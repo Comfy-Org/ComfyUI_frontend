@@ -32,6 +32,7 @@ const state = vi.hoisted(() => ({
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canTopUp: true,
+  canSubscribeSelfServe: false,
   showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
   handleResubscribe: vi.fn()
@@ -69,10 +70,16 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
       canManageSubscription: state.canManageSubscription,
-      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
-      canTopUp: state.canTopUp
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     })),
     workspaceType: computed(() => state.workspaceType as WorkspaceType)
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: computed(() => state.canTopUp),
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
   })
 }))
 
@@ -112,6 +119,8 @@ const i18n = createI18n({
             body: 'Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.',
             bodyNoDate:
               'Your team has used all its credits. Add more credits to continue generating.',
+            upgradeBody:
+              'Upgrade your plan to add credits and continue generating.',
             memberBody:
               'Your team has used all its credits. Your workspace admins need to add more credits to continue generating.',
             addCredits: 'Add credits',
@@ -124,6 +133,9 @@ const i18n = createI18n({
           },
           updatePayment: 'Update payment'
         }
+      },
+      subscription: {
+        upgradeToAddCredits: 'Upgrade to add credits'
       }
     }
   }
@@ -174,6 +186,7 @@ describe('BillingStatusBanner', () => {
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canTopUp = true
+    state.canSubscribeSelfServe = false
   })
 
   it('renders nothing for a healthy funded team', () => {
@@ -195,6 +208,24 @@ describe('BillingStatusBanner', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers an upgrade when self-serve subscription is available', () => {
+    exhausted()
+    state.canTopUp = false
+    state.canSubscribeSelfServe = true
+
+    renderBanner()
+
+    expect(
+      screen.getByRole('button', { name: 'Upgrade to add credits' })
+    ).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Upgrade your plan to add credits and continue generating.'
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent(
+      'Your workspace admins need to add more credits'
+    )
   })
 
   it('shows out-of-credits contact-admin copy without an Add credits action for members', () => {
