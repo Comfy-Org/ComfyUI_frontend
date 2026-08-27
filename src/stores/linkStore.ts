@@ -22,7 +22,7 @@ export interface EndpointUpdate {
   topology: LinkTopology
   patch: EndpointPatch
 }
-interface EndpointUpdateError {
+export interface EndpointUpdateError {
   code:
     | 'duplicate-topology'
     | 'unowned-topology'
@@ -444,6 +444,7 @@ export const useLinkStore = defineStore('link', () => {
     replaceLink,
     updateEndpoint,
     updateEndpoints,
+    validateEndpointUpdates,
     deleteLink,
     isInputSlotConnected,
     getInputSlotLink,

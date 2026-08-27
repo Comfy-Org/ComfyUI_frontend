@@ -6,7 +6,10 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
@@ -137,6 +140,20 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     ).toEqual(['blob:second'])
   })
 
+  it('owns preview arrays after setting them', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(11)])
+    const previews = ['blob:first']
+
+    store.setNodePreviewsByExecutionId(executionId, previews)
+    previews.push('blob:caller-mutation')
+
+    expect(store.getNodePreviewImagesByExecutionId(executionId)).toEqual([
+      'blob:first'
+    ])
+    expect(store.latestPreview).toEqual(['blob:first'])
+  })
+
   it('should update reactive nodeOutputs.value when merging outputs', () => {
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(1)])
@@ -187,6 +204,29 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 
     expect(refAfter).not.toBe(refBefore)
     expect(refAfter?.images).toHaveLength(2)
+  })
+
+  it('replaces outputs written through the legacy map', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'canonical.png')
+    const legacyOutput = createMockOutputs([{ filename: 'legacy.png' }])
+    store.replaceOutputsFromLegacy({ '5': legacyOutput })
+
+    expect(store.getNodeOutputs(node)).toEqual(legacyOutput)
+  })
+
+  it('projects previews without reading legacy map mutations back', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, node.id), [
+      'blob:canonical'
+    ])
+    app.nodePreviewImages['5'] = ['blob:legacy']
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:canonical'])
   })
 })
 
@@ -758,6 +798,17 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images).toHaveLength(1)
     expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('test.png')
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
+  })
+
+  it('leaves node images unchanged for preview change detection', () => {
+    const store = useNodeOutputStore()
+    const images = [{ filename: 'previous.png' }]
+    const node = createMockNode({ id: 5, images })
+
+    store.setNodeOutputs(node, 'test.png')
+
+    expect(node.images).toBe(images)
+    expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
   })
 
   it('should skip empty array of filenames after createOutputs', () => {

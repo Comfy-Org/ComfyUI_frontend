@@ -1,6 +1,14 @@
 name: Validate Action SHA Pins
 
 on:
+  # A PR only re-checks the pins it edits, so a stale major merges green and reddens every later workflow PR.
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.pinact.yaml'
   pull_request:
     paths:
       - '.github/workflows/**'

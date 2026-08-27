@@ -246,6 +246,9 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
     5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
   - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
   - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
+- NEVER call `captureException` or `datadogRum.addError` directly
+  - Use `reportError()` from `@/platform/telemetry/reportError`; see `src/AGENTS.md`
+  - Each raw sink reaches one console, so the failure reads as zero in the other
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`

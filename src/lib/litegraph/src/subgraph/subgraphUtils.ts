@@ -595,8 +595,13 @@ export function reorderSubgraphInputs(
     (index) => previousInputs.inputs[index]
   )
 
+  const result = replaceNodeInputs(
+    subgraphNode,
+    previousInputs,
+    orderedHostInputs
+  )
+  if (!result.ok) return
   reorderInPlace(subgraph.inputs, orderedIndices)
-  replaceNodeInputs(subgraphNode, previousInputs, orderedHostInputs)
   subgraphNode.invalidatePromotedViews()
 
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
