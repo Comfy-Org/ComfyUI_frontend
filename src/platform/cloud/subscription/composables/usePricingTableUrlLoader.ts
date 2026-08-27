@@ -161,7 +161,12 @@ export function usePricingTableUrlLoader() {
           error
         )
       }
-      if (!permissions.value.canManageSubscription) return
+      if (
+        !permissions.value.canManageSubscription ||
+        !canOpenPricingSurface.value
+      ) {
+        return
+      }
       if (!teamCreditStops.value) {
         subscriptionDialog.showPricingTable({
           reason: 'deep_link',
