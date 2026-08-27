@@ -10,6 +10,7 @@ import { createAgentEventTransport } from '../../services/agent/agentEventTransp
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import type { WorkflowReference } from '../../types/workflowReference'
 
 export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
@@ -26,6 +27,7 @@ interface UserEntry {
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
+  workflowReferences?: WorkflowReference[]
 }
 
 export type ConversationEntry = UserEntry | AssistantMessage
@@ -47,6 +49,7 @@ export const useAgentConversationStore = defineStore(
     const userTexts = ref(new Map<TurnId, string>())
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
     const userTags = ref(new Map<TurnId, string[]>())
+    const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
 
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
@@ -65,13 +68,16 @@ export const useAgentConversationStore = defineStore(
       turnId: TurnId,
       text: string,
       attachments?: UserAttachment[],
-      tags?: string[]
+      tags?: string[],
+      workflowReferences?: WorkflowReference[]
     ): void {
       userTexts.value.set(turnId, text)
       if (attachments !== undefined && attachments.length > 0)
         userAttachments.value.set(turnId, attachments)
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
+      if (workflowReferences !== undefined && workflowReferences.length > 0)
+        userWorkflowReferences.value.set(turnId, workflowReferences)
     }
 
     function setThreadId(id: string | null): void {
@@ -231,6 +237,7 @@ export const useAgentConversationStore = defineStore(
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
+      userWorkflowReferences.value = new Map()
       dropAttachmentPreviews()
       threadId.value = null
       hydratedMessageIds = new Set()
@@ -244,6 +251,7 @@ export const useAgentConversationStore = defineStore(
       messages.value = transcript.messages
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
+      userWorkflowReferences.value = new Map()
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
@@ -269,7 +277,8 @@ export const useAgentConversationStore = defineStore(
                 role: 'user',
                 text,
                 attachments: userAttachments.value.get(message.id),
-                tags: userTags.value.get(message.id)
+                tags: userTags.value.get(message.id),
+                workflowReferences: userWorkflowReferences.value.get(message.id)
               },
               message
             ]

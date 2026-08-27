@@ -12,6 +12,7 @@ import type {
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import type { WorkflowReference } from '../../types/workflowReference'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -212,7 +213,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function sendMessage(
     text: string,
     attachments?: SentAttachment[],
-    tags?: SentTag[]
+    tags?: SentTag[],
+    workflowReferences?: WorkflowReference[]
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -296,7 +298,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           previewUrl,
           ref
         })),
-        tags?.map((tag) => `${tag.title} #${tag.id}`)
+        tags?.map((tag) => `${tag.title} #${tag.id}`),
+        workflowReferences
       )
       conversationStore.startTurn(turnId)
       if (wasStopRequestedWhileSending()) {

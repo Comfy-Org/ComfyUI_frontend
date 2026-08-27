@@ -577,7 +577,7 @@ async function enterNodeSelectionMode(): Promise<void> {
   await openAddMenu()
   await userEvent.click(
     await screen.findByRole('menuitem', {
-      name: i18n.global.t('agent.addNodesFromGraph')
+      name: i18n.global.t('agent.nodes')
     })
   )
 }
@@ -763,7 +763,7 @@ describe('AgentPanelRoot attach flow', () => {
     await openAddMenu()
     expect(
       await screen.findByRole('menuitem', {
-        name: i18n.global.t('agent.addNodesFromGraph')
+        name: i18n.global.t('agent.nodes')
       })
     ).toBeInTheDocument()
     expect(
@@ -2315,7 +2315,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
     expect(
-      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
+      await screen.findAllByText(i18n.global.t('agent.selectWorkflowForAgent'))
     ).not.toHaveLength(0)
 
     await sendFromComposer('work without a canvas')
@@ -2361,7 +2361,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     expect(
-      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
+      await screen.findAllByText(i18n.global.t('agent.selectWorkflowForAgent'))
     ).not.toHaveLength(0)
     expect(screen.queryByText('current')).not.toBeInTheDocument()
 

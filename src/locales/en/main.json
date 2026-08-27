@@ -5182,6 +5182,10 @@
     "attach": "Attach a file",
     "attachFiles": "Attach images or files",
     "addToPrompt": "Add to prompt",
+    "nodes": "Nodes",
+    "workflows": "Workflows",
+    "noWorkflowsToReference": "No workflows available to reference",
+    "removeWorkflowReferenceLabel": "Remove {workflow} reference",
     "addNodesFromGraph": "Add nodes from graph",
     "dragAndDropAssets": "Drag and drop assets here",
     "nodeSelection": {

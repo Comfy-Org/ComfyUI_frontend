@@ -14,6 +14,7 @@ import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import type { ActiveTab } from '../../types/activeTab'
+import type { WorkflowReference } from '../../types/workflowReference'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -37,6 +38,9 @@ const {
   canOpenAssets = false,
   isMaximized = false,
   selectionTags = [],
+  workflowReferences = [],
+  availableWorkflows = [],
+  editableWorkflowId,
   activeTab = null,
   workflowTabs = [],
   workflowDetached = false,
@@ -56,6 +60,9 @@ const {
   canOpenAssets?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
+  workflowReferences?: WorkflowReference[]
+  availableWorkflows?: WorkflowReference[]
+  editableWorkflowId?: string
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
   workflowDetached?: boolean
@@ -68,7 +75,11 @@ const {
   answeringAskIds?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{
-  send: [text: string, attachments: ComposerAttachment[]]
+  send: [
+    text: string,
+    attachments: ComposerAttachment[],
+    workflowReferences?: WorkflowReference[]
+  ]
   stop: []
   attach: []
   openAssets: []
@@ -76,6 +87,8 @@ const emit = defineEmits<{
   removeTag: [id: string]
   focusTag: [id: string]
   mentionPick: [node: SelectedNode]
+  workflowReferencePick: [workflow: WorkflowReference]
+  removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   selectTab: [path: string]
   clearWorkflow: []
@@ -175,6 +188,15 @@ function updateAttachment(
 
 function removeAttachment(id: string): void {
   composerRef.value?.removeAttachment(id)
+}
+
+function onComposerSend(
+  text: string,
+  attachments: ComposerAttachment[],
+  references?: WorkflowReference[]
+): void {
+  if (references !== undefined) emit('send', text, attachments, references)
+  else emit('send', text, attachments)
 }
 
 defineExpose({ addAttachment, updateAttachment, removeAttachment })
@@ -319,9 +341,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :can-attach="canAttach"
             :can-open-assets="canOpenAssets"
             :selection-tags="selectionTags"
+            :workflow-references="workflowReferences"
+            :available-workflows="availableWorkflows"
+            :editable-workflow-id="editableWorkflowId"
             :get-mention-nodes="getMentionNodes"
             :get-mention-assets="getMentionAssets"
-            @send="(text, attachments) => emit('send', text, attachments)"
+            @send="onComposerSend"
             @stop="emit('stop')"
             @attach="emit('attach')"
             @open-assets="emit('openAssets')"
@@ -329,6 +354,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @remove-tag="emit('removeTag', $event)"
             @focus-tag="emit('focusTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
+            @workflow-reference-pick="emit('workflowReferencePick', $event)"
+            @remove-workflow-reference="emit('removeWorkflowReference', $event)"
           >
             <template #header>
               <WorkflowSelectorChip

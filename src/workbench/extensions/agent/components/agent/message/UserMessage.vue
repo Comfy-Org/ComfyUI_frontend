@@ -9,6 +9,7 @@ import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import type { WorkflowReference } from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import AgentTooltip from '../AgentTooltip.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -17,11 +18,13 @@ const {
   text,
   attachments = [],
   tags = [],
+  workflowReferences = [],
   editable = false
 } = defineProps<{
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
+  workflowReferences?: WorkflowReference[]
   editable?: boolean
 }>()
 const emit = defineEmits<{
@@ -109,9 +112,18 @@ const splitAttachments = computed(() => {
     </div>
     <div
       v-if="text"
+      data-testid="user-message-bubble"
       class="border-agent-border bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm wrap-break-word whitespace-pre-wrap"
     >
-      {{ text }}
+      <span
+        v-for="workflow in workflowReferences"
+        :key="workflow.id"
+        class="bg-agent-pill text-agent-fg-muted mr-1 inline-flex max-w-40 items-center gap-1 rounded-lg px-1.5 py-0.5 align-middle text-xs"
+      >
+        <span class="icon-[comfy--workflow] size-3 shrink-0" />
+        <span class="truncate">{{ workflow.name }}</span>
+      </span>
+      <span>{{ text }}</span>
     </div>
     <div
       v-if="text"

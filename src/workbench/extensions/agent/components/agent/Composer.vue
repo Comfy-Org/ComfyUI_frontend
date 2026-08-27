@@ -5,6 +5,9 @@ import {
   DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
 import { computed, inject, nextTick, ref, useTemplateRef, watch } from 'vue'
@@ -23,6 +26,7 @@ import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
+import type { WorkflowReference } from '../../types/workflowReference'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
@@ -35,6 +39,9 @@ const {
   canAttach = false,
   canOpenAssets = false,
   selectionTags = [],
+  workflowReferences = [],
+  availableWorkflows = [],
+  editableWorkflowId,
   getMentionNodes = () => [],
   getMentionAssets = async () => []
 } = defineProps<{
@@ -43,11 +50,18 @@ const {
   canAttach?: boolean
   canOpenAssets?: boolean
   selectionTags?: SelectedNode[]
+  workflowReferences?: WorkflowReference[]
+  availableWorkflows?: WorkflowReference[]
+  editableWorkflowId?: string
   getMentionNodes?: () => SelectedNode[]
   getMentionAssets?: () => AssetItem[] | Promise<AssetItem[]>
 }>()
 const emit = defineEmits<{
-  send: [text: string, attachments: ComposerAttachment[]]
+  send: [
+    text: string,
+    attachments: ComposerAttachment[],
+    workflowReferences?: WorkflowReference[]
+  ]
   stop: []
   attach: []
   openAssets: []
@@ -55,6 +69,8 @@ const emit = defineEmits<{
   removeTag: [id: string]
   focusTag: [id: string]
   mentionPick: [node: SelectedNode]
+  workflowReferencePick: [workflow: WorkflowReference]
+  removeWorkflowReference: [id: string]
 }>()
 
 const assetDragActive = inject<Readonly<Ref<boolean>>>(
@@ -73,6 +89,12 @@ const mentionNodes = computed(() => {
   )
 })
 const mentionAssets = ref<AssetItem[]>([])
+const eligibleWorkflows = computed(() => {
+  const selectedIds = new Set(workflowReferences.map(({ id }) => id))
+  return availableWorkflows
+    .filter(({ id }) => id !== editableWorkflowId && !selectedIds.has(id))
+    .toSorted((a, b) => a.name.localeCompare(b.name))
+})
 function loadMentionNodes(): void {
   graphNodes.value = getMentionNodes().toSorted((a, b) =>
     a.title.localeCompare(b.title)
@@ -90,6 +112,7 @@ async function loadMentionAssets(): Promise<void> {
 }
 
 const mentionOpen = ref(false)
+const workflowSubmenuOpen = ref(false)
 const mentionQuery = ref('')
 const mentionStart = ref(-1)
 const mentionActive = ref(0)
@@ -97,6 +120,12 @@ const mentionActive = ref(0)
 type MentionMatch =
   | { kind: 'node'; id: string; label: string; node: SelectedNode }
   | { kind: 'asset'; id: string; label: string; asset: AssetItem }
+  | {
+      kind: 'workflow'
+      id: string
+      label: string
+      workflow: WorkflowReference
+    }
 
 /**
  * Nodes already in the basket, hidden from the picker - re-picking one is a
@@ -140,6 +169,16 @@ const mentionMatches = computed<MentionMatch[]>(() => {
           id: asset.id,
           label: getAssetDisplayName(asset),
           asset
+        })
+      ),
+    ...eligibleWorkflows.value
+      .filter(({ name }) => name.toLowerCase().includes(query))
+      .map(
+        (workflow): MentionMatch => ({
+          kind: 'workflow',
+          id: workflow.id,
+          label: workflow.name,
+          workflow
         })
       )
   ].toSorted((a, b) => a.label.localeCompare(b.label))
@@ -203,7 +242,7 @@ function syncMention(event: Event): void {
 
 function pickMention(match: MentionMatch): void {
   if (match.kind === 'node') emit('mentionPick', match.node)
-  else {
+  else if (match.kind === 'asset') {
     const attachmentId = `asset:${match.asset.id}`
     if (!composer.attachments.value.some((item) => item.id === attachmentId)) {
       composer.addAttachment({
@@ -213,7 +252,7 @@ function pickMention(match: MentionMatch): void {
         previewUrl: match.asset.thumbnail_url ?? match.asset.preview_url
       })
     }
-  }
+  } else emit('workflowReferencePick', match.workflow)
   const draft = composer.draft.value
   const before = draft.slice(0, mentionStart.value)
   const end = mentionStart.value + 1 + mentionQuery.value.length
@@ -280,7 +319,11 @@ const placeholderHint = computed(() => {
 })
 
 const composer = useComposer({
-  onSend: (text, attachments) => emit('send', text, attachments),
+  onSend: (text, attachments) => {
+    if (workflowReferences.length > 0)
+      emit('send', text, attachments, [...workflowReferences])
+    else emit('send', text, attachments)
+  },
   isStreaming: () => streaming,
   onStop: () => emit('stop')
 })
@@ -365,6 +408,11 @@ defineExpose({
           v-else-if="match.kind === 'asset'"
           class="icon-[lucide--image] size-3.5 shrink-0"
         />
+        <span
+          v-else-if="match.kind === 'workflow'"
+          class="icon-[comfy--workflow] size-3.5 shrink-0"
+        />
+        <span v-else class="icon-[comfy--node] size-3.5 shrink-0" />
         <span class="truncate">{{ match.label }}</span>
         <span
           v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
@@ -403,7 +451,10 @@ defineExpose({
         />
         <span>{{ t('agent.dragAndDropAssets') }}</span>
       </div>
-      <div v-if="selectionTags.length" class="flex flex-wrap gap-2 p-3">
+      <div
+        v-if="selectionTags.length || workflowReferences.length"
+        class="flex flex-wrap gap-2 p-3"
+      >
         <span
           v-for="tag in selectionTags"
           :key="selectedNodeKey(tag)"
@@ -434,6 +485,27 @@ defineExpose({
             "
             class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
             @click.stop="emit('removeTag', selectedNodeKey(tag))"
+          >
+            <span class="icon-[lucide--x] size-3.5 shrink-0" />
+          </button>
+        </span>
+        <span
+          v-for="workflow in workflowReferences"
+          :key="workflow.id"
+          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-border-default px-2.5 text-xs/4 font-medium transition-colors hover:bg-tertiary-background-hover"
+        >
+          <span class="text-agent-fg-muted icon-[comfy--workflow] size-3.5" />
+          <span class="max-w-40 truncate">{{ workflow.name }}</span>
+          <button
+            v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
+            type="button"
+            :aria-label="
+              t('agent.removeWorkflowReferenceLabel', {
+                workflow: workflow.name
+              })
+            "
+            class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
+            @click="emit('removeWorkflowReference', workflow.id)"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
           </button>
@@ -514,13 +586,53 @@ defineExpose({
                 class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
                 @select="emit('selectNodes')"
               >
-                <span
-                  class="icon-[lucide--mouse-pointer-click] size-4 shrink-0"
-                />
+                <span class="icon-[comfy--node] size-4 shrink-0" />
                 <span class="whitespace-nowrap">
-                  {{ t('agent.addNodesFromGraph') }}
+                  {{ t('agent.nodes') }}
                 </span>
               </DropdownMenuItem>
+              <DropdownMenuSub v-model:open="workflowSubmenuOpen">
+                <DropdownMenuSubTrigger
+                  class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                >
+                  <span class="icon-[comfy--workflow] size-4 shrink-0" />
+                  <span class="flex-1 text-left whitespace-nowrap">
+                    {{ t('agent.workflows') }}
+                  </span>
+                  <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent
+                    :side-offset="4"
+                    class="agent-scope bg-agent-surface-raised z-1100 box-border max-h-64 min-w-[186px] overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+                  >
+                    <DropdownMenuItem
+                      class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                      @select.prevent="workflowSubmenuOpen = false"
+                    >
+                      <span
+                        class="icon-[lucide--chevron-left] size-4 shrink-0"
+                      />
+                      <span>{{ t('g.back') }}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      v-for="workflow in eligibleWorkflows"
+                      :key="workflow.id"
+                      class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                      @select="emit('workflowReferencePick', workflow)"
+                    >
+                      <span class="icon-[comfy--workflow] size-4 shrink-0" />
+                      <span class="max-w-64 truncate">{{ workflow.name }}</span>
+                    </DropdownMenuItem>
+                    <div
+                      v-if="eligibleWorkflows.length === 0"
+                      class="text-agent-fg-muted px-2 py-1 text-xs"
+                    >
+                      {{ t('agent.noWorkflowsToReference') }}
+                    </div>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
               <DropdownMenuItem
                 v-if="canOpenAssets"
                 class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"

@@ -442,6 +442,44 @@ describe('Composer', () => {
       expect(emitted().send).toBeUndefined()
     })
 
+    it('stages an eligible workflow from an @ mention', async () => {
+      const workflow = { id: 'wf-water', name: 'Water world' }
+      const { emitted } = mount({
+        availableWorkflows: [
+          { id: 'wf-edit', name: 'Editable workflow' },
+          workflow
+        ],
+        editableWorkflowId: 'wf-edit'
+      })
+
+      await userEvent.type(screen.getByRole('textbox'), '@water')
+      await userEvent.keyboard('{Enter}')
+
+      expect(emitted().workflowReferencePick).toEqual([[workflow]])
+      expect(screen.getByRole('textbox')).toHaveValue('')
+    })
+
+    it('includes selected workflow references in the send snapshot', async () => {
+      const references = [{ id: 'wf-water', name: 'Water world' }]
+      const { emitted } = mount({ workflowReferences: references })
+
+      await userEvent.type(screen.getByRole('textbox'), 'use this workflow')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+      expect(emitted().send[0]).toEqual(['use this workflow', [], references])
+    })
+
+    it('excludes only the referenced id when node titles match', async () => {
+      mount({ selectionTags: [NODES[0]], getMentionNodes: () => NODES })
+
+      await userEvent.type(screen.getByRole('textbox'), '@')
+      const listbox = screen.getByRole('listbox')
+
+      expect(within(listbox).queryByText('#5')).not.toBeInTheDocument()
+      expect(within(listbox).getByText('#7')).toBeInTheDocument()
+      expect(within(listbox).getByText('VAE Decode')).toBeInTheDocument()
+    })
+
     it('filters assets, stages a keyboard pick, removes its token, and sends its ref', async () => {
       const { emitted } = mount({
         getMentionNodes: () => NODES,
@@ -566,6 +604,17 @@ describe('Composer', () => {
     mount()
 
     await openAddMenu()
+
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+  })
+
+  it('returns from the workflow submenu to the reference menu', async () => {
+    mount()
+
+    await openAddMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Back' }))
 
     expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()

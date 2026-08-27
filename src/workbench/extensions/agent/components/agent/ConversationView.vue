@@ -87,6 +87,7 @@ watch(
               :text="entry.text"
               :attachments="entry.attachments"
               :tags="entry.tags"
+              :workflow-references="entry.workflowReferences"
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
             />

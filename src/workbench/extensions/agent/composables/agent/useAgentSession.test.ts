@@ -693,6 +693,25 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
   })
 
+  it('(h3) keeps workflow references in the local turn without inventing a wire field', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const references = [{ id: 'wf-context', name: 'Context workflow' }]
+    session.start()
+
+    await session.sendMessage('compare this', undefined, undefined, references)
+
+    expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
+      content: 'compare this',
+      selection: undefined,
+      attachments: undefined
+    })
+    expect(useAgentConversationStore().entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: references
+    })
+  })
+
   it('(h4) the turn post never carries a draft field (upload retired)', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
