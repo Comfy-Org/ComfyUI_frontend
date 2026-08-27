@@ -10,9 +10,14 @@
   >
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
-        v-if="widget.visible"
-        data-testid="node-widget"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        v-if="shouldRenderRow(widget)"
+        :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
+        :class="
+          cn(
+            'group col-span-full grid grid-cols-subgrid items-stretch',
+            !isConvertedWidget(widget) && 'lg-node-widget'
+          )
+        "
       >
         <div
           :class="
@@ -38,6 +43,7 @@
           />
         </div>
         <AppInput
+          v-if="!isConvertedWidget(widget)"
           :widget-id="widget.widgetId"
           :name="widget.simplified.name"
           :enable="canSelectInputs && !widget.simplified.options?.disabled"
@@ -83,6 +89,15 @@ import InputSlot from './InputSlot.vue'
 const EMPTY_TOOLTIP: TooltipOptions = {}
 const grid = useTemplateRef<HTMLElement>('grid')
 
+const isConvertedWidgetType = (type: string) =>
+  type === 'converted-widget' || type.startsWith('converted-widget:')
+
+const isConvertedWidget = (widget: WidgetGridItem) =>
+  isConvertedWidgetType(widget.simplified.type)
+
+const shouldRenderRow = (widget: WidgetGridItem) =>
+  widget.visible && (!isConvertedWidget(widget) || !!widget.slotMetadata)
+
 const {
   processedWidgets,
   nodeType,
@@ -102,9 +117,10 @@ const canvasStore = useCanvasStore()
 
 const gridTemplateRows = computed(() =>
   processedWidgets
-    .filter((widget) => widget.visible)
+    .filter(shouldRenderRow)
     .map((widget) =>
-      shouldExpand(widget.simplified.type) || widget.hasLayoutSize
+      !isConvertedWidget(widget) &&
+      (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
         ? 'auto'
         : 'min-content'
     )

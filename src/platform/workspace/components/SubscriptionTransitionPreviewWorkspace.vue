@@ -373,7 +373,7 @@ const emit = defineEmits<{
   retryAuthentication: []
 }>()
 
-const { locale, n, t } = useI18n()
+const { locale, n, t, te } = useI18n()
 const verificationRecoveryActive = computed(
   () =>
     embeddedCheckoutEnabled &&
@@ -405,7 +405,10 @@ function openVerification() {
 }
 
 function formatTierName(tier: string): string {
-  return t(`subscription.tiers.${tier.toLowerCase()}.name`)
+  const nameKey = `subscription.tiers.${tier.toLowerCase()}.name`
+  if (te(nameKey)) return t(nameKey)
+  const lower = tier.toLowerCase()
+  return lower.charAt(0).toUpperCase() + lower.slice(1)
 }
 
 function isTeamTier(tier: string): boolean {

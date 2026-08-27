@@ -2248,7 +2248,7 @@ export class LGraphNode
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     this.widgets ||= []
-    const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
+    const widget = toConcreteWidget(custom_widget, this)
     this.widgets.push(widget)
 
     // Only register with store if node has a valid ID (is already in a graph).

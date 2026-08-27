@@ -17772,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "Sélectionnez le style realistic_image et un sous-style optionnel.",
+    "description": "Sélectionnez le style et le sous-style logo_raster.",
     "display_name": "Recraft Style - Logo Raster",
     "inputs": {
       "substyle": {
@@ -17883,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "Créez un style Recraft V4 réutilisable à partir de 1 à 10 images de référence. Le style_id renvoyé fonctionne avec chaque modèle Recraft V4 et V4.1 du même type de sortie. La taille totale de toutes les images est limitée à 10 MB.",
+    "display_name": "Recraft V4 Create Style",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence définissant le style. Des références similaires affinent la correspondance, des références variées l'élargissent."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Type de sortie pour lequel le style est créé : recraftv4_styles pour les images matricielles, recraftv4_styles_vector pour les SVG."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Génère des images à l’aide des modèles Recraft V4 ou V4 Pro.",
     "display_name": "Recraft V4 Texte vers Image",
@@ -17892,7 +17912,7 @@
       },
       "model": {
         "name": "modèle",
-        "tooltip": "Le modèle à utiliser pour la génération."
+        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en matière de style et nécessitent toujours un style_id ou des style_references."
       },
       "model_size": {
         "name": "taille"
@@ -17916,10 +17936,26 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit la graine."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID d'un style Recraft V4 à appliquer, par ex. depuis le nœud Recraft V4 Create Style ou la sortie style_id d'une exécution précédente. Ne peut pas être combiné avec style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Degré de fidélité au style : precise le reproduit en détail, flexible correspond à l'aspect général. Utilisé uniquement lorsqu'un style est fourni."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Images de référence permettant de créer un style à la volée, facturées en supplément de la génération. Le style créé est renvoyé sous forme de style_id pour être réutilisé. Ne peut pas être combiné avec style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +17969,7 @@
       },
       "model": {
         "name": "modèle",
-        "tooltip": "Le modèle à utiliser pour la génération."
+        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en matière de style et nécessitent toujours un style_id ou des style_references."
       },
       "model_size": {
         "name": "taille"
@@ -17957,10 +17993,26 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit la graine."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID d'un style vectoriel Recraft V4 à appliquer, par ex. depuis le nœud Recraft V4 Create Style ou la sortie style_id d'une exécution précédente. Ne peut pas être combiné avec style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Degré de fidélité au style : precise le reproduit en détail, flexible correspond à l'aspect général. Utilisé uniquement lorsqu'un style est fourni."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Images de référence permettant de créer un style vectoriel à la volée, facturées en supplément de la génération. Le style créé est renvoyé sous forme de style_id pour être réutilisé. Ne peut pas être combiné avec style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,60 +24665,10 @@
       },
       "resolution": {
         "name": "résolution",
-        "tooltip": "Résolution vidéo de sortie. La 4K n’est pas disponible pour les modèles veo-3.1-lite et veo-3.0."
+        "tooltip": "Résolution de la vidéo de sortie. La 4K n'est pas disponible pour le modèle veo-3.1-lite."
       },
       "seed": {
         "name": "graine",
-        "tooltip": "Graine pour la génération vidéo (0 pour aléatoire)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Génère des vidéos à partir de prompts textuels en utilisant l'API Veo de Google",
-    "display_name": "Génération de vidéo Google Veo2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Format d'image de la vidéo générée"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "Durée de la vidéo générée en secondes"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "Améliorer le prompt avec l'aide de l'IA"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Image de référence optionnelle pour guider la génération vidéo"
-      },
-      "model": {
-        "name": "modèle",
-        "tooltip": "Modèle Veo 2 à utiliser pour la génération vidéo"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Prompt négatif pour indiquer ce qu'il faut éviter dans la vidéo"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "Autoriser la génération de personnes dans la vidéo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Description textuelle de la vidéo"
-      },
-      "seed": {
-        "name": "seed",
         "tooltip": "Graine pour la génération vidéo (0 pour aléatoire)"
       }
     },
