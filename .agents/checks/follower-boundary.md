@@ -43,7 +43,7 @@ Per ADR 0016 the durable follower integrates updates into the yjs-backed FE doma
 Flag:
 
 - **New durable dependence on `LitegraphMutator` / snapshot-diff / `SemanticProjector`** —
-  these are the disposable POC stopgap gated behind `VITE_AGENT_CRDT_FOLLOWER`. New code
+  these are the disposable POC stopgap mounted with the flag-gated agent panel. New code
   that treats them as the permanent seam, or extends them instead of routing state into a
   domain store, should be questioned against ADR 0016.
 - **Layout/view fields written into the shared semantic doc** — `pos`, `size`, pan/zoom,
