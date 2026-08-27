@@ -110,7 +110,9 @@
       <!-- Upgrade to add credits (free tier) -->
       <Button
         v-if="
-          canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
+          billingPolicyCapabilities.showsSubscribeUpsellUI &&
+          permissions.canTopUp &&
+          isFreeTier
         "
         variant="subscribe"
         size="sm"
@@ -120,7 +122,10 @@
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <Button
-        v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"
+        v-else-if="
+          billingPolicyCapabilities.topUpAccess === 'allowed' &&
+          permissions.canTopUp
+        "
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -269,6 +274,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -324,6 +330,8 @@ const {
   isLoading,
   fetchBalance
 } = useBillingContext()
+
+const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
