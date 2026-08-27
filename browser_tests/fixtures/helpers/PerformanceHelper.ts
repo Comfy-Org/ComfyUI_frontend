@@ -46,6 +46,16 @@ type MeasurementState =
   | { kind: 'idle' }
   | { kind: 'measuring'; snapshot: PerfSnapshot }
 
+export function getMeasurementRejectionReason(
+  rafCollection: RafCollection | null,
+  nonMonotonicCdpMetrics: string[]
+): string | null {
+  if (nonMonotonicCdpMetrics.length) {
+    return `non-monotonic CDP metrics: ${nonMonotonicCdpMetrics.join(', ')}`
+  }
+  return getRafRejectionReason(rafCollection)
+}
+
 export class PerformanceHelper {
   private cdp: CDPSession | null = null
   private measurementState: MeasurementState = { kind: 'idle' }
@@ -297,7 +307,10 @@ export class PerformanceHelper {
       workloadIdentity,
       ...summarizeRafIntervals(rafIntervalsMs)
     }
-    const rejectionReason = getRafRejectionReason(rafCollection)
+    const rejectionReason = getMeasurementRejectionReason(
+      rafCollection,
+      taskAccounting.nonMonotonicCdpMetrics
+    )
     return rejectionReason
       ? { kind: 'rejected', reason: rejectionReason, measurement }
       : { kind: 'accepted', measurement }

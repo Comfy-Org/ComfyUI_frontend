@@ -1,8 +1,15 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { getMeasurementRejectionReason } from '@e2e/fixtures/helpers/PerformanceHelper'
 
 test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
+  test('rejects non-monotonic CDP counters', () => {
+    expect(
+      getMeasurementRejectionReason(null, ['TaskDuration', 'ProcessTime'])
+    ).toBe('non-monotonic CDP metrics: TaskDuration, ProcessTime')
+  })
+
   test('collects quiet rAF intervals inside the measured window', async ({
     comfyPage
   }) => {
