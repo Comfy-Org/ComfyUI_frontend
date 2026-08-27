@@ -32,70 +32,102 @@ export const heroSnippetLanguages = {
   { label: string; shikiLang: BundledLanguage }
 >
 
-const BASE_URLS: Record<HeroSnippetEnv, string> = {
-  cloud: 'https://cloud.comfy.org',
-  local: 'http://127.0.0.1:8188',
-  serverless: 'https://<your-deployment>.comfy.run'
+/**
+ * `COMFY_BASE_URL` per environment, verified against @comfyorg/sdk 0.1.7 and
+ * comfy-sdk 0.1.8. Cloud is the SDKs' own default, so its snippets set nothing;
+ * the self-hosted URL is comfy-api-proxy, which fronts a local ComfyUI with the
+ * v2 API and takes no key.
+ */
+const BASE_URLS: Record<Exclude<HeroSnippetEnv, 'cloud'>, string> = {
+  local: 'http://127.0.0.1:8189',
+  serverless: 'https://<deployment>.run.comfy.app'
 }
 
-function python(baseUrl: string): string {
+/** The proxy in front of a self-hosted ComfyUI authenticates no requests. */
+const NEEDS_API_KEY: Record<HeroSnippetEnv, boolean> = {
+  cloud: true,
+  local: false,
+  serverless: true
+}
+
+function baseUrlNote(env: HeroSnippetEnv, comment: string): string {
+  if (env === 'cloud') return ''
+  return `${comment} export COMFY_BASE_URL="${BASE_URLS[env]}"\n`
+}
+
+function python(env: HeroSnippetEnv): string {
+  const client = NEEDS_API_KEY[env]
+    ? 'Comfy(api_key=os.environ["COMFY_API_KEY"])'
+    : 'Comfy()  # the proxy takes no key'
+  const osImport = NEEDS_API_KEY[env] ? 'import os\n' : ''
   return `# pip install comfy-sdk
-import os
-from comfy_sdk import Comfy
+${baseUrlNote(env, '#')}${osImport}from comfy_sdk import Comfy
 
-os.environ["COMFY_BASE_URL"] = "${baseUrl}"
-client = Comfy(api_key=os.environ["COMFY_API_KEY"])
+client = ${client}
 wf = client.workflows.from_file("workflow_api.json")
+
 job = client.run(wf)  # submit, then poll to a terminal state
-job.outputs[0].to_file("output.png")`
+for output in job.get_outputs("9"):  # "9" is your SaveImage node
+    output.to_file(output.name)`
 }
 
-function javascript(baseUrl: string): string {
-  return `// npm install @comfyorg/sdk
-import { Comfy } from '@comfyorg/sdk'
+function javascript(env: HeroSnippetEnv): string {
+  const client = NEEDS_API_KEY[env]
+    ? 'new Comfy({ apiKey: process.env.COMFY_API_KEY })'
+    : 'new Comfy()  // the proxy takes no key'
+  return `// npm i @comfyorg/sdk
+${baseUrlNote(env, '//')}import { Comfy } from '@comfyorg/sdk'
 
-const client = new Comfy({
-  baseUrl: '${baseUrl}',
-  apiKey: process.env.COMFY_API_KEY
-})
+const client = ${client}
 const wf = await client.workflows.fromFile('workflow_api.json')
-const job = await client.run(wf)  // submit, then poll to a terminal state
-await job.outputs[0].toFile('output.png')`
+
+const job = await client.run(wf) // submit, then poll to a terminal state
+await job.getOutputs('9')[0].toFile('output.png') // "9" is your SaveImage node`
 }
 
-function curl(baseUrl: string): string {
-  return `curl -X POST ${baseUrl}/api/v1/run \\
-  -H "Authorization: Bearer $COMFY_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  --data @workflow_api.json`
+/*
+ * The v2 job endpoint wraps the graph rather than taking the file as the body,
+ * so the workflow is spliced into the request instead of passed with `@`.
+ */
+function curl(env: HeroSnippetEnv): string {
+  const baseUrl = env === 'cloud' ? 'https://cloud.comfy.org' : BASE_URLS[env]
+  const auth = NEEDS_API_KEY[env]
+    ? '  -H "Authorization: Bearer $COMFY_API_KEY" \\\n'
+    : ''
+  return `curl -X POST ${baseUrl}/api/v2/jobs \\
+${auth}  -H "Content-Type: application/json" \\
+  -d "{\\"workflow\\": $(cat workflow_api.json)}"
+
+# poll GET /api/v2/jobs/{id} until it reaches a terminal status,
+# then GET /api/v2/assets/{id}/content for each output`
 }
 
 /**
  * Hero code samples, one per environment × language.
  *
- * UNVERIFIED: only cloud/python is taken from the design. The JavaScript and
- * cURL forms, and the local/serverless base URLs, are drafted from the same
- * shape and must be checked against the shipping SDK surface before launch
- * (developers-page content pass, issue 10).
+ * Verified 2026-08-27 against the published SDKs (@comfyorg/sdk 0.1.7,
+ * comfy-sdk 0.1.8) and the generated Comfy API v2 contract. Neither client
+ * takes a base-URL argument, outputs are fetched by node id, and the node ids
+ * here ("9") are illustrative — they belong to the reader's own graph.
  */
 export const heroSnippets: Record<
   HeroSnippetEnv,
   Record<HeroSnippetLang, string>
 > = {
   cloud: {
-    python: python(BASE_URLS.cloud),
-    javascript: javascript(BASE_URLS.cloud),
-    curl: curl(BASE_URLS.cloud)
+    python: python('cloud'),
+    javascript: javascript('cloud'),
+    curl: curl('cloud')
   },
   local: {
-    python: python(BASE_URLS.local),
-    javascript: javascript(BASE_URLS.local),
-    curl: curl(BASE_URLS.local)
+    python: python('local'),
+    javascript: javascript('local'),
+    curl: curl('local')
   },
   serverless: {
-    python: python(BASE_URLS.serverless),
-    javascript: javascript(BASE_URLS.serverless),
-    curl: curl(BASE_URLS.serverless)
+    python: python('serverless'),
+    javascript: javascript('serverless'),
+    curl: curl('serverless')
   }
 }
 
