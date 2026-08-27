@@ -6,6 +6,65 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
+
+class ForeignWidget implements IBaseWidget {
+  [symbol: symbol]: boolean
+  #drawResult = 'drawn'
+  type = 'foreign_test'
+  options = {}
+  y = 0
+  nameReads = 0
+  nameWrites = 0
+  valueReads = 0
+  valueWrites = 0
+  private _name = 'foreign'
+  private _value = 10
+
+  constructor() {
+    Object.defineProperties(this, {
+      name: {
+        configurable: true,
+        enumerable: true,
+        get: () => {
+          this.nameReads++
+          return this._name
+        },
+        set: (name: string) => {
+          this.nameWrites++
+          this._name = name
+        }
+      },
+      value: {
+        configurable: true,
+        enumerable: true,
+        get: () => {
+          this.valueReads++
+          return this._value
+        },
+        set: (value: number) => {
+          this.valueWrites++
+          this._value = value
+        }
+      }
+    })
+  }
+
+  draw() {
+    return this.#drawResult
+  }
+
+  mouse() {
+    return true
+  }
+
+  computeSize(): [number, number] {
+    return [120, 24]
+  }
+
+  declare name: string
+  declare value: number
+}
 
 function createNodeWithWidgets(values: Record<string, number>) {
   const graph = new LGraph()
@@ -101,4 +160,57 @@ describe('widgets view', () => {
     expect(storedOrder(node)).toEqual(['custom'])
     expect(storedValue(widget)).toBe(10)
   })
+
+  it.for([
+    [
+      'addCustomWidget',
+      (node: LGraphNode, widget: ForeignWidget) => node.addCustomWidget(widget)
+    ],
+    [
+      'widgets.push',
+      (node: LGraphNode, widget: ForeignWidget) => {
+        node.widgets ||= []
+        node.widgets.push(widget)
+        return node.widgets.at(-1)
+      }
+    ]
+  ] as const)(
+    'preserves foreign widget behavior through $0',
+    ([, addWidget]) => {
+      const graph = new LGraph()
+      const node = new LGraphNode('test')
+      graph.add(node)
+      const widget = new ForeignWidget()
+      const result = addWidget(node, widget)
+
+      expect(result).toBe(widget)
+      expect(widget).not.toBeInstanceOf(ForeignWidget)
+      expect(widget.draw()).toBe('drawn')
+      expect(widget.mouse()).toBe(true)
+      expect(widget.computeSize()).toEqual([120, 24])
+      expect(storedOrder(node)).toEqual(['foreign'])
+      expect(storedValue(widget)).toBe(10)
+      const nameReadsAfterNormalization = widget.nameReads
+      expect(widget.name).toBe('foreign')
+      expect(widget.nameReads).toBe(nameReadsAfterNormalization + 1)
+      widget.name = 'renamed'
+      expect(widget.nameWrites).toBe(1)
+      const graphId = node.graph!.rootGraph.id
+      const store = useWidgetValueStore()
+      expect(
+        store.getWidget(widgetId(graphId, node.id, 'foreign'))
+      ).toBeUndefined()
+      expect(store.getWidget(widgetId(graphId, node.id, 'renamed'))?.name).toBe(
+        'renamed'
+      )
+      expect(storedOrder(node)).toEqual(['renamed'])
+      const valueReadsAfterNormalization = widget.valueReads
+      expect(widget.value).toBe(10)
+      expect(widget.valueReads).toBe(valueReadsAfterNormalization + 1)
+
+      widget.value = 25
+      expect(widget.valueWrites).toBe(1)
+      expect(storedValue(widget)).toBe(25)
+    }
+  )
 })

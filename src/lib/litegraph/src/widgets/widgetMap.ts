@@ -95,7 +95,39 @@ function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
     prototype = Object.getPrototypeOf(prototype) as object | null
   }
 
+  prototype = Object.getPrototypeOf(widget) as object | null
+  while (prototype && prototype !== Object.prototype) {
+    for (const [key, descriptor] of Object.entries(
+      Object.getOwnPropertyDescriptors(prototype)
+    )) {
+      if (key !== 'constructor' && descriptors[key] === undefined)
+        descriptors[key] = descriptor
+    }
+    prototype = Object.getPrototypeOf(prototype) as object | null
+  }
+
   const existingDescriptors = Object.getOwnPropertyDescriptors(widget)
+  for (const [key, existing] of Object.entries(existingDescriptors)) {
+    if (existing.get === undefined && existing.set === undefined) continue
+
+    const concreteDescriptor = descriptors[key]
+    if (concreteDescriptor?.get && concreteDescriptor.set) {
+      descriptors[key] = {
+        configurable: existing.configurable,
+        enumerable: existing.enumerable,
+        get() {
+          existing.get?.call(this)
+          return concreteDescriptor.get?.call(this)
+        },
+        set(value: unknown) {
+          concreteDescriptor.set?.call(this, value)
+          existing.set?.call(this, value)
+        }
+      }
+    } else {
+      descriptors[key] = existing
+    }
+  }
   if (
     Object.keys(descriptors).some(
       (key) => existingDescriptors[key]?.configurable === false
