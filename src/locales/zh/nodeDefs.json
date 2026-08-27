@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "使用 PixVerse 延续现有视频，可选择生成原生音频。源视频必须短于 40 秒，且任一边最长不超过 1920px。输出会保留源视频的分辨率，因此质量决定的是续接内容的渲染效果，而非帧尺寸。",
+    "display_name": "PixVerse V6 视频延长",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要延续的视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "使用 PixVerse 生成从首帧过渡到尾帧的视频，可选择生成原生音频。输出会保留首帧的宽高比。",
+    "display_name": "PixVerse V6 首尾帧转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "使用 PixVerse 根据参考主体、背景和视频合成视频。在提示词中通过名称引用参考素材，即可将其放入场景中，例如“{'@'}主体1 穿过 {'@'}背景1”。连接参考视频后，模型会切换至 Omni 模式，输出时长将与最长的参考视频一致。",
+    "display_name": "PixVerse V6 融合（参考转视频）",
+    "inputs": {
+      "backgrounds": {
+        "name": "背景",
+        "tooltip": "主体将被放入其中的场景参考图像。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "时长（秒）"
+      },
+      "model_generate_audio": {
+        "name": "生成音频"
+      },
+      "model_negative_prompt": {
+        "name": "负面提示词"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_style": {
+        "name": "风格"
+      },
+      "subjects": {
+        "name": "主体",
+        "tooltip": "要放入场景中的主体参考图像。"
+      },
+      "videos": {
+        "name": "视频",
+        "tooltip": "用于借鉴主体、运动、构图或风格的参考视频。最多两个，合计最长 15 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "使用 PixVerse 为图像添加动画，可选择生成原生音频。输出将保持输入图像的宽高比。",
+    "display_name": "PixVerse V6 图像转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_duration_seconds": {
+        "name": "时长（秒）"
+      },
+      "model_generate_audio": {
+        "name": "生成音频"
+      },
+      "model_multi_clip": {
+        "name": "多片段"
+      },
+      "model_negative_prompt": {
+        "name": "负面提示词"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_style": {
+        "name": "风格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "使用 PixVerse 根据文本提示词生成视频，可选择生成原生音频。",
+    "display_name": "PixVerse V6 文本转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_duration_seconds": {
+        "name": "时长（秒）"
+      },
+      "model_generate_audio": {
+        "name": "生成音频"
+      },
+      "model_multi_clip": {
+        "name": "多片段"
+      },
+      "model_negative_prompt": {
+        "name": "负面提示词"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_style": {
+        "name": "风格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "Polyexponential调度器",
     "inputs": {

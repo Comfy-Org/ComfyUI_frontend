@@ -19,6 +19,10 @@ describe('getBillingPolicyCapabilities', () => {
       { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     ],
     [
+      'LocalEnterpriseWithoutActiveSubscription',
+      { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+    ],
+    [
       'LocalAndUnknown',
       { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     ],
@@ -44,6 +48,10 @@ describe('getBillingPolicyCapabilities', () => {
     [
       'CloudTeamWithoutActiveSubscription',
       { topUpAccess: 'subscription-required', showsSubscribeUpsellUI: false }
+    ],
+    [
+      'CloudEnterpriseWithoutActiveSubscription',
+      { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     ],
     [
       'CloudAndUnknown',

@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "PixVerseで既存の動画を延長します。必要に応じてネイティブ音声も使用できます。ソースは40秒未満かつ、いずれの辺も1920px以下である必要があります。出力はソースの解像度を維持するため、品質はフレームサイズではなく延長部分のレンダリング品質を設定します。",
+    "display_name": "PixVerse V6 動画延長",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "延長する動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "PixVerseで最初のフレームから最後のフレームへ遷移する動画を生成します。必要に応じてネイティブ音声も使用できます。出力は最初のフレームのアスペクト比を維持します。",
+    "display_name": "PixVerse V6 最初と最後のフレームから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "PixVerseで参照する被写体、背景、動画から動画を構成します。プロンプト内で名前を指定して参照をシーンに配置します。例:「{'@'}Subject1 walks through {'@'}Background1」。参照動画を接続するとモデルはOmniモードに切り替わり、出力の長さは最長の参照動画に一致します。",
+    "display_name": "PixVerse V6 フュージョン（参照から動画）",
+    "inputs": {
+      "backgrounds": {
+        "name": "backgrounds",
+        "tooltip": "被写体を配置するシーンの参照画像。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "長さ（秒）"
+      },
+      "model_generate_audio": {
+        "name": "音声を生成"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "シーンに配置する被写体の参照画像。"
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "被写体、動き、フレーミング、スタイルを参照する動画。最大2本、合計15秒まで。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "PixVerseで画像をアニメーション化します。必要に応じてネイティブ音声も追加できます。出力は入力画像のアスペクト比を維持します。",
+    "display_name": "PixVerse V6 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "長さ（秒）"
+      },
+      "model_generate_audio": {
+        "name": "音声を生成"
+      },
+      "model_multi_clip": {
+        "name": "複数クリップ"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "PixVerseでテキストプロンプトから動画を生成します。必要に応じてネイティブ音声も追加できます。",
+    "display_name": "PixVerse V6 テキストから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_duration_seconds": {
+        "name": "長さ（秒）"
+      },
+      "model_generate_audio": {
+        "name": "音声を生成"
+      },
+      "model_multi_clip": {
+        "name": "複数クリップ"
+      },
+      "model_negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "ポリ指数スケジューラー",
     "inputs": {

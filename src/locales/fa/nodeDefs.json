@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "یک ویدیوی موجود را با PixVerse ادامه می‌دهد، با امکان افزودن صدای بومی. منبع باید کمتر از ۴۰ ثانیه و حداکثر ۱۹۲۰px در هر ضلع باشد. خروجی وضوح منبع را حفظ می‌کند؛ بنابراین کیفیت تعیین می‌کند ادامه با چه کیفیتی رندر شود، نه اندازهٔ فریم.",
+    "display_name": "PixVerse V6 ادامهٔ ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "ویدیویی که باید ادامه یابد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "ویدیویی ایجاد می‌کند که با PixVerse از فریم اول به فریم آخر گذار می‌کند، با امکان افزودن صدای بومی. خروجی نسبت تصویر فریم اول را حفظ می‌کند.",
+    "display_name": "PixVerse V6 تبدیل فریم اول-آخر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "با PixVerse ویدیویی از سوژه‌ها، پس‌زمینه‌ها و ویدیوهای مرجع ترکیب می‌کند. با نام‌بردن از مرجع در prompt آن را در صحنه قرار دهید؛ برای نمونه، «{'@'}Subject1 از میان {'@'}Background1 عبور می‌کند». اتصال یک ویدیوی مرجع، مدل را به حالت Omni تغییر می‌دهد که در آن طول خروجی با طولانی‌ترین ویدیوی مرجع برابر است.",
+    "display_name": "PixVerse V6 ترکیب (مرجع به ویدیو)",
+    "inputs": {
+      "backgrounds": {
+        "name": "پس‌زمینه‌ها",
+        "tooltip": "تصاویر مرجع صحنه‌ای که سوژه‌ها در آن قرار می‌گیرند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "subjects": {
+        "name": "سوژه‌ها",
+        "tooltip": "تصاویر مرجع سوژه‌هایی که باید در صحنه قرار گیرند."
+      },
+      "videos": {
+        "name": "ویدیوها",
+        "tooltip": "ویدیوهای مرجع برای اقتباس سوژه‌ها، حرکت، کادربندی یا سبک. حداکثر دو ویدیو و در مجموع حداکثر ۱۵ ثانیه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "یک تصویر را با PixVerse متحرک می‌کند و در صورت تمایل، صدای بومی نیز اضافه می‌کند. خروجی نسبت ابعاد تصویر ورودی را حفظ می‌کند.",
+    "display_name": "PixVerse V6 تصویر به ویدئو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "با PixVerse از یک پرامپت متنی ویدئو تولید می‌کند و در صورت تمایل، صدای بومی نیز اضافه می‌کند.",
+    "display_name": "PixVerse V6 متن به ویدئو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "PolyexponentialScheduler",
     "inputs": {

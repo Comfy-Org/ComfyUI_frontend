@@ -26,6 +26,7 @@ import type {
   PreviewSubscribeResponse,
   ResubscribeRequest,
   ResubscribeResponse,
+  SavedPaymentMethod,
   SubscribeRequest,
   SubscribeResponse,
   SubscriptionDuration,
@@ -83,6 +84,11 @@ export type { TeamCreditStopSummary }
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
 export interface SubscribeOptions {
+  confirmationToken?: string
+  promotionCode?: string
+  quoteId?: string
+  quoteVersion?: number
+  savedPaymentMethodId?: string
   returnUrl?: string
   cancelUrl?: string
   teamCreditStopId?: string
@@ -93,6 +99,7 @@ export interface SubscribeOptions {
 
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
+  promotionCode?: string
 }
 
 export type { SubscribeResponse }
@@ -109,6 +116,13 @@ export type { BillingStatusResponse }
 export type { BillingBalanceResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
+export type { SavedPaymentMethod }
+export type BillingAuthenticationState = NonNullable<
+  BillingOpStatusResponse['authentication_state']
+>
+export type BillingDeclineReason = NonNullable<
+  BillingOpStatusResponse['decline_reason']
+>
 
 interface GetBillingEventsParams {
   page?: number
@@ -452,6 +466,19 @@ export const workspaceApi = {
     }
   },
 
+  async listSavedPaymentMethods(): Promise<SavedPaymentMethod[]> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<SavedPaymentMethod[]>(
+        workspaceApiUrl('/billing/payment-methods'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
   /**
    * Preview subscription change
    * POST /api/billing/preview-subscribe
@@ -466,7 +493,8 @@ export const workspaceApi = {
         workspaceApiUrl('/billing/preview-subscribe'),
         {
           plan_slug: planSlug,
-          team_credit_stop_id: options.teamCreditStopId
+          team_credit_stop_id: options.teamCreditStopId,
+          promotion_code: options.promotionCode
         } satisfies PreviewSubscribeRequest,
         { headers }
       )
@@ -484,12 +512,22 @@ export const workspaceApi = {
     planSlug: string,
     options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
+    if (options.confirmationToken && options.savedPaymentMethodId) {
+      throw new TypeError(
+        'confirmationToken and savedPaymentMethodId are mutually exclusive'
+      )
+    }
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<SubscribeResponse>(
         workspaceApiUrl('/billing/subscribe'),
         {
           plan_slug: planSlug,
+          confirmation_token: options.confirmationToken,
+          promotion_code: options.promotionCode,
+          quote_id: options.quoteId,
+          quote_version: options.quoteVersion,
+          saved_payment_method_id: options.savedPaymentMethodId,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
@@ -630,7 +668,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
-        workspaceApiUrl(`/billing/ops/${opId}`),
+        workspaceApiUrl(`/billing/ops/${encodeURIComponent(opId)}`),
         { headers, timeout: 30_000 }
       )
       return response.data
