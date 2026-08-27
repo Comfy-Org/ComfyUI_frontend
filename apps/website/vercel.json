@@ -41,6 +41,36 @@
       "permanent": true
     },
     {
+      "source": "/career",
+      "destination": "/careers",
+      "permanent": true
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy-policy",
+      "permanent": true
+    },
+    {
+      "source": "/minimax",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/minimax/",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax/",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
+    },
+    {
       "source": "/enterprise",
       "destination": "/cloud/enterprise",
       "permanent": true
@@ -61,8 +91,13 @@
       "permanent": true
     },
     {
+      "source": "/trust",
+      "destination": "https://trust.comfy.org",
+      "permanent": false
+    },
+    {
       "source": "/login",
-      "destination": "https://cloud.comfy.org/login",
+      "destination": "https://cloud.comfy.org/cloud/login",
       "permanent": false
     }
   ]

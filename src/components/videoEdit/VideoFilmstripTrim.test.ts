@@ -82,7 +82,7 @@ describe('VideoFilmstripTrim', () => {
   it('insets the filmstrip track by handle width on each side', () => {
     renderFilmstrip({
       totalFrames: 100,
-      thumbnails: ['data:image/jpeg;base64,one'],
+      thumbnail: 'data:image/jpeg;base64,one',
       startFrame: 0,
       endFrame: 99,
       playheadFrame: 0,
@@ -94,26 +94,58 @@ describe('VideoFilmstripTrim', () => {
     expect(filmstrip.style.right).toBe('16px')
   })
 
-  it('prevents filmstrip thumbnails from being dragged', () => {
+  it('shows the skeleton only while loading', async () => {
+    const { rerender } = renderFilmstrip({
+      totalFrames: 1,
+      thumbnail: '',
+      startFrame: 0,
+      endFrame: 0,
+      playheadFrame: 0,
+      loading: true
+    })
+
+    expect(screen.getByTestId('filmstrip-skeleton')).toBeTruthy()
+
+    await rerender({ loading: false })
+
+    expect(screen.queryByTestId('filmstrip-skeleton')).toBeNull()
+  })
+
+  it('tiles the thumbnail across the track at the source aspect ratio', () => {
     renderFilmstrip({
       totalFrames: 100,
-      thumbnails: ['data:image/jpeg;base64,one'],
+      thumbnail: 'data:image/jpeg;base64,one',
+      tileAspectRatio: 2,
+      startFrame: 0,
+      endFrame: 99,
+      playheadFrame: 0
+    })
+
+    const tile = screen.getByTestId('filmstrip-tile')
+    expect(tile.style.backgroundImage).toContain('data:image/jpeg;base64,one')
+    expect(tile.style.backgroundRepeat).toBe('repeat-x')
+    expect(tile.style.backgroundSize).toBe('96px 100%')
+  })
+
+  it('renders neither tile nor skeleton for an empty non-loading thumbnail', () => {
+    renderFilmstrip({
+      totalFrames: 100,
+      thumbnail: '',
       startFrame: 0,
       endFrame: 99,
       playheadFrame: 0,
-      disabled: false
+      loading: false
     })
 
-    expect(
-      screen.getByTestId('filmstrip-thumbnail').getAttribute('draggable')
-    ).toBe('false')
+    expect(screen.queryByTestId('filmstrip-tile')).toBeNull()
+    expect(screen.queryByTestId('filmstrip-skeleton')).toBeNull()
   })
 
   it('shows whole frame number in tooltip while dragging end handle', () => {
     activeHandle.value = 'max'
     renderFilmstrip({
       totalFrames: 401,
-      thumbnails: ['data:image/jpeg;base64,one'],
+      thumbnail: 'data:image/jpeg;base64,one',
       startFrame: 0,
       endFrame: 400,
       playheadFrame: 0,
@@ -127,7 +159,7 @@ describe('VideoFilmstripTrim', () => {
     activeHandle.value = 'min'
     renderFilmstrip({
       totalFrames: 401,
-      thumbnails: ['data:image/jpeg;base64,one'],
+      thumbnail: 'data:image/jpeg;base64,one',
       startFrame: 120,
       endFrame: 400,
       playheadFrame: 120,
@@ -142,7 +174,7 @@ describe('VideoFilmstripTrim', () => {
     render(VideoFilmstripTrim, {
       props: {
         totalFrames: 101,
-        thumbnails: ['data:image/jpeg;base64,one'],
+        thumbnail: 'data:image/jpeg;base64,one',
         startFrame: 0,
         endFrame: 100,
         playheadFrame: 0,
@@ -192,7 +224,7 @@ describe('VideoFilmstripTrim', () => {
     const { emitted } = render(VideoFilmstripTrim, {
       props: {
         totalFrames: 101,
-        thumbnails: ['data:image/jpeg;base64,one'],
+        thumbnail: 'data:image/jpeg;base64,one',
         startFrame: 0,
         endFrame: 100,
         playheadFrame: 0,
@@ -219,7 +251,7 @@ describe('VideoFilmstripTrim', () => {
     const { emitted } = render(VideoFilmstripTrim, {
       props: {
         totalFrames: 101,
-        thumbnails: ['data:image/jpeg;base64,one'],
+        thumbnail: 'data:image/jpeg;base64,one',
         startFrame: 10,
         endFrame: 80,
         playheadFrame: 50,
@@ -254,7 +286,7 @@ describe('VideoFilmstripTrim', () => {
         return () =>
           h(VideoFilmstripTrim, {
             totalFrames: 101,
-            thumbnails: ['data:image/jpeg;base64,one'],
+            thumbnail: 'data:image/jpeg;base64,one',
             startFrame: 10,
             endFrame: 80,
             playheadFrame: playheadFrame.value,
@@ -294,7 +326,7 @@ describe('VideoFilmstripTrim', () => {
     const { emitted } = render(VideoFilmstripTrim, {
       props: {
         totalFrames: 101,
-        thumbnails: ['data:image/jpeg;base64,one'],
+        thumbnail: 'data:image/jpeg;base64,one',
         startFrame: 0,
         endFrame: 100,
         playheadFrame: 50,
@@ -320,7 +352,7 @@ describe('VideoFilmstripTrim', () => {
     const { emitted } = render(VideoFilmstripTrim, {
       props: {
         totalFrames: 101,
-        thumbnails: ['data:image/jpeg;base64,one'],
+        thumbnail: 'data:image/jpeg;base64,one',
         startFrame: 10,
         endFrame: 80,
         playheadFrame: 50,
@@ -357,7 +389,7 @@ describe('VideoFilmstripTrim', () => {
     const { emitted } = render(VideoFilmstripTrim, {
       props: {
         totalFrames: 101,
-        thumbnails: ['data:image/jpeg;base64,one'],
+        thumbnail: 'data:image/jpeg;base64,one',
         startFrame: 0,
         endFrame: 100,
         playheadFrame: 0,
@@ -395,7 +427,7 @@ describe('VideoFilmstripTrim', () => {
         return () =>
           h(VideoFilmstripTrim, {
             totalFrames: 101,
-            thumbnails: ['data:image/jpeg;base64,one'],
+            thumbnail: 'data:image/jpeg;base64,one',
             startFrame: 0,
             endFrame: 100,
             playheadFrame: playheadFrame.value,
@@ -435,7 +467,7 @@ describe('VideoFilmstripTrim', () => {
   it('renders trim handles when enabled', () => {
     renderFilmstrip({
       totalFrames: 100,
-      thumbnails: ['data:image/jpeg;base64,one'],
+      thumbnail: 'data:image/jpeg;base64,one',
       startFrame: 10,
       endFrame: 80,
       playheadFrame: 10,
@@ -449,7 +481,7 @@ describe('VideoFilmstripTrim', () => {
   it('hides trim handles when disabled', () => {
     renderFilmstrip({
       totalFrames: 100,
-      thumbnails: ['data:image/jpeg;base64,one'],
+      thumbnail: 'data:image/jpeg;base64,one',
       startFrame: 10,
       endFrame: 80,
       playheadFrame: 10,
@@ -458,49 +490,5 @@ describe('VideoFilmstripTrim', () => {
 
     expect(screen.queryByTestId('handle-start')).toBeNull()
     expect(screen.queryByTestId('handle-end')).toBeNull()
-  })
-
-  it('hides trim selection UI when trim is toggled off', () => {
-    renderFilmstrip({
-      totalFrames: 100,
-      thumbnails: ['data:image/jpeg;base64,one'],
-      startFrame: 10,
-      endFrame: 80,
-      playheadFrame: 10,
-      trimEnabled: false
-    })
-
-    expect(screen.getByTestId('playhead')).toBeTruthy()
-    expect(screen.getByTestId('filmstrip-track').style.left).toBe('16px')
-    expect(screen.getByTestId('filmstrip-track').style.right).toBe('16px')
-    expect(screen.queryByTestId('handle-start')).toBeNull()
-    expect(screen.queryByTestId('handle-end')).toBeNull()
-  })
-
-  it('scrubs across the full timeline when trim is toggled off', async () => {
-    const playheadFrame = ref(0)
-    const { emitted } = render(VideoFilmstripTrim, {
-      props: {
-        totalFrames: 101,
-        thumbnails: ['data:image/jpeg;base64,one'],
-        startFrame: 10,
-        endFrame: 80,
-        playheadFrame: 0,
-        trimEnabled: false,
-        'onUpdate:playheadFrame': (value: number) => {
-          playheadFrame.value = value
-        }
-      },
-      global: {
-        plugins: [i18n]
-      }
-    })
-
-    const track = mockTrackRect()
-
-    await fireEvent.pointerDown(track, { clientX: 100, button: 0 })
-
-    expect(playheadFrame.value).toBe(expectedFrameAt(100))
-    expect(emitted().scrub).toEqual([[expectedFrameAt(100)]])
   })
 })

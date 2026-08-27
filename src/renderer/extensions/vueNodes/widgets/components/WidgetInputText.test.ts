@@ -170,6 +170,40 @@ describe('WidgetInputText Value Binding', () => {
     })
   })
 
+  describe('Locked Field Hover Styling', () => {
+    // Tests assert on the Tailwind class name directly because that's the
+    // mechanism being guarded — a rename would need a baseline update anyway.
+    const HOVER_CLASS = 'hover:bg-component-node-widget-background-hovered'
+
+    it('omits the generic hover background class when the field is locked (read-only)', () => {
+      const widget = createInputTextWidget('locked value', {
+        read_only: true
+      })
+      renderComponent(widget, 'locked value')
+
+      const input = screen.getByRole('textbox')
+      expect(input.className).not.toContain(HOVER_CLASS)
+    })
+
+    it('omits the generic hover background class when the field is disabled by a link', () => {
+      const widget = createInputTextWidget('linked value', {
+        disabled: true
+      })
+      renderComponent(widget, 'linked value')
+
+      const input = screen.getByRole('textbox')
+      expect(input.className).not.toContain(HOVER_CLASS)
+    })
+
+    it('applies the generic hover background class when the field is editable', () => {
+      const widget = createInputTextWidget('editable value')
+      renderComponent(widget, 'editable value')
+
+      const input = screen.getByRole('textbox')
+      expect(input.className).toContain(HOVER_CLASS)
+    })
+  })
+
   describe('Edge Cases', () => {
     it('handles very long strings', async () => {
       const widget = createInputTextWidget('short')

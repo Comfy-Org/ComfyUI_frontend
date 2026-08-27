@@ -1,16 +1,43 @@
+// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
 import type {
   BillingTelemetryEvent,
   ExecutionOutcomeMetadata,
-  TelemetryProvider
+  ImageLoadFailureMetadata,
+  TelemetryProvider,
+  UnifiedAuthRefreshMetadata,
+  UnifiedAuthRetryMetadata
 } from '../../types'
 import {
   getBillingTelemetryEventName,
-  getBillingTelemetryEventPayload
+  getBillingTelemetryEventPayload,
+  TelemetryEvents
 } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    datadogRum.addAction(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_RETRY_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      metadata
+    )
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    datadogRum.addAction(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_REFRESH_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      metadata
+    )
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
   trackBillingEvent(event: BillingTelemetryEvent): void {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),

@@ -53,7 +53,6 @@ function renderToolbar() {
 
 describe('AppModeToolbar', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     appModeState.enableAppBuilder = true
     appModeState.hasNodes = true
   })

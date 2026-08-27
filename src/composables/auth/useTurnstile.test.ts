@@ -61,7 +61,6 @@ describe('isTurnstileEnabled', () => {
 
 describe('useTurnstile', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     remoteConfig.value = {}
     mockedDevOverride.mockReturnValue(undefined)
     mockedGetServerFeature.mockReturnValue('off')

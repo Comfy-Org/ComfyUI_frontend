@@ -1,6 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { computed } from 'vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@/components/curve/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -60,10 +59,6 @@ function runUniforms(sources: UniformSources) {
 }
 
 describe('useGLSLUniforms reads promoted widget values from the host key', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('curveValues reflects the edited host curve, not the stale interior curve', () => {
     const staleCurve: CurveData = {
       points: [

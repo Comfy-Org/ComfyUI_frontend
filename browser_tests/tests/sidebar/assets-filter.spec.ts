@@ -197,6 +197,52 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
     await expect(tab.assetCards).toHaveCount(1)
   })
 
+  test('Search results support arrow navigation and Enter selection', async ({
+    comfyPage,
+    page
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.waitForAssets()
+
+    await tab.openFilterMenu()
+    await tab.filterSearchInput.fill('past')
+
+    const pastWeek = tab.dateFilterOption('Past 7 days')
+    const pastMonth = tab.dateFilterOption('Past 30 days')
+
+    await tab.filterSearchInput.press('ArrowDown')
+    await expect(pastWeek).toBeFocused()
+
+    await page.keyboard.press('ArrowDown')
+    await expect(pastMonth).toBeFocused()
+
+    await page.keyboard.press('ArrowUp')
+    await expect(pastWeek).toBeFocused()
+
+    await page.keyboard.press('ArrowUp')
+    await expect(tab.filterSearchInput).toBeFocused()
+
+    await page.keyboard.press('ArrowUp')
+    await expect(pastMonth).toBeFocused()
+
+    await page.keyboard.press('ArrowDown')
+    await expect(tab.filterSearchInput).toBeFocused()
+
+    await page.keyboard.press('ArrowDown')
+    await expect(pastWeek).toBeFocused()
+
+    await page.keyboard.press('Enter')
+
+    await expect(pastWeek).toHaveAttribute('aria-checked', 'true')
+    await expect(tab.filterButton).toHaveAttribute('aria-expanded', 'true')
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await page.keyboard.press('Escape')
+
+    await expect(tab.filterButton).toHaveAttribute('aria-expanded', 'false')
+  })
+
   test('Date and media filters compose and applied controls can clear them', async ({
     comfyPage,
     page

@@ -5,7 +5,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CallToActionSection from '../common/CallToActionSection.vue'
 import LearningDirectorySection from './LearningDirectorySection.vue'
-import { getRoutes, externalLinks, localizeHref } from '../../config/routes'
+import { externalLinks, localizeHref } from '../../config/routes'
 import type { LearningCategory } from '../../data/learningTutorials'
 import {
   categoryLabelKeys,
@@ -55,7 +55,6 @@ const breadcrumbs = learningCrumbs(locale, category).map((crumb) => ({
   url: absoluteUrl(Astro.site, localizeHref(crumb.path, locale))
 }))
 
-const routes = getRoutes(locale)
 ---
 
 <BaseLayout
@@ -70,10 +69,11 @@ const routes = getRoutes(locale)
   <CallToActionSection
     locale={locale}
     headingKey="learning.cta.heading"
-    primaryLabelKey="learning.cta.contactSales"
-    primaryHref={routes.contact}
-    secondaryLabelKey="cta.tryWorkflow"
-    secondaryHref={externalLinks.workflows}
+    primaryLabelKey="cta.tryWorkflow"
+    primaryHref={externalLinks.workflows}
+    secondaryLabelKey="learning.cta.runComfy"
+    secondaryHref={externalLinks.cloud}
+    secondaryTarget="_blank"
     client:visible
   />
 </BaseLayout>

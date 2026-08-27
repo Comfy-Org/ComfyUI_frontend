@@ -20,14 +20,6 @@ const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
   }
 })
 
-vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () => ({
-    currentUser: null,
-    isAuthenticated: false,
-    isLoading: false
-  })
-}))
-
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     currentUser: null,
@@ -216,10 +208,6 @@ describe('WorkflowTab - workflow status indicator', () => {
 })
 
 describe('WorkflowTab - close button', () => {
-  beforeEach(() => {
-    mockCloseWorkflow.mockClear()
-  })
-
   it('delegates close to workflow service with the tab workflow', async () => {
     renderTab()
     const user = userEvent.setup()

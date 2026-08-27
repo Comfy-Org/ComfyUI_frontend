@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -26,19 +27,22 @@ import { useAssetSelection } from './useAssetSelection'
 import { useAssetSelectionStore } from './useAssetSelectionStore'
 
 function createMockAssets(count: number): AssetItem[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `asset-${i}`,
-    name: `Asset ${i}`,
-    size: 1000,
-    created_at: new Date().toISOString(),
-    tags: ['output'],
-    preview_url: `http://example.com/asset-${i}.png`
-  }))
+  return Array.from(
+    { length: count },
+    (_, i): AssetItem =>
+      fromPartial({
+        id: `asset-${i}`,
+        name: `Asset ${i}`,
+        size: 1000,
+        created_at: new Date().toISOString(),
+        tags: ['output'],
+        preview_url: `http://example.com/asset-${i}.png`
+      })
+  )
 }
 
 describe('useAssetSelection', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShiftKey.value = false
     mockCtrlKey.value = false
     mockMetaKey.value = false
@@ -49,8 +53,8 @@ describe('useAssetSelection', () => {
       const selection = useAssetSelection()
       const store = useAssetSelectionStore()
       const assets: AssetItem[] = [
-        { id: 'a', name: 'a.png', tags: [] },
-        { id: 'b', name: 'b.png', tags: [] }
+        fromPartial({ id: 'a', name: 'a.png', tags: [] }),
+        fromPartial({ id: 'b', name: 'b.png', tags: [] })
       ]
 
       store.setSelection(['a', 'b'])
@@ -83,8 +87,8 @@ describe('useAssetSelection', () => {
       const selection = useAssetSelection()
       const store = useAssetSelectionStore()
       const assets: AssetItem[] = [
-        { id: 'a', name: 'a.png', tags: [] },
-        { id: 'b', name: 'b.png', tags: [] }
+        fromPartial({ id: 'a', name: 'a.png', tags: [] }),
+        fromPartial({ id: 'b', name: 'b.png', tags: [] })
       ]
 
       store.setSelection(['a'])
@@ -101,8 +105,8 @@ describe('useAssetSelection', () => {
       const selection = useAssetSelection()
       const store = useAssetSelectionStore()
       const assets: AssetItem[] = [
-        { id: 'a', name: 'a.png', tags: [] },
-        { id: 'b', name: 'b.png', tags: [] }
+        fromPartial({ id: 'a', name: 'a.png', tags: [] }),
+        fromPartial({ id: 'b', name: 'b.png', tags: [] })
       ]
 
       store.setSelection(['a', 'b'])

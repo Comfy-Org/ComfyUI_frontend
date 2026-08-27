@@ -100,7 +100,6 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.refs.remoteConfig.value = null
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
@@ -400,6 +399,46 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures unified auth retry and refresh outcomes', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackUnifiedAuthRetry({
+        transport: 'ws',
+        outcome: 'failed',
+        failure_reason: 'token_unavailable'
+      })
+      provider.trackUnifiedAuthRefresh({
+        outcome: 'retry_scheduled',
+        retry_count: 1
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+        {
+          transport: 'ws',
+          outcome: 'failed',
+          failure_reason: 'token_unavailable'
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+        { outcome: 'retry_scheduled', retry_count: 1 }
+      )
+    })
+
+    it('captures image load failures', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackImageLoadFailed({ source: 'node_image_preview' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.IMAGE_LOAD_FAILED,
+        { source: 'node_image_preview' }
+      )
+    })
+
     it('captures enriched execution starts with client attribution', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -560,7 +599,8 @@ describe('PostHogTelemetryProvider', () => {
           stage: 'succeeded',
           outcome: 'success',
           billing_op_id: 'op-cancel',
-          operation_type: 'cancel'
+          operation_type: 'cancel',
+          duration_ms: 4200
         },
         TelemetryEvents.BILLING_OPERATION_SUCCEEDED
       ],

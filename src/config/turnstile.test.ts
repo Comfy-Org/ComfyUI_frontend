@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getTurnstileSiteKey } from '@/config/turnstile'
 
@@ -26,11 +26,6 @@ describe('getTurnstileSiteKey', () => {
   beforeEach(() => {
     mockRemoteConfig.value = {}
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
-  })
-
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.unstubAllGlobals()
   })
 
   describe('OSS / non-cloud build', () => {

@@ -65,7 +65,6 @@ const globalConfig = { mocks: { $t: (key: string) => key } }
 
 describe('Media3DTop', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsAssetPreviewSupported.mockReturnValue(true)
   })
 

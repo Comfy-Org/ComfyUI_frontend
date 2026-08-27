@@ -63,7 +63,7 @@ function fakeNode(overrides: Record<string, unknown> = {}): LGraphNode {
 
 function mountSource(node: LGraphNode) {
   let videoUrl!: ReturnType<typeof useVideoSourceUrl>['videoUrl']
-  render(
+  const view = render(
     defineComponent({
       setup() {
         videoUrl = useVideoSourceUrl(computed(() => node)).videoUrl
@@ -71,18 +71,58 @@ function mountSource(node: LGraphNode) {
       }
     })
   )
-  return { videoUrl }
+  return { videoUrl, unmount: view.unmount }
 }
 
 describe('useVideoSourceUrl', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     for (const key of Object.keys(mocks.nodeOutputs)) {
       delete mocks.nodeOutputs[key]
     }
     for (const key of Object.keys(mocks.nodePreviewImages)) {
       delete mocks.nodePreviewImages[key]
     }
+  })
+
+  it('restores the previous onConnectionsChange on unmount', () => {
+    const original = vi.fn()
+    const node = fakeNode({
+      inputs: [{ name: 'video' }],
+      getInputNode: () => null,
+      onConnectionsChange: original
+    })
+
+    const { unmount } = mountSource(node)
+    expect(node.onConnectionsChange).not.toBe(original)
+
+    unmount()
+
+    expect(node.onConnectionsChange).toBe(original)
+  })
+
+  it('recovers when the input link appears after mount', async () => {
+    mocks.getNodeImageUrls.mockReturnValue([
+      '/api/view?filename=out.mp4&type=temp&rand=0.5'
+    ])
+    mocks.getWidget.mockReturnValue(undefined)
+    const upstream = fakeNode({ id: 'upstream' })
+    let connected = false
+    const node = fakeNode({
+      inputs: [{ name: 'video' }],
+      getInputNode: () => (connected ? upstream : null)
+    })
+
+    const { videoUrl } = mountSource(node)
+    expect(videoUrl.value).toBeUndefined()
+
+    connected = true
+    mocks.nodeOutputs['upstream'] = { images: [{ filename: 'out.mp4' }] }
+    const fireConnectionsChange =
+      node.onConnectionsChange as unknown as () => void
+    fireConnectionsChange()
+    await nextTick()
+
+    expect(videoUrl.value).toBe('/api/view?filename=out.mp4&type=temp')
   })
 
   it('switches from the file widget to the executed preview when outputs arrive', async () => {

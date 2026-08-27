@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => {
   const context: Record<string, unknown> = {}
@@ -27,7 +27,6 @@ import { trackUserManualRefresh } from './manualRefreshTracker'
 
 describe('initDatadogRum', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     for (const key of Object.keys(hoisted.context)) {
       delete hoisted.context[key]
     }
@@ -37,11 +36,6 @@ describe('initDatadogRum', () => {
     hoisted.fetch.mockResolvedValue(new Response(null, { status: 503 }))
     hoisted.getInitConfiguration.mockReturnValue(undefined)
     vi.stubGlobal('fetch', hoisted.fetch)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
   })
 
   it.for([

@@ -14,6 +14,9 @@ import type {
   AddCreditsClickMetadata,
   AuthErrorMetadata,
   AuthMetadata,
+  ImageLoadFailureMetadata,
+  UnifiedAuthRefreshMetadata,
+  UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
   DefaultViewSetMetadata,
@@ -26,6 +29,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
@@ -376,6 +381,28 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_AUTH_FAILED, metadata)
   }
 
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_RETRY_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      metadata
+    )
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_REFRESH_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      metadata
+    )
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
   trackUserLoggedIn(): void {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
@@ -631,6 +658,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_MISMATCH, metadata)
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_SUMMARY, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

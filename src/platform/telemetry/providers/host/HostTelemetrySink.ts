@@ -2,17 +2,11 @@ import type {
   ComfyDesktop2TelemetryBridge,
   ComfyDesktop2TelemetryValue
 } from '@comfyorg/comfyui-desktop-bridge-types'
-import {
-  checkForCompletedTopup as checkTopupUtil,
-  clearTopupTracking as clearTopupUtil,
-  startTopupTracking as startTopupUtil
-} from '@/platform/telemetry/topupTracker'
-import type { AuditLog } from '@/services/customerEventsService'
-
 import type {
   AddCreditsClickMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -20,6 +14,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
@@ -48,7 +44,12 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
-import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
+import {
+  CANCELLATION_STAGE_EVENTS,
+  TelemetryEvents,
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload
+} from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
@@ -119,6 +120,13 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.BEGIN_CHECKOUT, metadata)
   }
 
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    this.capture(
+      getBillingTelemetryEventName(event),
+      getBillingTelemetryEventPayload(event)
+    )
+  }
+
   trackMonthlySubscriptionSucceeded(
     metadata?: SubscriptionSuccessMetadata
   ): void {
@@ -156,18 +164,6 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackRunButton(properties: RunButtonProperties): void {
     this.capture(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
-  }
-
-  startTopupTracking(): void {
-    startTopupUtil()
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return checkTopupUtil(events)
-  }
-
-  clearTopupTracking(): void {
-    clearTopupUtil()
   }
 
   trackSurvey(
@@ -276,10 +272,6 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.WORKFLOW_CREATED, metadata)
   }
 
-  trackWorkflowExecution(): void {
-    this.capture(TelemetryEvents.EXECUTION_START)
-  }
-
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
     this.capture(TelemetryEvents.EXECUTION_ERROR, metadata)
   }
@@ -298,6 +290,18 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.capture(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.capture(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_MISMATCH, metadata)
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.capture(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_SUMMARY, metadata)
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
