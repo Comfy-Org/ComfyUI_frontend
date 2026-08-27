@@ -113,15 +113,15 @@ const splitAttachments = computed(() => {
     <div
       v-if="text"
       data-testid="user-message-bubble"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm wrap-break-word whitespace-pre-wrap"
+      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted flex w-fit max-w-full flex-wrap items-center gap-1 rounded-[10px] border px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap"
     >
       <span
         v-for="workflow in workflowReferences"
         :key="workflow.id"
         data-testid="workflow-reference-chip"
-        class="mr-1 inline-flex max-w-40 items-center gap-1 rounded-sm border border-primary-background/30 bg-primary-background/30 px-1 py-0.5 align-middle text-xs font-medium text-primary-background-hover"
+        class="inline-flex max-w-40 items-center gap-1 rounded-sm bg-primary-background/30 px-1 py-0.5 align-middle text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset"
       >
-        <span class="icon-[comfy--workflow] size-3 shrink-0" />
+        <span class="icon-[comfy--workflow] size-3.5 shrink-0" />
         <span class="truncate">{{ workflow.name }}</span>
       </span>
       <span>{{ text }}</span>
