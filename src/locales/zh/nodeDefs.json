@@ -24320,7 +24320,7 @@
     }
   },
   "VAEEncodeTiled": {
-    "display_name": "VAE编码分块）",
+    "display_name": "VAE编码（分块）",
     "inputs": {
       "overlap": {
         "name": "重叠"

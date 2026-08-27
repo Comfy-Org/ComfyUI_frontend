@@ -1,25 +1,19 @@
+import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
+
 // Exact serialized indices changed by the artifact-proven pack mechanisms.
 // Unlisted indices and renderers without matching evidence remain strict.
 export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
   string,
   Record<string, string>
 > = {
-  'ComfyUI_Fill-Nodes': {
-    FL_ColorPicker: '3,4,5,6',
-    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
-  },
-  'ComfyUI-KJNodes': {
-    SplineEditor: '1'
-  },
   'ComfyUI-LTXVideo': {
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '2,3,5',
     LTXDirector: '3,4,5,7'
   },
-  'comfyui-itools': {
-    iToolsRegexNode: '0'
+  'comfyui-sam3': {
+    SAM3VideoSegmentation: '1,2'
   }
 }
 
@@ -27,45 +21,37 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   string,
   Record<string, string>
 > = {
-  'ComfyUI_Fill-Nodes': {
-    FL_ColorPicker: '3,4,5,6',
-    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
-  },
-  'ComfyUI-KJNodes': {
-    SplineEditor: '1'
-  },
   'ComfyUI-LTXVideo': {
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '2,3,5',
     LTXDirector: '3,4,5,7'
   },
-  'comfyui-itools': {
-    iToolsRegexNode: '0'
+  'comfyui-sam3': {
+    SAM3VideoSegmentation: '1,2'
   }
 }
 
-const VHS_ROUNDTRIP_VALUE_KEYS = {
-  VHS_LoadAudioUpload: 'choose audio to upload',
-  VHS_LoadImages: 'choose folder to upload',
-  VHS_LoadVideo: 'choose video to upload',
-  VHS_LoadVideoFFmpeg: 'choose video to upload',
+const VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH = {
   VHS_VAEDecodeBatched: 'per_batch',
   VHS_VAEEncodeBatched: 'per_batch'
 }
 
 export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH = {
-  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS
+  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH
 }
 
 export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
-  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS
+  'ComfyUI-VideoHelperSuite': {
+    VHS_VAEDecodeBatched: 'per_batch',
+    VHS_VAEEncodeBatched: 'per_batch'
+  }
 }
 
 export type RoundtripInitializationSignal =
   | { property: string; predicate: 'defined' }
   | { property: string; predicate: 'equals'; value: unknown }
+  | { inputs: string[]; predicate: 'inputs-absent' }
   | { predicate: 'widget-value'; value: unknown; widget: string }
   | { predicate: 'widget-count'; value: number }
   | { predicate: 'minimum-widget-count'; value: number }
@@ -90,8 +76,8 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   },
   'comfyui-sam3': {
     SAM3VideoSegmentation: {
-      property: '_hiddenInputs',
-      predicate: 'defined'
+      inputs: ['positive_boxes', 'negative_boxes'],
+      predicate: 'inputs-absent'
     }
   },
   'comfyui-itools': {
@@ -116,6 +102,8 @@ function expectedInitializationValue(
   signal: RoundtripInitializationSignal
 ): string {
   if (signal.predicate === 'defined') return 'defined'
+  if (signal.predicate === 'inputs-absent')
+    return `inputs absent [${signal.inputs.join(',')}]`
   if (signal.predicate === 'minimum-widget-count')
     return `>= ${signal.value} widgets`
   if (signal.predicate === 'widget-count') return `${signal.value} widgets`
@@ -130,21 +118,28 @@ function expectedInitializationValue(
 // the pack is slow or the contract is wrong.
 export function pendingRoundtripInitializations(
   signals: Record<string, RoundtripInitializationSignal>,
-  values: Record<string, unknown>,
+  values: Record<string, unknown> | undefined,
   vueNodesEnabled: boolean
 ): string[] {
   return Object.entries(signals)
     .filter(([node, signal]) => {
-      if (signal.predicate === 'defined') return values[node] === undefined
+      const observed = values?.[node]
+      if (signal.predicate === 'defined') return observed === undefined
+      if (signal.predicate === 'inputs-absent') {
+        return (
+          !Array.isArray(observed) ||
+          signal.inputs.some((input) => observed.includes(input))
+        )
+      }
       if (signal.predicate === 'minimum-widget-count')
-        return typeof values[node] !== 'number' || values[node] < signal.value
+        return typeof observed !== 'number' || observed < signal.value
       if (signal.predicate === 'widget-count')
-        return !Object.is(values[node], signal.value)
-      return !Object.is(values[node], signal.value)
+        return !Object.is(observed, signal.value)
+      return !Object.is(observed, signal.value)
     })
     .map(
       ([node, signal]) =>
-        `${node} (${vueNodesEnabled ? 'vue' : 'litegraph'}: expected ${expectedInitializationValue(signal)}, observed ${JSON.stringify(values[node])})`
+        `${node} (${vueNodesEnabled ? 'vue' : 'litegraph'}: expected ${expectedInitializationValue(signal)}, observed ${JSON.stringify(values?.[node])})`
     )
 }
 
@@ -177,26 +172,15 @@ export interface RoundtripNodeLossExpectation {
   restore: string
 }
 
-const FL_TIMELINE_NODE_LOSS: RoundtripNodeLossExpectation = {
-  reason:
-    'the pack replaces node.serialize with a timeline-data serializer, so graph reload drops the node',
-  restore:
-    'fix FL_TimeLine to preserve LiteGraph node serialization, then remove this entry when both renderer passes retain it'
-}
-
 export const ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH: Record<
   string,
   Record<string, RoundtripNodeLossExpectation>
-> = {
-  'ComfyUI_Fill-Nodes': { FL_TimeLine: FL_TIMELINE_NODE_LOSS }
-}
+> = {}
 
 export const ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE: Record<
   string,
   Record<string, RoundtripNodeLossExpectation>
-> = {
-  'ComfyUI_Fill-Nodes': { FL_TimeLine: FL_TIMELINE_NODE_LOSS }
-}
+> = {}
 
 export interface TopologyExpectation {
   before: number
@@ -281,4 +265,53 @@ export function staleValueDriftKeys(
       .filter((key) => !observed[node]?.includes(key))
       .map((key) => `${node}.${key}`)
   )
+}
+
+export interface NamedWidgetValueDrift {
+  name: string
+  before: unknown
+  after: unknown
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+export function declaredInputNamesForTypes(
+  defs: Record<string, RawNodeDef>,
+  types: readonly string[]
+): Record<string, string[]> {
+  return Object.fromEntries(
+    types.map((type) => {
+      const def = defs[type]
+      if (!def) throw new Error(`${type} has no backend node definition`)
+      return [
+        type,
+        [
+          ...Object.keys(def.input?.required ?? {}),
+          ...Object.keys(def.input?.optional ?? {})
+        ]
+      ]
+    })
+  )
+}
+
+export function namedWidgetValueDrifts(
+  before: unknown,
+  after: unknown,
+  names?: readonly string[]
+): NamedWidgetValueDrift[] | null {
+  if (!isRecord(before) || !isRecord(after)) return null
+
+  const comparedNames = names
+    ? names.filter((name) => name in before)
+    : Object.keys(before).filter((name) => name in after)
+  if (comparedNames.length === 0) return names ? [] : null
+
+  return comparedNames.flatMap((name) => {
+    return name in after &&
+      JSON.stringify(before[name]) === JSON.stringify(after[name])
+      ? []
+      : [{ name, before: before[name], after: after[name] }]
+  })
 }
