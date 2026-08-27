@@ -10,7 +10,6 @@ import type {
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import type { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { getPendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 
 import { findPlanSlug } from './useSubscriptionCheckout'
 
@@ -339,8 +338,7 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
     constructor(
       message: string,
       public readonly status?: number,
-      public readonly code?: string,
-      public readonly details?: Record<string, unknown>
+      public readonly code?: string
     ) {
       super(message)
       this.name = 'WorkspaceApiError'
@@ -3279,60 +3277,6 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Transition error'
         })
       )
-    })
-
-    // ASSUMPTION PENDING BE-10062: the refusal is expected to name the
-    // blocking operation as `details.billing_op_id`. Reconcile this fixture
-    // with whatever that ticket ships.
-    it('adopts the operation named by a refused change when nothing is stored locally', async () => {
-      const checkout = await setupWithApprovedPreview()
-      checkout.selectedTierKey.value = 'standard'
-      checkout.selectedBillingCycle.value = 'yearly'
-      mockSubscribe.mockRejectedValueOnce(
-        new WorkspaceApiError(
-          'a subscription change is already in progress',
-          409,
-          'SUBSCRIPTION_CHANGE_IN_PROGRESS',
-          { billing_op_id: 'op-blocking' }
-        )
-      )
-      mockStartOperation.mockResolvedValueOnce({
-        status: 'pending',
-        workspaceId: 'workspace-1'
-      })
-
-      await checkout.handleConfirmTransition()
-
-      expect(mockStartOperation).toHaveBeenCalledWith(
-        'op-blocking',
-        'subscription',
-        expect.objectContaining({ tier: 'standard', cycle: 'yearly' })
-      )
-      expect(getPendingSubscriptionCheckout()?.operationId).toBe('op-blocking')
-    })
-
-    it('falls back to the error toast while a refused change omits the operation id', async () => {
-      const checkout = await setupWithApprovedPreview()
-      checkout.selectedTierKey.value = 'standard'
-      checkout.selectedBillingCycle.value = 'yearly'
-      mockSubscribe.mockRejectedValueOnce(
-        new WorkspaceApiError(
-          'a subscription change is already in progress',
-          409,
-          'SUBSCRIPTION_CHANGE_IN_PROGRESS'
-        )
-      )
-
-      await checkout.handleConfirmTransition()
-
-      expect(mockStartOperation).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'a subscription change is already in progress'
-        })
-      )
-      expect(getPendingSubscriptionCheckout()).toBeNull()
     })
 
     it('returns to pricing when reactivation payment recovery fails', async () => {

@@ -15,7 +15,6 @@ import type {
   CreateTopupResponse,
   CreateWorkspaceRequest,
   CurrentWorkspaceResponse,
-  ErrorResponse,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -137,8 +136,7 @@ export class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
-    public readonly code?: string,
-    public readonly details?: ErrorResponse['details']
+    public readonly code?: string
   ) {
     super(message)
     this.name = 'WorkspaceApiError'
@@ -162,7 +160,7 @@ async function getAuthHeaderOrThrow() {
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
-    const { code, message, details } = errorResponseFromBody(
+    const { code, message } = errorResponseFromBody(
       err.response?.data,
       err.message
     )
@@ -171,8 +169,7 @@ function handleAxiosError(err: unknown): never {
     throw new WorkspaceApiError(
       message,
       status,
-      code === UNKNOWN_ERROR_CODE ? undefined : code,
-      details
+      code === UNKNOWN_ERROR_CODE ? undefined : code
     )
   }
   throw err

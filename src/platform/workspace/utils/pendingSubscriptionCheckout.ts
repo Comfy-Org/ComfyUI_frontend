@@ -125,9 +125,15 @@ export function clearPendingSubscriptionCheckout(operationId?: string): void {
 }
 
 // A client-side `timeout` is this tab giving up, not the server finishing: an
-// operation awaiting bank authentication stays pending for hours, as does one
-// held for reconciliation. Dropping the pointer there is the defect.
-const SERVER_TERMINAL_STATUSES = ['succeeded', 'failed']
+// operation awaiting bank authentication stays pending for hours. Dropping the
+// pointer there is the defect. `reconciliation_needed` does belong here — the
+// contract calls it terminal for polling, and the store stops and resolves on
+// it, so retaining the pointer would re-poll a settled operation every reload.
+const SERVER_TERMINAL_STATUSES = [
+  'succeeded',
+  'failed',
+  'reconciliation_needed'
+]
 
 export function clearPendingSubscriptionCheckoutIfTerminal(
   operationId: string,
@@ -135,29 +141,4 @@ export function clearPendingSubscriptionCheckoutIfTerminal(
 ): void {
   if (!SERVER_TERMINAL_STATUSES.includes(status)) return
   clearPendingSubscriptionCheckout(operationId)
-}
-
-const SUBSCRIPTION_CHANGE_IN_PROGRESS = 'SUBSCRIPTION_CHANGE_IN_PROGRESS'
-
-function readOperationId(source: unknown): string | null {
-  if (!source || typeof source !== 'object') return null
-  if (!('billing_op_id' in source)) return null
-  return isNonEmptyString(source.billing_op_id) ? source.billing_op_id : null
-}
-
-/**
- * Recover the operation that refused a subscription change from the rejection
- * itself, so a customer whose stored pointer is gone — cleared, expired, or
- * created on another device — still has a handle on the blocking operation.
- *
- * The id is optional: until the backend reports it (BE-10062) this returns
- * `null` and callers fall back to their existing error handling.
- */
-export function blockingOperationIdFromError(error: unknown): string | null {
-  if (!error || typeof error !== 'object') return null
-  if (!('code' in error) || error.code !== SUBSCRIPTION_CHANGE_IN_PROGRESS) {
-    return null
-  }
-  const details = 'details' in error ? error.details : undefined
-  return readOperationId(details) ?? readOperationId(error)
 }
