@@ -129,7 +129,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       expect(page.hero.videoSrc).toMatch(HERO_VIDEO_URL)
     }
     if (page.hero.posterSrc !== undefined) {
-      expect(page.hero.posterSrc).toMatch(IMAGE_URL)
+      expect(page.hero.posterSrc).toMatch(HERO_STILL_URL)
     }
     if (page.hero.placeholderImageSrc !== undefined) {
       expect(page.hero.placeholderImageSrc).toMatch(HERO_STILL_URL)

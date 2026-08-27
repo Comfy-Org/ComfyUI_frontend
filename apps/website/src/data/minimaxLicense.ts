@@ -26,6 +26,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
   hero: {
     layout: 'overlay',
     videoSrc: HERO_VIDEO_SRC,
+    posterSrc: HERO_POSTER_SRC,
     mobileFallbackImageSrc: HERO_POSTER_SRC,
     eyebrowKey: 'minimaxLicense.hero.eyebrow',
     titleKey: 'minimaxLicense.hero.title',

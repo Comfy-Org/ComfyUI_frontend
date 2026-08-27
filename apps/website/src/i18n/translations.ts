@@ -6044,7 +6044,7 @@ const translations = {
   },
   'minimaxLicense.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
   'minimaxLicense.hero.title': {
-    en: 'MiniMax Commercial License',
+    en: 'MiniMax\nCommercial License',
     'zh-CN': 'MiniMax 商业许可'
   },
   'minimaxLicense.hero.description': {

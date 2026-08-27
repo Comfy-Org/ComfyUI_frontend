@@ -63,8 +63,11 @@ const isContentFirst = hero.layout === 'content-first'
           v-if="showVideo"
           :locale
           :src="hero.videoSrc"
+          :poster="hero.posterSrc"
           autoplay
           loop
+          mute-only
+          class="absolute inset-0 aspect-auto size-full rounded-none border-0"
         />
         <VideoPlayer
           v-else-if="showMobileVideo"
@@ -72,6 +75,8 @@ const isContentFirst = hero.layout === 'content-first'
           :src="hero.mobileVideoSrc"
           autoplay
           loop
+          mute-only
+          class="absolute inset-0 aspect-auto size-full rounded-none border-0"
         />
         <img
           v-else-if="hero.mobileFallbackImageSrc"
@@ -80,21 +85,21 @@ const isContentFirst = hero.layout === 'content-first'
           aria-hidden="true"
           width="1280"
           height="720"
-          class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+          class="absolute inset-0 size-full object-cover"
         />
       </div>
 
       <div
         aria-hidden="true"
-        :class="cn(OVERLAY_CELL, 'bg-primary-comfy-ink/50')"
+        :class="cn(OVERLAY_CELL, 'z-10 bg-primary-comfy-ink/50')"
       />
 
       <div
         :class="
           cn(
-            'flex flex-col items-center text-center',
+            'relative z-20 flex flex-col items-center text-center',
             OVERLAY_CELL,
-            'min-h-96 justify-center px-6 py-12 lg:aspect-21/9'
+            'min-h-112 justify-center px-6 py-16 lg:min-h-144 lg:px-12 lg:py-20'
           )
         "
       >
@@ -106,7 +111,7 @@ const isContentFirst = hero.layout === 'content-first'
         </p>
 
         <h1
-          class="text-4xl font-light tracking-tight text-primary-warm-white sm:text-6xl lg:text-8xl/none"
+          class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-warm-white sm:text-6xl lg:text-8xl/none"
         >
           {{ t(hero.titleKey, locale)
           }}<span v-if="hero.titleRestKey" class="text-primary-warm-white/80">{{
@@ -127,21 +132,21 @@ const isContentFirst = hero.layout === 'content-first'
           :secondary-cta="hero.secondaryCta"
           :locale
         />
-
-        <div
-          v-if="hero.badgeKeys?.length"
-          class="mt-6 flex flex-wrap items-center justify-center gap-3"
-        >
-          <Badge
-            v-for="badgeKey in hero.badgeKeys"
-            :key="badgeKey"
-            data-testid="model-launch-hero-badge"
-            variant="subtle"
-          >
-            {{ t(badgeKey, locale) }}
-          </Badge>
-        </div>
       </div>
+    </div>
+
+    <div
+      v-if="hero.badgeKeys?.length"
+      class="mt-3 flex flex-wrap items-center justify-center gap-3"
+    >
+      <Badge
+        v-for="badgeKey in hero.badgeKeys"
+        :key="badgeKey"
+        data-testid="model-launch-hero-badge"
+        variant="subtle"
+      >
+        {{ t(badgeKey, locale) }}
+      </Badge>
     </div>
   </section>
 
