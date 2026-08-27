@@ -45,6 +45,11 @@ helper posts `{ "delete": [jobId] }` to `/history`. The current path therefore
 deletes the owning history job by job ID; it does not delete the selected
 output by `AssetItem.id`. This is the behavior the decision below replaces.
 
+Current clear-history product copy promises the opposite job-to-output
+behavior. `clearHistoryMenuAssetsNote` says media assets will not be deleted,
+and `clearHistoryDialogAssetsNote` says generated assets survive clearing their
+jobs and remain available in the assets panel.
+
 ## Decision
 
 The lifecycle split is directional: jobs fan out to their generated output
@@ -63,6 +68,23 @@ assets, never the reverse.
    asset from a multi-output job leaves the other outputs and the job intact.
 6. **Delete UI must disclose that the job remains.** Confirmation copy for
    asset deletion states that the generation (job/history entry) is preserved.
+
+## Migration Work
+
+The accepted job-deletion rule reverses the current clear-history product
+contract. It must not ship partially. The migration requires:
+
+- **Product copy:** Update `clearHistoryMenuAssetsNote`,
+  `clearHistoryDialogAssetsNote`, and their translations to disclose that
+  deleting history jobs also deletes their generated output assets.
+- **Frontend flow:** Make individual and bulk history deletion use the new
+  cascade contract, refresh the independent output-asset listing after the
+  request, and ensure output-asset deletion sends selected `AssetItem.id`
+  values rather than history job IDs.
+- **Backend cascade:** Implement and test deletion of every generated output
+  asset owned by a deleted job, for both individual job deletion and history
+  clearing. The backend cascade is a prerequisite and cannot be verified from
+  this frontend repository.
 
 ## Consequences
 
