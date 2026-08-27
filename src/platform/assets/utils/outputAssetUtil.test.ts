@@ -8,6 +8,7 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 import {
+  getOutputKey,
   getTotalAssetOutputCount,
   resolveOutputAssetItems
 } from './outputAssetUtil'
@@ -141,13 +142,35 @@ describe('getTotalAssetOutputCount', () => {
   })
 
   it('falls back to the grouped output count when output identities are incomplete', () => {
-    const asset = createAsset({
-      id: 'job-1',
-      name: 'preview.png',
-      user_metadata: { outputCount: 4 }
+    const parent = createAsset({
+      id: 'job-1-parent',
+      name: 'parent.png',
+      user_metadata: { jobId: 'job-1', nodeId: '1', outputCount: 4 }
+    })
+    const child = createAsset({
+      id: 'job-1-child',
+      name: 'child.png',
+      user_metadata: { jobId: 'job-1', nodeId: '2' }
     })
 
-    expect(getTotalAssetOutputCount([asset])).toBe(4)
+    expect(getTotalAssetOutputCount([parent, child])).toBe(4)
+  })
+
+  it('distinguishes outputs whose path components share delimiters', () => {
+    const assets = [
+      createAsset({
+        id: 'job-1-a',
+        name: 'c.png',
+        user_metadata: { jobId: 'job-1', nodeId: '1', subfolder: 'a-b' }
+      }),
+      createAsset({
+        id: 'job-1-b',
+        name: 'b-c.png',
+        user_metadata: { jobId: 'job-1', nodeId: '1', subfolder: 'a' }
+      })
+    ]
+
+    expect(getTotalAssetOutputCount(assets)).toBe(2)
   })
 
   it('counts input assets once even when they carry output-shaped metadata', () => {
@@ -194,14 +217,14 @@ describe('resolveOutputAssetItems', () => {
 
     const results = await resolveOutputAssetItems(metadata, {
       createdAt: '2025-01-01T00:00:00.000Z',
-      excludeOutputKey: '2-sub-b.png'
+      excludeOutputKey: getOutputKey(outputB) ?? undefined
     })
 
     expect(mocks.getJobDetail).not.toHaveBeenCalled()
     expect(results).toHaveLength(1)
     expect(results[0]).toEqual(
       expect.objectContaining({
-        id: 'job-1-1-sub-a.png',
+        id: `job-1-${getOutputKey(outputA)}`,
         name: 'a.png',
         created_at: '2025-01-01T00:00:00.000Z',
         tags: ['output'],
@@ -282,7 +305,7 @@ describe('resolveOutputAssetItems', () => {
     }
 
     const results = await resolveOutputAssetItems(metadata, {
-      excludeOutputKey: '2-sub-b.png'
+      excludeOutputKey: getOutputKey(outputB) ?? undefined
     })
 
     // outputB excluded, remaining reversed: [C, A]
@@ -304,7 +327,7 @@ describe('resolveOutputAssetItems', () => {
     }
 
     const results = await resolveOutputAssetItems(metadata, {
-      excludeOutputKey: '1-sub-only.png'
+      excludeOutputKey: getOutputKey(output) ?? undefined
     })
 
     expect(results).toHaveLength(0)
@@ -439,7 +462,7 @@ describe('resolveOutputAssetItems', () => {
     if (!asset) {
       throw new Error('Expected a root output asset')
     }
-    expect(asset.id).toBe('job-root-1--root.png')
+    expect(asset.id).toBe(`job-root-${getOutputKey(output)}`)
     if (!asset.user_metadata) {
       throw new Error('Expected output metadata')
     }
@@ -465,6 +488,11 @@ describe('resolveOutputAssetItems', () => {
         })
       ]
     }
+    const singleOutputId = `job-cloud-${getOutputKey({
+      nodeId: '1',
+      subfolder: 'sub',
+      filename: 'a.png'
+    })}`
 
     it('overlays real asset id and preview matched by filename', async () => {
       mocks.getJobAssets.mockResolvedValue([
@@ -594,8 +622,16 @@ describe('resolveOutputAssetItems', () => {
       // Same filename and same node_id on both sides: nothing left to pair on,
       // so both keep their unique synthesized ids.
       expect(results.map((asset) => asset.id)).toEqual([
-        'job-dup-1-b-img.png',
-        'job-dup-1-a-img.png'
+        `job-dup-${getOutputKey({
+          nodeId: '1',
+          subfolder: 'b',
+          filename: 'img.png'
+        })}`,
+        `job-dup-${getOutputKey({
+          nodeId: '1',
+          subfolder: 'a',
+          filename: 'img.png'
+        })}`
       ])
     })
 
@@ -655,7 +691,7 @@ describe('resolveOutputAssetItems', () => {
 
       const [asset] = await resolveOutputAssetItems(singleOutputMetadata)
 
-      expect(asset.id).toBe('job-cloud-1-sub-a.png')
+      expect(asset.id).toBe(singleOutputId)
     })
 
     it('resolves unambiguous names while skipping duplicated ones', async () => {
@@ -680,8 +716,16 @@ describe('resolveOutputAssetItems', () => {
 
       expect(results.map((asset) => asset.id)).toEqual([
         'asset-unique',
-        'job-mixed-1-b-img.png',
-        'job-mixed-1-a-img.png'
+        `job-mixed-${getOutputKey({
+          nodeId: '1',
+          subfolder: 'b',
+          filename: 'img.png'
+        })}`,
+        `job-mixed-${getOutputKey({
+          nodeId: '1',
+          subfolder: 'a',
+          filename: 'img.png'
+        })}`
       ])
     })
 
@@ -692,7 +736,7 @@ describe('resolveOutputAssetItems', () => {
 
       const [asset] = await resolveOutputAssetItems(singleOutputMetadata)
 
-      expect(asset.id).toBe('job-cloud-1-sub-a.png')
+      expect(asset.id).toBe(singleOutputId)
     })
 
     it('degrades to unresolved items when the endpoint returns nothing', async () => {
@@ -700,7 +744,7 @@ describe('resolveOutputAssetItems', () => {
 
       const [asset] = await resolveOutputAssetItems(singleOutputMetadata)
 
-      expect(asset.id).toBe('job-cloud-1-sub-a.png')
+      expect(asset.id).toBe(singleOutputId)
     })
 
     it('does not call the endpoint on non-cloud distributions', async () => {
@@ -716,7 +760,7 @@ describe('resolveOutputAssetItems', () => {
 
       const [asset] = await resolveOutputAssetItems(singleOutputMetadata)
 
-      expect(asset.id).toBe('job-cloud-1-sub-a.png')
+      expect(asset.id).toBe(singleOutputId)
     })
 
     it('does not call the endpoint when there are no outputs to enrich', async () => {

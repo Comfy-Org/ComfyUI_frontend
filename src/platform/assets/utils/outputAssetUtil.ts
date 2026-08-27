@@ -119,12 +119,12 @@ export function getOutputKey({
     return null
   }
 
-  return `${nodeId}-${subfolder}-${filename}`
+  return JSON.stringify([String(nodeId), subfolder, filename])
 }
 
 /**
  * Maps a job's outputs to AssetItems with ids derived from the composite
- * `<nodeId>-<subfolder>-<filename>` key. Records sharing a composite key are
+ * `[nodeId, subfolder, filename]` key. Records sharing a composite key are
  * dropped after the first to keep `:key` unique in VirtualGrid — colliding
  * ids cause Vue to reuse one DOM node and visibly duplicate the asset on
  * scroll.
