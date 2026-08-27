@@ -87,7 +87,7 @@ export const useLitegraphSettings = () => {
     ([minFontSizeForLOD, canvas]) => {
       if (canvas) {
         canvas.min_font_size_for_lod = minFontSizeForLOD
-        canvas.setDirty(/* fg */ true, /* bg */ true)
+        canvas.setDirty(true, true)
       }
     },
     { immediate: true }
