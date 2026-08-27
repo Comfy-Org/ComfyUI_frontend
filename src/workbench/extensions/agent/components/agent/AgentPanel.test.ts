@@ -42,11 +42,9 @@ describe('AgentPanel', () => {
   it('passes the editable workflow into the minimized run notice', () => {
     mount()
 
-    expect(
-      screen.getByText(
-        'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
-      )
-    ).toBeInTheDocument()
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
     expect(
       screen.getByText('The AI agent can make mistakes')
     ).toBeInTheDocument()
@@ -55,11 +53,9 @@ describe('AgentPanel', () => {
   it('passes the editable workflow into the expanded run notice', () => {
     mount(true)
 
-    expect(
-      screen.getByText(
-        'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
-      )
-    ).toBeInTheDocument()
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
     expect(
       screen.getByText(
         'The AI agent can make mistakes. Double check your response.'
