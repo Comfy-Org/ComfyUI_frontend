@@ -25,6 +25,7 @@ describe('attachWidgetMintPort', () => {
   let enabled: boolean
   let bound: boolean
   let root: string | null
+  let interiorPaths: Map<string, string[]>
   let session: MintSession
   let listeners: Set<(set: WidgetSetView) => void>
 
@@ -37,6 +38,7 @@ describe('attachWidgetMintPort', () => {
     enabled = true
     bound = true
     root = ROOT
+    interiorPaths = new Map()
     session = createMintSession()
     listeners = new Set()
     port = attachWidgetMintPort({
@@ -50,6 +52,8 @@ describe('attachWidgetMintPort', () => {
       isEnabled: () => enabled,
       isDocBound: () => bound,
       rootGraphId: () => root,
+      resolveInteriorPath: (owningGraphId) =>
+        interiorPaths.get(owningGraphId) ?? null,
       enqueue: (operations) => minted.push(...operations)
     })
   })
@@ -90,7 +94,25 @@ describe('attachWidgetMintPort', () => {
     expect(minted).toEqual([])
   })
 
-  it('surfaces a subgraph-interior write observably instead of minting', () => {
+  it('mints an interior set_widget with the resolved node path', () => {
+    interiorPaths.set('subgraph-uuid', ['57'])
+
+    deliver(widgetSet({ graphId: 'subgraph-uuid', nodeId: '27' }))
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: '27',
+        widget: 'seed',
+        value: 42,
+        old: 3,
+        path: ['57', '27'],
+        inner_widget: 'seed'
+      }
+    ])
+  })
+
+  it('surfaces an unresolvable interior write observably instead of minting', () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
