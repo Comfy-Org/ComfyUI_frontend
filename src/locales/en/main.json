@@ -4077,23 +4077,6 @@
     "successDescription": "You can now upload your workflow to your creator page",
     "uploadWorkflowButton": "Upload my workflow"
   },
-  "desktopDialogs": {
-    "reinstallVenv": {
-      "title": "Reinstall ComfyUI (Fresh Start)?",
-      "message": "Sorry, we can't launch ComfyUI because some installed packages aren't compatible.\n\nClick Reinstall to restore ComfyUI and get back up and running.\n\nPlease note: if you've added custom nodes, you'll need to reinstall them after this process.",
-      "buttons": {
-        "Learn More": "Learn More",
-        "Reinstall": "Reinstall"
-      }
-    },
-    "invalidDialog": {
-      "title": "Invalid Dialog",
-      "message": "Invalid dialog ID was provided.",
-      "buttons": {
-        "Close": "Close"
-      }
-    }
-  },
   "vueNodesSlot": {
     "iterative": "(Iterative)"
   },
