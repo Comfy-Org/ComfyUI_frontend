@@ -90,22 +90,6 @@ describe('agentRestClient route + method', () => {
   })
 })
 
-describe('getDraft query encoding', () => {
-  it('encodes a workflow id containing a space', async () => {
-    respond(jsonResponse(200, { content: {}, version: 1 }))
-    await makeClient().getDraft('my workflow')
-
-    expect(lastCall().route).toBe('/agent/draft?workflow_id=my%20workflow')
-  })
-
-  it('encodes a workflow id containing a slash', async () => {
-    respond(jsonResponse(200, { content: {}, version: 1 }))
-    await makeClient().getDraft('a/b')
-
-    expect(lastCall().route).toBe('/agent/draft?workflow_id=a%2Fb')
-  })
-})
-
 describe('postMessage wire body', () => {
   it('uses snake_case workflow_id and includes only the keys provided', async () => {
     respond(jsonResponse(202, turnAccepted))
@@ -166,15 +150,6 @@ describe('success response parsing', () => {
     expect(result.thread_id).toBe('t1')
     expect((result as Record<string, unknown>).workflow_id).toBe('w1')
   })
-
-  it('parses a getDraft 200 snapshot', async () => {
-    respond(jsonResponse(200, { content: { nodes: [] }, version: 24 }))
-
-    const result = await makeClient().getDraft('wf-1')
-
-    expect(result.version).toBe(24)
-    expect(result.content).toEqual({ nodes: [] })
-  })
 })
 
 describe('error mapping', () => {
@@ -200,7 +175,7 @@ describe('error mapping', () => {
     )
 
     const error = await makeClient()
-      .getDraft('wf-x')
+      .getMessages('t-x')
       .catch((e: unknown) => e)
 
     expect((error as AgentApiError).message).toBe('access denied')
@@ -226,7 +201,7 @@ describe('error mapping', () => {
     respond(jsonResponse(200, { wrong: 'shape' }))
 
     const error = await makeClient()
-      .getDraft('wf-1')
+      .getMessages('t-1')
       .catch((e: unknown) => e)
 
     expect(error).toBeInstanceOf(Error)

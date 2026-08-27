@@ -4764,9 +4764,21 @@
         "title": "Prompt validation failed",
         "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
       },
-      "agent_draft_apply_failed": {
-        "title": "Couldn't apply agent changes",
-        "desc": "Couldn't apply the agent's draft to the canvas."
+      "op_rejected": {
+        "title": "Agent edit rejected",
+        "desc": "The workflow document refused an agent edit. The canvas and the shared document may briefly differ until the next update."
+      },
+      "prefix_abort": {
+        "title": "Agent edits partially applied",
+        "desc": "A batch of agent edits stopped partway. The remaining edits are retried automatically."
+      },
+      "guard_trip": {
+        "title": "Agent update blocked",
+        "desc": "An incoming agent update did not match the expected workflow document shape and was blocked."
+      },
+      "apply_failed": {
+        "title": "Agent edit failed",
+        "desc": "An agent edit could not be applied to the workflow document."
       },
       "agent_api_failed": {
         "title": "Comfy Agent error",
