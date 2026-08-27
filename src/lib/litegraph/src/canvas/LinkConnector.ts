@@ -140,7 +140,10 @@ export class LinkConnector {
     input: INodeInputSlot,
     opts?: { startPoint?: Point }
   ): void {
-    if (this.isConnecting) throw new Error('Already dragging links.')
+    if (this.isConnecting) {
+      console.error('Already dragging links.')
+      return
+    }
 
     const { state, inputLinks, renderLinks } = this
 
@@ -159,10 +162,12 @@ export class LinkConnector {
 
       try {
         const reroute = network.reroutes.get(floatingLink.parentId)
-        if (!reroute)
-          throw new Error(
+        if (!reroute) {
+          console.error(
             `Invalid reroute id: [${floatingLink.parentId}] for floating link id: [${floatingLink.id}].`
           )
+          return
+        }
 
         const renderLink = new FloatingRenderLink(
           network,
@@ -284,7 +289,10 @@ export class LinkConnector {
     node: LGraphNode,
     output: INodeOutputSlot
   ): void {
-    if (this.isConnecting) throw new Error('Already dragging links.')
+    if (this.isConnecting) {
+      console.error('Already dragging links.')
+      return
+    }
 
     const { state, renderLinks } = this
 
@@ -295,13 +303,15 @@ export class LinkConnector {
       node.id,
       node.outputs.indexOf(output)
     )) {
-      try {
-        const reroute = LLink.getFirstReroute(network, floatingLink)
-        if (!reroute)
-          throw new Error(
-            `Invalid reroute id: [${floatingLink.parentId}] for floating link id: [${floatingLink.id}].`
-          )
+      const reroute = LLink.getFirstReroute(network, floatingLink)
+      if (!reroute) {
+        console.error(
+          `Invalid reroute id: [${floatingLink.parentId}] for floating link id: [${floatingLink.id}].`
+        )
+        continue
+      }
 
+      try {
         const renderLink = new FloatingRenderLink(
           network,
           floatingLink,
@@ -332,6 +342,24 @@ export class LinkConnector {
         node.id,
         node.outputs.indexOf(output)
       )) {
+        let subgraphTarget:
+          | { node: SubgraphOutputNode; output: SubgraphOutput }
+          | undefined
+        if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+          if (!(network instanceof Subgraph)) {
+            console.warn('Subgraph output link found in non-subgraph network.')
+            continue
+          }
+
+          const subgraphOutputNode = network.outputNode
+          const subgraphOutput = network.outputs.at(link.target_slot)
+          if (!subgraphOutputNode || !subgraphOutput) {
+            console.error('No subgraph output found for link.')
+            continue
+          }
+          subgraphTarget = { node: subgraphOutputNode, output: subgraphOutput }
+        }
+
         const firstReroute = LLink.getFirstReroute(network, link)
         if (firstReroute) {
           firstReroute._dragging = true
@@ -342,21 +370,11 @@ export class LinkConnector {
         this.outputLinks.push(link)
 
         try {
-          if (link.target_id === SUBGRAPH_OUTPUT_ID) {
-            if (!(network instanceof Subgraph)) {
-              console.warn(
-                'Subgraph output link found in non-subgraph network.'
-              )
-              continue
-            }
-
-            const output = network.outputs.at(link.target_slot)
-            if (!output) throw new Error('No subgraph output found for link.')
-
+          if (subgraphTarget) {
             const renderLink = new ToOutputFromIoNodeLink(
               network,
-              network.outputNode,
-              output
+              subgraphTarget.node,
+              subgraphTarget.output
             )
             renderLink.fromDirection = LinkDirection.NONE
             renderLinks.push(renderLink)
@@ -409,7 +427,10 @@ export class LinkConnector {
     output: INodeOutputSlot,
     fromReroute?: Reroute
   ): void {
-    if (this.isConnecting) throw new Error('Already dragging links.')
+    if (this.isConnecting) {
+      console.error('Already dragging links.')
+      return
+    }
 
     const { state } = this
     const renderLink = new ToInputRenderLink(network, node, output, fromReroute)
@@ -432,7 +453,10 @@ export class LinkConnector {
     input: INodeInputSlot,
     fromReroute?: Reroute
   ): void {
-    if (this.isConnecting) throw new Error('Already dragging links.')
+    if (this.isConnecting) {
+      console.error('Already dragging links.')
+      return
+    }
 
     const { state } = this
     const renderLink = new ToOutputRenderLink(network, node, input, fromReroute)
@@ -449,7 +473,10 @@ export class LinkConnector {
     input: SubgraphInput,
     fromReroute?: Reroute
   ): void {
-    if (this.isConnecting) throw new Error('Already dragging links.')
+    if (this.isConnecting) {
+      console.error('Already dragging links.')
+      return
+    }
 
     const renderLink = new ToInputFromIoNodeLink(
       network,
@@ -470,7 +497,10 @@ export class LinkConnector {
     output: SubgraphOutput,
     fromReroute?: Reroute
   ): void {
-    if (this.isConnecting) throw new Error('Already dragging links.')
+    if (this.isConnecting) {
+      console.error('Already dragging links.')
+      return
+    }
 
     const renderLink = new ToOutputFromIoNodeLink(
       network,
@@ -491,7 +521,10 @@ export class LinkConnector {
    * @param reroute The reroute that the link is being dragged from
    */
   dragFromReroute(network: LinkNetwork, reroute: Reroute): void {
-    if (this.isConnecting) throw new Error('Already dragging links.')
+    if (this.isConnecting) {
+      console.error('Already dragging links.')
+      return
+    }
 
     const link = reroute.firstLink ?? reroute.firstFloatingLink
     if (!link) {
@@ -506,7 +539,10 @@ export class LinkConnector {
       }
 
       const input = network.inputs.at(link.origin_slot)
-      if (!input) throw new Error('No subgraph input found for link.')
+      if (!input) {
+        console.error('No subgraph input found for link.')
+        return
+      }
 
       const renderLink = new ToInputFromIoNodeLink(
         network,
@@ -555,7 +591,10 @@ export class LinkConnector {
    * @param reroute The reroute that the link is being dragged from
    */
   dragFromRerouteToOutput(network: LinkNetwork, reroute: Reroute): void {
-    if (this.isConnecting) throw new Error('Already dragging links.')
+    if (this.isConnecting) {
+      console.error('Already dragging links.')
+      return
+    }
 
     const link = reroute.firstLink ?? reroute.firstFloatingLink
     if (!link) {
@@ -570,7 +609,10 @@ export class LinkConnector {
       }
 
       const output = network.outputs.at(link.target_slot)
-      if (!output) throw new Error('No subgraph output found for link.')
+      if (!output) {
+        console.error('No subgraph output found for link.')
+        return
+      }
 
       const renderLink = new ToOutputFromIoNodeLink(
         network,
@@ -615,7 +657,10 @@ export class LinkConnector {
   }
 
   dragFromLinkSegment(network: LinkNetwork, linkSegment: LinkSegment): void {
-    if (this.isConnecting) throw new Error('Already dragging links.')
+    if (this.isConnecting) {
+      console.error('Already dragging links.')
+      return
+    }
 
     const { state } = this
     if (linkSegment.origin_id == null || linkSegment.origin_slot == null) return
@@ -812,10 +857,12 @@ export class LinkConnector {
 
     // Connecting to input
     if (this.state.connectingTo === 'input') {
-      if (this.renderLinks.length !== 1)
-        throw new Error(
+      if (this.renderLinks.length !== 1) {
+        console.error(
           `Attempted to connect ${this.renderLinks.length} input links to a reroute.`
         )
+        return
+      }
 
       const renderLink = this.renderLinks[0]
       this._connectOutputToReroute(reroute, renderLink)
@@ -853,7 +900,10 @@ export class LinkConnector {
     if (!results?.length) return
 
     const maybeReroutes = reroute.getReroutes()
-    if (maybeReroutes === null) throw new Error('Reroute loop detected.')
+    if (maybeReroutes === null) {
+      console.error('Reroute loop detected.')
+      return
+    }
 
     const originalReroutes = maybeReroutes.slice(0, -1).reverse()
 
