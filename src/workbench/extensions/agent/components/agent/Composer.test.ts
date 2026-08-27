@@ -660,51 +660,44 @@ describe('Composer', () => {
     ])
   })
 
-  it('renders and removes a selected workflow reference chip', async () => {
-    const { emitted } = mount(
-      {},
-      {
-        workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
-      }
-    )
+  it.for(['{Delete}', '{Backspace}'])(
+    'selects and removes an inline workflow reference with %s',
+    async (key) => {
+      const { emitted } = mount(
+        {},
+        {
+          workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
+        }
+      )
 
-    const inlineInput = screen.getByTestId('composer-inline-input')
-    const workflowChip = within(inlineInput).getByTestId(
-      'workflow-reference-chip'
-    )
-    expect(workflowChip).toHaveClass(
-      'group',
-      'bg-primary-background/30',
-      'ring-1',
-      'ring-inset',
-      'ring-primary-background/30',
-      'text-primary-background-hover',
-      'rounded-sm',
-      'text-xs/[15px]',
-      'font-normal'
-    )
-    expect(workflowChip).not.toHaveClass('h-5', 'h-7', 'font-medium')
-    expect(inlineInput).toContainElement(screen.getByRole('textbox'))
-    const removeButton = screen.getByRole('button', {
-      name: 'Remove Water world reference'
-    })
-    expect(removeButton).toHaveClass(
-      'absolute',
-      'size-3.5',
-      'opacity-0',
-      'group-hover:opacity-100',
-      'focus-visible:opacity-100'
-    )
-    expect(removeButton).not.toHaveClass(
-      'group-hover:w-3.5',
-      'group-hover:ml-1',
-      'focus-visible:w-3.5',
-      'focus-visible:ml-1'
-    )
-    await userEvent.click(removeButton)
+      const inlineInput = screen.getByTestId('composer-inline-input')
+      const workflowChip = within(inlineInput).getByRole('button', {
+        name: 'Water world workflow reference'
+      })
+      expect(workflowChip).toHaveClass(
+        'bg-primary-background/30',
+        'ring-1',
+        'ring-inset',
+        'ring-primary-background/30',
+        'text-primary-background-hover',
+        'rounded-sm',
+        'text-xs/[15px]',
+        'font-normal'
+      )
+      expect(workflowChip).not.toHaveClass('h-5', 'h-7', 'font-medium')
+      expect(inlineInput).toContainElement(screen.getByRole('textbox'))
+      expect(
+        screen.queryByRole('button', { name: 'Remove Water world reference' })
+      ).toBeNull()
 
-    expect(emitted().removeWorkflowReference).toEqual([['wf-1']])
-  })
+      await userEvent.click(workflowChip)
+      expect(workflowChip).toHaveAttribute('aria-pressed', 'true')
+      await userEvent.keyboard(key)
+
+      expect(emitted().removeWorkflowReference).toEqual([['wf-1']])
+      expect(screen.getByRole('textbox')).toHaveFocus()
+    }
+  )
 
   it('keeps selected nodes in a dedicated section above the inline prompt', () => {
     mount({

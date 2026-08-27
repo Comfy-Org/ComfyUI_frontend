@@ -5187,7 +5187,7 @@
     "workflows": "Workflows",
     "noNodesToReference": "No nodes available to reference",
     "noWorkflowsToReference": "No workflows available to reference",
-    "removeWorkflowReferenceLabel": "Remove {workflow} reference",
+    "workflowReferenceLabel": "{workflow} workflow reference",
     "addNodesFromGraph": "Add nodes from graph",
     "dragAndDropAssets": "Drag and drop assets here",
     "nodeSelection": {
