@@ -32,8 +32,9 @@ agent panel, so the panel's product flag is the only gate.
 
 ## Verify (requires the agent-panel slice that mounts the follower)
 
-- The CRDT dev panel (`data-testid="crdt-dev-panel"`, dev builds only) shows
-  connected: yes and the subscribed workflow id.
+- Click the CRDT dev chip (bottom right, dev builds only) to open the panel;
+  the Live status table shows connected: yes and the subscribed workflow id in
+  the doc id row.
 - Send a message in the agent chat; as the agent edits, `updatesApplied` increments and
   nodes move on the canvas.
 - Reload the tab mid-session: it resubscribes and reconverges from the seeded snapshot.
