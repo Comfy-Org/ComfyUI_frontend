@@ -329,7 +329,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
           <RunNoticeBanner
             :expanded="isMaximized"
-            :workflow-name="activeTab?.name"
+            :workflow-name="workflowDetached ? undefined : activeTab?.name"
           />
           <Composer
             ref="composerRef"
