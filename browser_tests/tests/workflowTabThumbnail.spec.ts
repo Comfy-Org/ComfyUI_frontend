@@ -158,6 +158,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
 
     // Switch to tab 1 and back to update tab 0's thumbnail
     await (await getTab(comfyPage, 1)).click()
+    await comfyPage.nextFrame()
 
     const tab0ThumbnailAfterNewNode = await getNodeThumbnailBase64(comfyPage, 0)
 
