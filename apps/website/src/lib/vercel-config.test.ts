@@ -76,9 +76,16 @@ describe('vercel.json agent-readiness surface', () => {
   })
 
   it('preserves the anti-noindex header for the production origin host', () => {
-    const rule = (config.headers ?? []).find((entry) =>
-      entry.headers?.some((header) => header.key === 'X-Robots-Tag')
+    const rule = (config.headers ?? []).find(
+      (entry) =>
+        entry.source === '/(.*)' &&
+        entry.headers?.some((header) => header.key === 'X-Robots-Tag')
     )
-    expect(rule?.headers?.[0]?.value).toBe('index, follow')
+    expect(rule?.has).toEqual([
+      { type: 'host', value: 'website-frontend-comfyui.vercel.app' }
+    ])
+    expect(
+      rule?.headers?.find((header) => header.key === 'X-Robots-Tag')?.value
+    ).toBe('index, follow')
   })
 })

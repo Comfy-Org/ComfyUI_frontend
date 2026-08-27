@@ -90,8 +90,8 @@ for (const path of ['/index.md', '/api.md', '/404.md']) {
     `status ${res.status}, type ${res.headers.get('content-type')}`
   )
 }
-{
-  const { res, body } = await probe('/openapi.json')
+for (const path of ['/openapi.json', '/api/openapi.json']) {
+  const { res, body } = await probe(path)
   let ok = res.status === 200
   if (ok) {
     try {
@@ -101,7 +101,7 @@ for (const path of ['/index.md', '/api.md', '/404.md']) {
       ok = false
     }
   }
-  report('OpenAPI spec at /openapi.json', ok, `status ${res.status}`)
+  report(`OpenAPI spec at ${path}`, ok, `status ${res.status}`)
 }
 for (const [path, target] of [
   ['/developers', '/api'],

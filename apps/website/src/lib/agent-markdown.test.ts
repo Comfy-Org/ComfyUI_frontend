@@ -20,6 +20,11 @@ describe('homepageMarkdown', () => {
     expect(sections.length).toBeGreaterThanOrEqual(5)
   })
 
+  it('uses the same i18n headings as the rendered sections', () => {
+    expect(markdown).toContain('## Latest model releases')
+    expect(markdown).toContain('## How ComfyUI works')
+  })
+
   it('links the product surfaces and agent resources', () => {
     for (const needle of [
       'https://comfy.org/download',
@@ -52,6 +57,7 @@ describe('apiMarkdown', () => {
   it('links keys, docs, SDKs, and the OpenAPI spec', () => {
     for (const needle of [
       'https://platform.comfy.org/profile/api-keys',
+      'https://docs.comfy.org/development/cloud/overview',
       'https://docs.comfy.org/development/api-development/sdks',
       'pip install comfy-sdk',
       '@comfyorg/sdk',
