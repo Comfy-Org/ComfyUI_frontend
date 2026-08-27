@@ -26,8 +26,7 @@ const cloudOnboardingRoutes = isCloud
       .cloudOnboardingRoutes
   : []
 
-const isFileProtocol =
-  typeof window !== 'undefined' && window.location.protocol === 'file:'
+const isFileProtocol = window.location.protocol === 'file:'
 
 /**
  * Determine base path for the router.
@@ -146,46 +145,8 @@ router.beforeEach((to, _from, next) => {
   next()
 })
 
-// Routes that are reachable but must never be published as canonical: they're
-// gated behind auth (requiresAuth handles cloud-survey/cloud-user-check/
-// cloud-subscribe) or are a transactional, per-request flow (OAuth consent).
-const NON_CANONICAL_ROUTE_NAMES = new Set(['cloud-oauth-consent'])
-
-function isCanonicalRoute(to: RouteLocationNormalized): boolean {
-  if (to.meta.requiresAuth) return false
-  return !NON_CANONICAL_ROUTE_NAMES.has(String(to.name))
-}
-
-router.afterEach((to) => {
-  const isBrowser =
-    typeof window !== 'undefined' && typeof document !== 'undefined'
-
-  if (isBrowser) {
-    trackPageView()
-  }
-
-  // Update canonical URL to resolve duplicate parameter SEO issues (P1-4)
-  // Ensures Googlebot indexes the clean path without query strings (e.g. ?template=)
-  if (isBrowser && !isFileProtocol) {
-    const existingCanonicalLink: HTMLLinkElement | null =
-      document.querySelector('link[rel="canonical"]')
-
-    if (!isCanonicalRoute(to)) {
-      existingCanonicalLink?.remove()
-      return
-    }
-
-    const canonicalLink =
-      existingCanonicalLink ?? document.createElement('link')
-    canonicalLink.rel = 'canonical'
-    if (!existingCanonicalLink) {
-      document.head.appendChild(canonicalLink)
-    }
-    const resolvedUrl = new URL(router.resolve(to).href, window.location.origin)
-    resolvedUrl.search = ''
-    resolvedUrl.hash = ''
-    canonicalLink.href = resolvedUrl.href
-  }
+router.afterEach(() => {
+  trackPageView()
 })
 
 if (isCloud) {

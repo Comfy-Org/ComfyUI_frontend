@@ -110,6 +110,18 @@ const VITE_OG_DESC =
 const VITE_OG_IMAGE = `${VITE_OG_URL}/assets/images/og-image.png`
 const VITE_OG_KEYWORDS = 'ComfyUI, Comfy Cloud, ComfyUI online'
 
+export function getCanonicalTags(distribution: string | undefined) {
+  return distribution === 'cloud'
+    ? [
+        {
+          tag: 'link',
+          attrs: { rel: 'canonical', href: `${VITE_OG_URL}/` },
+          injectTo: 'head' as const
+        }
+      ]
+    : []
+}
+
 // Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
 const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
@@ -419,6 +431,7 @@ export default defineConfig({
         return {
           html,
           tags: [
+            ...getCanonicalTags(DISTRIBUTION),
             // Basic SEO
             { tag: 'title', children: VITE_OG_TITLE, injectTo: 'head' },
             {
