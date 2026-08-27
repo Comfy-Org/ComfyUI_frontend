@@ -1586,14 +1586,15 @@ export class ComfyApp {
         })
       }
 
-      void useSubgraphNavigationStore().updateHash(
-        'workflow-load',
-        workflowNavigationId
-      )
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
     } finally {
+      // Finally: a throwing load still repairs the URL.
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
       ChangeTracker.isLoadingGraph = false
     }
   }
@@ -2094,8 +2095,7 @@ export class ComfyApp {
     if (parameters && typeof parameters === 'string') {
       const outcome = await importA1111(this.rootGraph, parameters, () => {
         try {
-          // false: this reset is the final destination - no workflow load
-          // follows to republish the hash, so suppression must not arm.
+          // false: final destination; no later load republishes the hash.
           useWorkflowService().beforeLoadNewGraph(false)
         } finally {
           useMissingNodesErrorStore().setMissingNodeTypes([])

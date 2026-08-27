@@ -2282,6 +2282,7 @@ describe('ComfyApp', () => {
 
       expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
       expect(
         mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
       ).toBeLessThan(vi.mocked(mockCanvas.setGraph).mock.invocationCallOrder[0])

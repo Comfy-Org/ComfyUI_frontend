@@ -33,6 +33,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -49,19 +50,29 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
   return linearMode ? 'app' : 'graph'
 }
 
+// TRANSITIONAL (decision log D14): deletable when ECS scopes workflow
+// loading per document; the contract tests transfer.
 let workflowLoadTail: Promise<void> = Promise.resolve()
 let pendingWorkflowLoads = 0
 const pendingWorkflowLoadsByPath = new Map<string, Promise<void>>()
-const closingWorkflowCounts = new Map<string, number>()
+// Object identity, not path: a mid-close rename would strand a path key.
+const closingWorkflowCounts = new Map<ComfyWorkflow, number>()
+
+/** The registry key: raw instance, so reactive proxies and raw references agree. */
+function closingKey(workflow: ComfyWorkflow): ComfyWorkflow {
+  return toRaw(workflow)
+}
 
 /** @internal Test-only: clears the module-level load queue between tests. */
 export function resetWorkflowLoadQueueForTests(): {
   pendingLoads: number
   closingCount: number
+  pendingPaths: number
 } {
   const drained = {
     pendingLoads: pendingWorkflowLoads,
-    closingCount: closingWorkflowCounts.size
+    closingCount: closingWorkflowCounts.size,
+    pendingPaths: pendingWorkflowLoadsByPath.size
   }
   workflowLoadTail = Promise.resolve()
   pendingWorkflowLoads = 0
@@ -78,9 +89,9 @@ function queueWorkflowLoad(
   const result = workflowLoadTail.then(load)
   const settledResult = result
     .catch((error) => {
-      // The internal chain marks `result` handled; keep failures observable
-      // for fire-and-forget callers.
+      // Keep fire-and-forget load failures observable.
       console.error('[workflowService] queued workflow load failed', error)
+      reportError(error, { errorType: 'workflow_load_failure' })
       return undefined
     })
     .finally(() => {
@@ -303,16 +314,14 @@ export const useWorkflowService = () => {
   /**
    * Load the default workflow
    */
-  const loadDefaultWorkflow = async () => {
-    await app.loadGraphData(defaultGraph)
-  }
+  const loadDefaultWorkflow = () =>
+    queueWorkflowLoad(() => app.loadGraphData(defaultGraph))
 
   /**
    * Load a blank workflow
    */
-  const loadBlankWorkflow = async () => {
-    await app.loadGraphData(blankGraph)
-  }
+  const loadBlankWorkflow = () =>
+    queueWorkflowLoad(() => app.loadGraphData(blankGraph))
 
   /**
    * Reload the current workflow
@@ -334,7 +343,8 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { force?: boolean; navigationIntentId?: number } = {}
   ): Promise<void> => {
-    if (closingWorkflowCounts.has(workflow.path)) return Promise.resolve()
+    if (closingWorkflowCounts.has(closingKey(workflow)))
+      return Promise.resolve()
     if (
       pendingWorkflowLoads === 0 &&
       workflowStore.isActive(workflow) &&
@@ -347,26 +357,32 @@ export const useWorkflowService = () => {
       options.navigationIntentId ??
       useSubgraphNavigationStore().beginWorkflowNavigation()
     return queueWorkflowLoad(async () => {
-      const loadFromRemote = !workflow.isLoaded
-      if (loadFromRemote) {
-        await workflow.load()
-      }
-
-      await app.loadGraphData(
-        toRaw(workflow.activeState) as ComfyWorkflowJSON,
-        /* clean=*/ true,
-        /* restore_view=*/ true,
-        workflow,
-        {
-          checkForRerouteMigration: false,
-          deferWarnings: true,
-          skipAssetScans: !loadFromRemote && !options.force,
-          workflowNavigationId: navigationIntentId
+      try {
+        const loadFromRemote = !workflow.isLoaded
+        if (loadFromRemote) {
+          await workflow.load()
         }
-      )
-      showPendingWarnings(undefined, {
-        silent: !loadFromRemote && !options.force
-      })
+
+        await app.loadGraphData(
+          toRaw(workflow.activeState) as ComfyWorkflowJSON,
+          /* clean=*/ true,
+          /* restore_view=*/ true,
+          workflow,
+          {
+            checkForRerouteMigration: false,
+            deferWarnings: true,
+            skipAssetScans: !loadFromRemote && !options.force,
+            workflowNavigationId: navigationIntentId
+          }
+        )
+        showPendingWarnings(undefined, {
+          silent: !loadFromRemote && !options.force
+        })
+      } catch (error) {
+        // A failed load's intent must not stay newest (suppresses the survivor's hash).
+        useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+        throw error
+      }
     }, workflow.path)
   }
 
@@ -399,16 +415,14 @@ export const useWorkflowService = () => {
       }
     }
 
-    // Captured once: a rename mid-close mutates workflow.path in place, and
-    // a live re-read in the finally would strand the old key forever.
+    // Captured once: a mid-close rename mutates workflow.path in place.
     const closingPath = workflow.path
-    const isLastOpenWorkflow = workflowStore.openWorkflows.length === 1
+    const closing = closingKey(workflow)
     closingWorkflowCounts.set(
-      closingPath,
-      (closingWorkflowCounts.get(closingPath) ?? 0) + 1
+      closing,
+      (closingWorkflowCounts.get(closing) ?? 0) + 1
     )
     try {
-      workflowDraftStore.removeDraft(closingPath)
       const wasActive = workflowStore.isActive(workflow)
       const pendingWorkflowLoad = pendingWorkflowLoadsByPath.get(closingPath)
       if (!wasActive && pendingWorkflowLoad) await pendingWorkflowLoad
@@ -416,11 +430,13 @@ export const useWorkflowService = () => {
         wasActive ||
         (pendingWorkflowLoad && workflowStore.isActive(workflow))
       ) {
-        let observedOpenTail: Promise<void>
-        do {
-          observedOpenTail = workflowLoadTail
+        // Bounded drain: quiesce for the replacement decision without letting
+        // a hot enqueue stream starve the close.
+        for (let spins = 0; spins < 16; spins++) {
+          const observedOpenTail = workflowLoadTail
           await observedOpenTail
-        } while (observedOpenTail !== workflowLoadTail)
+          if (observedOpenTail === workflowLoadTail) break
+        }
       }
 
       // If this is the active workflow, load the most recent workflow from history
@@ -428,7 +444,7 @@ export const useWorkflowService = () => {
         const mostRecentWorkflow = workflowStore.getMostRecentWorkflow()
         let replacementWorkflow =
           mostRecentWorkflow &&
-          !closingWorkflowCounts.has(mostRecentWorkflow.path)
+          !closingWorkflowCounts.has(closingKey(mostRecentWorkflow))
             ? mostRecentWorkflow
             : undefined
         for (
@@ -437,28 +453,36 @@ export const useWorkflowService = () => {
           shift++
         ) {
           const candidate = workflowStore.openedWorkflowIndexShift(shift)
-          if (candidate && !closingWorkflowCounts.has(candidate.path)) {
+          if (candidate && !closingWorkflowCounts.has(closingKey(candidate))) {
             replacementWorkflow = candidate
           }
         }
         if (replacementWorkflow) {
           await openWorkflow(replacementWorkflow)
         } else {
-          await queueWorkflowLoad(loadDefaultWorkflow)
+          await loadDefaultWorkflow()
         }
-      } else if (isLastOpenWorkflow) {
-        await queueWorkflowLoad(loadDefaultWorkflow)
+      } else if (
+        // Read live, post-drain: the awaits above can change the answer.
+        workflowStore.openWorkflows.length > 0 &&
+        workflowStore.openWorkflows.every((open) =>
+          closingWorkflowCounts.has(closingKey(open))
+        )
+      ) {
+        await loadDefaultWorkflow()
       }
 
       await workflowStore.closeWorkflow(workflow)
+      // Only after the close is real: a still-open tab keeps its draft.
+      workflowDraftStore.removeDraft(closingPath)
       useNodeOutputStore().discardPreviewsForWorkflow(closingPath)
       return true
     } finally {
-      const remainingCloses = closingWorkflowCounts.get(closingPath) ?? 0
+      const remainingCloses = closingWorkflowCounts.get(closing) ?? 0
       if (remainingCloses <= 1) {
-        closingWorkflowCounts.delete(closingPath)
+        closingWorkflowCounts.delete(closing)
       } else {
-        closingWorkflowCounts.set(closingPath, remainingCloses - 1)
+        closingWorkflowCounts.set(closing, remainingCloses - 1)
       }
     }
   }
@@ -712,7 +736,9 @@ export const useWorkflowService = () => {
     // Remove the suffix `(2)` or similar
     const filename = workflow.filename.replace(/\s*\(\d+\)$/, '') + suffix
 
-    await app.loadGraphData(state, true, true, filename)
+    await queueWorkflowLoad(() =>
+      app.loadGraphData(state, true, true, filename)
+    )
   }
 
   /**
