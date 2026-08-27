@@ -56,6 +56,8 @@ const parseGcsCredentials = (raw: string | undefined) => {
 // and take down the local-disk fallback it has no bearing on.
 const gcsCredentials = gcsBucket ? parseGcsCredentials(process.env.GCS_CREDENTIALS_JSON) : undefined
 
+const isLocalDevelopment = process.env.NODE_ENV === 'development' && !process.env.VERCEL
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -66,12 +68,14 @@ export default buildConfig({
       beforeDashboard: ['/components/RebuildSiteButton#RebuildSiteButton'],
     },
     // Prefill the login form with the seeded admin credentials in local dev only
-    // (`prefillOnly` fills the fields without auto-submitting). Never in
-    // production — that would ship credentials into the login page.
+    // (`prefillOnly` fills the fields without auto-submitting). Gated on an
+    // affirmative local-dev signal rather than `NODE_ENV !== 'production'`: that
+    // negative test also passes for `test` and for any staging box left on the
+    // default `development`, each of which would then ship credentials into its
+    // login page. A deployed CMS is never local, so `VERCEL` disqualifies every
+    // Vercel environment regardless of what NODE_ENV holds there.
     autoLogin:
-      process.env.NODE_ENV !== 'production' &&
-      process.env.PAYLOAD_ADMIN_EMAIL &&
-      process.env.PAYLOAD_ADMIN_PASSWORD
+      isLocalDevelopment && process.env.PAYLOAD_ADMIN_EMAIL && process.env.PAYLOAD_ADMIN_PASSWORD
         ? {
             email: process.env.PAYLOAD_ADMIN_EMAIL,
             password: process.env.PAYLOAD_ADMIN_PASSWORD,

@@ -99,7 +99,8 @@ Environment variables to set on the Vercel project (Production + Preview):
 | `WEBSITE_PREVIEW_URL`                                  | Optional; enables the admin "Preview" link.                                                                                                                        |
 
 Do **not** set `PAYLOAD_ADMIN_EMAIL` / `PAYLOAD_ADMIN_PASSWORD` on Vercel. They only
-drive the local login prefill, which is disabled when `NODE_ENV === 'production'`.
+drive the local login prefill, which requires `NODE_ENV === 'development'` with `VERCEL`
+unset — so it stays off on every deployed environment, not just production.
 
 On a fresh database `/admin` serves an unauthenticated "create first user" screen,
 and the first account is forced to `admin` — create it immediately after the first
