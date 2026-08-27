@@ -55,6 +55,8 @@ export function useNodePointerInteractions(
 
     if (isPinned() || agentNodeSelectionStore.isActive) return
 
+    if (agentNodeSelectionStore.isActive) return
+
     const nodeId = toValue(nodeStateRef).id
 
     dragGuard.recordStart(event)
@@ -69,6 +71,8 @@ export function useNodePointerInteractions(
     if (layoutStore.isResizingVueNodes.value) return
 
     if (isPinned() || agentNodeSelectionStore.isActive) return
+
+    if (agentNodeSelectionStore.isActive) return
 
     const nodeId = toValue(nodeStateRef).id
 

@@ -45,12 +45,15 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
   const animateToBounds = vi.fn()
   const selectedItems = new Set(selected)
   const deselectAll = vi.fn(() => selectedItems.clear())
+  const surface = document.createElement('canvas')
+  surface.width = 1600
+  surface.height = 900
   useCanvasStore().canvas = {
     graph: { nodes, events: new EventTarget() },
     selectedItems,
     deselectAll,
     animateToBounds,
-    canvas: Object.assign(new EventTarget(), { width: 1600, height: 900 })
+    canvas: surface
   } as never
   return { animateToBounds, deselectAll, selectedItems }
 }

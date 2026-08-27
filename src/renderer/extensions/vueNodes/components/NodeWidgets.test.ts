@@ -240,7 +240,7 @@ describe('NodeWidgets', () => {
 
   it('becomes non-interactive during agent node selection', () => {
     const { container } = renderComponent({
-      nodeData: createMockNodeData(),
+      nodeData: createMockNodeData('TestNode'),
       setupStores: () => {
         useAgentNodeSelectionStore().isActive = true
       }
