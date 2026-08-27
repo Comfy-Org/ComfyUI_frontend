@@ -38,6 +38,7 @@ const {
   muteOnly = false,
   hideControls = false,
   hideFullscreen = false,
+  playButtonVariant = 'solid',
   fit = 'cover',
   ariaLabel,
   class: className
@@ -61,6 +62,8 @@ const {
   muteOnly?: boolean
   hideControls?: boolean
   hideFullscreen?: boolean
+  /** Style of the centered play/pause button in `minimal` mode. */
+  playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
   ariaLabel?: string
   class?: HTMLAttributes['class']
@@ -338,6 +341,7 @@ function toggleFullscreen() {
     >
       <PlayPauseButton
         :playing
+        :variant="playButtonVariant"
         :aria-label="
           playing ? t('player.pause', locale) : t('player.play', locale)
         "
