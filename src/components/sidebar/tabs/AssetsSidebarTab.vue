@@ -185,12 +185,12 @@ import {
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import {
   computed,
   defineAsyncComponent,
   nextTick,
-  onMounted,
   onUnmounted,
   ref,
   toValue,
@@ -221,7 +221,8 @@ import type {
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
-import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
+import type { AssetSource } from '@/platform/assets/composables/useAssetSelectionStore'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
@@ -235,6 +236,7 @@ import {
 } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import type { SelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -253,7 +255,12 @@ const { t } = useI18n()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
-const activeTab = ref<'input' | 'output'>('output')
+const selectionStore = useAssetSelectionStore()
+
+const activeTab = computed<AssetSource>({
+  get: () => selectionStore.activeSource,
+  set: (value) => selectionStore.setSource(value)
+})
 const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
@@ -306,22 +313,19 @@ const toast = useToast()
 const assetsStore = useAssetsStore()
 
 // Asset selection
+const { hasSelection, selectedIdsArray } = storeToRefs(selectionStore)
 const {
   isSelected,
-  selectedIds,
   handleAssetClick,
   toggleAssetSelection,
   selectAll,
   setSelectedIds,
-  hasSelection,
   clearSelection,
   getSelectedAssets,
   reconcileSelection,
   getOutputCount,
-  getTotalOutputCount,
-  activate: activateSelection,
-  deactivate: deactivateSelection
-} = useAssetSelection()
+  getTotalOutputCount
+} = selectionStore
 
 const panelRef = useTemplateRef('panelRef')
 const marqueePanelRef = computed(() => {
@@ -401,7 +405,7 @@ const { marqueeStyle } = useAssetGridSelection({
   marqueeContainerRef: marqueePanelRef,
   hoverTargetRef: marqueePanelRef,
   getAssets: () => visibleAssets.value,
-  getSelectedIds: () => [...selectedIds.value],
+  getSelectedIds: () => [...selectedIdsArray.value],
   setSelectedIds,
   selectAll,
   isEnabled: () => !isListView.value
@@ -476,8 +480,6 @@ const refreshAssets = async () => {
 watch(
   activeTab,
   () => {
-    clearSelection()
-    // Clear search when switching tabs
     searchQuery.value = ''
     // Reset pagination state when tab changes
     void refreshAssets()
@@ -485,11 +487,15 @@ watch(
   { immediate: true }
 )
 
-function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
+function handleAssetSelect(
+  asset: AssetItem,
+  modifiers: SelectionModifiers,
+  assets?: AssetItem[]
+) {
   const assetList = assets ?? visibleAssets.value
   const index = assetList.findIndex((a) => a.id === asset.id)
   emit('assetSelected', asset)
-  handleAssetClick(asset, index, assetList)
+  handleAssetClick(asset, index, assetList, modifiers)
 }
 
 function handleAssetSelectionToggle(asset: AssetItem) {
@@ -627,12 +633,8 @@ const exitFolderView = () => {
   searchQuery.value = ''
 }
 
-onMounted(() => {
-  activateSelection()
-})
-
 onUnmounted(() => {
-  deactivateSelection()
+  clearSelection()
 })
 
 const handleDeselectAll = () => {

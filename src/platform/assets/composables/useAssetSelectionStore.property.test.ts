@@ -2,27 +2,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import * as fc from 'fast-check'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-const mockShiftKey = ref(false)
-const mockCtrlKey = ref(false)
-const mockMetaKey = ref(false)
-
 vi.mock('@/platform/assets/composables/media/assetMappers')
-
-vi.mock('@vueuse/core', () => ({
-  useKeyModifier: (key: string) => {
-    if (key === 'Shift') return mockShiftKey
-    if (key === 'Control') return mockCtrlKey
-    if (key === 'Meta') return mockMetaKey
-    return ref(false)
-  }
-}))
-
-import { useAssetSelection } from './useAssetSelection'
 import { useAssetSelectionStore } from './useAssetSelectionStore'
 
 const arbAssetId = fc.stringMatching(/^[a-z0-9]{4,12}$/)
@@ -37,13 +21,7 @@ function arbAssets(minLength = 1, maxLength = 20): fc.Arbitrary<AssetItem[]> {
     )
 }
 
-describe('useAssetSelection properties', () => {
-  beforeEach(() => {
-    mockShiftKey.value = false
-    mockCtrlKey.value = false
-    mockMetaKey.value = false
-  })
-
+describe('useAssetSelectionStore properties', () => {
   describe('reconcileSelection', () => {
     it('after reconcile, selected IDs are always within visible assets', () => {
       fc.assert(
@@ -52,11 +30,10 @@ describe('useAssetSelection properties', () => {
           arbAssets(1, 15),
           (initialAssets, visibleAssets) => {
             setActivePinia(createPinia())
-            const selection = useAssetSelection()
             const store = useAssetSelectionStore()
 
             store.setSelection(initialAssets.map((a) => a.id))
-            selection.reconcileSelection(visibleAssets)
+            store.reconcileSelection(visibleAssets)
 
             const visibleIds = new Set(visibleAssets.map((a) => a.id))
             for (const id of store.selectedAssetIds) {
@@ -74,13 +51,12 @@ describe('useAssetSelection properties', () => {
           arbAssets(1, 15),
           (initialAssets, visibleAssets) => {
             setActivePinia(createPinia())
-            const selection = useAssetSelection()
             const store = useAssetSelectionStore()
 
             const initialIds = new Set(initialAssets.map((a) => a.id))
             store.setSelection([...initialIds])
 
-            selection.reconcileSelection(visibleAssets)
+            store.reconcileSelection(visibleAssets)
 
             for (const id of store.selectedAssetIds) {
               expect(initialIds.has(id)).toBe(true)
@@ -94,13 +70,12 @@ describe('useAssetSelection properties', () => {
       fc.assert(
         fc.property(arbAssets(1, 15), (assets) => {
           setActivePinia(createPinia())
-          const selection = useAssetSelection()
           const store = useAssetSelectionStore()
 
           const selectedIds = assets.map((a) => a.id)
           store.setSelection(selectedIds)
 
-          selection.reconcileSelection(assets)
+          store.reconcileSelection(assets)
 
           expect(store.selectedAssetIds.size).toBe(selectedIds.length)
         })
@@ -111,11 +86,10 @@ describe('useAssetSelection properties', () => {
       fc.assert(
         fc.property(arbAssets(1, 15), (initialAssets) => {
           setActivePinia(createPinia())
-          const selection = useAssetSelection()
           const store = useAssetSelectionStore()
 
           store.setSelection(initialAssets.map((a) => a.id))
-          selection.reconcileSelection([])
+          store.reconcileSelection([])
 
           expect(store.selectedAssetIds.size).toBe(0)
         })
@@ -128,10 +102,10 @@ describe('useAssetSelection properties', () => {
       fc.assert(
         fc.property(arbAssets(0, 20), (assets) => {
           setActivePinia(createPinia())
-          const selection = useAssetSelection()
+          const store = useAssetSelectionStore()
 
-          selection.selectAll(assets)
-          const selected = selection.getSelectedAssets(assets)
+          store.selectAll(assets)
+          const selected = store.getSelectedAssets(assets)
 
           expect(selected.length).toBe(assets.length)
         })
@@ -162,8 +136,8 @@ describe('useAssetSelection properties', () => {
       fc.assert(
         fc.property(arbAssetWithMeta, (asset) => {
           setActivePinia(createPinia())
-          const selection = useAssetSelection()
-          expect(selection.getOutputCount(asset)).toBeGreaterThanOrEqual(1)
+          const store = useAssetSelectionStore()
+          expect(store.getOutputCount(asset)).toBeGreaterThanOrEqual(1)
         })
       )
     })
@@ -189,8 +163,8 @@ describe('useAssetSelection properties', () => {
       fc.assert(
         fc.property(fc.array(arbAssetWithMeta, { maxLength: 20 }), (assets) => {
           setActivePinia(createPinia())
-          const selection = useAssetSelection()
-          expect(selection.getTotalOutputCount(assets)).toBeGreaterThanOrEqual(
+          const store = useAssetSelectionStore()
+          expect(store.getTotalOutputCount(assets)).toBeGreaterThanOrEqual(
             assets.length
           )
         })
