@@ -6021,12 +6021,9 @@ const translations = {
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
   'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
-  // MiniMax commercial license page (/minimax/license) — staged for the
-  // exclusive-reseller announcement; eyebrow and meta drop "Coming soon" on
-  // announcement day.
   'minimaxLicense.meta.title': {
-    en: 'MiniMax Commercial License on Comfy — Coming Soon',
-    'zh-CN': 'Comfy 上的 MiniMax 商业许可 — 即将推出'
+    en: 'MiniMax Commercial License on Comfy',
+    'zh-CN': 'Comfy 上的 MiniMax 商业许可'
   },
   'minimaxLicense.meta.description': {
     en: 'Get a MiniMax commercial license through Comfy, the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus Audio & Music. Full commercial rights to your outputs, LoRA training included.',
@@ -6041,7 +6038,6 @@ const translations = {
     en: 'Updated August 2026',
     'zh-CN': '更新于 2026 年 8 月'
   },
-  'minimaxLicense.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
   'minimaxLicense.hero.title': {
     en: 'MiniMax\nCommercial License',
     'zh-CN': 'MiniMax 商业许可'

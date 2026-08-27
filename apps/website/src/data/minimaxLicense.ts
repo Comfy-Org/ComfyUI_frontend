@@ -13,11 +13,6 @@ const HERO_POSTER_SRC = '/videos/minimax-license/hero-poster.jpg'
 const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
 
-// Staged ahead of the MiniMax reseller agreement being signed. If an approved
-// short sizzle lands, set hero.videoSrc (+ mobileFallbackImageSrc for phones)
-// and the overlay plays it behind the scrim in place of the backdrop. On
-// announcement day, retire the `minimaxLicense.hero.eyebrow` "Coming soon"
-// label or reword it.
 export const minimaxLicensePage: ModelLaunchPage = {
   metaTitleKey: 'minimaxLicense.meta.title',
   metaDescriptionKey: 'minimaxLicense.meta.description',
@@ -28,7 +23,6 @@ export const minimaxLicensePage: ModelLaunchPage = {
     videoSrc: HERO_VIDEO_SRC,
     posterSrc: HERO_POSTER_SRC,
     mobileFallbackImageSrc: HERO_POSTER_SRC,
-    eyebrowKey: 'minimaxLicense.hero.eyebrow',
     titleKey: 'minimaxLicense.hero.title',
     descriptionKey: 'minimaxLicense.hero.description',
     primaryCta: {

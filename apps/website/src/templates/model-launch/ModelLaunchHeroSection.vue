@@ -55,7 +55,7 @@ const isContentFirst = hero.layout === 'content-first'
         aria-hidden="true"
         width="1440"
         height="810"
-        :class="cn('w-full object-cover', OVERLAY_CELL, 'size-full')"
+        :class="cn('z-0 w-full object-cover', OVERLAY_CELL, 'size-full')"
       />
 
       <div v-if="hero.videoSrc" :class="cn('relative', OVERLAY_CELL)">
@@ -73,6 +73,7 @@ const isContentFirst = hero.layout === 'content-first'
           v-else-if="showMobileVideo"
           :locale
           :src="hero.mobileVideoSrc"
+          :poster="hero.posterSrc"
           autoplay
           loop
           mute-only
@@ -209,7 +210,7 @@ const isContentFirst = hero.layout === 'content-first'
       "
     >
       <h1
-        class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl/tight"
+        class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
       >
         {{ t(hero.titleKey, locale)
         }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
