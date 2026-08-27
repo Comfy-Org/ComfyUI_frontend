@@ -250,7 +250,7 @@ describe('drawConnections', () => {
     ])
   })
 
-  it('uses the new graph render order when onRender swaps graphs', () => {
+  it('defers a graph swap in onRender until its background can be drawn', () => {
     const oldSource = new LGraphNode('Old source')
     oldSource.addOutput('out', 'STRING')
     graph.add(oldSource)
@@ -267,8 +267,7 @@ describe('drawConnections', () => {
     newTarget.addInput('in', 'STRING')
     newGraph.add(newTarget)
     createTestLink(newGraph, newSource, 0, newTarget, 0)
-    newGraph.config.links_ontop = true
-
+    const oldTargetPosition = vi.spyOn(oldTarget, 'getInputPos')
     const newTargetPosition = vi.spyOn(newTarget, 'getInputPos')
     vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
     const drawNode = vi.spyOn(canvas, 'drawNode').mockImplementation(() => {})
@@ -277,6 +276,15 @@ describe('drawConnections', () => {
 
     canvas.draw(true, true)
 
+    expect(oldTargetPosition).toHaveBeenCalled()
+    expect(newTargetPosition).not.toHaveBeenCalled()
+    expect(drawNode).not.toHaveBeenCalled()
+
+    oldTargetPosition.mockClear()
+    drawNode.mockClear()
+    canvas.draw(true, true)
+
+    expect(oldTargetPosition).not.toHaveBeenCalled()
     expect(newTargetPosition).toHaveBeenCalled()
     expect(drawNode.mock.calls.map(([node]) => node)).toEqual([
       newSource,

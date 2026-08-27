@@ -5188,21 +5188,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // rendering
     this.onRender?.(canvas, ctx)
 
-    const graphForContent = this.graph
-    if (
-      graphAfterBackground !== nodesGraph ||
-      graphForContent !== graphAfterBackground
-    ) {
-      nodesInFrameOrder = graphForContent
-        ? nodesInRenderOrder(graphForContent)
-        : undefined
-      if (graphForContent) {
-        this.ds.computeVisibleArea(this.viewport)
-        this.computeVisibleNodes(nodesInFrameOrder, this.visible_nodes)
-        this._visible_node_ids = new Set(
-          this.visible_nodes.map((node) => node.id)
-        )
-      }
+    const graphForContent =
+      this.graph === graphAfterBackground ? graphAfterBackground : null
+    if (graphAfterBackground !== nodesGraph && graphForContent) {
+      nodesInFrameOrder = nodesInRenderOrder(graphForContent)
+      this.ds.computeVisibleArea(this.viewport)
+      this.computeVisibleNodes(nodesInFrameOrder, this.visible_nodes)
+      this._visible_node_ids = new Set(
+        this.visible_nodes.map((node) => node.id)
+      )
     }
 
     // info widget
