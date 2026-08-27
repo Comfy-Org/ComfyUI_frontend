@@ -11,7 +11,8 @@ export function syncSlotOffsets(
   nodeId: NodeId
 ): void {
   const nodeElement = element.closest<HTMLElement>('[data-node-id]') ?? element
-  const mode = getSlotOffsetMode(nodeElement)
+  const mode: SlotOffsetMode =
+    nodeElement.dataset.collapsed === undefined ? 'expanded' : 'collapsed'
   const slotElements =
     nodeElement.querySelectorAll<HTMLElement>('[data-slot-key]')
   if (slotElements.length === 0) {
@@ -25,59 +26,29 @@ export function syncSlotOffsets(
     : 0
   if (scale <= 0) return
 
-  const offsets = Array.from(slotElements).flatMap((slotElement) => {
-    const offset = measureSlotOffset({
-      slotElement,
-      nodeId,
-      nodeRect,
-      nodeWidth: nodeElement.offsetWidth,
-      scale,
-      mode
+  const offsets: SlotOffset[] = []
+  for (const slotElement of slotElements) {
+    const slotId = parseSlotId(slotElement.dataset.slotKey ?? '')
+    if (!slotId || slotId.nodeId !== nodeId) continue
+
+    const slotRect = slotElement.getBoundingClientRect()
+    if (slotRect.width <= 0 || slotRect.height <= 0) continue
+
+    offsets.push({
+      index: slotId.index,
+      type: slotId.direction,
+      position: {
+        x:
+          mode === 'collapsed'
+            ? (slotRect.left + slotRect.width / 2 - nodeRect.x) / scale
+            : slotId.direction === 'input'
+              ? 0
+              : nodeElement.offsetWidth,
+        y:
+          (slotRect.top + slotRect.height / 2 - nodeRect.y) / scale -
+          LiteGraph.NODE_TITLE_HEIGHT
+      }
     })
-    return offset ? [offset] : []
-  })
-  layoutStore.updateNodeSlotOffsets(graphId, nodeId, offsets, mode)
-}
-
-function getSlotOffsetMode(nodeElement: HTMLElement): SlotOffsetMode {
-  return nodeElement.dataset.collapsed !== undefined ? 'collapsed' : 'expanded'
-}
-
-function measureSlotOffset({
-  slotElement,
-  nodeId,
-  nodeRect,
-  nodeWidth,
-  scale,
-  mode
-}: {
-  slotElement: HTMLElement
-  nodeId: NodeId
-  nodeRect: DOMRectReadOnly
-  nodeWidth: number
-  scale: number
-  mode: SlotOffsetMode
-}): SlotOffset | null {
-  const slotId = parseSlotId(slotElement.dataset.slotKey ?? '')
-  if (!slotId || slotId.nodeId !== nodeId) return null
-
-  const slotRect = slotElement.getBoundingClientRect()
-  if (slotRect.width <= 0 || slotRect.height <= 0) return null
-
-  const centerX = (slotRect.left + slotRect.width / 2 - nodeRect.x) / scale
-  return {
-    index: slotId.index,
-    type: slotId.direction,
-    position: {
-      x:
-        mode === 'collapsed'
-          ? centerX
-          : slotId.direction === 'input'
-            ? 0
-            : nodeWidth,
-      y:
-        (slotRect.top + slotRect.height / 2 - nodeRect.y) / scale -
-        LiteGraph.NODE_TITLE_HEIGHT
-    }
   }
+  layoutStore.updateNodeSlotOffsets(graphId, nodeId, offsets, mode)
 }
