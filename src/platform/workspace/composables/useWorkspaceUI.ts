@@ -169,7 +169,12 @@ function useWorkspaceUIInternal() {
   )
 
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { canReactivate, canSubscribeSelfServe } = useBillingCapabilities()
+  const {
+    canReactivate,
+    canSubscribeSelfServe,
+    isReady: capabilitiesReady,
+    readUnavailable: capabilityReadUnavailable
+  } = useBillingCapabilities()
 
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(
@@ -196,17 +201,31 @@ function useWorkspaceUIInternal() {
       : permissions.value.canManageSubscriptionLifecycle
   )
 
+  // A snapshot still loading, or one the client could not read, carries no
+  // answer about this workspace. `denied` does: the server answered about this
+  // actor, so it is usable and closes the surface.
+  const capabilitySnapshotUsable = computed(
+    () => capabilitiesReady.value && !capabilityReadUnavailable.value
+  )
+
   // Whether the self-serve pricing catalog applies to this workspace at all.
   // The server resolves can_subscribe_self_serve false for sales-managed tiers
   // (Enterprise, unrecognized), so every pricing-table entry point — menu
   // items, settings links, and the ?pricing= deep link — reads this one value.
   // Same rail split as canReactivatePlan: legacy_stripe has no capability
   // projection row and stays on the membership check.
-  const canOpenPricingSurface = computed(() =>
-    isCloud && shouldUseWorkspaceBilling.value
+  //
+  // Opening the catalog is navigation, not a billing write — every checkout
+  // endpoint enforces its own policy — so an absent snapshot falls back to
+  // membership rather than stranding a self-serve owner with no route to a
+  // plan. This mirrors canTopUp, which already fails open for owners.
+  const canOpenPricingSurface = computed(() => {
+    if (!isCloud || !shouldUseWorkspaceBilling.value)
+      return permissions.value.canManageSubscription
+    return capabilitySnapshotUsable.value
       ? canSubscribeSelfServe.value
       : permissions.value.canManageSubscription
-  )
+  })
 
   const uiConfig = computed<WorkspaceUIConfig>(() => {
     const base = getUIConfig(workspaceType.value, workspaceRole.value)

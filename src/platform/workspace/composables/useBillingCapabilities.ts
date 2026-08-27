@@ -416,6 +416,7 @@ function useBillingCapabilitiesInternal() {
     canInviteMembers,
     canDowngradeToPersonal,
     isReady,
+    readUnavailable: readUnavailableForCurrentScope,
     initialize,
     refresh
   }
