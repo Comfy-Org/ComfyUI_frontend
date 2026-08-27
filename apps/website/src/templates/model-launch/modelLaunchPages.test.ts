@@ -28,9 +28,11 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
 const VIDEO_URL = /^https:\/\/media\.comfy\.org\/.+\.(webm|mp4)$/
 const IMAGE_URL = /^https:\/\/media\.comfy\.org\/.+\.(webp|png|jpe?g)$/
 const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
-// Hero stills may also ship from public/ as a root-relative path.
+// Hero media may also ship from public/ as a root-relative path.
 const HERO_STILL_URL =
   /^(https:\/\/media\.comfy\.org\/|\/)[\w./-]+\.(webp|png|jpe?g)$/
+const HERO_VIDEO_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/)[\w./-]+\.(webm|mp4)$/
 
 describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
@@ -124,7 +126,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
 
   it('serves media matching its declared kind', () => {
     if (page.hero.videoSrc !== undefined) {
-      expect(page.hero.videoSrc).toMatch(VIDEO_URL)
+      expect(page.hero.videoSrc).toMatch(HERO_VIDEO_URL)
     }
     if (page.hero.posterSrc !== undefined) {
       expect(page.hero.posterSrc).toMatch(IMAGE_URL)

@@ -2,9 +2,10 @@ import type { ModelLaunchPage } from '../templates/model-launch/types'
 
 import { minimaxLinks } from './minimax'
 
-// The license-page key art (dark H3 neon-city render), served from public/ so
-// it ships with the page; a matching hero.mp4 is staged in the same folder on
-// the team deployment for the later short-video swap.
+// The license-page hero loop and its phone still (dark H3 renders), served
+// from public/ so they ship with the page. Phones render the still and never
+// fetch the video, same as /minimax-h3.
+const HERO_VIDEO_SRC = '/videos/minimax-license/hero.mp4'
 const HERO_POSTER_SRC = '/videos/minimax-license/hero-poster.jpg'
 
 // CTA hrefs in this config must be absolute (modelLaunchPages.test.ts), so the
@@ -24,7 +25,8 @@ export const minimaxLicensePage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'minimaxLicense.breadcrumb.updated',
   hero: {
     layout: 'overlay',
-    placeholderImageSrc: HERO_POSTER_SRC,
+    videoSrc: HERO_VIDEO_SRC,
+    mobileFallbackImageSrc: HERO_POSTER_SRC,
     eyebrowKey: 'minimaxLicense.hero.eyebrow',
     titleKey: 'minimaxLicense.hero.title',
     descriptionKey: 'minimaxLicense.hero.description',
