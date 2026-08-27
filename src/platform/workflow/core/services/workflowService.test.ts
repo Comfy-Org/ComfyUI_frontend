@@ -11,7 +11,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  resetWorkflowLoadQueueForTests,
+  useWorkflowService
+} from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -177,8 +180,16 @@ function enableWarningSettings() {
 
 describe('useWorkflowService', () => {
   beforeEach(() => {
+    resetWorkflowLoadQueueForTests()
     draftStoreMocks.saveDraft.mockReturnValue(true)
     subgraphNavigationMocks.navigationIntentId = 0
+  })
+
+  afterEach(() => {
+    // A leak here means a test left a load pending or a close unbalanced -
+    // fail at the origin instead of as a timeout three tests later.
+    const drained = resetWorkflowLoadQueueForTests()
+    expect(drained).toEqual({ pendingLoads: 0, closingCount: 0 })
   })
 
   describe('showPendingWarnings', () => {
@@ -289,7 +300,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
     })
 
-    it('does not suppress a root change for a clean-false load', () => {
+    it('forwards the clean flag to saveCurrentViewport', () => {
       workflowStore.activeWorkflow = createModeTestWorkflow()
 
       useWorkflowService().beforeLoadNewGraph(false)
@@ -435,6 +446,62 @@ describe('useWorkflowService', () => {
   })
 
   describe('openWorkflow ordering', () => {
+    it('re-selecting the active workflow with no loads pending is a no-op', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/active-noop.json'
+      })
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      const service = useWorkflowService()
+
+      await service.openWorkflow(active)
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+
+      await service.openWorkflow(active, { force: true })
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    })
+
+    it('re-opens a workflow normally once its close has settled', async () => {
+      const workflowStore = useWorkflowStore()
+      const cycled = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/close-then-reopen.json'
+      })
+      Object.defineProperty(cycled, 'unload', { value: vi.fn() })
+      const service = useWorkflowService()
+
+      await expect(
+        service.closeWorkflow(cycled, { warnIfUnsaved: false })
+      ).resolves.toBe(true)
+
+      workflowStore.activeWorkflow = null
+      await service.openWorkflow(cycled)
+
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(app.loadGraphData).mock.calls[0][3]).toBe(cycled)
+    })
+
+    it('falls back to the default workflow when closing the last, inactive workflow', async () => {
+      const workflowStore = useWorkflowStore()
+      const lastOpen = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/last-inactive.json'
+      })
+      Object.defineProperty(lastOpen, 'unload', { value: vi.fn() })
+      workflowStore.attachWorkflow(lastOpen, 0)
+      workflowStore.activeWorkflow = null
+      const service = useWorkflowService()
+
+      await expect(
+        service.closeWorkflow(lastOpen, { warnIfUnsaved: false })
+      ).resolves.toBe(true)
+
+      // loadDefaultWorkflow drives loadGraphData with no workflow argument.
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(app.loadGraphData).mock.calls[0][3]).toBeUndefined()
+    })
+
     it('serializes rapid workflow opens so the final selection stays active', async () => {
       const workflowStore = useWorkflowStore()
       const first = createWorkflow(null, {

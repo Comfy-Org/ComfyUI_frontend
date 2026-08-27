@@ -2094,7 +2094,9 @@ export class ComfyApp {
     if (parameters && typeof parameters === 'string') {
       const outcome = await importA1111(this.rootGraph, parameters, () => {
         try {
-          useWorkflowService().beforeLoadNewGraph()
+          // false: this reset is the final destination - no workflow load
+          // follows to republish the hash, so suppression must not arm.
+          useWorkflowService().beforeLoadNewGraph(false)
         } finally {
           useMissingNodesErrorStore().setMissingNodeTypes([])
         }
@@ -2260,7 +2262,8 @@ export class ComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
-    useWorkflowService().beforeLoadNewGraph()
+    // false: no workflow load follows to republish the hash.
+    useWorkflowService().beforeLoadNewGraph(false)
     this.canvas.setGraph(this.rootGraph)
     this.clean()
 

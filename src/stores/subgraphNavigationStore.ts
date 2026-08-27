@@ -229,10 +229,10 @@ export const useSubgraphNavigationStore = defineStore(
     let blockedRouteHash: string | undefined
     let pendingWorkflowResetGraph: typeof app.rootGraph | undefined
 
-    const createNavigationIntent = (
+    function createNavigationIntent(
       hash: string,
       source: GraphNavigationIntent['source']
-    ): GraphNavigationIntent => {
+    ): GraphNavigationIntent {
       const intent = { id: ++navigationIntentId, hash, source }
       latestNavigationIntent = intent
       return intent
@@ -246,10 +246,10 @@ export const useSubgraphNavigationStore = defineStore(
 
     async function withNavBlocked<T>(
       op: () => Promise<T>,
-      routeHash: string
+      blockedHash: string
     ): Promise<T> {
       const previousBlockedRouteHash = blockedRouteHash
-      blockedRouteHash = routeHash
+      blockedRouteHash = blockedHash
       blockNavDepth++
       try {
         return await op()

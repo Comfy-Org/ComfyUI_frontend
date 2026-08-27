@@ -54,6 +54,22 @@ let pendingWorkflowLoads = 0
 const pendingWorkflowLoadsByPath = new Map<string, Promise<void>>()
 const closingWorkflowCounts = new Map<string, number>()
 
+/** @internal Test-only: clears the module-level load queue between tests. */
+export function resetWorkflowLoadQueueForTests(): {
+  pendingLoads: number
+  closingCount: number
+} {
+  const drained = {
+    pendingLoads: pendingWorkflowLoads,
+    closingCount: closingWorkflowCounts.size
+  }
+  workflowLoadTail = Promise.resolve()
+  pendingWorkflowLoads = 0
+  pendingWorkflowLoadsByPath.clear()
+  closingWorkflowCounts.clear()
+  return drained
+}
+
 function queueWorkflowLoad(
   load: () => Promise<void>,
   workflowPath?: string
@@ -61,7 +77,12 @@ function queueWorkflowLoad(
   pendingWorkflowLoads++
   const result = workflowLoadTail.then(load)
   const settledResult = result
-    .catch(() => undefined)
+    .catch((error) => {
+      // The internal chain marks `result` handled; keep failures observable
+      // for fire-and-forget callers.
+      console.error('[workflowService] queued workflow load failed', error)
+      return undefined
+    })
     .finally(() => {
       pendingWorkflowLoads--
       if (
@@ -378,14 +399,18 @@ export const useWorkflowService = () => {
       }
     }
 
+    // Captured once: a rename mid-close mutates workflow.path in place, and
+    // a live re-read in the finally would strand the old key forever.
+    const closingPath = workflow.path
+    const isLastOpenWorkflow = workflowStore.openWorkflows.length === 1
     closingWorkflowCounts.set(
-      workflow.path,
-      (closingWorkflowCounts.get(workflow.path) ?? 0) + 1
+      closingPath,
+      (closingWorkflowCounts.get(closingPath) ?? 0) + 1
     )
     try {
-      workflowDraftStore.removeDraft(workflow.path)
+      workflowDraftStore.removeDraft(closingPath)
       const wasActive = workflowStore.isActive(workflow)
-      const pendingWorkflowLoad = pendingWorkflowLoadsByPath.get(workflow.path)
+      const pendingWorkflowLoad = pendingWorkflowLoadsByPath.get(closingPath)
       if (!wasActive && pendingWorkflowLoad) await pendingWorkflowLoad
       if (
         wasActive ||
@@ -421,17 +446,19 @@ export const useWorkflowService = () => {
         } else {
           await queueWorkflowLoad(loadDefaultWorkflow)
         }
+      } else if (isLastOpenWorkflow) {
+        await queueWorkflowLoad(loadDefaultWorkflow)
       }
 
       await workflowStore.closeWorkflow(workflow)
-      useNodeOutputStore().discardPreviewsForWorkflow(workflow.path)
+      useNodeOutputStore().discardPreviewsForWorkflow(closingPath)
       return true
     } finally {
-      const remainingCloses = closingWorkflowCounts.get(workflow.path) ?? 0
+      const remainingCloses = closingWorkflowCounts.get(closingPath) ?? 0
       if (remainingCloses <= 1) {
-        closingWorkflowCounts.delete(workflow.path)
+        closingWorkflowCounts.delete(closingPath)
       } else {
-        closingWorkflowCounts.set(workflow.path, remainingCloses - 1)
+        closingWorkflowCounts.set(closingPath, remainingCloses - 1)
       }
     }
   }

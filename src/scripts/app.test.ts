@@ -332,6 +332,28 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('suppresses the workflow reset for a default clean load', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData())
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(true)
+      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        undefined
+      )
+    })
+
+    it('never suppresses the workflow reset for an API JSON import', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadApiJson({}, 'empty.json').catch(() => undefined)
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
+    })
+
     it('notifies extensions on both sides of a graph load', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
