@@ -19,11 +19,14 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
       class="text-agent-accent icon-[heroicons--information-circle-20-solid] size-5 shrink-0"
     />
     <p class="text-agent-fg my-0 min-w-0 flex-1 text-sm font-medium">
-      {{
-        workflowName
-          ? $t('agent.workflowEditNotice', { workflow: workflowName })
-          : $t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice')
-      }}
+      <i18n-t v-if="workflowName" keypath="agent.workflowEditNotice" tag="span">
+        <template #workflow>
+          <span class="underline decoration-solid">{{ workflowName }}</span>
+        </template>
+      </i18n-t>
+      <template v-else>
+        {{ $t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice') }}
+      </template>
     </p>
     <button
       type="button"
