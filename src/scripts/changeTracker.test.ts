@@ -12,6 +12,7 @@ import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -130,6 +131,20 @@ function mockCanvasState(state: ComfyWorkflowJSON) {
   vi.mocked(app.rootGraph.serialize).mockReturnValue(state as never)
 }
 
+function registerLayoutOnlyNodeType(nodeType: string) {
+  useNodeDefStore().addNodeDef({
+    name: nodeType,
+    display_name: nodeType,
+    category: 'test',
+    description: '',
+    input: {},
+    output: [],
+    output_node: false,
+    layout_only: true,
+    python_module: 'test'
+  })
+}
+
 function dispatchedEventNames() {
   return vi.mocked(api.dispatchCustomEvent).mock.calls.map(([event]) => event)
 }
@@ -222,6 +237,7 @@ describe('ChangeTracker', () => {
     mockWorkflowStore.activeWorkflow = null
     mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
     mockCanvasState(createState())
+    useNodeDefStore().updateNodeDefs(Object.values(SYSTEM_NODE_DEFS))
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
     app.ui.autoQueueMode = 'instant'
@@ -1087,6 +1103,108 @@ describe('ChangeTracker', () => {
           expectAutoQueueGraphChangedNotDispatched()
         }
       )
+
+      it('ignores declared layout-only nodes and their v0.4 links', () => {
+        const nodeType = 'LayoutFrame'
+        registerLayoutOnlyNodeType(nodeType)
+        const initial = createState(2)
+        initial.nodes[0].type = nodeType
+        initial.nodes[0].widgets_values = ['Initial content']
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = ['Updated content']
+        changed.links = [
+          [1, changed.nodes[0].id, 0, changed.nodes[1].id, 0, '*']
+        ]
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('ignores declared layout-only nodes and their v1 links', async () => {
+        const nodeType = 'LayoutFrameV1'
+        registerLayoutOnlyNodeType(nodeType)
+        const base = createState(2)
+        base.nodes[0].type = nodeType
+        base.nodes[0].widgets_values = ['Initial content']
+        const initial = await requireValidWorkflow({
+          ...base,
+          version: 1,
+          state: {
+            lastGroupId: 0,
+            lastNodeId: base.last_node_id,
+            lastLinkId: 0,
+            lastRerouteId: 0
+          },
+          links: []
+        })
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = ['Updated content']
+        changed.links = [
+          {
+            id: 1,
+            origin_id: changed.nodes[0].id,
+            origin_slot: 0,
+            target_id: changed.nodes[1].id,
+            target_slot: 0,
+            type: '*'
+          }
+        ]
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('keeps undeclared outputless node types execution-relevant', () => {
+        const initial = createState(1)
+        initial.nodes[0].type = 'UnknownLayoutFrame'
+        initial.nodes[0].widgets_values = ['Initial content']
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = ['Updated content']
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
+
+      it('filters layout-only nodes and links inside subgraph definitions', async () => {
+        const nodeType = 'NestedLayoutFrame'
+        registerLayoutOnlyNodeType(nodeType)
+        const initial = await createSubgraphState()
+        const initialSubgraph = getSubgraphDefinition(initial)
+        initialSubgraph.nodes[0].type = nodeType
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        const changedSubgraph = getSubgraphDefinition(changed)
+        changedSubgraph.nodes[0].widgets_values = ['Updated content']
+        changedSubgraph.links?.pop()
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
 
       it('clears redoQueue on new change', () => {
         const tracker = createTracker(createState(1))

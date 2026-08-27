@@ -5,6 +5,22 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 describe('NodeDef Migration', () => {
+  it('preserves layout-only metadata', () => {
+    const result = transformNodeDefV1ToV2({
+      name: 'LayoutNode',
+      display_name: 'Layout Node',
+      category: 'Testing',
+      python_module: 'test_module',
+      description: 'A layout-only node',
+      input: {},
+      output: [],
+      output_node: false,
+      layout_only: true
+    })
+
+    expect(result.layout_only).toBe(true)
+  })
+
   it('should transform a plain object to V2 format', () => {
     const plainObject = {
       required: {

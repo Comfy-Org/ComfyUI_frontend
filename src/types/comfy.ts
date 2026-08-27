@@ -109,6 +109,11 @@ export interface ComfyExtension {
    */
   name: string
   /**
+   * Frontend-only node types whose nodes and incident links never contribute
+   * to execution. Backend and system node definitions cannot be reclassified.
+   */
+  layoutOnlyNodeTypes?: readonly string[]
+  /**
    * The commands defined by the extension
    */
   commands?: ComfyCommand[]

@@ -80,6 +80,7 @@ export function transformNodeDefV1ToV2(
     description: nodeDefV1.description,
     category: nodeDefV1.category,
     output_node: nodeDefV1.output_node,
+    layout_only: nodeDefV1.layout_only,
     python_module: nodeDefV1.python_module,
     deprecated: nodeDefV1.deprecated,
     experimental: nodeDefV1.experimental

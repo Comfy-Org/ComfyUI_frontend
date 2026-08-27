@@ -41,6 +41,8 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -1132,6 +1134,44 @@ describe('ComfyApp', () => {
   })
 
   describe('workflow lifecycle', () => {
+    it('validates layout-only declarations after node definition hooks', () => {
+      const nodeType = 'test/LayoutOnlyHookOrdering'
+      class LayoutOnlyHookOrdering extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, LayoutOnlyHookOrdering)
+      useExtensionStore().registerExtension({
+        name: 'test.layout-only-hook-ordering',
+        layoutOnlyNodeTypes: [nodeType]
+      })
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      mockExtensionService.invokeExtensions.mockImplementation(
+        (hook: string, nodeDefs: ComfyNodeDef[]) => {
+          if (hook === 'beforeRegisterVueAppNodeDefs') {
+            const nodeDef = nodeDefs.find((value) => value.name === nodeType)
+            if (!nodeDef)
+              throw new Error('frontend-only node definition missing')
+            nodeDef.output = ['*']
+          }
+          return []
+        }
+      )
+
+      try {
+        const updateNodeDefs = Reflect.get(app, 'updateVueAppNodeDefs')
+        if (typeof updateNodeDefs !== 'function') {
+          throw new Error('node definition updater missing')
+        }
+        updateNodeDefs.call(app, {})
+
+        expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('final node definition has outputs')
+        )
+      } finally {
+        warn.mockRestore()
+        LiteGraph.unregisterNodeType(nodeType)
+      }
+    })
+
     it('clears missing node packs before loading API JSON without missing nodes', async () => {
       const graph = new LGraph()
       const activeSubgraph = createTestSubgraph({ rootGraph: graph })

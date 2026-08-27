@@ -82,6 +82,7 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
+import { applyLayoutOnlyNodeTypes } from '@/services/layoutOnlyNodeTypes'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -1110,13 +1111,22 @@ export class ComfyApp {
       ...SYSTEM_NODE_DEFS
     }
 
-    const nodeDefStore = useNodeDefStore()
     const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
     useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
       nodeDefArray
     )
-    nodeDefStore.updateNodeDefs(nodeDefArray)
+    const declaredLayoutOnlyNodeTypes = new Set(
+      useExtensionStore().enabledExtensions.flatMap(
+        (extension) => extension.layoutOnlyNodeTypes ?? []
+      )
+    )
+    const classifiedNodeDefs = applyLayoutOnlyNodeTypes(
+      nodeDefArray,
+      new Set(Object.keys(frontendOnlyDefs)),
+      declaredLayoutOnlyNodeTypes
+    )
+    useNodeDefStore().updateNodeDefs(classifiedNodeDefs)
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {

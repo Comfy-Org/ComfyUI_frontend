@@ -27,6 +27,13 @@ describe('validateNodeDef', () => {
     expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })
 
+  it('preserves layout-only metadata', () => {
+    expect(
+      validateComfyNodeDef({ ...EXAMPLE_NODE_DEF, layout_only: true })
+        ?.layout_only
+    ).toBe(true)
+  })
+
   describe.for([
     [{ ckpt_name: ['foo', { default: 1 }] }, ['foo', { default: 1 }]],
     [{ ckpt_name: ['foo', { bar: 1 }] }, ['foo', { bar: 1 }]],

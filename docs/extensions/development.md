@@ -132,6 +132,27 @@ For cloud extensions, modify `.env`:
 DEV_SERVER_COMFYUI_URL=https://stagingcloud.comfy.org/
 ```
 
+## Declaring Layout-Only Frontend Node Types
+
+An extension can identify a whole frontend-only node type as editor-only:
+
+```javascript
+app.registerExtension({
+  name: 'example.layout-nodes',
+  layoutOnlyNodeTypes: ['ExampleLayoutFrame']
+})
+```
+
+Run on Change then ignores those nodes and their incident links when deciding
+whether to queue the workflow. Use this only when every instance of the type is
+purely presentational and can never affect execution.
+
+Declarations apply during startup and node-definition reloads. They are
+accepted only for node types synthesized by the frontend because no backend or
+system definition exists. Unknown and undeclared types remain
+execution-relevant. A final node definition with outputs or `output_node: true`
+is also kept execution-relevant and produces a warning.
+
 ## Key Points
 
 - Python nodes work normally in dev mode

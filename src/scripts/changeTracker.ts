@@ -11,10 +11,12 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { serializeNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
@@ -85,7 +87,8 @@ const nonExecutionSlotProperties = new Set([
 ])
 
 const nonExecutionBoundaryNodeProperties = new Set(['bounding', 'pinned'])
-const nonExecutableNodeTypes = new Set(['Note', 'MarkdownNote'])
+
+type IsLayoutOnlyNodeType = (nodeType: string) => boolean
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -157,10 +160,14 @@ function getExecutionLinkState(value: unknown): unknown {
   ]
 }
 
-function normalizeNodeId(value: unknown): unknown {
+function asSerializedNodeId(value: unknown): SerializedNodeId | null {
   return typeof value === 'number' || typeof value === 'string'
     ? serializeNodeId(value)
-    : value
+    : null
+}
+
+function normalizeNodeId(value: unknown): unknown {
+  return asSerializedNodeId(value) ?? value
 }
 
 function normalizeSlotIndex(value: unknown): unknown {
@@ -170,16 +177,52 @@ function normalizeSlotIndex(value: unknown): unknown {
   return Number.isNaN(index) ? value : index
 }
 
-function isExecutableNodeState(value: unknown): boolean {
+function isExecutableNodeState(
+  value: unknown,
+  isLayoutOnlyNodeType: IsLayoutOnlyNodeType
+): boolean {
   const node = asRecord(value)
   return (
-    !node ||
-    typeof node.type !== 'string' ||
-    !nonExecutableNodeTypes.has(node.type)
+    !node || typeof node.type !== 'string' || !isLayoutOnlyNodeType(node.type)
   )
 }
 
-function getExecutionDefinitionsState(value: unknown): unknown {
+function getLayoutOnlyNodeIds(
+  nodes: unknown[],
+  isLayoutOnlyNodeType: IsLayoutOnlyNodeType
+): Set<SerializedNodeId> {
+  const nodeIds = new Set<SerializedNodeId>()
+  for (const value of nodes) {
+    const node = asRecord(value)
+    if (!node || typeof node.type !== 'string') continue
+    if (!isLayoutOnlyNodeType(node.type)) continue
+    const nodeId = asSerializedNodeId(node.id)
+    if (nodeId !== null) nodeIds.add(nodeId)
+  }
+  return nodeIds
+}
+
+function isIncidentToNode(
+  value: unknown,
+  nodeIds: ReadonlySet<SerializedNodeId>
+): boolean {
+  const link = asRecord(value)
+  const originId = asSerializedNodeId(
+    Array.isArray(value) ? value[1] : link?.origin_id
+  )
+  const targetId = asSerializedNodeId(
+    Array.isArray(value) ? value[3] : link?.target_id
+  )
+  return (
+    (originId !== null && nodeIds.has(originId)) ||
+    (targetId !== null && nodeIds.has(targetId))
+  )
+}
+
+function getExecutionDefinitionsState(
+  value: unknown,
+  isLayoutOnlyNodeType: IsLayoutOnlyNodeType
+): unknown {
   const definitions = asRecord(value)
   if (!definitions || !Array.isArray(definitions.subgraphs)) return value
 
@@ -188,24 +231,34 @@ function getExecutionDefinitionsState(value: unknown): unknown {
     subgraphs: _.sortBy(
       definitions.subgraphs,
       (subgraph) => asRecord(subgraph)?.id
-    ).map(getExecutionGraphState)
+    ).map((subgraph) => getExecutionGraphState(subgraph, isLayoutOnlyNodeType))
   }
 }
 
-function getExecutionGraphState(value: unknown): unknown {
+function getExecutionGraphState(
+  value: unknown,
+  isLayoutOnlyNodeType: IsLayoutOnlyNodeType
+): unknown {
   const graph = asRecord(value)
   if (!graph) return value
 
   const executionGraph = omitProperties(graph, nonExecutionGraphProperties)
+  const layoutOnlyNodeIds = Array.isArray(graph.nodes)
+    ? getLayoutOnlyNodeIds(graph.nodes, isLayoutOnlyNodeType)
+    : new Set<SerializedNodeId>()
   if (Array.isArray(graph.nodes)) {
     executionGraph.nodes = _.sortBy(
-      graph.nodes.filter(isExecutableNodeState).map(getExecutionNodeState),
+      graph.nodes
+        .filter((node) => isExecutableNodeState(node, isLayoutOnlyNodeType))
+        .map(getExecutionNodeState),
       (node) => asRecord(node)?.id
     )
   }
   if (Array.isArray(graph.links)) {
     executionGraph.links = _.sortBy(
-      graph.links.map(getExecutionLinkState),
+      graph.links
+        .filter((link) => !isIncidentToNode(link, layoutOnlyNodeIds))
+        .map(getExecutionLinkState),
       (link) => JSON.stringify(link)
     )
   } else if (!('links' in graph)) {
@@ -224,9 +277,23 @@ function getExecutionGraphState(value: unknown): unknown {
     executionGraph.outputNode = getExecutionBoundaryNodeState(graph.outputNode)
   }
   if ('definitions' in graph) {
-    executionGraph.definitions = getExecutionDefinitionsState(graph.definitions)
+    executionGraph.definitions = getExecutionDefinitionsState(
+      graph.definitions,
+      isLayoutOnlyNodeType
+    )
   }
   return executionGraph
+}
+
+function executionStateChanged(
+  previousState: ComfyWorkflowJSON,
+  currentState: ComfyWorkflowJSON
+): boolean {
+  const { isLayoutOnlyNodeType } = useNodeDefStore()
+  return !_.isEqual(
+    getExecutionGraphState(previousState, isLayoutOnlyNodeType),
+    getExecutionGraphState(currentState, isLayoutOnlyNodeType)
+  )
 }
 
 const reportedInactiveCalls = new Set<string>()
@@ -385,10 +452,7 @@ export class ChangeTracker {
     const autoQueueGraphChanged =
       !!previousState &&
       isAutoQueueOnChange() &&
-      !_.isEqual(
-        getExecutionGraphState(previousState),
-        getExecutionGraphState(this.activeState)
-      )
+      executionStateChanged(previousState, this.activeState)
 
     api.dispatchCustomEvent('graphChanged', this.activeState)
     if (autoQueueGraphChanged) {

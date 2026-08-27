@@ -36,6 +36,17 @@ describe('useNodeDefStore', () => {
     ...overrides
   })
 
+  it('queries layout-only node types from registered definitions', () => {
+    store.updateNodeDefs([
+      createMockNodeDef({ name: 'LayoutNode', layout_only: true }),
+      createMockNodeDef({ name: 'ExecutionNode' })
+    ])
+
+    expect(store.isLayoutOnlyNodeType('LayoutNode')).toBe(true)
+    expect(store.isLayoutOnlyNodeType('ExecutionNode')).toBe(false)
+    expect(store.isLayoutOnlyNodeType('UnknownNode')).toBe(false)
+  })
+
   describe('filter registry', () => {
     it('should register a new filter', () => {
       const filter: NodeDefFilter = {

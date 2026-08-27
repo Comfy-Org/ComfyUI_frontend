@@ -48,6 +48,7 @@ export class ComfyNodeDefImpl
   readonly experimental: boolean
   readonly dev_only: boolean
   readonly output_node: boolean
+  readonly layout_only: boolean
   readonly api_node: boolean
   /**
    * @deprecated Use `inputs` instead
@@ -165,6 +166,7 @@ export class ComfyNodeDefImpl
       obj.experimental ?? obj.category.startsWith('_for_testing')
     this.dev_only = obj.dev_only ?? false
     this.output_node = obj.output_node
+    this.layout_only = obj.layout_only ?? false
     this.api_node = !!obj.api_node
     this.input = obj.input ?? {}
     this.output = obj.output ?? []
@@ -266,6 +268,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     output_name: [],
     output_is_list: [],
     output_node: false,
+    layout_only: true,
     python_module: 'nodes',
     description: 'Node that add notes to your project'
   },
@@ -281,6 +284,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     output_name: [],
     output_is_list: [],
     output_node: false,
+    layout_only: true,
     python_module: 'nodes',
     description:
       'Node that add notes to your project. Reformats text as markdown.'
@@ -434,6 +438,9 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
   }
+  function isLayoutOnlyNodeType(nodeType: string): boolean {
+    return nodeDefsByName.value[nodeType]?.layout_only === true
+  }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     const nodeTypeName = node.constructor?.nodeData?.name ?? node.type
     if (!nodeTypeName) return null
@@ -549,6 +556,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
     updateNodeDefs,
     addNodeDef,
+    isLayoutOnlyNodeType,
     fromLGraphNode,
     getInputSpecForWidget,
     registerNodeDefFilter,
