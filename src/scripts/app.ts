@@ -10,6 +10,7 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { applyLayoutOnlyNodeTypes } from '@/core/graph/layoutOnlyNodeTypes'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -82,7 +83,6 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
-import { applyLayoutOnlyNodeTypes } from '@/services/layoutOnlyNodeTypes'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -1083,11 +1083,16 @@ export class ComfyApp {
 
     // Only create frontend_only definitions for nodes that don't have backend definitions
     const frontendOnlyDefs: Record<string, ComfyNodeDefV1> = {}
+    const skippedFrontendOnlyNodeTypes = new Set<string>()
     for (const [name, node] of Object.entries(
       LiteGraph.registered_node_types
     )) {
       // Skip if we already have a backend definition or system definition
-      if (name in defs || name in SYSTEM_NODE_DEFS || node.skip_list) {
+      if (name in defs || name in SYSTEM_NODE_DEFS) {
+        continue
+      }
+      if (node.skip_list) {
+        skippedFrontendOnlyNodeTypes.add(name)
         continue
       }
 
@@ -1112,6 +1117,9 @@ export class ComfyApp {
     }
 
     const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
+    const trustedLayoutOnlyNodeDefs = new Set(
+      nodeDefArray.filter((nodeDef) => nodeDef.layout_only === true)
+    )
     useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
       nodeDefArray
@@ -1121,11 +1129,12 @@ export class ComfyApp {
         (extension) => extension.layoutOnlyNodeTypes ?? []
       )
     )
-    const classifiedNodeDefs = applyLayoutOnlyNodeTypes(
-      nodeDefArray,
-      new Set(Object.keys(frontendOnlyDefs)),
+    const classifiedNodeDefs = applyLayoutOnlyNodeTypes(nodeDefArray, {
+      trustedLayoutOnlyNodeDefs,
+      frontendOnlyNodeTypes: new Set(Object.keys(frontendOnlyDefs)),
+      skippedFrontendOnlyNodeTypes,
       declaredLayoutOnlyNodeTypes
-    )
+    })
     useNodeDefStore().updateNodeDefs(classifiedNodeDefs)
   }
 

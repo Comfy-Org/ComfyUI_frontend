@@ -280,6 +280,17 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
   }
 }
 
+function updateVueAppNodeDefs(
+  app: ComfyApp,
+  defs: Record<string, ComfyNodeDef> = {}
+) {
+  const updateNodeDefs = Reflect.get(app, 'updateVueAppNodeDefs')
+  if (typeof updateNodeDefs !== 'function') {
+    throw new Error('node definition updater missing')
+  }
+  updateNodeDefs.call(app, defs)
+}
+
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
@@ -1134,6 +1145,59 @@ describe('ComfyApp', () => {
   })
 
   describe('workflow lifecycle', () => {
+    it('classifies declared outputless frontend-only node types', () => {
+      const nodeType = 'test/DeclaredLayoutOnlyNode'
+      class DeclaredLayoutOnlyNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, DeclaredLayoutOnlyNode)
+      useExtensionStore().registerExtension({
+        name: 'test.declared-layout-only-node',
+        layoutOnlyNodeTypes: [nodeType]
+      })
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      try {
+        updateVueAppNodeDefs(app)
+
+        expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(true)
+        expect(warn).not.toHaveBeenCalled()
+      } finally {
+        warn.mockRestore()
+        LiteGraph.unregisterNodeType(nodeType)
+      }
+    })
+
+    it('rejects layout-only metadata added by node definition hooks', () => {
+      const nodeType = 'test/HookMutatedBackendNode'
+      const backendNodeDef: ComfyNodeDef = {
+        name: nodeType,
+        display_name: 'Hook Mutated Backend Node',
+        category: 'test',
+        description: '',
+        input: {},
+        output: [],
+        output_node: false,
+        python_module: 'test'
+      }
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      mockExtensionService.invokeExtensions.mockImplementation(
+        (hook: string, nodeDefs: ComfyNodeDef[]) => {
+          if (hook === 'beforeRegisterVueAppNodeDefs') {
+            const nodeDef = nodeDefs.find((value) => value.name === nodeType)
+            if (!nodeDef) throw new Error('backend node definition missing')
+            nodeDef.layout_only = true
+          }
+          return []
+        }
+      )
+
+      updateVueAppNodeDefs(app, { [nodeType]: backendNodeDef })
+
+      expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Ignoring untrusted layout-only metadata')
+      )
+    })
+
     it('validates layout-only declarations after node definition hooks', () => {
       const nodeType = 'test/LayoutOnlyHookOrdering'
       class LayoutOnlyHookOrdering extends LGraphNode {}
@@ -1156,11 +1220,7 @@ describe('ComfyApp', () => {
       )
 
       try {
-        const updateNodeDefs = Reflect.get(app, 'updateVueAppNodeDefs')
-        if (typeof updateNodeDefs !== 'function') {
-          throw new Error('node definition updater missing')
-        }
-        updateNodeDefs.call(app, {})
+        updateVueAppNodeDefs(app)
 
         expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
         expect(warn).toHaveBeenCalledWith(

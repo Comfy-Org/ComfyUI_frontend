@@ -110,7 +110,8 @@ export interface ComfyExtension {
   name: string
   /**
    * Frontend-only node types whose nodes and incident links never contribute
-   * to execution. Backend and system node definitions cannot be reclassified.
+   * to execution. Backend, system, and skip_list node definitions cannot be
+   * reclassified by this declaration.
    */
   layoutOnlyNodeTypes?: readonly string[]
   /**
