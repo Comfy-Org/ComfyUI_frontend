@@ -169,7 +169,7 @@ const titleId = useId()
 const subtitleId = useId()
 const loadingSuggestionId = ref<SuggestionId | null>(null)
 const delayElapsed = ref(false)
-const catalogDecided = ref(false)
+const decidedSuggestions = ref<Suggestion[] | null>(null)
 let reported = false
 
 /**
@@ -178,7 +178,7 @@ let reported = false
  * the `io` metadata the continuation needs. Either way the button would be a
  * dead end found by clicking it, seconds after the user's first success.
  */
-const availableSuggestions = computed(() =>
+const catalogSuggestions = computed(() =>
   nudgeOutput.value === null
     ? []
     : SUGGESTIONS.filter(({ templateId }) => {
@@ -189,6 +189,12 @@ const availableSuggestions = computed(() =>
         )
       })
 )
+const availableSuggestions = computed(() => decidedSuggestions.value ?? [])
+
+function decideSuggestions() {
+  if (decidedSuggestions.value !== null) return
+  decidedSuggestions.value = catalogSuggestions.value
+}
 
 // A run that produced no image, and an install serving none of the
 // continuations, both leave the card with nothing to continue from. Neither is
@@ -207,7 +213,10 @@ const screenIsClear = computed(
  * continuations under the user — and reports a count it never showed.
  */
 const onScreen = computed(
-  () => screenIsClear.value && delayElapsed.value && catalogDecided.value
+  () =>
+    screenIsClear.value &&
+    delayElapsed.value &&
+    decidedSuggestions.value !== null
 )
 
 const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
@@ -219,9 +228,7 @@ const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
 )
 
 const { start: startCatalogWait, stop: stopCatalogWait } = useTimeoutFn(
-  () => {
-    catalogDecided.value = true
-  },
+  decideSuggestions,
   CATALOG_WAIT_MS,
   { immediate: false }
 )
@@ -235,15 +242,21 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
 // its own impression, rather than inheriting the first tour's answers.
 watch(
   nudgeArmed,
-  (armed) => {
+  (armed, _previous, onCleanup) => {
     stopCatalogWait()
-    catalogDecided.value = false
+    decidedSuggestions.value = null
     reported = false
     if (!armed) return
+
+    let active = true
+    onCleanup(() => {
+      active = false
+    })
     startCatalogWait()
     void loadTemplates().finally(() => {
+      if (!active) return
       stopCatalogWait()
-      catalogDecided.value = true
+      decideSuggestions()
     })
   },
   { immediate: true }

@@ -286,9 +286,10 @@ describe('FirstRunTourNudge', () => {
     })
   })
 
-  it('gives up on a stalled catalog rather than withholding the card', async () => {
+  it('freezes the fallback when the catalog resolves after the deadline', async () => {
+    const catalogLoaded = createDeferred<boolean>()
     mocks.catalog.value = []
-    mocks.loadTemplates.mockReturnValueOnce(createDeferred<boolean>().promise)
+    mocks.loadTemplates.mockReturnValueOnce(catalogLoaded.promise)
     mocks.nudgeArmed.value = true
     renderNudge()
 
@@ -304,6 +305,24 @@ describe('FirstRunTourNudge', () => {
       tour: 'firstRun',
       suggestion_count: 0
     })
+
+    mocks.catalog.value = CATALOG_TEMPLATE_IDS
+    catalogLoaded.resolve(true)
+    await catalogLoaded.promise
+    await nextTick()
+
+    expect(
+      screen.queryByRole('button', {
+        name: new RegExp(SUGGESTION_TITLES.animate, 'i')
+      }),
+      'the catalog deadline already decided what the card showed and reported'
+    ).toBeNull()
+    expect(
+      screen.getByText(
+        enMessages.onboardingCoachmarks.firstRun.nudge.fallback.title
+      )
+    ).toBeTruthy()
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledTimes(1)
   })
 
   it('reports one nudge per tour, however often it comes and goes', async () => {
