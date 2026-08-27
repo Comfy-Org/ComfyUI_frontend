@@ -84,7 +84,7 @@ function createCompletedJobView(id: string): JobListViewItem {
     state: 'completed',
     taskRef: task,
     title: id
-  } as JobListViewItem
+  }
 }
 
 function renderComponent(
