@@ -693,6 +693,14 @@ export class ComfyApi extends EventTarget {
           params.set('token', authToken)
         }
       } catch (error) {
+        if (await shouldRemintCloudRequest()) {
+          const { useTelemetry } = await import('@/platform/telemetry')
+          useTelemetry()?.trackUnifiedAuthRetry({
+            transport: 'ws',
+            outcome: 'failed',
+            failure_reason: 'token_unavailable'
+          })
+        }
         // Continue without auth token if there's an error
         console.warn(
           'Could not get auth token for WebSocket connection:',

@@ -399,6 +399,34 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures unified auth retry and refresh outcomes', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackUnifiedAuthRetry({
+        transport: 'ws',
+        outcome: 'failed',
+        failure_reason: 'token_unavailable'
+      })
+      provider.trackUnifiedAuthRefresh({
+        outcome: 'retry_scheduled',
+        retry_count: 1
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+        {
+          transport: 'ws',
+          outcome: 'failed',
+          failure_reason: 'token_unavailable'
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+        { outcome: 'retry_scheduled', retry_count: 1 }
+      )
+    })
+
     it('captures enriched execution starts with client attribution', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
