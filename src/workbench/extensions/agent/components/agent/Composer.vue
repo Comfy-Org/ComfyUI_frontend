@@ -539,7 +539,7 @@ defineExpose({
                 workflow: workflow.name
               })
             "
-            class="hover:text-agent-fg ml-0 flex h-3.5 w-0 shrink-0 cursor-pointer items-center justify-center overflow-hidden opacity-0 transition-[color,width,margin,opacity] group-hover:ml-1 group-hover:w-3.5 group-hover:opacity-100 focus-visible:ml-1 focus-visible:w-3.5 focus-visible:opacity-100"
+            class="hover:text-agent-fg ml-0 flex h-3.5 w-0 min-w-0 cursor-pointer items-center justify-center overflow-hidden p-0 opacity-0 transition-[color,width,margin,opacity] group-hover:ml-1 group-hover:w-3.5 group-hover:opacity-100 focus-visible:ml-1 focus-visible:w-3.5 focus-visible:opacity-100"
             @click="emit('removeWorkflowReference', workflow.id)"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
