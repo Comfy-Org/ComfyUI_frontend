@@ -70,6 +70,18 @@ const perfMeasurementSchema = perfMeasurementV2Schema.extend({
 
 export type PerfMeasurement = z.infer<typeof perfMeasurementSchema>
 
+const rejectedRafNumberSchema = z.union([
+  z.number(),
+  z.null().transform(() => Number.NaN)
+])
+const rejectedPerfMeasurementSchema = perfMeasurementSchema.extend({
+  rafIntervalsMs: z.array(rejectedRafNumberSchema),
+  rafIntervalP50Ms: rejectedRafNumberSchema,
+  rafIntervalP95Ms: rejectedRafNumberSchema,
+  rafIntervalP99Ms: rejectedRafNumberSchema,
+  rafIntervalMaxMs: rejectedRafNumberSchema
+})
+
 export const perfMeasurementResultSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('accepted'),
@@ -78,7 +90,7 @@ export const perfMeasurementResultSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('rejected'),
     reason: z.string().min(1),
-    measurement: perfMeasurementSchema
+    measurement: rejectedPerfMeasurementSchema
   })
 ])
 

@@ -8,7 +8,10 @@ import type {
   PerfMeasurementResult,
   PerfReportV3
 } from '../browser_tests/fixtures/utils/perfReportSchema'
-import { perfReportSchema } from '../browser_tests/fixtures/utils/perfReportSchema'
+import {
+  perfMeasurementResultSchema,
+  perfReportSchema
+} from '../browser_tests/fixtures/utils/perfReportSchema'
 import { renderPerfReport } from './perf-report'
 
 function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
@@ -217,6 +220,16 @@ describe('performance report', () => {
     const parsed = perfReportSchema.parse(input)
 
     expect(parsed).toEqual(input)
+  })
+
+  it('preserves rejected results with serialized non-finite rAF values', () => {
+    const serialized: unknown = JSON.parse(JSON.stringify(rejected(Number.NaN)))
+
+    const parsed = perfMeasurementResultSchema.parse(serialized)
+
+    expect(parsed.kind).toBe('rejected')
+    expect(Number.isNaN(parsed.measurement.rafIntervalP95Ms)).toBe(true)
+    expect(Number.isNaN(parsed.measurement.rafIntervalsMs[0])).toBe(true)
   })
 
   it('bounds fallback summary data and reports omitted measurements', () => {
