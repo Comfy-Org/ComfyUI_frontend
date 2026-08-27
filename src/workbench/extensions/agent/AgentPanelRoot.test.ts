@@ -3141,6 +3141,102 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeNull()
   })
 
+  it('offers an open tab after it is saved while the panel remains mounted', async () => {
+    makeTab('wf-current')
+    const savedLater = addTab('workflows/video_minimax_h3_i2v.json', {
+      isTemporary: true
+    })
+    const cloudWorkflows: { id: string; name: string }[] = []
+    mockMessagesEndpoint(
+      'wf-current',
+      { status: 404, body: { error: 'none' } },
+      cloudWorkflows
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    expect(
+      screen.queryByRole('menuitem', { name: 'video_minimax_h3_i2v' })
+    ).toBeNull()
+
+    await userEvent.keyboard('{Escape}')
+    await userEvent.clear(textbox)
+    savedLater.isTemporary = false
+    cloudWorkflows.push({
+      id: 'wf-video',
+      name: 'video_minimax_h3_i2v'
+    })
+
+    await userEvent.type(textbox, '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'video_minimax_h3_i2v' })
+    ).toBeVisible()
+  })
+
+  it('does not let an older workflow refresh overwrite a newer result', async () => {
+    makeTab('wf-current')
+    addTab('workflows/video_minimax_h3_i2v.json')
+    let resolveInitial!: (response: Response) => void
+    const initialWorkflowResponse = new Promise<Response>((resolve) => {
+      resolveInitial = resolve
+    })
+    let workflowRequestCount = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.includes('/workflows')) {
+          workflowRequestCount++
+          if (workflowRequestCount === 1) return initialWorkflowResponse
+          return Promise.resolve(
+            json(200, {
+              data: [{ id: 'wf-video', name: 'video_minimax_h3_i2v' }],
+              pagination: {
+                offset: 0,
+                limit: 100,
+                total: 1,
+                has_more: false
+              }
+            })
+          )
+        }
+        if (url.includes('/agent/threads'))
+          return Promise.resolve(
+            json(200, { threads: [], pagination: { page: 1 } })
+          )
+        return Promise.resolve(new Response('{}', { status: 200 }))
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    expect(
+      await screen.findByRole('menuitem', { name: 'video_minimax_h3_i2v' })
+    ).toBeVisible()
+
+    resolveInitial(
+      json(200, {
+        data: [],
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: 0,
+          has_more: false
+        }
+      })
+    )
+    await nextTick()
+    await nextTick()
+
+    expect(
+      screen.getByRole('menuitem', { name: 'video_minimax_h3_i2v' })
+    ).toBeVisible()
+  })
+
   it('sends no workflow id for an unbound tab and posts exactly once', async () => {
     const tab = makeTab()
     tab.activeState = fromPartial<ComfyWorkflowJSON>({

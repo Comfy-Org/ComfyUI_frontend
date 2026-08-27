@@ -479,6 +479,14 @@ describe('Composer', () => {
       expect(screen.getByRole('textbox')).toHaveValue('')
     })
 
+    it('requests fresh workflow candidates when @ enters Workflows', async () => {
+      const { emitted } = mount()
+
+      await openReferenceSection('Workflows')
+
+      expect(emitted().requestWorkflowReferences).toHaveLength(1)
+    })
+
     it('returns from a reference submenu to the root menu', async () => {
       mount({ getMentionNodes: () => NODES })
       const menu = await openReferenceSection('Nodes')
@@ -609,6 +617,15 @@ describe('Composer', () => {
 
     expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+  })
+
+  it('requests fresh workflow candidates when + opens Workflows', async () => {
+    const { emitted } = mount()
+
+    await openAddMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+
+    expect(emitted().requestWorkflowReferences).toHaveLength(1)
   })
 
   it('lists only eligible workflows and emits the selected reference', async () => {
