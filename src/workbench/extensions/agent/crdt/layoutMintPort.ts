@@ -16,20 +16,23 @@
  * Teardown is first-class: workflow load/switch/close drives `LGraph.clear()`
  * through the store with no call-carried provenance, so `clearGraph` changes
  * are INERT unless inside an explicit {@link LayoutMintPort.runIntentionalClear}
- * window, and the load brackets hold `beginGraphTeardown`/`endGraphTeardown`
+ * window, and the load path holds the shared session's teardown brackets
  * around every graph load. The intentional-clear window also captures clear's
  * payload: `removed_nodes` is the AUTHORITATIVE mint-time node set, read
  * BEFORE the clear runs (post-clear the graph is already empty).
  *
- * delete_node is NOT minted by this port yet: its `removed_links` payload is
- * severed before change delivery, so it needs a pre-removal capture at the
- * detach seam - owned by the next write-leg block alongside the linkStore
- * port.
+ * delete_node's `removed_links` payload is severed before change delivery,
+ * so it comes from the link port's severance log: litegraph severs a node's
+ * links synchronously (each recorded by the link port) before the store's
+ * deleteNode change delivers on its microtask, and this port consumes the
+ * capture at mint time.
  */
 import type { NodeId, WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import type { GraphOperation } from './graphOperations'
+import type { SeveranceLog } from './linkMintPort'
 import { shouldMint } from './mintGate'
+import type { MintSession } from './mintSession'
 
 export const AGENT_REMOTE_ACTOR = 'agent-remote'
 
@@ -61,6 +64,10 @@ interface MintSnapshotSource {
 
 export interface LayoutMintPortDeps {
   changes: LayoutChangeFeed
+  /** Shared teardown brackets (held by the load path around every graph load). */
+  session: MintSession
+  /** The link port's capture of a deleted node's severed link ids. */
+  severedLinks: SeveranceLog
   /** The session's local layout-actor prefix (`ACTOR_CONFIG.USER_PREFIX`). */
   localActorPrefix: string
   /** Slice 00's product gate. */
@@ -73,9 +80,6 @@ export interface LayoutMintPortDeps {
 }
 
 export interface LayoutMintPort {
-  /** Load brackets: every graph load/switch/close teardown is inert. */
-  beginGraphTeardown(): void
-  endGraphTeardown(): void
   /**
    * Marks `fn`'s clear as an intentional human clear: captures the
    * authoritative pre-clear node set and mints ONE `clear` op when the
@@ -86,7 +90,6 @@ export interface LayoutMintPort {
 }
 
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
-  let teardownDepth = 0
   let intentionalClearNodes: NodeId[] | null = null
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
@@ -102,9 +105,10 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
 
   function onChange(change: LayoutChangeView): void {
     const operation = change.operation
+    const inTeardown = deps.session.inTeardown()
     switch (operation.type) {
       case 'createNode': {
-        if (!gate(change, teardownDepth > 0)) return
+        if (!gate(change, inTeardown)) return
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
@@ -127,10 +131,22 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         ])
         return
       }
+      case 'deleteNode': {
+        if (!gate(change, inTeardown)) return
+        if (operation.nodeId === undefined) return
+        deps.enqueue([
+          {
+            op: 'delete_node',
+            node_id: operation.nodeId,
+            removed_links: deps.severedLinks.take(String(operation.nodeId))
+          }
+        ])
+        return
+      }
       case 'clearGraph': {
         const captured = intentionalClearNodes
         intentionalClearNodes = null
-        if (!gate(change, teardownDepth > 0 || captured === null)) return
+        if (!gate(change, inTeardown || captured === null)) return
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return
       }
@@ -142,12 +158,6 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   const unsubscribe = deps.changes.onChange(onChange)
 
   return {
-    beginGraphTeardown() {
-      teardownDepth++
-    },
-    endGraphTeardown() {
-      teardownDepth = Math.max(0, teardownDepth - 1)
-    },
     runIntentionalClear<T>(fn: () => T): T {
       intentionalClearNodes = deps.source.nodeIds()
       try {
