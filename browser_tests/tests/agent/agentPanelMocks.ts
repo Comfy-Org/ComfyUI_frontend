@@ -5,12 +5,9 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   AgentCancelAccepted,
-  AgentDraftSnapshot,
   AgentTurnAccepted,
-  AgentWsEvent,
-  DraftPatchData
+  AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -27,59 +24,6 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
-
-const DRAFT_GRAPH: ComfyWorkflowJSON = {
-  version: 0.4,
-  last_node_id: 2,
-  last_link_id: 0,
-  nodes: [
-    {
-      id: 1,
-      type: 'CheckpointLoaderSimple',
-      pos: [100, 300],
-      size: [210, 100],
-      flags: {},
-      order: 0,
-      mode: 0,
-      inputs: [],
-      outputs: [
-        { name: 'MODEL', type: 'MODEL', links: [] },
-        { name: 'CLIP', type: 'CLIP', links: [] },
-        { name: 'VAE', type: 'VAE', links: [] }
-      ],
-      properties: {},
-      widgets_values: ['sd_xl_base_1.0.safetensors']
-    },
-    {
-      id: 2,
-      type: 'SaveImage',
-      pos: [1400, 300],
-      size: [210, 100],
-      flags: {},
-      order: 1,
-      mode: 0,
-      inputs: [{ name: 'images', type: 'IMAGE', link: null }],
-      outputs: [],
-      properties: {},
-      widgets_values: ['ComfyUI']
-    }
-  ],
-  links: []
-}
-
-const DRAFT_SNAPSHOT: AgentDraftSnapshot = {
-  content: DRAFT_GRAPH as unknown as Record<string, unknown>,
-  version: 24
-}
-
-export const DRAFT_PATCH: DraftPatchData = {
-  base_version: 24,
-  version: 25,
-  content: DRAFT_GRAPH as unknown as Record<string, unknown>,
-  workflow_id: WORKFLOW_ID,
-  message_id: TURN_ID,
-  thread_id: THREAD_ID
-}
 
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
@@ -282,10 +226,6 @@ async function mockAgentBoot(
 
   await page.route('**/api/agent/threads/*/messages/*/cancel', (route: Route) =>
     route.fulfill(jsonRoute(CANCEL_ACCEPTED))
-  )
-
-  await page.route('**/api/agent/draft**', (r) =>
-    r.fulfill(jsonRoute(DRAFT_SNAPSHOT))
   )
 }
 

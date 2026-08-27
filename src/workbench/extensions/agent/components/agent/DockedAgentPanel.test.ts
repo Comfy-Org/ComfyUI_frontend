@@ -31,7 +31,6 @@ vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', async () => {
     listThreads: unusedRest,
     listCloudWorkflows: unusedRest,
     cancelMessage: unusedRest,
-    getDraft: unusedRest,
     uploadImage: unusedRest
   }
   return {

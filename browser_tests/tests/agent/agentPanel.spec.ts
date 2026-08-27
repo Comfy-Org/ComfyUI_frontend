@@ -7,7 +7,6 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
-  DRAFT_PATCH,
   INTERMEDIATE_MESSAGE_EVENT,
   MESSAGE_DELTA_EVENT,
   MESSAGE_DONE_EVENT,
@@ -321,40 +320,5 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
     await expect.poll(() => postedMessages.length).toBe(2)
     expect(postedMessages[1]).toContain(revisedPrompt)
-  })
-
-  test('applies a draft_patch graph to the canvas', async ({
-    comfyPage,
-    postedMessages,
-    getWebSocket
-  }) => {
-    test.setTimeout(30_000)
-
-    const page = comfyPage.page
-    const panel = page.locator('#agent-panel-root')
-
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
-    await expect(openButton).toBeVisible()
-    await openButton.click()
-    await expect(panel).toBeVisible()
-
-    await panel
-      .getByRole('textbox', { name: /^Describe ideas/ })
-      .fill('Build it')
-    await panel.getByRole('button', { name: 'Send' }).click()
-    await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
-
-    const ws = await getWebSocket()
-    pushEvent(ws, { type: 'draft_patch', data: DRAFT_PATCH })
-
-    await expect
-      .poll(() => page.evaluate(() => window.app!.graph!.nodes.length))
-      .toBe(2)
-    const nodeTypes = await page.evaluate(() =>
-      window.app!.graph!.nodes.map((n) => n.type)
-    )
-    expect(nodeTypes).toEqual(
-      expect.arrayContaining(['CheckpointLoaderSimple', 'SaveImage'])
-    )
   })
 })
