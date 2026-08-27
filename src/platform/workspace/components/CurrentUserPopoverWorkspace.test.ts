@@ -22,6 +22,8 @@ const state = vi.hoisted(() => ({
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
   canReactivate: false,
+  canReactivatePlan: false,
+  shouldUseWorkspaceBilling: true,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   showPricingTable: vi.fn(),
@@ -76,7 +78,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     permissions: computed(() => ({
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-    }))
+    })),
+    canReactivatePlan: computed(() => state.canReactivatePlan)
   })
 }))
 
@@ -85,6 +88,12 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
     canTopUp: computed(() => state.canTopUp),
     canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
     canReactivate: computed(() => state.canReactivate)
+  })
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
   })
 }))
 
@@ -190,6 +199,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
     state.canReactivate = false
+    state.shouldUseWorkspaceBilling = true
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -506,7 +516,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.isCancelled = isCancelled
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
-      state.canReactivate = canReactivate
+      state.canReactivatePlan = canReactivate
       state.canSubscribeSelfServe = canSubscribeSelfServe
 
       renderComponent('team')
@@ -526,7 +536,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canTopUp = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    state.canReactivatePlan = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
@@ -536,6 +546,22 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('reads the derived reactivate policy, not the raw server capability', () => {
+    state.isCancelled = true
+    state.canManageSubscriptionLifecycle = true
+    // The legacy rail resolves can_reactivate false but still permits
+    // reactivation, so the button must follow canReactivatePlan. Rail
+    // selection itself is covered in useWorkspaceUI.test.ts.
+    state.canReactivate = false
+    state.canReactivatePlan = true
+
+    renderComponent('personal')
+
+    expect(
+      screen.getByRole('button', { name: 'Resubscribe' })
+    ).toBeInTheDocument()
   })
 
   for (const workspaceType of ['personal', 'team'] as const) {

@@ -85,6 +85,7 @@ const mockCanManageSubscription = ref(true)
 const mockCanManageSubscriptionLifecycle = ref(true)
 const mockCanCancel = ref(true)
 const mockCanReactivate = ref(true)
+const mockCanReactivatePlan = ref(true)
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanChangeSeats = ref(true)
 const mockCanSubscribeSelfServe = ref(true)
@@ -223,6 +224,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
       canLeaveWorkspace: mockCanLeaveWorkspace.value
     })),
+    canReactivatePlan: mockCanReactivatePlan,
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
@@ -820,7 +822,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockHasTeamPlan.value = false
     mockIsWorkspaceSubscribed.value = false
     mockCanManageSubscriptionLifecycle.value = true
-    mockCanReactivate.value = false
+    mockCanReactivatePlan.value = false
     renderComponent()
 
     expect(
