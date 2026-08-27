@@ -244,6 +244,22 @@ export const useSubgraphNavigationStore = defineStore(
       return intent.id
     }
 
+    /**
+     * Releases a workflow-load intent whose load FAILED: while it stays the
+     * newest intent it suppresses the surviving graph's hash forever, so
+     * clear it and republish the live graph.
+     */
+    function endWorkflowNavigation(navigationId: number): void {
+      if (
+        latestNavigationIntent?.source !== 'workflow' ||
+        latestNavigationIntent.id !== navigationId
+      ) {
+        return
+      }
+      latestNavigationIntent = undefined
+      void updateHash('graph')
+    }
+
     async function withNavBlocked<T>(
       op: () => Promise<T>,
       blockedHash: string
@@ -408,7 +424,7 @@ export const useSubgraphNavigationStore = defineStore(
       }
     }
 
-    function updateHash(
+    async function updateHash(
       source: 'graph' | 'workflow-load' = 'graph',
       workflowNavigationId?: number,
       currentGraph?: LGraph | null
@@ -525,6 +541,7 @@ export const useSubgraphNavigationStore = defineStore(
       restoreViewport,
       saveCurrentViewport,
       beginWorkflowNavigation,
+      endWorkflowNavigation,
       updateHash,
       /** @internal Exposed for test assertions only. */
       viewportCache

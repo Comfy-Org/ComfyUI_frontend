@@ -1584,14 +1584,16 @@ export class ComfyApp {
         })
       }
 
-      void useSubgraphNavigationStore().updateHash(
-        'workflow-load',
-        workflowNavigationId
-      )
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
     } finally {
+      // Republish from the finally so a load that throws after the interim
+      // root reset still repairs the URL instead of stranding the old hash.
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
       ChangeTracker.isLoadingGraph = false
     }
   }
