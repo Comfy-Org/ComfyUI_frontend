@@ -129,7 +129,7 @@ function createAssetExportPlan(assets: AssetItem[]): {
       continue
     }
 
-    const jobId = metadata?.jobId || asset.id
+    const jobId = asset.job_id || metadata?.jobId || asset.id
     jobIds.add(jobId)
     if (metadata?.outputCount != null) {
       if (!countedOutputJobIds.has(jobId)) {
@@ -140,8 +140,9 @@ function createAssetExportPlan(assets: AssetItem[]): {
     }
 
     fileCount++
-    if (metadata?.jobId && asset.name) {
-      const names = (jobAssetNameFilters[metadata.jobId] ??= [])
+    const filterJobId = asset.job_id || metadata?.jobId
+    if (filterJobId && asset.name) {
+      const names = (jobAssetNameFilters[filterJobId] ??= [])
       if (!names.includes(asset.name)) names.push(asset.name)
     }
   }
@@ -819,7 +820,9 @@ export function useMediaAssetActions() {
 
               failed.forEach((outcome) => {
                 console.warn(
-                  `Failed to delete asset ${outcome.items[0].name}:`,
+                  `Failed to delete assets ${outcome.items
+                    .map(({ name }) => name)
+                    .join(', ')}:`,
                   outcome.reason
                 )
               })
@@ -868,7 +871,11 @@ export function useMediaAssetActions() {
               }
 
               if (flags.assetsEnabled && succeededIds.size > 0) {
-                void assetsStore.inputAssets.invalidate([...succeededIds])
+                const ids = [...succeededIds]
+                void Promise.all([
+                  assetsStore.inputAssets.invalidate(ids),
+                  assetsStore.outputAssets.invalidate(ids)
+                ])
               } else if (!flags.assetsEnabled) {
                 const hasOutputAssets = assetArray.some((a) => {
                   const type = getAssetType(a)

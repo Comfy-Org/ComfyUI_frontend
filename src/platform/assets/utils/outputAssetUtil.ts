@@ -10,40 +10,6 @@ import {
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import { ResultItemImpl as ResultItem } from '@/stores/queueStore'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-
-class AssetResultItem extends ResultItem {
-  constructor(
-    private readonly asset: AssetItem,
-    init: ConstructorParameters<typeof ResultItem>[0]
-  ) {
-    super(init)
-  }
-
-  override get url(): string {
-    return this.asset.preview_url ?? ''
-  }
-
-  override get previewUrl(): string {
-    return this.asset.thumbnail_url ?? this.url
-  }
-}
-
-export function assetToResultItem(asset: AssetItem): ResultItemImpl {
-  const metadata = getOutputAssetMetadata(asset.user_metadata)
-  return new AssetResultItem(asset, {
-    assetId: asset.id,
-    display_name: asset.display_name ?? undefined,
-    filename: asset.name,
-    format: metadata?.format,
-    mediaType: getMediaTypeFromFilename(asset.name),
-    nodeId: metadata?.nodeId ?? '',
-    subfolder: metadata?.subfolder ?? '',
-    type: 'output'
-  })
-}
 
 type OutputAssetMapOptions = {
   jobId: string

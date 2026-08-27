@@ -234,10 +234,8 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import {
-  assetToResultItem,
-  resolveOutputAssetItems
-} from '@/platform/assets/utils/outputAssetUtil'
+import { assetToResultItem } from '@/platform/assets/utils/assetResultItem'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -477,8 +475,7 @@ watch(
     clearSelection()
     // Clear search when switching tabs
     searchQuery.value = ''
-    // Reset pagination state when tab changes
-    void refreshAssets()
+    void currentAssets.value.loadMore()
   },
   { immediate: true }
 )

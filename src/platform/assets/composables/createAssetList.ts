@@ -72,6 +72,7 @@ export function createAssetList(
     try {
       await operation(controller.signal, run)
     } catch (error) {
+      if (controller.signal.aborted) return
       options.onError?.('asset fetch failed', error)
       throw error
     } finally {
@@ -176,6 +177,13 @@ export function createAssetList(
       return Promise.resolve()
     }
     if (refreshPromise) return refreshPromise
+    if (
+      !activeController &&
+      seenCursors.size === 0 &&
+      items.value.length === 0
+    ) {
+      return Promise.resolve()
+    }
 
     generation++
     activeController?.abort()

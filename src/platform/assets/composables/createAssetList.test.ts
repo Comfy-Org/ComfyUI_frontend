@@ -32,15 +32,23 @@ const response = (
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void
-  const promise = new Promise<T>((done) => {
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((done, fail) => {
     resolve = done
+    reject = fail
   })
-  return { promise, resolve }
+  return { promise, reject, resolve }
 }
 
 describe('createAssetList', () => {
   beforeEach(() => {
     vi.mocked(api.fetchApi).mockReset()
+  })
+
+  it('does not fetch when an unloaded list is invalidated', async () => {
+    await createAssetList().invalidate()
+
+    expect(api.fetchApi).not.toHaveBeenCalled()
   })
 
   it('coalesces loads and retries the same cursor after failure', async () => {
@@ -83,19 +91,27 @@ describe('createAssetList', () => {
   it('aborts and ignores a stale load when refresh preempts it', async () => {
     const stale = deferred<Response>()
     vi.mocked(api.fetchApi)
-      .mockReturnValueOnce(stale.promise)
+      .mockImplementationOnce((_path, options) => {
+        options?.signal?.addEventListener(
+          'abort',
+          () => stale.reject(new DOMException('Aborted', 'AbortError')),
+          { once: true }
+        )
+        return stale.promise
+      })
       .mockResolvedValueOnce(response(['fresh']))
-    const list = createAssetList()
+    const onError = vi.fn()
+    const list = createAssetList({}, { onError })
     const staleLoad = list.loadMore()
     const queuedHeadLoad = list.loadNew()
     const staleSignal = vi.mocked(api.fetchApi).mock.calls[0][1]?.signal
 
     await list.invalidate()
     expect(staleSignal?.aborted).toBe(true)
-    stale.resolve(response(['stale']))
     await Promise.all([staleLoad, queuedHeadLoad])
     expect(toValue(list.items).map(({ id }) => id)).toEqual(['fresh'])
     expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    expect(onError).not.toHaveBeenCalled()
   })
 
   it('serializes head refreshes behind pagination and deduplicates new items', async () => {

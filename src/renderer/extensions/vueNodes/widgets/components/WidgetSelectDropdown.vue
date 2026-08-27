@@ -153,7 +153,9 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 const handleApproachEnd = useDebounceFn(async () => {
-  if (flatOutputAssets.value.hasMore) await flatOutputAssets.value.loadMore()
+  if (toValue(flatOutputAssets.value.hasMore)) {
+    await flatOutputAssets.value.loadMore()
+  }
 }, 300)
 
 const isLoadingMore = computed(() => toValue(flatOutputAssets.value.isLoading))

@@ -107,9 +107,9 @@ function toOutputGroup([jobId, assets]: [
     ...representative,
     created_at: newest.created_at,
     user_metadata: {
-      jobId,
       subfolder: '',
       ...representative.user_metadata,
+      jobId,
       outputCount: ordered.length
     },
     outputGroup: { id: jobId, assets: ordered }

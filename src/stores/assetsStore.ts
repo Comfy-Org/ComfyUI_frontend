@@ -285,16 +285,6 @@ export const useAssetsStore = defineStore('assets', () => {
     queryOptions
   )
   const historyOutputAssets = useHistoryAssets()
-  whenever(
-    () => flags.assetsEnabled,
-    () => {
-      void Promise.all([
-        cloudInputAssets.loadMore(),
-        cloudOutputAssets.loadMore()
-      ]).catch(() => undefined)
-    },
-    { immediate: true }
-  )
   const groupedCloudOutputAssets: PagedList<AssetItem> = {
     ...cloudOutputAssets,
     items: computed(() =>

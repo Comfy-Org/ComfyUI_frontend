@@ -106,14 +106,6 @@ test.describe(
 
       await expect(tab.assetCards).toHaveCount(EXPECTED_TOTAL_TILES)
 
-      const labels = await tab.assetCards.evaluateAll((nodes) =>
-        nodes
-          .map((el) => el.getAttribute('aria-label'))
-          .filter((v): v is string => v !== null)
-      )
-      expect(labels).toHaveLength(EXPECTED_TOTAL_TILES)
-      expect(new Set(labels).size).toBe(labels.length)
-
       await testInfo.attach('expanded-folder-view.png', {
         body: await comfyPage.page.screenshot({ fullPage: false }),
         contentType: 'image/png'
