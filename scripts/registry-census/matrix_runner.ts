@@ -584,20 +584,14 @@ export async function runPack(
     const k = byType('KSampler')
     if (!k) return
     const foreignWidget = new ForeignWidget()
-    const expectedMethods = Object.fromEntries(
-      ['draw', 'mouse', 'computeSize'].map((method) => [
-        method,
-        (foreignWidget as unknown as Record<string, unknown>)[method]
-      ])
-    )
+    const expectedWidget = new ForeignWidget()
+    const widgetMethods = ['draw', 'mouse', 'computeSize'] as const
     k.addCustomWidget(foreignWidget)
     mangled.add(`${k.id}:XFOREIGN`)
 
     const widget = k.widgets?.find((item) => item.name === 'XFOREIGN')
-    const prototypeMethods = ['draw', 'mouse', 'computeSize'].filter(
-      (method) =>
-        (widget as unknown as Record<string, unknown> | undefined)?.[method] !==
-        expectedMethods[method]
+    const prototypeMethods = widgetMethods.filter(
+      (method) => widget?.[method] !== expectedWidget[method]
     )
     if (prototypeMethods.length)
       throw new Error(
