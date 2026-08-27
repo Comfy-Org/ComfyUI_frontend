@@ -41,7 +41,21 @@ export function createMintSession(): MintSession {
     runRemoteApply<T>(fn: () => T): T {
       remoteApplyDepth++
       try {
-        return fn()
+        const result = fn()
+        if (
+          result !== null &&
+          typeof result === 'object' &&
+          'then' in result &&
+          typeof (result as { then: unknown }).then === 'function'
+        ) {
+          // The scope is synchronous by contract: any continuation after an
+          // await runs OUTSIDE it, and remote echoes there would mint straight
+          // into the bound doc. Surface the contract break loudly.
+          console.error(
+            '[agent-crdt] runRemoteApply received an async fn; continuations after the first await escape the remote scope'
+          )
+        }
+        return result
       } finally {
         remoteApplyDepth--
       }
