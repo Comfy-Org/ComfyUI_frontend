@@ -18,6 +18,7 @@ vi.mock('@/scripts/api', () => ({
     apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false),
     user: 'test-user'
   }
 }))
@@ -33,9 +34,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()
-  },
-  INPUT_TAG: 'input',
-  OUTPUT_TAG: 'output'
+  }
 }))
 
 // Mock distribution type - hoisted so it can be changed per test

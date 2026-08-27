@@ -55,27 +55,6 @@ vi.mock(
   })
 )
 
-const { mockMediaAssets } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ref } = require('vue')
-  return {
-    mockMediaAssets: {
-      media: ref([]),
-      loading: ref(false),
-      error: ref(null),
-      fetchMediaList: vi.fn().mockResolvedValue([]),
-      refresh: vi.fn().mockResolvedValue([]),
-      loadMore: vi.fn(),
-      hasMore: ref(false),
-      isLoadingMore: ref(false)
-    }
-  }
-})
-
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => mockMediaAssets
-}))
-
 vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
   resolveOutputAssetItems: vi.fn().mockResolvedValue([])
 }))
@@ -139,7 +118,6 @@ const i18n = createI18n({
 
 describe('WidgetSelectDropdown', () => {
   beforeEach(() => {
-    mockMediaAssets.media.value = []
     mockAssetsData.items = []
     mockItemsRef.value = []
     mockSelectedSetRef.value = new Set()

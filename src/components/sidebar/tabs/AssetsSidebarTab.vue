@@ -219,7 +219,10 @@ import type {
   MediaAssetGridMode,
   MediaAssetViewMode
 } from '@/platform/assets/components/mediaAssetViewOptions'
-import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
+import {
+  getAssetType,
+  getOutputGroupAssets
+} from '@/platform/assets/composables/media/assetMappers'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -229,16 +232,15 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import {
-  getAssetSubfolder,
-  getAssetUrl
-} from '@/platform/assets/utils/assetUrlUtil'
+import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import {
+  assetToResultItem,
+  resolveOutputAssetItems
+} from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { ResultItemImpl } from '@/stores/queueStore'
 import {
   formatDuration,
   getMediaTypeFromFilename,
@@ -361,8 +363,14 @@ const {
   error: folderError,
   execute: loadFolderAssets
 } = useAsyncState(
-  (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
-    resolveOutputAssetItems(metadata, options),
+  (
+    asset: AssetItem,
+    metadata: OutputAssetMetadata,
+    options: { createdAt?: string } = {}
+  ) =>
+    Promise.resolve(
+      getOutputGroupAssets(asset) ?? resolveOutputAssetItems(metadata, options)
+    ),
   [] as AssetItem[],
   { immediate: false, resetOnExecute: true }
 )
@@ -456,25 +464,7 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed(() => {
-  return previewableVisibleAssets.value.map((asset) => {
-    const mediaType = getMediaTypeFromFilename(asset.name)
-    const resultItem = new ResultItemImpl({
-      filename: asset.name,
-      subfolder: getAssetSubfolder(asset),
-      type: 'output',
-      nodeId: '0',
-      mediaType: mediaType === 'image' ? 'images' : mediaType
-    })
-
-    Object.defineProperty(resultItem, 'url', {
-      get() {
-        return asset.preview_url || ''
-      },
-      configurable: true
-    })
-
-    return resultItem
-  })
+  return previewableVisibleAssets.value.map(assetToResultItem)
 })
 
 const refreshAssets = async () => {
@@ -615,7 +605,7 @@ const enterFolderView = async (asset: AssetItem) => {
   folderExecutionTime.value = executionTimeInSeconds
   expectedFolderCount.value = metadata.outputCount ?? 0
 
-  await loadFolderAssets(0, metadata, { createdAt: asset.created_at })
+  await loadFolderAssets(0, asset, metadata, { createdAt: asset.created_at })
 
   if (folderError.value) {
     toast.add({

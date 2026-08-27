@@ -73,6 +73,7 @@ export interface UseWidgetSelectItemsOptions {
 
 export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const { modelValue, outputMediaAssets, assetData } = options
+  const outputAssets = computed(() => toValue(toValue(outputMediaAssets).items))
 
   const missingMediaStore = useMissingMediaStore()
   const missingMediaValues = computed<ReadonlySet<string>>(
@@ -113,7 +114,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
 
   watch(
-    () => toValue(toValue(outputMediaAssets).items),
+    outputAssets,
     (assets, _, onCleanup) => {
       let cancelled = false
       onCleanup(() => {
@@ -206,15 +207,11 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const items: FormDropdownItem[] = []
     const labelFn = toValue(options.getOptionLabel)
 
-    const assets = toValue(toValue(outputMediaAssets).items).flatMap(
-      (asset) => {
-        const meta = getOutputAssetMetadata(asset.user_metadata)
-        const resolved = meta
-          ? resolvedByJobId.value.get(meta.jobId)
-          : undefined
-        return resolved ?? [asset]
-      }
-    )
+    const assets = outputAssets.value.flatMap((asset) => {
+      const meta = getOutputAssetMetadata(asset.user_metadata)
+      const resolved = meta ? resolvedByJobId.value.get(meta.jobId) : undefined
+      return resolved ?? [asset]
+    })
 
     const missing = missingMediaValues.value
     for (const asset of assets) {

@@ -199,8 +199,6 @@ const DEFAULT_LIMIT = 500
 const MAX_PAGINATION_BATCHES = 1000
 
 export const MODELS_TAG = 'models'
-export const INPUT_TAG = 'input'
-export const OUTPUT_TAG = 'output'
 /** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
 const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]

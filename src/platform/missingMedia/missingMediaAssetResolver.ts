@@ -1,7 +1,6 @@
 import { toValue } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -56,16 +55,9 @@ export async function resolveMissingMediaAssetSources({
   const allInputs = async () => {
     if (!useFeatureFlags().flags.assetsEnabled)
       return toValue(useAssetsStore().inputAssets.items)
-    const inputAssets = useAssetsQuery({
-      include_tags: ['input'],
-      include_public: true
+    return assetService.getAllAssetsByTag('input', true, {
+      signal: controller.signal
     })
-    while (toValue(inputAssets.hasMore)) {
-      await inputAssets.loadMore()
-      if (controller.signal.aborted) throw new Error('aborted')
-    }
-
-    return toValue(inputAssets.items)
   }
 
   try {

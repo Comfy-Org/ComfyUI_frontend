@@ -1,5 +1,4 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -11,24 +10,13 @@ import {
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-const mockInputItems = ref<AssetItem[]>([])
-const mockInputHasMore = ref(false)
-
-const { mockUseAssetsQuery } = vi.hoisted(() => ({
-  mockUseAssetsQuery: vi.fn()
-}))
-
-const { mockGetAssetsPageByTag } = vi.hoisted(() => ({
+const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
+  mockGetAllAssetsByTag: vi.fn(),
   mockGetAssetsPageByTag: vi.fn()
 }))
 
 const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
-}))
-
-vi.mock('@/platform/assets/composables/useAssetsQuery', () => ({
-  useAssetsQuery: mockUseAssetsQuery,
-  invalidateAll: vi.fn()
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
@@ -44,6 +32,7 @@ vi.mock('@/platform/assets/services/assetService', async () => {
     ...actual,
     assetService: {
       ...actual.assetService,
+      getAllAssetsByTag: mockGetAllAssetsByTag,
       getAssetsPageByTag: mockGetAssetsPageByTag
     }
   }
@@ -114,23 +103,14 @@ function makeAssetPage(
 
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
-    mockInputItems.value = []
-    mockInputHasMore.value = false
-    mockUseAssetsQuery.mockReturnValue({
-      items: mockInputItems,
-      hasMore: mockInputHasMore,
-      loadMore: vi.fn(() => {
-        mockInputHasMore.value = false
-        return Promise.resolve()
-      })
-    })
+    mockGetAllAssetsByTag.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
-  it('loads cloud input assets via a public-inclusive query', async () => {
+  it('loads all public-inclusive cloud input assets', async () => {
     const inputAsset = makeAsset('photo.png')
-    mockInputItems.value = [inputAsset]
+    mockGetAllAssetsByTag.mockResolvedValue([inputAsset])
 
     const result = await resolveMissingMediaAssetSources({
       isCloud: true,
@@ -139,9 +119,8 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
-    expect(mockUseAssetsQuery).toHaveBeenCalledWith({
-      include_tags: ['input'],
-      include_public: true
+    expect(mockGetAllAssetsByTag).toHaveBeenCalledWith('input', true, {
+      signal: expect.any(AbortSignal)
     })
     expect(result.inputAssets).toEqual([inputAsset])
     expect(result.generatedAssets).toEqual([])

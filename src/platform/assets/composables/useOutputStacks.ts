@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { getOutputGroupAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
@@ -104,6 +105,11 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
   }
 
   async function resolveStackChildren(asset: AssetItem): Promise<AssetItem[]> {
+    const groupedAssets = getOutputGroupAssets(asset)
+    if (groupedAssets) {
+      return groupedAssets.filter((child) => child.id !== asset.id)
+    }
+
     const metadata = getOutputAssetMetadata(asset.user_metadata)
     if (!metadata) {
       return []
