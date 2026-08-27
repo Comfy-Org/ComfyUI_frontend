@@ -183,6 +183,69 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(0)
   })
 
+  it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(settled).toEqual([
+      { state: 'unacknowledged', ops: expect.any(Array) }
+    ])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled).toHaveLength(1)
+
+    ackInFlight()
+    expect(settled).toHaveLength(2)
+    expect(settled[1].state).toBe('acknowledged')
+  })
+
+  it('an identified empty-list failure settles the batch it names via failure.op_id', () => {
+    sender.enqueue([addNode(1)])
+    const opId = sent[0].ops[0].op_id
+
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: { op_id: opId }
+    })
+
+    expect(settled).toHaveLength(1)
+    expect(settled[0].state).toBe('acknowledged')
+  })
+
+  it('an identified failure for other ops never settles the in-flight batch', () => {
+    sender.enqueue([addNode(1)])
+
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: { op_id: 'ffff'.repeat(8) }
+    })
+
+    expect(settled).toHaveLength(0)
+  })
+
+  it('idle late results drain the stale credits so a fresh batch can settle anonymously', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(settled).toHaveLength(1)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    sender.enqueue([addNode(2)])
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled).toHaveLength(2)
+    expect(settled[1].state).toBe('acknowledged')
+  })
+
   it('stops sending after detach', () => {
     sender.enqueue([addNode(1)])
     ackInFlight()

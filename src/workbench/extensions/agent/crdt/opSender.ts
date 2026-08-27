@@ -28,6 +28,8 @@ export interface OpsResultView {
   ok: boolean
   applied: string[]
   skipped: string[]
+  /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
+  failure?: { op_id?: string }
 }
 
 export interface OpSenderDeps {
@@ -74,6 +76,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Op[][] = []
   let inFlight: InFlight | null = null
   let detached = false
+  // Late-result credits: a batch that settled 'unacknowledged' was
+  // transmitted twice, so up to two of its results may still arrive - as
+  // ANONYMOUS failures (empty id lists, no failure op_id) they are
+  // indistinguishable from the current batch's. Swallowing up to the credit
+  // beats mis-attribution: a swallowed own-result only costs the idempotent
+  // resend cycle, while a mis-attributed settle poisons everything
+  // downstream of this seam.
+  let staleAnonymousBudget = 0
 
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
@@ -111,6 +121,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     inFlight.timer = setTimeout(() => {
       if (inFlight?.ops !== batch) return
       if (inFlight.resent) {
+        staleAnonymousBudget += 2
         settle({ state: 'unacknowledged', ops: batch })
         return
       }
@@ -135,14 +146,25 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
-    if (!inFlight) return
-    const concerns = [...result.applied, ...result.skipped].some((opId) =>
-      inFlight!.opIds.has(opId)
-    )
-    // A failed batch can come back with empty id lists; with one batch in
-    // flight, any result while waiting settles it.
-    if (!concerns && (result.applied.length > 0 || result.skipped.length > 0))
+    if (!inFlight) {
+      // A late result with no batch waiting: drain a credit if one is
+      // outstanding so it cannot swallow a future batch's own result.
+      if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
+    }
+    const identified = [...result.applied, ...result.skipped]
+    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    if (identified.length > 0) {
+      if (!identified.some((opId) => inFlight!.opIds.has(opId))) return
+      settle({ state: 'acknowledged', ops: inFlight.ops, result })
+      return
+    }
+    // Anonymous failure (empty lists, no failure op_id): only attribute it
+    // to the in-flight batch once no stale credit could explain it.
+    if (staleAnonymousBudget > 0) {
+      staleAnonymousBudget--
+      return
+    }
     settle({ state: 'acknowledged', ops: inFlight.ops, result })
   })
 
