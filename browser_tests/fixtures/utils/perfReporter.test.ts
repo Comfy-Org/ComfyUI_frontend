@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { writePerfReport } from '../browser_tests/fixtures/utils/perfReporter'
+import { writePerfReport } from '@e2e/fixtures/utils/perfReporter'
 
 function withTemporaryWorkingDirectory(run: () => void): void {
   const originalDirectory = process.cwd()
