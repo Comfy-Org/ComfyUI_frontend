@@ -5068,6 +5068,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         ? getNodesInFrameOrder()
         : undefined
 
+    const shouldDrawBackground = Boolean(
+      this.dirty_bgcanvas ||
+      force_bgcanvas ||
+      this.always_render_background ||
+      (this.graph?._last_trigger_time &&
+        now - this.graph._last_trigger_time < 1000)
+    )
+    const sharesCanvas = this.bgcanvas === this.canvas
+    if (sharesCanvas && shouldDrawBackground) this.dirty_canvas = true
+
     // Compute node size before drawing links.
     if (this.dirty_canvas || force_canvas) {
       this.computeVisibleNodes(
@@ -5087,13 +5097,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    if (
-      this.dirty_bgcanvas ||
-      force_bgcanvas ||
-      this.always_render_background ||
-      (this.graph?._last_trigger_time &&
-        now - this.graph._last_trigger_time < 1000)
-    ) {
+    if (shouldDrawBackground && !sharesCanvas) {
       this.drawBackCanvas(getCurrentGraphNodesInFrameOrder(), graphAtFrameStart)
     }
 
@@ -5166,7 +5170,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // draw bg canvas
     if (this.bgcanvas == this.canvas) {
       nodesInFrameOrder ??= graph ? nodesInRenderOrder(graph) : undefined
-      this.drawBackCanvas(nodesInFrameOrder, nodesGraph)
+      this.drawBackCanvas(nodesInFrameOrder, nodesGraph, false)
     } else {
       const scale = window.devicePixelRatio
       ctx.drawImage(
@@ -5539,7 +5543,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   drawBackCanvas(
     nodesInFrameOrder?: LGraphNode[],
-    nodesGraph: LGraph | Subgraph | null = this.graph
+    nodesGraph: LGraph | Subgraph | null = this.graph,
+    redrawFrontCanvas = true
   ): void {
     const canvas = this.bgcanvas
     if (
@@ -5555,6 +5560,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
     const ctx = this.bgctx
     if (!ctx) throw new TypeError('Background canvas context was null.')
+
+    this.dirty_bgcanvas = false
 
     const viewport = this.viewport || [
       0,
@@ -5683,9 +5690,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.restore()
     }
 
-    this.dirty_bgcanvas = false
-    // Forces repaint of the front canvas.
-    this.dirty_canvas = true
+    if (redrawFrontCanvas) this.dirty_canvas = true
   }
 
   /**

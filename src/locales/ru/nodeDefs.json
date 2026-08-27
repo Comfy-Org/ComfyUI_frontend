@@ -17772,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "Выберите стиль realistic_image и дополнительный подстиль (опционально).",
+    "description": "Выберите стиль и подстиль logo_raster.",
     "display_name": "Recraft Style - Логотип Растр",
     "inputs": {
       "substyle": {
@@ -17883,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "Создайте многоразовый стиль Recraft V4 на основе 1–10 референсных изображений. Возвращаемый style_id работает с любой моделью Recraft V4 и V4.1 того же типа вывода. Общий размер всех изображений ограничен 10 МБ.",
+    "display_name": "Recraft V4: создание стиля",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Референсные изображения, определяющие стиль. Схожие референсы делают соответствие точнее, разнообразные — расширяют его."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Тип вывода, для которого создаётся стиль: recraftv4_styles для растровых изображений, recraftv4_styles_vector для SVG."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Генерирует изображения с помощью моделей Recraft V4 или V4 Pro.",
     "display_name": "Recraft V4: текст в изображение",
@@ -17892,7 +17912,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Модель, используемая для генерации."
+        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с сохранением стиля и всегда требуют style_id или style_references."
       },
       "model_size": {
         "name": "size"
@@ -17916,10 +17936,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты не детерминированы независимо от сида."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID применяемого стиля Recraft V4, например из узла Recraft V4 Create Style или вывода style_id предыдущего запуска. Нельзя использовать вместе со style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Степень следования стилю: precise воспроизводит его в деталях, flexible соответствует общему виду. Используется только при наличии стиля."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Референсные изображения для создания стиля на лету, оплачиваются дополнительно к генерации. Созданный стиль возвращается как style_id для повторного использования. Нельзя использовать вместе со style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +17969,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Модель, используемая для генерации."
+        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с сохранением стиля и всегда требуют style_id или style_references."
       },
       "model_size": {
         "name": "size"
@@ -17957,10 +17993,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты не детерминированы независимо от сида."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID применяемого векторного стиля Recraft V4, например из узла Recraft V4 Create Style или вывода style_id предыдущего запуска. Нельзя использовать вместе со style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Степень следования стилю: precise воспроизводит его в деталях, flexible соответствует общему виду. Используется только при наличии стиля."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Референсные изображения для создания векторного стиля на лету, оплачиваются дополнительно к генерации. Созданный стиль возвращается как style_id для повторного использования. Нельзя использовать вместе со style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,61 +24665,11 @@
       },
       "resolution": {
         "name": "разрешение",
-        "tooltip": "Разрешение выходного видео. 4K недоступно для моделей veo-3.1-lite и veo-3.0."
+        "tooltip": "Разрешение выходного видео. 4K недоступно для модели veo-3.1-lite."
       },
       "seed": {
         "name": "seed",
         "tooltip": "Сид для генерации видео (0 для случайного)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Генерирует видео по текстовым подсказкам с помощью Google Veo API",
-    "display_name": "Google Veo2 Генерация видео",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Соотношение сторон выходного видео"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "Длительность выходного видео в секундах"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "Улучшать ли подсказку с помощью ИИ"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Необязательное референсное изображение для направления генерации видео"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "Модель Veo 2 для генерации видео"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Негативная текстовая подсказка для указания, чего избегать в видео"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "Разрешить ли генерацию людей в видео"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Текстовое описание видео"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Сид для генерации видео (0 — случайный)"
       }
     },
     "outputs": {
