@@ -38,6 +38,9 @@
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
+    <template v-if="showUI" #agent-panel>
+      <DockedAgentPanel v-if="!linearMode" />
+    </template>
     <template #graph-canvas-panel>
       <div
         ref="canvasPanelBoundsRef"
@@ -145,6 +148,7 @@ import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import DockedAgentPanel from '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'

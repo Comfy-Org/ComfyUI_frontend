@@ -19,6 +19,7 @@ import './load3dLazy'
 import './maskeditor'
 if (!isCloud) {
   await import('./nodeTemplates')
+  await import('./agentPanel')
 }
 import './noteNode'
 import './painter'

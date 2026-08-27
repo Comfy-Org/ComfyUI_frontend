@@ -85,6 +85,23 @@
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
+        v-if="agentPanelEnabled"
+        variant="link"
+        size="sm"
+        :class="
+          cn(
+            'no-drag shrink-0 border border-solid text-base-foreground',
+            isAgentPanelOpen
+              ? 'border-plum-500 bg-plum-600/20'
+              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
+          )
+        "
+        @click="onAgentEntryClick"
+      >
+        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
+        <span>{{ $t('agent.askComfyAgent') }}</span>
+      </Button>
+      <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
@@ -119,7 +136,11 @@ import type { WatchStopHandle } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { storeToRefs } from 'pinia'
+
 import Button from '@/components/ui/button/Button.vue'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -150,6 +171,13 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
+const agentPanelStore = useAgentPanelStore()
+const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
+  storeToRefs(agentPanelStore)
+
+function onAgentEntryClick(): void {
+  agentPanelStore.toggle()
+}
 
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -82,6 +82,29 @@ vi.mock('@/stores/commandStore', () => ({
 vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
+
+const agentPanelHolder = vi.hoisted(() => ({
+  store: null as unknown as {
+    isOpen: { value: boolean }
+    enabled: { value: boolean }
+    toggle: ReturnType<typeof vi.fn>
+  }
+}))
+vi.mock(
+  '@/workbench/extensions/agent/stores/agent/agentPanelStore',
+  async () => {
+    const { ref } = await import('vue')
+    agentPanelHolder.store = {
+      isOpen: ref(false),
+      enabled: ref(false),
+      toggle: vi.fn(() => {
+        agentPanelHolder.store.isOpen.value =
+          !agentPanelHolder.store.isOpen.value
+      })
+    }
+    return { useAgentPanelStore: () => agentPanelHolder.store }
+  }
+)
 
 vi.mock('@/utils/mouseDownUtil', () => ({
   whileMouseDown: vi.fn()
@@ -173,5 +196,38 @@ describe('WorkflowTabs feedback button', () => {
     expect(
       screen.queryByRole('button', { name: 'Feedback' })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('WorkflowTabs agent entry button', () => {
+  beforeEach(() => {
+    tabBarLayout.value = 'Integrated'
+    agentPanelHolder.store.enabled.value = true
+    agentPanelHolder.store.isOpen.value = false
+    agentPanelHolder.store.toggle.mockClear()
+  })
+
+  afterEach(() => {
+    tabBarLayout.value = 'Default'
+    agentPanelHolder.store.enabled.value = false
+    agentPanelHolder.store.isOpen.value = false
+  })
+
+  it('does not render the entry button while the feature flag is off', () => {
+    agentPanelHolder.store.enabled.value = false
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeNull()
+  })
+
+  it('toggles the panel when the entry button is clicked', async () => {
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+    expect(agentPanelHolder.store.toggle).toHaveBeenCalledTimes(1)
   })
 })

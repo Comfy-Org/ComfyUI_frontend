@@ -30,6 +30,7 @@ import {
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
 import { useAppModeStore } from '@/stores/appModeStore'
+import DockedAgentPanel from '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
@@ -202,6 +203,7 @@ function dragDrop(e: DragEvent) {
         </SplitterPanel>
       </Splitter>
     </div>
+    <DockedAgentPanel />
   </div>
 </template>
 
