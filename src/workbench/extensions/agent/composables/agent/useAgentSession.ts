@@ -60,8 +60,8 @@ let sessionGeneration = 0
 
 /**
  * Page-lifetime binding memory: the workflow a resumed turn belongs to must
- * survive a panel remount (the V0 draft store carried this as pinia state).
- * Module-level like `sessionGeneration`; newChat/loadThread clear it.
+ * survive a panel remount. Module-level like `sessionGeneration`;
+ * newChat/loadThread clear it.
  */
 let rememberedWorkflowId: string | null = null
 
@@ -72,7 +72,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   /**
    * The workflow the session is bound to (set on turn ack or an active-tab
    * switch, cleared by newChat/loadThread) - the CRDT follower's subscribe
-   * target. The draft store this replaces died with the V0 draft channel.
+   * target.
    */
   const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
 
@@ -328,12 +328,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     const event = parsed.data
     switch (event.type) {
-      case 'draft_patch':
-      case 'draft_version':
-        // Retired V0 channel: the wire schema still declares these frames
-        // until the schema commit removes them; they carry nothing for the
-        // CRDT leg and are dropped without ingestion.
-        return
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread
         // on screen is allowed to move the user's tabs.
