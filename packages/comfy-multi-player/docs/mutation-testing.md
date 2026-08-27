@@ -25,6 +25,14 @@ The unpinned rows show what the pins are for. Unpinned and idle the number happe
 
 `stryker.config.mjs` pins `timeoutMS`, `timeoutFactor`, `concurrency` and `coverageAnalysis` for exactly this reason. **Do not unpin them.** A score produced with different values is not comparable to any score recorded here.
 
+Incremental mode reuses results only when Stryker proves that the mutant and its
+covering tests are unchanged. CI restores `reports/stryker-incremental.json` from
+a cache keyed by the operating system, `package-lock.json`, and
+`stryker.config.mjs`; changing a dependency or any pinned measurement setting
+therefore forces a full run. Each workflow run uses a unique cache save key and
+restores the newest compatible report, avoiding GitHub Actions cache-key
+immutability while still carrying results forward.
+
 ## Current baseline
 
 Measured 2026-08-21 on the pinned settings over the five-file glob, at `main` = `9e3e38e`:
@@ -106,4 +114,9 @@ Node 22 or newer.
 
 INCONCLUSIVE is not a pass. Re-run on a quieter machine; do not record the score.
 
-Stryker writes local HTML and JSON reports under `reports/mutation/`; generated reports and `.stryker-tmp/` are ignored by git. `.github/workflows/mutation.yml` runs nightly and by manual `workflow_dispatch`, not on every pull request; it uploads `reports/mutation/` as a build artifact so a failing run leaves something to read.
+Stryker writes local HTML and JSON reports plus the incremental report under
+`reports/`; generated reports and `.stryker-tmp/` are ignored by git.
+`.github/workflows/mutation.yml` runs nightly and by manual
+`workflow_dispatch`, not on every pull request; it caches the incremental report
+and uploads `reports/mutation/` as a build artifact so a failing run leaves
+something to read.

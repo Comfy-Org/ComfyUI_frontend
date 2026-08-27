@@ -38,6 +38,11 @@ export default {
   // aimed at.
   mutate: ["src/applier.ts", "src/stamps.ts", "src/project.ts", "src/doc.ts", "src/mint.ts"],
   reporters: ["clear-text", "html", "json"],
+  // Reuse unchanged mutant results between scheduled/manual CI runs. The
+  // workflow restores this report from a cache keyed by the dependency lock
+  // and this config, so changing any pinned measurement knob starts clean.
+  incremental: true,
+  incrementalFile: "reports/stryker-incremental.json",
   coverageAnalysis: "all",
   // Per-mutant budget = netTime * timeoutFactor + timeoutMS. Generous on
   // purpose: only a genuinely non-terminating mutant should ever time out.
