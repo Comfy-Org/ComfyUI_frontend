@@ -89,7 +89,7 @@ function readOpen(): boolean {
   }
 }
 
-const open = ref(readOpen())
+const open = ref(isDevBuild && readOpen())
 
 function setOpen(value: boolean) {
   open.value = value
@@ -124,6 +124,7 @@ function poll() {
 }
 
 onMounted(() => {
+  if (!isDevBuild) return
   poll()
   pollHandle = setInterval(poll, 1000)
 })
