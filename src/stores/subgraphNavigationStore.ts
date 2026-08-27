@@ -11,6 +11,7 @@ import {
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
@@ -337,6 +338,7 @@ export const useSubgraphNavigationStore = defineStore(
               '[subgraphNavigation] openWorkflow rejected during recovery',
               err
             )
+            reportError(err, { errorType: 'workflow_navigation_failure' })
             return redirectToRoot('workflow load failed', navigationId)
           }
           if (navigationId !== navigationIntentId) return

@@ -33,6 +33,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -91,6 +92,7 @@ function queueWorkflowLoad(
       // The internal chain marks `result` handled; keep failures observable
       // for fire-and-forget callers.
       console.error('[workflowService] queued workflow load failed', error)
+      reportError(error, { errorType: 'workflow_load_failure' })
       return undefined
     })
     .finally(() => {

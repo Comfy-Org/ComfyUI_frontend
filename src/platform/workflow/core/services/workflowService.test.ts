@@ -8,6 +8,7 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { defaultGraph } from '@/scripts/defaultGraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -122,6 +123,12 @@ vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
     storeThumbnail: vi.fn(),
     getThumbnail: vi.fn()
   })
+}))
+
+const reportErrorMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: reportErrorMock
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -512,8 +519,10 @@ describe('useWorkflowService', () => {
         service.closeWorkflow(lastOpen, { warnIfUnsaved: false })
       ).resolves.toBe(true)
 
-      // loadDefaultWorkflow drives loadGraphData with no workflow argument.
+      // loadDefaultWorkflow is detected by its payload, not by a missing
+      // workflow argument: the call must carry the default graph itself.
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(app.loadGraphData).mock.calls[0][0]).toBe(defaultGraph)
       expect(vi.mocked(app.loadGraphData).mock.calls[0][3]).toBeUndefined()
     })
 
@@ -600,6 +609,9 @@ describe('useWorkflowService', () => {
         expect.stringContaining('queued workflow load failed'),
         error
       )
+      expect(reportErrorMock).toHaveBeenCalledWith(error, {
+        errorType: 'workflow_load_failure'
+      })
       expect(
         subgraphNavigationMocks.endWorkflowNavigation
       ).toHaveBeenCalledWith(1)
