@@ -13,8 +13,8 @@ const { locale = 'en', pack } = defineProps<{
 
 const detailHref =
   locale === 'zh-CN'
-    ? `/zh-CN/cloud/supported-nodes/${pack.id}`
-    : `/cloud/supported-nodes/${pack.id}`
+    ? `/zh-CN/cloud/supported-nodes/${pack.id}/`
+    : `/cloud/supported-nodes/${pack.id}/`
 
 function nodeCountLabel(nodeCount: number): string {
   const key =

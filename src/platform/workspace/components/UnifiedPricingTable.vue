@@ -469,17 +469,12 @@ const emit = defineEmits<{
 
 const { t, n } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions } = useWorkspaceUI()
+const { permissions, canReactivatePlan } = useWorkspaceUI()
 
 const canSubscribeSelfServe = computed(() =>
   isCloud
     ? capabilities.canSubscribeSelfServe.value
     : permissions.value.canManageSubscription
-)
-const canReactivate = computed(() =>
-  isCloud
-    ? capabilities.canReactivate.value
-    : permissions.value.canManageSubscriptionLifecycle
 )
 const canChangeSeats = computed(() =>
   isCloud
@@ -500,8 +495,8 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
-const PRICING_URL = 'https://www.comfy.org/pricing'
+const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
+const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */
@@ -770,7 +765,7 @@ const isTeamButtonDisabled = computed(() => {
   if (isLoading) return true
   if (!isTeamSubscribed.value) return !canSubscribeSelfServe.value
   if (isTeamCurrentPlanSelected.value) {
-    return !isCancelled.value || !canReactivate.value
+    return !isCancelled.value || !canReactivatePlan.value
   }
   return !canChangeSeats.value
 })
@@ -861,7 +856,7 @@ const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
   if (!canSelectPersonalPlan.value) return false
   if (isTeamPlan.value) return canDowngradeToPersonal.value
   if (isCurrentPlan(tierKey)) {
-    return isCancelled.value && canReactivate.value
+    return isCancelled.value && canReactivatePlan.value
   }
   return hasActivePaidPlan(currentAccountTier.value)
     ? canChangeSeats.value
