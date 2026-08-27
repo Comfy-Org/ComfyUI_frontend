@@ -260,7 +260,7 @@ export class PerformanceHelper {
       await this.startRafCollector()
       this.measurementState = { kind: 'measuring', snapshot }
     } catch (error) {
-      await this.stopRafCollectorIfRunning()
+      await Promise.allSettled([this.stopRafCollectorIfRunning()])
       throw error
     }
   }
