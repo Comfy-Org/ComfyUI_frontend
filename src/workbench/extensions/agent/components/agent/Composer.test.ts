@@ -429,9 +429,11 @@ describe('Composer', () => {
 
       const menu = await openReferenceSection('Nodes', '@vae de')
       expect(within(menu).getAllByRole('menuitem')).toHaveLength(2)
-      expect(within(menu).getByText('VAE Decode')).toBeVisible()
+      expect(
+        within(menu).getByRole('menuitem', { name: 'VAE Decode' })
+      ).toHaveAttribute('data-active', 'true')
 
-      await userEvent.keyboard('{ArrowDown}{Enter}')
+      await userEvent.keyboard('{Enter}')
       expect(emitted().mentionPick[0]).toEqual([NODES[2]])
       expect(emitted().send).toBeUndefined()
       expect((box as HTMLTextAreaElement).value).toBe('')
@@ -801,16 +803,13 @@ describe('Composer', () => {
     )
   })
 
-  it('emits focusTag when a selection chip is activated', async () => {
-    const { emitted } = mount({
-      selectionTags: [{ id: '5', title: 'KSampler' }]
-    })
+  it('renders a selection chip label as non-interactive context', () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Show KSampler #5 on canvas' })
-    )
-
-    expect(emitted().focusTag).toEqual([['5']])
+    expect(screen.getByText('KSampler')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Show KSampler #5 on canvas' })
+    ).toBeNull()
   })
 
   // The remove button sits outside the focus trigger; removing a chip must not

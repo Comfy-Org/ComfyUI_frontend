@@ -3059,7 +3059,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
-  it('stages a mention pick once and reports the tag gesture', async () => {
+  it('stages a mention pick without selecting it on canvas', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     const state = setupNodeSelectionCanvas()
@@ -3071,8 +3071,8 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(await screen.findByText('KSampler'))
 
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
-    expect([...state.selectedItems]).toEqual([state.nodes[1]])
-    expect(state.selectItems).toHaveBeenCalledWith([state.nodes[1]], true)
+    expect([...state.selectedItems]).toEqual([])
+    expect(state.selectItems).not.toHaveBeenCalled()
     expect(telemetry.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
     expect(telemetry.trackAgentNodeTagged).toHaveBeenCalledWith({
       source: 'mention_picker'
@@ -3119,6 +3119,26 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
     expect(screen.queryByText('Sunset.png')).not.toBeInTheDocument()
     expect(textbox).toHaveValue('@sun')
+  })
+
+  it('offers only Cloud-backed workflows that are open in editor tabs', async () => {
+    makeTab('wf-current')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint(
+      'wf-current',
+      { status: 404, body: { error: 'none' } },
+      [{ id: 'wf-remote', name: 'Remote workflow' }]
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'other' })).toBeVisible()
+    expect(
+      screen.queryByRole('menuitem', { name: 'Remote workflow' })
+    ).toBeNull()
   })
 
   it('sends no workflow id for an unbound tab and posts exactly once', async () => {
@@ -3312,54 +3332,35 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
   })
 
-  it('deselects the graph node when its reference chip is removed', async () => {
+  it('removes a reference chip without changing canvas selection', async () => {
     makeTab()
     const state = setupNodeSelectionCanvas()
+    state.selectedItems.add(state.nodes[0])
+    hostStores.canvas.updateSelectedItems()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
 
-    await openMentionPicker()
-    await userEvent.click(await screen.findByText('VAE Decode'))
     await openMentionPicker()
     const matches = await screen.findAllByText('KSampler')
     await userEvent.click(matches[matches.length - 1])
 
-    expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'Remove VAE Decode #9 reference' })
+      screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
     )
 
-    expect(screen.queryByText('VAE Decode')).not.toBeInTheDocument()
-    expect(state.deselect).toHaveBeenCalledWith(state.nodes[0])
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+    expect(state.deselect).not.toHaveBeenCalled()
     expect(focusNodeInstance).not.toHaveBeenCalled()
-    expect([...state.selectedItems]).toEqual([state.nodes[1]])
-    expect(hostStores.canvas.selectedItems).toEqual([state.nodes[1]])
+    expect([...state.selectedItems]).toEqual([state.nodes[0]])
+    expect(hostStores.canvas.selectedItems).toEqual([state.nodes[0]])
   })
 
-  it('focuses the graph node when its reference chip is activated', async () => {
+  it('does not expose a canvas-focus action on a reference chip', async () => {
     makeTab()
-    const state = setupNodeSelectionCanvas()
-
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    useAgentPanelStore().isOpen = true
-
-    await openMentionPicker()
-    await userEvent.click(await screen.findByText('KSampler'))
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Show KSampler #12 on canvas' })
-    )
-
-    expect(focusNodeInstance).toHaveBeenCalledWith(state.nodes[1])
-    expect(screen.getByText('KSampler')).toBeInTheDocument()
-  })
-
-  it('focuses a retained subgraph node after navigating to the root graph', async () => {
-    makeTab()
-    const state = setupNodeSelectionCanvas()
-    nestSelectionCanvasInSubgraph(state)
+    setupNodeSelectionCanvas()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
@@ -3367,18 +3368,14 @@ describe('AgentPanelRoot workflow binding', () => {
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
-    showRootGraph(state)
-    await nextTick()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Show KSampler #12 on canvas' })
-    )
-
-    expect(focusNodeInstance).toHaveBeenCalledWith(state.nodes[1])
+    expect(
+      screen.queryByRole('button', { name: 'Show KSampler #12 on canvas' })
+    ).toBeNull()
+    expect(focusNodeInstance).not.toHaveBeenCalled()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
-  it('uses graph-scoped identity for focus, removal, and picker exclusion', async () => {
+  it('uses graph-scoped identity for removal and picker exclusion', async () => {
     makeTab()
     const state = setupNodeSelectionCanvas()
     const subgraphNode = nestSelectionCanvasInSubgraph(state)
@@ -3404,13 +3401,6 @@ describe('AgentPanelRoot workflow binding', () => {
     hostStores.canvas.updateSelectedItems()
     await nextTick()
 
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: 'Show Subgraph twin #shared on canvas'
-      })
-    )
-    expect(focusNodeInstance).toHaveBeenCalledWith(referencedNode)
-
     await openMentionPicker()
     expect(
       within(screen.getByRole('menu')).getByText('Root twin')
@@ -3421,7 +3411,7 @@ describe('AgentPanelRoot workflow binding', () => {
         name: 'Remove Subgraph twin #shared reference'
       })
     )
-    expect(state.deselect).toHaveBeenCalledWith(referencedNode)
+    expect(state.deselect).not.toHaveBeenCalled()
     expect([...state.selectedItems]).toEqual([rootTwin])
   })
 
@@ -3523,7 +3513,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
-  it('restores an off-view subgraph reference by locator after a panel remount', async () => {
+  it('restores an off-view subgraph context chip without a focus action', async () => {
     makeTab()
     const state = setupNodeSelectionCanvas()
     const subgraphNode = nestSelectionCanvasInSubgraph(state)
@@ -3555,12 +3545,12 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(screen.getByText('Subgraph twin')).toBeInTheDocument()
     expect(screen.queryByText('Root twin')).not.toBeInTheDocument()
-    await userEvent.click(
-      screen.getByRole('button', {
+    expect(
+      screen.queryByRole('button', {
         name: 'Show Subgraph twin #shared on canvas'
       })
-    )
-    expect(focusNodeInstance).toHaveBeenCalledWith(referencedNode)
+    ).toBeNull()
+    expect(focusNodeInstance).not.toHaveBeenCalled()
   })
   it('does not resend a canvas selection after its chip was consumed', async () => {
     makeTab()
@@ -3580,7 +3570,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
 
-    expect([...state.selectedItems]).toEqual([state.nodes[1]])
+    expect([...state.selectedItems]).toEqual([])
     await sendFromComposer('second ask')
     expect(bodies[1]).not.toHaveProperty('selection')
   })
