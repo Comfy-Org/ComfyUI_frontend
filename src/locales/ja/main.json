@@ -978,23 +978,6 @@
     "WAN_CAMERA_EMBEDDING": "WANカメラ埋め込み",
     "WEBCAM": "ウェブカメラ"
   },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "閉じる"
-      },
-      "message": "無効なダイアログIDが指定されました。",
-      "title": "無効なダイアログ"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "詳細を見る",
-        "Reinstall": "再インストール"
-      },
-      "message": "一部のインストール済みパッケージに互換性がないため、ComfyUIを起動できません。\n\n「再インストール」をクリックすると、ComfyUIを復元して再び利用できるようになります。\n\n注意：カスタムノードを追加している場合は、この処理後に再インストールする必要があります。",
-      "title": "ComfyUIを再インストールしますか？（初期状態に戻す）"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "ComfyUIデスクトップアプリがあなたのアカウントでサインインを待機しています。ComfyUIデスクトップアプリからサインインを開始した場合のみ続行してください。",
     "confirmSummary": "デスクトップサインインを承認しますか？",
