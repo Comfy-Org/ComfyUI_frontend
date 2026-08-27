@@ -427,6 +427,18 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures image load failures', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackImageLoadFailed({ source: 'node_image_preview' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.IMAGE_LOAD_FAILED,
+        { source: 'node_image_preview' }
+      )
+    })
+
     it('captures enriched execution starts with client attribution', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

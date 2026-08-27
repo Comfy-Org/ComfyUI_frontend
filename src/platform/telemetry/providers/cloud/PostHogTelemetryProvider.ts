@@ -14,6 +14,7 @@ import type {
   AddCreditsClickMetadata,
   AuthErrorMetadata,
   AuthMetadata,
+  ImageLoadFailureMetadata,
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
@@ -396,6 +397,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
       metadata
     )
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
   trackUserLoggedIn(): void {

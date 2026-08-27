@@ -887,8 +887,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // workspace switches establish it themselves. A stale (discarded)
       // re-mint does not rotate either.
       if (minted) {
-        trackUnifiedRefresh('succeeded')
         useAuthStore().notifyTokenRefreshed()
+        trackUnifiedRefresh('succeeded')
       } else if (unifiedRefreshTimerId === null) {
         // A mint failure while the owner uid is momentarily null (Firebase
         // re-initializing post-wake) resolves false instead of throwing. Only
