@@ -5899,9 +5899,9 @@ const translations = {
   },
   'minimaxMusic3.hero.titleRest': { en: ' is here', 'zh-CN': ' 已上线' },
   'minimaxMusic3.hero.description': {
-    en: 'Full songs up to five minutes in one generation. Feed lyrics and a music description, and get coherent structure, expressive vocals, and evolving arrangements. Quality holds steady across the whole track, and the open weights are free to use commercially under Apache 2.0.',
+    en: 'Full songs up to five minutes in one generation. Feed lyrics and a music description, and get coherent structure, expressive vocals, and evolving arrangements. Quality holds steady across the whole track, and the open weights are free for most commercial use under the MiniMax Community License.',
     'zh-CN':
-      '一次生成最长五分钟的完整歌曲。输入歌词和音乐描述，即可获得连贯的结构、富有表现力的人声和层层递进的编曲。整首曲目质量稳定如一，且开源权重依据 Apache 2.0 许可可免费商用。'
+      '一次生成最长五分钟的完整歌曲。输入歌词和音乐描述，即可获得连贯的结构、富有表现力的人声和层层递进的编曲。整首曲目质量稳定如一，且开源权重依据 MiniMax 社区许可，对多数商业用途免费。'
   },
   'minimaxMusic3.hero.tagOpenWeights': {
     en: 'Open Weight',
@@ -5964,9 +5964,9 @@ const translations = {
     'zh-CN': '为商业创作获取 H3 许可。'
   },
   'minimaxMusic3.reviews.highlightDescription': {
-    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Music 3 itself stays free for commercial use under Apache 2.0.',
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Music 3 stays free for most commercial use under its Community License.',
     'zh-CN':
-      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。Music 3 本身依旧可在 Apache 2.0 许可下免费商用。'
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。Music 3 在其社区许可下对多数商业用途依旧免费。'
   },
   'minimaxMusic3.reviews.highlightCta': {
     en: 'GET YOUR LICENSE',

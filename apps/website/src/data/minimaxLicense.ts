@@ -134,9 +134,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '许可涵盖 MiniMax 的音频和音乐模型吗？'
         },
         answer: {
-          en: 'Yes. MiniMax commercial licenses through Comfy cover MiniMax H3 and MiniMax Audio & Music, available globally, so video, audio, and music sit under one agreement. MiniMax Music 3 is the exception: it ships under Apache 2.0 and is already free for commercial use.',
+          en: 'Yes. MiniMax commercial licenses through Comfy cover MiniMax H3 and MiniMax Audio & Music, available globally, so video, audio, and music sit under one agreement. MiniMax Music 3 has its own Community License that allows free commercial use below 20 million US dollars in yearly revenue; above that threshold, it needs a commercial license too.',
           'zh-CN':
-            '涵盖。通过 Comfy 获取的 MiniMax 商业许可涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，全球可用，视频、音频与音乐都在同一份协议之下。MiniMax Music 3 是例外：它采用 Apache 2.0 许可，本就可以免费商用。'
+            '涵盖。通过 Comfy 获取的 MiniMax 商业许可涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，全球可用，视频、音频与音乐都在同一份协议之下。MiniMax Music 3 拥有自己的社区许可，年收入低于 2000 万美元的公司可免费商用；超过该门槛，同样需要商业许可。'
         }
       },
       {
