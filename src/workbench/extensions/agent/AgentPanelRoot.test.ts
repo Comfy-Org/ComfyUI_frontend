@@ -1850,10 +1850,6 @@ describe('AgentPanelRoot workflow binding', () => {
 
   function mockMessagesEndpoint(
     ackWorkflowId: string,
-    draft: { status: number; body: unknown } = {
-      status: 200,
-      body: { content: { version: 0.4, nodes: [{ id: 1 }] }, version: 3 }
-    },
     cloudWorkflows: { id: string; name: string }[] = []
   ): unknown[] {
     const bodies: unknown[] = []
@@ -1867,9 +1863,6 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
           return json(200, { threads: [], pagination: { page: 1 } })
-        }
-        if (url.includes('/agent/draft')) {
-          return json(draft.status, draft.body)
         }
         if (url.includes('/workflows')) {
           return json(200, {
@@ -1887,14 +1880,6 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     return bodies
   }
-
-  const patch = (version: number, content: unknown): void =>
-    ws.emit('draft_patch', {
-      workflow_id: 'wf-42',
-      base_version: version - 1,
-      version,
-      content
-    })
 
   it('names the active workflow in the selector', async () => {
     makeTab('wf-42')
@@ -1997,7 +1982,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('holds the creating flag for 500 ms before an unbound agent tab materializes', async () => {
     makeTab('wf-42')
-    let resolveDraft: ((response: Response) => void) | undefined
+    let resolveLookup: ((response: Response) => void) | undefined
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
@@ -2006,7 +1991,7 @@ describe('AgentPanelRoot workflow binding', () => {
           return json(200, { threads: [], pagination: { page: 1 } })
         if (url.includes('workflow_id=wf-new')) {
           return new Promise<Response>((resolve) => {
-            resolveDraft = resolve
+            resolveLookup = resolve
           })
         }
         return new Response('{}', { status: 200 })
@@ -2027,7 +2012,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(activity.creatingTab).toBe(true)
 
-    resolveDraft?.(json(404, { error: 'none' }))
+    resolveLookup?.(json(404, { error: 'none' }))
     await vi.advanceTimersByTimeAsync(0)
     await vi.advanceTimersByTimeAsync(499)
     expect(activity.creatingTab).toBe(true)
@@ -2041,7 +2026,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('lowers the creating flag when a newer focus event supersedes the fetch', async () => {
     const bound = makeTab('wf-42')
-    let resolveDraft: ((response: Response) => void) | undefined
+    let resolveLookup: ((response: Response) => void) | undefined
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
@@ -2050,10 +2035,9 @@ describe('AgentPanelRoot workflow binding', () => {
           return json(200, { threads: [], pagination: { page: 1 } })
         if (url.includes('workflow_id=wf-new')) {
           return new Promise<Response>((resolve) => {
-            resolveDraft = resolve
+            resolveLookup = resolve
           })
         }
-        if (url.includes('/agent/draft')) return json(404, { error: 'none' })
         return new Response('{}', { status: 200 })
       })
     )
@@ -2069,7 +2053,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() => expect(activity.creatingTab).toBe(true))
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
-    resolveDraft?.(json(404, { error: 'none' }))
+    resolveLookup?.(json(404, { error: 'none' }))
 
     await vi.waitFor(() =>
       expect(workflowService.openWorkflow).toHaveBeenCalledWith(bound)
@@ -2102,7 +2086,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
     makeTab('wf-42')
-    mockMessagesEndpoint('wf-42', { status: 404, body: { error: 'none' } })
+    mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
     const activity = useWorkflowTabActivityStore()
@@ -2344,7 +2328,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
     makeTab('wf-42')
-    mockMessagesEndpoint('wf-42', { status: 404, body: { error: 'none' } })
+    mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
 
@@ -2362,7 +2346,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('two unnamed agent tabs mint distinct tabs with distinct bindings', async () => {
     makeTab('wf-42')
-    mockMessagesEndpoint('wf-42', { status: 404, body: { error: 'none' } })
+    mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
 
@@ -2394,7 +2378,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('a slow tab activation cannot finish after a newer focus event', async () => {
     const tab = makeTab('wf-42')
-    mockMessagesEndpoint('wf-42', { status: 404, body: { error: 'none' } })
+    mockMessagesEndpoint('wf-42')
 
     let resolveSlowOpen: (() => void) | undefined
     workflowService.openWorkflow.mockImplementationOnce(
@@ -2436,7 +2420,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('a stale agent_active_tab resolving late cannot steal focus from the newest', async () => {
     makeTab('wf-42')
-    mockMessagesEndpoint('wf-42', { status: 404, body: { error: 'none' } })
+    mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
 
@@ -2480,7 +2464,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
   it('an activation superseded before it starts does nothing at all', async () => {
-    mockMessagesEndpoint('wf-42', { status: 404, body: { error: 'none' } })
+    mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
 
@@ -2511,10 +2495,7 @@ describe('AgentPanelRoot workflow binding', () => {
     addTab('workflows/scratch.json', {
       activeState: { id: 'graph-internal-id-not-a-cloud-id' }
     })
-    const bodies = mockMessagesEndpoint('wf-42', {
-      status: 404,
-      body: { error: 'none' }
-    })
+    const bodies = mockMessagesEndpoint('wf-42')
 
     await renderAndSend('first message')
 
@@ -2569,11 +2550,9 @@ describe('AgentPanelRoot workflow binding', () => {
   it('does not resolve two same-named open saved tabs to one cloud id', async () => {
     makeTab()
     addTab('workflows/archive/current.json')
-    const bodies = mockMessagesEndpoint(
-      'wf-fresh',
-      { status: 404, body: { error: 'none' } },
-      [{ id: 'wf-cloud-current', name: 'current' }]
-    )
+    const bodies = mockMessagesEndpoint('wf-fresh', [
+      { id: 'wf-cloud-current', name: 'current' }
+    ])
 
     await renderAndSend('first message')
 
@@ -2583,15 +2562,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('excludes ambiguous and nameless cloud records from resolution', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint(
-      'wf-fresh',
-      { status: 404, body: { error: 'none' } },
-      [
-        { id: 'wf-a', name: 'current' },
-        { id: 'wf-b', name: 'current' },
-        { id: 'wf-nameless' } as { id: string; name: string }
-      ]
-    )
+    const bodies = mockMessagesEndpoint('wf-fresh', [
+      { id: 'wf-a', name: 'current' },
+      { id: 'wf-b', name: 'current' },
+      { id: 'wf-nameless' } as { id: string; name: string }
+    ])
 
     await renderAndSend('first message')
 
@@ -2630,14 +2605,10 @@ describe('AgentPanelRoot workflow binding', () => {
   it('resolves saved tabs to their cloud workflow ids by name', async () => {
     makeTab()
     addTab('workflows/side.json')
-    const bodies = mockMessagesEndpoint(
-      'wf-cloud-current',
-      { status: 404, body: { error: 'none' } },
-      [
-        { id: 'wf-cloud-current', name: 'current' },
-        { id: 'wf-cloud-side', name: 'side' }
-      ]
-    )
+    const bodies = mockMessagesEndpoint('wf-cloud-current', [
+      { id: 'wf-cloud-current', name: 'current' },
+      { id: 'wf-cloud-side', name: 'side' }
+    ])
 
     await renderAndSend('first message')
 
@@ -2654,11 +2625,9 @@ describe('AgentPanelRoot workflow binding', () => {
   it('does not resolve temporary tabs through the cloud workflow index', async () => {
     const tab = makeTab()
     tab.isTemporary = true
-    const bodies = mockMessagesEndpoint(
-      'wf-fresh',
-      { status: 404, body: { error: 'none' } },
-      [{ id: 'wf-cloud-current', name: 'current' }]
-    )
+    const bodies = mockMessagesEndpoint('wf-fresh', [
+      { id: 'wf-cloud-current', name: 'current' }
+    ])
 
     await renderAndSend('first message')
 
@@ -2670,14 +2639,10 @@ describe('AgentPanelRoot workflow binding', () => {
     makeTab()
     addTab('workflows/temp/duck.json', { isTemporary: true })
     const duck = addTab('workflows/duck.json')
-    mockMessagesEndpoint(
-      'wf-cloud-current',
-      { status: 404, body: { error: 'none' } },
-      [
-        { id: 'wf-cloud-current', name: 'current' },
-        { id: 'wf-cloud-duck', name: 'duck' }
-      ]
-    )
+    mockMessagesEndpoint('wf-cloud-current', [
+      { id: 'wf-cloud-current', name: 'current' },
+      { id: 'wf-cloud-duck', name: 'duck' }
+    ])
 
     await renderAndSend('first message')
 
@@ -2703,10 +2668,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('sends every open tab that has a cloud id with the message', async () => {
     makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42', {
-      status: 404,
-      body: { error: 'none' }
-    })
+    const bodies = mockMessagesEndpoint('wf-42')
 
     await renderAndSend('first message')
 
@@ -2723,10 +2685,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     makeTab('wf-42')
     addTab('workflows/mountain.json')
-    const bodies = mockMessagesEndpoint('wf-42', {
-      status: 404,
-      body: { error: 'none' }
-    })
+    const bodies = mockMessagesEndpoint('wf-42')
 
     await renderAndSend('first message')
 
@@ -2741,10 +2700,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('skips the draft on first send from an unbound empty tab', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42', {
-      status: 404,
-      body: { error: 'none' }
-    })
+    const bodies = mockMessagesEndpoint('wf-42')
 
     await renderAndSend('first message')
 
@@ -2756,10 +2712,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('omits current_tab from the snapshot when the active tab has no cloud id', async () => {
     makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42', {
-      status: 404,
-      body: { error: 'none' }
-    })
+    const bodies = mockMessagesEndpoint('wf-42')
 
     await renderAndSend('first message')
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
@@ -3503,14 +3456,18 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
   })
 
-  it('parks an empty draft even for the bound tab', async () => {
-    const tab = makeTab('wf-42')
+  it('never subscribes to the retired draft_patch frame', async () => {
+    makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('help me')
 
-    tab.isModified = true
-    patch(1, { version: 0.4, nodes: [] })
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 0,
+      version: 1,
+      content: { version: 0.4, nodes: [] }
+    })
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()

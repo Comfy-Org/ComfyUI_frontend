@@ -5,7 +5,6 @@ import {
   isAgentEvent,
   parseAgentWsEvent,
   zAgentCancelAccepted,
-  zAgentDraftSnapshot,
   zAgentError,
   zAgentMessage,
   zAgentMessages,
@@ -85,7 +84,6 @@ function restSchemaFor(line: RestLine): ZodTypeAny {
   if (line.status >= 400) return zAgentError
   if (line.op.startsWith('postMessage')) return zAgentTurnAccepted
   if (line.op.startsWith('getMessages')) return zAgentMessages
-  if (line.op.startsWith('getDraft')) return zAgentDraftSnapshot
   if (line.op.startsWith('cancelMessage')) return zAgentCancelAccepted
   throw new Error(`no schema mapped for op=${line.op} status=${line.status}`)
 }
@@ -141,13 +139,9 @@ describe('agentApiSchema contract subtleties', () => {
     }
   })
 
-  it('rejects draft_patch missing base_version', () => {
-    expect(
-      zAgentWsEvent.safeParse({
-        type: 'draft_patch',
-        data: { version: 2, content: {}, workflow_id: 'w1' }
-      }).success
-    ).toBe(false)
+  it('keeps the retired draft frames foreign to the union', () => {
+    expect(isAgentEvent('draft_patch')).toBe(false)
+    expect(isAgentEvent('draft_version')).toBe(false)
   })
 
   it('rejects an unknown event type in the union while isAgentEvent stays false', () => {
@@ -159,22 +153,20 @@ describe('agentApiSchema contract subtleties', () => {
 
   it('accepts extra additive keys in event data', () => {
     const parsed = parseAgentWsEvent({
-      type: 'draft_version',
-      data: { version: 5, workflow_id: 'w1', future_field: true }
+      type: 'agent_active_tab',
+      data: { workflow_id: 'w1', future_field: true }
     })
     expect(parsed.success).toBe(true)
   })
 
-  it('exposes exactly the seven agent event types', () => {
+  it('exposes exactly the five agent event types', () => {
     expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
       [
         'agent_active_tab',
         'agent_message_delta',
         'agent_message_done',
         'agent_thinking',
-        'agent_tool_call',
-        'draft_patch',
-        'draft_version'
+        'agent_tool_call'
       ].sort()
     )
   })
