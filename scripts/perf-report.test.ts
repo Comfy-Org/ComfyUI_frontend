@@ -132,6 +132,22 @@ describe('performance report', () => {
     expect(output).not.toContain('No regressions detected')
   })
 
+  it('reports CDP task accounting metrics', () => {
+    const output = renderPerfReport(report([accepted(20)]), null, [])
+
+    for (const label of [
+      'task other duration',
+      'V8 compile duration',
+      'DevTools command duration',
+      'thread time',
+      'process time',
+      'accounted task duration',
+      'task accounting residual'
+    ]) {
+      expect(output).toContain(`| sample: ${label} |`)
+    }
+  })
+
   it('starts a new epoch for a v1 baseline', () => {
     const output = renderPerfReport(
       report([accepted(20)]),

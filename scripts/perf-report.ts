@@ -31,6 +31,13 @@ type MetricKey =
   | 'layouts'
   | 'layoutDurationMs'
   | 'taskDurationMs'
+  | 'taskOtherDurationMs'
+  | 'v8CompileDurationMs'
+  | 'devToolsCommandDurationMs'
+  | 'threadTimeMs'
+  | 'processTimeMs'
+  | 'accountedTaskDurationMs'
+  | 'taskAccountingResidualMs'
   | 'domNodes'
   | 'scriptDurationMs'
   | 'eventListeners'
@@ -88,6 +95,25 @@ const REPORTED_METRICS: MetricDef[] = [
     minAbsDelta: 5
   },
   { key: 'taskDurationMs', label: 'task duration', unit: 'ms' },
+  { key: 'taskOtherDurationMs', label: 'task other duration', unit: 'ms' },
+  { key: 'v8CompileDurationMs', label: 'V8 compile duration', unit: 'ms' },
+  {
+    key: 'devToolsCommandDurationMs',
+    label: 'DevTools command duration',
+    unit: 'ms'
+  },
+  { key: 'threadTimeMs', label: 'thread time', unit: 'ms' },
+  { key: 'processTimeMs', label: 'process time', unit: 'ms' },
+  {
+    key: 'accountedTaskDurationMs',
+    label: 'accounted task duration',
+    unit: 'ms'
+  },
+  {
+    key: 'taskAccountingResidualMs',
+    label: 'task accounting residual',
+    unit: 'ms'
+  },
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
   { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
   { key: 'heapUsedBytes', label: 'heap used', unit: 'bytes' },
