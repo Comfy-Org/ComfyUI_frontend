@@ -7,7 +7,6 @@ import {
   requireCdpMetric
 } from '@/utils/cdpPerformanceMetrics'
 import type {
-  PerfActivityIdentity,
   PerfIdentitySource,
   PerfWorkloadIdentity
 } from '@e2e/fixtures/helpers/perfWorkloadIdentity'
@@ -375,11 +374,6 @@ export class PerformanceHelper {
         gpuClass
       }
     })
-    const activity = await this.page.evaluate(() => {
-      const value = (window as unknown as Record<string, unknown>)
-        .__perfActivityIdentity
-      return (value ?? {}) as Partial<PerfActivityIdentity>
-    })
-    return buildPerfWorkloadIdentity({ ...source, browserVersion }, activity)
+    return buildPerfWorkloadIdentity({ ...source, browserVersion })
   }
 }

@@ -33,16 +33,6 @@ export interface PerfIdentitySource {
   gpuClass: 'hardware' | 'software' | 'swiftshader' | 'unknown'
 }
 
-export interface PerfActivityIdentity {
-  activeProgressEntries: number | null
-  progressEventsEmitted: number | null
-  progressEventsReceived: number | null
-  progressEventsApplied: number | null
-  dirtyReasons: Record<string, number> | null
-  foregroundDraws: number | null
-  backgroundDraws: number | null
-}
-
 export interface PerfWorkloadIdentity {
   schemaVersion: typeof PERF_IDENTITY_SCHEMA_VERSION
   topology: {
@@ -55,35 +45,7 @@ export interface PerfWorkloadIdentity {
     maxFanOut: number
     widgets: number
   }
-  activity: PerfActivityIdentity
   environment: Omit<PerfIdentitySource, 'nodes' | 'links' | 'visibleNodes'>
-  missingOptionalFields: string[]
-}
-
-const ALLOWED_DIRTY_REASONS = [
-  'animation',
-  'background',
-  'foreground',
-  'layout',
-  'progress',
-  'unknown'
-] as const
-
-function normalizeCount(value: number | null | undefined): number | null {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
-    ? value
-    : null
-}
-
-function normalizeDirtyReasons(
-  value: Record<string, number> | null | undefined
-): Record<string, number> | null {
-  if (!value) return null
-  const entries = ALLOWED_DIRTY_REASONS.flatMap((reason) => {
-    const count = normalizeCount(value[reason])
-    return count === null ? [] : [[reason, count]]
-  })
-  return entries.length ? Object.fromEntries(entries) : null
 }
 
 export function stableSerialize(value: unknown): string {
@@ -128,22 +90,12 @@ export function hashTopology(
 }
 
 export function buildPerfWorkloadIdentity(
-  source: PerfIdentitySource,
-  activity: Partial<PerfActivityIdentity> = {}
+  source: PerfIdentitySource
 ): PerfWorkloadIdentity {
   const fanOut = new Map<string, number>()
   for (const link of source.links) {
     const key = `${link.originId}:${link.originSlot}`
     fanOut.set(key, (fanOut.get(key) ?? 0) + 1)
-  }
-  const normalizedActivity: PerfActivityIdentity = {
-    activeProgressEntries: normalizeCount(activity.activeProgressEntries),
-    progressEventsEmitted: normalizeCount(activity.progressEventsEmitted),
-    progressEventsReceived: normalizeCount(activity.progressEventsReceived),
-    progressEventsApplied: normalizeCount(activity.progressEventsApplied),
-    dirtyReasons: normalizeDirtyReasons(activity.dirtyReasons),
-    foregroundDraws: normalizeCount(activity.foregroundDraws),
-    backgroundDraws: normalizeCount(activity.backgroundDraws)
   }
   return {
     schemaVersion: PERF_IDENTITY_SCHEMA_VERSION,
@@ -157,7 +109,6 @@ export function buildPerfWorkloadIdentity(
       maxFanOut: Math.max(0, ...fanOut.values()),
       widgets: source.nodes.reduce((sum, node) => sum + node.widgetCount, 0)
     },
-    activity: normalizedActivity,
     environment: {
       renderer: source.renderer,
       canvasInfoEnabled: source.canvasInfoEnabled,
@@ -169,11 +120,7 @@ export function buildPerfWorkloadIdentity(
       buildMode: source.buildMode,
       browserVersion: source.browserVersion,
       gpuClass: source.gpuClass
-    },
-    missingOptionalFields: Object.entries(normalizedActivity)
-      .filter(([, value]) => value === null)
-      .map(([key]) => `activity.${key}`)
-      .sort()
+    }
   }
 }
 

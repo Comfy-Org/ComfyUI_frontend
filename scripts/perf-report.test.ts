@@ -58,15 +58,6 @@ function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
         maxFanOut: 0,
         widgets: 0
       },
-      activity: {
-        activeProgressEntries: null,
-        progressEventsEmitted: null,
-        progressEventsReceived: null,
-        progressEventsApplied: null,
-        dirtyReasons: null,
-        foregroundDraws: null,
-        backgroundDraws: null
-      },
       environment: {
         renderer: 'legacy',
         canvasInfoEnabled: null,
@@ -78,8 +69,7 @@ function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
         buildMode: 'test',
         browserVersion: 'test',
         gpuClass: 'unknown'
-      },
-      missingOptionalFields: []
+      }
     }
   }
 }
@@ -120,9 +110,7 @@ describe('performance report', () => {
     expect(output).toContain(
       '| sample: rAF interval p95 | 10ms | 20ms | +100% |'
     )
-    expect(output).toContain(
-      '| sample: rAF interval p95 | 10ms | 0ms | 0.0% |'
-    )
+    expect(output).toContain('| sample: rAF interval p95 | 10ms | 0ms | 0.0% |')
     expect(output).not.toContain('3500ms')
     expect(output).toContain(
       '1 measurement rejected and excluded from all statistics'

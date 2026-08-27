@@ -12,15 +12,6 @@ const perfWorkloadIdentitySchema = z.object({
     maxFanOut: z.number(),
     widgets: z.number()
   }),
-  activity: z.object({
-    activeProgressEntries: z.number().nullable(),
-    progressEventsEmitted: z.number().nullable(),
-    progressEventsReceived: z.number().nullable(),
-    progressEventsApplied: z.number().nullable(),
-    dirtyReasons: z.record(z.string(), z.number()).nullable(),
-    foregroundDraws: z.number().nullable(),
-    backgroundDraws: z.number().nullable()
-  }),
   environment: z.object({
     renderer: z.enum(['legacy', 'vue']),
     canvasInfoEnabled: z.boolean().nullable(),
@@ -32,8 +23,7 @@ const perfWorkloadIdentitySchema = z.object({
     buildMode: z.enum(['development', 'production', 'test']),
     browserVersion: z.string(),
     gpuClass: z.enum(['hardware', 'software', 'swiftshader', 'unknown'])
-  }),
-  missingOptionalFields: z.array(z.string())
+  })
 })
 
 const perfMeasurementV2Schema = z.object({

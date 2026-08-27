@@ -80,24 +80,6 @@ describe('perf workload identity', () => {
     expect(serialized).not.toContain('"20"')
   })
 
-  it('marks unavailable activity instrumentation explicitly', () => {
-    const identity = buildPerfWorkloadIdentity(source, {
-      progressEventsReceived: 12,
-      foregroundDraws: 4,
-      dirtyReasons: { progress: 3, 'workflow secret': 99 }
-    })
-
-    expect(identity.activity.progressEventsReceived).toBe(12)
-    expect(identity.missingOptionalFields).not.toContain(
-      'activity.progressEventsReceived'
-    )
-    expect(identity.missingOptionalFields).toContain(
-      'activity.progressEventsApplied'
-    )
-    expect(identity.activity.dirtyReasons).toEqual({ progress: 3 })
-    expect(JSON.stringify(identity)).not.toContain('workflow secret')
-  })
-
   it('filters samples by topology and execution environment', () => {
     const reference = { workloadIdentity: buildPerfWorkloadIdentity(source) }
     const sameWorkloadNewBuild = {
