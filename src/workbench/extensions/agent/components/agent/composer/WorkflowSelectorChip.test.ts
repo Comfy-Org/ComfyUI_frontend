@@ -64,7 +64,9 @@ describe('WorkflowSelectorChip', () => {
   it('names the active workflow on the trigger and lists every open tab', async () => {
     const { user } = renderChip()
     const workflowName = within(trigger()).getByText('portrait')
-    expect(workflowName).toHaveClass('underline', 'decoration-solid')
+    expect(trigger()).toHaveClass('flex-1', 'font-normal')
+    expect(trigger()).not.toHaveClass('font-medium')
+    expect(workflowName).not.toHaveClass('underline', 'decoration-solid')
 
     await user.hover(trigger())
     expect(
@@ -110,9 +112,17 @@ describe('WorkflowSelectorChip', () => {
 
   it('shows the choose-a-workflow placeholder without an active tab', async () => {
     const { user } = renderChip({ activeTab: null })
-    expect(trigger()).toHaveTextContent(
+    const emptyTrigger = trigger()
+    expect(emptyTrigger).toHaveTextContent(
       'Select a workflow for agent to work in'
     )
+    expect(emptyTrigger).toHaveClass(
+      'border',
+      'border-white/15',
+      'bg-white/4.5',
+      'font-normal'
+    )
+    expect(emptyTrigger).not.toHaveClass('flex-1', 'font-medium')
     expect(
       screen.queryByRole('button', {
         name: enMessages.agent.dontWorkInWorkflow
