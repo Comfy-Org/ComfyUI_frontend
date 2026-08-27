@@ -3,6 +3,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toNodeId } from '@/types/nodeId'
 
 test.describe(
@@ -79,41 +80,41 @@ for (const vueNodesEnabled of [false, true] as const) {
         vueNodesEnabled
       )
       await comfyPage.nodeOps.clearGraph()
-      const nodeId = toNodeId(
-        await comfyPage.page.evaluate(() => {
-          class ForeignLegacyWidget {
-            name = 'foreign_legacy_widget'
-            type = 'foreign_legacy_test'
-            value = 0
-            options = {}
-            y = 0
-            drawCalls = 0
-            mouseCalls = 0
-            computeSizeCalls = 0
+      const addForeignWidget = () => {
+        class ForeignLegacyWidget implements IBaseWidget {
+          [symbol: symbol]: boolean
+          name = 'foreign_legacy_widget'
+          type = 'foreign_legacy_test'
+          value = 0
+          options = {}
+          y = 0
+          drawCalls = 0
+          mouseCalls = 0
+          computeSizeCalls = 0
 
-            draw() {
-              this.drawCalls++
-            }
-
-            mouse() {
-              this.mouseCalls++
-              return true
-            }
-
-            computeSize(): [number, number] {
-              this.computeSizeCalls++
-              return [160, 24]
-            }
+          draw() {
+            this.drawCalls++
           }
 
-          const node = window.LiteGraph!.createNode('Note')!
-          node.title = 'Foreign legacy widget'
-          node.pos = [400, 200]
-          window.app!.graph.add(node)
-          node.addCustomWidget(new ForeignLegacyWidget() as never)
-          return String(node.id)
-        })
-      )
+          mouse() {
+            this.mouseCalls++
+            return true
+          }
+
+          computeSize(): [number, number] {
+            this.computeSizeCalls++
+            return [160, 24]
+          }
+        }
+
+        const node = window.LiteGraph!.createNode('Note')!
+        node.title = 'Foreign legacy widget'
+        node.pos = [400, 200]
+        window.app!.graph.add(node)
+        node.addCustomWidget(new ForeignLegacyWidget())
+        return String(node.id)
+      }
+      const nodeId = toNodeId(await comfyPage.page.evaluate(addForeignWidget))
 
       const counters = () =>
         comfyPage.page.evaluate((id) => {
@@ -121,17 +122,26 @@ for (const vueNodesEnabled of [false, true] as const) {
             .app!.graph.getNodeById(id)
             ?.widgets?.find(
               (candidate) => candidate.name === 'foreign_legacy_widget'
-            ) as
-            | {
-                drawCalls?: number
-                mouseCalls?: number
-                computeSizeCalls?: number
-              }
-            | undefined
+            )
           return {
-            draw: widget?.drawCalls ?? 0,
-            mouse: widget?.mouseCalls ?? 0,
-            computeSize: widget?.computeSizeCalls ?? 0
+            draw:
+              widget &&
+              'drawCalls' in widget &&
+              typeof widget.drawCalls === 'number'
+                ? widget.drawCalls
+                : 0,
+            mouse:
+              widget &&
+              'mouseCalls' in widget &&
+              typeof widget.mouseCalls === 'number'
+                ? widget.mouseCalls
+                : 0,
+            computeSize:
+              widget &&
+              'computeSizeCalls' in widget &&
+              typeof widget.computeSizeCalls === 'number'
+                ? widget.computeSizeCalls
+                : 0
           }
         }, nodeId)
 
