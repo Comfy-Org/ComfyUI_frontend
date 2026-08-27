@@ -2808,6 +2808,94 @@ describe('useWorkspaceAuthStore', () => {
       expect(unifiedToken.value).toBe('unified-token-1')
     })
 
+    it('re-arms the retry when a swallowed mint failure resolves false (owner null mid-refresh)', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const expiresInMs = 3600 * 1000
+      const mockFetch = vi.fn().mockImplementation(() =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...personalTokenResponse,
+              expires_at: new Date(Date.now() + expiresInMs).toISOString()
+            })
+        })
+      )
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      await store.mintAtLogin()
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      // Firebase is re-initializing at refresh time: requestToken throws
+      // NOT_AUTHENTICATED, which performUnifiedMint swallows to `false`.
+      mockCurrentUser.value = null
+      await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+
+      mockCurrentUser.value = { uid: 'user-a' }
+      await vi.advanceTimersByTimeAsync(5000)
+
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockNotifyTokenRefreshed).toHaveBeenCalledTimes(1)
+      expect(unifiedToken.value).toBe('unified-token-1')
+    })
+
+    it('does not stomp a superseding workspace switch schedule with a stale-refresh retry', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const expiresInMs = 3600 * 1000
+      const okResponse = (token: string) => ({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token,
+            expires_at: new Date(Date.now() + expiresInMs).toISOString()
+          })
+      })
+      let releaseStaleRefresh = () => {}
+      const staleRefreshGate = new Promise<void>((resolve) => {
+        releaseStaleRefresh = resolve
+      })
+      const mockFetch = vi
+        .fn()
+        .mockImplementationOnce(() =>
+          Promise.resolve(okResponse('workspace-token-a'))
+        )
+        .mockImplementationOnce(() =>
+          staleRefreshGate.then(() => okResponse('stale-refresh-token'))
+        )
+        .mockImplementation(() =>
+          Promise.resolve(okResponse('workspace-token-b'))
+        )
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      await store.switchWorkspace('workspace-a')
+
+      // The proactive refresh fires and hangs; a workspace switch supersedes
+      // it and arms its own schedule before the stale mint resolves false.
+      await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
+      const switchPromise = store.switchWorkspace('workspace-b')
+      releaseStaleRefresh()
+      await switchPromise
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getUnifiedToken()).toBe('workspace-token-b')
+
+      // No 5s retry pending: the next mint is workspace-b's own scheduled
+      // refresh, not a stale-refresh backoff retry.
+      const fetchCallsAfterSwitch = mockFetch.mock.calls.length
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(mockFetch).toHaveBeenCalledTimes(fetchCallsAfterSwitch)
+    })
+
     it('surfaces an error toast and resolves false when the login mint hits a permanent auth error', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')

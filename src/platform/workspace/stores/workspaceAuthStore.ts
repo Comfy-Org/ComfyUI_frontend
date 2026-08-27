@@ -743,6 +743,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const delay = Math.max(0, refreshAt - now)
 
     unifiedRefreshTimerId = setTimeout(() => {
+      unifiedRefreshTimerId = null
       void refreshUnified()
     }, delay)
   }
@@ -764,6 +765,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     unifiedRefreshRetryCount += 1
     stopUnifiedRefreshTimer()
     unifiedRefreshTimerId = setTimeout(() => {
+      unifiedRefreshTimerId = null
       void refreshUnified()
     }, delay)
     return true
@@ -877,6 +879,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // re-mint does not rotate either.
       if (minted) {
         useAuthStore().notifyTokenRefreshed()
+      } else if (unifiedRefreshTimerId === null) {
+        // A mint failure while the owner uid is momentarily null (Firebase
+        // re-initializing post-wake) resolves false instead of throwing. Only
+        // a false with no armed timer is a dead chain: a superseding mint has
+        // already scheduled its own refresh.
+        scheduleUnifiedRefreshRetry()
       }
     } catch (err) {
       // Guard the toast on a live token so concurrent permanent failures across
