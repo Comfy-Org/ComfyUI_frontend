@@ -80,6 +80,28 @@ describe('readDocSnapshot', () => {
     expect(snap.nodes.get('9')?.pos).toEqual([0, 0])
   })
 
+  it('discrimination probe: rejects a representative LAYOUT node entry', () => {
+    // Both the semantic and the layout doc root-map 'nodes', so root names
+    // cannot discriminate them; the entry SHAPE must. This is a realistic
+    // layout-doc node (geometry, no `type`) - cross-applied, it must read
+    // as zero nodes, never as a mangled semantic node.
+    const doc = new Y.Doc()
+    const layoutEntry = new Y.Map<unknown>()
+    const position = new Y.Map<unknown>()
+    position.set('x', 120)
+    position.set('y', 80)
+    const size = new Y.Map<unknown>()
+    size.set('width', 210)
+    size.set('height', 90)
+    layoutEntry.set('position', position)
+    layoutEntry.set('size', size)
+    layoutEntry.set('zIndex', 3)
+    layoutEntry.set('visible', true)
+    doc.getMap<Y.Map<unknown>>(NODES_KEY).set('7', layoutEntry)
+
+    expect(readDocSnapshot(doc).nodes.size).toBe(0)
+  })
+
   it('reads opaque widget arrays positionally', () => {
     const doc = new Y.Doc()
     const m = new Y.Map<unknown>()
