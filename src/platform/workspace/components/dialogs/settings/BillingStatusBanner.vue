@@ -74,8 +74,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
-import { isCloud } from '@/platform/distribution/types'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -85,23 +83,13 @@ type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 
 const { t, d } = useI18n()
 const { renewalDate, subscription, manageSubscription } = useBillingContext()
-const { permissions } = useWorkspaceUI()
-const { shouldUseWorkspaceBilling } = useBillingRouting()
-const { canTopUp, canSubscribeSelfServe, canReactivate } =
-  useBillingCapabilities()
+const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
-// The legacy rail keeps lifecycle authorization on the client, and
-// handleResubscribe() skips its capability guard there, so the affordance has
-// to follow the same three-way condition or it hides a working action.
-const canReactivatePlan = computed(() =>
-  isCloud && shouldUseWorkspaceBilling.value
-    ? canReactivate.value
-    : permissions.value.canManageSubscriptionLifecycle
-)
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''

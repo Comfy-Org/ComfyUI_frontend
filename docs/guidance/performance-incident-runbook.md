@@ -138,5 +138,5 @@ stacks. “Did not reproduce” is a result, not permission to record indefinite
 - Cleanup verified by:
 ```
 
-See [ADR 0021](../adr/0021-performance-measurement-and-ci-policy.md) for the
+See [ADR 0022](../adr/0022-performance-measurement-and-ci-policy.md) for the
 measurement and CI policy behind this procedure.
