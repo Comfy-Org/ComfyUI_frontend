@@ -41,10 +41,14 @@ Specifically:
    with `watch`, `computed`, or an equivalent explicit selector. They must not
    use the transitive reads of `watchEffect` to discover dependencies.
 2. A draw establishes a frame-local view of data whose consistency matters
-   across passes. Render order, graph identity, and similar derived collections
-   are computed at most once per frame and passed through foreground,
-   background, connection, and nested same-canvas paths. Direct method calls
-   may compute their own local snapshot when no frame snapshot is supplied.
+   across passes. Render order and similar derived collections are computed at
+   most once while the graph identity is unchanged and passed through
+   foreground, background, connection, and nested same-canvas paths. Graph
+   replacement is a pass boundary: if a background callback replaces the
+   graph, the foreground pass discards the old context, recomputes visibility
+   and render order for the replacement, and renders that graph in the same
+   draw. Direct method calls may compute their own local snapshot when no frame
+   snapshot is supplied.
 3. A frame snapshot is not a cross-frame cache. Persistent caches require an
    explicit invalidation key and proof for graph replacement, membership,
    ordering, subgraphs, and supported extension mutations.
@@ -96,8 +100,10 @@ Specifically:
 
 - Callers must maintain explicit source lists and thread frame context through
   renderer methods and wrappers.
-- Mid-frame graph or z-order mutation becomes visible on the next draw rather
-  than producing different foreground and background orders in one frame.
+- Mid-frame z-order and other non-identity mutation becomes visible on the next
+  draw rather than producing different foreground and background orders in one
+  frame. Graph replacement is the exception: it takes effect at the next pass
+  boundary in the same draw.
 - Third-party wrappers that discard new optional arguments remain correct but
   may miss optimizations until updated.
 - Frame-local snapshots allocate or prepare data once per frame; persistent
