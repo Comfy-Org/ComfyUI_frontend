@@ -36,14 +36,14 @@ const selectedTeamPrice = computed(() => {
 
 const MONTHS_PER_YEAR = 12
 
-const creditsForBillingPeriod = (monthlyAmount: number) =>
+const amountForBillingPeriod = (monthlyAmount: number) =>
   billingPeriod === 'yearly' ? monthlyAmount * MONTHS_PER_YEAR : monthlyAmount
 
 const teamCredits = computed(() =>
-  creditsForBillingPeriod(selectedTeamTier.value.credits)
+  amountForBillingPeriod(selectedTeamTier.value.credits)
 )
 const teamVideos = computed(() =>
-  creditsForBillingPeriod(selectedTeamTier.value.videos)
+  amountForBillingPeriod(selectedTeamTier.value.videos)
 )
 const teamCreditsLabel = computed(() =>
   t(
@@ -132,7 +132,7 @@ const ctaHref = computed(() =>
             :step="1"
             :ticks="teamCreditTiers.length"
             :thumb-label="t('pricing.team.sliderLabel', locale)"
-            :thumb-value-text="`${selectedTeamTier.credits.toLocaleString('en-US')} ${t('pricing.creditsLabel', locale)}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
+            :thumb-value-text="`${teamCredits.toLocaleString('en-US')} ${teamCreditsLabel}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
           >
             <template #tick="{ index, active }">
               <CreditsIcon
