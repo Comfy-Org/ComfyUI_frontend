@@ -1,4 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import { omit, pickBy } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -7,9 +8,13 @@ import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
 } from '@/core/graph/nodeShell/nodeShellState'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  NodeSlotType,
+  RenderShape
+} from '@/lib/litegraph/src/types/globalEnums'
 import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -21,6 +26,15 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
+
+/** Mirrors `PLACEHOLDER_LIVE_DECORATIONS` in LGraphNode. */
+const PLACEHOLDER_LIVE_DECORATIONS = [
+  'title',
+  'color',
+  'bgcolor',
+  'boxcolor',
+  'shape'
+] as const
 
 vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
@@ -181,7 +195,7 @@ function createPlaceholderNode(
   outputs: { name: string; links: number[] | null }[] = [],
   graph?: LGraph
 ): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
+  const node = fromAny<LGraphNode, unknown>({
     id,
     type,
     pos: [100, 200],
@@ -204,20 +218,33 @@ function createPlaceholderNode(
     },
     inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
     outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
-    graph: graph ?? null,
-    serialize: vi.fn(() => ({
-      id,
-      type,
-      pos: [100, 200],
-      size: [200, 100],
-      flags: {},
-      order: 0,
-      mode: 0,
-      inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
-      outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
-      widgets_values: []
-    }))
+    graph: graph ?? null
   })
+
+  // Mirrors the placeholder branch of LGraphNode.serialize(): the loaded file's
+  // structural fields replayed verbatim, with the recorded decorations dropped
+  // before the live ones are re-applied, so a cleared decoration cannot
+  // resurrect the recorded one.
+  node.serialize = vi.fn(() => ({
+    ...omit(node.last_serialization!, PLACEHOLDER_LIVE_DECORATIONS),
+    mode: node.mode,
+    pos: [node.pos[0], node.pos[1]] satisfies Point,
+    ...pickBy(
+      {
+        title:
+          node.title === (node.constructor as { title?: string }).title
+            ? undefined
+            : node.title,
+        color: node.color,
+        bgcolor: node.bgcolor,
+        boxcolor: node.boxcolor,
+        shape: node.shape
+      },
+      Boolean
+    )
+  }))
+
+  return node
 }
 
 function createNewNode(
@@ -1727,6 +1754,99 @@ describe('useNodeReplacement', () => {
       ])
 
       expect(dispatch).toHaveBeenCalledWith('node:added', { node: newNode })
+    })
+
+    it('carries the live title and decorations of a renamed placeholder onto the replacement', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType')
+      Object.assign(placeholder.last_serialization!, {
+        title: 'Title From File',
+        color: '#000000',
+        bgcolor: '#111111',
+        boxcolor: '#222222',
+        shape: RenderShape.BOX
+      })
+      Object.assign(placeholder, {
+        title: 'My Rename',
+        color: '#123456',
+        bgcolor: '#654321',
+        boxcolor: '#abcdef',
+        shape: RenderShape.ROUND
+      })
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode()
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.title).toBe('My Rename')
+      expect(newNode.color).toBe('#123456')
+      expect(newNode.bgcolor).toBe('#654321')
+      expect(newNode.boxcolor).toBe('#abcdef')
+      expect(newNode.shape).toBe(RenderShape.ROUND)
+    })
+
+    it('does not resurrect a file decoration the placeholder no longer carries', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType')
+      Object.assign(placeholder.last_serialization!, {
+        title: 'Title From File',
+        color: '#000000',
+        bgcolor: '#111111',
+        boxcolor: '#222222',
+        shape: RenderShape.BOX
+      })
+      Object.assign(placeholder, {
+        title: undefined,
+        color: undefined,
+        bgcolor: '',
+        boxcolor: undefined,
+        shape: undefined
+      })
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode()
+      Object.assign(newNode, {
+        title: 'New Node',
+        color: undefined,
+        bgcolor: undefined,
+        boxcolor: undefined,
+        shape: undefined
+      })
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.title).toBe('New Node')
+      expect(newNode.color).toBeUndefined()
+      expect(newNode.bgcolor).toBeUndefined()
+      expect(newNode.boxcolor).toBeUndefined()
+      expect(newNode.shape).toBeUndefined()
     })
   })
 })
