@@ -4,6 +4,7 @@ const PERF_IDENTITY_SCHEMA_VERSION = 1 as const
 
 export interface PerfTopologyNode {
   id: string
+  type: string
   inputCount: number
   outputCount: number
   widgetCount: number
@@ -107,6 +108,7 @@ export function hashTopology(
     nodes: [...nodes]
       .map((node) => ({
         id: aliases.get(node.id),
+        type: node.type,
         inputs: node.inputCount,
         outputs: node.outputCount
       }))

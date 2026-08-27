@@ -10,8 +10,20 @@ import {
 
 const source: PerfIdentitySource = {
   nodes: [
-    { id: '20', inputCount: 1, outputCount: 0, widgetCount: 2 },
-    { id: '10', inputCount: 0, outputCount: 1, widgetCount: 1 }
+    {
+      id: '20',
+      type: 'OutputNode',
+      inputCount: 1,
+      outputCount: 0,
+      widgetCount: 2
+    },
+    {
+      id: '10',
+      type: 'InputNode',
+      inputCount: 0,
+      outputCount: 1,
+      widgetCount: 1
+    }
   ],
   links: [{ originId: '10', originSlot: 0, targetId: '20', targetSlot: 0 }],
   visibleNodes: 2,
@@ -37,6 +49,17 @@ describe('perf workload identity', () => {
   it('hashes topology independently of source ordering', () => {
     expect(hashTopology(source.nodes, source.links)).toBe(
       hashTopology([...source.nodes].reverse(), [...source.links].reverse())
+    )
+  })
+
+  it('distinguishes node types with otherwise identical topology', () => {
+    const changedTypes = source.nodes.map((node) => ({
+      ...node,
+      type: `Different${node.type}`
+    }))
+
+    expect(hashTopology(source.nodes, source.links)).not.toBe(
+      hashTopology(changedTypes, source.links)
     )
   })
 

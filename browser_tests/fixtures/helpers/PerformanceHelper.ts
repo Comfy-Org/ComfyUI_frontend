@@ -325,6 +325,7 @@ export class PerformanceHelper {
       const graph = app.canvas.graph ?? app.graph
       const nodes = graph.nodes.map((node) => ({
         id: String(node.id),
+        type: node.type,
         inputCount: node.inputs?.length ?? 0,
         outputCount: node.outputs?.length ?? 0,
         widgetCount: node.widgets?.length ?? 0
