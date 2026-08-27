@@ -125,8 +125,20 @@ describe('performance report', () => {
   })
 
   it('rejects current samples with mixed workload identities', () => {
-    const incompatible = accepted(100)
-    incompatible.measurement.workloadIdentity.topology.hash = 'sha256:different'
+    const incompatibleMeasurement = measurement('sample', 100)
+    const incompatible: PerfMeasurementResult = {
+      kind: 'accepted',
+      measurement: {
+        ...incompatibleMeasurement,
+        workloadIdentity: {
+          ...incompatibleMeasurement.workloadIdentity,
+          topology: {
+            ...incompatibleMeasurement.workloadIdentity.topology,
+            hash: 'sha256:different'
+          }
+        }
+      }
+    }
 
     const output = renderPerfReport(
       report([accepted(10), incompatible]),
