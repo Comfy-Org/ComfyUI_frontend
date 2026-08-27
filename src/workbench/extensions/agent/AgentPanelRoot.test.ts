@@ -1,6 +1,4 @@
 // @vitest-environment jsdom
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import {
@@ -461,6 +459,7 @@ async function openAddMenu(): Promise<void> {
 
 async function openMentionPicker(): Promise<void> {
   await userEvent.type(screen.getByRole('textbox'), '@')
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
 }
 
 type SelectionTestNode = {
@@ -3092,12 +3091,13 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const textbox = screen.getByRole('textbox')
     await userEvent.type(textbox, '@')
+    await userEvent.keyboard('{Enter}')
     expect(screen.getByText('#5')).toBeInTheDocument()
     expect(screen.getByText('#7')).toBeInTheDocument()
-    await userEvent.keyboard('{ArrowDown}{Tab}')
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{Tab}')
 
     expect(textbox).toHaveValue('')
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     expect(screen.getAllByText('KSampler')).toHaveLength(1)
     expect(screen.getByText('#7')).toBeInTheDocument()
     await sendFromComposer('tune it')
@@ -3108,40 +3108,17 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('sends an existing @ asset reference without uploading it again', async () => {
+  it('keeps asset actions out of the @ Reference menu', async () => {
     makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42')
-    vi.spyOn(assetService, 'getInputAssetsIncludingPublic').mockResolvedValue([
-      fromPartial({
-        id: 'asset-1',
-        name: 'sunset-original.png',
-        hash: 'sunset-hash.png',
-        tags: ['input'],
-        display_name: 'Sunset.png',
-        preview_url: '/api/assets/asset-1/content'
-      })
-    ])
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const textbox = screen.getByRole('textbox')
     await userEvent.type(textbox, '@sun')
-    await userEvent.click(
-      await screen.findByRole('option', { name: 'Sunset.png' })
-    )
 
-    expect(textbox).toHaveValue('')
-    expect(screen.getByText('Sunset.png')).toBeInTheDocument()
-    await sendFromComposer('use this asset')
-
-    expect(bodies[0]).toMatchObject({
-      content: 'use this asset',
-      attachments: ['sunset-hash.png']
-    })
-    expect(
-      vi
-        .mocked(fetch)
-        .mock.calls.some(([url]) => String(url).includes('/upload/'))
-    ).toBe(false)
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+    expect(screen.queryByText('Sunset.png')).not.toBeInTheDocument()
+    expect(textbox).toHaveValue('@sun')
   })
 
   it('sends no workflow id for an unbound tab and posts exactly once', async () => {
@@ -3436,7 +3413,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await openMentionPicker()
     expect(
-      within(screen.getByRole('listbox')).getByText('Root twin')
+      within(screen.getByRole('menu')).getByText('Root twin')
     ).toBeInTheDocument()
 
     await userEvent.click(
@@ -3459,9 +3436,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(await screen.findByText('KSampler'))
     await openMentionPicker()
 
-    const listbox = screen.getByRole('listbox')
-    expect(within(listbox).queryByText('KSampler')).not.toBeInTheDocument()
-    expect(within(listbox).getByText('VAE Decode')).toBeInTheDocument()
+    const menu = screen.getByRole('menu')
+    expect(within(menu).queryByText('KSampler')).not.toBeInTheDocument()
+    expect(within(menu).getByText('VAE Decode')).toBeInTheDocument()
   })
 
   it('keeps reference chips unchanged after normal graph selection', async () => {

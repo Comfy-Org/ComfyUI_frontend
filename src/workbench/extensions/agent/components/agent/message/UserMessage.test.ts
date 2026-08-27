@@ -74,7 +74,15 @@ describe('UserMessage', () => {
     })
 
     const bubble = screen.getByTestId('user-message-bubble')
-    expect(within(bubble).getByText('Workflow 1')).toBeVisible()
+    const [firstWorkflowChip] = within(bubble).getAllByTestId(
+      'workflow-reference-chip'
+    )
+    expect(firstWorkflowChip).toHaveClass(
+      'bg-primary-background/30',
+      'border-primary-background/30',
+      'text-primary-background-hover',
+      'rounded-sm'
+    )
     expect(within(bubble).getByText('Workflow 2')).toBeVisible()
     expect(
       within(bubble).getByText('Build a scene from water world.')

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,7 +9,6 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 
@@ -338,28 +337,44 @@ describe('Composer', () => {
       { id: '7', title: 'KSampler' },
       { id: '9', title: 'VAE Decode' }
     ]
-    const ASSETS = [
-      {
-        id: 'asset-1',
-        name: 'sunset-original.png',
-        hash: 'sunset-hash.png',
-        tags: ['input'],
-        display_name: 'Sunset.png',
-        thumbnail_url: '/api/assets/asset-1/thumbnail',
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z'
-      },
-      {
-        id: 'asset-2',
-        name: 'forest.png',
-        tags: ['input'],
-        user_metadata: { name: 'Forest reference' },
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z'
-      }
-    ]
 
-    it('lists matching nodes alphabetically', async () => {
+    async function openReferenceRoot(text = '@') {
+      await userEvent.type(screen.getByRole('textbox'), text)
+      return screen.getByRole('menu', { name: 'Add to prompt' })
+    }
+
+    async function openReferenceSection(
+      section: 'Nodes' | 'Workflows',
+      text = '@'
+    ) {
+      const menu = await openReferenceRoot(text)
+      await userEvent.click(
+        within(menu).getByRole('menuitem', { name: section })
+      )
+      return screen.getByRole('menu', { name: 'Add to prompt' })
+    }
+
+    it('opens a Reference menu with only Nodes and Workflows at the root', async () => {
+      mount({
+        getMentionNodes: () => NODES,
+        availableWorkflows: [{ id: 'wf-water', name: 'Water world' }],
+        canOpenAssets: true
+      })
+
+      const menu = await openReferenceRoot()
+
+      expect(within(menu).getByText('Reference')).toBeVisible()
+      expect(
+        within(menu)
+          .getAllByRole('menuitem')
+          .map((item) => item.textContent?.trim())
+      ).toEqual(['Nodes', 'Workflows'])
+      expect(within(menu).queryByText('KSampler')).toBeNull()
+      expect(within(menu).queryByText('Water world')).toBeNull()
+      expect(within(menu).queryByText('Add from assets panel')).toBeNull()
+    })
+
+    it('opens the Nodes submenu and lists matching nodes alphabetically', async () => {
       mount({
         getMentionNodes: () => [
           { id: '3', title: 'VAE Decode' },
@@ -368,11 +383,13 @@ describe('Composer', () => {
         ]
       })
 
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      const menu = await openReferenceSection('Nodes')
 
       expect(
-        screen.getAllByRole('option').map((option) => option.textContent.trim())
-      ).toEqual(['Alpha', 'KSampler', 'VAE Decode'])
+        within(menu)
+          .getAllByRole('menuitem')
+          .map((item) => item.textContent?.trim())
+      ).toEqual(['Back', 'Alpha', 'KSampler', 'VAE Decode'])
     })
 
     // Re-picking a staged node is a no-op, so it drops out of the list.
@@ -382,13 +399,13 @@ describe('Composer', () => {
         selectionTags: [NODES[0]]
       })
 
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      const menu = await openReferenceSection('Nodes')
 
-      const labels = screen
-        .getAllByRole('option')
-        .map((option) => option.textContent.trim())
+      const labels = within(menu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent?.trim())
       expect(labels).not.toContain(NODES[0].title)
-      expect(screen.getAllByRole('option')).toHaveLength(NODES.length - 1)
+      expect(labels).toEqual(['Back', 'KSampler#7', 'VAE Decode'])
     })
 
     // The staged node is only hidden from the picker, not from the duplicate
@@ -401,48 +418,47 @@ describe('Composer', () => {
         selectionTags: [NODES[0]]
       })
 
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      await openReferenceSection('Nodes')
 
       expect(screen.getByText(`#${NODES[0].id}`)).toBeInTheDocument()
     })
 
-    it('opens on @, filters with spaces, and stages the pick on Enter', async () => {
+    it('keeps type-to-filter behavior inside the selected reference type', async () => {
       const { emitted } = mount({ getMentionNodes: () => NODES })
       const box = screen.getByRole('textbox')
 
-      await userEvent.type(box, '@')
-      expect(screen.getByRole('listbox')).toBeInTheDocument()
-      expect(screen.getAllByRole('option')).toHaveLength(3)
-      expect(screen.getByText('#5')).toBeInTheDocument()
-      expect(screen.getByText('#7')).toBeInTheDocument()
-      expect(screen.queryByText('#9')).not.toBeInTheDocument()
+      const menu = await openReferenceSection('Nodes', '@vae de')
+      expect(within(menu).getAllByRole('menuitem')).toHaveLength(2)
+      expect(within(menu).getByText('VAE Decode')).toBeVisible()
 
-      await userEvent.type(box, 'vae de')
-      expect(screen.getAllByRole('option')).toHaveLength(1)
-      expect(screen.queryByText('#9')).not.toBeInTheDocument()
-
-      await userEvent.keyboard('{Enter}')
+      await userEvent.keyboard('{ArrowDown}{Enter}')
       expect(emitted().mentionPick[0]).toEqual([NODES[2]])
       expect(emitted().send).toBeUndefined()
       expect((box as HTMLTextAreaElement).value).toBe('')
     })
 
-    it('navigates with arrows and inserts with Tab', async () => {
-      const { emitted } = mount({ getMentionNodes: () => NODES })
+    it('navigates categories and submenu items with the keyboard', async () => {
+      const workflow = { id: 'wf-water', name: 'Water world' }
+      const { emitted } = mount({ availableWorkflows: [workflow] })
 
-      await userEvent.type(screen.getByRole('textbox'), '@')
-      const options = screen.getAllByRole('option')
+      const root = await openReferenceRoot()
+      const categories = within(root).getAllByRole('menuitem')
+      expect(categories[0]).toHaveAttribute('data-active', 'true')
       await userEvent.keyboard('{ArrowDown}')
-      expect(options[1]).toHaveAttribute('aria-selected', 'true')
-      await userEvent.keyboard('{ArrowUp}')
-      expect(options[0]).toHaveAttribute('aria-selected', 'true')
-      await userEvent.keyboard('{Tab}')
+      expect(categories[1]).toHaveAttribute('data-active', 'true')
+      await userEvent.keyboard('{Enter}')
 
-      expect(emitted().mentionPick[0]).toEqual([NODES[0]])
+      const submenu = screen.getByRole('menu', { name: 'Add to prompt' })
+      expect(
+        within(submenu).getByRole('menuitem', { name: 'Back' })
+      ).toHaveAttribute('data-active', 'true')
+      await userEvent.keyboard('{ArrowDown}{Tab}')
+
+      expect(emitted().workflowReferencePick).toEqual([[workflow]])
       expect(emitted().send).toBeUndefined()
     })
 
-    it('stages an eligible workflow from an @ mention', async () => {
+    it('stages an eligible workflow from the Workflows submenu', async () => {
       const workflow = { id: 'wf-water', name: 'Water world' }
       const { emitted } = mount({
         availableWorkflows: [
@@ -452,11 +468,30 @@ describe('Composer', () => {
         editableWorkflowId: 'wf-edit'
       })
 
-      await userEvent.type(screen.getByRole('textbox'), '@water')
-      await userEvent.keyboard('{Enter}')
+      const menu = await openReferenceSection('Workflows', '@water')
+      await userEvent.click(
+        within(menu).getByRole('menuitem', { name: 'Water world' })
+      )
 
       expect(emitted().workflowReferencePick).toEqual([[workflow]])
       expect(screen.getByRole('textbox')).toHaveValue('')
+    })
+
+    it('returns from a reference submenu to the root menu', async () => {
+      const menu = await openReferenceSection('Nodes')
+
+      await userEvent.click(
+        within(menu).getByRole('menuitem', { name: 'Back' })
+      )
+
+      const root = screen.getByRole('menu', { name: 'Add to prompt' })
+      expect(within(root).getByText('Reference')).toBeVisible()
+      expect(
+        within(root).getByRole('menuitem', { name: 'Nodes' })
+      ).toBeVisible()
+      expect(
+        within(root).getByRole('menuitem', { name: 'Workflows' })
+      ).toBeVisible()
     })
 
     it('includes selected workflow references in the send snapshot', async () => {
@@ -472,67 +507,20 @@ describe('Composer', () => {
     it('excludes only the referenced id when node titles match', async () => {
       mount({ selectionTags: [NODES[0]], getMentionNodes: () => NODES })
 
-      await userEvent.type(screen.getByRole('textbox'), '@')
-      const listbox = screen.getByRole('listbox')
+      const menu = await openReferenceSection('Nodes')
 
-      expect(within(listbox).queryByText('#5')).not.toBeInTheDocument()
-      expect(within(listbox).getByText('#7')).toBeInTheDocument()
-      expect(within(listbox).getByText('VAE Decode')).toBeInTheDocument()
-    })
-
-    it('filters assets, stages a keyboard pick, removes its token, and sends its ref', async () => {
-      const { emitted } = mount({
-        getMentionNodes: () => NODES,
-        getMentionAssets: async () => ASSETS
-      })
-      const box = screen.getByRole('textbox')
-
-      await userEvent.type(box, '@sun')
-      const option = await screen.findByRole('option', { name: 'Sunset.png' })
-      expect(screen.getAllByRole('option')).toEqual([option])
-
-      await userEvent.keyboard('{Enter}')
-      expect(box).toHaveValue('')
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
-      expect(screen.getByText('Sunset.png')).toBeInTheDocument()
-
-      await userEvent.type(box, 'use this')
-      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-      expect(emitted().send[0]).toEqual([
-        'use this',
-        [
-          {
-            id: 'asset:asset-1',
-            name: 'Sunset.png',
-            ref: 'sunset-hash.png',
-            previewUrl: '/api/assets/asset-1/thumbnail'
-          }
-        ]
-      ])
-    })
-
-    it('stages an asset with the mouse and removes its chip', async () => {
-      mount({ getMentionAssets: async () => ASSETS })
-      const box = screen.getByRole('textbox')
-
-      await userEvent.type(box, '@forest')
-      await userEvent.click(
-        await screen.findByRole('option', { name: 'Forest reference' })
-      )
-
-      expect(box).toHaveValue('')
-      expect(screen.getByText('Forest reference')).toBeInTheDocument()
-      await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
-      expect(screen.queryByText('Forest reference')).not.toBeInTheDocument()
+      expect(within(menu).queryByText('#5')).not.toBeInTheDocument()
+      expect(within(menu).getByText('#7')).toBeInTheDocument()
+      expect(within(menu).getByText('VAE Decode')).toBeInTheDocument()
     })
 
     it('keeps a duplicate-title id visible when filtering by id', async () => {
       mount({ getMentionNodes: () => NODES })
 
-      await userEvent.type(screen.getByRole('textbox'), '@5')
+      const menu = await openReferenceSection('Nodes', '@5')
 
-      expect(screen.getAllByRole('option')).toHaveLength(1)
-      expect(screen.getByText('#5')).toBeInTheDocument()
+      expect(within(menu).getAllByRole('menuitem')).toHaveLength(2)
+      expect(within(menu).getByText('#5')).toBeInTheDocument()
     })
 
     it('closes on Escape so Enter sends normally', async () => {
@@ -540,10 +528,10 @@ describe('Composer', () => {
       const box = screen.getByRole('textbox')
 
       await userEvent.type(box, 'hi @k')
-      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      expect(screen.getByRole('menu')).toBeInTheDocument()
 
       await userEvent.keyboard('{Escape}')
-      expect(screen.queryByRole('listbox')).toBeNull()
+      expect(screen.queryByRole('menu')).toBeNull()
 
       await userEvent.keyboard('{Enter}')
       expect(emitted().send[0]).toEqual(['hi @k', []])
@@ -553,7 +541,7 @@ describe('Composer', () => {
       mount({ getMentionNodes: () => NODES })
 
       await userEvent.type(screen.getByRole('textbox'), 'email@k')
-      expect(screen.queryByRole('listbox')).toBeNull()
+      expect(screen.queryByRole('menu')).toBeNull()
     })
 
     it('lets Shift+Enter insert a newline instead of picking', async () => {
@@ -561,13 +549,13 @@ describe('Composer', () => {
       const box = screen.getByRole('textbox')
 
       await userEvent.type(box, '@k')
-      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      expect(screen.getByRole('menu')).toBeInTheDocument()
 
       await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
       expect(emitted().mentionPick).toBeUndefined()
       expect(emitted().send).toBeUndefined()
       expect((box as HTMLTextAreaElement).value).toBe('@k\n')
-      expect(screen.queryByRole('listbox')).toBeNull()
+      expect(screen.queryByRole('menu')).toBeNull()
     })
 
     it('closes when the caret moves out of the token', async () => {
@@ -575,10 +563,10 @@ describe('Composer', () => {
       const box = screen.getByRole('textbox')
 
       await userEvent.type(box, '@k')
-      expect(screen.getByRole('listbox')).toBeInTheDocument()
+      expect(screen.getByRole('menu')).toBeInTheDocument()
 
       await userEvent.keyboard('{Home}')
-      expect(screen.queryByRole('listbox')).toBeNull()
+      expect(screen.queryByRole('menu')).toBeNull()
     })
   })
 
@@ -660,7 +648,17 @@ describe('Composer', () => {
       }
     )
 
-    expect(screen.getByText('Water world')).toBeVisible()
+    const inlineInput = screen.getByTestId('composer-inline-input')
+    const workflowChip = within(inlineInput).getByTestId(
+      'workflow-reference-chip'
+    )
+    expect(workflowChip).toHaveClass(
+      'bg-primary-background/30',
+      'border-primary-background/30',
+      'text-primary-background-hover',
+      'rounded-sm'
+    )
+    expect(inlineInput).toContainElement(screen.getByRole('textbox'))
     await userEvent.click(
       screen.getByRole('button', { name: 'Remove Water world reference' })
     )
