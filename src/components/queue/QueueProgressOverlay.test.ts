@@ -202,4 +202,28 @@ describe('QueueProgressOverlay', () => {
     expect(assetSelectionStore.selectedIdsArray).toEqual([])
     expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
   })
+
+  it('only selects the latest asset when focus requests overlap', async () => {
+    let resolveFirst!: (found: boolean) => void
+    outputAssetsMock.loadOutputAsset
+      .mockImplementationOnce(
+        () => new Promise<boolean>((resolve) => (resolveFirst = resolve))
+      )
+      .mockResolvedValueOnce(true)
+    const { assetSelectionStore, user } = renderComponent([], [])
+
+    itemToView = createCompletedJobView('older-request')
+    await user.click(screen.getByTestId('view-item-button'))
+    itemToView = createCompletedJobView('latest-request')
+    await user.click(screen.getByTestId('view-item-button'))
+
+    await waitFor(() =>
+      expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
+    )
+    resolveFirst(true)
+    await waitFor(() =>
+      expect(outputAssetsMock.loadOutputAsset).toHaveBeenCalledTimes(2)
+    )
+    expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
+  })
 })

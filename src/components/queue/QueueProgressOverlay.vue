@@ -236,7 +236,9 @@ const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
+let focusRequest = 0
 const focusAssetInSidebar = async (item: JobListItem) => {
+  const request = ++focusRequest
   const task = item.taskRef
   const jobId = task?.jobId
   const preview = task?.previewOutput
@@ -246,7 +248,8 @@ const focusAssetInSidebar = async (item: JobListItem) => {
   openAssetsSidebar()
   await nextTick()
 
-  if (!(await assetsStore.loadOutputAsset(assetId))) return
+  if (!(await assetsStore.loadOutputAsset(assetId)) || request !== focusRequest)
+    return
 
   assetSelectionStore.setSelection([assetId])
   assetSelectionStore.setLastSelectedAssetId(assetId)
