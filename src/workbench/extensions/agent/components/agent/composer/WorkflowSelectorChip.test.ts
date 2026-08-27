@@ -21,6 +21,7 @@ const i18n = createI18n({
         switchWorkflow: enMessages.agent.switchWorkflow,
         changeWorkflowForChat: enMessages.agent.changeWorkflowForChat,
         chooseWorkflow: enMessages.agent.chooseWorkflow,
+        selectWorkflowForAgent: 'Select a workflow for agent to work in',
         chooseWorkflowForChat: enMessages.agent.chooseWorkflowForChat,
         dontWorkInWorkflow: enMessages.agent.dontWorkInWorkflow,
         searchWorkflows: enMessages.agent.searchWorkflows
@@ -108,7 +109,9 @@ describe('WorkflowSelectorChip', () => {
 
   it('shows the choose-a-workflow placeholder without an active tab', async () => {
     const { user } = renderChip({ activeTab: null })
-    expect(trigger()).toHaveTextContent(enMessages.agent.chooseWorkflow)
+    expect(trigger()).toHaveTextContent(
+      'Select a workflow for agent to work in'
+    )
     expect(
       screen.queryByRole('button', {
         name: enMessages.agent.dontWorkInWorkflow
@@ -125,7 +128,9 @@ describe('WorkflowSelectorChip', () => {
 
   it('detached mode has no current workflow even with an active tab', async () => {
     const { user } = renderChip({ detached: true })
-    expect(trigger()).toHaveTextContent(enMessages.agent.chooseWorkflow)
+    expect(trigger()).toHaveTextContent(
+      'Select a workflow for agent to work in'
+    )
     expect(trigger()).not.toHaveTextContent('portrait')
     expect(
       screen.queryByRole('button', {
