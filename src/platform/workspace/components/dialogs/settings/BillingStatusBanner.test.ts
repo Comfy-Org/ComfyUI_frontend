@@ -28,10 +28,11 @@ const state = vi.hoisted(() => ({
     endDate: null
   } as Subscription | null,
   renewalDate: null as string | null,
-  workspaceType: 'team' as string,
+  workspaceType: 'team' as WorkspaceType,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canReactivate: true,
+  canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
   canTopUp: true,
   canSubscribeSelfServe: false,
@@ -80,7 +81,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     })),
-    workspaceType: computed(() => state.workspaceType as WorkspaceType)
+    workspaceType: computed(() => state.workspaceType),
+    canReactivatePlan: computed(() => state.canReactivatePlan)
   })
 }))
 
@@ -405,7 +407,7 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = false
+    state.canReactivatePlan = false
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(

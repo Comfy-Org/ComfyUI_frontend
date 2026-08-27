@@ -7,17 +7,7 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphT
 
 vi.mock('@/renderer/core/layout/store/layoutStore')
 
-type InvalidationReason =
-  | 'animation'
-  | 'extension'
-  | 'interaction'
-  | 'layout'
-  | 'progress'
-  | 'settings'
-  | 'topology'
-
 interface DirtyRequest {
-  reason: InvalidationReason
   foreground: boolean
   background: boolean
   changedForeground: boolean
@@ -29,7 +19,6 @@ class InvalidationProbe {
   readonly drawSequence: ('background' | 'foreground')[] = []
   readonly foregroundDraw = vi.fn()
   readonly backgroundDraw = vi.fn()
-  private reason: InvalidationReason = 'extension'
 
   constructor(readonly canvas: LGraphCanvas) {
     const setDirty = canvas.setDirty.bind(canvas)
@@ -39,7 +28,6 @@ class InvalidationProbe {
         const wasBackgroundDirty = canvas.dirty_bgcanvas
         setDirty(foreground, background)
         this.requests.push({
-          reason: this.reason,
           foreground,
           background: background ?? false,
           changedForeground: !wasForegroundDirty && canvas.dirty_canvas,
@@ -63,12 +51,6 @@ class InvalidationProbe {
         drawBackground(redrawFrontCanvas)
       }
     )
-  }
-
-  run(reason: InvalidationReason, action: () => void): void {
-    this.reason = reason
-    action()
-    this.reason = 'extension'
   }
 
   reset(): void {
@@ -130,17 +112,25 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     probe.reset()
   })
 
-  it('coalesces a burst of equal foreground requests into one layer draw', () => {
-    probe.run('progress', () => {
-      for (let i = 0; i < 100; i++) canvas.setDirty(true, false)
+  it('coalesces a burst of foreground requests in the render loop', () => {
+    const frames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback)
+      return frames.length
     })
+    canvas.startRendering()
 
-    canvas.draw()
+    for (let i = 0; i < 100; i++) canvas.setDirty(true, false)
+
+    expect(frames).toHaveLength(1)
+    frames.shift()!(16)
+    canvas.stopRendering()
 
     expect(probe.requests).toHaveLength(100)
     expect(
       probe.requests.filter((request) => request.changedForeground)
     ).toHaveLength(1)
+    expect(frames).toHaveLength(1)
     expect(probe.foregroundDraw).toHaveBeenCalledTimes(1)
     expect(probe.backgroundDraw).not.toHaveBeenCalled()
   })
@@ -165,35 +155,31 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     expect(canvas.dirty_bgcanvas).toBe(false)
   })
 
-  it('records layer transitions for representative invalidation reasons', () => {
-    const requests: [InvalidationReason, boolean, boolean][] = [
-      ['progress', true, false],
-      ['settings', false, true],
-      ['topology', true, true],
-      ['layout', true, true],
-      ['interaction', true, false]
+  it('records layer transitions for setDirty flag combinations', () => {
+    const requests: [boolean, boolean][] = [
+      [true, false],
+      [false, true],
+      [true, true]
     ]
 
-    for (const [reason, foreground, background] of requests) {
-      probe.run(reason, () => canvas.setDirty(foreground, background))
+    for (const [foreground, background] of requests) {
+      canvas.setDirty(foreground, background)
       canvas.draw()
     }
 
     expect(
-      probe.requests.map(({ reason, foreground, background }) => ({
-        reason,
+      probe.requests.map(({ foreground, background }) => ({
         foreground,
         background
       }))
     ).toEqual(
-      requests.map(([reason, foreground, background]) => ({
-        reason,
+      requests.map(([foreground, background]) => ({
         foreground,
         background
       }))
     )
-    expect(probe.foregroundDraw).toHaveBeenCalledTimes(5)
-    expect(probe.backgroundDraw).toHaveBeenCalledTimes(3)
+    expect(probe.foregroundDraw).toHaveBeenCalledTimes(3)
+    expect(probe.backgroundDraw).toHaveBeenCalledTimes(2)
   })
 
   it('draws both layers immediately when a synchronous draw forces them', () => {
@@ -210,7 +196,6 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     canvas.bgcanvas = canvas.canvas
     canvas.setDirty(false, true)
 
-    canvas.draw()
     canvas.draw()
 
     expect(probe.requests).toHaveLength(1)
@@ -306,19 +291,17 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     const node = new LGraphNode('Node')
     graph.add(node)
     probe.reset()
-    probe.run('extension', () => graph.setDirtyCanvas(false, true))
-    probe.run('extension', () => node.setDirtyCanvas(true, false))
+    graph.setDirtyCanvas(false, true)
+    node.setDirtyCanvas(true, false)
 
     expect(probe.requests).toEqual([
       {
-        reason: 'extension',
         foreground: false,
         background: true,
         changedForeground: false,
         changedBackground: true
       },
       {
-        reason: 'extension',
         foreground: true,
         background: false,
         changedForeground: true,
@@ -330,8 +313,8 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
   it('redraws both layers on each animation tick', () => {
     canvas.always_render_background = true
 
-    probe.run('animation', () => canvas.draw())
-    probe.run('animation', () => canvas.draw())
+    canvas.draw()
+    canvas.draw()
 
     expect(probe.requests).toHaveLength(0)
     expect(probe.foregroundDraw).toHaveBeenCalledTimes(2)
@@ -342,8 +325,8 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     canvas.bgcanvas = canvas.canvas
     canvas.always_render_background = true
 
-    probe.run('animation', () => canvas.draw())
-    probe.run('animation', () => canvas.draw())
+    canvas.draw()
+    canvas.draw()
 
     expect(probe.foregroundDraw).toHaveBeenCalledTimes(2)
     expect(probe.backgroundDraw).toHaveBeenCalledTimes(2)
