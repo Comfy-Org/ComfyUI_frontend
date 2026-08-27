@@ -233,7 +233,7 @@ export function useMediaAssetActions() {
     try {
       const jobIds: string[] = []
       const assetIds: string[] = []
-      const jobAssetNameFilters: Record<string, string[]> = {}
+      const namesByJobId = new Map<string, Set<string>>()
       const wholeJobIds = new Set<string>()
       const fileCount = getTotalAssetOutputCount(assets)
 
@@ -245,29 +245,27 @@ export function useMediaAssetActions() {
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
-          // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
           if (metadata?.outputCount != null) {
             wholeJobIds.add(jobId)
-          }
-
-          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
-            if (!jobAssetNameFilters[metadata.jobId]) {
-              jobAssetNameFilters[metadata.jobId] = []
-            }
-            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
-              jobAssetNameFilters[metadata.jobId].push(asset.name)
-            }
+          } else if (metadata?.jobId && asset.name) {
+            const names = namesByJobId.get(metadata.jobId) ?? new Set<string>()
+            names.add(asset.name)
+            namesByJobId.set(metadata.jobId, names)
           }
         } else {
           assetIds.push(asset.id)
         }
       }
 
-      for (const jobId of wholeJobIds) {
-        delete jobAssetNameFilters[jobId]
-      }
+      // A job-level selection outranks any name filter a sibling child of the
+      // same job contributed, whichever order they were selected in.
+      const jobAssetNameFilters = Object.fromEntries(
+        [...namesByJobId]
+          .filter(([jobId]) => !wholeJobIds.has(jobId))
+          .map(([jobId, names]): [string, string[]] => [jobId, [...names]])
+      )
 
       const spansMultipleJobs = jobIds.length > 1
       const namingStrategy = spansMultipleJobs

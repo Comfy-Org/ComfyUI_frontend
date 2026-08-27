@@ -55,22 +55,36 @@ export function getAssetOutputCount(
   return typeof count === 'number' && count > 0 ? count : 1
 }
 
+/**
+ * Counts the unique outputs a selection stands for.
+ *
+ * An expanded output stack puts a job-level parent and its children in the
+ * same selection. The parent stands for every output of its job
+ * (`outputCount`); each child stands for exactly one, and the child set never
+ * includes the parent's own output. Summing them counts the job twice, so
+ * outputs are grouped by job and each job contributes the larger of its
+ * parent's `outputCount` and the number of distinct output identities
+ * selected from it — the first covers a job-level selection whose children
+ * were never expanded, the second a child-only selection.
+ *
+ * Assets that are not job outputs, and outputs whose metadata names no job,
+ * count once each under their own id.
+ */
 export function getTotalAssetOutputCount(assets: readonly AssetItem[]): number {
   const individualCounts = new Map<string, number>()
   const outputsByJobId = new Map<string, SelectedJobOutputs>()
 
   for (const asset of assets) {
-    const metadata = getOutputAssetMetadata(asset.user_metadata)
-    const assetType = getAssetType(asset, metadata ? 'output' : 'input')
+    const assetType = getAssetType(asset)
+    const isJobOutput = assetType === 'output' || assetType === 'temp'
+    const metadata = isJobOutput
+      ? getOutputAssetMetadata(asset.user_metadata)
+      : null
 
-    if ((assetType !== 'output' && assetType !== 'temp') || !metadata) {
-      const count =
-        assetType === 'output' || assetType === 'temp'
-          ? getAssetOutputCount(asset)
-          : 1
+    if (!metadata) {
       individualCounts.set(
         asset.id,
-        Math.max(individualCounts.get(asset.id) ?? 0, count)
+        isJobOutput ? getAssetOutputCount(asset) : 1
       )
       continue
     }
@@ -85,27 +99,19 @@ export function getTotalAssetOutputCount(assets: readonly AssetItem[]): number {
       selectedOutputs.expectedCount,
       getAssetOutputCount(asset)
     )
-
-    for (const output of metadata.allOutputs ?? []) {
-      const outputKey = getOutputKey(output)
-      if (outputKey) selectedOutputs.outputKeys.add(outputKey)
-    }
-
-    const assetOutputKey = getOutputKey({
-      nodeId: metadata.nodeId,
-      subfolder: metadata.subfolder,
-      filename: asset.name
-    })
-    selectedOutputs.outputKeys.add(assetOutputKey ?? `asset:${asset.id}`)
+    selectedOutputs.outputKeys.add(
+      getOutputKey({
+        nodeId: metadata.nodeId,
+        subfolder: metadata.subfolder,
+        filename: asset.name
+      }) ?? `asset:${asset.id}`
+    )
   }
 
   let total = 0
   for (const count of individualCounts.values()) total += count
-  for (const selectedOutputs of outputsByJobId.values()) {
-    total += Math.max(
-      selectedOutputs.expectedCount,
-      selectedOutputs.outputKeys.size
-    )
+  for (const { expectedCount, outputKeys } of outputsByJobId.values()) {
+    total += Math.max(expectedCount, outputKeys.size)
   }
   return total
 }

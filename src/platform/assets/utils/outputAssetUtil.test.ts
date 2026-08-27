@@ -70,10 +70,7 @@ describe('getTotalAssetOutputCount', () => {
         jobId: 'job-1',
         nodeId: '1',
         subfolder: 'outputs',
-        outputCount: 4,
-        allOutputs: [
-          createOutput({ filename: 'parent.png', subfolder: 'outputs' })
-        ]
+        outputCount: 4
       }
     })
     const children = ['2', '3', '4'].map((nodeId) =>
@@ -89,34 +86,6 @@ describe('getTotalAssetOutputCount', () => {
     )
 
     expect(getTotalAssetOutputCount([parent, ...children])).toBe(4)
-  })
-
-  it('deduplicates a child already present in the parent output list', () => {
-    const outputs = [
-      createOutput({ filename: 'parent.png', nodeId: '1' }),
-      createOutput({ filename: 'child.png', nodeId: '2' })
-    ]
-    const parent = createAsset({
-      id: 'job-1-parent',
-      name: 'parent.png',
-      user_metadata: {
-        jobId: 'job-1',
-        nodeId: '1',
-        subfolder: 'sub',
-        allOutputs: outputs
-      }
-    })
-    const child = createAsset({
-      id: 'job-1-child',
-      name: 'child.png',
-      user_metadata: {
-        jobId: 'job-1',
-        nodeId: '2',
-        subfolder: 'sub'
-      }
-    })
-
-    expect(getTotalAssetOutputCount([parent, child])).toBe(2)
   })
 
   it('counts distinct selected children from each job', () => {

@@ -362,40 +362,4 @@ describe('useAssetSelection', () => {
       expect(selected[0].id).toBe('asset-1')
     })
   })
-
-  describe('getTotalOutputCount', () => {
-    it('reports unique outputs for an overlapping parent and child selection', () => {
-      const parent = fromPartial<AssetItem>({
-        id: 'parent',
-        name: 'cover.png',
-        tags: ['output'],
-        user_metadata: {
-          jobId: 'job-1',
-          nodeId: '1',
-          subfolder: '',
-          outputCount: 4
-        }
-      })
-      const children = ['2', '3', '4'].map((nodeId) =>
-        fromPartial<AssetItem>({
-          id: `child-${nodeId}`,
-          name: `child-${nodeId}.png`,
-          tags: ['output'],
-          user_metadata: {
-            jobId: 'job-1',
-            nodeId,
-            subfolder: ''
-          }
-        })
-      )
-      const assets = [parent, ...children]
-      const selection = useAssetSelection()
-
-      selection.selectAll(assets)
-
-      expect(
-        selection.getTotalOutputCount(selection.getSelectedAssets(assets))
-      ).toBe(4)
-    })
-  })
 })
