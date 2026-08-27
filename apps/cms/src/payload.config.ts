@@ -55,7 +55,10 @@ const parseGcsCredentials = (raw: string | undefined) => {
   return { client_email: clientEmail, private_key: privateKey }
 }
 
-const gcsCredentials = parseGcsCredentials(process.env.GCS_CREDENTIALS_JSON)
+// Only when the bucket is set: with GCS disabled the parsed value is discarded,
+// so a stale or malformed credential would otherwise throw during module init
+// and take down the local-disk fallback it has no bearing on.
+const gcsCredentials = gcsBucket ? parseGcsCredentials(process.env.GCS_CREDENTIALS_JSON) : undefined
 
 export default buildConfig({
   admin: {
