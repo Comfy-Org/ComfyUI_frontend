@@ -1170,6 +1170,77 @@ describe('useWorkflowService', () => {
       expect(workflowStore.activeWorkflow?.path).toBe(survivor.path)
     })
 
+    it('skips a closing candidate in the index-shift fallback', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/active.json'
+      })
+      const closingNeighbor = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/closing-neighbor.json'
+      })
+      const survivor = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/survivor.json'
+      })
+      for (const wf of [active, closingNeighbor, survivor]) {
+        Object.defineProperty(wf, 'unload', { value: vi.fn() })
+      }
+      workflowStore.attachWorkflow(active, 0)
+      workflowStore.attachWorkflow(closingNeighbor, 1)
+      workflowStore.attachWorkflow(survivor, 2)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      // No most-recent candidate: the decision goes straight to the
+      // index-shift fallback, whose first candidate is the closing neighbor.
+      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(null)
+
+      // Hold the neighbor's close INSIDE the store call: this is the window
+      // where it is still in openWorkflows (the store removal has not run)
+      // while the closing registry already holds it - the exact state the
+      // fallback guard exists for.
+      const storeCloseReleases: (() => void)[] = []
+      const storeClose = vi
+        .spyOn(workflowStore, 'closeWorkflow')
+        .mockImplementation(
+          () =>
+            new Promise<void>((resolve) => {
+              storeCloseReleases.push(resolve)
+            })
+        )
+      const closingNeighborPromise = useWorkflowService().closeWorkflow(
+        closingNeighbor,
+        { warnIfUnsaved: false }
+      )
+      await Promise.resolve()
+
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (_data, _clean, _restore, workflow) => {
+          if (workflow) {
+            workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+          }
+        }
+      )
+      const closingActive = useWorkflowService().closeWorkflow(active, {
+        warnIfUnsaved: false
+      })
+      // The replacement decision is a synchronous walk a few microtasks in;
+      // it must run while the neighbor's held store-close keeps the closing
+      // window open, so drain the microtask queue before releasing.
+      for (let tick = 0; tick < 8; tick++) await Promise.resolve()
+      storeClose.mockImplementation(async () => {})
+      while (storeCloseReleases.length) storeCloseReleases.shift()?.()
+      await Promise.all([closingNeighborPromise, closingActive])
+
+      const loadedPaths = vi
+        .mocked(app.loadGraphData)
+        .mock.calls.map(
+          (call) => (call?.[3] as { path?: string } | undefined)?.path
+        )
+      expect(loadedPaths).toContain(survivor.path)
+      expect(loadedPaths).not.toContain(closingNeighbor.path)
+    })
+
     it('reopens a renamed path after a close that renamed the workflow mid-flight', async () => {
       const workflowStore = useWorkflowStore()
       const renamed = createWorkflow(null, {
