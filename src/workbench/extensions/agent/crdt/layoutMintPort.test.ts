@@ -200,6 +200,29 @@ describe('attachLayoutMintPort', () => {
     expect(minted).toEqual([])
   })
 
+  it.for([
+    'moveNode',
+    'resizeNode',
+    'setNodeZIndex',
+    'batchUpdateBounds',
+    'createReroute',
+    'deleteReroute',
+    'moveReroute',
+    'createGroup',
+    'setGroupBounds',
+    'deleteGroup'
+  ] as const)('never mints the non-semantic %s operation', (type) => {
+    deliver({
+      operation: {
+        type,
+        actor: LOCAL_ACTOR,
+        nodeId: '1',
+        layout: { position: { x: 1, y: 2 } }
+      }
+    })
+    expect(minted).toEqual([])
+  })
+
   it('stops minting after detach', () => {
     port.detach()
     deliver(createNodeChange('1'))
