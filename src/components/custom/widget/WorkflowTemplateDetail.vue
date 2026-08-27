@@ -212,8 +212,8 @@ function getFailedDownloadLabel(
         <p
           :class="
             cn(
-              'm-0 max-w-2xl text-sm/relaxed wrap-break-word text-muted-foreground',
-              !showFullDescription && 'line-clamp-3'
+              'm-0 max-w-2xl overflow-hidden text-sm/relaxed wrap-break-word text-muted-foreground transition-[max-height] duration-200 ease-out [interpolate-size:allow-keywords] motion-reduce:transition-none',
+              showFullDescription ? 'max-h-max' : 'line-clamp-3 max-h-[3lh]'
             )
           "
         >
@@ -222,7 +222,7 @@ function getFailedDownloadLabel(
         <button
           v-if="description.length > 220"
           type="button"
-          class="m-0 w-fit cursor-pointer border-0 bg-transparent p-0 text-sm text-base-foreground hover:underline"
+          class="m-0 flex w-fit cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm text-base-foreground hover:underline"
           :aria-expanded="showFullDescription"
           @click="showFullDescription = !showFullDescription"
         >
@@ -233,6 +233,15 @@ function getFailedDownloadLabel(
                 : 'templateWorkflows.detail.descriptionMore'
             )
           }}
+          <i
+            aria-hidden="true"
+            :class="
+              cn(
+                'icon-[lucide--chevron-down] size-3.5 transition-transform duration-200 motion-reduce:transition-none',
+                showFullDescription && 'rotate-180'
+              )
+            "
+          />
         </button>
       </div>
 
