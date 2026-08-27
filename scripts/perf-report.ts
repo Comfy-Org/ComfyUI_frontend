@@ -24,6 +24,7 @@ import {
 const CURRENT_PATH = 'test-results/perf-metrics.json'
 const BASELINE_PATH = 'temp/perf-baseline/perf-metrics.json'
 const HISTORY_DIR = 'temp/perf-history'
+const COMMENT_DATA_LIMIT = 48_000
 
 type MetricKey =
   | 'styleRecalcs'
@@ -553,6 +554,56 @@ function renderRejectedMeasurements(report: PerfReportV3): string[] {
   ]
 }
 
+function serializeCommentData(current: PerfReportV3): string {
+  const commentData = {
+    ...current,
+    measurements: current.measurements.map((result) => {
+      const { rafIntervalsMs: _, ...measurement } = result.measurement
+      return { ...result, measurement }
+    })
+  }
+  const serializedCommentData = JSON.stringify(commentData, null, 2)
+  if (serializedCommentData.length <= COMMENT_DATA_LIMIT) {
+    return serializedCommentData
+  }
+
+  const measurementIdentities = current.measurements.map((result) => ({
+    name: result.measurement.name,
+    rejectedRunReason: result.kind === 'rejected' ? result.reason : null,
+    workloadIdentity: result.measurement.workloadIdentity
+  }))
+  const fallbackData = {
+    schemaVersion: current.schemaVersion,
+    timestamp: current.timestamp,
+    gitSha: current.gitSha,
+    branch: current.branch,
+    summaryTruncated: true,
+    fullArtifact: CURRENT_PATH,
+    measurementCount: current.measurements.length
+  }
+  const serializeFallback = (identityCount: number) =>
+    JSON.stringify(
+      {
+        ...fallbackData,
+        measurementIdentities: measurementIdentities.slice(0, identityCount)
+      },
+      null,
+      2
+    )
+
+  let lowerBound = 0
+  let upperBound = measurementIdentities.length
+  while (lowerBound < upperBound) {
+    const candidate = Math.ceil((lowerBound + upperBound) / 2)
+    if (serializeFallback(candidate).length <= COMMENT_DATA_LIMIT) {
+      lowerBound = candidate
+    } else {
+      upperBound = candidate - 1
+    }
+  }
+  return serializeFallback(lowerBound)
+}
+
 export function renderPerfReport(
   current: PerfReportV3,
   baseline: PerfReport | null,
@@ -604,38 +655,9 @@ export function renderPerfReport(
     lines.push(...renderNoBaselineReport(prGroups))
   }
 
-  const commentData = {
-    ...current,
-    measurements: current.measurements.map((result) => {
-      const { rafIntervalsMs: _, ...measurement } = result.measurement
-      return { ...result, measurement }
-    })
-  }
-  const serializedCommentData = JSON.stringify(commentData, null, 2)
-  const boundedCommentData =
-    serializedCommentData.length <= 48_000
-      ? serializedCommentData
-      : JSON.stringify(
-          {
-            schemaVersion: current.schemaVersion,
-            timestamp: current.timestamp,
-            gitSha: current.gitSha,
-            branch: current.branch,
-            summaryTruncated: true,
-            fullArtifact: CURRENT_PATH,
-            measurementIdentities: current.measurements.map((result) => ({
-              name: result.measurement.name,
-              rejectedRunReason:
-                result.kind === 'rejected' ? result.reason : null,
-              workloadIdentity: result.measurement.workloadIdentity
-            }))
-          },
-          null,
-          2
-        )
   lines.push('\n<details><summary>Summary data</summary>\n')
   lines.push('```json')
-  lines.push(boundedCommentData)
+  lines.push(serializeCommentData(current))
   lines.push('```')
   lines.push('\n</details>')
 

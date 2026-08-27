@@ -206,4 +206,32 @@ describe('performance report', () => {
 
     expect(parsed).toEqual(input)
   })
+
+  it('bounds fallback summary data and reports omitted measurements', () => {
+    const measurementCount = 2_000
+    const output = renderPerfReport(
+      report(Array.from({ length: measurementCount }, () => accepted(20))),
+      null,
+      []
+    )
+    const summaryData = output.match(/```json\n([\s\S]*?)\n```/)?.[1]
+
+    expect(summaryData).toBeDefined()
+    expect(summaryData?.length).toBeLessThanOrEqual(48_000)
+    const summary: unknown = JSON.parse(summaryData ?? '')
+    expect(summary).toMatchObject({
+      summaryTruncated: true,
+      measurementCount
+    })
+    expect(summary).toHaveProperty('measurementIdentities')
+    if (
+      typeof summary !== 'object' ||
+      summary === null ||
+      !('measurementIdentities' in summary) ||
+      !Array.isArray(summary.measurementIdentities)
+    ) {
+      throw new Error('Expected measurement identities in fallback summary')
+    }
+    expect(summary.measurementIdentities.length).toBeLessThan(measurementCount)
+  })
 })
