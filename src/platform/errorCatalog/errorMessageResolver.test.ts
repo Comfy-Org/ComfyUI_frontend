@@ -624,6 +624,78 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('resolves an agent transport failure to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'apply_failed',
+          message: 'An agent edit could not be applied',
+          details: 'op_rejected: unknown_widget at seed'
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Agent edit failed',
+      displayMessage:
+        'An agent edit could not be applied to the workflow document.'
+    })
+  })
+
+  it('resolves a rejected agent edit to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'op_rejected',
+          message: 'The document refused an edit',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Agent edit rejected',
+      displayMessage:
+        'The workflow document refused an agent edit. The canvas and the shared document may briefly differ until the next update.'
+    })
+  })
+
+  it('resolves a partial agent batch to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'prefix_abort',
+          message: 'A batch stopped partway',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Agent edits partially applied',
+      displayMessage:
+        'A batch of agent edits stopped partway. The remaining edits are retried automatically.'
+    })
+  })
+
+  it('resolves a blocked agent update to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'guard_trip',
+          message: 'An incoming update was blocked',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Agent update blocked',
+      displayMessage:
+        'An incoming agent update did not match the expected workflow document shape and was blocked.'
+    })
+  })
+
   it('resolves server_error prompt copy by environment', () => {
     const error = {
       type: 'server_error',
