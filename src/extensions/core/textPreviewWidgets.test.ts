@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 
 interface MockWidget {
   name: string
@@ -99,5 +100,43 @@ describe('updateTextPreviewWidgets', () => {
   it('writes a plain string message as-is', () => {
     updateTextPreviewWidgets(node, { text: 'hello' })
     expect(node.widgets[0].value).toBe('hello')
+  })
+
+  it.for([
+    ['null message', null],
+    ['undefined message', undefined],
+    ['message without text', {}],
+    ['null text', { text: null }],
+    ['empty array', { text: [] }],
+    ['array of only nulls', { text: [null, null] }]
+  ] as [string, NodeExecutionOutput | null | undefined][])(
+    'renders empty and does not throw for $0',
+    ([_label, message]) => {
+      expect(() => updateTextPreviewWidgets(node, message)).not.toThrow()
+      expect(node.widgets[0].value).toBe('')
+    }
+  )
+
+  it('drops null entries instead of rendering blank separators', () => {
+    updateTextPreviewWidgets(node, {
+      text: ['first', null, 'second']
+    } as unknown as NodeExecutionOutput)
+
+    expect(node.widgets[0].value).toBe('first\n\nsecond')
+  })
+
+  it('renders non-string entries rather than blanking the node', () => {
+    updateTextPreviewWidgets(node, {
+      text: ['first', 23.976, null, 'second']
+    } as unknown as NodeExecutionOutput)
+
+    expect(node.widgets[0].value).toBe('first\n\n23.976\n\nsecond')
+  })
+
+  it('stringifies a bare non-string scalar payload', () => {
+    updateTextPreviewWidgets(node, {
+      text: 23.976
+    } as unknown as NodeExecutionOutput)
+    expect(node.widgets[0].value).toBe('23.976')
   })
 })

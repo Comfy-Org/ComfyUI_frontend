@@ -2,6 +2,9 @@ import type { ExpectMatcherState, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { Position, Size } from '@e2e/fixtures/types'
+
+type Bounds = Position & Size
 
 function makeMatcher<T>(
   getValue: (node: NodeReference) => Promise<T> | T,
@@ -46,5 +49,29 @@ export const comfyExpect = expect.extend({
       pass: isFocused,
       message: () => `Expected element to ${isFocused ? 'not ' : ''}be focused.`
     }
+  },
+  async toHaveBounds(
+    locator: Locator,
+    expected: Bounds,
+    { numDigits }: { numDigits?: number } = {}
+  ) {
+    const message = (box: object) =>
+      `Bounds ${JSON.stringify(box)} should ${this.isNot ? 'not ' : ''}match ${JSON.stringify(expected)}`
+
+    const assertBounds = async () => {
+      const box = await locator.boundingBox()
+      if (!box) throw new Error(`Failed to resolve bounds for ${locator}`)
+
+      const assertBoundsEqual = () => {
+        for (const key of ['x', 'y', 'width', 'height'] as const)
+          expect(box[key], key).toBeCloseTo(expected[key], numDigits)
+      }
+      if (this.isNot) expect(assertBoundsEqual, message(box)).toThrow()
+      else expect(assertBoundsEqual, message(box)).not.toThrow()
+    }
+
+    await expect(assertBounds).toPass({ timeout: 5000 })
+    const box = await locator.boundingBox
+    return { pass: !this.isNot, message: () => message(box) }
   }
 })

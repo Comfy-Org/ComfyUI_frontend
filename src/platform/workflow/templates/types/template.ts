@@ -19,6 +19,13 @@ export interface TemplateInfo {
   localizedTitle?: string
   localizedDescription?: string
   isEssential?: boolean
+  /**
+   * Whether App Mode is this template's default view, from the workflow's own
+   * `extra.linearMode`. Supplied by `templates/index.json`; absent means a node
+   * graph. Do not fall back to the `.app` filename suffix, which is wrong in
+   * both directions (see the App badge in WorkflowTemplateSelectorDialog).
+   */
+  isApp?: boolean
   sourceModule?: string
   tags?: string[]
   models?: string[]
@@ -40,8 +47,10 @@ export interface TemplateInfo {
    */
   requiresCustomNodes?: string[]
   /**
-   * Manual ranking boost/demotion for "Recommended" sort. Scale 1-10, default 5.
-   * Higher values promote the template, lower values demote it.
+   * Curator override applied to search relevance and the "Recommended" sort.
+   * Anything from -5 to 5, and an absent value, is neutral; promotion starts at
+   * 6 and demotion at -6, both saturating at a magnitude of 1000.
+   * See docs/TEMPLATE_RANKING.md.
    */
   searchRank?: number
   /**

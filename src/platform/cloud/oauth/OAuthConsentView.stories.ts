@@ -28,7 +28,13 @@ const baseChallenge: OAuthConsentChallenge = {
 
 const meta: Meta<typeof OAuthConsentView> = {
   title: 'Cloud/OAuth/Consent',
-  component: OAuthConsentView
+  component: OAuthConsentView,
+  decorators: [
+    () => ({
+      template:
+        '<div class="dark-theme relative min-h-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas"><i class="icon-[comfy--comfy-logo] absolute top-6 left-6 h-6 w-26 text-brand-yellow" aria-hidden="true" /><story /></div>'
+    })
+  ]
 }
 export default meta
 type Story = StoryObj<typeof meta>
@@ -93,6 +99,19 @@ export const ComfyCli: Story = {
     initialChallenge: {
       ...baseChallenge,
       client_display_name: 'Comfy CLI'
+    }
+  }
+}
+
+export const RemoteWebClient: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'Claude',
+      resource_display_name: 'Comfy Cloud MCP',
+      client_application_type: 'web',
+      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+      scopes: ['comfy-mcp:tools:calls']
     }
   }
 }

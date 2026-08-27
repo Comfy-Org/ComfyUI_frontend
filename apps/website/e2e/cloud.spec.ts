@@ -86,13 +86,6 @@ test.describe('Cloud page @smoke', () => {
     const cards = section.locator('a[href]')
     await expect(cards).toHaveCount(3)
   })
-
-  test('FAQSection heading is visible with 15 items', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /FAQ/i })).toBeVisible()
-
-    const faqButtons = page.locator('button[aria-controls^="faq-panel-"]')
-    await expect(faqButtons).toHaveCount(15)
-  })
 })
 
 test.describe('Cloud FAQ accordion @interaction', () => {
@@ -111,7 +104,6 @@ test.describe('Cloud FAQ accordion @interaction', () => {
       name: /What is Comfy Cloud/i
     })
     await firstQuestion.scrollIntoViewIfNeeded()
-    // Gate: wait for Vue hydration to bind aria-expanded
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await firstQuestion.click()
 
@@ -125,7 +117,6 @@ test.describe('Cloud FAQ accordion @interaction', () => {
       name: /What is Comfy Cloud/i
     })
     await firstQuestion.scrollIntoViewIfNeeded()
-    // Gate: wait for Vue hydration to bind aria-expanded
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()

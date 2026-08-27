@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -26,19 +27,22 @@ import { useAssetSelection } from './useAssetSelection'
 import { useAssetSelectionStore } from './useAssetSelectionStore'
 
 function createMockAssets(count: number): AssetItem[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `asset-${i}`,
-    name: `Asset ${i}`,
-    size: 1000,
-    created_at: new Date().toISOString(),
-    tags: ['output'],
-    preview_url: `http://example.com/asset-${i}.png`
-  }))
+  return Array.from(
+    { length: count },
+    (_, i): AssetItem =>
+      fromPartial({
+        id: `asset-${i}`,
+        name: `Asset ${i}`,
+        size: 1000,
+        created_at: new Date().toISOString(),
+        tags: ['output'],
+        preview_url: `http://example.com/asset-${i}.png`
+      })
+  )
 }
 
 describe('useAssetSelection', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShiftKey.value = false
     mockCtrlKey.value = false
     mockMetaKey.value = false
@@ -49,8 +53,8 @@ describe('useAssetSelection', () => {
       const selection = useAssetSelection()
       const store = useAssetSelectionStore()
       const assets: AssetItem[] = [
-        { id: 'a', name: 'a.png', tags: [] },
-        { id: 'b', name: 'b.png', tags: [] }
+        fromPartial({ id: 'a', name: 'a.png', tags: [] }),
+        fromPartial({ id: 'b', name: 'b.png', tags: [] })
       ]
 
       store.setSelection(['a', 'b'])
@@ -83,8 +87,8 @@ describe('useAssetSelection', () => {
       const selection = useAssetSelection()
       const store = useAssetSelectionStore()
       const assets: AssetItem[] = [
-        { id: 'a', name: 'a.png', tags: [] },
-        { id: 'b', name: 'b.png', tags: [] }
+        fromPartial({ id: 'a', name: 'a.png', tags: [] }),
+        fromPartial({ id: 'b', name: 'b.png', tags: [] })
       ]
 
       store.setSelection(['a'])
@@ -101,8 +105,8 @@ describe('useAssetSelection', () => {
       const selection = useAssetSelection()
       const store = useAssetSelectionStore()
       const assets: AssetItem[] = [
-        { id: 'a', name: 'a.png', tags: [] },
-        { id: 'b', name: 'b.png', tags: [] }
+        fromPartial({ id: 'a', name: 'a.png', tags: [] }),
+        fromPartial({ id: 'b', name: 'b.png', tags: [] })
       ]
 
       store.setSelection(['a', 'b'])
@@ -130,6 +134,35 @@ describe('useAssetSelection', () => {
       handleAssetClick(assets[1], 1, assets)
       expect(isSelected('asset-0')).toBe(false)
       expect(isSelected('asset-1')).toBe(true)
+      expect(selectedCount.value).toBe(1)
+    })
+
+    it('keeps the only selected asset selected when clicked again', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      handleAssetClick(assets[0], 0, assets)
+
+      expect(isSelected('asset-0')).toBe(true)
+      expect(selectedCount.value).toBe(1)
+    })
+
+    it('collapses a multi-selection to the clicked asset', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+      mockCtrlKey.value = true
+      handleAssetClick(assets[1], 1, assets)
+      mockCtrlKey.value = false
+
+      handleAssetClick(assets[0], 0, assets)
+
+      expect(isSelected('asset-0')).toBe(true)
+      expect(isSelected('asset-1')).toBe(false)
       expect(selectedCount.value).toBe(1)
     })
   })
@@ -235,6 +268,33 @@ describe('useAssetSelection', () => {
       expect(isSelected('asset-0')).toBe(true)
       expect(isSelected('asset-2')).toBe(true)
       expect(selectedCount.value).toBe(2)
+    })
+  })
+
+  describe('toggleAssetSelection', () => {
+    it('removes one asset without clearing the rest of the selection', () => {
+      const selection = useAssetSelection()
+      const assets = createMockAssets(3)
+
+      selection.selectAll(assets)
+      selection.toggleAssetSelection(assets[1], 1, assets)
+
+      expect(selection.isSelected('asset-0')).toBe(true)
+      expect(selection.isSelected('asset-1')).toBe(false)
+      expect(selection.isSelected('asset-2')).toBe(true)
+      expect(selection.selectedCount.value).toBe(2)
+    })
+
+    it('adds one asset without clearing the rest of the selection', () => {
+      const selection = useAssetSelection()
+      const assets = createMockAssets(3)
+
+      selection.handleAssetClick(assets[0], 0, assets)
+      selection.toggleAssetSelection(assets[1], 1, assets)
+
+      expect(selection.isSelected('asset-0')).toBe(true)
+      expect(selection.isSelected('asset-1')).toBe(true)
+      expect(selection.selectedCount.value).toBe(2)
     })
   })
 

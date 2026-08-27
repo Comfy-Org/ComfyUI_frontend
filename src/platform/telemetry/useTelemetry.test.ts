@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -7,10 +7,6 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 describe('useTelemetry', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should return null when not in cloud distribution', () => {
     const provider = useTelemetry()
 

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -282,15 +280,48 @@ describe('TaskItemImpl', () => {
       expect(taskItem.executionError).toEqual(errorDetail)
     })
   })
+
+  describe('previewableOutputsCount', () => {
+    it('returns undefined when the job has no previewable_outputs_count', () => {
+      const job = createHistoryJob(0, 'job-id')
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBeUndefined()
+    })
+
+    it('returns the server-provided previewable_outputs_count', () => {
+      const job: JobListItem = {
+        ...createHistoryJob(0, 'job-id'),
+        previewable_outputs_count: 2
+      }
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBe(2)
+    })
+
+    it('returns 0 when previewable_outputs_count is 0', () => {
+      const job: JobListItem = {
+        ...createHistoryJob(0, 'job-id'),
+        previewable_outputs_count: 0
+      }
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBe(0)
+    })
+
+    it('normalizes an explicit null previewable_outputs_count to undefined', () => {
+      const job: JobListItem = {
+        ...createHistoryJob(0, 'job-id'),
+        previewable_outputs_count: null
+      }
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBeUndefined()
+    })
+  })
 })
 
 describe('useQueueStore', () => {
   let store: ReturnType<typeof useQueueStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useQueueStore()
-    vi.clearAllMocks()
   })
 
   const mockGetQueue = vi.mocked(api.getQueue)

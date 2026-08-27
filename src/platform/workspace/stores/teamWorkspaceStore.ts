@@ -2,20 +2,26 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import {
+  clearWorkflowRestoreState,
+  prepareWorkflowWorkspaceTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
   BillingRail,
+  CurrentWorkspaceResponse,
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
   SubscriptionTier,
   WorkspaceWithRole
 } from '../api/workspaceApi'
-import { workspaceApi } from '../api/workspaceApi'
+import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
 
 export interface WorkspaceMember {
   id: string
@@ -24,9 +30,11 @@ export interface WorkspaceMember {
   joinDate: Date
   role: 'owner' | 'member'
   isOriginalOwner: boolean
+  creditsUsedThisMonth?: number
+  monthlyCreditLimit?: number | null
 }
 
-export interface PendingInvite {
+export interface WorkspacePendingInvite {
   id: string
   email: string
   inviteDate: Date
@@ -40,7 +48,7 @@ interface WorkspaceState extends WorkspaceWithRole {
   subscriptionPlan: SubscriptionPlan
   subscriptionTier: SubscriptionTier | null
   members: WorkspaceMember[]
-  pendingInvites: PendingInvite[]
+  pendingInvites: WorkspacePendingInvite[]
 }
 
 type InitState = 'uninitialized' | 'loading' | 'ready' | 'error'
@@ -52,11 +60,15 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     email: member.email,
     joinDate: new Date(member.joined_at),
     role: member.role,
-    isOriginalOwner: member.is_original_owner ?? false
+    isOriginalOwner: member.is_original_owner ?? false,
+    creditsUsedThisMonth: member.credits_used_this_month,
+    monthlyCreditLimit: member.monthly_credit_limit
   }
 }
 
-function mapApiInviteToPendingInvite(invite: ApiPendingInvite): PendingInvite {
+function mapApiInviteToPendingInvite(
+  invite: ApiPendingInvite
+): WorkspacePendingInvite {
   return {
     id: invite.id,
     email: invite.email,
@@ -76,6 +88,26 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
     members: [],
     pendingInvites: []
   }
+}
+
+/**
+ * Builds workspace state from GET /api/workspaces/current — the single
+ * workspace bound to an API-key credential. The response carries no
+ * membership timestamps (only sortWorkspaces reads them, and a one-entry list
+ * never sorts) and may omit role, which fails closed to member so owner-only
+ * billing actions stay hidden rather than 403 on click.
+ */
+function createWorkspaceStateFromCredential(
+  current: CurrentWorkspaceResponse
+): WorkspaceState {
+  return createWorkspaceState({
+    id: current.id,
+    name: current.name,
+    type: current.type,
+    role: current.role ?? 'member',
+    created_at: '',
+    joined_at: ''
+  })
 }
 
 export function sortWorkspaces<T extends WorkspaceWithRole>(list: T[]): T[] {
@@ -113,14 +145,14 @@ function clearLastWorkspaceId(): void {
 }
 
 const MAX_OWNED_WORKSPACES = 10
-export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const initState = ref<InitState>('uninitialized')
   const workspaces = shallowRef<WorkspaceState[]>([])
-  const activeWorkspaceId = ref<string | null>(null)
+  const mutableActiveWorkspaceId = ref<string | null>(null)
+  const activeWorkspaceId = computed(() => mutableActiveWorkspaceId.value)
   const billingRailByWorkspaceId = shallowRef<Record<string, BillingRail>>({})
   const error = ref<Error | null>(null)
 
@@ -128,6 +160,23 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const isDeleting = ref(false)
   const isSwitching = ref(false)
   const isFetchingWorkspaces = ref(false)
+  const mutableWorkspaceTransitionGeneration = ref(0)
+  const workspaceTransitionGeneration = computed(
+    () => mutableWorkspaceTransitionGeneration.value
+  )
+  let identityGeneration = 0
+  let initializationPromise: Promise<void> | null = null
+  let pendingWorkspaceSwitch: Promise<void> | null = null
+
+  function isStaleIdentity(generation: number): boolean {
+    return generation !== identityGeneration
+  }
+
+  function isStaleWorkspace(generation: number, workspaceId: string): boolean {
+    return (
+      isStaleIdentity(generation) || activeWorkspaceId.value !== workspaceId
+    )
+  }
 
   const activeWorkspace = computed(
     () => workspaces.value.find((w) => w.id === activeWorkspaceId.value) ?? null
@@ -188,16 +237,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return !!selfRow && selfRow.id === originalOwnerId.value
   })
 
-  const pendingInvites = computed<PendingInvite[]>(
+  const pendingInvites = computed<WorkspacePendingInvite[]>(
     () => activeWorkspace.value?.pendingInvites ?? []
-  )
-
-  const totalMemberSlots = computed(
-    () => members.value.length + pendingInvites.value.length
-  )
-
-  const isInviteLimitReached = computed(
-    () => totalMemberSlots.value >= MAX_WORKSPACE_MEMBERS
   )
 
   const workspaceId = computed(() => activeWorkspace.value?.id ?? null)
@@ -250,23 +291,43 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Retries on transient failures with exponential backoff.
    * Call once on app boot.
    */
-  async function initialize(): Promise<void> {
-    if (initState.value !== 'uninitialized') return
-
+  async function performInitialization(): Promise<void> {
+    const generation = identityGeneration
     initState.value = 'loading'
     isFetchingWorkspaces.value = true
     error.value = null
 
     const workspaceAuthStore = useWorkspaceAuthStore()
+    const isApiKeySession = useCurrentUser().isApiKeyLogin.value
 
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
+        // An API-key credential is bound to exactly one workspace on the
+        // server. There is no discovery, switching, or token exchange for it:
+        // the server echoes the binding back and the key itself authenticates
+        // workspace-scoped calls.
+        if (isApiKeySession) {
+          const current = await workspaceApi.getCurrentWorkspace()
+          if (isStaleIdentity(generation)) return
+          workspaces.value = [createWorkspaceStateFromCredential(current)]
+          mutableActiveWorkspaceId.value = current.id
+          initState.value = 'ready'
+          isFetchingWorkspaces.value = false
+          return
+        }
+
+        const { useSessionCookie } =
+          await import('@/platform/auth/session/useSessionCookie')
+        await useSessionCookie().ensureSessionCookie()
+        if (isStaleIdentity(generation)) return
+
         // 1. Try to restore workspace context from session (page refresh case)
         const hasValidSession = workspaceAuthStore.initializeFromSession()
 
         if (hasValidSession && workspaceAuthStore.currentWorkspace) {
           // Valid session exists - fetch workspace list and verify access
           const response = await workspaceApi.list()
+          if (isStaleIdentity(generation)) return
           workspaces.value = sortWorkspaces(
             response.workspaces.map(createWorkspaceState)
           )
@@ -282,27 +343,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           )
 
           if (sessionWorkspaceExists) {
-            activeWorkspaceId.value = sessionWorkspaceId
+            mutableActiveWorkspaceId.value = sessionWorkspaceId
             initState.value = 'ready'
             isFetchingWorkspaces.value = false
             return
           }
 
           // Session workspace not found (deleted/access revoked) - fallback to default
+          if (isCloud) clearWorkflowRestoreState()
           workspaceAuthStore.clearWorkspaceContext()
 
           const personal = workspaces.value.find((w) => w.type === 'personal')
           const fallbackWorkspaceId = personal?.id ?? workspaces.value[0].id
 
-          try {
-            await workspaceAuthStore.switchWorkspace(fallbackWorkspaceId)
-          } catch {
-            console.error(
-              '[teamWorkspaceStore] Token exchange failed during fallback'
-            )
-          }
+          await workspaceAuthStore.switchWorkspace(fallbackWorkspaceId)
 
-          activeWorkspaceId.value = fallbackWorkspaceId
+          if (isStaleIdentity(generation)) return
+
+          mutableActiveWorkspaceId.value = fallbackWorkspaceId
           setLastWorkspaceId(fallbackWorkspaceId)
           initState.value = 'ready'
           isFetchingWorkspaces.value = false
@@ -311,6 +369,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
         // 2. No valid session - fetch workspaces and pick default
         const response = await workspaceApi.list()
+        if (isStaleIdentity(generation)) return
         workspaces.value = sortWorkspaces(
           response.workspaces.map(createWorkspaceState)
         )
@@ -333,28 +392,39 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         }
 
         // 4. Exchange Firebase token for workspace token
-        try {
-          await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
-        } catch {
-          // Log but don't fail initialization - API calls will fall back to Firebase token
-          console.error(
-            '[teamWorkspaceStore] Token exchange failed during init'
-          )
-        }
+        await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
+
+        if (isStaleIdentity(generation)) return
 
         // 5. Set active workspace
-        activeWorkspaceId.value = targetWorkspaceId
+        mutableActiveWorkspaceId.value = targetWorkspaceId
         setLastWorkspaceId(targetWorkspaceId)
 
         initState.value = 'ready'
         isFetchingWorkspaces.value = false
         return
       } catch (e) {
+        if (isStaleIdentity(generation)) return
         const isNoWorkspacesError =
           e instanceof Error && e.message === 'No workspaces available'
+        // A definitive 4xx on the credential lookup cannot be repaired by
+        // resending the same key; retries stay reserved for transient
+        // failures (network, 408/429, 5xx).
+        const isPermanentCredentialError =
+          isApiKeySession &&
+          e instanceof WorkspaceApiError &&
+          e.status !== undefined &&
+          e.status >= 400 &&
+          e.status < 500 &&
+          e.status !== 408 &&
+          e.status !== 429
 
         // Don't retry on permanent errors (no workspaces available)
-        if (isNoWorkspacesError || attempt >= MAX_INIT_RETRIES) {
+        if (
+          isNoWorkspacesError ||
+          isPermanentCredentialError ||
+          attempt >= MAX_INIT_RETRIES
+        ) {
           error.value = e instanceof Error ? e : new Error('Unknown error')
           initState.value = 'error'
           isFetchingWorkspaces.value = false
@@ -368,50 +438,86 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           `[teamWorkspaceStore] Init failed (attempt ${attempt + 1}/${MAX_INIT_RETRIES + 1}), retrying in ${delay}ms: ${errorMessage}`
         )
         await new Promise((resolve) => setTimeout(resolve, delay))
+        if (isStaleIdentity(generation)) return
       }
     }
 
+    if (isStaleIdentity(generation)) return
     isFetchingWorkspaces.value = false
+  }
+
+  function initialize(): Promise<void> {
+    if (initializationPromise) return initializationPromise
+    if (initState.value !== 'uninitialized' && initState.value !== 'error') {
+      return Promise.resolve()
+    }
+
+    const promise = performInitialization()
+    initializationPromise = promise
+    void promise.then(
+      () => {
+        if (initializationPromise === promise) initializationPromise = null
+      },
+      () => {
+        if (initializationPromise === promise) initializationPromise = null
+      }
+    )
+    return promise
   }
 
   /**
    * Re-fetch workspaces from API without changing active workspace.
    */
   async function refreshWorkspaces(): Promise<void> {
+    const generation = identityGeneration
     isFetchingWorkspaces.value = true
     try {
       const response = await workspaceApi.list()
+      if (isStaleIdentity(generation)) return
       workspaces.value = sortWorkspaces(
         response.workspaces.map(createWorkspaceState)
       )
     } finally {
-      isFetchingWorkspaces.value = false
+      if (!isStaleIdentity(generation)) {
+        isFetchingWorkspaces.value = false
+      }
     }
   }
 
-  /**
-   * Drop a revoked/deleted active workspace and reload so init falls back to the
-   * personal workspace. Skips the personal workspace to avoid a reload loop.
-   */
-  function forgetRevokedActiveWorkspace(workspaceId: string): void {
-    if (activeWorkspaceId.value !== workspaceId) return
+  /** Returns whether the revoked workspace was handled, with or without reload. */
+  function forgetRevokedActiveWorkspace(workspaceId: string): boolean {
+    if (activeWorkspaceId.value !== workspaceId) return false
 
     const revoked = workspaces.value.find((w) => w.id === workspaceId)
-    if (revoked?.type === 'personal') return
+    if (revoked?.type === 'personal') return true
 
+    if (!isCloud) {
+      const personal = workspaces.value.find((w) => w.type === 'personal')
+      workspaces.value = workspaces.value.filter((w) => w.id !== workspaceId)
+      mutableActiveWorkspaceId.value = personal?.id ?? null
+      if (personal) {
+        setLastWorkspaceId(personal.id)
+      } else {
+        clearLastWorkspaceId()
+      }
+      return true
+    }
+
+    prepareWorkflowWorkspaceTransition()
     clearLastWorkspaceId()
     window.location.reload()
+    return true
   }
 
   /**
    * Switch to a different workspace.
    * Clears workspace context and reloads the page.
    */
-  async function switchWorkspace(workspaceId: string): Promise<void> {
-    if (workspaceId === activeWorkspaceId.value) return
-
+  async function executeWorkspaceSwitch(workspaceId: string): Promise<void> {
+    const generation = identityGeneration
     const workspaceAuthStore = useWorkspaceAuthStore()
 
+    mutableWorkspaceTransitionGeneration.value++
     isSwitching.value = true
 
     try {
@@ -420,6 +526,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (!workspace) {
         // Workspace not in list - try refetching in case it was added
         await refreshWorkspaces()
+        if (isStaleIdentity(generation)) return
         const refreshedWorkspace = workspaces.value.find(
           (w) => w.id === workspaceId
         )
@@ -428,7 +535,21 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         }
       }
 
-      // Clear current workspace context and persist new workspace ID
+      if (isStaleIdentity(generation)) return
+
+      if (!isCloud) {
+        await workspaceAuthStore.switchWorkspace(workspaceId)
+        if (isStaleIdentity(generation)) return
+        if (workspaceAuthStore.currentWorkspace?.id !== workspaceId) {
+          throw new Error('Workspace authentication did not switch')
+        }
+        mutableActiveWorkspaceId.value = workspaceId
+        setLastWorkspaceId(workspaceId)
+        isSwitching.value = false
+        return
+      }
+
+      prepareWorkflowWorkspaceTransition()
       workspaceAuthStore.clearWorkspaceContext()
       setLastWorkspaceId(workspaceId)
 
@@ -436,15 +557,40 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       window.location.reload()
       // Code after this won't run (page reloads)
     } catch (e) {
-      isSwitching.value = false
+      if (!isStaleIdentity(generation)) {
+        isSwitching.value = false
+      }
       throw e
     }
+  }
+
+  async function switchWorkspace(workspaceId: string): Promise<void> {
+    if (workspaceId === activeWorkspaceId.value) return
+    if (!isCloud && isSwitching.value) {
+      console.error('Workspace switch already in progress')
+      return
+    }
+
+    const workspaceSwitch = executeWorkspaceSwitch(workspaceId)
+    pendingWorkspaceSwitch = workspaceSwitch
+    try {
+      await workspaceSwitch
+    } finally {
+      if (pendingWorkspaceSwitch === workspaceSwitch) {
+        pendingWorkspaceSwitch = null
+      }
+    }
+  }
+
+  function waitForWorkspaceSwitch(): Promise<void> {
+    return pendingWorkspaceSwitch ?? Promise.resolve()
   }
 
   /**
    * Create a new workspace and switch to it.
    */
   async function createWorkspace(name: string): Promise<WorkspaceState> {
+    const generation = identityGeneration
     const workspaceAuthStore = useWorkspaceAuthStore()
 
     isCreating.value = true
@@ -452,11 +598,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     try {
       const newWorkspace = await workspaceApi.create({ name })
       const workspaceState = createWorkspaceState(newWorkspace)
+      if (isStaleIdentity(generation)) return workspaceState
 
       // Add to local list
       workspaces.value = [...workspaces.value, workspaceState]
 
       // Clear context and switch to new workspace
+      prepareWorkflowWorkspaceTransition()
       workspaceAuthStore.clearWorkspaceContext()
       // Clear any preserved invite query to prevent stale invites from being
       // processed after the reload (prevents owner adding themselves as member)
@@ -467,7 +615,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       // Code after this won't run (page reloads)
       return workspaceState
     } catch (e) {
-      isCreating.value = false
+      if (!isStaleIdentity(generation)) {
+        isCreating.value = false
+      }
       throw e
     }
   }
@@ -477,6 +627,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * If deleting active workspace, switches to personal.
    */
   async function deleteWorkspace(workspaceId?: string): Promise<void> {
+    const generation = identityGeneration
     const targetId = workspaceId ?? activeWorkspaceId.value
     if (!targetId) throw new Error('No workspace to delete')
 
@@ -492,10 +643,12 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     try {
       await workspaceApi.delete(targetId)
+      if (isStaleIdentity(generation)) return
 
       if (targetId === activeWorkspaceId.value) {
         // Deleted active workspace - go to personal
         const personal = personalWorkspace.value
+        prepareWorkflowWorkspaceTransition()
         workspaceAuthStore.clearWorkspaceContext()
         if (personal) {
           setLastWorkspaceId(personal.id)
@@ -508,7 +661,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         isDeleting.value = false
       }
     } catch (e) {
-      isDeleting.value = false
+      if (!isStaleIdentity(generation)) {
+        isDeleting.value = false
+      }
       throw e
     }
   }
@@ -520,7 +675,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     workspaceId: string,
     newName: string
   ): Promise<void> {
+    const generation = identityGeneration
     const updated = await workspaceApi.update(workspaceId, { name: newName })
+    if (isStaleIdentity(generation)) return
     updateWorkspace(workspaceId, { name: updated.name })
   }
 
@@ -535,17 +692,20 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   async function leaveWorkspace(): Promise<void> {
+    const generation = identityGeneration
     const current = activeWorkspace.value
     if (!current) throw new Error('No active workspace')
 
     const workspaceAuthStore = useWorkspaceAuthStore()
 
     await workspaceApi.leave()
+    if (isStaleIdentity(generation)) return
 
     const personal = workspaces.value.find(
       (workspace) =>
         workspace.type === 'personal' && workspace.id !== current.id
     )
+    prepareWorkflowWorkspaceTransition()
     workspaceAuthStore.clearWorkspaceContext()
     if (personal) {
       setLastWorkspaceId(personal.id)
@@ -560,20 +720,30 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Fetch members for the current workspace.
    */
   async function fetchMembers(
-    params?: ListMembersParams
+    params: ListMembersParams = {}
   ): Promise<WorkspaceMember[]> {
-    if (!activeWorkspaceId.value) return []
+    const generation = identityGeneration
+    const workspaceId = activeWorkspaceId.value
+    if (!workspaceId) return []
 
-    const response = await workspaceApi.listMembers(params)
+    const response = await workspaceApi.listMembers({
+      ...params,
+      limit: params.limit ?? 100
+    })
     const members = response.members.map(mapApiMemberToWorkspaceMember)
-    updateActiveWorkspace({ members })
+    if (!isStaleWorkspace(generation, workspaceId)) {
+      updateWorkspace(workspaceId, { members })
+    }
     return members
   }
 
   // Tracks which workspaces have already loaded their members so the
   // lifecycle gate resolves without redundant or duplicate fetches.
   const loadedMemberWorkspaceIds = new Set<string>()
-  let inFlightMembersWorkspaceId: string | null = null
+  let inFlightMembersRequest: {
+    generation: number
+    workspaceId: string
+  } | null = null
 
   /**
    * Load the active workspace's members once. No-ops for already-loaded
@@ -582,19 +752,30 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    */
   async function ensureMembersLoaded(): Promise<void> {
     const workspaceId = activeWorkspaceId.value
+    const generation = identityGeneration
     if (!workspaceId) return
     if (loadedMemberWorkspaceIds.has(workspaceId)) return
-    if (inFlightMembersWorkspaceId === workspaceId) return
+    if (
+      inFlightMembersRequest?.generation === generation &&
+      inFlightMembersRequest.workspaceId === workspaceId
+    ) {
+      return
+    }
 
-    inFlightMembersWorkspaceId = workspaceId
+    const request = { generation, workspaceId }
+    inFlightMembersRequest = request
     try {
       await fetchMembers()
-      loadedMemberWorkspaceIds.add(workspaceId)
+      if (!isStaleWorkspace(generation, workspaceId)) {
+        loadedMemberWorkspaceIds.add(workspaceId)
+      }
     } catch (e) {
-      console.error('Failed to load workspace members', e)
+      if (!isStaleIdentity(generation)) {
+        console.error('Failed to load workspace members', e)
+      }
     } finally {
-      if (inFlightMembersWorkspaceId === workspaceId) {
-        inFlightMembersWorkspaceId = null
+      if (inFlightMembersRequest === request) {
+        inFlightMembersRequest = null
       }
     }
   }
@@ -603,10 +784,17 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Remove a member from the current workspace.
    */
   async function removeMember(userId: string): Promise<void> {
+    const generation = identityGeneration
+    const workspaceId = activeWorkspaceId.value
+    if (!workspaceId) return
+
     await workspaceApi.removeMember(userId)
-    const current = activeWorkspace.value
+    if (isStaleWorkspace(generation, workspaceId)) {
+      return
+    }
+    const current = workspaces.value.find((w) => w.id === workspaceId)
     if (current) {
-      updateActiveWorkspace({
+      updateWorkspace(workspaceId, {
         members: current.members.filter((m) => m.id !== userId)
       })
     }
@@ -619,6 +807,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     userId: string,
     role: WorkspaceMember['role']
   ): Promise<void> {
+    const generation = identityGeneration
+    const workspaceId = activeWorkspaceId.value
+    if (!workspaceId) return
     if (
       activeWorkspace.value?.type === 'personal' &&
       userId === originalOwnerId.value
@@ -629,9 +820,12 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     // the PATCH response to echo a full Member (a 204/partial body would
     // otherwise drop joined_at / is_original_owner).
     await workspaceApi.updateMemberRole(userId, role)
-    const current = activeWorkspace.value
+    if (isStaleWorkspace(generation, workspaceId)) {
+      return
+    }
+    const current = workspaces.value.find((w) => w.id === workspaceId)
     if (current) {
-      updateActiveWorkspace({
+      updateWorkspace(workspaceId, {
         members: current.members.map((m) =>
           m.id === userId ? { ...m, role } : m
         )
@@ -640,27 +834,50 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Set or clear a member's monthly credit limit. Local-only until backend
+   * persistence lands in FE-1278; `null` removes the cap.
+   */
+  function setMemberCreditLimit(userId: string, limit: number | null): void {
+    const current = activeWorkspace.value
+    if (!current) return
+    updateActiveWorkspace({
+      members: current.members.map((m) =>
+        m.id === userId ? { ...m, monthlyCreditLimit: limit } : m
+      )
+    })
+  }
+
+  /**
    * Fetch pending invites for the current workspace.
    */
-  async function fetchPendingInvites(): Promise<PendingInvite[]> {
-    if (!activeWorkspaceId.value) return []
+  async function fetchPendingInvites(): Promise<WorkspacePendingInvite[]> {
+    const generation = identityGeneration
+    const workspaceId = activeWorkspaceId.value
+    if (!workspaceId) return []
 
     const response = await workspaceApi.listInvites()
     const invites = response.invites.map(mapApiInviteToPendingInvite)
-    updateActiveWorkspace({ pendingInvites: invites })
+    if (!isStaleWorkspace(generation, workspaceId)) {
+      updateWorkspace(workspaceId, { pendingInvites: invites })
+    }
     return invites
   }
 
   /**
    * Create an invite for the current workspace.
    */
-  async function createInvite(email: string): Promise<PendingInvite> {
+  async function createInvite(email: string): Promise<WorkspacePendingInvite> {
+    const generation = identityGeneration
+    const workspaceId = activeWorkspaceId.value
     const response = await workspaceApi.createInvite({ email })
     const invite = mapApiInviteToPendingInvite(response)
 
-    const current = activeWorkspace.value
+    if (!workspaceId || isStaleWorkspace(generation, workspaceId)) {
+      return invite
+    }
+    const current = workspaces.value.find((w) => w.id === workspaceId)
     if (current) {
-      updateActiveWorkspace({
+      updateWorkspace(workspaceId, {
         pendingInvites: [...current.pendingInvites, invite]
       })
     }
@@ -672,10 +889,15 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Revoke a pending invite.
    */
   async function revokeInvite(inviteId: string): Promise<void> {
+    const generation = identityGeneration
+    const workspaceId = activeWorkspaceId.value
     await workspaceApi.revokeInvite(inviteId)
-    const current = activeWorkspace.value
+    if (!workspaceId || isStaleWorkspace(generation, workspaceId)) {
+      return
+    }
+    const current = workspaces.value.find((w) => w.id === workspaceId)
     if (current) {
-      updateActiveWorkspace({
+      updateWorkspace(workspaceId, {
         pendingInvites: current.pendingInvites.filter((i) => i.id !== inviteId)
       })
     }
@@ -683,35 +905,41 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   const resendingInviteIds = new Set<string>()
 
-  /**
-   * Resend a pending invite by issuing a fresh one before revoking the old.
-   * Create-first so a failed resend never destroys the original invite. If the
-   * revoke fails, the store is resynced (so the leftover original surfaces) and
-   * the error is rethrown so the caller can report the partial failure rather
-   * than show success over two live invites for the same email.
-   */
-  async function resendInvite(inviteId: string): Promise<PendingInvite> {
-    if (resendingInviteIds.has(inviteId)) {
-      throw new Error('Invite resend already in progress')
-    }
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
+  async function resendInvite(
+    inviteId: string
+  ): Promise<WorkspacePendingInvite> {
+    const generation = identityGeneration
+    const resendKey = `${generation}:${inviteId}`
+    const workspace = activeWorkspace.value
+    const invite = workspace?.pendingInvites.find(
+      (invite) => invite.id === inviteId
     )
-    if (!invite) {
+    if (resendingInviteIds.has(resendKey)) {
+      console.error('Invite resend already in progress')
+      if (invite) return invite
+    }
+    if (!workspace || !invite) {
       throw new Error('Invite not found')
     }
-    resendingInviteIds.add(inviteId)
+    resendingInviteIds.add(resendKey)
     try {
-      const newInvite = await createInvite(invite.email)
-      try {
-        await revokeInvite(inviteId)
-      } catch (error) {
-        await fetchPendingInvites()
-        throw error
+      const refreshed = mapApiInviteToPendingInvite(
+        await workspaceApi.resendInvite(inviteId)
+      )
+      if (isStaleIdentity(generation)) return refreshed
+      const currentWorkspace = workspaces.value.find(
+        (candidate) => candidate.id === workspace.id
+      )
+      if (currentWorkspace) {
+        updateWorkspace(workspace.id, {
+          pendingInvites: currentWorkspace.pendingInvites.map((invite) =>
+            invite.id === inviteId ? refreshed : invite
+          )
+        })
       }
-      return newInvite
+      return refreshed
     } finally {
-      resendingInviteIds.delete(inviteId)
+      resendingInviteIds.delete(resendKey)
     }
   }
 
@@ -722,10 +950,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   async function acceptInvite(
     token: string
   ): Promise<{ workspaceId: string; workspaceName: string }> {
+    const generation = identityGeneration
     const response = await workspaceApi.acceptInvite(token)
 
     // Refresh workspace list to include newly joined workspace
-    await refreshWorkspaces()
+    if (!isStaleIdentity(generation)) {
+      await refreshWorkspaces()
+    }
 
     return {
       workspaceId: response.workspace_id,
@@ -747,11 +978,31 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     workspaceAuthStore.destroy()
   }
 
+  function resetForIdentityChange(): void {
+    identityGeneration++
+    mutableWorkspaceTransitionGeneration.value++
+    pendingWorkspaceSwitch = null
+    initializationPromise = null
+    initState.value = 'uninitialized'
+    workspaces.value = []
+    mutableActiveWorkspaceId.value = null
+    billingRailByWorkspaceId.value = {}
+    error.value = null
+    isCreating.value = false
+    isDeleting.value = false
+    isSwitching.value = false
+    isFetchingWorkspaces.value = false
+    loadedMemberWorkspaceIds.clear()
+    inFlightMembersRequest = null
+    resendingInviteIds.clear()
+  }
+
   return {
     // State
     initState,
     workspaces,
     activeWorkspaceId,
+    workspaceTransitionGeneration,
     error,
     isCreating,
     isDeleting,
@@ -770,8 +1021,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     isCurrentUserOriginalOwner,
     pendingInvites,
     originalOwnerId,
-    totalMemberSlots,
-    isInviteLimitReached,
     workspaceId,
     workspaceName,
     isWorkspaceSubscribed,
@@ -780,10 +1029,12 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     // Initialization & Cleanup
     initialize,
     destroy,
+    resetForIdentityChange,
     refreshWorkspaces,
 
     // Workspace Actions
     switchWorkspace,
+    waitForWorkspaceSwitch,
     forgetRevokedActiveWorkspace,
     createWorkspace,
     deleteWorkspace,
@@ -796,6 +1047,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     ensureMembersLoaded,
     removeMember,
     changeMemberRole,
+    setMemberCreditLimit,
 
     // Invite Actions
     fetchPendingInvites,

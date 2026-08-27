@@ -47,6 +47,10 @@ export function denormalize(
 /** Simple 2D point or size as [x, y] or [width, height] */
 type Vec2 = readonly [number, number]
 
+/** `value` wrapped into `[0, length)`. Unlike `%`, negatives wrap to the end. */
+export const wrapIndex = (value: number, length: number): number =>
+  ((value % length) + length) % length
+
 /**
  * Finds the greatest common divisor (GCD) for two numbers using iterative
  * Euclidean algorithm. Uses iteration instead of recursion to avoid stack

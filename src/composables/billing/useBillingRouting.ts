@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type { BillingType } from './types'
@@ -8,27 +9,27 @@ import type { BillingType } from './types'
 /**
  * Selects the billing backend for the active workspace: legacy user-scoped
  * (`/customers/*`) or workspace-scoped (`/api/billing/*`). Personal workspaces
- * stay legacy until `consolidatedBillingEnabled`, and known legacy Stripe
- * workspaces remain legacy after it is enabled. An unknown rail keeps the
- * flag-based route so workspace status can load it. Team workspaces are always
- * workspace-scoped. The routing matrix is covered in useBillingRouting.test.ts.
+ * use workspace billing unless an explicit legacy Stripe rail selects legacy
+ * account operations and its migration flag is off. An unloaded workspace
+ * remains legacy during bootstrap; Local/Desktop uses workspace billing after
+ * its Cloud-backed workspace context loads.
  */
 export function useBillingRouting() {
   const { flags } = useFeatureFlags()
   const workspaceStore = useTeamWorkspaceStore()
 
-  const type = computed<BillingType>(() => {
-    if (!flags.teamWorkspacesEnabled) return 'legacy'
+  const shouldUseUnifiedPricing = computed(() => {
+    return isCloud && workspaceStore.activeWorkspace?.type !== undefined
+  })
 
-    // An unloaded workspace has no type yet; stay legacy so bootstrap never
-    // eagerly routes to workspace billing.
+  const type = computed<BillingType>(() => {
     const workspaceType = workspaceStore.activeWorkspace?.type
     if (!workspaceType) return 'legacy'
 
     if (
       workspaceType === 'personal' &&
-      (!flags.consolidatedBillingEnabled ||
-        workspaceStore.activeWorkspaceBillingRail === 'legacy_stripe')
+      workspaceStore.activeWorkspaceBillingRail === 'legacy_stripe' &&
+      !flags.legacyBillingMigrationEnabled
     ) {
       return 'legacy'
     }
@@ -38,5 +39,5 @@ export function useBillingRouting() {
 
   const shouldUseWorkspaceBilling = computed(() => type.value === 'workspace')
 
-  return { type, shouldUseWorkspaceBilling }
+  return { type, shouldUseWorkspaceBilling, shouldUseUnifiedPricing }
 }
