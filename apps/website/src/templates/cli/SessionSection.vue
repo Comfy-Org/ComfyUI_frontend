@@ -18,13 +18,24 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       </template>
     </SectionHeader>
 
-    <VideoPlayer
-      :locale="locale"
-      :aria-label="t('cli.session.alt', locale)"
-      src="https://media.comfy.org/website/cli/terminal-session-1280.mp4"
-      poster="https://media.comfy.org/website/cli/terminal-session-poster.jpg"
-      minimal
-      class="mt-12 lg:mt-16"
-    />
+    <!-- The wrapper carries the recording's native 1284x910 aspect and the
+         player is pinned to it, overriding VideoPlayer's 16:9 default so no
+         terminal rows are cropped (same pattern as the MCP setup clips). -->
+    <div
+      class="relative mx-auto mt-12 aspect-1284/910 w-full max-w-4xl overflow-hidden lg:mt-16"
+    >
+      <VideoPlayer
+        :locale="locale"
+        :aria-label="t('cli.session.alt', locale)"
+        src="https://media.comfy.org/website/cli/terminal-session-1280.mp4"
+        poster="https://media.comfy.org/website/cli/terminal-session-poster.jpg"
+        autoplay
+        lazy-autoplay
+        loop
+        mute-only
+        fit="contain"
+        class="absolute inset-0 size-full"
+      />
+    </div>
   </section>
 </template>
