@@ -28,6 +28,7 @@ import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
+import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
@@ -38,6 +39,8 @@ import { i18n } from './i18n'
 
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
+
+if (isCloud) stripPaymentReturnParams()
 
 // Load remote config before initializeApp() below, so getFirebaseConfig() resolves
 // against the server's runtime values instead of the build-time defaults.

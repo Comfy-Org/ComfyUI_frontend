@@ -104,7 +104,8 @@ const nodeData = computed<NodeState>(() => ({
     collapsed: false
   },
   inputs: previewInputs.value,
-  outputs: previewOutputs.value
+  outputs: previewOutputs.value,
+  properties: {}
 }))
 
 const previewWidgets = computed<WidgetGridItem[]>(() =>

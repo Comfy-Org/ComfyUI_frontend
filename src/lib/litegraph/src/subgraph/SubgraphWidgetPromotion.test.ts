@@ -7,6 +7,7 @@ import type {
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   BaseWidget,
   LGraphNode,
@@ -21,7 +22,10 @@ import {
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
@@ -408,8 +412,12 @@ describe('SubgraphWidgetPromotion', () => {
         inputs: [{ name: 'value', type: 'number' }]
       })
 
-      const { node: first } = createNodeWithWidget('First', 'number', 42)
-      const { node: second } = createNodeWithWidget('Second', 'number', 42)
+      const { node: first } = createNodeWithWidget('First', 'number', 13)
+      const { node: second, widget: secondWidget } = createNodeWithWidget(
+        'Second',
+        'number',
+        27
+      )
       subgraph.add(first)
       subgraph.add(second)
       subgraph.inputNode.slots[0].connect(first.inputs[0], first)
@@ -418,12 +426,29 @@ describe('SubgraphWidgetPromotion', () => {
       const subgraphNode = createTestSubgraphNode(subgraph)
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
       expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(2)
+      // linkIds resolve in connection order, so `first` seeds the store.
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
 
+      const repromotions: IBaseWidget[] = []
+      subgraph.events.addEventListener('widget-promoted', (e) => {
+        repromotions.push(e.detail.widget)
+      })
+
+      // Disconnect the interior widget that currently backs the promotion.
+      // The input must re-resolve to the remaining interior widget — observable
+      // as a repromotion event carrying that widget — not merely survive as a
+      // stale binding to the removed source.
       first.disconnectInput(0, true)
 
       expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(1)
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
       expect(subgraphNode.widgets).toHaveLength(1)
+      expect(repromotions).toHaveLength(1)
+      expect(repromotions[0]).toBe(secondWidget)
+      // Re-resolution deliberately keeps the store-backed value (see
+      // widgetValueStore.registerWidget): rebinding must not clobber the
+      // promoted value the user may have edited.
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
 
       second.disconnectInput(0, true)
 
@@ -448,6 +473,35 @@ describe('SubgraphWidgetPromotion', () => {
       concrete.setValue(99, { e: fromAny({}), node: subgraphNode, canvas })
 
       expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(99)
+    })
+
+    it('keeps sibling hosts of one definition isolated across a rebind', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'STRING' }]
+      })
+      const {
+        node: interiorNode,
+        widget: interiorWidget,
+        input: interiorInput
+      } = createNodeWithWidget('Interior', 'text', 'seeded', 'STRING')
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const hostA = createTestSubgraphNode(subgraph, { id: 101 })
+      const hostB = createTestSubgraphNode(subgraph, { id: 102 })
+
+      hostA.widgets[0].value = 'a-edit'
+      hostB.widgets[0].value = 'b-edit'
+      expect(promotedWidgetStateByName(hostA, 'value').value).toBe('a-edit')
+      expect(promotedWidgetStateByName(hostB, 'value').value).toBe('b-edit')
+      expect(interiorWidget.value).toBe('seeded')
+
+      interiorNode.disconnectInput(0)
+      await Promise.resolve()
+      subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+      expect(promotedWidgetStateByName(hostA, 'value').value).not.toBe('b-edit')
+      expect(promotedWidgetStateByName(hostB, 'value').value).not.toBe('a-edit')
     })
   })
 
@@ -1273,6 +1327,33 @@ describe('SubgraphWidgetPromotion', () => {
             String(hostNode.id)
           )
         ).toEqual([{ name: 'preview', ...exposure12 }])
+      })
+
+      it('moves a nested host raw-ID entry to its owner-scoped locator', () => {
+        const outer = createTestSubgraph()
+        const hostNode = createTestSubgraphNode(createTestSubgraph(), {
+          id: 21
+        })
+        outer.add(hostNode)
+        const rootGraphId = hostNode.rootGraph.id
+        const rawLocator = createNodeLocatorId(null, hostNode.id)
+        const scopedLocator = getPreviewExposureHostLocator(hostNode)
+        expect(scopedLocator).not.toBeNull()
+        if (!scopedLocator) return
+        const store = usePreviewExposureStore()
+        store.setExposures(rootGraphId, rawLocator, [
+          { name: 'preview', ...exposure12 }
+        ])
+
+        hostNode._internalConfigureAfterSlots()
+
+        expect(store.getExposures(rootGraphId, scopedLocator)).toEqual([
+          { name: 'preview', ...exposure12 }
+        ])
+        expect(store.getExposures(rootGraphId, rawLocator)).toEqual([])
+        expect(hostNode.serialize().properties?.previewExposures).toEqual([
+          { name: 'preview', ...serializedExposure12 }
+        ])
       })
 
       type SerializeCase = {

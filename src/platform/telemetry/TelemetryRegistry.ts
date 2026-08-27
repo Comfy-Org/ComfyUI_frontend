@@ -1,5 +1,3 @@
-import type { AuditLog } from '@/services/customerEventsService'
-
 import type {
   AddCreditsClickMetadata,
   AuthErrorMetadata,
@@ -167,25 +165,6 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackRunButton(properties: RunButtonProperties): void {
     this.dispatch((provider) => provider.trackRunButton?.(properties))
-  }
-
-  startTopupTracking(): void {
-    this.dispatch((provider) => provider.startTopupTracking?.())
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return this.providers.some((provider) => {
-      try {
-        return provider.checkForCompletedTopup?.(events) ?? false
-      } catch (error) {
-        console.error('[Telemetry] Provider dispatch failed', error)
-        return false
-      }
-    })
-  }
-
-  clearTopupTracking(): void {
-    this.dispatch((provider) => provider.clearTopupTracking?.())
   }
 
   trackSurvey(

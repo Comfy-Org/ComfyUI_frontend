@@ -15,14 +15,15 @@ const state = vi.hoisted(() => ({
   isCloud: true,
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
-  isFreeTier: false,
-  isTeamPlan: false,
-  tier: 'PRO' as 'PRO' | 'FREE' | null,
   isCancelled: false,
   planSlug: 'pro-monthly' as string | null,
   canTopUp: false,
+  canSubscribeSelfServe: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
+  canReactivate: false,
+  canReactivatePlan: false,
+  shouldUseWorkspaceBilling: true,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   showPricingTable: vi.fn(),
@@ -62,9 +63,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
     ),
-    isFreeTier: computed(() => state.isFreeTier),
-    isTeamPlan: computed(() => state.isTeamPlan),
-    tier: computed(() => state.tier),
     subscription: computed(() => ({
       isCancelled: state.isCancelled,
       planSlug: state.planSlug
@@ -78,10 +76,24 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
-      canTopUp: state.canTopUp,
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-    }))
+    })),
+    canReactivatePlan: computed(() => state.canReactivatePlan)
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: computed(() => state.canTopUp),
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
+    canReactivate: computed(() => state.canReactivate)
+  })
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
   })
 }))
 
@@ -180,14 +192,14 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
-    state.isFreeTier = false
-    state.isTeamPlan = false
-    state.tier = 'PRO'
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
     state.canTopUp = false
+    state.canSubscribeSelfServe = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
+    state.canReactivate = false
+    state.shouldUseWorkspaceBilling = true
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -294,6 +306,18 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('offers subscription when top-up is denied but self-serve is allowed', async () => {
+    const user = userEvent.setup()
+    state.canSubscribeSelfServe = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
+
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'upgrade_to_add_credits'
+    })
+  })
+
   it.for(['payment_failed', 'paused'])(
     'keeps Manage plan available for an existing %s subscription',
     (billingStatus) => {
@@ -314,6 +338,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
+    state.canSubscribeSelfServe = true
     state.planSlug = null
 
     renderComponent('team')
@@ -353,7 +378,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     state.isCloud = false
     state.canAccessSubscriptionFeatures = false
-    state.tier = null
     state.canTopUp = true
 
     renderComponent('personal')
@@ -366,15 +390,15 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
-  it('keeps add-credits hidden for an unsubscribed Cloud owner', () => {
+  it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
     state.canAccessSubscriptionFeatures = false
-    state.tier = null
     state.canTopUp = true
+    state.canSubscribeSelfServe = true
     state.canManageSubscription = true
 
     renderComponent('personal')
 
-    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
     expect(
       screen.queryByTestId('upgrade-to-add-credits-button')
     ).not.toBeInTheDocument()
@@ -385,8 +409,6 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
     state.isCloud = false
-    state.isFreeTier = true
-    state.tier = 'FREE'
     state.canTopUp = true
 
     renderComponent('personal')
@@ -398,9 +420,8 @@ describe('CurrentUserPopoverWorkspace', () => {
   })
 
   it('keeps the upgrade upsell for the Cloud free tier', () => {
-    state.isFreeTier = true
-    state.tier = 'FREE'
-    state.canTopUp = true
+    state.canTopUp = false
+    state.canSubscribeSelfServe = true
 
     renderComponent('personal')
 
@@ -414,6 +435,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCloud = false
     state.isCancelled = true
     state.canManageSubscriptionLifecycle = true
+    state.canReactivate = true
 
     renderComponent('team')
 
@@ -429,6 +451,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: true,
       canManageSubscription: false,
       canManageSubscriptionLifecycle: true,
+      canReactivate: true,
+      canSubscribeSelfServe: false,
       action: 'Resubscribe',
       visible: true
     },
@@ -438,6 +462,19 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: true,
       canManageSubscription: true,
       canManageSubscriptionLifecycle: false,
+      canReactivate: false,
+      canSubscribeSelfServe: false,
+      action: 'Resubscribe',
+      visible: false
+    },
+    {
+      name: 'does not resubscribe a cancelled plan when the server denies reactivation to a client-side owner',
+      canAccessSubscriptionFeatures: true,
+      isCancelled: true,
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canReactivate: false,
+      canSubscribeSelfServe: false,
       action: 'Resubscribe',
       visible: false
     },
@@ -447,6 +484,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: false,
       canManageSubscription: true,
       canManageSubscriptionLifecycle: false,
+      canReactivate: false,
+      canSubscribeSelfServe: true,
       action: 'Subscribe',
       visible: true
     },
@@ -456,6 +495,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: false,
       canManageSubscription: false,
       canManageSubscriptionLifecycle: true,
+      canReactivate: true,
+      canSubscribeSelfServe: false,
       action: 'Subscribe',
       visible: false
     }
@@ -466,6 +507,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled,
       canManageSubscription,
       canManageSubscriptionLifecycle,
+      canReactivate,
+      canSubscribeSelfServe,
       action,
       visible
     }) => {
@@ -473,6 +516,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.isCancelled = isCancelled
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
+      state.canReactivatePlan = canReactivate
+      state.canSubscribeSelfServe = canSubscribeSelfServe
 
       renderComponent('team')
 
@@ -491,6 +536,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canTopUp = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
+    state.canReactivatePlan = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
@@ -500,6 +546,22 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('reads the derived reactivate policy, not the raw server capability', () => {
+    state.isCancelled = true
+    state.canManageSubscriptionLifecycle = true
+    // The legacy rail resolves can_reactivate false but still permits
+    // reactivation, so the button must follow canReactivatePlan. Rail
+    // selection itself is covered in useWorkspaceUI.test.ts.
+    state.canReactivate = false
+    state.canReactivatePlan = true
+
+    renderComponent('personal')
+
+    expect(
+      screen.getByRole('button', { name: 'Resubscribe' })
+    ).toBeInTheDocument()
   })
 
   for (const workspaceType of ['personal', 'team'] as const) {
@@ -547,6 +609,31 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('hides local Plan and Credits without subscription management permission', () => {
     state.isCloud = false
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-credits-menu-item')
+    ).not.toBeInTheDocument()
+  })
+
+  // Paired with the negative case above: on its own, "hidden without
+  // permission" can pass vacuously if the item is missing for an unrelated
+  // reason (e.g. a renamed/merged testid), so this asserts the item actually
+  // renders once the only gating permission is granted.
+  it('shows local Plan and Credits with subscription management permission', () => {
+    state.isCloud = false
+    state.canManageSubscription = true
+
+    renderComponent()
+
+    expect(screen.getByTestId('plans-credits-menu-item')).toBeInTheDocument()
+  })
+
+  // The pair above only varies the permission, so both cases would still pass
+  // if the Local-only guard were dropped. This varies the distribution instead.
+  it('hides local Plan and Credits on Cloud', () => {
+    state.canManageSubscription = true
 
     renderComponent()
 

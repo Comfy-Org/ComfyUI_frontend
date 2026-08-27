@@ -50,7 +50,7 @@ describe('plain-object copies of LLink (uncovered)', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it.fails('carries topology onto a spread copy of a link', () => {
+  it('carries topology onto a spread copy of a link', () => {
     const { graph, link } = connectedPair(toRerouteId(7))
     const copy: Partial<LLink> = { ...graph.links[link.id] }
 
@@ -63,7 +63,7 @@ describe('plain-object copies of LLink (uncovered)', () => {
     expect(copy.parentId).toBe(link.parentId)
   })
 
-  it.fails('rewires Custom-Scripts consumers from copied links (#15594)', () => {
+  it('rewires Custom-Scripts consumers from copied links (#15594)', () => {
     const { graph, source, consumers, inserted } = insertionScenario(2)
     const saved: Partial<LLink>[] = source.outputs[1].links!.map((id) => ({
       ...graph.links[id]

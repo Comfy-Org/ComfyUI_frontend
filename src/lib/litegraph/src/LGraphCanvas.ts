@@ -8,10 +8,13 @@ import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -21,17 +24,17 @@ import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
+import { mintNodeId, observeNodeId } from './idAllocation'
 import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
-import { parseNodeId, serializeNodeId } from '@/types/nodeId'
+import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
-  inputLink,
   inputLinkId,
   outputLinkIds,
   outputLinks
@@ -4992,16 +4995,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const i = graph._nodes.indexOf(node)
-    if (i == -1) return
-
-    useLayoutMutations(LayoutSource.Canvas).bringNodeToFront(
-      graph.rootGraph.id,
-      node.id
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(
+      graph,
+      node.id,
+      'front'
     )
-
-    graph._nodes.splice(i, 1)
-    graph._nodes.push(node)
   }
 
   /**
@@ -5011,11 +5009,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const i = graph._nodes.indexOf(node)
-    if (i == -1) return
-
-    graph._nodes.splice(i, 1)
-    graph._nodes.unshift(node)
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(graph, node.id, 'back')
   }
 
   /**
@@ -5029,7 +5023,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     visible_nodes.length = 0
     if (!this.graph) throw new NullGraphError()
 
-    const _nodes = nodes || this.graph._nodes
+    const _nodes = nodes || nodesInRenderOrder(this.graph)
     for (const node of _nodes) {
       node.updateArea(this.ctx)
       // Not in visible area
@@ -5692,7 +5686,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
 
     // clip if required (mask)
-    const shape = node.shape || RenderShape.BOX
+    const shape = node.renderingShape
     const size = temp_vec2
     size[0] = node.renderingSize[0]
     size[1] = node.renderingSize[1]
@@ -6059,7 +6053,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.strokeStyle = '#AAA'
     ctx.globalAlpha = this.editor_alpha
     // for every node
-    const nodes = graph._nodes
+    const nodes = nodesInRenderOrder(graph)
+    const linkStore = useLinkStore()
+    const graphScope = graphScopeOf(graph)
 
     // Ensure widget-input slot positions are computed before rendering links.
     // arrange() sets input.pos for widget-backed slots, but is normally called
@@ -6075,7 +6071,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     for (const node of nodes) {
       for (const [inputSlot, input] of node.inputs.entries()) {
-        const link = inputLink(graph, node.id, inputSlot)
+        const topology = linkStore.getInputSlotLink(
+          graphScope,
+          node.id,
+          inputSlot
+        )
+        const link = topology ? graph.getLink(topology.id) : undefined
         if (!link) continue
 
         const endPos: Point = LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
@@ -8542,8 +8543,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           {
             content: 'Convert to Subgraph',
             callback: () => {
-              if (!this.selectedItems.size)
-                throw new Error('Convert to Subgraph: Nothing selected.')
+              if (!this.selectedItems.size) {
+                console.error('Convert to Subgraph: Nothing selected.')
+                return
+              }
               this._graph.convertToSubgraph(this.selectedItems)
             }
           },
@@ -9054,13 +9057,14 @@ export function remapClipboardSubgraphNodeIds(
     const numericId = Number(node.id)
     if (!Number.isInteger(numericId)) return
     usedNodeIds.add(numericId)
-    if (rootGraph.state.lastNodeId < numericId)
-      rootGraph.state.lastNodeId = numericId
+    observeNodeId(rootGraph.state, toNodeId(numericId))
   })
 
   function nextUniqueNodeId() {
-    while (usedNodeIds.has(++rootGraph.state.lastNodeId));
-    const nextId = rootGraph.state.lastNodeId
+    let nextId = Number(mintNodeId(rootGraph.state))
+    while (usedNodeIds.has(nextId)) {
+      nextId = Number(mintNodeId(rootGraph.state))
+    }
     usedNodeIds.add(nextId)
     return nextId
   }
@@ -9085,8 +9089,7 @@ export function remapClipboardSubgraphNodeIds(
       }
 
       usedNodeIds.add(nodeInfo.id)
-      if (rootGraph.state.lastNodeId < nodeInfo.id)
-        rootGraph.state.lastNodeId = nodeInfo.id
+      observeNodeId(rootGraph.state, toNodeId(nodeInfo.id))
     }
 
     if (remappedIds.size > 0) {
