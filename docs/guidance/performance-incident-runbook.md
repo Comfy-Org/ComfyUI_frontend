@@ -58,8 +58,10 @@ When the lightweight run reproduces but does not attribute the cost:
 - Then collect a 3–5 second trace around the reproduced window.
 - Disable Memory, screenshots, network payload capture, and heap dumps.
 - Use only the timeline/frame/layout/paint categories needed for the hypothesis.
-- Stream trace output when supported, gzip after capture, and enforce a 32 MiB
-  compressed artifact cap. Stop instead of extending the recording.
+- Stream trace output through a size-limited compressor when supported. Enforce
+  raw and compressed byte limits during capture, abort and clean up partial
+  output when either limit is reached, and retain the 32 MiB compressed artifact
+  cap. Stop instead of extending the recording.
 
 Never load a giant trace as one JSON object. Check size and free disk first;
 inventory it with bounded streaming passes (`jq --stream`, an incremental JSON
@@ -89,7 +91,7 @@ do not use that run as the baseline.
 
 Use OS/native sampling when renderer tasks remain CPU-active but browser traces
 cannot name the work. Capture the exact renderer PID and short workload marks.
-On Windows, prefer an 8 second WPR CPU sample in memory mode; require at least 2
+On Windows, prefer an 8-second WPR CPU sample in memory mode; require at least 2
 GiB free space and never use unbounded file mode. Add GPU providers only after
 CPU stacks implicate graphics or remain unresolved.
 

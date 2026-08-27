@@ -40,6 +40,9 @@ Performance CI therefore needs two systems with different contracts:
 - repeated distribution benchmarks that detect timing regressions under a
   controlled identity.
 
+Diagnostic captures are an incident-response tool outside those two CI
+systems. They explain regressions but do not produce gate or benchmark samples.
+
 ## Decision
 
 We will separate deterministic performance gates, distribution benchmarks, and
@@ -75,6 +78,11 @@ aligned start and stop boundary frames. Reports include sample count, p50, p95,
 p99, maximum, and counts and percentages above 8.33, 16.67, 33.3, and 50 ms.
 These are interval thresholds, not claims of dropped frames unless the actual
 display refresh rate and presentation data support that interpretation.
+
+This is the contract for the future versioned schema introduced below. The
+current advisory lane persists only mean and p95 after removing raw intervals;
+it does not satisfy this distribution contract and cannot be promoted to a
+timing gate until the schema rollout is complete.
 
 At 60 Hz the entire browser frame budget is 16.67 ms; at 120 Hz it is 8.33 ms;
 at 144 Hz it is 6.94 ms. Application JavaScript must leave time for style,
