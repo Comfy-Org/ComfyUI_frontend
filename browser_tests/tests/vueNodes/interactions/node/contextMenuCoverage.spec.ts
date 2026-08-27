@@ -79,6 +79,7 @@ test.describe(
           })
         ).toBeHidden()
       })
+
       test('should show Run Branch for output nodes', async ({ comfyPage }) => {
         await comfyPage.workflow.loadWorkflow('default')
         const nodeRef = await getNodeRef(comfyPage, 'Save Image')
