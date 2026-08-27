@@ -19,7 +19,9 @@ import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 
 const props = defineProps<{ status: AgentCrdtStatus }>()
 
-// ── strings (script-side to satisfy @intlify/vue-i18n/no-raw-text) ────────
+const isDevBuild = import.meta.env.DEV
+
+// ── strings (dev-only debug surface, intentionally untranslated) ──────────
 const S = {
   chipClosed: 'CRDT dev',
   title: 'CRDT Dev Panel (PoC)',
@@ -194,6 +196,7 @@ function fmtTime(at: number): string {
 
 <template>
   <div
+    v-if="isDevBuild"
     class="fixed right-3 bottom-3 z-9999 font-mono text-xs"
     data-testid="crdt-dev-panel"
   >
