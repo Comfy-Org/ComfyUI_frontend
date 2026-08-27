@@ -27,8 +27,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <VideoPlayer
         :locale="locale"
         :aria-label="t('cli.session.alt', locale)"
-        src="https://media.comfy.org/website/cli/terminal-session-1280.mp4"
-        poster="https://media.comfy.org/website/cli/terminal-session-poster.jpg"
+        src="https://media.comfy.org/website/cli/terminal-session-v2-1280.mp4"
+        poster="https://media.comfy.org/website/cli/terminal-session-v2-poster.jpg"
         autoplay
         lazy-autoplay
         loop

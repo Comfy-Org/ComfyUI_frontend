@@ -2926,9 +2926,9 @@ const translations = {
       '面向 Comfy Cloud 一镜到底：一次合作伙伴模型生成、一次云端 GPU 工作流运行，以及自带技能。只剪掉了等待的秒数，输出原样保留。'
   },
   'cli.session.alt': {
-    en: 'Recorded terminal session: comfy generate saving cat.png, a workflow run on Comfy Cloud, and the bundled skills list',
+    en: 'Recorded terminal session: comfy generate saving cat.png, a workflow run on Comfy Cloud, the bundled skills list, and the two images the session saved',
     'zh-CN':
-      '终端录屏：comfy generate 保存 cat.png、一次 Comfy Cloud 工作流运行，以及自带技能列表'
+      '终端录屏：comfy generate 保存 cat.png、一次 Comfy Cloud 工作流运行、自带技能列表，以及会话保存的两张图像'
   },
 
   // CLI – SkillsSection
