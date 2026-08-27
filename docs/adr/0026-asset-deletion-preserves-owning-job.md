@@ -16,17 +16,20 @@ so implementation and tests can cite it directly.
 
 ## Context
 
-Assets and history jobs are distinct entities with independent lifecycles. A
-job (a history entry) produces one or more output assets; an asset belongs to
-exactly one job. As the assets surface replaces direct history-based output
-browsing, the frontend needs a single answer to what deleting each entity
-means, because implementations that couple the two lifecycles destroy user
-data the user did not ask to delete.
+Generated output assets and history jobs are distinct entities with independent
+lifecycles. A job (a history entry) produces one or more output assets; each
+generated output asset belongs to exactly one job. `OutputAssetMetadata`
+therefore requires a `jobId`, while the general `AssetItem` schema does not.
+Input assets and model assets do not have an owning history job and are outside
+this decision. As the assets surface replaces direct history-based output
+browsing, the frontend needs a single answer to what deleting each output asset
+or job means, because implementations that couple the two lifecycles destroy
+user data the user did not ask to delete.
 
 Concretely, the questions that kept recurring:
 
-- Does deleting an asset delete the job that produced it?
-- Is an asset's visibility derived from its job's state?
+- Does deleting an output asset delete the job that produced it?
+- Is an output asset's visibility derived from its job's state?
 - What does deleting a job do to the assets it produced?
 - When a grouped output (a job with multiple outputs) is deleted, what IDs are
   actually deleted?
@@ -34,12 +37,14 @@ Concretely, the questions that kept recurring:
 
 ## Decision
 
-The lifecycle split is directional: jobs fan out to assets, never the reverse.
+The lifecycle split is directional: jobs fan out to their generated output
+assets, never the reverse.
 
-1. **Asset deletion never deletes the owning job.** Deleting an asset removes
-   that asset only. The job and its history entry remain.
-2. **Asset visibility is not derived from job state.** An asset's presence in
-   listings is a property of the asset, not of whether its job still exists.
+1. **Output asset deletion never deletes the owning job.** Deleting a generated
+   output asset removes that asset only. The job and its history entry remain.
+2. **Output asset visibility is not derived from job state.** A generated output
+   asset's presence in listings is a property of the asset, not of whether its
+   job still exists.
 3. **Job deletion fans out to its assets.** Deleting a job deletes the assets
    it produced.
 4. **Grouped deletes name real asset IDs.** Deleting a grouped output resolves
@@ -51,12 +56,13 @@ The lifecycle split is directional: jobs fan out to assets, never the reverse.
 
 ## Consequences
 
-- Asset delete actions must not call history/job deletion endpoints, directly
-  or as a follow-up step.
-- Confirmation dialogs for asset deletion must not claim the item is
+- Output asset delete actions must not call history/job deletion endpoints,
+  directly or as a follow-up step.
+- Confirmation dialogs for output asset deletion must not claim the item is
   "permanently removed" without stating the job survives.
-- Tests that assert job deletion as a side effect of asset deletion codify a
-  violation of this decision and need updating alongside the implementation.
+- Tests that assert job deletion as a side effect of output asset deletion
+  codify a violation of this decision and need updating alongside the
+  implementation.
 - Job deletion flows may (and should) delete produced assets; that direction
   is the sanctioned fan-out.
 - Any future proposal to derive asset visibility from job state (or vice
