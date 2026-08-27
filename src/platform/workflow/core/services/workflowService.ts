@@ -50,6 +50,10 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
   return linearMode ? 'app' : 'graph'
 }
 
+// TRANSITIONAL (decision log D14): this coordination machinery (load queue,
+// per-path pending map, closing registry) exists because loading mutates one
+// shared graph; it becomes deletable when the ECS migration scopes workflow
+// loading per document. The contract tests transfer to the replacement.
 let workflowLoadTail: Promise<void> = Promise.resolve()
 let pendingWorkflowLoads = 0
 const pendingWorkflowLoadsByPath = new Map<string, Promise<void>>()
