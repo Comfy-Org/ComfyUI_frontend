@@ -30,6 +30,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(dirname, '../..'),
   },
+  // This app is the admin panel and API only — the public site is apps/website.
+  // There is no route at `/`, so send it to the panel rather than a 404.
+  redirects: async () => [{ source: '/', destination: '/admin', permanent: false }],
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })
