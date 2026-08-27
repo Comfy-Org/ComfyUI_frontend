@@ -188,7 +188,6 @@ export function useWorkflowPersistenceV2() {
     if (
       sessionPath &&
       (await draftStore.loadPersistedWorkflow({
-        workflowName: null,
         preferredPath: sessionPath
       }))
     )
@@ -205,7 +204,6 @@ export function useWorkflowPersistenceV2() {
 
     // 3. Fall back to most recent draft
     return await draftStore.loadPersistedWorkflow({
-      workflowName: null,
       fallbackToLatestDraft: true
     })
   }

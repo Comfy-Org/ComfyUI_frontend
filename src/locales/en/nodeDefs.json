@@ -17745,7 +17745,7 @@
   },
   "RecraftStyleV3LogoRaster": {
     "display_name": "Recraft Style - Logo Raster",
-    "description": "Select realistic_image style and optional substyle.",
+    "description": "Select logo_raster style and substyle.",
     "inputs": {
       "substyle": {
         "name": "substyle"
@@ -17855,6 +17855,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "display_name": "Recraft V4 Create Style",
+    "description": "Create a reusable Recraft V4 style from 1-10 reference images. The returned style_id works with every Recraft V4 and V4.1 model of the same output type. Total size of all images is limited to 10 MB.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Output type the style is created for: recraftv4_styles for raster images, recraftv4_styles_vector for SVG."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Reference images defining the style. Similar references sharpen the match, varied references widen it."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "display_name": "Recraft V4 Text to Image",
     "description": "Generates images using Recraft V4 and V4.1 models.",
@@ -17869,7 +17889,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "The model to use for generation."
+        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references."
       },
       "n": {
         "name": "n",
@@ -17883,6 +17903,18 @@
         "name": "recraft_controls",
         "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
       },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID of a Recraft V4 style to apply, e.g. from the Recraft V4 Create Style node or the style_id output of a previous run. Cannot be combined with style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "How closely to follow the style: precise reproduces it in detail, flexible matches the general look. Only used when a style is provided."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Reference images to create a style from on the fly, billed on top of the generation. The created style is returned as style_id for reuse. Cannot be combined with style_id."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -17892,6 +17924,10 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17910,7 +17946,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "The model to use for generation."
+        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references."
       },
       "n": {
         "name": "n",
@@ -17924,6 +17960,18 @@
         "name": "recraft_controls",
         "tooltip": "Optional additional controls over the generation via the Recraft Controls node."
       },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID of a Recraft V4 vector style to apply, e.g. from the Recraft V4 Create Style node or the style_id output of a previous run. Cannot be combined with style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "How closely to follow the style: precise reproduces it in detail, flexible matches the general look. Only used when a style is provided."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Reference images to create a vector style from on the fly, billed on top of the generation. The created style is returned as style_id for reuse. Cannot be combined with style_id."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -17933,6 +17981,10 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24464,7 +24516,7 @@
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "Output video resolution. 4K is not available for veo-3.1-lite and veo-3.0 models."
+        "tooltip": "Output video resolution. 4K is not available for the veo-3.1-lite model."
       },
       "negative_prompt": {
         "name": "negative_prompt",
@@ -24497,56 +24549,6 @@
       "generate_audio": {
         "name": "generate_audio",
         "tooltip": "Generate audio for the video. Supported by all Veo 3 models."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "display_name": "Google Veo 2 Video Generation",
-    "description": "Generates videos from text prompts using Google's Veo 2 API",
-    "inputs": {
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Text description of the video"
-      },
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Aspect ratio of the output video"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Negative text prompt to guide what to avoid in the video"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "Duration of the output video in seconds"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "Whether to enhance the prompt with AI assistance"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "Whether to allow generating people in the video"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed for video generation (0 for random)"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Optional reference image to guide video generation"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "Veo 2 model to use for video generation"
       },
       "control_after_generate": {
         "name": "control after generate"
