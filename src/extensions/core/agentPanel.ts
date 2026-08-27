@@ -4,6 +4,7 @@ import {
   FLAG_SETTLE_TIMEOUT_MS,
   createPostHogFlagSource
 } from '@/workbench/extensions/agent/utils/postHogFlagSource'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useExtensionService } from '@/services/extensionService'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
@@ -56,6 +57,7 @@ useExtensionService().registerExtension({
           '[Comfy.AgentPanel] feature-flag gate failed to load',
           error
         )
+        reportError(error, { errorType: 'agent_flag_gate_load_failure' })
         settle()
       }
     }

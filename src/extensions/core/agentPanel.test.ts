@@ -43,6 +43,12 @@ const registered = vi.hoisted(() => ({
   setup: null as (() => void) | null
 }))
 
+const reportErrorMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: reportErrorMock
+}))
+
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({
     registerExtension: (extension: { setup?: () => void }) => {
@@ -87,6 +93,7 @@ describe('the agent panel flag gate', () => {
     posthogState.flag = undefined
     posthogState.listeners = []
     registered.setup = null
+    reportErrorMock.mockClear()
   })
 
   it('registers its subscription pre-init and enables on the flags delivery', async () => {
@@ -158,6 +165,11 @@ describe('the agent panel flag gate', () => {
 
     expect(useAgentPanelStore().enabled).toBe(true)
     expect(useAgentPanelStore().gateSettled).toBe(true)
+    // Dev force-enable is a product decision, not a healthy gate: the load
+    // failure still reaches the shared error sinks.
+    expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_flag_gate_load_failure'
+    })
     consoleError.mockRestore()
   })
 
@@ -177,6 +189,9 @@ describe('the agent panel flag gate', () => {
       '[Comfy.AgentPanel] feature-flag gate failed to load',
       expect.any(Error)
     )
+    expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_flag_gate_load_failure'
+    })
     consoleError.mockRestore()
   })
 })
