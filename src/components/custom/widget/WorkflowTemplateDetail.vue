@@ -177,7 +177,9 @@ function getFailedDownloadLabel(
                 )
               }}
             </h3>
-            <p class="m-0 text-xs/4 font-normal text-muted-foreground">
+            <p
+              class="m-0 text-[13px]/[18px] font-normal text-muted-foreground"
+            >
               {{
                 t(
                   isPartnerNode
