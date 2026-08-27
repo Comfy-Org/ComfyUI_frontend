@@ -523,6 +523,30 @@ describe('PricingTable', () => {
     })
   })
 
+  describe('credit allotment display', () => {
+    it('states the whole-year allotment and a matching video estimate on the yearly cycle', async () => {
+      renderComponent()
+      await flushPromises()
+
+      expect(screen.getAllByText('Yearly credits')).toHaveLength(3)
+      expect(screen.getByText('50,400')).toBeTruthy()
+      expect(screen.getByText('~4,560')).toBeTruthy()
+      expect(screen.getByText('253,200')).toBeTruthy()
+      expect(screen.getByText('~22,980')).toBeTruthy()
+    })
+
+    it('states the monthly allotment on the monthly cycle', async () => {
+      renderComponent()
+      await flushPromises()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Monthly' }))
+
+      expect(screen.getAllByText('Monthly credits')).toHaveLength(3)
+      expect(screen.getByText('4,200')).toBeTruthy()
+      expect(screen.getByText('~380')).toBeTruthy()
+    })
+  })
+
   describe('team workspace link', () => {
     it('should emit chooseTeamWorkspace when clicking "Need team workspace?" link', async () => {
       renderComponent()

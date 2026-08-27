@@ -171,16 +171,16 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
-                  {{ n(tier.pricing.credits) }}
+                  {{ n(creditsForCurrentCycle(tier.pricing.credits)) }}
                 </span>
                 <span class="text-sm text-muted-foreground">
-                  {{ t('subscription.monthlyCredits') }}
+                  {{ t(creditsLabelKey) }}
                 </span>
               </div>
               <span class="text-sm text-muted-foreground">
                 {{
                   t('subscription.videoEstimate', {
-                    count: n(tier.pricing.videoEstimate)
+                    count: n(creditsForCurrentCycle(tier.pricing.videoEstimate))
                   })
                 }}
               </span>
@@ -249,10 +249,10 @@
                   <span
                     class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                   >
-                    {{ n(teamCredits) }}
+                    {{ n(teamCreditsForCurrentCycle) }}
                   </span>
                   <span class="text-sm text-muted-foreground">
-                    {{ t('subscription.monthlyCredits') }}
+                    {{ t(creditsLabelKey) }}
                   </span>
                 </div>
                 <span class="text-sm text-muted-foreground">
@@ -417,6 +417,7 @@ import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
+  creditsForBillingCycle,
   hasActivePaidPlan,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -660,6 +661,15 @@ const isEnded = computed(() => subscriptionStatus.value === 'ended')
 
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
+const creditsForCurrentCycle = (monthlyAmount: number) =>
+  creditsForBillingCycle(monthlyAmount, isYearly.value)
+
+const creditsLabelKey = computed(() =>
+  isYearly.value ? 'subscription.yearlyCredits' : 'subscription.monthlyCredits'
+)
+
 // Team credit stops: backend-sourced when the API supplies them, otherwise the
 // hardcoded DES-197 fallback so OSS / pre-deploy still renders. Always non-empty
 // so the default/selected stops below are guaranteed defined.
@@ -687,9 +697,11 @@ const selectedTeamStop = computed(
     teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
     defaultTeamStop.value
 )
-const teamCredits = computed(() => selectedTeamStop.value.credits)
+const teamCreditsForCurrentCycle = computed(() =>
+  creditsForCurrentCycle(selectedTeamStop.value.credits)
+)
 const teamVideoEstimate = computed(() =>
-  Math.round(teamCredits.value * VIDEO_PER_CREDIT)
+  Math.round(teamCreditsForCurrentCycle.value * VIDEO_PER_CREDIT)
 )
 
 // The team's currently-subscribed stop (null when on no team plan). Matched to

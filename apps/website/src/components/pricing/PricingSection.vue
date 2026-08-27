@@ -55,6 +55,29 @@ function originalPriceFor(plan: PricingPlan): string | undefined {
     : undefined
 }
 
+function showsYearlyCredits(plan: PricingPlan): boolean {
+  return billingPeriod.value === 'yearly' && plan.yearlyCreditsKey !== undefined
+}
+
+function displayCreditsKey(plan: PricingPlan): TranslationKey | undefined {
+  return showsYearlyCredits(plan) ? plan.yearlyCreditsKey : plan.creditsKey
+}
+
+function displayEstimateKey(plan: PricingPlan): TranslationKey | undefined {
+  return billingPeriod.value === 'yearly' && plan.yearlyEstimateKey
+    ? plan.yearlyEstimateKey
+    : plan.estimateKey
+}
+
+function creditsLabelFor(plan: PricingPlan): string {
+  return t(
+    showsYearlyCredits(plan)
+      ? 'pricing.creditsLabelYearly'
+      : 'pricing.creditsLabel',
+    locale
+  )
+}
+
 const planCards = computed(() =>
   pricingPlans.map((plan) => ({
     plan,
@@ -63,6 +86,9 @@ const planCards = computed(() =>
     yearlyTotal: plan.yearlyTotalKey
       ? t(plan.yearlyTotalKey, locale)
       : undefined,
+    creditsKey: displayCreditsKey(plan),
+    creditsLabel: creditsLabelFor(plan),
+    estimateKey: displayEstimateKey(plan),
     features: plan.features
   }))
 )
@@ -125,6 +151,9 @@ const planCards = computed(() =>
           priceKey,
           originalPrice,
           yearlyTotal,
+          creditsKey,
+          creditsLabel,
+          estimateKey,
           features
         } in planCards"
         :key="plan.id"
@@ -155,10 +184,10 @@ const planCards = computed(() =>
         </div>
 
         <PricingCredits
-          v-if="plan.creditsKey"
-          :credits="t(plan.creditsKey, locale)"
-          :label="t('pricing.creditsLabel', locale)"
-          :estimate-key="plan.estimateKey"
+          v-if="creditsKey"
+          :credits="t(creditsKey, locale)"
+          :label="creditsLabel"
+          :estimate-key="estimateKey"
           :locale
         />
 

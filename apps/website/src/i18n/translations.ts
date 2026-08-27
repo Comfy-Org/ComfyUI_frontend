@@ -1430,6 +1430,10 @@ const translations = {
   },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
+  'pricing.creditsLabelYearly': {
+    en: 'credits per year',
+    'zh-CN': '年度积分'
+  },
   'pricing.banner.title': {
     en: "Start free. Upgrade when you're ready.",
     'zh-CN': '免费开始，准备好了再升级。'
@@ -1506,9 +1510,14 @@ const translations = {
   'pricing.plan.standard.eduYearlyPrice': { en: '$15', 'zh-CN': '$15' },
   'pricing.plan.standard.eduYearlyTotal': { en: '$180', 'zh-CN': '$180' },
   'pricing.plan.standard.credits': { en: '4,200', 'zh-CN': '4,200' },
+  'pricing.plan.standard.yearlyCredits': { en: '50,400', 'zh-CN': '50,400' },
   'pricing.plan.standard.estimate': {
     en: 'Generates ~380 5s videos*',
     'zh-CN': '约可生成 380 个 5 秒视频*'
+  },
+  'pricing.plan.standard.yearlyEstimate': {
+    en: 'Generates ~4,560 5s videos*',
+    'zh-CN': '约可生成 4,560 个 5 秒视频*'
   },
   'pricing.plan.standard.cta': {
     en: 'SUBSCRIBE TO STANDARD',
@@ -1523,9 +1532,14 @@ const translations = {
   'pricing.plan.creator.eduYearlyPrice': { en: '$26.25', 'zh-CN': '$26.25' },
   'pricing.plan.creator.eduYearlyTotal': { en: '$315', 'zh-CN': '$315' },
   'pricing.plan.creator.credits': { en: '7,400', 'zh-CN': '7,400' },
+  'pricing.plan.creator.yearlyCredits': { en: '88,800', 'zh-CN': '88,800' },
   'pricing.plan.creator.estimate': {
     en: 'Generates ~670 5s videos*',
     'zh-CN': '约可生成 670 个 5 秒视频*'
+  },
+  'pricing.plan.creator.yearlyEstimate': {
+    en: 'Generates ~8,040 5s videos*',
+    'zh-CN': '约可生成 8,040 个 5 秒视频*'
   },
   'pricing.plan.creator.cta': {
     en: 'SUBSCRIBE TO CREATOR',
@@ -1540,9 +1554,14 @@ const translations = {
   'pricing.plan.pro.eduYearlyPrice': { en: '$75', 'zh-CN': '$75' },
   'pricing.plan.pro.eduYearlyTotal': { en: '$900', 'zh-CN': '$900' },
   'pricing.plan.pro.credits': { en: '21,100', 'zh-CN': '21,100' },
+  'pricing.plan.pro.yearlyCredits': { en: '253,200', 'zh-CN': '253,200' },
   'pricing.plan.pro.estimate': {
     en: 'Generates ~1,915 5s videos*',
     'zh-CN': '约可生成 1,915 个 5 秒视频*'
+  },
+  'pricing.plan.pro.yearlyEstimate': {
+    en: 'Generates ~22,980 5s videos*',
+    'zh-CN': '约可生成 22,980 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
 
