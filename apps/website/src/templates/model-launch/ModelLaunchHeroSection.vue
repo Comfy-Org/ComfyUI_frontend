@@ -12,7 +12,12 @@ import Badge from '../../components/ui/badge/Badge.vue'
 import { t } from '../../i18n/translations'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 
-const { locale = 'en', hero } = defineProps<{
+const {
+  headingTag = 'h1',
+  locale = 'en',
+  hero
+} = defineProps<{
+  headingTag?: 'h1' | 'h2'
   hero: ModelLaunchHero
   locale?: Locale
 }>()
@@ -62,6 +67,7 @@ const isContentFirst = hero.layout === 'content-first'
         <VideoPlayer
           v-if="showVideo"
           :locale
+          :aria-label="t(hero.titleKey, locale)"
           :src="hero.videoSrc"
           :poster="hero.posterSrc"
           autoplay
@@ -72,6 +78,7 @@ const isContentFirst = hero.layout === 'content-first'
         <VideoPlayer
           v-else-if="showMobileVideo"
           :locale
+          :aria-label="t(hero.titleKey, locale)"
           :src="hero.mobileVideoSrc"
           :poster="hero.posterSrc"
           autoplay
@@ -111,14 +118,15 @@ const isContentFirst = hero.layout === 'content-first'
           {{ t(hero.eyebrowKey, locale) }}
         </p>
 
-        <h1
+        <component
+          :is="headingTag"
           class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-warm-white sm:text-6xl lg:text-8xl/none"
         >
           {{ t(hero.titleKey, locale)
           }}<span v-if="hero.titleRestKey" class="text-primary-warm-white/80">{{
             t(hero.titleRestKey, locale)
           }}</span>
-        </h1>
+        </component>
 
         <p
           v-if="hero.descriptionKey"
@@ -162,6 +170,7 @@ const isContentFirst = hero.layout === 'content-first'
       <VideoPlayer
         v-if="showVideo"
         :locale
+        :aria-label="t(hero.titleKey, locale)"
         :src="hero.videoSrc"
         :poster="hero.posterSrc"
         autoplay
@@ -170,6 +179,7 @@ const isContentFirst = hero.layout === 'content-first'
       <VideoPlayer
         v-else-if="showMobileVideo"
         :locale
+        :aria-label="t(hero.titleKey, locale)"
         :src="hero.mobileVideoSrc"
         :poster="hero.posterSrc"
         autoplay
@@ -209,14 +219,15 @@ const isContentFirst = hero.layout === 'content-first'
         )
       "
     >
-      <h1
+      <component
+        :is="headingTag"
         class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
       >
         {{ t(hero.titleKey, locale)
         }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
           t(hero.titleRestKey, locale)
         }}</span>
-      </h1>
+      </component>
 
       <p
         v-if="hero.descriptionKey"
