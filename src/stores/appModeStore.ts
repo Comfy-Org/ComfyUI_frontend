@@ -71,6 +71,7 @@ function hasAppModeConsumer(
   for (const linkId of input.linkIds) {
     const link = host.subgraph.getLink(linkId)
     if (!link) continue
+    if (link.targetIsIoNode) return true
     const { inputNode, input: targetInput } = link.resolve(host.subgraph)
     if (!inputNode || !targetInput) continue
     if (inputNode.isSubgraphNode()) {
@@ -272,6 +273,20 @@ export const useAppModeStore = defineStore('appMode', () => {
     warnOnUninterpretableAppConfig(data, inputs, outputs)
   }
 
+  function revalidateSelections() {
+    const { inputs, outputs } = pruneLinearData({
+      inputs: selectedInputs.value,
+      outputs: selectedOutputs.value
+    })
+    selectedInputs.value = inputs
+    selectedOutputs.value = outputs
+  }
+
+  function enterAppMode() {
+    revalidateSelections()
+    setMode('app')
+  }
+
   function resetSelectedToWorkflow() {
     const { activeWorkflow } = workflowStore
     if (!activeWorkflow) return
@@ -381,6 +396,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   return {
+    enterAppMode,
     enterBuilder,
     exitBuilder,
     hasNodes,

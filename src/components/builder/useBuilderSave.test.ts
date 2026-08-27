@@ -3,7 +3,6 @@ import { ref } from 'vue'
 
 import { useBuilderSave } from './useBuilderSave'
 
-const mockSetMode = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackEnterLinear = vi.hoisted(() => vi.fn())
 const mockTrackDefaultViewSet = vi.hoisted(() => vi.fn())
@@ -15,15 +14,12 @@ const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
 const mockShowConfirmDialog = vi.hoisted(() => vi.fn())
 const mockCloseDialog = vi.hoisted(() => vi.fn())
 const mockExitBuilder = vi.hoisted(() => vi.fn())
+const mockEnterAppMode = vi.hoisted(() => vi.fn())
 
 const mockActiveWorkflow = ref<{
   filename: string
   initialMode?: string | null
 } | null>(null)
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({ setMode: mockSetMode })
-}))
 
 vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: () => ({ toastErrorHandler: mockToastErrorHandler })
@@ -56,7 +52,10 @@ vi.mock('@/services/dialogService', () => ({
 }))
 
 vi.mock('@/stores/appModeStore', () => ({
-  useAppModeStore: () => ({ exitBuilder: mockExitBuilder })
+  useAppModeStore: () => ({
+    enterAppMode: mockEnterAppMode,
+    exitBuilder: mockExitBuilder
+  })
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
@@ -334,7 +333,28 @@ describe('useBuilderSave', () => {
       expect(mockTrackEnterLinear).toHaveBeenCalledWith({
         source: 'app_builder'
       })
-      expect(mockSetMode).toHaveBeenCalledWith('app')
+      expect(mockEnterAppMode).toHaveBeenCalledOnce()
     })
+  })
+
+  it('enters App Mode from the app success dialog', async () => {
+    mockActiveWorkflow.value = { filename: 'my-workflow', initialMode: 'graph' }
+    mockSaveWorkflowAs.mockResolvedValueOnce(true)
+    const { saveAs } = useBuilderSave()
+    saveAs()
+    const { onSave } = mockShowLayoutDialog.mock.calls[0][0].props as {
+      onSave: (filename: string, openAsApp: boolean) => Promise<void>
+    }
+    await onSave('new-name', true)
+    const { onConfirm } = mockShowConfirmDialog.mock.calls[0][0]
+      .footerProps as {
+      onConfirm: () => void
+    }
+
+    onConfirm()
+
+    expect(mockCloseDialog).toHaveBeenCalledWith({ key: SUCCESS_DIALOG_KEY })
+    expect(mockTrackEnterLinear).toHaveBeenCalledWith({ source: 'app_builder' })
+    expect(mockEnterAppMode).toHaveBeenCalledOnce()
   })
 })

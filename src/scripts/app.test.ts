@@ -1226,7 +1226,7 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('preserves source execution shape when Vue hooks remove outputs', async () => {
+    it('preserves source execution shape across registration hooks', async () => {
       const nodeType = 'test/HookClearedBackendOutputs'
       const backendNodeDef: ComfyNodeDef = {
         name: nodeType,
@@ -1243,13 +1243,23 @@ describe('ComfyApp', () => {
       vi.spyOn(app, 'getNodeDefs').mockResolvedValue({
         [nodeType]: backendNodeDef
       })
-      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+      vi.spyOn(app, 'registerNodeDef').mockImplementation(
+        async (_nodeId, nodeDef) => {
+          nodeDef.output = []
+        }
+      )
       mockExtensionService.invokeExtensions.mockImplementation(
         (hook: string, nodeDefs: ComfyNodeDef[]) => {
           if (hook !== 'beforeRegisterVueAppNodeDefs') return []
-          const nodeDef = nodeDefs.find((value) => value.name === nodeType)
-          if (!nodeDef) throw new Error('backend node definition missing')
-          nodeDef.output = []
+          const nodeDefIndex = nodeDefs.findIndex(
+            (value) => value.name === nodeType
+          )
+          if (nodeDefIndex === -1)
+            throw new Error('backend node definition missing')
+          nodeDefs[nodeDefIndex] = {
+            ...nodeDefs[nodeDefIndex],
+            output: []
+          }
           return []
         }
       )
@@ -1348,6 +1358,36 @@ describe('ComfyApp', () => {
 
       expect(noteHookCalls).toBe(2)
       expect(SYSTEM_NODE_DEFS.Note.name).toBe('Note')
+      expect(useNodeDefStore().isLayoutOnlyNodeType('Note')).toBe(true)
+      expect(useNodeDefStore().isLayoutOnlyNodeType('RenamedNote')).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('node type identities are immutable')
+      )
+    })
+
+    it('preserves system identity when hooks replace and rename definitions', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      mockExtensionService.invokeExtensions.mockImplementation(
+        (hook: string, nodeDefs: ComfyNodeDef[]) => {
+          if (hook !== 'beforeRegisterVueAppNodeDefs') return []
+          const noteIndex = nodeDefs.findIndex(
+            (nodeDef) => nodeDef.name === 'Note'
+          )
+          if (noteIndex === -1)
+            throw new Error('system Note definition missing')
+          nodeDefs[noteIndex] = {
+            ...nodeDefs[noteIndex],
+            name: 'RenamedNote'
+          }
+          return []
+        }
+      )
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+
+      await app.registerNodes()
+
       expect(useNodeDefStore().isLayoutOnlyNodeType('Note')).toBe(true)
       expect(useNodeDefStore().isLayoutOnlyNodeType('RenamedNote')).toBe(false)
       expect(warn).toHaveBeenCalledWith(
@@ -1945,11 +1985,11 @@ describe('ComfyApp', () => {
 
       expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
       expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('source node definition has outputs')
+        expect.stringContaining('final node definition has outputs')
       )
     })
 
-    it('classifies custom source definitions without replacing their constructors', async () => {
+    it('keeps pre-registration custom output shape across reloads', async () => {
       const nodeType = 'test/ReloadedFrontendOutputNode'
       class ReloadedFrontendOutputNode extends LGraphNode {}
       LiteGraph.registerNodeType(nodeType, ReloadedFrontendOutputNode)
@@ -1959,7 +1999,12 @@ describe('ComfyApp', () => {
       })
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       app.vueAppReady = true
-      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
+      vi.spyOn(app, 'getNodeDefs').mockImplementation(async () => ({}))
+      vi.spyOn(app, 'registerNodeDef').mockImplementation(
+        async (_nodeId, nodeDef) => {
+          nodeDef.output = []
+        }
+      )
       mockExtensionService.invokeExtensionsAsync.mockImplementation(
         async (hook: string, defs?: Record<string, ComfyNodeDef>) => {
           if (hook !== 'addCustomNodeDefs' || !defs) return
@@ -1975,21 +2020,200 @@ describe('ComfyApp', () => {
           }
         }
       )
+      mockExtensionService.invokeExtensions.mockImplementation(
+        (hook: string, nodeDefs: ComfyNodeDef[]) => {
+          if (hook !== 'beforeRegisterVueAppNodeDefs') return []
+          const nodeDef = nodeDefs.find((value) => value.name === nodeType)
+          if (!nodeDef) throw new Error('custom node definition missing')
+          nodeDef.output = []
+          nodeDef.category = `Hooked/${nodeDef.category}`
+          return []
+        }
+      )
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 
       try {
+        await app.registerNodes()
+        expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+        expect(useNodeDefStore().nodeDefsByName[nodeType].category).toBe(
+          'Hooked/test'
+        )
+
         await app.reloadNodeDefs()
 
         expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+        expect(useNodeDefStore().nodeDefsByName[nodeType].category).toBe(
+          'Hooked/test'
+        )
         expect(LiteGraph.registered_node_types[nodeType]).toBe(
           ReloadedFrontendOutputNode
         )
         expect(warn).toHaveBeenCalledWith(
           expect.stringContaining('source node definition has outputs')
         )
+        expect(
+          mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+            ([hook]) => hook === 'addCustomNodeDefs'
+          )
+        ).toHaveLength(1)
       } finally {
         LiteGraph.unregisterNodeType(nodeType)
       }
+    })
+
+    it('keeps registered custom output shape across reloads', async () => {
+      const nodeType = 'test/RegistrationAddedFrontendOutputNode'
+      class RegistrationAddedFrontendOutputNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, RegistrationAddedFrontendOutputNode)
+      useExtensionStore().registerExtension({
+        name: 'test.registration-added-frontend-output-node',
+        layoutOnlyNodeTypes: [nodeType]
+      })
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockImplementation(async () => ({}))
+      vi.spyOn(app, 'registerNodeDef').mockImplementation(
+        async (_nodeId, nodeDef) => {
+          nodeDef.output = ['*']
+          nodeDef.category = `Registered/${nodeDef.category}`
+        }
+      )
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string, defs?: Record<string, ComfyNodeDef>) => {
+          if (hook !== 'addCustomNodeDefs' || !defs) return
+          defs[nodeType] = {
+            name: nodeType,
+            display_name: 'Registration Added Frontend Output Node',
+            category: 'test',
+            description: '',
+            input: {},
+            output: [],
+            output_node: false,
+            python_module: 'test'
+          }
+        }
+      )
+      mockExtensionService.invokeExtensions.mockImplementation(
+        (hook: string, nodeDefs: ComfyNodeDef[]) => {
+          if (hook !== 'beforeRegisterVueAppNodeDefs') return []
+          const nodeDef = nodeDefs.find((value) => value.name === nodeType)
+          if (!nodeDef) throw new Error('custom node definition missing')
+          nodeDef.output = []
+          nodeDef.category = `Hooked/${nodeDef.category}`
+          return []
+        }
+      )
+
+      try {
+        await app.registerNodes()
+        expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+        expect(useNodeDefStore().nodeDefsByName[nodeType].category).toBe(
+          'Hooked/Registered/test'
+        )
+
+        await app.reloadNodeDefs()
+
+        expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+        expect(useNodeDefStore().nodeDefsByName[nodeType].category).toBe(
+          'Hooked/Registered/test'
+        )
+        expect(LiteGraph.registered_node_types[nodeType]).toBe(
+          RegistrationAddedFrontendOutputNode
+        )
+      } finally {
+        LiteGraph.unregisterNodeType(nodeType)
+      }
+    })
+
+    it('uses plain custom definition snapshots during reload', async () => {
+      const nodeType = 'test/PrototypeFrontendNode'
+      const setLayoutOnly = vi.fn()
+      class PrototypeNodeDef implements ComfyNodeDef {
+        name = nodeType
+        display_name = 'Prototype Frontend Node'
+        category = 'test'
+        description = ''
+        input = {}
+        output: string[] = []
+        output_node = false
+        python_module = 'test'
+
+        get layout_only() {
+          return false
+        }
+
+        set layout_only(value: boolean) {
+          setLayoutOnly(value)
+        }
+      }
+      class PrototypeFrontendNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, PrototypeFrontendNode)
+      useExtensionStore().registerExtension({
+        name: 'test.prototype-frontend-node',
+        layoutOnlyNodeTypes: [nodeType]
+      })
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockImplementation(async () => ({}))
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string, defs?: Record<string, ComfyNodeDef>) => {
+          if (hook !== 'addCustomNodeDefs' || !defs) return
+          defs[nodeType] = new PrototypeNodeDef()
+        }
+      )
+      mockExtensionService.invokeExtensions.mockImplementation(
+        (hook: string, nodeDefs: ComfyNodeDef[]) => {
+          if (hook !== 'beforeRegisterVueAppNodeDefs') return []
+          const nodeDef = nodeDefs.find((value) => value.name === nodeType)
+          if (!nodeDef) throw new Error('custom node definition missing')
+          nodeDef.layout_only = true
+          return []
+        }
+      )
+
+      try {
+        await app.registerNodes()
+        expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(true)
+        expect(setLayoutOnly).toHaveBeenCalledOnce()
+        setLayoutOnly.mockClear()
+
+        await app.reloadNodeDefs()
+
+        expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(true)
+        expect(setLayoutOnly).not.toHaveBeenCalled()
+      } finally {
+        LiteGraph.unregisterNodeType(nodeType)
+      }
+    })
+
+    it('applies custom definitions through direct registration', async () => {
+      const nodeType = 'test/DirectCustomDefinition'
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string, defs?: Record<string, ComfyNodeDef>) => {
+          if (hook !== 'addCustomNodeDefs' || !defs) return
+          defs[nodeType] = {
+            name: nodeType,
+            display_name: 'Direct Custom Definition',
+            category: 'test',
+            description: '',
+            input: {},
+            output: [],
+            output_node: false,
+            python_module: 'test'
+          }
+        }
+      )
+
+      await app.registerNodesFromDefs({})
+
+      expect(registerNodeDef).toHaveBeenCalledWith(
+        nodeType,
+        expect.objectContaining({ name: nodeType })
+      )
     })
 
     it('syncs refreshed combo options into promoted combo host state', async () => {

@@ -1,5 +1,7 @@
+import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { setActivePinia } from 'pinia'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -9,7 +11,10 @@ import type * as DistributionModule from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useAppModeStore } from '@/stores/appModeStore'
 import type * as ModelStoreModule from '@/stores/modelStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -59,7 +64,12 @@ vi.mock('@/scripts/app', () => {
       refreshComboInNodes: vi.fn().mockResolvedValue(undefined),
       canvas: mockCanvas,
       rootGraph: {
-        clear: mockGraphClear
+        id: '00000000-0000-4000-8000-000000000001',
+        clear: mockGraphClear,
+        nodes: [],
+        extra: {},
+        events: new EventTarget(),
+        getNodeById: vi.fn()
       }
     }
   }
@@ -132,6 +142,7 @@ const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
     trackHelpResourceClicked: mockTrackHelpResourceClicked,
+    trackEnterLinear: vi.fn(),
     trackRunButton: vi.fn(),
     trackWorkflowExecution: vi.fn()
   }))
@@ -172,6 +183,7 @@ const mockChangeTracker = vi.hoisted(() => ({
 }))
 const mockWorkflowStore = vi.hoisted(() => ({
   activeWorkflow: {
+    activeMode: 'graph',
     changeTracker: mockChangeTracker
   }
 }))
@@ -185,6 +197,12 @@ vi.mock('@/stores/subgraphStore', () => ({
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: vi.fn(() => ({
+    get linearMode() {
+      return mockWorkflowStore.activeWorkflow.activeMode === 'app'
+    },
+    set linearMode(value: boolean) {
+      mockWorkflowStore.activeWorkflow.activeMode = value ? 'app' : 'graph'
+    },
     getCanvas: () => app.canvas,
     canvas: app.canvas
   })),
@@ -324,12 +342,14 @@ describe('useCoreCommands', () => {
   }
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
     mockDistributionState.isCloud = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
+    mockWorkflowStore.activeWorkflow.activeMode = 'graph'
 
     // Reset app state
     app.canvas.subgraph = undefined
@@ -339,6 +359,32 @@ describe('useCoreCommands', () => {
 
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
+  })
+
+  it('revalidates App Mode selections only when entering App Mode', async () => {
+    const appModeStore = useAppModeStore()
+    appModeStore.selectedInputs = [
+      [widgetId(app.rootGraph.id, toNodeId(99), 'prompt'), 'prompt']
+    ]
+    const command = useCoreCommands().find(
+      (candidate) => candidate.id === 'Comfy.ToggleLinear'
+    )
+    if (!command) throw new Error('ToggleLinear command missing')
+
+    await command.function()
+
+    expect(mockWorkflowStore.activeWorkflow.activeMode).toBe('app')
+    expect(appModeStore.selectedInputs).toEqual([])
+
+    appModeStore.selectedInputs = [
+      [widgetId(app.rootGraph.id, toNodeId(99), 'prompt'), 'prompt']
+    ]
+    await command.function()
+
+    expect(mockWorkflowStore.activeWorkflow.activeMode).toBe('graph')
+    expect(appModeStore.selectedInputs).toEqual([
+      [widgetId(app.rootGraph.id, toNodeId(99), 'prompt'), 'prompt']
+    ])
   })
 
   describe('ClearWorkflow command', () => {

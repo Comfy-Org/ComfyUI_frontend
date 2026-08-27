@@ -10,6 +10,7 @@ import BuilderFooterToolbar from '@/components/builder/BuilderFooterToolbar.vue'
 
 const mockSetMode = vi.hoisted(() => vi.fn())
 const mockExitBuilder = vi.hoisted(() => vi.fn())
+const mockEnterAppMode = vi.hoisted(() => vi.fn())
 const mockSave = vi.hoisted(() => vi.fn())
 const mockSaveAs = vi.hoisted(() => vi.fn())
 
@@ -29,6 +30,7 @@ const mockHasOutputs = ref(true)
 
 vi.mock('@/stores/appModeStore', () => ({
   useAppModeStore: () => ({
+    enterAppMode: mockEnterAppMode,
     exitBuilder: mockExitBuilder,
     hasOutputs: mockHasOutputs,
     $id: 'appMode'
@@ -165,10 +167,10 @@ describe('BuilderFooterToolbar', () => {
     expect(mockExitBuilder).toHaveBeenCalledOnce()
   })
 
-  it('calls setMode app on view app click', async () => {
+  it('enters App Mode on view app click', async () => {
     const { user } = renderComponent()
     await user.click(screen.getByRole('button', { name: /view app/i }))
-    expect(mockSetMode).toHaveBeenCalledWith('app')
+    expect(mockEnterAppMode).toHaveBeenCalledOnce()
   })
 
   it('shows "Save as" when workflow is temporary', () => {

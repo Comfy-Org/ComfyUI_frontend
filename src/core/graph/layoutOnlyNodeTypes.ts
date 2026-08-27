@@ -1,20 +1,19 @@
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 interface LayoutOnlyNodeTypeSources {
-  nodeDefSources: ReadonlyMap<
-    ComfyNodeDef,
-    {
-      nodeType: string
-      trustedLayoutOnly: boolean
-      hasExecutionOutputs: boolean
-    }
-  >
+  nodeDefSources: ReadonlyMap<ComfyNodeDef, LayoutOnlyNodeDefSource>
   frontendOnlyNodeTypes: ReadonlySet<string>
   skippedFrontendOnlyNodeTypes: ReadonlySet<string>
   declaredLayoutOnlyNodeTypes: ReadonlySet<string>
 }
 
-function hasExecutionOutputs(nodeDef: ComfyNodeDef): boolean {
+export interface LayoutOnlyNodeDefSource {
+  nodeType: string
+  trustedLayoutOnly: boolean
+  hasExecutionOutputs: boolean
+}
+
+export function nodeDefHasExecutionOutputs(nodeDef: ComfyNodeDef): boolean {
   return nodeDef.output_node || (nodeDef.output?.length ?? 0) > 0
 }
 
@@ -70,7 +69,7 @@ export function applyLayoutOnlyNodeTypes(
 
     if (
       source?.hasExecutionOutputs === true ||
-      hasExecutionOutputs(normalizedNodeDef)
+      nodeDefHasExecutionOutputs(normalizedNodeDef)
     ) {
       const executionShape = source?.hasExecutionOutputs
         ? 'source node definition'

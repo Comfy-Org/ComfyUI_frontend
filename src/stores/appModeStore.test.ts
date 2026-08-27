@@ -6,10 +6,15 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import {
+  LLink,
   LGraphNode as LGraphNodeClass,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -31,6 +36,7 @@ import {
   createNodeState
 } from '@/utils/__tests__/litegraphTestUtils'
 import type { WidgetId } from '@/types/widgetId'
+import { toLinkId } from '@/types/linkId'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
   let lastOptions: { onEnterBuilder: () => void; onDismiss: () => void }
@@ -272,7 +278,8 @@ describe('appModeStore', () => {
     expect(result.inputs).toEqual([])
   })
 
-  it('keeps promoted selections with an executable consumer', () => {
+  it('revalidates promoted selections when entering App Mode', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const layoutNodeType = 'MixedFanoutLayoutFrame'
     useNodeDefStore().addNodeDef({
       name: layoutNodeType,
@@ -323,14 +330,90 @@ describe('appModeStore', () => {
     vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
       rootGraph.getNodeById(id)
     )
+    workflowStore.activeWorkflow = createBuilderWorkflow('builder:arrange')
 
-    const result = store.pruneLinearData({
+    store.loadSelections({
       inputs: [[hostWidget.widgetId, hostWidget.name]],
       outputs: []
     })
 
     expect(widgetValidForApp(host, hostWidget)).toBe(true)
-    expect(result.inputs).toEqual([[hostWidget.widgetId, hostWidget.name]])
+    expect(store.selectedInputs).toEqual([
+      [hostWidget.widgetId, hostWidget.name]
+    ])
+
+    expect(executionNode.disconnectInput(0)).toBe(true)
+    store.enterAppMode()
+
+    expect(widgetValidForApp(host, hostWidget)).toBe(false)
+    expect(store.selectedInputs).toEqual([])
+    expect(workflowStore.activeWorkflow.activeMode).toBe('app')
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('app config could not be interpreted'),
+      expect.anything()
+    )
+  })
+
+  it('accepts promoted selections that pass through subgraph outputs', () => {
+    const layoutNodeType = 'PassthroughLayoutFrame'
+    useNodeDefStore().addNodeDef({
+      name: layoutNodeType,
+      display_name: layoutNodeType,
+      category: 'test',
+      description: '',
+      input: {},
+      output: [],
+      output_node: false,
+      layout_only: true,
+      python_module: 'test'
+    })
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'Prompt', type: 'STRING' }],
+      outputs: [{ name: 'Prompt', type: 'STRING' }]
+    })
+    const layoutNode = new LGraphNodeClass(layoutNodeType, layoutNodeType)
+    const layoutInput = layoutNode.addInput('Prompt', 'STRING')
+    const layoutWidget = layoutNode.addWidget(
+      'string',
+      'text',
+      '',
+      () => undefined
+    )
+    layoutInput.widget = { name: layoutWidget.name }
+    subgraph.add(layoutNode)
+    subgraph.inputNode.slots[0].connect(layoutInput, layoutNode)
+    const passthrough = new LLink(
+      toLinkId(2),
+      'STRING',
+      SUBGRAPH_INPUT_ID,
+      0,
+      SUBGRAPH_OUTPUT_ID,
+      0
+    )
+    subgraph.links.set(passthrough.id, passthrough)
+    subgraph.inputNode.slots[0].linkIds.push(passthrough.id)
+    subgraph.outputNode.slots[0].linkIds.push(passthrough.id)
+    const host = createTestSubgraphNode(subgraph, { id: 5 })
+    const rootGraph = host.graph as LGraph
+    rootGraph.add(host)
+    host._internalConfigureAfterSlots()
+    const hostWidget = host.widgets?.find((widget) => widget.name === 'Prompt')
+    if (!hostWidget?.widgetId) throw new Error('promoted widget missing')
+    vi.mocked(app.rootGraph).id = rootGraph.id
+    vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+    vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      rootGraph.getNodeById(id)
+    )
+
+    store.loadSelections({
+      inputs: [[hostWidget.widgetId, hostWidget.name]],
+      outputs: []
+    })
+
+    expect(widgetValidForApp(host, hostWidget)).toBe(true)
+    expect(store.selectedInputs).toEqual([
+      [hostWidget.widgetId, hostWidget.name]
+    ])
   })
 
   describe('enterBuilder', () => {

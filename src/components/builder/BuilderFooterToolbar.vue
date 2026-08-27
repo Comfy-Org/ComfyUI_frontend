@@ -151,7 +151,7 @@ const { t } = useI18n()
 const appModeStore = useAppModeStore()
 const dialogStore = useDialogStore()
 const workflowStore = useWorkflowStore()
-const { isBuilderMode, setMode } = useAppMode()
+const { isBuilderMode } = useAppMode()
 const { hasOutputs } = storeToRefs(appModeStore)
 const {
   isFirstStep,
@@ -202,7 +202,7 @@ function onExitBuilder() {
 }
 
 function onViewApp() {
-  setMode('app')
+  appModeStore.enterAppMode()
 }
 
 function onSetDefaultView(openAsApp: boolean) {

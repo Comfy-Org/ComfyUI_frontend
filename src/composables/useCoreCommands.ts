@@ -48,6 +48,7 @@ import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -95,6 +96,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const authActions = useAuthActions()
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
+  const appModeStore = useAppModeStore()
   const executionStore = useExecutionStore()
   const modelStore = useModelStore()
   const missingModelStore = useMissingModelStore()
@@ -1360,8 +1362,12 @@ export function useCoreCommands(): ComfyCommand[] {
         const source =
           typeof metadata?.source === 'string' ? metadata.source : 'keybind'
         const newMode = !canvasStore.linearMode
-        if (newMode) useTelemetry()?.trackEnterLinear({ source })
-        canvasStore.linearMode = newMode
+        if (newMode) {
+          appModeStore.enterAppMode()
+          useTelemetry()?.trackEnterLinear({ source })
+        } else {
+          canvasStore.linearMode = false
+        }
       }
     }
   ]

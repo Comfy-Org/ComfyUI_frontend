@@ -10,7 +10,11 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { applyLayoutOnlyNodeTypes } from '@/core/graph/layoutOnlyNodeTypes'
+import type { LayoutOnlyNodeDefSource } from '@/core/graph/layoutOnlyNodeTypes'
+import {
+  applyLayoutOnlyNodeTypes,
+  nodeDefHasExecutionOutputs
+} from '@/core/graph/layoutOnlyNodeTypes'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -270,22 +274,39 @@ function createNodeOutputsMutationView(
 
 interface NodeDefProvenance {
   backendNodeTypes: ReadonlySet<string>
-  trustedLayoutOnlyNodeDefs: ReadonlyMap<ComfyNodeDefV1, string>
+  backendSourcesByType: ReadonlyMap<string, LayoutOnlyNodeDefSource>
 }
 
 function captureNodeDefProvenance(
   defs: Record<string, ComfyNodeDefV1>
 ): NodeDefProvenance {
-  const trustedLayoutOnlyNodeDefs = new Map<ComfyNodeDefV1, string>()
-  for (const [nodeType, nodeDef] of Object.entries(defs)) {
-    if (nodeDef.layout_only === true) {
-      trustedLayoutOnlyNodeDefs.set(nodeDef, nodeType)
-    }
-  }
+  const backendSourcesByType = new Map(
+    Object.entries(defs).map(([nodeType, nodeDef]) => [
+      nodeType,
+      {
+        nodeType,
+        trustedLayoutOnly: nodeDef.layout_only === true,
+        hasExecutionOutputs: nodeDefHasExecutionOutputs(nodeDef)
+      }
+    ])
+  )
   return {
     backendNodeTypes: new Set(Object.keys(defs)),
-    trustedLayoutOnlyNodeDefs
+    backendSourcesByType
   }
+}
+
+function snapshotCustomNodeDefs(
+  defs: Record<string, ComfyNodeDefV1>,
+  originalNodeTypes: ReadonlySet<string>
+): Map<string, ComfyNodeDefV1> {
+  return new Map(
+    Object.entries(defs).flatMap(([nodeType, nodeDef]) =>
+      originalNodeTypes.has(nodeType)
+        ? []
+        : [[nodeType, { ...cloneDeep(nodeDef) }] as const]
+    )
+  )
 }
 
 export class ComfyApp {
@@ -304,6 +325,8 @@ export class ComfyApp {
    * If the queue is currently being processed
    */
   private processingQueue: boolean = false
+  private customNodeDefSources = new Map<string, ComfyNodeDefV1>()
+  private registeredCustomNodeDefs = new Map<string, ComfyNodeDefV1>()
 
   /**
    * Content Clipboard
@@ -1105,6 +1128,7 @@ export class ComfyApp {
     // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
 
     // Only create frontend_only definitions for nodes that don't have backend definitions
+    const nodeDefStore = useNodeDefStore()
     const frontendOnlyDefs: Record<string, ComfyNodeDefV1> = {}
     const skippedFrontendOnlyNodeTypes = new Set<string>()
     for (const [name, node] of Object.entries(
@@ -1119,18 +1143,21 @@ export class ComfyApp {
         continue
       }
 
-      frontendOnlyDefs[name] = {
-        name,
-        display_name: name,
-        category: node.category || '__frontend_only__',
-        input: { required: {}, optional: {} },
-        output: [],
-        output_name: [],
-        output_is_list: [],
-        output_node: false,
-        python_module: 'custom_nodes.frontend_only',
-        description: node.description ?? `Frontend only node for ${name}`
-      } as ComfyNodeDefV1
+      frontendOnlyDefs[name] =
+        this.registeredCustomNodeDefs.get(name) ??
+        this.customNodeDefSources.get(name) ??
+        ({
+          name,
+          display_name: name,
+          category: node.category || '__frontend_only__',
+          input: { required: {}, optional: {} },
+          output: [],
+          output_name: [],
+          output_is_list: [],
+          output_node: false,
+          python_module: 'custom_nodes.frontend_only',
+          description: node.description ?? `Frontend only node for ${name}`
+        } as ComfyNodeDefV1)
     }
 
     const allNodeDefs = {
@@ -1139,29 +1166,38 @@ export class ComfyApp {
       ...SYSTEM_NODE_DEFS
     }
 
-    const nodeDefSources = new Map<
-      ComfyNodeDefV1,
-      {
-        nodeType: string
-        trustedLayoutOnly: boolean
-        hasExecutionOutputs: boolean
-      }
-    >()
+    const nodeDefSources = new Map<ComfyNodeDefV1, LayoutOnlyNodeDefSource>()
+    const nodeDefSourcesByType = new Map<string, LayoutOnlyNodeDefSource>()
+    const nodeDefSourceMarker = Symbol('nodeDefSource')
     const nodeDefArray = Object.entries(allNodeDefs).map(
       ([nodeType, sourceNodeDef]) => {
         const nodeDef = cloneDeep(sourceNodeDef)
-        const trustedBackendType =
-          provenance.trustedLayoutOnlyNodeDefs.get(sourceNodeDef)
+        const backendSource = provenance.backendSourcesByType.get(nodeType)
+        const customSourceNodeDef = this.customNodeDefSources.get(nodeType)
+        const registeredCustomNodeDef =
+          this.registeredCustomNodeDefs.get(nodeType)
         const trustedSystemNodeDef = SYSTEM_NODE_DEFS[nodeType]
-        nodeDefSources.set(nodeDef, {
-          nodeType,
-          trustedLayoutOnly:
-            trustedBackendType === nodeType ||
-            (trustedSystemNodeDef === sourceNodeDef &&
-              sourceNodeDef.layout_only === true),
-          hasExecutionOutputs:
-            sourceNodeDef.output_node || (sourceNodeDef.output?.length ?? 0) > 0
-        })
+        const source =
+          trustedSystemNodeDef === sourceNodeDef
+            ? {
+                nodeType,
+                trustedLayoutOnly: sourceNodeDef.layout_only === true,
+                hasExecutionOutputs: nodeDefHasExecutionOutputs(sourceNodeDef)
+              }
+            : (backendSource ?? {
+                nodeType,
+                trustedLayoutOnly: false,
+                hasExecutionOutputs:
+                  nodeDefHasExecutionOutputs(
+                    customSourceNodeDef ?? sourceNodeDef
+                  ) ||
+                  nodeDefHasExecutionOutputs(
+                    registeredCustomNodeDef ?? sourceNodeDef
+                  )
+              })
+        nodeDefSources.set(nodeDef, source)
+        nodeDefSourcesByType.set(nodeType, source)
+        Reflect.set(nodeDef, nodeDefSourceMarker, nodeType)
         return nodeDef
       }
     )
@@ -1169,6 +1205,19 @@ export class ComfyApp {
       'beforeRegisterVueAppNodeDefs',
       nodeDefArray
     )
+    for (const nodeDef of nodeDefArray) {
+      if (!nodeDefSources.has(nodeDef)) {
+        const markedNodeType: unknown = Reflect.get(
+          nodeDef,
+          nodeDefSourceMarker
+        )
+        const source = nodeDefSourcesByType.get(
+          typeof markedNodeType === 'string' ? markedNodeType : nodeDef.name
+        )
+        if (source) nodeDefSources.set(nodeDef, source)
+      }
+      Reflect.deleteProperty(nodeDef, nodeDefSourceMarker)
+    }
     const declaredLayoutOnlyNodeTypes = new Set(
       useExtensionStore().enabledExtensions.flatMap(
         (extension) => extension.layoutOnlyNodeTypes ?? []
@@ -1180,7 +1229,7 @@ export class ComfyApp {
       skippedFrontendOnlyNodeTypes,
       declaredLayoutOnlyNodeTypes
     })
-    useNodeDefStore().updateNodeDefs(classifiedNodeDefs)
+    nodeDefStore.updateNodeDefs(classifiedNodeDefs)
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
@@ -1235,16 +1284,18 @@ export class ComfyApp {
     return await useLitegraphService().registerNodeDef(nodeId, nodeDef)
   }
 
-  async registerNodesFromDefs(
-    defs: Record<string, ComfyNodeDefV1>,
-    nodeTypesToRegister?: readonly string[]
-  ) {
+  async registerNodesFromDefs(defs: Record<string, ComfyNodeDefV1>) {
+    const originalNodeTypes = new Set(Object.keys(defs))
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
-
-    // Register a node for each definition
-    const nodeTypes = nodeTypesToRegister ?? Object.keys(defs)
+    this.customNodeDefSources = snapshotCustomNodeDefs(defs, originalNodeTypes)
     await Promise.all(
-      nodeTypes.map((nodeId) => this.registerNodeDef(nodeId, defs[nodeId]))
+      Object.keys(defs).map((nodeId) =>
+        this.registerNodeDef(nodeId, defs[nodeId])
+      )
+    )
+    this.registeredCustomNodeDefs = snapshotCustomNodeDefs(
+      defs,
+      originalNodeTypes
     )
   }
 
@@ -2510,7 +2561,11 @@ export class ComfyApp {
     const defs = await this.getNodeDefs()
     const nodeTypesToReload = Object.keys(defs)
     const provenance = captureNodeDefProvenance(defs)
-    await this.registerNodesFromDefs(defs, nodeTypesToReload)
+    await Promise.all(
+      nodeTypesToReload.map((nodeId) =>
+        this.registerNodeDef(nodeId, defs[nodeId])
+      )
+    )
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {

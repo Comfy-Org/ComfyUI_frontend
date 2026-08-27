@@ -1,4 +1,3 @@
-import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { t } from '@/i18n'
@@ -19,7 +18,6 @@ const isSaving = ref(false)
 
 export function useBuilderSave() {
   const { toastErrorHandler } = useErrorHandling()
-  const { setMode } = useAppMode()
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const dialogService = useDialogService()
@@ -110,7 +108,7 @@ export function useBuilderSave() {
               onCancel: () => {
                 closeDialog(SUCCESS_DIALOG_KEY)
                 useTelemetry()?.trackEnterLinear({ source: 'app_builder' })
-                setMode('app')
+                appModeStore.enterAppMode()
               },
               onConfirm: () => {
                 closeDialog(SUCCESS_DIALOG_KEY)
@@ -125,7 +123,7 @@ export function useBuilderSave() {
               onConfirm: () => {
                 closeDialog(SUCCESS_DIALOG_KEY)
                 useTelemetry()?.trackEnterLinear({ source: 'app_builder' })
-                setMode('app')
+                appModeStore.enterAppMode()
               }
             }
     })

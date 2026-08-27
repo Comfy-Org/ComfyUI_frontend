@@ -43,7 +43,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
-import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -53,7 +52,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
-const { setMode } = useAppMode()
 const workflowService = useWorkflowService()
 const workflowStore = useWorkflowStore()
 const { toastErrorHandler } = useErrorHandling()
@@ -89,7 +87,7 @@ async function onSave(close: () => void) {
 }
 
 function onEnterAppMode(close: () => void) {
-  setMode('app')
+  appModeStore.enterAppMode()
   close()
 }
 
