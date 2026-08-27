@@ -42,7 +42,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -288,7 +288,16 @@ function updateVueAppNodeDefs(
   if (typeof updateNodeDefs !== 'function') {
     throw new Error('node definition updater missing')
   }
-  updateNodeDefs.call(app, defs)
+  const trustedLayoutOnlyNodeDefs = new Map<ComfyNodeDef, string>()
+  for (const [nodeType, nodeDef] of Object.entries(defs)) {
+    if (nodeDef.layout_only === true) {
+      trustedLayoutOnlyNodeDefs.set(nodeDef, nodeType)
+    }
+  }
+  updateNodeDefs.call(app, defs, {
+    backendNodeTypes: new Set(Object.keys(defs)),
+    trustedLayoutOnlyNodeDefs
+  })
 }
 
 describe('ComfyApp', () => {
@@ -1195,6 +1204,102 @@ describe('ComfyApp', () => {
       expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('Ignoring untrusted layout-only metadata')
+      )
+    })
+
+    it('captures backend trust before node registration hooks run', async () => {
+      const nodeType = 'test/EarlyHookMutatedBackendNode'
+      const backendNodeDef: ComfyNodeDef = {
+        name: nodeType,
+        display_name: 'Early Hook Mutated Backend Node',
+        category: 'test',
+        description: '',
+        input: {},
+        output: [],
+        output_node: false,
+        python_module: 'test'
+      }
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({
+        [nodeType]: backendNodeDef
+      })
+      vi.spyOn(app, 'registerNodeDef').mockImplementation(
+        async (_nodeId, nodeDef) => {
+          nodeDef.layout_only = true
+        }
+      )
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      await app.registerNodes()
+
+      expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Ignoring untrusted layout-only metadata')
+      )
+    })
+
+    it('accepts frontend definitions added during registration', async () => {
+      const nodeType = 'test/HookAddedLayoutOnlyNode'
+      class HookAddedLayoutOnlyNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, HookAddedLayoutOnlyNode)
+      useExtensionStore().registerExtension({
+        name: 'test.hook-added-layout-only-node',
+        layoutOnlyNodeTypes: [nodeType]
+      })
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string, defs?: Record<string, ComfyNodeDef>) => {
+          if (hook !== 'addCustomNodeDefs' || !defs) return
+          defs[nodeType] = {
+            name: nodeType,
+            display_name: 'Hook Added Layout Only Node',
+            category: 'test',
+            description: '',
+            input: {},
+            output: [],
+            output_node: false,
+            python_module: 'test'
+          }
+        }
+      )
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      try {
+        await app.registerNodes()
+
+        expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(true)
+        expect(warn).not.toHaveBeenCalled()
+      } finally {
+        warn.mockRestore()
+        LiteGraph.unregisterNodeType(nodeType)
+      }
+    })
+
+    it('isolates system definitions from node definition hooks', () => {
+      let noteHookCalls = 0
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      mockExtensionService.invokeExtensions.mockImplementation(
+        (hook: string, nodeDefs: ComfyNodeDef[]) => {
+          if (hook !== 'beforeRegisterVueAppNodeDefs') return []
+          const note = nodeDefs.find((nodeDef) => nodeDef.name === 'Note')
+          if (!note) throw new Error('system Note definition missing')
+          noteHookCalls += 1
+          note.name = 'RenamedNote'
+          return []
+        }
+      )
+
+      updateVueAppNodeDefs(app)
+      updateVueAppNodeDefs(app)
+
+      expect(noteHookCalls).toBe(2)
+      expect(SYSTEM_NODE_DEFS.Note.name).toBe('Note')
+      expect(useNodeDefStore().isLayoutOnlyNodeType('Note')).toBe(true)
+      expect(useNodeDefStore().isLayoutOnlyNodeType('RenamedNote')).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('node type identities are immutable')
       )
     })
 

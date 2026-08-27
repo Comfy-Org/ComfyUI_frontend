@@ -145,7 +145,8 @@ app.registerExtension({
 
 Run on Change then ignores those nodes and their incident links when deciding
 whether to queue the workflow. Use this only when every instance of the type is
-purely presentational and can never affect execution.
+purely presentational and can never affect execution. Layout-only nodes are
+also excluded from App Mode input and output selection.
 
 Declarations apply during startup and node-definition reloads. They are
 accepted only for node types synthesized by the frontend because no backend or

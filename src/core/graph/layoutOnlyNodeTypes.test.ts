@@ -25,6 +25,7 @@ describe('applyLayoutOnlyNodeTypes', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const [result] = applyLayoutOnlyNodeTypes([createNodeDef('LayoutFrame')], {
       trustedLayoutOnlyNodeDefs: new Set(),
+      nodeDefSourceTypes: new Map(),
       frontendOnlyNodeTypes: new Set(['LayoutFrame']),
       skippedFrontendOnlyNodeTypes: new Set(),
       declaredLayoutOnlyNodeTypes: new Set(['LayoutFrame'])
@@ -39,6 +40,7 @@ describe('applyLayoutOnlyNodeTypes', () => {
     const nodeDef = createNodeDef('BackendLayout', { layout_only: true })
     const [result] = applyLayoutOnlyNodeTypes([nodeDef], {
       trustedLayoutOnlyNodeDefs: new Set([nodeDef]),
+      nodeDefSourceTypes: new Map([[nodeDef, 'BackendLayout']]),
       frontendOnlyNodeTypes: new Set(),
       skippedFrontendOnlyNodeTypes: new Set(),
       declaredLayoutOnlyNodeTypes: new Set()
@@ -52,6 +54,7 @@ describe('applyLayoutOnlyNodeTypes', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const [result] = applyLayoutOnlyNodeTypes([createNodeDef('BackendNode')], {
       trustedLayoutOnlyNodeDefs: new Set(),
+      nodeDefSourceTypes: new Map(),
       frontendOnlyNodeTypes: new Set(),
       skippedFrontendOnlyNodeTypes: new Set(),
       declaredLayoutOnlyNodeTypes: new Set(['BackendNode'])
@@ -71,6 +74,7 @@ describe('applyLayoutOnlyNodeTypes', () => {
 
     const [result] = applyLayoutOnlyNodeTypes([nodeDef], {
       trustedLayoutOnlyNodeDefs,
+      nodeDefSourceTypes: new Map([[nodeDef, 'HookMutatedNode']]),
       frontendOnlyNodeTypes: new Set(),
       skippedFrontendOnlyNodeTypes: new Set(),
       declaredLayoutOnlyNodeTypes: new Set()
@@ -87,6 +91,7 @@ describe('applyLayoutOnlyNodeTypes', () => {
 
     applyLayoutOnlyNodeTypes([], {
       trustedLayoutOnlyNodeDefs: new Set(),
+      nodeDefSourceTypes: new Map(),
       frontendOnlyNodeTypes: new Set(),
       skippedFrontendOnlyNodeTypes: new Set(['HiddenLayoutFrame']),
       declaredLayoutOnlyNodeTypes: new Set(['HiddenLayoutFrame'])
@@ -110,6 +115,7 @@ describe('applyLayoutOnlyNodeTypes', () => {
         [createNodeDef('ContradictoryNode', overrides)],
         {
           trustedLayoutOnlyNodeDefs: new Set(),
+          nodeDefSourceTypes: new Map(),
           frontendOnlyNodeTypes: new Set(['ContradictoryNode']),
           skippedFrontendOnlyNodeTypes: new Set(),
           declaredLayoutOnlyNodeTypes: new Set(['ContradictoryNode'])
@@ -122,4 +128,27 @@ describe('applyLayoutOnlyNodeTypes', () => {
       )
     }
   )
+
+  it('restores immutable node type identities after hook mutation', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const nodeDef = createNodeDef('Note', { layout_only: true })
+    const nodeDefSourceTypes = new Map<ComfyNodeDef, string>([
+      [nodeDef, 'Note']
+    ])
+    nodeDef.name = 'ExecutableBackendNode'
+
+    const [result] = applyLayoutOnlyNodeTypes([nodeDef], {
+      trustedLayoutOnlyNodeDefs: new Set([nodeDef]),
+      nodeDefSourceTypes,
+      frontendOnlyNodeTypes: new Set(),
+      skippedFrontendOnlyNodeTypes: new Set(),
+      declaredLayoutOnlyNodeTypes: new Set()
+    })
+
+    expect(result.name).toBe('Note')
+    expect(result.layout_only).toBe(true)
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('node type identities are immutable')
+    )
+  })
 })

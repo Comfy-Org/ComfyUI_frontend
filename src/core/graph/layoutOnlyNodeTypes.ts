@@ -2,6 +2,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 interface LayoutOnlyNodeTypeSources {
   trustedLayoutOnlyNodeDefs: ReadonlySet<ComfyNodeDef>
+  nodeDefSourceTypes: ReadonlyMap<ComfyNodeDef, string>
   frontendOnlyNodeTypes: ReadonlySet<string>
   skippedFrontendOnlyNodeTypes: ReadonlySet<string>
   declaredLayoutOnlyNodeTypes: ReadonlySet<string>
@@ -17,6 +18,7 @@ export function applyLayoutOnlyNodeTypes(
 ): ComfyNodeDef[] {
   const {
     trustedLayoutOnlyNodeDefs,
+    nodeDefSourceTypes,
     frontendOnlyNodeTypes,
     skippedFrontendOnlyNodeTypes,
     declaredLayoutOnlyNodeTypes
@@ -35,29 +37,40 @@ export function applyLayoutOnlyNodeTypes(
   }
 
   return nodeDefs.map((nodeDef) => {
+    const sourceType = nodeDefSourceTypes.get(nodeDef)
+    const normalizedNodeDef =
+      sourceType !== undefined && nodeDef.name !== sourceType
+        ? { ...nodeDef, name: sourceType }
+        : nodeDef
+    if (normalizedNodeDef !== nodeDef) {
+      console.warn(
+        `Ignoring node definition rename from "${sourceType}" to "${nodeDef.name}": node type identities are immutable.`
+      )
+    }
+
     const declaredFrontendOnlyType =
-      frontendOnlyNodeTypes.has(nodeDef.name) &&
-      declaredLayoutOnlyNodeTypes.has(nodeDef.name)
+      frontendOnlyNodeTypes.has(normalizedNodeDef.name) &&
+      declaredLayoutOnlyNodeTypes.has(normalizedNodeDef.name)
     const isLayoutOnly =
       trustedLayoutOnlyNodeDefs.has(nodeDef) || declaredFrontendOnlyType
 
     if (!isLayoutOnly) {
-      if (nodeDef.layout_only !== true) return nodeDef
+      if (normalizedNodeDef.layout_only !== true) return normalizedNodeDef
       console.warn(
-        `Ignoring untrusted layout-only metadata for "${nodeDef.name}": extensions must use layoutOnlyNodeTypes for frontend-only node types.`
+        `Ignoring untrusted layout-only metadata for "${normalizedNodeDef.name}": extensions must use layoutOnlyNodeTypes for frontend-only node types.`
       )
-      return { ...nodeDef, layout_only: false }
+      return { ...normalizedNodeDef, layout_only: false }
     }
 
-    if (hasExecutionOutputs(nodeDef)) {
+    if (hasExecutionOutputs(normalizedNodeDef)) {
       console.warn(
-        `Ignoring layout-only classification for "${nodeDef.name}": the final node definition has outputs or is an output node.`
+        `Ignoring layout-only classification for "${normalizedNodeDef.name}": the final node definition has outputs or is an output node.`
       )
-      return { ...nodeDef, layout_only: false }
+      return { ...normalizedNodeDef, layout_only: false }
     }
 
-    return nodeDef.layout_only === true
-      ? nodeDef
-      : { ...nodeDef, layout_only: true }
+    return normalizedNodeDef.layout_only === true
+      ? normalizedNodeDef
+      : { ...normalizedNodeDef, layout_only: true }
   })
 }

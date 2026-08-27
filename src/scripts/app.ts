@@ -268,6 +268,26 @@ function createNodeOutputsMutationView(
   return createMutationView(outputs, { commit, mapValue: mapNestedValue })
 }
 
+interface NodeDefProvenance {
+  backendNodeTypes: ReadonlySet<string>
+  trustedLayoutOnlyNodeDefs: ReadonlyMap<ComfyNodeDefV1, string>
+}
+
+function captureNodeDefProvenance(
+  defs: Record<string, ComfyNodeDefV1>
+): NodeDefProvenance {
+  const trustedLayoutOnlyNodeDefs = new Map<ComfyNodeDefV1, string>()
+  for (const [nodeType, nodeDef] of Object.entries(defs)) {
+    if (nodeDef.layout_only === true) {
+      trustedLayoutOnlyNodeDefs.set(nodeDef, nodeType)
+    }
+  }
+  return {
+    backendNodeTypes: new Set(Object.keys(defs)),
+    trustedLayoutOnlyNodeDefs
+  }
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -1077,7 +1097,10 @@ export class ComfyApp {
     this.canvas?.draw(true, true)
   }
 
-  private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
+  private updateVueAppNodeDefs(
+    defs: Record<string, ComfyNodeDefV1>,
+    provenance: NodeDefProvenance
+  ) {
     // Frontend only nodes registered by custom nodes.
     // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
 
@@ -1088,7 +1111,7 @@ export class ComfyApp {
       LiteGraph.registered_node_types
     )) {
       // Skip if we already have a backend definition or system definition
-      if (name in defs || name in SYSTEM_NODE_DEFS) {
+      if (provenance.backendNodeTypes.has(name) || name in SYSTEM_NODE_DEFS) {
         continue
       }
       if (node.skip_list) {
@@ -1116,9 +1139,24 @@ export class ComfyApp {
       ...SYSTEM_NODE_DEFS
     }
 
-    const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
-    const trustedLayoutOnlyNodeDefs = new Set(
-      nodeDefArray.filter((nodeDef) => nodeDef.layout_only === true)
+    const nodeDefSourceTypes = new Map<ComfyNodeDefV1, string>()
+    const trustedLayoutOnlyNodeDefs = new Set<ComfyNodeDefV1>()
+    const nodeDefArray = Object.entries(allNodeDefs).map(
+      ([nodeType, sourceNodeDef]) => {
+        const nodeDef = structuredClone(sourceNodeDef)
+        nodeDefSourceTypes.set(nodeDef, nodeType)
+        const trustedBackendType =
+          provenance.trustedLayoutOnlyNodeDefs.get(sourceNodeDef)
+        const trustedSystemNodeDef = SYSTEM_NODE_DEFS[nodeType]
+        if (
+          trustedBackendType === nodeType ||
+          (trustedSystemNodeDef === sourceNodeDef &&
+            sourceNodeDef.layout_only === true)
+        ) {
+          trustedLayoutOnlyNodeDefs.add(nodeDef)
+        }
+        return nodeDef
+      }
     )
     useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
@@ -1131,6 +1169,7 @@ export class ComfyApp {
     )
     const classifiedNodeDefs = applyLayoutOnlyNodeTypes(nodeDefArray, {
       trustedLayoutOnlyNodeDefs,
+      nodeDefSourceTypes,
       frontendOnlyNodeTypes: new Set(Object.keys(frontendOnlyDefs)),
       skippedFrontendOnlyNodeTypes,
       declaredLayoutOnlyNodeTypes
@@ -1178,10 +1217,11 @@ export class ComfyApp {
   async registerNodes() {
     // Load node definitions from the backend
     const defs = await this.getNodeDefs()
+    const provenance = captureNodeDefProvenance(defs)
     await this.registerNodesFromDefs(defs)
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
-      this.updateVueAppNodeDefs(defs)
+      this.updateVueAppNodeDefs(defs, provenance)
     }
   }
 
@@ -2460,6 +2500,7 @@ export class ComfyApp {
    */
   async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
+    const provenance = captureNodeDefProvenance(defs)
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
@@ -2514,7 +2555,7 @@ export class ComfyApp {
     syncPromotedComboHostOptions(this.rootGraph)
 
     if (this.vueAppReady) {
-      this.updateVueAppNodeDefs(defs)
+      this.updateVueAppNodeDefs(defs, provenance)
     }
   }
 

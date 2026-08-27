@@ -7,12 +7,14 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -1195,6 +1197,52 @@ describe('ChangeTracker', () => {
         const changedSubgraph = getSubgraphDefinition(changed)
         changedSubgraph.nodes[0].widgets_values = ['Updated content']
         changedSubgraph.links?.pop()
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('ignores promoted values sourced only from layout-only nodes', async () => {
+        const nodeType = 'PromotedLayoutFrame'
+        registerLayoutOnlyNodeType(nodeType)
+        const rootGraph = createTestRootGraph()
+        const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
+        const host = createTestSubgraphNode(subgraph)
+        rootGraph.add(host)
+        const interior = new LGraphNode(nodeType, nodeType)
+        const input = interior.addInput('text', 'STRING')
+        const widget = interior.addWidget(
+          'text',
+          'text',
+          'Initial content',
+          () => undefined
+        )
+        input.widget = { name: widget.name }
+        subgraph.add(interior)
+        const promotion = promoteValueWidgetViaSubgraphInput(
+          host,
+          interior,
+          widget
+        )
+        if (!promotion.ok) throw new Error(promotion.reason)
+        const hostInput = host.inputs.find((input) => input.name === 'text')
+        if (!hostInput?.widgetId) {
+          throw new Error('promoted host widget missing')
+        }
+
+        const initial = await requireValidWorkflow(rootGraph.serialize())
+        const tracker = createTracker(initial)
+        useWidgetValueStore().setValue(
+          hostInput.widgetId,
+          'Updated host content'
+        )
+        const changed = await requireValidWorkflow(rootGraph.serialize())
         mockCanvasState(changed)
 
         tracker.captureCanvasState()

@@ -23,6 +23,7 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
@@ -85,7 +86,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettings
 }))
 
-import { useAppModeStore } from './appModeStore'
+import { nodeTypeValidForApp, useAppModeStore } from './appModeStore'
 
 function createBuilderWorkflow(
   activeMode: string = 'builder:inputs'
@@ -165,6 +166,23 @@ describe('appModeStore', () => {
     vi.mocked(app.rootGraph).nodes = [{ id: toNodeId(1) } as LGraphNode]
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
+  })
+
+  it('excludes every layout-only node type from App Mode', () => {
+    useNodeDefStore().addNodeDef({
+      name: 'LayoutFrame',
+      display_name: 'Layout Frame',
+      category: 'test',
+      description: '',
+      input: {},
+      output: [],
+      output_node: false,
+      layout_only: true,
+      python_module: 'test'
+    })
+
+    expect(nodeTypeValidForApp('LayoutFrame')).toBe(false)
+    expect(nodeTypeValidForApp('ExecutionNode')).toBe(true)
   })
 
   describe('enterBuilder', () => {

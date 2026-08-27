@@ -90,6 +90,11 @@ const nonExecutionBoundaryNodeProperties = new Set(['bounding', 'pinned'])
 
 type IsLayoutOnlyNodeType = (nodeType: string) => boolean
 
+interface SubgraphHostProjection {
+  layoutOnlyWidgetNames: ReadonlySet<string>
+  layoutOnlyLegacyWidgetIndices: ReadonlySet<number>
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -112,11 +117,18 @@ function getExecutionSlotState(value: unknown): unknown {
   return slot ? omitProperties(slot, nonExecutionSlotProperties) : value
 }
 
-function getExecutionNodeState(value: unknown): unknown {
+function getExecutionNodeState(
+  value: unknown,
+  subgraphHostProjections: ReadonlyMap<string, SubgraphHostProjection>
+): unknown {
   const node = asRecord(value)
   if (!node) return value
 
   const executionNode = omitProperties(node, nonExecutionNodeProperties)
+  const projection =
+    typeof node.type === 'string'
+      ? subgraphHostProjections.get(node.type)
+      : undefined
   if ('id' in node) {
     executionNode.id = normalizeNodeId(node.id)
   }
@@ -125,6 +137,39 @@ function getExecutionNodeState(value: unknown): unknown {
   }
   if (Array.isArray(node.outputs)) {
     executionNode.outputs = node.outputs.map(getExecutionSlotState)
+  }
+  if (projection) {
+    const namedValues = asRecord(node.widgets_values_named)
+    if (namedValues) {
+      executionNode.widgets_values_named = Object.fromEntries(
+        Object.entries(namedValues).filter(
+          ([name]) => !projection.layoutOnlyWidgetNames.has(name)
+        )
+      )
+    }
+    if (Array.isArray(node.widgets_values)) {
+      const promotedWidgetNames = Array.isArray(node.inputs)
+        ? node.inputs.flatMap((value) => {
+            const input = asRecord(value)
+            if (!input || !asRecord(input.widget)) return []
+            return typeof input.name === 'string' ? [input.name] : []
+          })
+        : []
+      const omittedIndices = new Set<number>()
+      for (const [index, name] of promotedWidgetNames.entries()) {
+        if (projection.layoutOnlyWidgetNames.has(name)) {
+          omittedIndices.add(index)
+        }
+      }
+      if (promotedWidgetNames.length === 0) {
+        for (const index of projection.layoutOnlyLegacyWidgetIndices) {
+          omittedIndices.add(index)
+        }
+      }
+      executionNode.widgets_values = node.widgets_values.filter(
+        (_value, index) => !omittedIndices.has(index)
+      )
+    }
   }
   return executionNode
 }
@@ -219,6 +264,91 @@ function isIncidentToNode(
   )
 }
 
+function getSubgraphHostProjection(
+  value: unknown,
+  isLayoutOnlyNodeType: IsLayoutOnlyNodeType
+): SubgraphHostProjection | null {
+  const subgraph = asRecord(value)
+  if (!subgraph || !Array.isArray(subgraph.nodes)) return null
+
+  const layoutOnlyNodeIds = getLayoutOnlyNodeIds(
+    subgraph.nodes,
+    isLayoutOnlyNodeType
+  )
+  if (layoutOnlyNodeIds.size === 0) return null
+
+  const layoutOnlyWidgetNames = new Set<string>()
+  const layoutOnlyLegacyWidgetIndices = new Set<number>()
+  if (Array.isArray(subgraph.widgets)) {
+    for (const [index, value] of subgraph.widgets.entries()) {
+      const widget = asRecord(value)
+      const nodeId = asSerializedNodeId(widget?.id)
+      if (
+        nodeId === null ||
+        !layoutOnlyNodeIds.has(nodeId) ||
+        typeof widget?.name !== 'string'
+      ) {
+        continue
+      }
+      layoutOnlyWidgetNames.add(widget.name)
+      layoutOnlyLegacyWidgetIndices.add(index)
+    }
+  }
+
+  const inputNodeId = asSerializedNodeId(asRecord(subgraph.inputNode)?.id)
+  if (
+    inputNodeId !== null &&
+    Array.isArray(subgraph.inputs) &&
+    Array.isArray(subgraph.links)
+  ) {
+    for (const [inputIndex, value] of subgraph.inputs.entries()) {
+      const input = asRecord(value)
+      if (!input || typeof input.name !== 'string') continue
+      const targetNodeIds = subgraph.links.flatMap((value) => {
+        const link = asRecord(value)
+        const originId = asSerializedNodeId(
+          Array.isArray(value) ? value[1] : link?.origin_id
+        )
+        const originSlot = normalizeSlotIndex(
+          Array.isArray(value) ? value[2] : link?.origin_slot
+        )
+        if (originId !== inputNodeId || originSlot !== inputIndex) return []
+        const targetId = asSerializedNodeId(
+          Array.isArray(value) ? value[3] : link?.target_id
+        )
+        return targetId === null ? [] : [targetId]
+      })
+      if (
+        targetNodeIds.length > 0 &&
+        targetNodeIds.every((nodeId) => layoutOnlyNodeIds.has(nodeId))
+      ) {
+        layoutOnlyWidgetNames.add(input.name)
+      }
+    }
+  }
+
+  return layoutOnlyWidgetNames.size > 0
+    ? { layoutOnlyWidgetNames, layoutOnlyLegacyWidgetIndices }
+    : null
+}
+
+function getSubgraphHostProjections(
+  value: unknown,
+  isLayoutOnlyNodeType: IsLayoutOnlyNodeType
+): Map<string, SubgraphHostProjection> {
+  const definitions = asRecord(value)
+  if (!definitions || !Array.isArray(definitions.subgraphs)) return new Map()
+
+  const projections = new Map<string, SubgraphHostProjection>()
+  for (const value of definitions.subgraphs) {
+    const subgraph = asRecord(value)
+    if (!subgraph || typeof subgraph.id !== 'string') continue
+    const projection = getSubgraphHostProjection(subgraph, isLayoutOnlyNodeType)
+    if (projection) projections.set(subgraph.id, projection)
+  }
+  return projections
+}
+
 function getExecutionDefinitionsState(
   value: unknown,
   isLayoutOnlyNodeType: IsLayoutOnlyNodeType
@@ -243,6 +373,10 @@ function getExecutionGraphState(
   if (!graph) return value
 
   const executionGraph = omitProperties(graph, nonExecutionGraphProperties)
+  const subgraphHostProjections = getSubgraphHostProjections(
+    graph.definitions,
+    isLayoutOnlyNodeType
+  )
   const layoutOnlyNodeIds = Array.isArray(graph.nodes)
     ? getLayoutOnlyNodeIds(graph.nodes, isLayoutOnlyNodeType)
     : new Set<SerializedNodeId>()
@@ -250,7 +384,7 @@ function getExecutionGraphState(
     executionGraph.nodes = _.sortBy(
       graph.nodes
         .filter((node) => isExecutableNodeState(node, isLayoutOnlyNodeType))
-        .map(getExecutionNodeState),
+        .map((node) => getExecutionNodeState(node, subgraphHostProjections)),
       (node) => asRecord(node)?.id
     )
   }
