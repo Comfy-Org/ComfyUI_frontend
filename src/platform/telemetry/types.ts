@@ -121,9 +121,13 @@ export type OnboardingTourNudgeStage =
   | 'nudge_shown'
   | 'explore_templates_clicked'
 
+/** A continuation action on the nudge, which reports its own outcome. */
+export type OnboardingTourSuggestionStage = 'nudge_suggestion_clicked'
+
 export type OnboardingTourStage =
   | OnboardingTourStepStage
   | OnboardingTourNudgeStage
+  | OnboardingTourSuggestionStage
 
 export type OnboardingTourSkipReason =
   | 'user'
@@ -153,21 +157,32 @@ export interface OnboardingTourStepMetadata {
   not_started_reason?: OnboardingTourNotStartedReason
 }
 
-/** The nudge is post-tour, so it reports no step and no count. */
+/** The nudge is post-tour, so it reports no step and no step count. */
 export interface OnboardingTourNudgeMetadata {
   tour: string
   /**
-   * Whether the tour was walked to the end. Without it `nudge_shown` and
-   * `explore_templates_clicked` cannot be split by how the tour ended, so a
-   * conversion from a completed tour and one from a tour that never started
-   * land in the same bucket.
+   * How many continuations the card could offer. Zero is the card falling back
+   * to the template browser — either the run produced no image, or the
+   * install's pinned template package serves none of them. Without it that
+   * case is indistinguishable from a nudge that never appeared.
    */
-  tour_completed?: boolean
+  suggestion_count: number
+}
+
+/**
+ * Which continuation the card converted on. `loaded` separates a chosen action
+ * from one that reached a template the install could not open, which otherwise
+ * reads as a successful conversion.
+ */
+export interface OnboardingTourSuggestionMetadata extends OnboardingTourNudgeMetadata {
+  suggestion: string
+  loaded: boolean
 }
 
 export type OnboardingTourMetadata =
   | OnboardingTourStepMetadata
   | OnboardingTourNudgeMetadata
+  | OnboardingTourSuggestionMetadata
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -949,6 +964,10 @@ export interface TelemetryProvider {
     stage: OnboardingTourNudgeStage,
     metadata: OnboardingTourNudgeMetadata
   ): void
+  trackOnboardingTour?(
+    stage: OnboardingTourSuggestionStage,
+    metadata: OnboardingTourSuggestionMetadata
+  ): void
 
   // Email verification events
   trackEmailVerification?(stage: 'opened' | 'requested' | 'completed'): void
@@ -1100,6 +1119,8 @@ export const TelemetryEvents = {
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
   ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
   ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
+  ONBOARDING_TOUR_NUDGE_SUGGESTION_CLICKED:
+    'app:onboarding_tour_nudge_suggestion_clicked',
   ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
     'app:onboarding_tour_explore_templates_clicked',
 
@@ -1183,6 +1204,8 @@ export const OnboardingTourEvents: Record<
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
   skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED,
   nudge_shown: TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN,
+  nudge_suggestion_clicked:
+    TelemetryEvents.ONBOARDING_TOUR_NUDGE_SUGGESTION_CLICKED,
   explore_templates_clicked:
     TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
 }
