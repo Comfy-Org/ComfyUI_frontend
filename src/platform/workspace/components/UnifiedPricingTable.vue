@@ -469,17 +469,12 @@ const emit = defineEmits<{
 
 const { t, n } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions } = useWorkspaceUI()
+const { permissions, canReactivatePlan } = useWorkspaceUI()
 
 const canSubscribeSelfServe = computed(() =>
   isCloud
     ? capabilities.canSubscribeSelfServe.value
     : permissions.value.canManageSubscription
-)
-const canReactivate = computed(() =>
-  isCloud
-    ? capabilities.canReactivate.value
-    : permissions.value.canManageSubscriptionLifecycle
 )
 const canChangeSeats = computed(() =>
   isCloud
@@ -770,7 +765,7 @@ const isTeamButtonDisabled = computed(() => {
   if (isLoading) return true
   if (!isTeamSubscribed.value) return !canSubscribeSelfServe.value
   if (isTeamCurrentPlanSelected.value) {
-    return !isCancelled.value || !canReactivate.value
+    return !isCancelled.value || !canReactivatePlan.value
   }
   return !canChangeSeats.value
 })
@@ -861,7 +856,7 @@ const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
   if (!canSelectPersonalPlan.value) return false
   if (isTeamPlan.value) return canDowngradeToPersonal.value
   if (isCurrentPlan(tierKey)) {
-    return isCancelled.value && canReactivate.value
+    return isCancelled.value && canReactivatePlan.value
   }
   return hasActivePaidPlan(currentAccountTier.value)
     ? canChangeSeats.value
