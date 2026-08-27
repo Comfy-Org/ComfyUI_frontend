@@ -342,20 +342,38 @@ describe('drawConnections', () => {
   )
 
   it('shares render order with same-canvas and links-on-top passes', () => {
-    for (let index = 0; index < 3; index++) {
-      const node = new LGraphNode(`Node ${index}`)
-      vi.spyOn(node, 'updateArea').mockImplementation(() => {})
-      graph.add(node)
-    }
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+    const firstTarget = new LGraphNode('First target')
+    firstTarget.addInput('in', 'STRING')
+    graph.add(firstTarget)
+    const secondTarget = new LGraphNode('Second target')
+    secondTarget.addInput('in', 'STRING')
+    graph.add(secondTarget)
+    const secondLink = createTestLink(graph, sourceNode, 0, secondTarget, 0)
+    const firstLink = createTestLink(graph, sourceNode, 0, firstTarget, 0)
+    vi.mocked(layoutStore.getNodeLayout).mockImplementation(
+      (_graphId, nodeId) => ({
+        id: nodeId,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        zIndex: nodeId === firstTarget.id ? 2 : 1,
+        visible: true,
+        bounds: { x: 0, y: 0, width: 100, height: 100 }
+      })
+    )
     canvas.bgcanvas = canvas.canvas
     canvas.bgctx = canvas.ctx
     graph.config.links_ontop = true
     canvas.visible_area.set([0, 0, 800, 600])
     vi.mocked(layoutStore.getNodeLayout).mockClear()
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
 
     canvas.draw(true, true)
 
     expect(layoutStore.getNodeLayout).toHaveBeenCalledTimes(3)
+    expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
   })
 
   it('looks up each input and preserves rendered link identity', () => {
