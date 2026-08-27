@@ -1,36 +1,10 @@
 /**
- * The write-leg composition seam (plan 3.3): attaches the three mint ports to
- * the REAL stores and hands the composition root everything it must plug into
- * the surrounding app - the mutator's remote scope, the load brackets, and
- * the intentional-clear window.
- *
- * Layer discipline: workbench must not import renderer, so the layout seam
- * (the store's change feed, `withActor`, the local actor prefix) is injected
- * by the composition root - the same constraint that shapes
- * {@link LitegraphMutator}. The link and widget stores live in `@/stores` and
- * are adapted here directly via Pinia `$onAction`, which fires synchronously
- * around each store action:
- *
- * - `registerLink`/`replaceLink` -> the link port's PLACED event, carrying the
- *   topology the store actually placed (the action's return value; undefined
- *   means the store refused the placement and nothing may mint). A replace
- *   maps to PLACED and never to DELETED - the store displaces the incumbent
- *   internally without a `deleteLink` action, so the new claim's LWW
- *   displacement is the whole story on the wire.
- * - `deleteLink` -> the link port's DELETED event (severance capture +
- *   divergence surfacing), only when the store actually removed a placement.
- * - `setValue` -> the widget port's SET event, with the pre-write value read
- *   in the before phase (`old` on the wire op) and the mint gated on the
- *   action having applied (a `false` return means no widget state changed).
- *
- * Floating topologies (a reroute chain end with an unassigned endpoint) are
- * not links and are filtered here, before any port sees them.
- *
- * Load brackets: the composition root forwards the app extension hooks -
- * `beforeLoadGraph` opens the shared teardown bracket, `afterConfigureGraph`
- * closes it. The bracket is a guarded boolean, not a counter: a load that
- * fails between the hooks leaves it open (fail-closed - mints stay suppressed,
- * which can never storm the doc), and the next load's paired hooks reclose it.
+ * Composition seam for the three mint ports. Layout pieces are injected
+ * (workbench must not import renderer); link/widget adapt via Pinia $onAction,
+ * which fires synchronously around each action. A replace maps to PLACED and
+ * never DELETED (the store displaces incumbents internally). Load brackets
+ * are a fail-closed boolean over beforeLoadGraph/afterConfigureGraph: a
+ * failed load leaves mints suppressed until the next load's pair recloses.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
