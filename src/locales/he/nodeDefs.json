@@ -17772,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "בחר סגנון realistic_image ותת-סגנון אופציונלי.",
+    "description": "בחר סגנון ותת-סגנון עבור logo_raster.",
     "display_name": "Recraft Style - רסטר לוגו",
     "inputs": {
       "substyle": {
@@ -17883,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "צור סגנון Recraft V4 לשימוש חוזר מתוך 1–10 תמונות ייחוס. ה-style_id המוחזר פועל עם כל מודל Recraft V4 ו-V4.1 מאותו סוג פלט. הגודל הכולל של כל התמונות מוגבל ל-10 MB.",
+    "display_name": "יצירת סגנון Recraft V4",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "תמונות ייחוס המגדירות את הסגנון. ייחוסים דומים מחדדים את ההתאמה, וייחוסים מגוונים מרחיבים אותה."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "סוג הפלט שעבורו נוצר הסגנון: recraftv4_styles לתמונות רסטר, recraftv4_styles_vector עבור SVG."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "יוצר תמונות באמצעות מודלים של Recraft V4 או V4 Pro.",
     "display_name": "Recraft V4 טקסט לתמונה",
@@ -17892,7 +17912,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל בו ייעשה שימוש ליצירה."
+        "tooltip": "המודל לשימוש ביצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
       },
       "model_size": {
         "name": "גודל"
@@ -17916,10 +17936,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID של סגנון Recraft V4 להחלה, למשל מצומת Recraft V4 Create Style או מפלט style_id של הרצה קודמת. לא ניתן לשלב עם style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "מידת ההיצמדות לסגנון: precise משחזר אותו בפרטים, flexible תואם למראה הכללי. משמש רק כשמסופק סגנון."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "תמונות ייחוס ליצירת סגנון בזמן אמת, בחיוב נוסף על היצירה. הסגנון שנוצר מוחזר כ-style_id לשימוש חוזר. לא ניתן לשלב עם style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +17969,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל בו ייעשה שימוש ליצירה."
+        "tooltip": "המודל לשימוש ביצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
       },
       "model_size": {
         "name": "גודל"
@@ -17957,10 +17993,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID של סגנון וקטורי Recraft V4 להחלה, למשל מצומת Recraft V4 Create Style או מפלט style_id של הרצה קודמת. לא ניתן לשלב עם style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "מידת ההיצמדות לסגנון: precise משחזר אותו בפרטים, flexible תואם למראה הכללי. משמש רק כשמסופק סגנון."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "תמונות ייחוס ליצירת סגנון וקטורי בזמן אמת, בחיוב נוסף על היצירה. הסגנון שנוצר מוחזר כ-style_id לשימוש חוזר. לא ניתן לשלב עם style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,61 +24665,11 @@
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "רזולוציית הווידאו המופק. 4K לא זמין עבור veo-3.1-lite ו-veo-3.0."
+        "tooltip": "רזולוציית וידאו הפלט. 4K אינו זמין עבור המודל veo-3.1-lite."
       },
       "seed": {
         "name": "seed",
         "tooltip": "seed ליצירת הווידאו (0 לאקראי)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "יוצר סרטונים מהנחיות טקסט באמצעות Google Veo 2 API",
-    "display_name": "Google Veo 2 יצירת וידאו",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "יחס גובה-רוחב של הווידאו המופק"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "משך הווידאו המופק בשניות"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "האם לשפר את ההנחיה בעזרת בינה מלאכותית"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "תמונת ייחוס אופציונלית להכוונת יצירת הווידאו"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "מודל Veo 2 לשימוש ביצירת הווידאו"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "הנחיית טקסט שלילית שמנחה מה להימנע ממנו בווידאו"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "האם לאפשר יצירת דמויות אנושיות בווידאו"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "תיאור טקסטואלי של הווידאו"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע ליצירת הווידאו (0 לאקראי)"
       }
     },
     "outputs": {
