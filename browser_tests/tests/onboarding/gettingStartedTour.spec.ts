@@ -10,11 +10,6 @@ import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceAp
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { FirstRunNudge } from '@e2e/fixtures/components/FirstRunNudge'
 import type { OnboardingCoachmarks } from '@e2e/fixtures/components/Tour'
-import { EMPTY_ASSET_RESPONSE } from '@e2e/fixtures/data/assetFixtures'
-import {
-  ACTIVE_PERSONAL_BILLING_STATUS,
-  ONBOARDING_TOUR_REMOTE_CONFIG
-} from '@e2e/fixtures/data/cloudWorkspace'
 import {
   FIRST_RUN_START_TEMPLATE_ID,
   queuedPrompt
@@ -23,6 +18,7 @@ import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { onboardingFixture } from '@e2e/fixtures/tourFixture'
 import type { Position } from '@e2e/fixtures/types'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { mockFirstRunTourBackend } from '@e2e/fixtures/utils/firstRunTourMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -179,20 +175,11 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       'Comfy.TutorialCompleted': false,
       'Comfy.OnboardingCoachmarks.Seen': ['appMode'],
       'Comfy.VueNodes.Enabled': true
-    },
-    initialFeatureFlags: { onboarding_tour_enabled: true }
+    }
   })
 
   test.beforeEach(async ({ page }) => {
-    await page.route('**/api/features', (route) =>
-      route.fulfill(jsonRoute(ONBOARDING_TOUR_REMOTE_CONFIG))
-    )
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(ACTIVE_PERSONAL_BILLING_STATUS))
-    )
-    await page.route('**/api/assets**', (route) =>
-      route.fulfill(jsonRoute(EMPTY_ASSET_RESPONSE))
-    )
+    await mockFirstRunTourBackend(page)
   })
 
   /**

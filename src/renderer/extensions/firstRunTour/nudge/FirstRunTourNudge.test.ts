@@ -18,14 +18,21 @@ const FIRST_OUTPUT = {
   type: 'output' as const
 }
 
-function suggestion(id: FirstRunSuggestionId) {
-  const found = FIRST_RUN_SUGGESTIONS.find((entry) => entry.id === id)
-  if (!found) throw new Error(`No such suggestion: ${id}`)
-  return found
-}
+/**
+ * The template each action continues into, spelled out rather than read off
+ * `FIRST_RUN_SUGGESTIONS`, so repointing an action at another template fails
+ * here instead of being asserted against itself.
+ */
+const CONTINUATION_TEMPLATE_IDS = {
+  animate: 'video_minimax_h3_i2v_continuation',
+  upscale: 'utility_seedvr2_7b_int8_upscale_image',
+  restyle: 'api_google_nano_banana2_image_edit_continuation'
+} as const satisfies Record<FirstRunSuggestionId, string>
 
 function suggestionTitle(id: FirstRunSuggestionId): string {
-  return i18n.global.t(suggestion(id).titleKey)
+  const found = FIRST_RUN_SUGGESTIONS.find((entry) => entry.id === id)
+  if (!found) throw new Error(`No such suggestion: ${id}`)
+  return i18n.global.t(found.titleKey)
 }
 
 type Deferred<T> = {
@@ -41,9 +48,7 @@ function createDeferred<T>(): Deferred<T> {
   return { promise, resolve }
 }
 
-const CATALOG_TEMPLATE_IDS = FIRST_RUN_SUGGESTIONS.map(
-  ({ templateId }) => templateId
-)
+const CATALOG_TEMPLATE_IDS = Object.values(CONTINUATION_TEMPLATE_IDS)
 
 /** Stands in for what the install's template package actually serves. */
 function catalogEntry(name: string, withIo: boolean) {
@@ -226,14 +231,14 @@ describe('FirstRunTourNudge', () => {
 
   it.for(FIRST_RUN_SUGGESTIONS)(
     'continues the first output through $id',
-    async ({ id, templateId }) => {
+    async ({ id }) => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       await showNudge()
 
       await user.click(suggestionButton(id))
 
       expect(mocks.loadWorkflowTemplate).toHaveBeenCalledWith(
-        templateId,
+        CONTINUATION_TEMPLATE_IDS[id],
         'default',
         { input: FIRST_OUTPUT }
       )
@@ -344,7 +349,7 @@ describe('FirstRunTourNudge', () => {
   })
 
   it('offers only the continuations the install actually serves', async () => {
-    mocks.catalog.value = [suggestion('upscale').templateId]
+    mocks.catalog.value = [CONTINUATION_TEMPLATE_IDS.upscale]
     await showNudge()
 
     expect(suggestionButton('upscale')).toBeTruthy()

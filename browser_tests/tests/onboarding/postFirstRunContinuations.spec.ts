@@ -2,11 +2,6 @@ import { expect } from '@playwright/test'
 
 import { FIRST_RUN_SUGGESTIONS } from '@/renderer/extensions/firstRunTour/nudge/firstRunNudgeSuggestions'
 
-import { EMPTY_ASSET_RESPONSE } from '@e2e/fixtures/data/assetFixtures'
-import {
-  ACTIVE_PERSONAL_BILLING_STATUS,
-  ONBOARDING_TOUR_REMOTE_CONFIG
-} from '@e2e/fixtures/data/cloudWorkspace'
 import {
   CONTINUATION_INPUT,
   FIRST_RUN_OUTPUT,
@@ -16,7 +11,7 @@ import {
 } from '@e2e/fixtures/data/firstRunTour'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { postFirstRunFixture as test } from '@e2e/fixtures/postFirstRunFixture'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockFirstRunTourBackend } from '@e2e/fixtures/utils/firstRunTourMocks'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
@@ -44,23 +39,14 @@ test.describe(
         'Comfy.TutorialCompleted': false,
         'Comfy.OnboardingCoachmarks.Seen': ['appMode'],
         'Comfy.VueNodes.Enabled': true
-      },
-      initialFeatureFlags: { onboarding_tour_enabled: true }
+      }
     })
 
     test.beforeEach(async ({ page, templateApi }) => {
-      templateApi.configure(withTemplates([...FIRST_RUN_TEMPLATES]))
+      templateApi.configure(withTemplates(FIRST_RUN_TEMPLATES))
       await templateApi.mock()
 
-      await page.route('**/api/features', (route) =>
-        route.fulfill(jsonRoute(ONBOARDING_TOUR_REMOTE_CONFIG))
-      )
-      await page.route('**/api/billing/status', (route) =>
-        route.fulfill(jsonRoute(ACTIVE_PERSONAL_BILLING_STATUS))
-      )
-      await page.route('**/api/assets**', (route) =>
-        route.fulfill(jsonRoute(EMPTY_ASSET_RESPONSE))
-      )
+      await mockFirstRunTourBackend(page)
       await page.route(
         `**/templates/${FIRST_RUN_START_TEMPLATE_ID}.json`,
         (route) =>
