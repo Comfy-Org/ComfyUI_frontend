@@ -168,7 +168,7 @@ function getFailedDownloadLabel(
           class="flex shrink-0 flex-col gap-4 rounded-lg bg-secondary-background/50 p-4"
         >
           <div class="flex min-w-0 flex-col gap-2">
-            <h3 :id="cloudTitleId" class="m-0 text-sm font-medium">
+            <h3 :id="cloudTitleId" class="m-0 text-sm/5 font-semibold">
               {{
                 t(
                   isPartnerNode
