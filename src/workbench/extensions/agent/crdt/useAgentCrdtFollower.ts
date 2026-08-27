@@ -366,7 +366,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     try {
       clearSubscribeRetry()
       clearStaleProbe()
-      delete (window as unknown as Record<string, unknown>).__agentCrdtPoc
+      if (import.meta.env.DEV) {
+        delete (window as unknown as Record<string, unknown>).__agentCrdtPoc
+      }
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)
