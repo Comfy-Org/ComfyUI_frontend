@@ -3,6 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import CloudPricingSection from '../../../components/pricing/CloudPricingSection.vue'
 import WhatsIncludedSection from '../../../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../../../components/pricing/PricingFaq.astro'
+import MinimaxLicenseHeroSection from '../../../components/common/MinimaxLicenseHeroSection.vue'
 import { pricingOffers } from '../../../config/pricing'
 import { t } from '../../../i18n/translations'
 import {
@@ -41,6 +42,7 @@ const productId = jsonLdId(url, 'product')
     }),
   ]}
 >
+  <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
   <CloudPricingSection locale="zh-CN" client:load />
   <WhatsIncludedSection locale="zh-CN" />
   <PricingFaq locale="zh-CN" />

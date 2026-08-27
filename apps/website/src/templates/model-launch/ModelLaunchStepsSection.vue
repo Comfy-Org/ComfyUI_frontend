@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchSteps } from './types'
 
@@ -24,7 +26,12 @@ const stepNumber = (index: number) => String(index + 1).padStart(2, '0')
     </div>
 
     <ol
-      class="rounded-5xl bg-transparency-white-t4 mt-12 grid grid-cols-1 gap-4 p-4 md:grid-cols-3 lg:gap-2 lg:p-2"
+      :class="
+        cn(
+          'rounded-5xl bg-transparency-white-t4 mt-12 grid grid-cols-1 gap-4 p-4 lg:gap-2 lg:p-2',
+          steps.items.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
+        )
+      "
     >
       <li
         v-for="(step, index) in steps.items"

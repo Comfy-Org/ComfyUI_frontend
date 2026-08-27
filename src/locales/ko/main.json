@@ -978,23 +978,6 @@
     "WAN_CAMERA_EMBEDDING": "WAN 카메라 임베딩",
     "WEBCAM": "웹캠"
   },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "닫기"
-      },
-      "message": "잘못된 대화 상자 ID가 제공되었습니다.",
-      "title": "잘못된 대화 상자"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "자세히 알아보기",
-        "Reinstall": "재설치"
-      },
-      "message": "죄송합니다. 설치된 일부 패키지가 호환되지 않아 ComfyUI를 실행할 수 없습니다.\n\n재설치를 클릭하여 ComfyUI를 복원하고 다시 실행하세요.\n\n참고: 커스텀 노드를 추가한 경우 이 과정 후 다시 설치해야 합니다.",
-      "title": "ComfyUI를 재설치하시겠습니까? (새로 시작)"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI 데스크톱 앱이 귀하의 계정으로 로그인 대기 중입니다. ComfyUI 데스크톱 앱에서 로그인을 시작한 경우에만 계속 진행하세요.",
     "confirmSummary": "데스크톱 로그인 승인하시겠습니까?",

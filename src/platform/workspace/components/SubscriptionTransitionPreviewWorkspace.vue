@@ -317,11 +317,11 @@ import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   getTierCredits,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type {
@@ -434,9 +434,11 @@ function moneyShort(usd: number): string {
   return `$${n(usd)}`
 }
 
+// Lowercasing the tier is not a catalog lookup: FOUNDERS_EDITION keys as
+// 'founder', and TEAM/ENTERPRISE/unrecognized tiers key as nothing at all.
 function tierMonthlyCredits(tier: string): number {
-  const key = toTierKey(tier as IngestSubscriptionTier)
-  return key === null ? 0 : (getTierCredits(key) ?? 0)
+  const tierKey = toTierKey(tier as IngestSubscriptionTier)
+  return tierKey ? (getTierCredits(tierKey) ?? 0) : 0
 }
 
 const isImmediate = computed(() => previewData.is_immediate)
