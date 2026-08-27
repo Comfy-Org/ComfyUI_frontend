@@ -24,21 +24,23 @@ function assetsQueryInternal(
 ): PagedList<AssetItem> {
   const onError = options.onError ?? console.error
 
-  let next_cursor: string | undefined
+  let nextCursor: string | undefined
+  const seenCursors = new Set<string | undefined>()
   const hasMore = ref(true)
   const items = ref<AssetItem[]>([])
 
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   async function doLoadMore(signal?: AbortSignal) {
-    if (!hasMore.value) return
+    if (!hasMore.value || seenCursors.has(nextCursor)) return
+    seenCursors.add(nextCursor)
     const assetResponse = await doQuery(
       {
-        after: next_cursor ?? params.after
+        after: nextCursor ?? params.after
       },
       signal
     )
     if (!assetResponse) return
-    next_cursor = assetResponse.next_cursor
+    nextCursor = assetResponse.next_cursor
     hasMore.value = assetResponse.has_more
     items.value.push(...assetResponse.assets)
   }
@@ -52,7 +54,11 @@ function assetsQueryInternal(
       const knownIds = new Set(items.value.map((item) => item.id))
       const newItems: AssetItem[] = []
       let headCursor: string | undefined
+      const seenHeadCursors = new Set<string | undefined>()
       while (true) {
+        if (seenHeadCursors.has(headCursor)) break
+        seenHeadCursors.add(headCursor)
+
         const assetResponse = await doQuery({ after: headCursor }, signal)
         if (!assetResponse) return
 
@@ -74,7 +80,8 @@ function assetsQueryInternal(
     }
     await preempt(async () => {
       hasMore.value = true
-      next_cursor = undefined
+      nextCursor = undefined
+      seenCursors.clear()
       items.value = []
       await doLoadMore()
     })
