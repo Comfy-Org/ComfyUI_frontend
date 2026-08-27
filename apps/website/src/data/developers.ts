@@ -1,5 +1,8 @@
 import type { BundledLanguage } from 'shiki'
 
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
 /**
  * Structured, non-copy data for the /developers page. Display copy lives in
  * the `developers.*` namespace of src/i18n/translations.ts.
@@ -139,3 +142,39 @@ export const showcaseSlides: ShowcaseSlide[] = [
     autoplayMs: 30000
   }
 ]
+
+const FAQ_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
+
+/**
+ * FAQ ids whose answer is still the `TODO:` placeholder. They render on the
+ * page, but are held out of the FAQPage structured data — a placeholder
+ * acceptedAnswer is markup that says nothing. Emptying this list in the content
+ * pass (developers-page issue 10) fills the json-ld node out on its own.
+ */
+const PENDING_ANSWER_IDS: readonly string[] = [
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9'
+]
+
+export type DevelopersFaq = {
+  id: string
+  question: string
+  answer: string
+  /** True while the answer is a placeholder awaiting content review. */
+  pending: boolean
+}
+
+export function developersFaqs(locale: Locale): DevelopersFaq[] {
+  return FAQ_NUMBERS.map((n) => ({
+    id: String(n),
+    question: t(`developers.faq.q${n}`, locale),
+    answer: t(`developers.faq.a${n}`, locale),
+    pending: PENDING_ANSWER_IDS.includes(String(n))
+  }))
+}

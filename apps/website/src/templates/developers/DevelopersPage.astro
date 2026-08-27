@@ -2,6 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import BuildAnywhereSection from './BuildAnywhereSection.astro'
+import FAQSection from './FAQSection.astro'
 import HeroSection from './HeroSection.astro'
 import HowItWorksSection from './HowItWorksSection.astro'
 import PlaceholderSection from './PlaceholderSection.vue'
@@ -9,24 +10,41 @@ import PricingSection from './PricingSection.vue'
 import ProblemSection from './ProblemSection.astro'
 import ProductCardsSection from './ProductCardsSection.astro'
 import ShowcaseSection from './ShowcaseSection.astro'
+import { developersFaqs } from '../../data/developers'
 import { t } from '../../i18n/translations'
-import { absoluteUrl } from '../../utils/jsonLd'
+import { faqAnswerPlainText } from '../../utils/faqAnswer'
+import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
 
 interface Props {
   locale: Locale
 }
 
 const { locale } = Astro.props
+
+const { url } = pageContext(Astro.site, Astro.url.pathname, Astro.currentLocale)
+
+// A placeholder answer is worse than an absent one in structured data.
+const faqPage = faqPageNode(
+  url,
+  developersFaqs(locale)
+    .filter((faq) => !faq.pending)
+    .map((faq) => ({
+      question: faq.question,
+      answer: faqAnswerPlainText(faq.answer),
+    })),
+)
 ---
 
 <BaseLayout
   title={t('developers.meta.title', locale)}
   description={t('developers.meta.description', locale)}
   theme="subbrand"
+  pageType="WebPage"
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     { name: t('developers.breadcrumb', locale) },
   ]}
+  extraJsonLd={[faqPage]}
 >
   <HeroSection locale={locale} />
   <ProductCardsSection locale={locale} />
@@ -34,9 +52,9 @@ const { locale } = Astro.props
   <HowItWorksSection locale={locale} />
   <ShowcaseSection locale={locale} />
   <BuildAnywhereSection locale={locale} />
-  {/* Walking skeleton: each placeholder is replaced by its section ticket
-      (developers-page issues 08-09). */}
+  {/* Walking skeleton: the placeholder is replaced by its section ticket
+      (developers-page issue 09). */}
   <PlaceholderSection name="Observe and manage" block="FeatureSplit01" />
-  <PlaceholderSection name="Q&As" block="FAQSplit01" />
+  <FAQSection locale={locale} />
   <PricingSection locale={locale} client:load />
 </BaseLayout>

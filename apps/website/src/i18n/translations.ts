@@ -2353,6 +2353,88 @@ const translations = {
     'zh-CN': '阅读文档'
   },
 
+  // Developers page – FAQ
+  // q1–q9 and a1 are transcribed from the Figma frame (12340:60437). a2–a9 do
+  // not exist in the design and ship as the placeholder below in both locales;
+  // it must be gone before /developers merges (issue 10).
+  'developers.faq.title': {
+    en: 'Q&As',
+    'zh-CN': '常见问题'
+  },
+  'developers.faq.q1': {
+    en: 'What is the Comfy Developer Platform?',
+    'zh-CN': 'Comfy 开发者平台是什么？'
+  },
+  'developers.faq.a1': {
+    en: 'For Claude Code, Claude Desktop, or Codex, add https://cloud.comfy.org/mcp as a custom connector or remote MCP server in any client, then sign in when prompted. For any other agents, you need to connect with an API key. Send the docs https://docs.comfy.org/agent-tools/cloud to your agent and it will figure out the installation for you.',
+    'zh-CN':
+      '在 Claude Code、Claude Desktop 或 Codex 中，把 https://cloud.comfy.org/mcp 添加为自定义连接器或远程 MCP 服务器，然后按提示登录。对于其他智能体，你需要使用 API 密钥连接：把文档 https://docs.comfy.org/agent-tools/cloud 发给你的智能体，它会自行完成安装配置。'
+  },
+  'developers.faq.q2': {
+    en: 'Can I call a ComfyUI workflow as an API from my own app?',
+    'zh-CN': '我能从自己的应用里以 API 的方式调用 ComfyUI 工作流吗？'
+  },
+  'developers.faq.a2': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q3': {
+    en: 'Do I have to rewrite my workflow to deploy it?',
+    'zh-CN': '部署工作流时需要重写它吗？'
+  },
+  'developers.faq.a3': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q4': {
+    en: 'Can I use my own custom nodes, models, and LoRAs?',
+    'zh-CN': '我可以使用自己的自定义节点、模型和 LoRA 吗？'
+  },
+  'developers.faq.a4': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q5': {
+    en: 'What happens when custom nodes have conflicting Python dependencies?',
+    'zh-CN': '当自定义节点的 Python 依赖发生冲突时会怎样？'
+  },
+  'developers.faq.a5': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q6': {
+    en: 'How do I monitor runs and manage team access?',
+    'zh-CN': '我如何监控运行任务并管理团队访问权限？'
+  },
+  'developers.faq.a6': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q7': {
+    en: 'What does it cost?',
+    'zh-CN': '费用是多少？'
+  },
+  'developers.faq.a7': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q8': {
+    en: 'How do I join the beta, and when is it generally available?',
+    'zh-CN': '我如何加入 Beta 测试？正式版什么时候发布？'
+  },
+  'developers.faq.a8': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q9': {
+    en: 'How is this different from running ComfyUI on RunPod or Modal myself?',
+    'zh-CN': '这和我自己在 RunPod 或 Modal 上运行 ComfyUI 有什么区别？'
+  },
+  'developers.faq.a9': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+
   // Developers page – PricingSection
   'developers.pricing.title': {
     en: 'Pricing Plan',

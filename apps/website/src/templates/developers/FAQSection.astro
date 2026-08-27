@@ -1,0 +1,21 @@
+---
+import FAQSplit02 from '../../components/blocks/FAQSplit02.vue'
+import type { SplitFaq } from '../../components/blocks/FAQSplit02.vue'
+import { developersFaqs } from '../../data/developers'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+interface Props {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+
+const faqs: SplitFaq[] = developersFaqs(locale)
+---
+
+<FAQSplit02
+  client:load
+  heading={t('developers.faq.title', locale)}
+  faqs={faqs}
+/>
