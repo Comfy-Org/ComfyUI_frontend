@@ -18,9 +18,12 @@ test.describe('In-App Agent panel shell', { tag: '@cloud' }, () => {
       await expect(page.getByTestId('integrated-tab-bar-actions')).toBeVisible()
       // The gate settles asynchronously; assert only after it has run, so a
       // late enable cannot slip past auto-retrying negative assertions.
+      // Worst case: the gate settles by retry exhaustion (~5s) when the
+      // flag is off, since posthog drops false-valued bootstrap flags.
       await expect(page.locator('body')).toHaveAttribute(
         'data-agent-gate-settled',
-        'true'
+        'true',
+        { timeout: 15_000 }
       )
 
       await expect(

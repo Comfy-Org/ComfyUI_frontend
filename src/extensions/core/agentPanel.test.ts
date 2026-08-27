@@ -93,7 +93,7 @@ describe('the agent panel flag gate', () => {
 
     // Flags resolve later; the bounded retry re-takes the subscription.
     posthogState.flag = true
-    await vi.advanceTimersByTimeAsync(2100)
+    await vi.advanceTimersByTimeAsync(600)
 
     expect(useAgentPanelStore().enabled).toBe(true)
     expect(document.body.dataset.agentGateSettled).toBe('true')

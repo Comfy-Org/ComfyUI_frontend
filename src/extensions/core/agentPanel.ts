@@ -5,8 +5,8 @@ import {
 } from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
 import { useExtensionService } from '@/services/extensionService'
 
-const FLAG_RETRY_INTERVAL_MS = 2000
-const FLAG_RETRY_LIMIT = 15
+const FLAG_RETRY_INTERVAL_MS = 500
+const FLAG_RETRY_LIMIT = 10
 
 function markGateSettled(): void {
   document.body.dataset.agentGateSettled = 'true'
@@ -41,7 +41,10 @@ useExtensionService().registerExtension({
         // uninitialized singleton whose unsubscribe is dead and which never
         // delivers flags. `isFeatureEnabled` stays undefined until flags
         // actually resolve, so poll boundedly and re-take the subscription
-        // once they have.
+        // once they have. A flag that is OFF can legitimately stay undefined
+        // forever (posthog drops false-valued bootstrap flags), so the
+        // budget is short: it only needs to cover telemetry's init window,
+        // and exhaustion IS the settled fail-closed state.
         let retries = 0
         const retry = (): void => {
           if (posthog.isFeatureEnabled(AGENT_PANEL_FLAG) !== undefined) {
