@@ -1248,6 +1248,7 @@ export class ComfyApp {
       deferWarnings?: boolean
       skipAssetScans?: boolean
       silentAssetErrors?: boolean
+      workflowNavigationId?: number
     } = {}
   ) {
     const {
@@ -1256,9 +1257,10 @@ export class ComfyApp {
       shareId,
       deferWarnings = false,
       skipAssetScans = false,
-      silentAssetErrors = false
+      silentAssetErrors = false,
+      workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph()
+    useWorkflowService().beforeLoadNewGraph(clean !== false)
 
     if (skipAssetScans) {
       // Only reset candidates; preserve UI state (fileSizes, etc.)
@@ -1582,7 +1584,10 @@ export class ComfyApp {
         })
       }
 
-      void useSubgraphNavigationStore().updateHash()
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
