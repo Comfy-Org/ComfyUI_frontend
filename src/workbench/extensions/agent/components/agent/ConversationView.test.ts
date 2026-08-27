@@ -16,15 +16,6 @@ vi.hoisted(() => {
 
 import type * as VueUse from '@vueuse/core'
 
-// jsdom lacks ResizeObserver, which the asset-preview import chain references.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  }
-})
-
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
