@@ -120,14 +120,13 @@ describe('auditBuiltSite', () => {
   })
 
   it('reports a sitemap advertising a locale the page does not', () => {
+    // The sitemap clusters a page whose markup advertises nothing. Both halves
+    // are internally well-formed, so only comparing them catches it.
     const site = healthySite()
-    site.sitemap?.set('/about/', [
-      ...cluster('/about/'),
-      { hreflang: 'ja', href: `${ORIGIN}/ja/about/` }
-    ])
+    site.sitemap?.set('/affiliates/', cluster('/affiliates/'))
 
     expect(auditBuiltSite(site)).toEqual([
-      '/about/: sitemap advertises ja that the page does not'
+      '/affiliates/: sitemap advertises en, zh-Hans, x-default that the page does not'
     ])
   })
 
@@ -155,6 +154,30 @@ describe('auditBuiltSite', () => {
 
     expect(auditBuiltSite(site)).toEqual([
       '/about/: sitemap declares hreflang="en" more than once'
+    ])
+  })
+
+  it('rejects a locale outside the supported cluster on both sources', () => {
+    // Declared identically in the markup and the sitemap, so the two-source
+    // comparison sees no disagreement, and pointed at a page that does exist,
+    // so neither the built check nor reciprocity fires. Nothing else can see it.
+    const site = healthySite()
+    const ja = { hreflang: 'ja', href: `${ORIGIN}/zh-CN/about/` }
+    site.pages.set('/about/', [...cluster('/about/'), ja])
+    site.sitemap?.set('/about/', [...cluster('/about/'), ja])
+
+    expect(auditBuiltSite(site)).toEqual([
+      '/about/: page declares hreflang="ja", which is not one of en, zh-Hans, x-default',
+      '/about/: sitemap declares hreflang="ja", which is not one of en, zh-Hans, x-default'
+    ])
+  })
+
+  it('reports a sitemap URL with no page behind it', () => {
+    const site = healthySite()
+    site.sitemap?.set('/retired/', [])
+
+    expect(auditBuiltSite(site)).toEqual([
+      '/retired/: the sitemap lists it, but it was not built (404)'
     ])
   })
 

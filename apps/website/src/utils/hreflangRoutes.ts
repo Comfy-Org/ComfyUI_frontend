@@ -36,8 +36,15 @@ const NON_CLUSTERED_ROUTES: ReadonlySet<string> = new Set([
   '/privacy-policy/'
 ])
 
-/** `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory. */
-function routeOf(file: string): string {
+/**
+ * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.
+ *
+ * Exported so anything asking "is this file's route clustered?" derives it the
+ * same way `mirroredRoutes` does. A near-enough second copy asked about
+ * `/legal/index/`, a route the cluster can never contain, so every
+ * `index.astro` passed the membership test vacuously.
+ */
+export function routeOf(file: string): string {
   const withoutRoot = file.replace(/^\/src\/pages/, '').replace(/\.astro$/, '')
   const withoutIndex = withoutRoot.replace(/\/index$/, '')
   return withoutIndex === '' ? '/' : `${withoutIndex}/`

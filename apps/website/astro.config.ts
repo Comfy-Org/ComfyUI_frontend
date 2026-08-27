@@ -79,11 +79,11 @@ export default defineConfig({
 
         // Rendered from the same builder the page tags use, so the sitemap
         // cannot describe a different cluster than the markup.
-        item.links = clusterAlternates(path, origin).map((alternate) => ({
+        const links = clusterAlternates(path, origin).map((alternate) => ({
           lang: alternate.hreflang,
           url: alternate.href
         }))
-        return item
+        return { ...item, links }
       }
     })
   ],

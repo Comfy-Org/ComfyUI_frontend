@@ -60,6 +60,7 @@ function clusterErrors(
   source: string
 ): string[] {
   const errors: string[] = []
+  const expected = expectedAlternates(route, origin)
   const seen = new Set<string>()
   for (const { hreflang, href } of alternates) {
     if (seen.has(hreflang)) {
@@ -68,6 +69,16 @@ function clusterErrors(
       )
     }
     seen.add(hreflang)
+
+    // Checking only that the expected pairs are present accepts extras beside
+    // them. A locale this site does not publish still resolves and can still be
+    // reciprocal, so nothing downstream catches it: /ja/ pages that exist for
+    // some other reason would silently enter the cluster. The set is closed.
+    if (!expected.has(hreflang)) {
+      errors.push(
+        `${route}: ${source} declares hreflang="${hreflang}", which is not one of ${[...expected.keys()].join(', ')}`
+      )
+    }
 
     if (!href.startsWith(origin)) {
       errors.push(
@@ -79,7 +90,7 @@ function clusterErrors(
   // Reciprocity alone accepts a cluster whose two locales are swapped: each
   // side still lists the other, so every link resolves while the labels lie.
   if (alternates.length > 0) {
-    for (const [hreflang, href] of expectedAlternates(route, origin)) {
+    for (const [hreflang, href] of expected) {
       if (
         !alternates.some(
           (entry) => entry.hreflang === hreflang && entry.href === href
@@ -145,6 +156,14 @@ export function auditBuiltSite({
   }
 
   for (const [route, sitemapAlternates] of sitemap) {
+    // A sitemap URL with no page behind it is a 404 offered to a crawler. Report
+    // that and stop: the language comparison below would otherwise diff against
+    // an empty page cluster and blame the alternates for a missing page.
+    if (!pages.has(route)) {
+      errors.push(`${route}: the sitemap lists it, but it was not built (404)`)
+      continue
+    }
+
     errors.push(...clusterErrors(route, sitemapAlternates, origin, 'sitemap'))
 
     const langs = new Set(

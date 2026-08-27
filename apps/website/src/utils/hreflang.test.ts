@@ -8,6 +8,7 @@ import { alternatesFor, ogLocale, ogLocaleAlternate } from './hreflang'
 import {
   clusterAlternates,
   mirroredRoutes,
+  routeOf,
   unprefixed,
   ZH_HREFLANG
 } from './hreflangRoutes'
@@ -208,10 +209,9 @@ describe('the cluster against the real page tree', () => {
           DECLARES_NOINDEX.test(sourceOf(chinese))
         )
       })
-      .map(
-        (english) =>
-          english.replace(/^\/src\/pages/, '').replace(/\.astro$/, '') + '/'
-      )
+      // The cluster's own mapping, so an `index.astro` resolves to its
+      // directory and the assertion asks about a route that can be clustered.
+      .map(routeOf)
 
     expect(bothNoindex.length).toBeGreaterThan(0)
     for (const route of bothNoindex) {
