@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:docs/adr/0026-asset-deletion-preserves-owning-job.md
 # 23. Asset Deletion Preserves the Owning Job
+========
+# 24. Output Asset Deletion Preserves the Owning Job
+>>>>>>>> 27a3560cf (docs: renumber output asset deletion ADR):docs/adr/0024-output-asset-deletion-preserves-owning-job.md
 
 Date: 2026-08-27
 
