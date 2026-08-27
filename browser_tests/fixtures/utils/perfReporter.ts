@@ -83,6 +83,11 @@ export function writePerfReport(
       return []
     }
   })
+  if (measurements.length === 0) {
+    throw new Error(
+      `All ${tempFiles.length} recorded performance measurements were invalid`
+    )
+  }
 
   const report: PerfReportV3 = {
     schemaVersion: 3,
