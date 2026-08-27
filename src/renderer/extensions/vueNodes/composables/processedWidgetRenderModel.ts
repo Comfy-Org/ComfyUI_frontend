@@ -421,7 +421,7 @@ function processWidget(
     e.preventDefault()
     e.stopPropagation()
     ctx.ui.handleNodeRightClick(e, ctx.nodeData.id)
-    showNodeOptions(e, widgetState.name)
+    showNodeOptions(e, widgetState.name, ctx.nodeData.id)
   }
 
   return {

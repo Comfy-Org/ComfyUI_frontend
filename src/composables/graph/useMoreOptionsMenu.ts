@@ -9,7 +9,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
@@ -55,12 +55,15 @@ export enum BadgeVariant {
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
 const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
+const contextNodeId = ref<NodeId>()
 
 /**
  * Toggle the node options popover
  * @param event - The trigger event
  */
 export function toggleNodeOptions(event: Event) {
+  hoveredWidget.value = undefined
+  contextNodeId.value = undefined
   if (nodeOptionsInstance?.toggle) {
     nodeOptionsInstance.toggle(event)
   }
@@ -74,9 +77,10 @@ export function toggleNodeOptions(event: Event) {
 export function showNodeOptions(
   event: MouseEvent,
   widgetName?: string,
-  nodeId?: SerializedNodeId
+  nodeId?: NodeId
 ) {
   hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
+  contextNodeId.value = nodeId
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
   }
@@ -156,6 +160,7 @@ export function useMoreOptionsMenu() {
     getBasicSelectionOptions,
     getMultipleNodesOptions,
     getSubgraphOptions,
+    getAlignmentOptions,
     getDeleteOption
   } = useSelectionMenuOptions()
 
@@ -185,7 +190,11 @@ export function useMoreOptionsMenu() {
 
     // For node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
-    const node: LGraphNode | undefined = selectedNodes.value[0]
+    const node: LGraphNode | undefined =
+      (contextNodeId.value === undefined
+        ? undefined
+        : canvasStore.currentGraph?.getNodeById(contextNodeId.value)) ??
+      selectedNodes.value[0]
     const hideLinkedInputActions = node
       ? shouldHideLinkedCoreMediaInputActions(node)
       : false
@@ -250,6 +259,7 @@ export function useMoreOptionsMenu() {
     )
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
+      options.push(...getAlignmentOptions(node))
     }
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))

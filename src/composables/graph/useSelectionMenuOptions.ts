@@ -1,5 +1,6 @@
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { useFrameNodes } from './useFrameNodes'
 import { BadgeVariant } from './useMoreOptionsMenu'
@@ -27,22 +28,6 @@ export function useSelectionMenuOptions() {
     useSubgraphOperations()
 
   const { frameNodes } = useFrameNodes()
-
-  const alignSubmenu = computed(() =>
-    alignOptions.map((align) => ({
-      label: align.localizedName,
-      icon: align.icon,
-      action: () => applyAlign(align)
-    }))
-  )
-
-  const distributeSubmenu = computed(() =>
-    distributeOptions.map((distribute) => ({
-      label: distribute.localizedName,
-      icon: distribute.icon,
-      action: () => applyDistribute(distribute)
-    }))
-  )
 
   const getBasicSelectionOptions = (): MenuOption[] => [
     {
@@ -108,19 +93,27 @@ export function useSelectionMenuOptions() {
     }
   ]
 
-  const getAlignmentOptions = (): MenuOption[] => [
+  const getAlignmentOptions = (alignTo?: LGraphNode): MenuOption[] => [
     {
       label: t('contextMenu.Align Selected To'),
       icon: 'icon-[lucide--align-start-horizontal]',
       hasSubmenu: true,
-      submenu: alignSubmenu.value,
+      submenu: alignOptions.map((align) => ({
+        label: align.localizedName,
+        icon: align.icon,
+        action: () => applyAlign(align, alignTo)
+      })),
       action: () => {}
     },
     {
       label: t('contextMenu.Distribute Nodes'),
       icon: 'icon-[lucide--align-center-horizontal]',
       hasSubmenu: true,
-      submenu: distributeSubmenu.value,
+      submenu: distributeOptions.map((distribute) => ({
+        label: distribute.localizedName,
+        icon: distribute.icon,
+        action: () => applyDistribute(distribute)
+      })),
       action: () => {}
     }
   ]
@@ -138,8 +131,6 @@ export function useSelectionMenuOptions() {
     getSubgraphOptions,
     getMultipleNodesOptions,
     getDeleteOption,
-    getAlignmentOptions,
-    alignSubmenu,
-    distributeSubmenu
+    getAlignmentOptions
   }
 }

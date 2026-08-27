@@ -31,7 +31,8 @@ export async function openContextMenu(
  */
 export async function openMultiNodeContextMenu(
   comfyPage: ComfyPage,
-  titles: string[]
+  titles: string[],
+  contextTitle = titles[0]
 ): Promise<Locator> {
   if (titles.length === 0) {
     throw new Error('openMultiNodeContextMenu requires at least one title')
@@ -48,9 +49,10 @@ export async function openMultiNodeContextMenu(
   }
   await comfyPage.nextFrame()
 
-  const firstFixture = await comfyPage.vueNodes.getFixtureByTitle(titles[0])
-  const box = await firstFixture.header.boundingBox()
-  if (!box) throw new Error(`Header for "${titles[0]}" not found`)
+  const contextFixture =
+    await comfyPage.vueNodes.getFixtureByTitle(contextTitle)
+  const box = await contextFixture.header.boundingBox()
+  if (!box) throw new Error(`Header for "${contextTitle}" not found`)
   await comfyPage.page.mouse.click(
     box.x + box.width / 2,
     box.y + box.height / 2,

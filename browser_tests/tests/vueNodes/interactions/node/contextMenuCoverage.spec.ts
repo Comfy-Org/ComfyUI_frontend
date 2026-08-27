@@ -131,22 +131,23 @@ test.describe(
     })
 
     test.describe('Multi-Node Actions', () => {
-      const nodeTitles = ['Load Checkpoint', 'KSampler']
+      const nodeTitles = ['KSampler', 'Load Checkpoint', 'Empty Latent Image']
 
-      test('should align selected nodes via Align Selected To submenu', async ({
+      test('should align selected nodes to the context node', async ({
         comfyPage
       }) => {
-        const nodeRef0 = await getNodeRef(comfyPage, nodeTitles[0])
-        const nodeRef1 = await getNodeRef(comfyPage, nodeTitles[1])
+        await comfyPage.workflow.loadWorkflow('default')
+        const nodeRefs = await Promise.all(
+          nodeTitles.map((title) => getNodeRef(comfyPage, title))
+        )
+        const contextNode = nodeRefs[1]
+        const contextNodeInitialY = (await contextNode.getPosition()).y
 
-        const initialPos0 = await nodeRef0.getPosition()
-        const initialPos1 = await nodeRef1.getPosition()
-        expect(
-          initialPos0.y !== initialPos1.y,
-          'Nodes should start at different y positions'
-        ).toBe(true)
+        expect((await nodeRefs[0].getPosition()).y).not.toBe(
+          contextNodeInitialY
+        )
 
-        await openMultiNodeContextMenu(comfyPage, nodeTitles)
+        await openMultiNodeContextMenu(comfyPage, nodeTitles, nodeTitles[1])
         const menu = comfyPage.contextMenu.primeVueMenu
         await menu
           .getByRole('menuitem', {
@@ -163,16 +164,18 @@ test.describe(
 
         await expect
           .poll(async () => {
-            const pos0 = await nodeRef0.getPosition()
-            const pos1 = await nodeRef1.getPosition()
-            return Math.abs(pos0.y - pos1.y)
+            const positions = await Promise.all(
+              nodeRefs.map((node) => node.getPosition())
+            )
+            return positions.map(({ y }) => y)
           })
-          .toBeLessThanOrEqual(1)
+          .toEqual(nodeRefs.map(() => contextNodeInitialY))
       })
 
       test('should distribute selected nodes via Distribute Nodes submenu', async ({
         comfyPage
       }) => {
+        await comfyPage.workflow.loadWorkflow('default')
         const threeNodes = ['Load Checkpoint', 'KSampler', 'Empty Latent Image']
 
         await openMultiNodeContextMenu(comfyPage, threeNodes)
