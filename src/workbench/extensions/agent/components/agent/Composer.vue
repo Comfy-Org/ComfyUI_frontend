@@ -458,22 +458,9 @@ defineExpose({
         <span>{{ t('agent.dragAndDropAssets') }}</span>
       </div>
       <div
-        v-if="composer.attachments.value.length"
-        class="flex flex-wrap gap-2 px-3 pt-3"
-      >
-        <AttachmentChip
-          v-for="item in composer.attachments.value"
-          :key="item.id"
-          :name="item.name"
-          :preview-url="item.previewUrl"
-          :uploading="item.uploading"
-          @remove="composer.removeAttachment(item.id)"
-        />
-      </div>
-
-      <div
-        data-testid="composer-inline-input"
-        class="flex min-h-16 flex-wrap items-start gap-2 px-3 py-2"
+        v-if="selectionTags.length"
+        data-testid="composer-node-section"
+        class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
       >
         <span
           v-for="tag in selectionTags"
@@ -509,6 +496,27 @@ defineExpose({
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
           </button>
         </span>
+      </div>
+
+      <div
+        v-if="composer.attachments.value.length"
+        data-testid="composer-asset-section"
+        class="flex flex-wrap gap-2 p-3"
+      >
+        <AttachmentChip
+          v-for="item in composer.attachments.value"
+          :key="item.id"
+          :name="item.name"
+          :preview-url="item.previewUrl"
+          :uploading="item.uploading"
+          @remove="composer.removeAttachment(item.id)"
+        />
+      </div>
+
+      <div
+        data-testid="composer-inline-input"
+        class="flex min-h-16 flex-wrap items-start gap-1 p-3"
+      >
         <span
           v-for="workflow in workflowReferences"
           :key="workflow.id"
@@ -554,11 +562,7 @@ defineExpose({
           />
 
           <div
-            v-if="
-              !composer.draft.value &&
-              !selectionTags.length &&
-              !workflowReferences.length
-            "
+            v-if="!composer.draft.value && !workflowReferences.length"
             class="text-agent-fg-muted pointer-events-none absolute inset-x-0 top-0 z-10 font-inter text-[14px]/[20px] font-normal"
           >
             <span>{{ placeholderHint.firstLine }}</span>
