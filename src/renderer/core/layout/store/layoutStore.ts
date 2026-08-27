@@ -754,9 +754,11 @@ class LayoutStoreImpl {
    * this session's actor. The per-mutation command source remote appliers and
    * provenance-aware listeners key on: stamping happens synchronously at
    * apply time, so deferred change delivery still carries the scoped actor on
-   * `change.operation.actor`. Throws when `fn` returns a promise: the scope
-   * ends when the call returns, so work after an await would be stamped with
-   * the session actor.
+   * `change.operation.actor`. Asserts when `fn` returns a thenable: the
+   * scope ends when the call returns, so work after an await would be
+   * stamped with the session actor. DEV throws; production reports through
+   * the assert seam and returns the thenable, leaving that continuation
+   * session-stamped.
    */
   withActor<T>(actor: string, fn: () => T): T {
     const previous = this.currentActor

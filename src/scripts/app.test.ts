@@ -413,7 +413,7 @@ describe('ComfyApp', () => {
       ])
     })
 
-    it('skips afterLoadGraph when graph configure fails', async () => {
+    it('skips both after-hooks when graph configure fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
@@ -431,6 +431,9 @@ describe('ComfyApp', () => {
       expect(
         mockExtensionService.invokeExtensionsAsync
       ).not.toHaveBeenCalledWith('afterLoadGraph')
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterConfigureGraph')
     })
   })
 
