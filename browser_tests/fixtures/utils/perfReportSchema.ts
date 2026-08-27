@@ -133,8 +133,6 @@ const perfReportV2Schema = z.object({
   measurements: z.array(perfMeasurementResultV2Schema)
 })
 
-export type PerfReportV2 = z.infer<typeof perfReportV2Schema>
-
 const perfReportV1Schema = z.object({
   schemaVersion: z.literal(1).optional(),
   timestamp: z.string(),
