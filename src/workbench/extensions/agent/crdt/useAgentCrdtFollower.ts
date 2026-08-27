@@ -102,10 +102,6 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
   const tabId = crypto.randomUUID()
-  // Highest doc_update seq seen — used as base_version for human-minted ops.
-  // The ws path has no ceiling gate; this only feeds LWW stamps, so a slightly
-  // stale value is safe (ties break by [base_version, actor, op_id]).
-  let lastSeq = 0
   // Post-ECS main removed the global layout source scope
   // (`LayoutSource.External` / `layoutStore.setSource`), so remote batches
   // apply directly. Echo suppression becomes load-bearing only when the
@@ -194,8 +190,6 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     if (staleProbeTimer !== null) armStaleProbe()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
-      lastSeq = Math.max(lastSeq, event.detail.seq)
     projector.project(bridge.follower.doc)
   }
   const onOpsResult: EventListener = (event) => {
