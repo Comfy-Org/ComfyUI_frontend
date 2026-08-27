@@ -1,0 +1,52 @@
+# Dependabot configuration for @comfyorg/comfy-multi-player.
+#
+# Goals:
+#  - Keep npm runtime/dev dependencies current with weekly batched PRs.
+#  - Keep SHA-pinned GitHub Actions current without abandoning pin-by-SHA.
+#  - Minimise noise: group routine (non-security) updates so each ecosystem
+#    produces at most one PR per week unless a security advisory fires.
+#
+# Security advisories always open an immediate, ungrouped PR regardless of
+# schedule.
+
+version: 2
+
+updates:
+  # npm dependencies
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-dev-dependencies:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+      npm-runtime-dependencies:
+        dependency-type: production
+        update-types:
+          - patch
+          - minor
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+
+  # GitHub Actions — preserve SHA pinning.
+  # Dependabot updates the pinned SHA to the latest release for each action,
+  # keeping the repository's SHA-pinned convention intact.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        update-types:
+          - patch
+          - minor
+          - major
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
