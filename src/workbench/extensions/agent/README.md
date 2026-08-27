@@ -6,20 +6,15 @@ entirely in this subtree and renders in a flag-gated right dock registered by
 instances and wires every host dependency itself (REST client, `/ws` event source,
 draft-to-canvas seam).
 
-## CRDT follower POC
+## CRDT follower
 
-Set `VITE_AGENT_CRDT_FOLLOWER=true` to enable the experimental doc-host
-follower at build time, or toggle it at runtime with `?agentCrdtFollower=1`
-(persists to `localStorage['Comfy.Agent.CrdtFollower']` for the browser;
-`?agentCrdtFollower=0` clears the opt-in). The runtime toggle exists so hosted
-predeploy bundles — which are built without the env — can still enable the
-follower per session without a rebuild. An explicit URL param wins over both
-the persisted opt-in and the build flag for that page load. The follower uses
-the existing same-origin `/ws` connection. To run against a cloud ephemeral
-environment:
+The doc-host follower has no gate of its own: it mounts with the agent panel,
+so the panel's product flag (slice 00's `agent_panel` gate) is the only switch.
+The follower uses the existing same-origin `/ws` connection. To run against a
+cloud ephemeral environment:
 
 ```bash
-DEV_SERVER_COMFYUI_URL=https://<host>/ VITE_AGENT_CRDT_FOLLOWER=true pnpm dev
+DEV_SERVER_COMFYUI_URL=https://<host>/ pnpm dev
 ```
 
 Incoming `doc_update` frames are decoded and applied incrementally with

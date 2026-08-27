@@ -300,10 +300,11 @@ const {
   }
 })
 
-// The CRDT follower is the inbound content channel (the V0 draft-apply path
-// retired with agentDraftStore): it subscribes to the session's bound
-// workflow and projects doc updates onto the canvas.
+// The CRDT follower is the inbound content channel: subscribes to the
+// session's bound workflow and projects doc updates onto the canvas.
 const { status: crdtStatus } = useAgentCrdtFollower(boundWorkflowId)
+// Dev instrument only (slice-02 classification): never ships to users.
+const isCrdtDevPanelEnabled = import.meta.env.DEV
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
@@ -875,7 +876,7 @@ function onPanelDrop(event: DragEvent): void {
         })
       }}
     </div>
-    <CrdtDevPanel v-if="crdtStatus.enabled" :status="crdtStatus" />
+    <CrdtDevPanel v-if="isCrdtDevPanelEnabled" :status="crdtStatus" />
     <AgentPanel
       ref="panelRef"
       :entries

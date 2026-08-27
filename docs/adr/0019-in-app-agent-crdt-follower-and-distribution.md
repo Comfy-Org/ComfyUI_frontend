@@ -17,8 +17,8 @@ shared `@comfyorg/comfy-multi-player` applier). The frontend's job is to **follo
 integrate that update into frontend state and re-render. It does not author semantic
 operations in V1.
 
-The POC on this branch (`poc/fe-crdt-follower`, gated behind
-`import.meta.env.VITE_AGENT_CRDT_FOLLOWER`) ships an interim follower that diffs the
+The POC (originally branch `poc/fe-crdt-follower`, now mounted with the
+flag-gated agent panel) ships an interim follower that diffs the
 semantic Y.Doc into a `GraphMutation[]` and applies them to `app.graph` through a
 `LitegraphMutator` (`src/workbench/extensions/agent/crdt/`). That path renders, but it
 writes the imperative litegraph layer that the store migration
@@ -201,7 +201,7 @@ The follower code on this branch splits into a durable core and a disposable spi
 (workspace ADR-013 records the full rationale):
 
 - **Keep (durable, may receive further tests/E2E):** `docFrameClient`, `followerDoc`,
-  `docSchema` + `schemaGuard`, `followerGate` (runtime toggle), `layoutFollowerBridge`,
+  `docSchema` + `schemaGuard`, `layoutFollowerBridge`,
   and the `useAgentCrdtFollower` orchestrator shell.
 - **Dispose (spike-only, no further investment):** `semanticProjector`, `diffSnapshots`,
   `graphMutations`, `litegraphMutator`, and `followerSeam.integration.test.ts`. These are

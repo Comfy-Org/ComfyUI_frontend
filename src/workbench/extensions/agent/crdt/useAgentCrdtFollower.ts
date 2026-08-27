@@ -9,27 +9,9 @@ import { useAuthStore } from '@/stores/authStore'
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocOp } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
-import { resolveFollowerEnabled } from './followerGate'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { LitegraphMutator } from './litegraphMutator'
 import { SemanticProjector } from './semanticProjector'
-
-// Resolved once per page load ("per session"): build-time env, overridable at
-// runtime via `?agentCrdtFollower=1|0` / localStorage so predeploy-built
-// bundles (which never receive the env) can still enable the follower. R1a.
-const enabled = resolveFollowerEnabled({
-  buildFlag: import.meta.env.VITE_AGENT_CRDT_FOLLOWER,
-  search: window.location.search,
-  storage: safeLocalStorage()
-})
-
-function safeLocalStorage(): Storage | null {
-  try {
-    return window.localStorage
-  } catch {
-    return null
-  }
-}
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount / page reload loses the binding until the NEXT turn ack.
@@ -107,21 +89,6 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
-
-  if (!enabled) {
-    return {
-      status: readonly(
-        ref<AgentCrdtStatus>({
-          enabled: false,
-          connected: false,
-          workflowId: null,
-          updatesApplied: 0,
-          lastFrameType: null
-        })
-      ),
-      sendHumanOps: (_ops: DocOp[]) => undefined
-    }
-  }
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
