@@ -35,17 +35,6 @@ async function mockAgentBoot(
   await page.route('**/api/assets**', (r) =>
     r.fulfill(jsonRoute({ assets: [] }))
   )
-  await page.route('**/api/auth/token', (r) =>
-    r.fulfill(
-      jsonRoute({
-        token: 'mock-workspace-token',
-        expires_at: '2100-01-01T00:00:00.000Z',
-        workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
-        role: 'owner',
-        permissions: ['owner:*']
-      })
-    )
-  )
 }
 
 type AgentFixtures = {

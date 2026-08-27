@@ -3,15 +3,40 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { FLAG_RETRY_INTERVAL_MS, FLAG_RETRY_LIMIT } from './agentPanel'
+
+const FULL_RETRY_BUDGET_MS = FLAG_RETRY_INTERVAL_MS * (FLAG_RETRY_LIMIT + 1)
+
 const posthogState = vi.hoisted(() => ({
   flag: undefined as boolean | undefined,
-  listeners: [] as Array<() => void>
+  /** false = pre-init: the stub fires the callback once and registers nothing. */
+  ready: true,
+  listeners: [] as Array<
+    (
+      flags?: string[],
+      variants?: Record<string, unknown>,
+      context?: { errorsLoading?: boolean }
+    ) => void
+  >
 }))
 
 vi.mock('posthog-js', () => ({
   default: {
-    isFeatureEnabled: () => posthogState.flag,
-    onFeatureFlags: (listener: () => void) => {
+    isFeatureEnabled: () =>
+      posthogState.ready ? posthogState.flag : undefined,
+    onFeatureFlags: (
+      listener: (
+        flags?: string[],
+        variants?: Record<string, unknown>,
+        context?: { errorsLoading?: boolean }
+      ) => void
+    ) => {
+      if (!posthogState.ready) {
+        // The real SDK's pre-init behavior: invoke synchronously with an
+        // error context, register nothing, return a no-op unsubscribe.
+        listener([], {}, { errorsLoading: true })
+        return () => {}
+      }
       posthogState.listeners.push(listener)
       return () => {}
     }
@@ -53,6 +78,7 @@ describe('the agent panel flag gate', () => {
     localStorage.clear()
     delete document.body.dataset.agentGateSettled
     posthogState.flag = undefined
+    posthogState.ready = true
     posthogState.listeners = []
     registered.setup = null
     vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -72,7 +98,7 @@ describe('the agent panel flag gate', () => {
     vi.resetModules()
     await import('./agentPanel')
     registered.setup?.()
-    await vi.advanceTimersByTimeAsync(600 * 11)
+    await vi.advanceTimersByTimeAsync(FULL_RETRY_BUDGET_MS)
 
     expect(useAgentPanelStore().enabled).toBe(false)
     expect(document.body.dataset.agentGateSettled).toBe('true')
@@ -97,7 +123,7 @@ describe('the agent panel flag gate', () => {
     vi.resetModules()
     await import('./agentPanel')
     registered.setup?.()
-    await vi.advanceTimersByTimeAsync(600 * 11)
+    await vi.advanceTimersByTimeAsync(FULL_RETRY_BUDGET_MS)
     expect(document.body.dataset.agentGateSettled).toBe('true')
     expect(useAgentPanelStore().enabled).toBe(false)
 
@@ -107,20 +133,24 @@ describe('the agent panel flag gate', () => {
   })
 
   it('recovers when setup wins the race against posthog initialization', async () => {
-    // Flags unresolved at boot: isFeatureEnabled returns undefined.
-    posthogState.flag = undefined
+    // Pre-init: the SDK stub fires the callback with errorsLoading and
+    // registers nothing - that must NOT count as a flags delivery.
+    posthogState.ready = false
     vi.resetModules()
     await import('./agentPanel')
     registered.setup?.()
     await Promise.resolve()
     expect(useAgentPanelStore().enabled).toBe(false)
 
-    // Flags resolve later; the bounded retry re-takes the subscription.
+    // Init lands and flags resolve; the bounded retry re-takes the
+    // subscription against the live instance.
+    posthogState.ready = true
     posthogState.flag = true
-    await vi.advanceTimersByTimeAsync(600)
+    await vi.advanceTimersByTimeAsync(FLAG_RETRY_INTERVAL_MS + 100)
 
     expect(useAgentPanelStore().enabled).toBe(true)
     expect(document.body.dataset.agentGateSettled).toBe('true')
+    expect(posthogState.listeners.length).toBeGreaterThan(0)
   })
 
   it('fails closed without an unhandled rejection when the SDK import is blocked', async () => {

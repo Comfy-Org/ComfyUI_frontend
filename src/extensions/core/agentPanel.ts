@@ -5,8 +5,8 @@ import {
 } from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
 import { useExtensionService } from '@/services/extensionService'
 
-const FLAG_RETRY_INTERVAL_MS = 500
-const FLAG_RETRY_LIMIT = 10
+export const FLAG_RETRY_INTERVAL_MS = 500
+export const FLAG_RETRY_LIMIT = 10
 
 function markGateSettled(): void {
   document.body.dataset.agentGateSettled = 'true'
