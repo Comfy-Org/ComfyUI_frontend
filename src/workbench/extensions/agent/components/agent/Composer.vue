@@ -62,6 +62,7 @@ const emit = defineEmits<{
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
   workflowReferencePick: [workflow: WorkflowReference]
+  requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
 }>()
 const { t } = useI18n()
@@ -243,6 +244,7 @@ function syncMention(event: Event): void {
 function pickMention(match: MentionMatch): void {
   if (match.kind === 'section') {
     mentionSection.value = match.id
+    if (match.id === 'workflows') emit('requestWorkflowReferences')
     resetMentionActive()
     return
   }
@@ -262,6 +264,10 @@ function pickMention(match: MentionMatch): void {
   composer.draft.value = before + after
   closeMention()
   textareaRef.value?.focus()
+}
+
+function onWorkflowSubmenuOpenChange(open: boolean): void {
+  if (open) emit('requestWorkflowReferences')
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
@@ -608,7 +614,10 @@ defineExpose({
                   {{ t('agent.nodes') }}
                 </span>
               </DropdownMenuItem>
-              <DropdownMenuSub v-model:open="workflowSubmenuOpen">
+              <DropdownMenuSub
+                v-model:open="workflowSubmenuOpen"
+                @update:open="onWorkflowSubmenuOpenChange"
+              >
                 <DropdownMenuSubTrigger
                   class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
                 >

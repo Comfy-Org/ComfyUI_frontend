@@ -84,6 +84,7 @@ const emit = defineEmits<{
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
   workflowReferencePick: [workflow: WorkflowReference]
+  requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   selectTab: [path: string]
@@ -349,6 +350,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @remove-tag="emit('removeTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
             @workflow-reference-pick="emit('workflowReferencePick', $event)"
+            @request-workflow-references="emit('requestWorkflowReferences')"
             @remove-workflow-reference="emit('removeWorkflowReference', $event)"
           >
             <template #header>
