@@ -43,6 +43,11 @@ Hebrew is a right-to-left (RTL) language. Keep all interpolation placeholders ({
 Preferred glossary: node = צומת (plural צמתים), workflow = תהליך עבודה, queue = תור, canvas = קנבס, widget = פקד, subgraph = תת-גרף, prompt = פרומפט/הנחיה (per context), bypass = עקיפה, mute = השתקה.
 Keep widely-recognized technical terms in English (Latin script): API, GPU, CUDA, VAE, CLIP, LoRA, ControlNet, Civitai, Hugging Face, Nodes 2.0, etc.`
 
+const germanGuidance = `Use formal German (Sie-Form) consistently for a professional tone throughout the UI. Never mix Sie and du.
+Keep widely-recognized technical terms in English rather than inventing German equivalents, as German creative and developer software does: Node, Workflow, Prompt, Queue, Canvas, Widget, Subgraph, Seed, Sampler, Checkpoint, LoRA, VAE, CLIP, ControlNet.
+German compounds are written closed, not spaced: "Bildgenerierung", not "Bild Generierung". Where a compound joins an English technical term to a German noun, hyphenate: "Node-Editor", "Workflow-Vorlage".
+Prefer the imperative for button labels ("Speichern", "Abbrechen") and avoid the infinitive-with-zu form, which reads like documentation rather than an interface.`
+
 export const translationPipelineConfig: TranslationPipelineConfig = {
   entry: 'src/locales/en',
   output: 'src/locales',
@@ -75,6 +80,7 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
     { code: 'pt-BR', name: 'Brazilian Portuguese' },
     { code: 'fa', name: 'Persian', guidance: persianGuidance },
     { code: 'he', name: 'Hebrew', guidance: hebrewGuidance },
-    { code: 'it', name: 'Italian' }
+    { code: 'it', name: 'Italian' },
+    { code: 'de', name: 'German', guidance: germanGuidance }
   ]
 }

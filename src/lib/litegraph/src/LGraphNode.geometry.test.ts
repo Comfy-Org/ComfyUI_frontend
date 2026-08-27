@@ -123,6 +123,23 @@ describe('layout geometry projection', () => {
     expect(node._size).toBe(sizeBuffer)
   })
 
+  test('reads stored geometry once per layout revision', () => {
+    const { graph, node } = nodeWithStoredBounds(30, 40)
+    void node.renderingSize
+    const readNodeRect = vi.spyOn(layoutStore, 'readNodeRect')
+
+    void node.pos[0]
+    void node.size[0]
+    void node.renderingSize[0]
+    expect(readNodeRect).not.toHaveBeenCalled()
+
+    updateBounds(graph, node, 50, 60)
+    expect([...node.pos]).toEqual([50, 60])
+    expect([...node.size]).toEqual([200, 80])
+    expect([...node.renderingSize]).toEqual([200, 80])
+    expect(readNodeRect).toHaveBeenCalledOnce()
+  })
+
   test('preserves stored size when assigning position', () => {
     const { node } = nodeWithStoredBounds(30, 40, true)
     node.pos = [50, 60]
