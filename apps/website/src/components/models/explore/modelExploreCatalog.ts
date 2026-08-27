@@ -21,6 +21,7 @@ export interface ModelExploreCatalogItem {
   publisher?: string
   access: ModelAccessFilter
   categories: readonly ModelCategory[]
+  releaseDate?: string
   thumbnailUrl?: string
   mediaTone: ModelMediaTone
   searchText: string
@@ -49,29 +50,38 @@ export function createModelExploreCatalog(
 ): ModelExploreCatalogItem[] {
   return catalog
     .filter(({ canonicalSlug }) => canonicalSlug === undefined)
-    .map((model) => ({
-      kind: 'component' as const,
-      slug: model.slug,
-      title: model.displayName,
-      href: `/p/supported-models/${model.slug}`,
-      directory: model.directory,
-      workflowCount: model.workflowCount,
-      access:
-        model.directory === 'partner_nodes'
-          ? ('partner' as const)
-          : ('open' as const),
-      categories: model.categories,
-      ...(model.thumbnailUrl ? { thumbnailUrl: model.thumbnailUrl } : {}),
-      mediaTone: resolveMediaTone(model.categories[0]),
-      searchText: [
-        model.displayName,
-        model.name,
-        model.directory,
-        ...model.categories
-      ]
-        .join(' ')
-        .toLowerCase()
-    }))
+    .map((model) => {
+      const releaseDate = model.workflowPreviews
+        .map(({ publishedAt }) => publishedAt)
+        .filter((date): date is string => date !== undefined)
+        .sort((a, b) => b.localeCompare(a))[0]
+
+      return {
+        kind: 'component' as const,
+        slug: model.slug,
+        title: model.displayName,
+        href: `/p/supported-models/${model.slug}`,
+        directory: model.directory,
+        workflowCount: model.workflowCount,
+        access:
+          model.directory === 'partner_nodes'
+            ? ('partner' as const)
+            : ('open' as const),
+        categories: model.categories,
+        ...(releaseDate ? { releaseDate } : {}),
+        ...(model.thumbnailUrl ? { thumbnailUrl: model.thumbnailUrl } : {}),
+        mediaTone: resolveMediaTone(model.categories[0]),
+        searchText: [
+          model.displayName,
+          model.name,
+          model.directory,
+          ...model.categories
+        ]
+          .join(' ')
+          .toLowerCase()
+      }
+    })
+    .sort((a, b) => (b.releaseDate ?? '').localeCompare(a.releaseDate ?? ''))
 }
 
 export function createModelReleaseExploreCatalog(

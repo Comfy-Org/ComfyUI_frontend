@@ -97,6 +97,50 @@ describe('model explore catalog presentation', () => {
       )
     ).toEqual(['partner-image'])
   })
+
+  it('orders models by their most recent workflow release', () => {
+    const model = {
+      name: 'model.safetensors',
+      directory: 'diffusion_models',
+      huggingFaceUrl: '',
+      featured: false,
+      workflowCount: 1,
+      categories: ['image']
+    } satisfies Omit<Model, 'slug' | 'displayName' | 'workflowPreviews'>
+    const sortedCatalog = createModelExploreCatalog([
+      {
+        ...model,
+        slug: 'older-model',
+        displayName: 'Older Model',
+        workflowPreviews: [
+          {
+            id: 'older-workflow',
+            title: 'Older workflow',
+            thumbnailUrl: '/older.webp',
+            publishedAt: '2025-08-01T00:00:00.000Z'
+          }
+        ]
+      },
+      {
+        ...model,
+        slug: 'newer-model',
+        displayName: 'Newer Model',
+        workflowPreviews: [
+          {
+            id: 'newer-workflow',
+            title: 'Newer workflow',
+            thumbnailUrl: '/newer.webp',
+            publishedAt: '2026-08-01T00:00:00.000Z'
+          }
+        ]
+      }
+    ])
+
+    expect(sortedCatalog.map(({ slug }) => slug)).toEqual([
+      'newer-model',
+      'older-model'
+    ])
+  })
 })
 
 describe('model release catalog presentation', () => {
