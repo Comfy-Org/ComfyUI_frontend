@@ -59,8 +59,11 @@ Specifically:
    per-link loops.
 5. Extension hooks and wrappers continue to receive stable legacy objects where
    compatibility requires them. New renderer APIs should expose immutable or
-   purpose-specific read contexts. Wrappers must forward optional frame context
-   arguments; discarding them may preserve correctness but lose optimization.
+   purpose-specific read contexts. Wrappers participating in an active draw
+   must forward optional frame context arguments for correctness. Discarding
+   the context and recomputing after a mid-draw mutation can give passes
+   different orders and is not a supported mixed snapshot. A standalone direct
+   call may omit the context and compute one local snapshot.
 6. A change to these boundaries requires semantic parity tests for ordering,
    graph replacement, hit testing, callbacks, serialization, subgraphs, and the
    supported extension fixture. Performance claims require deterministic work
@@ -104,8 +107,9 @@ Specifically:
   draw rather than producing different foreground and background orders in one
   frame. Graph replacement is the exception: it takes effect at the next pass
   boundary in the same draw.
-- Third-party wrappers that discard new optional arguments remain correct but
-  may miss optimizations until updated.
+- Third-party wrappers must forward new optional context arguments when called
+  as part of an active draw; wrappers that discard them may render incoherent
+  pass order until updated.
 - Frame-local snapshots allocate or prepare data once per frame; persistent
   caching may still be needed for very large graphs and will require a separate
   invalidation design.
