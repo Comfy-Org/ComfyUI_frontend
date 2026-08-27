@@ -258,7 +258,7 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
         warnIfUnsaved: !workspaceStore.shiftDown
       }))
     ) {
-      // User clicked cancel
+      // User cancelled, or the replacement load failed
       break
     }
   }

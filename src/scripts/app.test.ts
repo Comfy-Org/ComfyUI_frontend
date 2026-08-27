@@ -345,6 +345,38 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('reports the load outcome explicitly: true on success', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await expect(app.loadGraphData(createWorkflowGraphData())).resolves.toBe(
+        true
+      )
+    })
+
+    it('resolves false, not rejects, when graph configure fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(graph, 'configure').mockImplementation(() => {
+        throw new Error('bad workflow json')
+      })
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          workflowNavigationId: 7
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      // The finally still repairs the URL even on the handled-failure path.
+      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        7
+      )
+    })
+
     it('never suppresses the workflow reset for an API JSON import', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -2078,7 +2110,7 @@ describe('ComfyApp', () => {
       })
       const loadGraphData = vi
         .spyOn(app, 'loadGraphData')
-        .mockResolvedValue(undefined)
+        .mockResolvedValue(true)
 
       const meshFile = createTestFile('model.glb', 'model/gltf-binary')
 

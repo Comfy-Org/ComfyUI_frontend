@@ -52,9 +52,9 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
 
 // TRANSITIONAL (decision log D14): deletable when ECS scopes workflow
 // loading per document; the contract tests transfer.
-let workflowLoadTail: Promise<void> = Promise.resolve()
+let workflowLoadTail: Promise<unknown> = Promise.resolve()
 let pendingWorkflowLoads = 0
-const pendingWorkflowLoadsByPath = new Map<string, Promise<void>>()
+const pendingWorkflowLoadsByPath = new Map<string, Promise<unknown>>()
 // Object identity, not path: a mid-close rename would strand a path key.
 const closingWorkflowCounts = new Map<ComfyWorkflow, number>()
 
@@ -81,10 +81,10 @@ export function resetWorkflowLoadQueueForTests(): {
   return drained
 }
 
-function queueWorkflowLoad(
-  load: () => Promise<void>,
+function queueWorkflowLoad<T>(
+  load: () => Promise<T>,
   workflowPath?: string
-): Promise<void> {
+): Promise<T> {
   pendingWorkflowLoads++
   const result = workflowLoadTail.then(load)
   const settledResult = result
@@ -338,19 +338,22 @@ export const useWorkflowService = () => {
    * Open a workflow in the current workspace
    * @param workflow The workflow to open
    * @param options The options for opening the workflow
+   * @returns false when the graph load reported failure (the error
+   * dialog was shown and the workflow never painted) or when the open
+   * was skipped because the workflow is mid-close; true otherwise
    */
   const openWorkflow = (
     workflow: ComfyWorkflow,
     options: { force?: boolean; navigationIntentId?: number } = {}
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     if (closingWorkflowCounts.has(closingKey(workflow)))
-      return Promise.resolve()
+      return Promise.resolve(false)
     if (
       pendingWorkflowLoads === 0 &&
       workflowStore.isActive(workflow) &&
       !options.force
     ) {
-      return Promise.resolve()
+      return Promise.resolve(true)
     }
 
     const navigationIntentId =
@@ -363,7 +366,7 @@ export const useWorkflowService = () => {
           await workflow.load()
         }
 
-        await app.loadGraphData(
+        const loaded = await app.loadGraphData(
           toRaw(workflow.activeState) as ComfyWorkflowJSON,
           /* clean=*/ true,
           /* restore_view=*/ true,
@@ -375,9 +378,16 @@ export const useWorkflowService = () => {
             workflowNavigationId: navigationIntentId
           }
         )
+        if (loaded === false) {
+          // Same invariant as the catch: a failed load's intent must not
+          // stay newest (guarded no-op when the publish already superseded).
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
+        }
         showPendingWarnings(undefined, {
           silent: !loadFromRemote && !options.force
         })
+        return loaded
       } catch (error) {
         // A failed load's intent must not stay newest (suppresses the survivor's hash).
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
@@ -389,7 +399,9 @@ export const useWorkflowService = () => {
   /**
    * Close a workflow with confirmation if there are unsaved changes
    * @param workflow The workflow to close
-   * @returns true if the workflow was closed, false if the user cancelled
+   * @returns true if the workflow was closed; false if the user
+   * cancelled or the replacement/default load reported failure (the
+   * workflow then stays open with its draft intact)
    */
   const closeWorkflow = async (
     workflow: ComfyWorkflow,
@@ -457,10 +469,13 @@ export const useWorkflowService = () => {
             replacementWorkflow = candidate
           }
         }
+        // `=== false` on purpose: only an EXPLICIT failure report aborts
+        // the close (a real configure failure resolves false - the dialog
+        // path); a rejection still propagates as before.
         if (replacementWorkflow) {
-          await openWorkflow(replacementWorkflow)
+          if ((await openWorkflow(replacementWorkflow)) === false) return false
         } else {
-          await loadDefaultWorkflow()
+          if ((await loadDefaultWorkflow()) === false) return false
         }
       } else if (
         // Read live, post-drain: the awaits above can change the answer.
@@ -469,7 +484,7 @@ export const useWorkflowService = () => {
           closingWorkflowCounts.has(closingKey(open))
         )
       ) {
-        await loadDefaultWorkflow()
+        if ((await loadDefaultWorkflow()) === false) return false
       }
 
       await workflowStore.closeWorkflow(workflow)
@@ -494,7 +509,8 @@ export const useWorkflowService = () => {
   /**
    * Delete a workflow
    * @param workflow The workflow to delete
-   * @returns `true` if the workflow was deleted, `false` if the user cancelled
+   * @returns `true` if the workflow was deleted; `false` if the user
+   * cancelled or the close was aborted by a failed replacement load
    */
   const deleteWorkflow = async (
     workflow: ComfyWorkflow,
