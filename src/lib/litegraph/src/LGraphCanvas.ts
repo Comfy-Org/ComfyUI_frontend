@@ -5135,7 +5135,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     clearTextMeasureCache()
     this.dirty_canvas = false
 
-    const { ctx, canvas, graph } = this
+    const { ctx, canvas } = this
 
     // @ts-expect-error start2D method not in standard CanvasRenderingContext2D
     if (ctx.start2D && !this.viewport) {
@@ -5169,7 +5169,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // draw bg canvas
     if (this.bgcanvas == this.canvas) {
-      nodesInFrameOrder ??= graph ? nodesInRenderOrder(graph) : undefined
+      nodesInFrameOrder ??= nodesGraph
+        ? nodesInRenderOrder(nodesGraph)
+        : undefined
       this.drawBackCanvas(nodesInFrameOrder, nodesGraph, false)
     } else {
       const scale = window.devicePixelRatio
@@ -5181,9 +5183,27 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.bgcanvas.height / scale
       )
     }
+    const graphAfterBackground = this.graph
 
     // rendering
     this.onRender?.(canvas, ctx)
+
+    const graphForContent = this.graph
+    if (
+      graphAfterBackground !== nodesGraph ||
+      graphForContent !== graphAfterBackground
+    ) {
+      nodesInFrameOrder = graphForContent
+        ? nodesInRenderOrder(graphForContent)
+        : undefined
+      if (graphForContent) {
+        this.ds.computeVisibleArea(this.viewport)
+        this.computeVisibleNodes(nodesInFrameOrder, this.visible_nodes)
+        this._visible_node_ids = new Set(
+          this.visible_nodes.map((node) => node.id)
+        )
+      }
+    }
 
     // info widget
     if (this.show_info) {
@@ -5191,7 +5211,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.renderInfo(ctx, pos?.[0] ?? 0, pos?.[1] ?? 0)
     }
 
-    if (graph) {
+    if (graphForContent) {
       // apply transformations
       ctx.save()
       this.ds.toCanvasContext(ctx)
@@ -5232,9 +5252,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // connections ontop?
-      if (graph.config.links_ontop) {
-        nodesInFrameOrder ??= nodesInRenderOrder(graph)
-        this.drawConnections(ctx, nodesInFrameOrder, nodesGraph)
+      if (graphForContent.config.links_ontop) {
+        nodesInFrameOrder ??= nodesInRenderOrder(graphForContent)
+        this.drawConnections(ctx, nodesInFrameOrder, graphForContent)
       }
 
       if (!LiteGraph.vueNodesMode || !this.overlayCtx) {
