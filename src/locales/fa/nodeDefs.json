@@ -17772,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "انتخاب سبک realistic_image و زیرسبک اختیاری.",
+    "description": "سبک و زیرسبک logo_raster را انتخاب کنید.",
     "display_name": "سبک Recraft - رستر لوگو",
     "inputs": {
       "substyle": {
@@ -17883,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "یک سبک قابل‌استفاده‌مجدد Recraft V4 از ۱ تا ۱۰ تصویر مرجع ایجاد کنید. style_id بازگردانده‌شده با همهٔ مدل‌های Recraft V4 و V4.1 با نوع خروجی یکسان کار می‌کند. مجموع حجم همهٔ تصاویر به ۱۰ MB محدود است.",
+    "display_name": "ایجاد سبک Recraft V4",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "تصاویر مرجع تعیین‌کنندهٔ سبک. مراجع مشابه تطابق را دقیق‌تر و مراجع متنوع دامنهٔ آن را گسترده‌تر می‌کنند."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نوع خروجی که سبک برای آن ایجاد می‌شود: recraftv4_styles برای تصاویر رستری و recraftv4_styles_vector برای SVG."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "تولید تصویر با استفاده از مدل‌های Recraft V4 یا V4 Pro.",
     "display_name": "تبدیل متن به تصویر Recraft V4",
@@ -17892,7 +17912,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "مدل مورد استفاده برای تولید."
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
       },
       "model_size": {
         "name": "اندازه"
@@ -17916,10 +17936,26 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID یک سبک Recraft V4 برای اعمال کردن؛ برای مثال از نود Recraft V4 Create Style یا خروجی style_id اجرای قبلی. با style_references قابل ترکیب نیست."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "میزان پیروی دقیق از سبک: precise آن را با جزئیات بازتولید می‌کند و flexible ظاهر کلی را تطبیق می‌دهد. فقط هنگامی استفاده می‌شود که سبکی ارائه شده باشد."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "تصاویر مرجع برای ایجاد سبک به‌صورت آنی که هزینهٔ آن علاوه بر تولید محاسبه می‌شود. سبک ایجادشده برای استفادهٔ مجدد به‌صورت style_id بازگردانده می‌شود. با style_id قابل ترکیب نیست."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +17969,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "مدل مورد استفاده برای تولید."
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
       },
       "model_size": {
         "name": "اندازه"
@@ -17957,10 +17993,26 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID یک سبک وکتور Recraft V4 برای اعمال کردن؛ برای مثال از نود Recraft V4 Create Style یا خروجی style_id اجرای قبلی. با style_references قابل ترکیب نیست."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "میزان پیروی دقیق از سبک: precise آن را با جزئیات بازتولید می‌کند و flexible ظاهر کلی را تطبیق می‌دهد. فقط هنگامی استفاده می‌شود که سبکی ارائه شده باشد."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "تصاویر مرجع برای ایجاد یک سبک وکتور به‌صورت آنی که هزینهٔ آن علاوه بر تولید محاسبه می‌شود. سبک ایجادشده برای استفادهٔ مجدد به‌صورت style_id بازگردانده می‌شود. با style_id قابل ترکیب نیست."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,61 +24665,11 @@
       },
       "resolution": {
         "name": "وضوح تصویر",
-        "tooltip": "وضوح خروجی ویدیو. وضوح ۴K برای مدل‌های veo-3.1-lite و veo-3.0 در دسترس نیست."
+        "tooltip": "وضوح ویدیوی خروجی. 4K برای مدل veo-3.1-lite در دسترس نیست."
       },
       "seed": {
         "name": "seed",
         "tooltip": "seed برای تولید ویدیو (۰ برای تصادفی)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "تولید ویدیو از طریق متن با استفاده از API گوگل Veo ۲",
-    "display_name": "تولید ویدیو با Google Veo 2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "نسبت تصویر ویدیوی خروجی"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "مدت زمان ویدیوی خروجی بر حسب ثانیه"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "آیا توضیح متنی با کمک هوش مصنوعی بهبود یابد"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "تصویر مرجع اختیاری برای راهنمایی تولید ویدیو"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "مدل Veo ۲ برای تولید ویدیو"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "راهنمای متنی منفی برای تعیین مواردی که باید در ویدیو اجتناب شود"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "آیا تولید افراد در ویدیو مجاز باشد"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "توضیح متنی برای ویدیو"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed برای تولید ویدیو (۰ برای تصادفی)"
       }
     },
     "outputs": {
