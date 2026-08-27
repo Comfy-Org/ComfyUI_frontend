@@ -4422,9 +4422,23 @@ export class LGraphNode
       if (!widget) continue
 
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      const pos: [number, number] = [offset, widget.y + offset]
-      slot.pos = pos
-      this.inputs[i].pos = pos
+      const x = offset
+      const y = widget.y + offset
+      const input = this.inputs[i]
+
+      // Slots are shallowReactive; a fresh array for unchanged coordinates
+      // triggers every slot-position subscriber once per frame.
+      const unchanged =
+        slot.pos?.[0] === x &&
+        slot.pos?.[1] === y &&
+        input.pos?.[0] === x &&
+        input.pos?.[1] === y
+
+      if (!unchanged) {
+        const pos: [number, number] = [x, y]
+        slot.pos = pos
+        input.pos = pos
+      }
       this._measureSlot(slot, i, true)
     }
   }
