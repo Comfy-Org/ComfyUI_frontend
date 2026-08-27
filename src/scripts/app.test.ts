@@ -1949,7 +1949,7 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('reapplies custom source definitions before reload classification', async () => {
+    it('classifies custom source definitions without replacing their constructors', async () => {
       const nodeType = 'test/ReloadedFrontendOutputNode'
       class ReloadedFrontendOutputNode extends LGraphNode {}
       LiteGraph.registerNodeType(nodeType, ReloadedFrontendOutputNode)
@@ -1960,7 +1960,6 @@ describe('ComfyApp', () => {
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       app.vueAppReady = true
       vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
-      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
       mockExtensionService.invokeExtensionsAsync.mockImplementation(
         async (hook: string, defs?: Record<string, ComfyNodeDef>) => {
           if (hook !== 'addCustomNodeDefs' || !defs) return
@@ -1982,6 +1981,9 @@ describe('ComfyApp', () => {
         await app.reloadNodeDefs()
 
         expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+        expect(LiteGraph.registered_node_types[nodeType]).toBe(
+          ReloadedFrontendOutputNode
+        )
         expect(warn).toHaveBeenCalledWith(
           expect.stringContaining('source node definition has outputs')
         )

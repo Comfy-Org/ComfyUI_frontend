@@ -1235,14 +1235,16 @@ export class ComfyApp {
     return await useLitegraphService().registerNodeDef(nodeId, nodeDef)
   }
 
-  async registerNodesFromDefs(defs: Record<string, ComfyNodeDefV1>) {
+  async registerNodesFromDefs(
+    defs: Record<string, ComfyNodeDefV1>,
+    nodeTypesToRegister?: readonly string[]
+  ) {
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
+    const nodeTypes = nodeTypesToRegister ?? Object.keys(defs)
     await Promise.all(
-      Object.keys(defs).map((nodeId) =>
-        this.registerNodeDef(nodeId, defs[nodeId])
-      )
+      nodeTypes.map((nodeId) => this.registerNodeDef(nodeId, defs[nodeId]))
     )
   }
 
@@ -2506,8 +2508,9 @@ export class ComfyApp {
    */
   async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
+    const nodeTypesToReload = Object.keys(defs)
     const provenance = captureNodeDefProvenance(defs)
-    await this.registerNodesFromDefs(defs)
+    await this.registerNodesFromDefs(defs, nodeTypesToReload)
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {

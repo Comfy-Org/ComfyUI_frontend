@@ -1,7 +1,6 @@
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
@@ -10,13 +9,13 @@ import type { NodeState } from '@/types/nodeState'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 const GRAPH_ID = 'graph-test'
 
@@ -243,25 +242,14 @@ describe('NodeWidgets', () => {
   it('disables App Mode selection while the live host is unavailable', () => {
     const nodeId = toNodeId('layout-node')
     const id = widgetId(GRAPH_ID, nodeId, 'text')
-    const nodeType = 'LayoutFrame'
+    const nodeType = 'ExecutionNode'
     renderComponent({
       nodeData: createMockNodeData(nodeType, nodeId),
       widgetIds: [id],
       setupStores: () => {
-        useWorkflowStore().activeWorkflow = fromAny({
+        useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
           activeMode: 'builder:inputs',
           initialMode: null
-        })
-        useNodeDefStore().addNodeDef({
-          name: nodeType,
-          display_name: nodeType,
-          category: 'test',
-          description: '',
-          input: {},
-          output: [],
-          output_node: false,
-          layout_only: true,
-          python_module: 'test'
         })
         registerWidgetState(id, { type: 'text' })
       }
