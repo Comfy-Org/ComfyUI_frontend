@@ -146,6 +146,16 @@ router.beforeEach((to, _from, next) => {
   next()
 })
 
+// Routes that are reachable but must never be published as canonical: they're
+// gated behind auth (requiresAuth handles cloud-survey/cloud-user-check/
+// cloud-subscribe) or are a transactional, per-request flow (OAuth consent).
+const NON_CANONICAL_ROUTE_NAMES = new Set(['cloud-oauth-consent'])
+
+function isCanonicalRoute(to: RouteLocationNormalized): boolean {
+  if (to.meta.requiresAuth) return false
+  return !NON_CANONICAL_ROUTE_NAMES.has(String(to.name))
+}
+
 router.afterEach((to) => {
   const isBrowser =
     typeof window !== 'undefined' && typeof document !== 'undefined'
@@ -157,12 +167,18 @@ router.afterEach((to) => {
   // Update canonical URL to resolve duplicate parameter SEO issues (P1-4)
   // Ensures Googlebot indexes the clean path without query strings (e.g. ?template=)
   if (isBrowser && !isFileProtocol) {
-    let canonicalLink: HTMLLinkElement | null = document.querySelector(
-      'link[rel="canonical"]'
-    )
-    if (!canonicalLink) {
-      canonicalLink = document.createElement('link')
-      canonicalLink.rel = 'canonical'
+    const existingCanonicalLink: HTMLLinkElement | null =
+      document.querySelector('link[rel="canonical"]')
+
+    if (!isCanonicalRoute(to)) {
+      existingCanonicalLink?.remove()
+      return
+    }
+
+    const canonicalLink =
+      existingCanonicalLink ?? document.createElement('link')
+    canonicalLink.rel = 'canonical'
+    if (!existingCanonicalLink) {
       document.head.appendChild(canonicalLink)
     }
     const resolvedUrl = new URL(router.resolve(to).href, window.location.origin)
