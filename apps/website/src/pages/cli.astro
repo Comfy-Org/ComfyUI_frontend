@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import ProductCardsSection from '../components/common/ProductCardsSection.vue'
+import HeroSection from '../templates/cli/HeroSection.vue'
+import SetupSection from '../templates/cli/SetupSection.vue'
+import SkillsSection from '../templates/cli/SkillsSection.vue'
+import AgentsSection from '../templates/cli/AgentsSection.vue'
+import WhySection from '../templates/cli/WhySection.vue'
+import HowItWorksSection from '../templates/cli/HowItWorksSection.vue'
+import FAQSection from '../templates/cli/FAQSection.vue'
+import { cliFaqs } from '../templates/cli/faqs'
+import { externalLinks } from '../config/routes'
+import { t } from '../i18n/translations'
+import {
+  absoluteUrl,
+  faqPageNode,
+  jsonLdId,
+  pageContext,
+  softwareApplicationNode,
+} from '../utils/jsonLd'
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const softwareId = jsonLdId(url, 'software')
+---
+
+<BaseLayout
+  title={t('cli.meta.title', 'en')}
+  description={t('cli.meta.description', 'en')}
+  mainEntityId={softwareId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.cli', locale) },
+  ]}
+  extraJsonLd={[
+    softwareApplicationNode({
+      siteUrl,
+      id: softwareId,
+      name: 'Comfy CLI',
+      url,
+      applicationCategory: 'DeveloperApplication',
+      firstParty: true,
+      description: t('cli.meta.description', 'en'),
+      operatingSystem: 'macOS, Windows, Linux',
+      codeRepository: externalLinks.comfyCliRepo,
+      isFree: true,
+    }),
+    faqPageNode(url, cliFaqs(locale)),
+  ]}
+  keywords={['comfy cli', 'comfyui cli', 'comfyui command line', 'comfyui terminal', 'comfyui automation', 'comfyui ci', 'ai cli for coding agents', 'claude code image generation', 'comfyui batch generation']}
+>
+  <HeroSection locale="en" client:load />
+  <SetupSection locale="en" client:visible />
+  <SkillsSection locale="en" client:visible />
+  <AgentsSection locale="en" />
+  <WhySection locale="en" />
+  <HowItWorksSection locale="en" />
+  <ProductCardsSection locale="en" label-key="products.labelProducts" />
+  <FAQSection client:visible locale="en" />
+</BaseLayout>
