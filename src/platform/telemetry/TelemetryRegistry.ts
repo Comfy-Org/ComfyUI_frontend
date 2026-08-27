@@ -14,6 +14,7 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  ImageLoadFailureMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -49,6 +50,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
@@ -97,6 +99,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
     this.dispatch((provider) => provider.trackUnifiedAuthRetry?.(metadata))
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
   }
 
   trackUserLoggedIn(): void {
