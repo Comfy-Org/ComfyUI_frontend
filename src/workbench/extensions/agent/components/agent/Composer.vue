@@ -527,7 +527,7 @@ defineExpose({
           v-for="workflow in workflowReferences"
           :key="workflow.id"
           data-testid="workflow-reference-chip"
-          class="group inline-flex h-7 max-w-full items-center rounded-sm border border-primary-background/30 bg-primary-background/30 px-1 py-0.5 text-xs/4 font-medium text-primary-background-hover"
+          class="group inline-flex h-5 max-w-full items-center rounded-sm border border-primary-background/30 bg-primary-background/30 px-1 py-0.5 text-xs/4 font-medium text-primary-background-hover"
         >
           <span class="mr-1 icon-[comfy--workflow] size-3.5 shrink-0" />
           <span class="max-w-40 truncate">{{ workflow.name }}</span>
