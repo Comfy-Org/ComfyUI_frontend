@@ -195,10 +195,11 @@ def main() -> int:
     check(
         'foreign-widget: prototype method loss is recorded despite the'
         ' mangled-row exclusion',
-        'foreign widget prototype methods lost:'
-        in (ops('poison-foreign-widget').get('wPushForeignClass') or {}).get(
+        (ops('poison-foreign-widget').get('wPushForeignClass') or {}).get(
             'err', ''
-        ),
+        )
+        == 'Error: foreign widget prototype methods lost:'
+        ' draw,mouse,computeSize',
     )
 
     check(
