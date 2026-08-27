@@ -561,6 +561,7 @@ export async function runPack(
   )
   await op('wPushForeignClass', () => {
     class ForeignWidget {
+      [symbol: symbol]: boolean
       name = 'XFOREIGN'
       type = 'X.FOREIGN'
       value = 1
