@@ -1,7 +1,14 @@
 # Registry corpus & ecosystem matrix
 
-A PR advisory that executes the frontend JS of every registry pack (~5,100
-packs) against the commit under review and reports a population verdict.
+A PR advisory that mirrors every registry pack (~5,100) and executes the
+frontend JS of the ~1,900 that ship any, against the commit under review, and
+reports a population verdict.
+
+**The corpus size and the executed count are different numbers, and the verdict
+is against the executed count.** Roughly 3,100 packs ship no extension-shaped JS
+and are skipped by `build_matrix.py`, so quoting the corpus size as the number of
+packs tested overstates the evidence by about 2.6x. `matrix-verdict` prints both:
+`packs with extension JS executed: 1945 (no-JS packs ignored: 3098)`.
 
 Vendored from `Comfy-Org/ComfyUI_ECS_Compat_Check` (`compat/paths.py`,
 `fetch_corpus.py`, `refresh_registry.py`), a private migration-phase
@@ -207,7 +214,10 @@ array-concatenation would otherwise smuggle in.
 The rules are load-bearing, not incidental:
 
 - **No secret may ever be added to a pack-executing job.** `ecosystem-matrix`
-  and `matrix-detection-proof` run unreviewed code from ~5,100 repositories.
+  and `matrix-detection-proof` run unreviewed code from ~1,900 repositories,
+  selected from a corpus of ~5,100 by a rule any pack author can satisfy at
+  will — shipping one JS file moves a pack into the executing set, so treat the
+  blast radius as the whole registry.
   Adding a Slack webhook, a token, or `id-token: write` to either job hands
   that credential to every pack author in the registry. If you need to
   notify on failure, do it from a separate `workflow_run` job.

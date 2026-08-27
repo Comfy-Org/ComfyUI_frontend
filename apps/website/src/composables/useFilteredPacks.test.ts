@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
-import type { Pack, PackNode } from '../data/cloudNodes'
+import type { GridPack, PackNode } from '../data/cloudNodes'
 
 import { useFilteredPacks } from './useFilteredPacks'
 import type { PackSortMode } from './useFilteredPacks'
 
-function pack(overrides: Partial<Pack> = {}): Pack {
+function pack(overrides: Partial<GridPack> = {}): GridPack {
   return {
     id: overrides.id ?? 'pack',
     displayName: overrides.displayName ?? 'Pack',
@@ -22,7 +22,7 @@ function node(name: string, displayName: string): PackNode {
 }
 
 describe('useFilteredPacks', () => {
-  const packs: readonly Pack[] = [
+  const packs: readonly GridPack[] = [
     pack({
       id: 'a',
       displayName: 'Alpha',

@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { computed, nextTick, watch } from 'vue'
+import { computed, effect, nextTick, stop, watch } from 'vue'
 
 import { LGraph, LGraphNode } from './litegraph'
 import type { IBaseWidget } from './types/widgets'
@@ -95,6 +95,35 @@ describe('_setConcreteSlots', () => {
 
     expect(slot.pos).not.toBe(initialPosition)
     expect(slot.pos?.[1]).toBeGreaterThan(initialPosition?.[1] ?? 0)
+  })
+
+  test('preserves widget-backed slot position identity', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const widget = node.addWidget('text', 'value', '', null)
+    const input = node.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    node._setConcreteSlots()
+
+    let runs = 0
+    const runner = effect(() => {
+      runs++
+      void input.pos
+    })
+
+    node.arrange()
+    const position = input.pos
+    expect(position).toBeDefined()
+    if (!position) throw new Error('Expected widget-backed slot position')
+    expect(position[1]).toBe(widget.y + 10)
+    expect(runs).toBe(2)
+
+    position[0] = 33
+    expect(input.pos).toBe(position)
+    expect(position[0]).toBe(33)
+    expect(runs).toBe(2)
+    stop(runner)
   })
 })
 
