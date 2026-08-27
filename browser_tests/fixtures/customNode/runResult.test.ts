@@ -1,14 +1,12 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { describe, expect, it } from 'vitest'
+
 import {
   classifyRun,
   describeRunOutcome
 } from '@e2e/fixtures/customNode/runResult'
 
-test.describe('classifyRun', () => {
-  test('PASS when every expected node appears in the executing stream', () => {
+describe('classifyRun', () => {
+  it('PASS when every expected node appears in the executing stream', () => {
     const result = classifyRun({
       events: [
         { type: 'execution_start' },
@@ -23,7 +21,7 @@ test.describe('classifyRun', () => {
     expect(result.executedNodes).toEqual(['1', '2'])
   })
 
-  test('PASS when an expected node was served from cache instead of run', () => {
+  it('PASS when an expected node was served from cache instead of run', () => {
     const result = classifyRun({
       events: [
         { type: 'executing', node: '1' },
@@ -36,7 +34,7 @@ test.describe('classifyRun', () => {
     expect(result.executedNodes).toEqual(['1', '2'])
   })
 
-  test('PARTIAL when a node appears in neither the executing nor the cached stream', () => {
+  it('PARTIAL when a node appears in neither the executing nor the cached stream', () => {
     const result = classifyRun({
       events: [
         { type: 'execution_cached', nodes: ['1'] },
@@ -48,7 +46,7 @@ test.describe('classifyRun', () => {
     expect(result.executedNodes).toEqual(['1'])
   })
 
-  test('PASS when a missing execution event has a non-null downstream output', () => {
+  it('PASS when a missing execution event has a non-null downstream output', () => {
     const result = classifyRun({
       events: [
         { type: 'executed', node: 'sink', output: { text: ['value'] } },
@@ -60,7 +58,7 @@ test.describe('classifyRun', () => {
     expect(result.outcome).toBe('PASS')
   })
 
-  test('PARTIAL when a downstream output is missing or null', () => {
+  it('PARTIAL when a downstream output is missing or null', () => {
     for (const output of [undefined, null]) {
       const result = classifyRun({
         events: [
@@ -74,7 +72,7 @@ test.describe('classifyRun', () => {
     }
   })
 
-  test('a node named by both streams is counted once', () => {
+  it('a node named by both streams is counted once', () => {
     const result = classifyRun({
       events: [
         { type: 'executing', node: '1' },
@@ -87,7 +85,7 @@ test.describe('classifyRun', () => {
     expect(result.executedNodes).toEqual(['1', '2'])
   })
 
-  test('EXECUTION_ERROR captures the failing node details', () => {
+  it('EXECUTION_ERROR captures the failing node details', () => {
     const result = classifyRun({
       events: [
         { type: 'executing', node: '1' },
@@ -110,7 +108,7 @@ test.describe('classifyRun', () => {
     )
   })
 
-  test('describes an execution error even when Cloud omits node identity', () => {
+  it('describes an execution error even when Cloud omits node identity', () => {
     expect(
       describeRunOutcome({
         outcome: 'EXECUTION_ERROR',
@@ -121,7 +119,48 @@ test.describe('classifyRun', () => {
     ).toBe('EXECUTION_ERROR (allocation failed)')
   })
 
-  test('an execution_error naming a node outside the queued graph is not this run', () => {
+  it('an executing event outside the queued graph cannot satisfy a node', () => {
+    const result = classifyRun({
+      events: [
+        { type: 'executing', node: '1' },
+        { type: 'executing', node: '2' },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['1', '2'],
+      graphNodeIds: ['1']
+    })
+    expect(result.executedNodes).toEqual(['1'])
+    expect(result.outcome).toBe('PARTIAL')
+  })
+
+  it('a stray executed event cannot stand in as downstream proof', () => {
+    const result = classifyRun({
+      events: [
+        { type: 'executed', node: 'sink', output: { text: ['value'] } },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['source'],
+      proofOutputNodeByExpectedNode: { source: 'sink' },
+      graphNodeIds: ['source']
+    })
+    expect(result.outputsByNode).toEqual({})
+    expect(result.outcome).toBe('PARTIAL')
+  })
+
+  it('cached nodes from another prompt do not count as executed', () => {
+    const result = classifyRun({
+      events: [
+        { type: 'execution_cached', nodes: ['1', '99'] },
+        { type: 'execution_success' }
+      ],
+      expectedNodeIds: ['1'],
+      graphNodeIds: ['1']
+    })
+    expect(result.executedNodes).toEqual(['1'])
+    expect(result.outcome).toBe('PASS')
+  })
+
+  it('an execution_error naming a node outside the queued graph is not this run', () => {
     const result = classifyRun({
       events: [
         { type: 'executing', node: '1' },
@@ -138,7 +177,7 @@ test.describe('classifyRun', () => {
     expect(result.error).toBeUndefined()
   })
 
-  test('an execution_error inside the queued graph, or carrying no node id, is reported', () => {
+  it('an execution_error inside the queued graph, or carrying no node id, is reported', () => {
     const inGraph = classifyRun({
       events: [
         { type: 'executing', node: '1' },
@@ -166,7 +205,7 @@ test.describe('classifyRun', () => {
     expect(anonymous.error?.exceptionMessage).toBe('allocation')
   })
 
-  test('an executed event carries the ui payload without counting as a run', () => {
+  it('an executed event carries the ui payload without counting as a run', () => {
     const result = classifyRun({
       events: [
         { type: 'executing', node: '1' },
@@ -185,7 +224,7 @@ test.describe('classifyRun', () => {
     expect(result.outcome).toBe('PARTIAL')
   })
 
-  test('EXECUTION_ERROR when the run is interrupted', () => {
+  it('EXECUTION_ERROR when the run is interrupted', () => {
     const result = classifyRun({
       events: [
         { type: 'executing', node: '1' },
@@ -196,7 +235,7 @@ test.describe('classifyRun', () => {
     expect(result.outcome).toBe('EXECUTION_ERROR')
   })
 
-  test('TIMEOUT when flagged or when no terminal event arrived', () => {
+  it('TIMEOUT when flagged or when no terminal event arrived', () => {
     const flagged = classifyRun({
       events: [{ type: 'executing', node: '1' }],
       expectedNodeIds: ['1'],

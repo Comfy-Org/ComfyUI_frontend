@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { describe, expect, it } from 'vitest'
 import {
   batchAutoRunnable,
   classifyAutoRunnable,
@@ -19,8 +16,8 @@ const SYNTH = new Set([
   '*'
 ])
 
-test.describe('autoRun classifier', () => {
-  test('widget-only node with outputs is runnable via a PreviewAny sink', () => {
+describe('autoRun classifier', () => {
+  it('widget-only node with outputs is runnable via a PreviewAny sink', () => {
     const verdict = classifyAutoRunnable(
       'IntConstant',
       {
@@ -34,7 +31,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.needsPreviewSink).toBe(true)
   })
 
-  test('widget-only OUTPUT_NODE runs standalone', () => {
+  it('widget-only OUTPUT_NODE runs standalone', () => {
     const verdict = classifyAutoRunnable(
       'ShowValue',
       {
@@ -53,7 +50,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.needsPreviewSink).toBe(false)
   })
 
-  test('synthesizable sockets make a node CHAINABLE with its socket list', () => {
+  it('synthesizable sockets make a node CHAINABLE with its socket list', () => {
     const verdict = classifyAutoRunnable(
       'MaskComposite',
       {
@@ -78,7 +75,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.needsPreviewSink).toBe(true)
   })
 
-  test('a union socket resolves to its first synthesizable member', () => {
+  it('a union socket resolves to its first synthesizable member', () => {
     const verdict = classifyAutoRunnable(
       'UnionConsumer',
       {
@@ -94,7 +91,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.requiredSockets).toEqual([{ name: 'pixels', type: 'IMAGE' }])
   })
 
-  test('a union socket with no synthesizable member means NEEDS_WIRES', () => {
+  it('a union socket with no synthesizable member means NEEDS_WIRES', () => {
     const verdict = classifyAutoRunnable(
       'UnionNeedsWires',
       {
@@ -108,7 +105,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.reason).toContain('MODEL,VAE')
   })
 
-  test('a socket with no model-free producer means NEEDS_WIRES', () => {
+  it('a socket with no model-free producer means NEEDS_WIRES', () => {
     const verdict = classifyAutoRunnable(
       'VaeDecode',
       {
@@ -122,7 +119,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.reason).toContain('vae')
   })
 
-  test('forceInput STRING is a socket but STRING is synthesizable', () => {
+  it('forceInput STRING is a socket but STRING is synthesizable', () => {
     const verdict = classifyAutoRunnable(
       'TextSink',
       {
@@ -136,7 +133,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.requiredSockets).toEqual([{ name: 'text', type: 'STRING' }])
   })
 
-  test('a declared widgetType makes an unproducible type a widget', () => {
+  it('a declared widgetType makes an unproducible type a widget', () => {
     const declared = classifyAutoRunnable(
       'PainterLike',
       {
@@ -162,7 +159,7 @@ test.describe('autoRun classifier', () => {
     expect(undeclared.verdict).toBe('NEEDS_WIRES')
   })
 
-  test('forceInput beats a declared widgetType', () => {
+  it('forceInput beats a declared widgetType', () => {
     const verdict = classifyAutoRunnable(
       'ForcedPainterLike',
       {
@@ -180,7 +177,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.reason).toContain('mask')
   })
 
-  test('an empty required combo means NEEDS_MODELS', () => {
+  it('an empty required combo means NEEDS_MODELS', () => {
     const verdict = classifyAutoRunnable(
       'CheckpointLoader',
       {
@@ -197,7 +194,7 @@ test.describe('autoRun classifier', () => {
   // Census-derived: transformed (V2-schema) defs carry combos as the string
   // 'COMBO' with options in the opts object - the classifier must not read
   // that as an unproducible socket type.
-  test('a V2-form combo with options is a widget', () => {
+  it('a V2-form combo with options is a widget', () => {
     const verdict = classifyAutoRunnable(
       'LatentConcatLike',
       {
@@ -217,7 +214,7 @@ test.describe('autoRun classifier', () => {
   // Census-derived (DevToolsNodeWithOutputCombo.subset_options): a combo
   // carrying forceInput is a socket in ANY form - no widget materializes,
   // so its option list cannot satisfy the input.
-  test('forceInput on a list-form combo is a socket, not a widget', () => {
+  it('forceInput on a list-form combo is a socket, not a widget', () => {
     const verdict = classifyAutoRunnable(
       'OutputComboLike',
       {
@@ -233,7 +230,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.reason).toContain('subset_options')
   })
 
-  test('a V2-form combo with no static options means NEEDS_MODELS', () => {
+  it('a V2-form combo with no static options means NEEDS_MODELS', () => {
     for (const spec of [
       ['COMBO', { multiselect: false, options: [] }],
       ['COMBO', { remote: { route: '/internal/files/output' } }]
@@ -252,7 +249,7 @@ test.describe('autoRun classifier', () => {
     }
   })
 
-  test('no outputs and not an OUTPUT_NODE means NO_OBSERVABLE_OUTPUT', () => {
+  it('no outputs and not an OUTPUT_NODE means NO_OBSERVABLE_OUTPUT', () => {
     const verdict = classifyAutoRunnable(
       'SideEffectOnly',
       {
@@ -265,7 +262,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.verdict).toBe('NO_OBSERVABLE_OUTPUT')
   })
 
-  test('optional socket inputs do not block auto-running', () => {
+  it('optional socket inputs do not block auto-running', () => {
     const verdict = classifyAutoRunnable(
       'MathWithOptionalAny',
       {
@@ -281,7 +278,7 @@ test.describe('autoRun classifier', () => {
     expect(verdict.verdict).toBe('AUTO_RUNNABLE')
   })
 
-  test('planAutoRuns validates producers against defs and batches runnables', () => {
+  it('planAutoRuns validates producers against defs and batches runnables', () => {
     const defs = {
       A: {
         input: { required: { v: ['INT', {}] } },

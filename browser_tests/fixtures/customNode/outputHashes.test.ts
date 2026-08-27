@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { describe, expect, it } from 'vitest'
 import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -32,8 +29,8 @@ function pngWith(input: { idat: Buffer; text?: string }): Buffer {
 
 const never = () => Promise.reject(new Error('no file fetch expected'))
 
-test.describe('S15 output hashes', () => {
-  test('identical pixels hash identically regardless of embedded metadata', () => {
+describe('S15 output hashes', () => {
+  it('identical pixels hash identically regardless of embedded metadata', () => {
     const idat = Buffer.from([1, 2, 3, 4, 5])
     const plain = hashPngPixels(pngWith({ idat }))
     const withPrompt = hashPngPixels(
@@ -43,13 +40,13 @@ test.describe('S15 output hashes', () => {
     expect(plain).toMatch(/^sha256:[0-9a-f]{64}$/)
   })
 
-  test('different pixels hash differently', () => {
+  it('different pixels hash differently', () => {
     const a = hashPngPixels(pngWith({ idat: Buffer.from([1, 2, 3]) }))
     const b = hashPngPixels(pngWith({ idat: Buffer.from([1, 2, 4]) }))
     expect(a).not.toBe(b)
   })
 
-  test('non-PNG bytes and IDAT-less files throw instead of hashing', () => {
+  it('non-PNG bytes and IDAT-less files throw instead of hashing', () => {
     expect(() => hashPngPixels(Buffer.from('GIF89a not a png'))).toThrow(
       /not a PNG/
     )
@@ -62,7 +59,7 @@ test.describe('S15 output hashes', () => {
     expect(() => hashPngPixels(noIdat)).toThrow(/no IDAT/)
   })
 
-  test('payload hashing is key-order independent and value sensitive', async () => {
+  it('payload hashing is key-order independent and value sensitive', async () => {
     const a = await hashSinkPayloads({ '5': { text: ['7'], b: 1 } }, never)
     const b = await hashSinkPayloads({ '5': { b: 1, text: ['7'] } }, never)
     const c = await hashSinkPayloads({ '5': { b: 1, text: ['8'] } }, never)
@@ -70,7 +67,7 @@ test.describe('S15 output hashes', () => {
     expect(a['5']).not.toBe(c['5'])
   })
 
-  test('file refs canonicalize by extension: run-varying names do not churn, pixels do', async () => {
+  it('file refs canonicalize by extension: run-varying names do not churn, pixels do', async () => {
     const idat = Buffer.from([9, 9, 9])
     const run1 = await hashSinkPayloads(
       { '3': { images: [{ filename: 'ComfyUI_00001_.png', type: 'temp' }] } },
@@ -94,7 +91,7 @@ test.describe('S15 output hashes', () => {
     expect(video['3']).toMatch(/^sha256:/)
   })
 
-  test('compare fails closed on every drift class', () => {
+  it('compare fails closed on every drift class', () => {
     const committed = {
       recordedAt: { core: 'abc123', run: '42' },
       schema: 1 as const,
@@ -144,7 +141,7 @@ test.describe('S15 output hashes', () => {
     ).toEqual([])
   })
 
-  test('record accumulates across calls to the same file (worker-restart survival)', () => {
+  it('record accumulates across calls to the same file (worker-restart survival)', () => {
     const dir = mkdtempSync(join(tmpdir(), 's15-'))
     const file = join(dir, 'recorded.json')
     recordObservedHashes(file, 'a/one.json', { '1': 'sha256:aa' })
@@ -158,7 +155,7 @@ test.describe('S15 output hashes', () => {
     expect(written.recordedAt.run).toBeTruthy()
   })
 
-  test('an empty committed entry fails because it proves no output content', () => {
+  it('an empty committed entry fails because it proves no output content', () => {
     const committed = {
       recordedAt: { core: 'abc', run: '1' },
       schema: 1 as const,
@@ -175,7 +172,7 @@ test.describe('S15 output hashes', () => {
     ])
   })
 
-  test('a truncated PNG chunk throws instead of hashing', () => {
+  it('a truncated PNG chunk throws instead of hashing', () => {
     const good = pngWith({ idat: Buffer.from([1, 2, 3]) })
     expect(() => hashPngPixels(good.subarray(0, good.length - 12))).toThrow(
       /no IEND/
@@ -187,7 +184,7 @@ test.describe('S15 output hashes', () => {
     )
   })
 
-  test('value objects that merely contain a filename keep their sibling keys', async () => {
+  it('value objects that merely contain a filename keep their sibling keys', async () => {
     const bare = await hashSinkPayloads(
       { '9': { filename: 'display.txt', text: ['A'] } },
       never
