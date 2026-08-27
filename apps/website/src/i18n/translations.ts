@@ -5101,17 +5101,46 @@ const translations = {
     'zh-CN': '模型家族'
   },
   'models.explore.family.title': {
+    en: 'Explore model families',
+    'zh-CN': '探索模型家族'
+  },
+  'models.explore.family.description': {
+    en: 'Move between leading model lineages without leaving the graph. Compare their newest releases, specializations, and access paths.',
+    'zh-CN':
+      '无需离开工作流即可探索领先的模型谱系，比较最新版本、专长和访问方式。'
+  },
+  'models.explore.family.explore': {
+    en: 'EXPLORE {name}',
+    'zh-CN': '探索 {name}'
+  },
+  'models.explore.family.mediaAlt': {
+    en: '{name} preview',
+    'zh-CN': '{name} 预览'
+  },
+  'models.explore.family.wan.title': {
     en: 'The Wan family',
     'zh-CN': 'Wan 模型家族'
   },
-  'models.explore.family.description': {
-    en: 'One video model lineage, from open weights to the latest partner release. Every generation and variant stays accessible from the same graph.',
-    'zh-CN':
-      '一个视频模型谱系，从开放权重到最新的合作伙伴版本。每一代和每个变体都可从同一工作流访问。'
+  'models.explore.family.wan.description': {
+    en: 'Open and hosted video models spanning text-to-video, image-to-video, character animation, and native audio.',
+    'zh-CN': '覆盖文生视频、图生视频、角色动画和原生音频的开放及托管视频模型。'
   },
-  'models.explore.family.viewModel': {
-    en: 'View {name} model page',
-    'zh-CN': '查看 {name} 模型页面'
+  'models.explore.family.minimax.title': {
+    en: 'The MiniMax family',
+    'zh-CN': 'MiniMax 模型家族'
+  },
+  'models.explore.family.minimax.description': {
+    en: 'Direct high-fidelity video and complete music generation from the same ComfyUI graph.',
+    'zh-CN': '在同一个 ComfyUI 工作流中控制高保真视频和完整音乐生成。'
+  },
+  'models.explore.family.seedance.title': {
+    en: 'The Seedance family',
+    'zh-CN': 'Seedance 模型家族'
+  },
+  'models.explore.family.seedance.description': {
+    en: 'Create longer video shots from text and multiple references with strong motion and prompt adherence.',
+    'zh-CN':
+      '通过文本和多个参考创建更长的视频镜头，并保持出色的动态和提示词遵循度。'
   },
   'models.explore.faq.label': {
     en: 'QUESTIONS',
@@ -5161,6 +5190,15 @@ const translations = {
   'models.explore.faq.5.a': {
     en: 'Comfy API can turn supported workflows into production endpoints.',
     'zh-CN': 'Comfy API 可以将受支持的工作流转换为生产端点。'
+  },
+  'models.explore.faq.6.q': {
+    en: 'Can I use these models commercially, and where are they available?',
+    'zh-CN': '这些模型可以用于商业用途吗？在哪里可以使用？'
+  },
+  'models.explore.faq.6.a': {
+    en: 'Commercial-use rights are model-specific. Local availability means you can run a model on your own hardware, but it does not grant commercial rights—review that model’s license and restrictions. Comfy Cloud availability depends on the models supported there and their applicable terms. Organizations that need negotiated terms, indemnity, or other contractual assurances should contact Comfy Enterprise to discuss a commercial agreement.',
+    'zh-CN':
+      '商业使用权取决于具体模型。本地可用表示你可以在自己的硬件上运行模型，但不代表自动获得商业使用权；请查看该模型的许可证和限制。Comfy Cloud 的可用性取决于云端支持的模型及其适用条款。需要协商条款、赔偿保障或其他合同保证的组织，应联系 Comfy Enterprise 讨论商业协议。'
   },
   'models.breadcrumb.models': {
     en: 'Supported Models',

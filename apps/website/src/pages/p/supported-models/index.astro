@@ -11,8 +11,8 @@ import ModelsExploreHero from '../../../components/models/explore/ModelsExploreH
 import type { ModelCategoryOption } from '../../../components/models/explore/ModelCategoryFilter.vue'
 import {
   dayZeroModelFixtures,
-  familyVariantFixtures,
   latestModelReleaseFixture,
+  modelFamilyFixtures,
   taskFixtures,
   trendingModelFixtures,
 } from '../../../components/models/explore/modelExploreFixtures'
@@ -191,9 +191,9 @@ const conversionCards = [
     eyebrow={t('models.explore.family.eyebrow', locale)}
     title={t('models.explore.family.title', locale)}
     description={t('models.explore.family.description', locale)}
-    featured={latestModelReleaseFixture}
-    variants={familyVariantFixtures}
-    viewModelLabel={t('models.explore.family.viewModel', locale)}
+    families={modelFamilyFixtures}
+    exploreFamilyLabel={t('models.explore.family.explore', locale)}
+    {locale}
   />
   <ModelConversionSection
     heading={t('pricing.banner.title', locale)}
@@ -207,6 +207,6 @@ const conversionCards = [
     labelKey="models.explore.faq.label"
     headingKey="models.explore.faq.heading"
     faqPrefix="models.explore.faq"
-    faqCount={5}
+    faqCount={6}
   />
 </BaseLayout>

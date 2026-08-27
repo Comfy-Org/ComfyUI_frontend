@@ -26,4 +26,10 @@ describe('deriveModelCategories', () => {
       ])
     ).toEqual(['image', 'audio', '3d', 'llm'])
   })
+
+  it('does not classify video with native audio as audio generation', () => {
+    expect(deriveModelCategories('Video', ['Video with Native Audio'])).toEqual(
+      ['video']
+    )
+  })
 })

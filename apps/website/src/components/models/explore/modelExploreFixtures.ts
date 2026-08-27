@@ -5,6 +5,7 @@ import { minimaxMusic3Page } from '../../../data/minimaxMusic3'
 import { seedancePage } from '../../../data/seedance'
 import { wanAnimate2Page } from '../../../data/wanAnimate2'
 import { wan3Page } from '../../../data/wan3'
+import type { TranslationKey } from '../../../i18n/translations'
 
 export type ModelMediaTone = 'forest' | 'plum' | 'ember' | 'canvas'
 export type ExploreModelStatus = 'open-weights'
@@ -31,11 +32,13 @@ export interface ExploreTaskFixture {
   mediaSrc: string
 }
 
-export interface ExploreFamilyVariant {
-  name: string
-  description: string
-  meta: string
+export interface ExploreModelFamilyFixture {
+  id: string
+  titleKey: TranslationKey
+  descriptionKey: TranslationKey
+  mediaSrc: string
   href: string
+  variants: readonly string[]
 }
 
 export interface ExploreFeaturedRelease {
@@ -254,23 +257,29 @@ export const latestModelReleaseFixture: ExploreFeaturedRelease = {
   tags: ['Partner Nodes', 'Text to video', 'Image to video']
 }
 
-export const familyVariantFixtures: ExploreFamilyVariant[] = [
+export const modelFamilyFixtures: ExploreModelFamilyFixture[] = [
   {
-    name: latestModelReleaseFixture.name,
-    description: latestModelReleaseFixture.description,
-    meta: 'Latest release',
-    href: latestModelReleaseFixture.href
+    id: 'wan',
+    titleKey: 'models.explore.family.wan.title',
+    descriptionKey: 'models.explore.family.wan.description',
+    mediaSrc: latestModelReleaseFixture.mediaSrc,
+    href: latestModelReleaseFixture.href,
+    variants: ['Wan 3.0', 'Wan 2.5', 'Wan Animate 2']
   },
   {
-    name: 'Wan 2.5',
-    description: 'A proven production baseline.',
-    meta: '3.1M runs',
-    href: 'https://blog.comfy.org/p/wan-25-preview-api-nodes-in-comfyui'
+    id: 'minimax',
+    titleKey: 'models.explore.family.minimax.title',
+    descriptionKey: 'models.explore.family.minimax.description',
+    mediaSrc: requiredMediaSource('MiniMax H3', minimaxPage.hero.posterSrc),
+    href: '/minimax-h3',
+    variants: ['MiniMax H3', 'MiniMax Music 3']
   },
   {
-    name: 'Wan Animate 2',
-    description: 'Character animation from one reference.',
-    meta: '420k runs',
-    href: '/wan-animate-2'
+    id: 'seedance',
+    titleKey: 'models.explore.family.seedance.title',
+    descriptionKey: 'models.explore.family.seedance.description',
+    mediaSrc: requiredMediaSource('Seedance 2.5', seedancePage.hero.posterSrc),
+    href: '/seedance-2.5',
+    variants: ['Seedance 2.5', 'Text to video', 'Multi-reference']
   }
 ]

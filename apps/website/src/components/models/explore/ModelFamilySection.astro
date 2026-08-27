@@ -1,82 +1,66 @@
 ---
+import FeaturedCarousel02 from '../../blocks/FeaturedCarousel02.vue'
+import type { FeaturedSplitSlide } from '../../blocks/FeaturedCarousel02.vue'
 import SectionLabel from '../../common/SectionLabel.vue'
-import IconButton from '../../ui/icon-button/IconButton.vue'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 
-import type {
-  ExploreFamilyVariant,
-  ExploreFeaturedRelease,
-} from './modelExploreFixtures'
+import type { ExploreModelFamilyFixture } from './modelExploreFixtures'
 
 interface Props {
   eyebrow: string
   title: string
   description: string
-  featured: ExploreFeaturedRelease
-  variants: ExploreFamilyVariant[]
-  viewModelLabel: string
+  families: ExploreModelFamilyFixture[]
+  exploreFamilyLabel: string
+  locale: Locale
 }
 
-const { eyebrow, title, description, featured, variants, viewModelLabel } =
+const { eyebrow, title, description, families, exploreFamilyLabel, locale } =
   Astro.props
+
+const slides: FeaturedSplitSlide[] = families.map((family) => {
+  const familyTitle = t(family.titleKey, locale)
+
+  return {
+    id: family.id,
+    media: {
+      type: 'image',
+      src: family.mediaSrc,
+      alt: t('models.explore.family.mediaAlt', locale).replace(
+        '{name}',
+        familyTitle,
+      ),
+    },
+    eyebrow,
+    title: familyTitle,
+    body: t(family.descriptionKey, locale),
+    primaryCta: {
+      label: exploreFamilyLabel.replace('{name}', familyTitle),
+      href: family.href,
+    },
+    tags: [...family.variants],
+  }
+})
 ---
 
 <section
   aria-labelledby="model-family-heading"
-  class="mx-auto max-w-10xl px-6 py-16 md:px-10 xl:px-30"
+  class="py-16"
 >
-  <div class="grid items-stretch gap-10 lg:grid-cols-2 lg:gap-16">
-    <div class="flex flex-col">
-      <SectionLabel>{eyebrow}</SectionLabel>
-      <h2
-        id="model-family-heading"
-        class="mt-4 text-4xl font-light text-primary-comfy-canvas lg:text-5xl"
-      >
-        {title}
-      </h2>
-      <p class="mt-5 text-base/relaxed font-light text-primary-comfy-canvas">
-        {description}
-      </p>
-      <div class="mt-8 border-t border-primary-comfy-canvas/20">
-        {
-          variants.map((variant) => (
-            <article class="flex items-center justify-between gap-6 border-b border-primary-comfy-canvas/20 py-5">
-              <div>
-                <h3 class="text-base font-semibold text-primary-comfy-canvas">
-                  {variant.name}
-                </h3>
-                <p class="mt-1 text-sm font-light text-primary-warm-gray">
-                  {variant.description}
-                </p>
-              </div>
-              <div class="flex shrink-0 items-center gap-3">
-                <p class="text-sm text-primary-warm-gray">{variant.meta}</p>
-                <IconButton
-                  as="a"
-                  href={variant.href}
-                  variant="solid"
-                  size="sm"
-                  aria-label={viewModelLabel.replace('{name}', variant.name)}
-                >
-                  <img src="/icons/arrow-right.svg" alt="" class="size-3" />
-                </IconButton>
-              </div>
-            </article>
-          ))
-        }
-      </div>
-    </div>
-    <a
-      href={featured.href}
-      aria-label={viewModelLabel.replace('{name}', featured.name)}
-      class="min-h-80 overflow-hidden rounded-5xl bg-transparency-white-t4 p-2 lg:min-h-full"
+  <div class="mx-auto max-w-9xl px-6 lg:px-12">
+    <SectionLabel>{eyebrow}</SectionLabel>
+    <h2
+      id="model-family-heading"
+      class="mt-4 text-4xl font-light text-primary-comfy-canvas lg:text-5xl"
     >
-      <img
-        src={featured.mediaSrc}
-        alt={`${featured.name} model preview`}
-        class="size-full rounded-4.5xl object-cover"
-        loading="lazy"
-        decoding="async"
-      />
-    </a>
+      {title}
+    </h2>
+    <p
+      class="mt-5 max-w-3xl text-base/relaxed font-light text-primary-comfy-canvas"
+    >
+      {description}
+    </p>
   </div>
+  <FeaturedCarousel02 client:visible {locale} {slides} class="mt-10" />
 </section>

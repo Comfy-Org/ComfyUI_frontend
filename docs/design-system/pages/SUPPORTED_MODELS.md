@@ -33,8 +33,7 @@ as implementation constraints.
 2. Header and footer remain the existing `BaseLayout` shell. No page-specific
    navigation, outbound-arrow decoration, or rollover treatment was added.
 3. Hero actions use the existing solid and yellow-outline `BrandButton`
-   variants. The hero carousel remains a static featured card until its control
-   system is approved.
+   variants. The hero remains a static featured card.
 4. Search reuses the `/workflows` search-field anatomy. The unapproved prompt
    suggestions and adjacent model-count control were omitted.
 5. Model modality tabs reuse the `/workflows` hub filter, including its icons,
@@ -56,9 +55,9 @@ as implementation constraints.
    modality selection.
 10. The conversion banner is the exact `/cloud/pricing`
     `PricingFreeBanner`, followed by the existing product-card family.
-11. Wan family rows use the established small solid `IconButton` with the
-    existing arrow-right asset. Each control is a real link with a
-    model-specific accessible label and a canonical Comfy destination.
+11. Model families reuse the shipped `FeaturedCarousel02` with Wan, MiniMax,
+    and Seedance slides. Its controls, autoplay pause behavior, swipe handling,
+    and reduced-motion behavior remain owned by that component.
 12. FAQ uses the existing localized `FAQSection`; no page-local accordion
     states were introduced.
 13. Editorial model cards link only to reviewed canonical Comfy destinations.
@@ -70,17 +69,16 @@ as implementation constraints.
 
 ## Approved exclusions and follow-up work
 
-| Item                         | Approval state       | Required next step                                                        |
-| ---------------------------- | -------------------- | ------------------------------------------------------------------------- |
-| Featured carousel pagination | intentionally absent | Design and document controls, states, motion, and reduced-motion behavior |
-| Featured carousel rotation   | intentionally absent | Approve content ownership and carousel behavior before adding state       |
-| Search suggestion chips      | blocked gap          | Approve a reusable suggestion-chip component and keyboard behavior        |
-| Inline collection actions    | integrated           | Approved `BrandButton` links open the dedicated generated catalog page    |
-| Task-card actions            | integrated           | Full-card links use reviewed Comfy use-case or category destinations      |
-| Production model media       | preview-integrated   | Six exact owned stills plus two governed source-gap fallbacks             |
-| Production catalog data      | build-integrated     | Generated routes, summary, categories, ItemList, and search records       |
-| Search and filter behavior   | integrated           | Query and categories filter the generated route-backed catalog            |
-| Minor visual polish          | accepted follow-up   | Resolve through the owning component contract, never page-local CSS       |
+| Item                       | Approval state     | Required next step                                                      |
+| -------------------------- | ------------------ | ----------------------------------------------------------------------- |
+| Family carousel            | integrated         | Reuses `FeaturedCarousel02` with reviewed family media and destinations |
+| Search suggestion chips    | blocked gap        | Approve a reusable suggestion-chip component and keyboard behavior      |
+| Inline collection actions  | integrated         | Approved `BrandButton` links open the dedicated generated catalog page  |
+| Task-card actions          | integrated         | Full-card links use reviewed Comfy use-case or category destinations    |
+| Production model media     | preview-integrated | Six exact owned stills plus two governed source-gap fallbacks           |
+| Production catalog data    | build-integrated   | Generated routes, summary, categories, ItemList, and search records     |
+| Search and filter behavior | integrated         | Query and categories filter the generated route-backed catalog          |
+| Minor visual polish        | accepted follow-up | Resolve through the owning component contract, never page-local CSS     |
 
 ## Implemented provenance map
 
@@ -98,7 +96,7 @@ as implementation constraints.
 | Task discovery tiles      | `TaskTile.vue`                      | Governed full-card link with destination-owned 16:9 media     |
 | Access and run-path cards | `ProductCard.vue`                   | Existing website destination-card anatomy                     |
 | Free-runs banner          | `PricingFreeBanner.vue`             | Exact shipped `/cloud/pricing` banner anatomy                 |
-| Family variant actions    | `IconButton.vue`                    | Solid small arrow links to canonical model information pages  |
+| Model family carousel     | `FeaturedCarousel02.vue`            | Shipped carousel behavior with reviewed model-family content  |
 | FAQ accordion             | `FAQSection.vue`                    | Existing localized accordion behavior and states              |
 | Page shell                | Existing website `BaseLayout.astro` | Header and footer remain unchanged                            |
 
@@ -116,19 +114,19 @@ the appearance or states of the approved components above.
 | `ModelMediaPlaceholder.vue`    | approved-fallback  | Shared decorative fallback for catalog entries without a still  |
 | `ModelTaskSection.astro`       | media-integrated   | Reviewed routes, destination-owned media, and collection action |
 | `ModelAccessSection.astro`     | design-only        | Two-column layout around approved destination cards             |
-| `ModelFamilySection.astro`     | design-only        | Linked family hierarchy with approved placeholder media         |
+| `ModelFamilySection.astro`     | media-integrated   | Localized family adapter for the shipped carousel               |
 | `ModelConversionSection.astro` | design-only        | Approved banner action and product-card layout                  |
 | `ModelWorkflowGallery.vue`     | catalog-integrated | Workflow cards, eight-item reveal, and centered catalog action  |
 | `ModelPricingSection.astro`    | catalog-integrated | Three-row access-cost summary using only known catalog facts    |
 
 ## Remaining component gaps for lint enforcement
 
-| Needed pattern          | Status              | Current implementation                                        |
-| ----------------------- | ------------------- | ------------------------------------------------------------- |
-| Search suggestion chip  | `blocked-gap`       | Omitted; not substituted with a raw button                    |
-| Task tile action        | `integrated`        | The complete tile links to its reviewed Comfy destination     |
-| Featured-model carousel | `blocked-gap`       | Static card only; invented pagination indicators removed      |
-| Model media             | `approved-fallback` | `ModelMediaPlaceholder.vue` where no exact owned still exists |
+| Needed pattern         | Status              | Current implementation                                        |
+| ---------------------- | ------------------- | ------------------------------------------------------------- |
+| Search suggestion chip | `blocked-gap`       | Omitted; not substituted with a raw button                    |
+| Task tile action       | `integrated`        | The complete tile links to its reviewed Comfy destination     |
+| Family carousel        | `integrated`        | Shipped `FeaturedCarousel02` owns controls and motion         |
+| Model media            | `approved-fallback` | `ModelMediaPlaceholder.vue` where no exact owned still exists |
 
 A blocked gap must not be filled by copying the mockup CSS. Design the missing
 component, document its variants and states, add it to the website registry,
@@ -211,8 +209,8 @@ and then restore the page element.
   workflows use-case index and remains visible at narrow viewport widths.
 - Access, conversion, and FAQ actions use destinations and behavior already
   owned by existing website components.
-- Family-row icon links use reviewed canonical Comfy destinations. They are the
-  only model-specific links approved during this design phase.
+- Family slides use reviewed canonical Comfy destinations and owned launch
+  media through the shipped carousel.
 - The document hierarchy remains one `h1`, followed by `h2` and `h3` headings.
 
 ## Acceptance gates
@@ -236,6 +234,7 @@ and then restore the page element.
 ### Integration gate
 
 This handoff preserves the approved design while connecting the build-generated
-catalog, search, and category filters. Carousel controls, suggestion chips,
-editorial ranking, and comprehensive curated link coverage remain separate
-work because their source data or governed component contracts do not exist.
+catalog, search, category filters, and shipped family carousel. Suggestion
+chips, editorial ranking, and comprehensive curated link coverage remain
+separate work because their source data or governed component contracts do not
+exist.

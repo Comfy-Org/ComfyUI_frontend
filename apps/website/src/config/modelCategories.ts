@@ -37,7 +37,7 @@ export function deriveModelCategories(
     if (normalizedTag.includes('image')) categories.add('image')
     if (normalizedTag.includes('video')) categories.add('video')
     if (
-      normalizedTag.includes('audio') ||
+      normalizedTag.includes('to audio') ||
       normalizedTag.includes('music') ||
       normalizedTag.includes('speech') ||
       normalizedTag.includes('voice')
