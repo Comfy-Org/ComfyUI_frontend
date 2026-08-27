@@ -1,4 +1,5 @@
 import { t } from '@/i18n'
+import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -192,7 +193,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       },
       deriveWidgetRenderState(this)
     )
-    if (registered) this._state = registered
+    if (registered) {
+      this._state = registered
+      registerWidgetControlFromConfig(this)
+    }
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

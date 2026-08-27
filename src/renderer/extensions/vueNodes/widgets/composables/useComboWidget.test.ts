@@ -660,7 +660,7 @@ describe('useComboWidget', () => {
     it('should add control widgets for cloud input mappings when requested', () => {
       const scenario = cloudInputScenarios[0]
 
-      const { mockNode, widget } = setupCloudInputMappingWidget(
+      const { widget } = setupCloudInputMappingWidget(
         scenario,
         { control_after_generate: true },
         [
@@ -671,20 +671,7 @@ describe('useComboWidget', () => {
         ]
       )
 
-      expect(addValueControlWidgets).toHaveBeenCalledWith(
-        mockNode,
-        widget,
-        'randomize',
-        undefined,
-        [
-          'COMBO',
-          {
-            control_after_generate: true,
-            name: scenario.inputName,
-            type: 'COMBO'
-          }
-        ]
-      )
+      expect(addValueControlWidgets).toHaveBeenCalledWith(widget, 'randomize')
     })
 
     it('should create normal combo widget for non-input nodes in cloud', () => {

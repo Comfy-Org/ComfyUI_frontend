@@ -5,6 +5,7 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { runWidgetControl } from '@/core/graph/widgets/control/widgetControlSystem'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
@@ -153,7 +154,6 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
-import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
@@ -1742,10 +1742,8 @@ export class ComfyApp {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
-            applyPromotedWidgetControl(node, 'beforeQueued', {
-              isPartialExecution
-            })
           })
+          runWidgetControl(this.rootGraph, 'before', { isPartialExecution })
 
           // Capture workflow before await — activeWorkflow may change if the
           // user switches tabs while the request is in flight.
@@ -1947,11 +1945,7 @@ export class ComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
-          for (const node of queuedNodes) {
-            applyPromotedWidgetControl(node, 'afterQueued', {
-              isPartialExecution
-            })
-          }
+          runWidgetControl(this.rootGraph, 'after', { isPartialExecution })
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
           await this.ui.queue.update()

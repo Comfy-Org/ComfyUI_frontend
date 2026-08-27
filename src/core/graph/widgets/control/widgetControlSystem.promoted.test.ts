@@ -9,8 +9,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
-import { applyPromotedWidgetControl } from './promotedWidgetControl'
+import { runWidgetControl } from './widgetControlSystem'
 
 class SeedNode extends LGraphNode {
   constructor(controlMode: string) {
@@ -23,17 +22,10 @@ class SeedNode extends LGraphNode {
       max: 1_000_000,
       step2: 1
     })
-    const control = this.addWidget(
-      'combo',
-      'control_after_generate',
-      controlMode,
-      () => {},
-      { values: ['fixed', 'increment', 'decrement', 'randomize'] }
-    )
-    control[IS_CONTROL_WIDGET] = true
-    control.beforeQueued = () => {}
-    control.afterQueued = () => {}
-    seed.linkedWidgets = [control]
+    seed.controlConfig = {
+      mode: controlMode === 'increment' ? 'increment' : 'fixed',
+      hasFilter: false
+    }
   }
 }
 
@@ -51,15 +43,16 @@ function createPromotedSeedHost(controlMode: string): SubgraphNode {
   const seedWidget = seedNode.widgets!.find((w) => w.name === 'seed')!
   const result = promoteValueWidgetViaSubgraphInput(host, seedNode, seedWidget)
   if (!result.ok) throw new Error(`promotion failed: ${result.reason}`)
+  subgraph.rootGraph.add(host)
   return host
 }
 
-describe('applyPromotedWidgetControl', () => {
+describe('runWidgetControl with promoted targets', () => {
   it('increments the host-owned value of a promoted seed after queueing', () => {
     const host = createPromotedSeedHost('increment')
     expect(promotedSeedValue(host)).toBe(1)
 
-    applyPromotedWidgetControl(host, 'afterQueued')
+    runWidgetControl(host.rootGraph, 'after')
 
     expect(promotedSeedValue(host)).toBe(2)
   })
@@ -67,7 +60,7 @@ describe('applyPromotedWidgetControl', () => {
   it('leaves the value unchanged when the control mode is fixed', () => {
     const host = createPromotedSeedHost('fixed')
 
-    applyPromotedWidgetControl(host, 'afterQueued')
+    runWidgetControl(host.rootGraph, 'after')
 
     expect(promotedSeedValue(host)).toBe(1)
   })
@@ -77,10 +70,18 @@ describe('applyPromotedWidgetControl', () => {
     const seedInput = host.inputs.find((input) => input.name === 'seed')!
     const source = new LGraphNode('Source')
     source.addOutput('out', 'INT')
+    if (host.graph?.getNodeById(host.id) !== host) host.graph?.add(host)
     host.graph!.add(source)
     source.connect(0, host, host.inputs.indexOf(seedInput))
+    expect(host.isInputConnected(host.inputs.indexOf(seedInput))).toBe(true)
+    expect(seedInput.widgetId).toBeDefined()
+    expect(
+      useWidgetValueStore()
+        .getWidgetControls(host.rootGraph.id)
+        .map(([id]) => id)
+    ).toContain(seedInput.widgetId)
 
-    applyPromotedWidgetControl(host, 'afterQueued')
+    runWidgetControl(host.rootGraph, 'after')
 
     expect(promotedSeedValue(host)).toBe(1)
   })

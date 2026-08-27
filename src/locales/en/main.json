@@ -3465,6 +3465,7 @@
       "randomizeDesc": "Shuffles the value randomly after each generation",
       "increment": "Increment Value",
       "incrementDesc": "Adds 1 to value or selects the next option",
+      "increment-wrap": "Increment with Wrap",
       "decrement": "Decrement Value",
       "decrementDesc": "Subtracts 1 from value or selects the previous option",
       "fixed": "Fixed Value",

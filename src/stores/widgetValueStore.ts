@@ -7,7 +7,11 @@ import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+import type {
+  WidgetControlState,
+  WidgetState,
+  WidgetStateInit
+} from '@/types/widgetState'
 
 export interface WidgetRenderState {
   advanced?: boolean
@@ -28,6 +32,9 @@ export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetStates = ref(new Map<UUID, Map<WidgetId, WidgetState>>())
+  const graphWidgetControls = ref(
+    new Map<UUID, Map<WidgetId, WidgetControlState>>()
+  )
   const graphWidgetRenderStates = ref(
     new Map<UUID, Map<WidgetId, WidgetRenderState>>()
   )
@@ -85,6 +92,17 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const nextWidgetStates = reactive(new Map<WidgetId, WidgetState>())
     graphWidgetStates.value.set(graphId, nextWidgetStates)
     return nextWidgetStates
+  }
+
+  function getGraphWidgetControls(
+    graphId: UUID
+  ): Map<WidgetId, WidgetControlState> {
+    const controls = graphWidgetControls.value.get(graphId)
+    if (controls) return controls
+
+    const nextControls = reactive(new Map<WidgetId, WidgetControlState>())
+    graphWidgetControls.value.set(graphId, nextControls)
+    return nextControls
   }
 
   function getGraphWidgetRenderStates(
@@ -154,6 +172,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const { graphId, nodeId, name: storageName } = parseWidgetId(widgetId)
     if (existing && existing.type !== init.type) {
       getGraphWidgetRenderStates(graphId).delete(widgetId)
+      graphWidgetControls.value.get(graphId)?.delete(widgetId)
     }
     registerWidgetRenderState(widgetId, renderState)
     // WidgetId is `graphId:nodeId:name`. A node replacement can reuse the same
@@ -248,8 +267,58 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const { graphId } = parseWidgetId(widgetId)
     graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
+    graphWidgetControls.value.get(graphId)?.delete(widgetId)
     removeNodeWidgetOrder(widgetId)
     return graphWidgetStates.value.get(graphId)?.delete(widgetId) ?? false
+  }
+
+  function registerWidgetControl(
+    targetId: WidgetId,
+    init: Omit<WidgetControlState, 'hasExecuted'>
+  ): WidgetControlState | undefined {
+    if (!isWidgetId(targetId)) return undefined
+
+    const { graphId } = parseWidgetId(targetId)
+    const controls = getGraphWidgetControls(graphId)
+    const existing = controls.get(targetId)
+    if (existing) return existing
+
+    controls.set(targetId, { ...init, hasExecuted: false })
+    return controls.get(targetId)
+  }
+
+  function getWidgetControls(graphId: UUID): [WidgetId, WidgetControlState][] {
+    return [...(graphWidgetControls.value.get(graphId)?.entries() ?? [])]
+  }
+
+  function getWidgetControl(
+    targetId: WidgetId
+  ): WidgetControlState | undefined {
+    if (!isWidgetId(targetId)) return undefined
+    const { graphId } = parseWidgetId(targetId)
+    return graphWidgetControls.value.get(graphId)?.get(targetId)
+  }
+
+  function updateWidgetControl(
+    targetId: WidgetId,
+    patch: Partial<WidgetControlState>
+  ): boolean {
+    const control = getWidgetControl(targetId)
+    if (!control) return false
+    if (patch.mode !== undefined) control.mode = patch.mode
+    if (patch.filter !== undefined && control.filter !== undefined) {
+      control.filter = patch.filter
+    }
+    if (patch.hasExecuted !== undefined) {
+      control.hasExecuted = patch.hasExecuted
+    }
+    return true
+  }
+
+  function deleteWidgetControl(targetId: WidgetId): boolean {
+    if (!isWidgetId(targetId)) return false
+    const { graphId } = parseWidgetId(targetId)
+    return graphWidgetControls.value.get(graphId)?.delete(targetId) ?? false
   }
 
   function renameWidget(
@@ -272,16 +341,20 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const renderStates = getGraphWidgetRenderStates(graphId)
     const renderState = renderStates.get(oldId)
+    const controls = getGraphWidgetControls(graphId)
+    const control = controls.get(oldId)
     const order = getNodeWidgetOrder(graphId, nodeId)
     const index = order.indexOf(oldId)
 
     widgetStates.delete(oldId)
     renderStates.delete(oldId)
+    controls.delete(oldId)
     if (index !== -1) order.splice(index, 1)
 
     state.name = name
     widgetStates.set(newId, state)
     if (renderState) renderStates.set(newId, renderState)
+    if (control) controls.set(newId, control)
     if (index !== -1) order.splice(index, 0, newId)
     else if (!order.includes(newId)) order.push(newId)
 
@@ -375,6 +448,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       for (const widgetId of order) {
         graphWidgetStates.value.get(graphId)?.delete(widgetId)
         graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
+        graphWidgetControls.value.get(graphId)?.delete(widgetId)
       }
     }
     graphOrders.delete(localNodeId)
@@ -389,6 +463,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         if (state.nodeId !== nodeId) continue
         widgetStates.delete(id)
         widgetRenderStates?.delete(id)
+        graphWidgetControls.value.get(graphId)?.delete(id)
       }
       if (widgetStates.size === 0) graphWidgetStates.value.delete(graphId)
     }
@@ -403,6 +478,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
+    graphWidgetControls.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
@@ -419,6 +495,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setLabel,
     updateOptions,
     deleteWidget,
+    registerWidgetControl,
+    getWidgetControls,
+    getWidgetControl,
+    updateWidgetControl,
+    deleteWidgetControl,
     renameWidget,
     getNodeWidgets,
     getNodeWidgetIds,

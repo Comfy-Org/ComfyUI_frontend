@@ -1,6 +1,7 @@
 import { intersection } from 'es-toolkit/compat'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { applyControlValues } from '@/core/graph/widgets/control/widgetControl'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
@@ -291,35 +292,19 @@ export class PrimitiveNode extends LGraphNode {
       if (!control_value) {
         control_value = 'fixed'
       }
-      addValueControlWidgets(
-        this,
-        widget,
-        control_value as string,
-        undefined,
-        inputData
-      )
-      if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
-
       const filter = useWidgetValueStore().getPositionalRestoredWidgetValue(
         graphId,
         this.id,
         2
       )
-      if (filter && this.widgets && this.widgets.length === 3) {
-        this.widgets[2].value = filter
-      }
+      addValueControlWidgets(widget, String(control_value))
+      applyControlValues(widget, [control_value, filter], 0)
     }
 
     // Restore any saved control values
     const controlValues = this.controlValues
-    if (
-      this.widgets &&
-      this.lastType === this.widgets[0]?.type &&
-      controlValues?.length === this.widgets.length - 1
-    ) {
-      for (let i = 0; i < controlValues.length; i++) {
-        this.widgets[i + 1].value = controlValues[i]
-      }
+    if (this.lastType === this.widgets?.[0]?.type && controlValues?.length) {
+      applyControlValues(widget, controlValues, 0)
     }
 
     this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
@@ -433,12 +418,16 @@ export class PrimitiveNode extends LGraphNode {
         }
       }
 
-      // Temporarily store the current values in case the node is being recreated
-      this.controlValues = []
       this.lastType = this.widgets[0]?.type
-      for (let i = 1; i < this.widgets.length; i++) {
-        this.controlValues.push(this.widgets[i].value)
-      }
+      const targetId = this.widgets[0]?.widgetId
+      const control = targetId
+        ? useWidgetValueStore().getWidgetControl(targetId)
+        : undefined
+      this.controlValues = control
+        ? control.filter === undefined
+          ? [control.mode]
+          : [control.mode, control.filter]
+        : []
       setTimeout(() => {
         delete this.lastType
         delete this.controlValues
