@@ -169,7 +169,7 @@ function useWorkspaceUIInternal() {
   )
 
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { canReactivate } = useBillingCapabilities()
+  const { canReactivate, canSubscribeSelfServe } = useBillingCapabilities()
 
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(
@@ -185,10 +185,27 @@ function useWorkspaceUIInternal() {
   // legacy_stripe workspaces have no capability projection row, so the
   // server-resolved can_reactivate is false for them and cannot gate the
   // action; that rail stays on the membership check.
+  //
+  // Every reactivation surface reads this — the affordances and the handlers
+  // that execute them. They must not diverge: an affordance shown on a
+  // condition the handler does not share offers an action that silently fails,
+  // and the reverse hides a working one.
   const canReactivatePlan = computed(() =>
     isCloud && shouldUseWorkspaceBilling.value
       ? canReactivate.value
       : permissions.value.canManageSubscriptionLifecycle
+  )
+
+  // Whether the self-serve pricing catalog applies to this workspace at all.
+  // The server resolves can_subscribe_self_serve false for sales-managed tiers
+  // (Enterprise, unrecognized), so every pricing-table entry point — menu
+  // items, settings links, and the ?pricing= deep link — reads this one value.
+  // Same rail split as canReactivatePlan: legacy_stripe has no capability
+  // projection row and stays on the membership check.
+  const canOpenPricingSurface = computed(() =>
+    isCloud && shouldUseWorkspaceBilling.value
+      ? canSubscribeSelfServe.value
+      : permissions.value.canManageSubscription
   )
 
   const uiConfig = computed<WorkspaceUIConfig>(() => {
@@ -233,6 +250,7 @@ function useWorkspaceUIInternal() {
     // Permissions and config
     permissions,
     canReactivatePlan,
+    canOpenPricingSurface,
     uiConfig,
     workspaceType,
     workspaceRole,

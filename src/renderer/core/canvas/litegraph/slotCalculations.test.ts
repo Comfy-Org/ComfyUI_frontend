@@ -12,21 +12,21 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: mockLiteGraph
 }))
 
-vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
-  getSlotKey: vi.fn()
-}))
-
-vi.mock('@/renderer/core/layout/store/layoutStore')
-
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 
 import {
   calculateInputSlotPosFromSlot,
+  getSlotLayout,
+  getSlotLayoutAtPoint,
   getSlotPosition
 } from './slotCalculations'
 import type { SlotPositionContext } from './slotCalculations'
@@ -62,18 +62,29 @@ function makeNode(
     inputs: INodeInputSlot[]
     outputs: INodeOutputSlot[]
     collapsed: boolean
+    titleMode: TitleMode
+    type: string
+    id: number
+    position: [number, number]
+    size: [number, number]
   }> = {}
 ): LGraphNode {
+  const position = overrides.position ?? [100, 200]
+  const size = overrides.size ?? [180, 120]
   return fromPartial<LGraphNode>({
-    id: toNodeId(1),
-    pos: [100, 200],
-    size: [180, 120],
+    id: toNodeId(overrides.id ?? 1),
+    pos: position,
+    size,
+    renderingSize: size,
     flags: { collapsed: overrides.collapsed ?? false },
+    title_mode: overrides.titleMode ?? TitleMode.NORMAL_TITLE,
+    type: overrides.type ?? 'TestNode',
     _collapsed_width: mockLiteGraph.NODE_COLLAPSED_WIDTH,
     constructor: { slot_start_y: undefined },
     inputs: overrides.inputs ?? [],
     outputs: overrides.outputs ?? [],
-    widgets: []
+    widgets: [],
+    graph: { rootGraph: { id: 'root-graph' } }
   })
 }
 
@@ -209,5 +220,223 @@ describe('getSlotPosition — legacy fallback (vueNodesMode disabled)', () => {
     const [x, y] = getSlotPosition(node, 5, true)
     expect(x).toBe(100)
     expect(y).toBe(200)
+  })
+})
+
+describe('Vue slot geometry', () => {
+  beforeEach(() => {
+    mockLiteGraph.vueNodesMode = true
+    layoutStore.resetForTests()
+  })
+
+  it('combines measured render offsets with the current node position', () => {
+    const node = makeNode({
+      inputs: [makeInput()],
+      position: [300, 400]
+    })
+    if (!node.graph) throw new Error('Expected node graph')
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [{ index: 0, type: 'input', position: { x: 0, y: 73 } }],
+      'expanded'
+    )
+
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 473])
+    const graph = fromPartial<LGraph>({
+      _nodes: [node],
+      rootGraph: { id: 'root-graph' }
+    })
+    expect(getSlotLayoutAtPoint(graph, { x: 300, y: 473 }, node)).toEqual(
+      getSlotLayout(node, 0, true)
+    )
+
+    node.pos[0] = 450
+    node.pos[1] = 500
+    expect(getSlotPosition(node, 0, true)).toEqual([450, 573])
+  })
+
+  it('derives slot positions from the current node layout', () => {
+    const node = makeNode({
+      inputs: [makeInput()],
+      outputs: [makeOutput()],
+      position: [300, 400],
+      size: [240, 160]
+    })
+
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 414])
+    expect(getSlotPosition(node, 0, false)).toEqual([540, 414])
+
+    node.pos[0] = 320
+    node.pos[1] = 450
+    node.size[0] = 300
+
+    expect(getSlotPosition(node, 0, true)).toEqual([320, 464])
+    expect(getSlotPosition(node, 0, false)).toEqual([620, 464])
+  })
+
+  it('finds a measured slot immediately outside node bounds', () => {
+    const node = makeNode({ inputs: [makeInput()], position: [300, 400] })
+    if (!node.graph) throw new Error('Expected node graph')
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [{ index: 0, type: 'input', position: { x: -6, y: 14 } }],
+      'expanded'
+    )
+    const graph = fromPartial<LGraph>({
+      _nodes: [node],
+      rootGraph: { id: 'root-graph' }
+    })
+
+    expect(getSlotLayoutAtPoint(graph, { x: 284, y: 414 })).toEqual(
+      getSlotLayout(node, 0, true)
+    )
+  })
+
+  it('finds protruding slots without relying on nearby node bounds', () => {
+    const node = makeNode({ inputs: [makeInput()], position: [300, 400] })
+    if (!node.graph) throw new Error('Expected node graph')
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [{ index: 0, type: 'input', position: { x: -6, y: 14 } }],
+      'expanded'
+    )
+    const overlappingNode = makeNode({ position: [280, 390] })
+    const graph = fromPartial<LGraph>({
+      _nodes: [node, overlappingNode],
+      rootGraph: { id: 'root-graph' }
+    })
+
+    expect(getSlotLayoutAtPoint(graph, { x: 284, y: 414 })).toEqual(
+      getSlotLayout(node, 0, true)
+    )
+  })
+
+  it('prefers the top rendered slot when nodes overlap', () => {
+    const topNode = makeNode({ id: 1, inputs: [makeInput()] })
+    const laterNode = makeNode({ id: 2, inputs: [makeInput()] })
+    const graph = fromPartial<LGraph>({
+      _nodes: [topNode, laterNode],
+      rootGraph: { id: 'root-graph' }
+    })
+    for (const [node, zIndex] of [
+      [topNode, 2],
+      [laterNode, 1]
+    ] as const) {
+      layoutStore.applyOperation({
+        type: 'createNode',
+        graphId: 'root-graph',
+        nodeId: node.id,
+        layout: {
+          id: node.id,
+          position: { x: 100, y: 200 },
+          size: { width: 180, height: 120 },
+          zIndex,
+          visible: true,
+          bounds: { x: 100, y: 200, width: 180, height: 120 }
+        },
+        timestamp: 0,
+        source: LayoutSource.Canvas
+      })
+    }
+
+    expect(getSlotLayoutAtPoint(graph, { x: 100, y: 214 })?.nodeId).toBe(
+      topNode.id
+    )
+  })
+
+  it('uses widget slot visual positions for connected and unconnected inputs', () => {
+    const widgetInput = makeInput({
+      widget: { name: 'widget' },
+      pos: [10, 88]
+    })
+    const node = makeNode({
+      inputs: [widgetInput],
+      position: [300, 400],
+      size: [240, 160]
+    })
+    const graph = fromPartial<LGraph>({ nodes: [node] })
+
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 488])
+    expect(getSlotLayoutAtPoint(graph, { x: 300, y: 488 }, node)).toEqual(
+      getSlotLayout(node, 0, true)
+    )
+  })
+
+  it('uses collapsed node anchors', () => {
+    const node = makeNode({
+      inputs: [makeInput()],
+      outputs: [makeOutput()],
+      collapsed: true,
+      position: [300, 400]
+    })
+
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
+    expect(getSlotPosition(node, 0, false)).toEqual([380, 385])
+  })
+
+  it('ignores expanded slot offsets after the node collapses', () => {
+    const node = makeNode({
+      inputs: [makeInput()],
+      outputs: [makeOutput()],
+      collapsed: true,
+      position: [300, 400]
+    })
+    if (!node.graph) throw new Error('Expected node graph')
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [
+        { index: 0, type: 'input', position: { x: 0, y: 73 } },
+        { index: 0, type: 'output', position: { x: 180, y: 73 } }
+      ],
+      'expanded'
+    )
+
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
+    expect(getSlotPosition(node, 0, false)).toEqual([380, 385])
+  })
+
+  it('uses collapsed slot offsets from the rendered node width', () => {
+    const node = makeNode({
+      inputs: [makeInput()],
+      outputs: [makeOutput()],
+      collapsed: true,
+      position: [300, 400]
+    })
+    if (!node.graph) throw new Error('Expected node graph')
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [
+        { index: 0, type: 'input', position: { x: 0, y: -15 } },
+        { index: 0, type: 'output', position: { x: 280, y: -15 } }
+      ],
+      'collapsed'
+    )
+
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
+    expect(getSlotPosition(node, 0, false)).toEqual([580, 385])
+  })
+
+  it('accounts for headerless and reroute node structure', () => {
+    const headerless = makeNode({
+      inputs: [makeInput()],
+      titleMode: TitleMode.NO_TITLE,
+      position: [300, 400],
+      size: [240, 160]
+    })
+    const reroute = makeNode({
+      outputs: [makeOutput()],
+      titleMode: TitleMode.NO_TITLE,
+      type: 'Reroute',
+      position: [300, 400],
+      size: [240, 160]
+    })
+
+    expect(getSlotPosition(headerless, 0, true)).toEqual([300, 384])
+    expect(getSlotPosition(reroute, 0, false)).toEqual([540, 380])
   })
 })

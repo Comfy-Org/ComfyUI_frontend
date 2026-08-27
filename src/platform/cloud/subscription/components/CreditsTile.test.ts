@@ -35,7 +35,8 @@ const state = vi.hoisted(() => ({
   showPricingTable: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
-  checkForCompletedTopup: vi.fn(),
+  trackApiCreditTopupSucceeded: vi.fn(),
+  telemetryUnavailable: false,
   getMyEvents: vi.fn(
     async (): Promise<CustomerEventsResult> => ({ events: [] })
   ),
@@ -98,10 +99,13 @@ vi.mock('@/services/dialogService', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked,
-    checkForCompletedTopup: state.checkForCompletedTopup
-  })
+  useTelemetry: () =>
+    state.telemetryUnavailable
+      ? null
+      : {
+          trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked,
+          trackApiCreditTopupSucceeded: state.trackApiCreditTopupSucceeded
+        }
 }))
 
 vi.mock('@/services/customerEventsService', () => ({
@@ -211,6 +215,7 @@ describe('CreditsTile', () => {
     state.canSubscribeSelfServe = false
     state.type = 'workspace'
     state.customerEventsError = null
+    state.telemetryUnavailable = false
     mockIsCloud.value = true
   })
 
@@ -350,6 +355,9 @@ describe('CreditsTile', () => {
 
   it('shows disabled credit details for an inactive plan', () => {
     activeProSubscription()
+    // Lapsed self-serve plans withhold top-up server-side
+    // (lapsedSelfServeCapabilities), which is what zeroes the tile.
+    state.canTopUp = false
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
@@ -358,6 +366,52 @@ describe('CreditsTile', () => {
       'Reactivate your plan to use these credits'
     )
     expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('keeps Add credits and the real balance on an inactive sales-managed plan', () => {
+    activeProSubscription()
+    // hideLifecycleCapabilities keeps top-up open for Enterprise whatever the
+    // subscription row says, so the inactive zero-state must not apply.
+    state.canTopUp = true
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).not.toContain(
+      'Reactivate your plan to use these credits'
+    )
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+  })
+
+  it('does not borrow a catalog monthly pool for an Enterprise plan', () => {
+    activeProSubscription()
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
+  })
+
+  it('does not borrow a catalog monthly pool for an unrecognized tier', () => {
+    activeProSubscription()
+    const galactic = 'GALACTIC' as unknown as SubscriptionInfo['tier']
+    state.tier = galactic
+    state.subscription = {
+      tier: galactic,
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
   })
 
   it('keeps top-up available without an active subscription', () => {
@@ -572,19 +626,20 @@ describe('CreditsTile', () => {
     activeProSubscription()
     state.type = 'legacy'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
-    const events = [{ event_type: 'credit_added' }]
+    const events = [
+      {
+        event_type: 'credit_added',
+        createdAt: new Date(Date.now() + 1000).toISOString()
+      }
+    ]
     state.getMyEvents.mockResolvedValueOnce({ events })
-    state.checkForCompletedTopup.mockImplementationOnce(() => {
-      localStorage.removeItem('pending_topup_timestamp')
-      return true
-    })
 
     renderTile()
 
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
-    expect(state.checkForCompletedTopup).toHaveBeenCalledWith(events)
+    expect(state.trackApiCreditTopupSucceeded).toHaveBeenCalled()
     vi.clearAllMocks()
 
     window.dispatchEvent(new Event('focus'))
@@ -593,18 +648,42 @@ describe('CreditsTile', () => {
     expect(state.getMyEvents).not.toHaveBeenCalled()
   })
 
+  it('refreshes and reconciles a pending legacy top-up when telemetry is unavailable', async () => {
+    activeProSubscription()
+    state.type = 'legacy'
+    state.telemetryUnavailable = true
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    const events = [
+      {
+        event_type: 'credit_added',
+        createdAt: new Date(Date.now() + 1000).toISOString()
+      }
+    ]
+    state.getMyEvents.mockResolvedValueOnce({ events })
+
+    renderTile()
+
+    await waitFor(() =>
+      expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
+    )
+    expect(state.fetchBalance).toHaveBeenCalled()
+    expect(state.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+  })
+
   it('retries legacy completion reconciliation after a request failure', async () => {
     activeProSubscription()
     state.type = 'legacy'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     state.customerEventsError = 'events unavailable'
+    const retryEvents = [
+      {
+        event_type: 'credit_added',
+        createdAt: new Date(Date.now() + 1000).toISOString()
+      }
+    ]
     state.getMyEvents
       .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ events: [{ event_type: 'credit_added' }] })
-    state.checkForCompletedTopup.mockImplementationOnce(() => {
-      localStorage.removeItem('pending_topup_timestamp')
-      return true
-    })
+      .mockResolvedValueOnce({ events: retryEvents })
 
     renderTile()
     await waitFor(() =>

@@ -17772,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "realistic_image 스타일과 선택적 하위 스타일을 선택하세요.",
+    "description": "logo_raster 스타일과 하위 스타일을 선택합니다.",
     "display_name": "Recraft 스타일 - 로고 래스터",
     "inputs": {
       "substyle": {
@@ -17883,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "1~10개의 참조 이미지로 재사용 가능한 Recraft V4 스타일을 생성합니다. 반환된 style_id는 동일한 출력 유형의 모든 Recraft V4 및 V4.1 모델에서 작동합니다. 모든 이미지의 총 크기는 10MB로 제한됩니다.",
+    "display_name": "Recraft V4 스타일 생성",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "스타일을 정의하는 참조 이미지입니다. 유사한 참조는 일치도를 높이고, 다양한 참조는 범위를 넓힙니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "스타일이 생성될 출력 유형입니다: 래스터 이미지에는 recraftv4_styles, SVG에는 recraftv4_styles_vector."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Recraft V4 또는 V4 Pro 모델을 사용하여 이미지를 생성합니다.",
     "display_name": "Recraft V4 텍스트-이미지",
@@ -17892,7 +17912,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
       },
       "model_size": {
         "name": "size"
@@ -17916,10 +17936,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "적용할 Recraft V4 스타일의 UUID입니다. 예: Recraft V4 스타일 생성 노드 또는 이전 실행의 style_id 출력에서 가져올 수 있습니다. style_references와 함께 사용할 수 없습니다."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "스타일을 따르는 정도입니다: precise는 세부적으로 재현하고, flexible는 전반적인 느낌을 일치시킵니다. 스타일이 제공된 경우에만 사용됩니다."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "생성 시 즉석에서 스타일을 만들기 위한 참조 이미지이며, 생성 비용에 추가로 청구됩니다. 생성된 스타일은 재사용할 수 있도록 style_id로 반환됩니다. style_id와 함께 사용할 수 없습니다."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +17969,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
       },
       "model_size": {
         "name": "size"
@@ -17957,10 +17993,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "적용할 Recraft V4 벡터 스타일의 UUID입니다. 예: Recraft V4 스타일 생성 노드 또는 이전 실행의 style_id 출력에서 가져올 수 있습니다. style_references와 함께 사용할 수 없습니다."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "스타일을 따르는 정도입니다: precise는 세부적으로 재현하고, flexible는 전반적인 느낌을 일치시킵니다. 스타일이 제공된 경우에만 사용됩니다."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "생성 시 즉석에서 벡터 스타일을 만들기 위한 참조 이미지이며, 생성 비용에 추가로 청구됩니다. 생성된 스타일은 재사용할 수 있도록 style_id로 반환됩니다. style_id와 함께 사용할 수 없습니다."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,61 +24665,11 @@
       },
       "resolution": {
         "name": "해상도",
-        "tooltip": "출력 비디오 해상도입니다. 4K는 veo-3.1-lite 및 veo-3.0 모델에서 지원되지 않습니다."
+        "tooltip": "출력 동영상 해상도입니다. veo-3.1-lite 모델에서는 4K를 사용할 수 없습니다."
       },
       "seed": {
         "name": "시드",
         "tooltip": "비디오 생성을 위한 시드 (0은 랜덤)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Google의 Veo API를 사용하여 텍스트 프롬프트로부터 비디오를 생성합니다",
-    "display_name": "Google Veo2 비디오 생성",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비",
-        "tooltip": "출력 비디오의 가로세로 비율"
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "출력 비디오의 길이(초)"
-      },
-      "enhance_prompt": {
-        "name": "프롬프트 개선",
-        "tooltip": "AI 지원으로 프롬프트를 향상시킬지 여부"
-      },
-      "image": {
-        "name": "이미지",
-        "tooltip": "비디오 생성을 안내할 선택적 참조 이미지"
-      },
-      "model": {
-        "name": "모델",
-        "tooltip": "비디오 생성에 사용할 Veo 2 모델"
-      },
-      "negative_prompt": {
-        "name": "부정 프롬프트",
-        "tooltip": "비디오에서 피해야 할 내용을 안내하는 네거티브 텍스트 프롬프트"
-      },
-      "person_generation": {
-        "name": "사람 생성",
-        "tooltip": "비디오에서 사람 생성을 허용할지 여부"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "비디오에 대한 텍스트 설명"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "비디오 생성용 시드 (0은 무작위)"
       }
     },
     "outputs": {
