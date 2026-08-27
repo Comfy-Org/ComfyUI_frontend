@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Contract or API question
+    url: https://github.com/Comfy-Org/comfy-multi-player/discussions
+    about: Read docs/api-contract-proposal.md first, then open a Discussion — issues are for tracked work, not open-ended design questions.
+  - name: Security report
+    url: https://github.com/Comfy-Org/comfy-multi-player/security/advisories/new
+    about: Report security vulnerabilities privately via GitHub Security Advisories, not as a public issue.
