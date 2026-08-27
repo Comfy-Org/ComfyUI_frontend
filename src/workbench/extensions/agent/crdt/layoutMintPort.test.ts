@@ -5,6 +5,8 @@ import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 import type { GraphOperation } from './graphOperations'
 import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
+import { createMintSession } from './mintSession'
+import type { MintSession } from './mintSession'
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123def'
@@ -27,6 +29,13 @@ function clearChange(actor: string = LOCAL_ACTOR): LayoutChangeView {
   return { operation: { type: 'clearGraph', actor } }
 }
 
+function deleteChange(
+  id: string,
+  actor: string = LOCAL_ACTOR
+): LayoutChangeView {
+  return { operation: { type: 'deleteNode', actor, nodeId: id } }
+}
+
 describe('attachLayoutMintPort', () => {
   let minted: GraphOperation[]
   let port: LayoutMintPort
@@ -34,6 +43,8 @@ describe('attachLayoutMintPort', () => {
   let bound: boolean
   let graphNodes: Map<string, WorkflowNode>
   let listeners: Set<(change: LayoutChangeView) => void>
+  let session: MintSession
+  let severed: Map<string, (string | number)[]>
 
   function deliver(change: LayoutChangeView): void {
     for (const listener of listeners) listener(change)
@@ -44,6 +55,8 @@ describe('attachLayoutMintPort', () => {
     enabled = true
     bound = true
     listeners = new Set()
+    session = createMintSession()
+    severed = new Map()
     graphNodes = new Map([
       ['1', { id: 1, type: 'TestNode', pos: [128, 96], widgets_values: [7] }]
     ])
@@ -54,6 +67,8 @@ describe('attachLayoutMintPort', () => {
           return () => listeners.delete(listener)
         }
       },
+      session,
+      severedLinks: { take: (nodeId) => severed.get(nodeId) ?? [] },
       localActorPrefix: LOCAL_PREFIX,
       isEnabled: () => enabled,
       isDocBound: () => bound,
@@ -108,19 +123,45 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('never mints inside a graph-teardown bracket', () => {
-    port.beginGraphTeardown()
+    session.beginGraphTeardown()
     deliver(createNodeChange('1'))
-    port.endGraphTeardown()
+    session.endGraphTeardown()
 
     expect(minted).toEqual([])
   })
 
   it('mints again after the teardown bracket closes', () => {
-    port.beginGraphTeardown()
-    port.endGraphTeardown()
+    session.beginGraphTeardown()
+    session.endGraphTeardown()
     deliver(createNodeChange('1'))
 
     expect(minted).toHaveLength(1)
+  })
+
+  it('mints delete_node carrying the severed link ids from the capture', () => {
+    severed.set('1', [17, 18])
+    deliver(deleteChange('1'))
+
+    expect(minted).toEqual([
+      { op: 'delete_node', node_id: '1', removed_links: [17, 18] }
+    ])
+  })
+
+  it('mints delete_node with no severances as an empty removed_links', () => {
+    deliver(deleteChange('1'))
+
+    expect(minted).toEqual([
+      { op: 'delete_node', node_id: '1', removed_links: [] }
+    ])
+  })
+
+  it('never mints a teardown-bracketed or agent-remote deleteNode', () => {
+    session.beginGraphTeardown()
+    deliver(deleteChange('1'))
+    session.endGraphTeardown()
+    deliver(deleteChange('2', AGENT_REMOTE_ACTOR))
+
+    expect(minted).toEqual([])
   })
 
   it('drops a snapshot-less mint observably, never silently', () => {
