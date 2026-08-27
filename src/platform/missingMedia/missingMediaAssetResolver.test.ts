@@ -27,7 +27,12 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/platform/assets/composables/useAssetsQuery', () => ({
-  useAssetsQuery: mockUseAssetsQuery
+  useAssetsQuery: mockUseAssetsQuery,
+  invalidateAll: vi.fn()
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
 
 vi.mock('@/platform/assets/services/assetService', async () => {
