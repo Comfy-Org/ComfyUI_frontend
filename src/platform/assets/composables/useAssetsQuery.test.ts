@@ -172,7 +172,7 @@ describe('useAssetsQuery loadMore pagination', () => {
       response(['overlap', 'older'], { hasMore: false })
     )
 
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+    await list.loadMore()
 
     expect(toValue(list.items).map(({ id }) => id)).toEqual([
       'newest',
@@ -190,10 +190,10 @@ describe('useAssetsQuery loadMore pagination', () => {
       response(['older'], { hasMore: true, nextCursor: 'stuck' })
     )
 
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+    await list.loadMore()
 
     expect(toValue(list.hasMore)).toBe(false)
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(false)
+    await list.loadMore()
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 
@@ -210,11 +210,11 @@ describe('useAssetsQuery loadMore pagination', () => {
         response(['oldest'], { hasMore: true, nextCursor: 'A' })
       )
 
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+    await list.loadMore()
+    await list.loadMore()
 
     expect(toValue(list.hasMore)).toBe(false)
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(false)
+    await list.loadMore()
     expect(fetchApiMock).toHaveBeenCalledTimes(3)
   })
 
@@ -225,7 +225,7 @@ describe('useAssetsQuery loadMore pagination', () => {
     })
     fetchApiMock.mockRejectedValueOnce(new Error('network failed'))
 
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(false)
+    await list.loadMore()
 
     expect(toValue(list.hasMore)).toBe(true)
     expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])

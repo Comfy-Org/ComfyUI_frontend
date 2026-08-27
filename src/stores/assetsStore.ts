@@ -90,6 +90,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
+const MAX_OUTPUT_ASSET_PAGES = 1000
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
@@ -285,6 +286,22 @@ export const useAssetsStore = defineStore('assets', () => {
     const flatAssets = useAssetsQuery({ tags_any: outputDirs.value })
     return wrapPagedList(flatAssets, unflattenOutputAssets)
   })
+
+  async function loadOutputAsset(id: string): Promise<boolean> {
+    const assets = toValue(outputAssets)
+    const hasAsset = () =>
+      toValue(assets.items).some((asset) => asset.id === id)
+    let pagesLoaded = 0
+    while (
+      !hasAsset() &&
+      toValue(assets.hasMore) &&
+      pagesLoaded < MAX_OUTPUT_ASSET_PAGES
+    ) {
+      await assets.loadMore()
+      pagesLoaded++
+    }
+    return hasAsset()
+  }
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -893,6 +910,9 @@ export const useAssetsStore = defineStore('assets', () => {
     inputAssets,
     outputAssets,
     invalidateAll,
+
+    // Actions
+    loadOutputAsset,
 
     // Deletion tracking
     deletingAssetIds,

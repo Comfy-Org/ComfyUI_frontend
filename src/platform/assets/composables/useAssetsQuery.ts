@@ -25,7 +25,6 @@ function assetsQueryInternal(
   const onError = options.onError ?? console.error
 
   let nextCursor: string | undefined
-  let loadGeneration = 0
   const seenCursors = new Set(
     params.after === undefined ? [] : [params.after]
   )
@@ -58,19 +57,12 @@ function assetsQueryInternal(
       !seenCursors.has(nextCursor)
     if (nextCursor !== undefined) seenCursors.add(nextCursor)
     items.value.push(...newItems)
-    loadGeneration++
-  }
-
-  async function loadMoreWithProgress() {
-    const startingGeneration = loadGeneration
-    await enqueue('loadMore', async (signal) => {
-      await doLoadMore(signal)
-    })
-    return loadGeneration > startingGeneration
   }
 
   async function loadMore() {
-    await loadMoreWithProgress()
+    await enqueue('loadMore', async (signal) => {
+      await doLoadMore(signal)
+    })
   }
 
   function loadNew() {
@@ -164,7 +156,6 @@ function assetsQueryInternal(
     isLoading,
     items,
     loadMore,
-    loadMoreWithProgress,
     loadNew
   }
 }
