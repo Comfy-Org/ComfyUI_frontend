@@ -56,36 +56,21 @@ export const minimaxLicensePage: ModelLaunchPage = {
     },
     items: [
       {
-        id: 'try-on-cloud',
-        title: {
-          en: 'Try H3 on Comfy Cloud',
-          'zh-CN': '在 Comfy Cloud 上试用 H3'
-        },
+        id: 'professional',
+        title: { en: 'Professional', 'zh-CN': '专业版' },
         description: {
-          en: 'Run the H3 workflows in the template library. Commercial rights are already included on Cloud.',
-          'zh-CN': '运行模板库中的 H3 工作流。Cloud 上已包含商业权利。'
+          en: 'A fixed-price monthly license for studios and teams shipping client work. Up to 10 licensed users, on distilled open-weight model versions.',
+          'zh-CN':
+            '面向交付客户项目的工作室和团队的固定价格月度许可。最多 10 个授权用户，使用蒸馏开源权重模型版本。'
         }
       },
       {
-        id: 'request-a-license',
-        title: {
-          en: "Tell us what you're building",
-          'zh-CN': '告诉我们你在构建什么'
-        },
+        id: 'enterprise',
+        title: { en: 'Enterprise', 'zh-CN': '企业版' },
         description: {
-          en: 'Request a license and we will help you pick Professional or Enterprise.',
-          'zh-CN': '申请许可，我们会帮你在专业版与企业版之间选择。'
-        }
-      },
-      {
-        id: 'run-locally',
-        title: {
-          en: 'Run H3 on your own hardware',
-          'zh-CN': '在自有硬件上运行 H3'
-        },
-        description: {
-          en: 'Full commercial rights to your outputs, fine-tuning and LoRA training included.',
-          'zh-CN': '产出的完整商业权利归你，包含微调与 LoRA 训练。'
+          en: 'An annual agreement for teams building MiniMax into their product. Custom volume pricing, no user cap, and every model version, undistilled weights included.',
+          'zh-CN':
+            '面向将 MiniMax 构建进自家产品的团队的年度协议。定制批量定价，不限用户数，涵盖所有模型版本，包括未蒸馏权重。'
         }
       }
     ]
@@ -135,13 +120,13 @@ export const minimaxLicensePage: ModelLaunchPage = {
       {
         id: 'plans',
         question: {
-          en: 'What plans are available?',
-          'zh-CN': '有哪些方案可选？'
+          en: 'What is the difference between the Professional and Enterprise tiers?',
+          'zh-CN': '专业版和企业版有什么区别？'
         },
         answer: {
-          en: 'Professional and Enterprise. Professional is a fixed-price license for studios shipping client work. Enterprise adds volume pricing, unlimited seats, and access to undistilled weights that Professional does not get. Request a license and we will help you pick.',
+          en: 'Professional is a fixed-price monthly license for studios and teams shipping client work, with up to 10 licensed users on distilled open-weight model versions. Enterprise is an annual agreement with custom volume pricing, no user cap, and every model version, undistilled weights included. Request a license and we will help you pick.',
           'zh-CN':
-            '专业版和企业版。专业版是面向交付客户项目的工作室的固定价格许可。企业版增加批量定价、不限席位，以及专业版没有的未蒸馏权重使用权。申请许可，我们会帮你选择。'
+            '专业版是面向交付客户项目的工作室和团队的固定价格月度许可，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版是年度协议，提供定制批量定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本。申请许可，我们会帮你选择。'
         }
       },
       {

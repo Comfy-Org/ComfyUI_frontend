@@ -6073,10 +6073,10 @@ const translations = {
     'zh-CN': '全球可用'
   },
   'minimaxLicense.steps.heading': {
-    en: 'Getting started',
-    'zh-CN': '开始使用'
+    en: 'Two license tiers',
+    'zh-CN': '两种许可级别'
   },
-  'minimaxLicense.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'minimaxLicense.steps.step': { en: 'Tier', 'zh-CN': '级别' },
   'minimaxLicense.steps.primaryCta': {
     en: 'REQUEST LICENSE',
     'zh-CN': '申请许可'
