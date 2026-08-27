@@ -5,15 +5,23 @@ import { describe, expect, it } from 'vitest'
 import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
-  it('does not promote the Models showcase page', () => {
+  // The /models showcase page is intentionally not promoted from the footer.
+  it('does not link the Models showcase page', () => {
     render(SiteFooter, { props: { locale: 'en' } })
 
-    expect(screen.queryByRole('link', { name: 'Models' })).toBeNull()
+    const hrefs = screen
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'))
+    expect(hrefs).not.toContain('/models')
   })
 
-  it('does not promote the localized Models showcase page', () => {
+  it('links the MiniMax license page at its localized path for zh-CN', () => {
     render(SiteFooter, { props: { locale: 'zh-CN' } })
 
-    expect(screen.queryByRole('link', { name: '模型' })).toBeNull()
+    const links = screen.getAllByRole('link', { name: 'MiniMax 商业许可' })
+    expect(links.length).toBeGreaterThan(0)
+    for (const link of links) {
+      expect(link.getAttribute('href')).toBe('/zh-CN/minimax/license')
+    }
   })
 })

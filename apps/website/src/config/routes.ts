@@ -26,6 +26,7 @@ const baseRoutes = {
   mcp: '/mcp',
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',
+  minimaxLicense: '/minimax/license',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
   fdct: '/forward-deployed-creatives',
