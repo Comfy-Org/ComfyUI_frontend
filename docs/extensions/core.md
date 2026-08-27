@@ -137,12 +137,18 @@ setup
 #### Loading Workflow
 
 ```
+beforeLoadGraph
 beforeConfigureGraph
 beforeRegisterNodeDef   [zero, one, or multiple times]
 nodeCreated             [repeated multiple times]
 loadedGraphNode         [repeated multiple times]
 afterConfigureGraph
+afterLoadGraph
 ```
+
+If configuring the graph fails, the load aborts after `beforeLoadGraph`:
+neither `afterConfigureGraph` nor `afterLoadGraph` fires on that path, so the
+pair is not guaranteed to balance.
 
 #### Adding New Node
 
@@ -162,8 +168,10 @@ nodeCreated
 | `registerCustomNodes`         | Allows extensions to register additional nodes             |
 | `loadedGraphNode`             | Called when a node is reloaded onto the graph              |
 | `nodeCreated`                 | Called after a node's constructor                          |
+| `beforeLoadGraph`             | Called at the start of a workflow load, before configure   |
 | `beforeConfigureGraph`        | Called before a graph is configured                        |
 | `afterConfigureGraph`         | Called after a graph is configured                         |
+| `afterLoadGraph`              | Called after a workflow load completes successfully        |
 | `getSelectionToolboxCommands` | Allows extensions to add commands to the selection toolbox |
 
 For the complete list of available hooks and detailed descriptions, see the [ComfyExtension interface in comfy.ts](https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/types/comfy.ts).

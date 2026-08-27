@@ -1,10 +1,10 @@
 import { shallowRef, triggerRef } from 'vue'
 
 /**
- * PoC (branch poc/fe-crdt-follower-e2e): in-memory ring buffer feeding the
- * CRDT dev panel. Deliberately module-level (one buffer per page, like the
- * follower gate) so the panel component and the follower composable never
- * need a shared injection seam. Not shipped beyond the PoC branch.
+ * Dev instrumentation: in-memory ring buffer feeding the CRDT dev panel.
+ * Deliberately module-level (one buffer per page, like the follower gate) so
+ * the panel component and the follower composable never need a shared
+ * injection seam. No mount site until the agent-panel slice lands.
  */
 
 export type DevEventKind =

@@ -105,12 +105,10 @@ jobs:
           echo '🔍 Checking production dependency licenses...'
 
           # Use license-checker-rseidelsohn (actively maintained fork, handles monorepos)
-          # Exclude internal @comfyorg packages from license check
-          # NOTE: @comfyorg/comfy-multi-player is first-party and excluded on the same
-          # basis as the rest, but unlike them it currently ships NO license field and
-          # NO LICENSE file (Comfy-Org/comfy-multi-player has neither in-repo). This
-          # exclusion is therefore load-bearing, not cosmetic — remove it once the
-          # package declares a license and a version carrying it is published.
+          # Exclude internal @comfyorg packages from license check.
+          # @comfyorg/comfy-multi-player is first-party and excluded on the same
+          # basis as the rest. At the pinned commit it declares GPL-3.0-only and
+          # ships a LICENSE file, both compatible with the allowlist below.
           # Run in if condition to capture exit code
           if pnpx license-checker-rseidelsohn@4 \
             --production \
