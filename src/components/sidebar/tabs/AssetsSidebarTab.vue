@@ -168,6 +168,7 @@
     :is-bulk-mode="isBulkMode"
     @zoom="handleZoomClick(contextMenuAsset)"
     @hide="handleContextMenuHide"
+    @asset-deleted="refreshAssets"
     @bulk-download="handleBulkDownload"
     @bulk-delete="handleBulkDelete"
     @bulk-add-to-workflow="handleBulkAddToWorkflow"
@@ -476,12 +477,18 @@ const galleryItems = computed(() => {
   })
 })
 
+const refreshAssets = async () => {
+  await currentAssets.value.invalidate()
+}
+
 watch(
   activeTab,
   () => {
     clearSelection()
+    // Clear search when switching tabs
     searchQuery.value = ''
-    void currentAssets.value.loadNew()
+    // Reset pagination state when tab changes
+    void refreshAssets()
   },
   { immediate: true }
 )
