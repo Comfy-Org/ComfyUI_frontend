@@ -73,7 +73,7 @@ export const useLitegraphSettings = () => {
     ([linkRenderMode, canvas]) => {
       if (canvas) {
         canvas.links_render_mode = linkRenderMode
-        canvas.setDirty(/* fg */ false, /* bg */ true)
+        canvas.setDirty(false, true)
       }
     },
     { immediate: true }
