@@ -52,9 +52,7 @@ describe('agentPanelStore open-state persistence', () => {
     store.toggle()
     await nextTick()
 
-    // Disabling gates the dock (the component derives docked from
-    // enabled && isOpen); it must never wipe the user's open preference,
-    // which has to survive for the next enabled session.
+    // Disabling must never wipe the open preference for the next enabled session.
     store.enabled = false
     await nextTick()
 

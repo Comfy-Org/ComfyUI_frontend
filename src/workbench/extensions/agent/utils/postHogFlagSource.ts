@@ -26,9 +26,7 @@ export function createPostHogFlagSource(
   return {
     isEnabled: () => posthog.isFeatureEnabled(flag) === true,
     onChange: (listener) => {
-      // Pre-init, posthog invokes the callback synchronously with
-      // errorsLoading and registers nothing - that is an error report,
-      // never a flags delivery, so it must not reach the listener.
+      // Pre-init errorsLoading is an error report, not a delivery - never forwarded.
       const unsubscribe = posthog.onFeatureFlags(
         (_flags, _variants, context) => {
           if (context?.errorsLoading) return

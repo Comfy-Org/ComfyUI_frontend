@@ -15,10 +15,8 @@ const posthogState = vi.hoisted(() => ({
   >
 }))
 
-// Mirrors the full posthog bundle's real contract (probe-verified): the
-// featureFlags extension exists from the constructor, so a subscription
-// registers pre-init and survives init(); an absent or off flag reads as
-// undefined.
+// Probe-verified posthog contract: featureFlags exists from the
+// constructor; an off or absent flag reads as undefined.
 vi.mock('posthog-js', () => ({
   default: {
     isFeatureEnabled: () => posthogState.flag,
@@ -61,8 +59,7 @@ async function bootGate(): Promise<void> {
   vi.resetModules()
   await import('./agentPanel')
   registered.setup?.()
-  // The mocked dynamic import resolves through the module runner, not a
-  // bare microtask - wait for the subscription to actually land.
+  // The mocked dynamic import outlives a bare microtask - wait for the subscription.
   await vi.waitFor(() => {
     if (posthogState.listeners.length === 0) {
       throw new Error('gate not subscribed yet')
@@ -111,9 +108,7 @@ describe('the agent panel flag gate', () => {
   it('stays disabled and settles on the delivery when the flag is off', async () => {
     await bootGate()
 
-    // posthog drops false-valued bootstrap flags and reports an absent key
-    // as undefined - the off state IS undefined, never false; the delivery
-    // itself still settles the gate.
+    // The off state IS undefined, never false; delivery still settles the gate.
     deliverFlags(undefined)
 
     expect(useAgentPanelStore().enabled).toBe(false)
@@ -121,9 +116,7 @@ describe('the agent panel flag gate', () => {
   })
 
   it('settles fail-closed by timeout when no delivery ever arrives', async () => {
-    // Fake timers must be installed BEFORE boot so the settle timeout is
-    // fake-scheduled; the boot wait advances in 1ms steps, far below the
-    // settle budget, so it cannot fire the timeout early.
+    // Fake timers go in BEFORE boot so the settle timeout is fake-scheduled.
     vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.resetModules()
     await import('./agentPanel')
@@ -165,8 +158,7 @@ describe('the agent panel flag gate', () => {
 
     expect(useAgentPanelStore().enabled).toBe(true)
     expect(useAgentPanelStore().gateSettled).toBe(true)
-    // Dev force-enable is a product decision, not a healthy gate: the load
-    // failure still reaches the shared error sinks.
+    // Dev force-enable is a product decision: the failure still reaches the sinks.
     expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_flag_gate_load_failure'
     })

@@ -13,10 +13,8 @@ useExtensionService().registerExtension({
   setup() {
     const agentPanelStore = useAgentPanelStore()
 
-    // Dev builds force-enable BEFORE any posthog work so a blocked SDK load
-    // cannot take local development down with it; the ff: localStorage
-    // override wins in both directions so the flag-off path stays
-    // reproducible locally.
+    // Force-enable BEFORE any posthog work (a blocked SDK load must not
+    // take local dev down); the ff: override wins in both directions.
     if (import.meta.env.MODE === 'development') {
       agentPanelStore.enabled =
         getDevOverride<boolean>(AGENT_PANEL_FLAG) ?? true
@@ -26,8 +24,7 @@ useExtensionService().registerExtension({
       const settle = (): void => {
         agentPanelStore.gateSettled = true
       }
-      // posthog-js is a lazy chunk and is commonly blocked by ad blockers; a failed
-      // load must leave the panel gated off rather than surface as an unhandled rejection.
+      // Ad blockers eat this chunk: a failed load gates off, never rejects unhandled.
       try {
         const posthog = (await import('posthog-js')).default
         const source = createPostHogFlagSource(posthog)
@@ -40,12 +37,9 @@ useExtensionService().registerExtension({
           agentPanelStore.enabled =
             devOverride ?? (forceInDev || source.isEnabled())
         }
-        // The full posthog bundle constructs its featureFlags extension in
-        // the PostHog constructor ("so they're available before init()"), so
-        // this subscription registers and survives init() even when setup
-        // wins the race against telemetry's posthog bootstrap. The settle
-        // timeout covers the one path with no delivery at all: a config
-        // without a posthog project token, where init never runs.
+        // featureFlags exists from the PostHog constructor, so this survives
+        // init() even when setup wins the race against telemetry's bootstrap;
+        // the settle timeout covers a token-less config where init never runs.
         source.onChange?.(() => {
           sync()
           settle()

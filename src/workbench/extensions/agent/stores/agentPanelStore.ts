@@ -6,8 +6,7 @@ const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
-  // writeDefaults false: flag-off users should not get a storage key planted
-  // for a feature they cannot see.
+  // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
   })
