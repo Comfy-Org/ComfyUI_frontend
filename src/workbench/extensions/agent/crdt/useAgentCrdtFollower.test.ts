@@ -75,10 +75,6 @@ vi.mock('./semanticProjector', () => ({
   }
 }))
 
-vi.mock('./devPanelLog', () => ({
-  recordDevEvent: vi.fn()
-}))
-
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
 vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
 vi.mock('@/stores/authStore', () => ({
