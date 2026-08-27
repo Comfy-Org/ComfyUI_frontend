@@ -896,12 +896,7 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('autoQueueGraphChanged')
               break
             case 'feature_flags':
-              // Store server feature flags
               this.serverFeatureFlags.value = msg.data
-              console.log(
-                'Server feature flags received:',
-                this.serverFeatureFlags.value
-              )
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
