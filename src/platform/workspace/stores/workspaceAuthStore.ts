@@ -5,6 +5,8 @@ import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
+import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
   TOKEN_REFRESH_BUFFER_MS,
@@ -863,6 +865,13 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
   }
 
+  function trackUnifiedRefresh(outcome: UnifiedAuthRefreshOutcome): void {
+    useTelemetry()?.trackUnifiedAuthRefresh({
+      outcome,
+      ...(outcome !== 'succeeded' && { retry_count: unifiedRefreshRetryCount })
+    })
+  }
+
   async function refreshUnified(): Promise<void> {
     if (!flags.unifiedCloudAuthEnabled) {
       return
@@ -879,17 +888,23 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // re-mint does not rotate either.
       if (minted) {
         useAuthStore().notifyTokenRefreshed()
+        trackUnifiedRefresh('succeeded')
       } else if (unifiedRefreshTimerId === null) {
         // A mint failure while the owner uid is momentarily null (Firebase
         // re-initializing post-wake) resolves false instead of throwing. Only
         // a false with no armed timer is a dead chain: a superseding mint has
         // already scheduled its own refresh.
-        scheduleUnifiedRefreshRetry()
+        trackUnifiedRefresh(
+          scheduleUnifiedRefreshRetry()
+            ? 'retry_scheduled'
+            : 'retries_exhausted'
+        )
       }
     } catch (err) {
       // Guard the toast on a live token so concurrent permanent failures across
       // the proactive + reactive paths alarm the user once, not once per caller.
       if (isPermanentAuthError(err)) {
+        trackUnifiedRefresh('permanent_failure')
         if (getUnifiedToken()) surfacePermanentAuthError(err)
         endWorkspaceSession(
           isWorkspaceSelectionInvalid(err)
@@ -898,6 +913,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         )
       } else {
         const retryScheduled = scheduleUnifiedRefreshRetry()
+        trackUnifiedRefresh(
+          retryScheduled ? 'retry_scheduled' : 'retries_exhausted'
+        )
         console.warn(
           retryScheduled
             ? 'Unified token refresh failed; retrying shortly:'
