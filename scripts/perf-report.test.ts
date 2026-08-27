@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import type {
   PerfMeasurement,
   PerfMeasurementResult,
-  PerfReportV2
+  PerfReportV3
 } from '../browser_tests/fixtures/utils/perfReportSchema'
 import { perfReportSchema } from '../browser_tests/fixtures/utils/perfReportSchema'
 import { renderPerfReport } from './perf-report'
@@ -93,9 +96,9 @@ function rejected(value: number): PerfMeasurementResult {
   }
 }
 
-function report(measurements: PerfMeasurementResult[]): PerfReportV2 {
+function report(measurements: PerfMeasurementResult[]): PerfReportV3 {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     timestamp: '2026-08-26T00:00:00.000Z',
     gitSha: 'abc123',
     branch: 'test',
@@ -142,11 +145,28 @@ describe('performance report', () => {
     )
 
     expect(output).toContain(
-      'Baseline schema v1 is not comparable with current schema v2'
+      'Baseline schema v1 is not comparable with current schema v3'
     )
   })
 
-  it('rejects malformed v2 reports at the boundary', () => {
+  it('parses a pre-change v2 report as a new measurement epoch', () => {
+    const fixture: unknown = JSON.parse(
+      readFileSync(resolve('scripts/fixtures/perf-report-v2.json'), 'utf-8')
+    )
+    const parsed = perfReportSchema.parse(fixture)
+
+    expect(parsed.schemaVersion).toBe(2)
+    if (parsed.schemaVersion !== 2)
+      throw new Error('Expected schema v2 fixture')
+    expect(renderPerfReport(report([accepted(20)]), parsed, [])).toContain(
+      'Baseline schema v2 is not comparable with current schema v3'
+    )
+    expect(
+      perfReportSchema.safeParse({ ...parsed, schemaVersion: 3 }).success
+    ).toBe(false)
+  })
+
+  it('rejects malformed v3 reports at the boundary', () => {
     expect(
       perfReportSchema.safeParse({
         ...report([accepted(20)]),

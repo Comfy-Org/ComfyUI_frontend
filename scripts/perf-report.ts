@@ -6,7 +6,7 @@ import { filterComparableWorkloads } from '../browser_tests/fixtures/helpers/per
 import type {
   PerfMeasurement,
   PerfReport,
-  PerfReportV2
+  PerfReportV3
 } from '../browser_tests/fixtures/utils/perfReportSchema'
 import { perfReportSchema } from '../browser_tests/fixtures/utils/perfReportSchema'
 import type { MetricStats } from './perf-stats'
@@ -107,7 +107,7 @@ function groupByName(
   return map
 }
 
-function acceptedMeasurements(report: PerfReportV2): PerfMeasurement[] {
+function acceptedMeasurements(report: PerfReportV3): PerfMeasurement[] {
   return report.measurements.flatMap((result) =>
     result.kind === 'accepted' ? [result.measurement] : []
   )
@@ -137,7 +137,7 @@ function loadHistoricalReports(): PerfReport[] {
 }
 
 function getHistoricalStats(
-  reports: PerfReportV2[],
+  reports: PerfReportV3[],
   testName: string,
   metric: MetricKey,
   reference: PerfMeasurement
@@ -158,7 +158,7 @@ function getHistoricalStats(
 }
 
 function getHistoricalTimeSeries(
-  reports: PerfReportV2[],
+  reports: PerfReportV3[],
   testName: string,
   metric: MetricKey,
   reference: PerfMeasurement
@@ -268,8 +268,8 @@ function renderHeadlineSummary(
 
 function renderFullReport(
   prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReportV2,
-  historical: PerfReportV2[]
+  baseline: PerfReportV3,
+  historical: PerfReportV3[]
 ): string[] {
   const lines: string[] = []
   const baselineGroups = groupByName(acceptedMeasurements(baseline))
@@ -411,7 +411,7 @@ function renderFullReport(
 
 function renderColdStartReport(
   prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReportV2,
+  baseline: PerfReportV3,
   historicalCount: number
 ): string[] {
   const lines: string[] = []
@@ -488,7 +488,7 @@ function renderNoBaselineReport(
   return lines
 }
 
-function renderRejectedMeasurements(report: PerfReportV2): string[] {
+function renderRejectedMeasurements(report: PerfReportV3): string[] {
   const rejected = report.measurements.filter(
     (result) => result.kind === 'rejected'
   )
@@ -511,12 +511,12 @@ function renderRejectedMeasurements(report: PerfReportV2): string[] {
 }
 
 export function renderPerfReport(
-  current: PerfReportV2,
+  current: PerfReportV3,
   baseline: PerfReport | null,
   historical: PerfReport[]
 ): string {
   const compatibleHistory = historical.filter(
-    (report): report is PerfReportV2 => report.schemaVersion === 2
+    (report): report is PerfReportV3 => report.schemaVersion === 3
   )
   const prGroups = groupByName(acceptedMeasurements(current))
 
@@ -601,8 +601,8 @@ function main() {
   }
 
   const current = readPerfReport(CURRENT_PATH)
-  if (current.schemaVersion !== 2) {
-    throw new Error('Current performance report must use schema v2')
+  if (current.schemaVersion !== 3) {
+    throw new Error('Current performance report must use schema v3')
   }
 
   const baseline: PerfReport | null = existsSync(BASELINE_PATH)

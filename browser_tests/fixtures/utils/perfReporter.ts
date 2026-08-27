@@ -4,7 +4,7 @@ import { join } from 'path'
 import type {
   PerfMeasurement,
   PerfMeasurementResult,
-  PerfReportV2
+  PerfReportV3
 } from '@e2e/fixtures/utils/perfReportSchema'
 import { perfMeasurementResultSchema } from '@e2e/fixtures/utils/perfReportSchema'
 
@@ -84,8 +84,8 @@ export function writePerfReport(
     }
   })
 
-  const report: PerfReportV2 = {
-    schemaVersion: 2,
+  const report: PerfReportV3 = {
+    schemaVersion: 3,
     timestamp: new Date().toISOString(),
     gitSha,
     branch,

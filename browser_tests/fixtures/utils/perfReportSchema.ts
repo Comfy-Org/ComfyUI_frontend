@@ -36,7 +36,7 @@ const perfWorkloadIdentitySchema = z.object({
   missingOptionalFields: z.array(z.string())
 })
 
-const perfMeasurementSchema = z.object({
+const perfMeasurementV2Schema = z.object({
   name: z.string(),
   durationMs: z.number(),
   styleRecalcs: z.number(),
@@ -44,15 +44,6 @@ const perfMeasurementSchema = z.object({
   layouts: z.number(),
   layoutDurationMs: z.number(),
   taskDurationMs: z.number(),
-  taskOtherDurationMs: z.number().nullable(),
-  v8CompileDurationMs: z.number().nullable(),
-  devToolsCommandDurationMs: z.number().nullable(),
-  threadTimeMs: z.number().nullable(),
-  processTimeMs: z.number().nullable(),
-  accountedTaskDurationMs: z.number().nullable(),
-  taskAccountingResidualMs: z.number().nullable(),
-  missingCdpMetrics: z.array(z.string()),
-  nonMonotonicCdpMetrics: z.array(z.string()),
   heapDeltaBytes: z.number(),
   heapUsedBytes: z.number(),
   domNodes: z.number(),
@@ -69,7 +60,19 @@ const perfMeasurementSchema = z.object({
   rafIntervalsOver8_33Ms: z.number(),
   rafIntervalsOver16_67Ms: z.number(),
   rafIntervalsOver33_3Ms: z.number(),
-  rafIntervalsOver50Ms: z.number(),
+  rafIntervalsOver50Ms: z.number()
+})
+
+const perfMeasurementSchema = perfMeasurementV2Schema.extend({
+  taskOtherDurationMs: z.number().nullable(),
+  v8CompileDurationMs: z.number().nullable(),
+  devToolsCommandDurationMs: z.number().nullable(),
+  threadTimeMs: z.number().nullable(),
+  processTimeMs: z.number().nullable(),
+  accountedTaskDurationMs: z.number().nullable(),
+  taskAccountingResidualMs: z.number().nullable(),
+  missingCdpMetrics: z.array(z.string()),
+  nonMonotonicCdpMetrics: z.array(z.string()),
   workloadIdentity: perfWorkloadIdentitySchema
 })
 
@@ -100,12 +103,34 @@ export function requireAcceptedMeasurement(
   return result.measurement
 }
 
+const perfReportV3Schema = z.object({
+  schemaVersion: z.literal(3),
+  timestamp: z.string(),
+  gitSha: z.string(),
+  branch: z.string(),
+  measurements: z.array(perfMeasurementResultSchema)
+})
+
+export type PerfReportV3 = z.infer<typeof perfReportV3Schema>
+
+const perfMeasurementResultV2Schema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('accepted'),
+    measurement: perfMeasurementV2Schema
+  }),
+  z.object({
+    kind: z.literal('rejected'),
+    reason: z.string().min(1),
+    measurement: perfMeasurementV2Schema
+  })
+])
+
 const perfReportV2Schema = z.object({
   schemaVersion: z.literal(2),
   timestamp: z.string(),
   gitSha: z.string(),
   branch: z.string(),
-  measurements: z.array(perfMeasurementResultSchema)
+  measurements: z.array(perfMeasurementResultV2Schema)
 })
 
 export type PerfReportV2 = z.infer<typeof perfReportV2Schema>
@@ -119,6 +144,7 @@ const perfReportV1Schema = z.object({
 })
 
 export const perfReportSchema = z.union([
+  perfReportV3Schema,
   perfReportV2Schema,
   perfReportV1Schema
 ])
