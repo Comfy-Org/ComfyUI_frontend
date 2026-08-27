@@ -1697,7 +1697,7 @@ describe('assetsStore - Refactored (Option A)', () => {
         outputs_count: 3,
         previewable_outputs_count: 2
       }
-      vi.mocked(api.getHistory).mockResolvedValue([job])
+      vi.mocked(fetchHistoryPage).mockResolvedValue(mockHistoryPage([job]))
 
       await store.updateHistory()
 
@@ -1710,7 +1710,7 @@ describe('assetsStore - Refactored (Option A)', () => {
         ...createMockJobItem(0),
         outputs_count: 3
       }
-      vi.mocked(api.getHistory).mockResolvedValue([job])
+      vi.mocked(fetchHistoryPage).mockResolvedValue(mockHistoryPage([job]))
 
       await store.updateHistory()
 
