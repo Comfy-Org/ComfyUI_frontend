@@ -58,6 +58,16 @@ describe('getRoutes ltx', () => {
   })
 })
 
+describe('getRoutes geminiOmni', () => {
+  it('serves the gemini omni page at its canonical path for en', () => {
+    expect(getRoutes('en').geminiOmni).toBe('/gemini-omni')
+  })
+
+  it('serves a localized gemini omni path for zh-CN', () => {
+    expect(getRoutes('zh-CN').geminiOmni).toBe('/zh-CN/gemini-omni')
+  })
+})
+
 describe('getRoutes minimaxMusic3', () => {
   it('serves the minimax music 3 page at its canonical path for en', () => {
     expect(getRoutes('en').minimaxMusic3).toBe('/minimax-music-3')

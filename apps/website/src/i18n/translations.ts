@@ -5282,6 +5282,105 @@ const translations = {
   },
   'ltx.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
 
+  // Gemini Omni 1.1 Flash launch page (/gemini-omni). zh-CN hand-translated.
+  // Hero copy is Rob's blog line verbatim; headings and CTA labels are read off
+  // June's Figma (node 12752-37723). No Q&A block yet: the Figma's is still the
+  // Seedance 2.0 placeholder and Rob's copy has not landed.
+  'geminiOmni.meta.title': {
+    en: 'Gemini Omni 1.1 Flash on Comfy: Google AI Video Model',
+    'zh-CN': 'Comfy 上的 Gemini Omni 1.1 Flash：Google AI 视频模型'
+  },
+  'geminiOmni.meta.description': {
+    en: 'Run Gemini Omni 1.1 Flash on Comfy. One node covers text to video, image to video, reference to video, editing and scene extension, with output up to 4K and audio on every clip.',
+    'zh-CN':
+      '在 Comfy 上运行 Gemini Omni 1.1 Flash。一个节点即可覆盖文本生成视频、图像生成视频、参考生成视频、视频编辑与场景延展，输出最高可达 4K，每个片段都带音频。'
+  },
+  'geminiOmni.breadcrumb.model': {
+    en: 'Gemini Omni 1.1 Flash',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
+  },
+  'geminiOmni.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'geminiOmni.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'geminiOmni.hero.titleModel': {
+    en: 'Gemini Omni 1.1 Flash',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
+  },
+  'geminiOmni.hero.titleRest': { en: ' is here', 'zh-CN': ' 已上线' },
+  'geminiOmni.hero.description': {
+    en: "Omni 1.1 Flash is Google's new video model, now on Comfy. It's built for fast generation. One node covers text-to-video, image-to-video, reference-to-video, editing, and scene extension, with output up to 4K and audio on every clip.",
+    'zh-CN':
+      'Omni 1.1 Flash 是 Google 的新一代视频模型，现已登陆 Comfy。它为快速生成而打造。一个节点即可覆盖文本生成视频、图像生成视频、参考生成视频、视频编辑与场景延展，输出最高可达 4K，每个片段都带音频。'
+  },
+  'geminiOmni.hero.primaryCta': { en: 'RUN IT NOW', 'zh-CN': '立即运行' },
+  'geminiOmni.hero.secondaryCta': {
+    en: 'EXPLORE WORKFLOWS',
+    'zh-CN': '探索工作流'
+  },
+  'geminiOmni.hero.tagPartnerNode': {
+    en: 'Partner node',
+    'zh-CN': '合作伙伴节点'
+  },
+  'geminiOmni.hero.tagImageToVideo': {
+    en: 'Image to Video',
+    'zh-CN': '图像转视频'
+  },
+  'geminiOmni.hero.tagTextToVideo': {
+    en: 'Text to Video',
+    'zh-CN': '文本转视频'
+  },
+  'geminiOmni.hero.tagReferenceToVideo': {
+    en: 'Reference to Video',
+    'zh-CN': '参考转视频'
+  },
+  'geminiOmni.models.heading': {
+    en: 'Made with Omni 1.1 Flash',
+    'zh-CN': '用 Omni 1.1 Flash 制作'
+  },
+  'geminiOmni.steps.heading': {
+    en: 'How to direct your shot',
+    'zh-CN': '如何执导你的镜头'
+  },
+  'geminiOmni.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'geminiOmni.steps.secondaryCta': {
+    en: 'RUN OMNI 1.1 FLASH',
+    'zh-CN': '运行 Omni 1.1 Flash'
+  },
+  'geminiOmni.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'geminiOmni.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'geminiOmni.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'geminiOmni.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'geminiOmni.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中构建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'geminiOmni.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'geminiOmni.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'geminiOmni.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'geminiOmni.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'geminiOmni.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+
   // Seedance 2.5 SEO page (/seedance-2.5). zh-CN hand-translated; some body
   // copy carries placeholder intent from Figma and may change (June, CRE-145).
   'seedance.meta.title': {
@@ -5798,6 +5897,10 @@ const translations = {
   },
   'footer.wanAnimate2': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
   'footer.ltx': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
+  'footer.geminiOmni': {
+    en: 'Gemini Omni 1.1 Flash',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
+  },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
   // Wan 3.0 model page (/wan-3.0)
   'wan3.meta.title': {
