@@ -188,6 +188,7 @@ function enableWarningSettings() {
 
 describe('useWorkflowService', () => {
   beforeEach(() => {
+    vi.mocked(app.loadGraphData).mockResolvedValue(true)
     resetWorkflowLoadQueueForTests()
     draftStoreMocks.saveDraft.mockReturnValue(true)
     subgraphNavigationMocks.navigationIntentId = 0
@@ -560,6 +561,70 @@ describe('useWorkflowService', () => {
       consoleError.mockRestore()
     })
 
+    it('keeps the tab and draft when the replacement load reports failure', async () => {
+      const workflowStore = useWorkflowStore()
+      const closing = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/closing.json'
+      })
+      const replacement = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/replacement.json'
+      })
+      workflowStore.attachWorkflow(closing, 0)
+      workflowStore.attachWorkflow(replacement, 1)
+      workflowStore.activeWorkflow = closing as LoadedComfyWorkflow
+      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
+        replacement as LoadedComfyWorkflow
+      )
+      const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
+      // The REAL configure-failure shape (christian-byrne's 16075 review):
+      // loadGraphData shows the dialog itself and RESOLVES false - it never
+      // rejects - so the guard must read the outcome, not rely on a throw.
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+
+      await expect(
+        useWorkflowService().closeWorkflow(closing, { warnIfUnsaved: false })
+      ).resolves.toBe(false)
+
+      expect(storeClose).not.toHaveBeenCalled()
+      expect(draftStoreMocks.removeDraft).not.toHaveBeenCalled()
+      expect(workflowStore.openWorkflows.map((open) => open.path)).toContain(
+        'workflows/closing.json'
+      )
+      // The failed load's intent is released (guarded no-op when the hash
+      // publish already superseded it) - pins the sibling of the catch path.
+      expect(
+        subgraphNavigationMocks.endWorkflowNavigation
+      ).toHaveBeenCalledWith(1)
+    })
+
+    it('keeps the last tab and its draft when the default load reports failure', async () => {
+      const workflowStore = useWorkflowStore()
+      const closing = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/closing.json'
+      })
+      workflowStore.attachWorkflow(closing, 0)
+      workflowStore.activeWorkflow = closing as LoadedComfyWorkflow
+      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(null)
+      const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
+      // Traverses loadDefaultWorkflow's boolean, not openWorkflow's: the
+      // last-tab close is the branch where a dead guard deletes the only
+      // draft the editor could not repaint.
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+
+      await expect(
+        useWorkflowService().closeWorkflow(closing, { warnIfUnsaved: false })
+      ).resolves.toBe(false)
+
+      expect(storeClose).not.toHaveBeenCalled()
+      expect(draftStoreMocks.removeDraft).not.toHaveBeenCalled()
+      expect(workflowStore.openWorkflows.map((open) => open.path)).toContain(
+        'workflows/closing.json'
+      )
+    })
+
     it('serializes rapid workflow opens so the final selection stays active', async () => {
       const workflowStore = useWorkflowStore()
       const first = createWorkflow(null, {
@@ -586,6 +651,7 @@ describe('useWorkflowService', () => {
           }
           workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
           concurrentLoads--
+          return true
         }
       )
 
@@ -629,6 +695,7 @@ describe('useWorkflowService', () => {
         .mockRejectedValueOnce(error)
         .mockImplementationOnce(async (_data, _clean, _restore, workflow) => {
           workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
         })
 
       const consoleError = vi
@@ -638,7 +705,7 @@ describe('useWorkflowService', () => {
       const secondOpen = useWorkflowService().openWorkflow(second)
 
       await expect(firstOpen).rejects.toBe(error)
-      await expect(secondOpen).resolves.toBeUndefined()
+      await expect(secondOpen).resolves.toBe(true)
       expect(consoleError).toHaveBeenCalledWith(
         expect.stringContaining('queued workflow load failed'),
         error
@@ -685,6 +752,7 @@ describe('useWorkflowService', () => {
             })
           }
           workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
         }
       )
 
@@ -725,6 +793,7 @@ describe('useWorkflowService', () => {
             })
           }
           workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
         }
       )
 
@@ -783,6 +852,7 @@ describe('useWorkflowService', () => {
             })
           }
           workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
         }
       )
 
@@ -833,6 +903,7 @@ describe('useWorkflowService', () => {
       vi.mocked(app.loadGraphData).mockImplementation(
         async (_data, _clean, _restore, workflow) => {
           workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
         }
       )
 
@@ -880,6 +951,7 @@ describe('useWorkflowService', () => {
             })
           }
           workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
         }
       )
 
@@ -931,6 +1003,7 @@ describe('useWorkflowService', () => {
             })
           }
           workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
         }
       )
 
@@ -987,6 +1060,7 @@ describe('useWorkflowService', () => {
           }
           if (workflow === failing) throw new Error('load failed')
           workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
         }
       )
 
@@ -1048,6 +1122,7 @@ describe('useWorkflowService', () => {
             workflowStore.activeWorkflow = final as LoadedComfyWorkflow
           }
           concurrentLoads--
+          return true
         }
       )
 
@@ -1088,7 +1163,7 @@ describe('useWorkflowService', () => {
         async (_data, _clean, _restore, workflow) => {
           if (workflow) {
             workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
-            return
+            return true
           }
           await new Promise<void>((resolve) => {
             resolveDefault = () => {
@@ -1097,6 +1172,7 @@ describe('useWorkflowService', () => {
               resolve()
             }
           })
+          return true
         }
       )
 
@@ -1135,9 +1211,10 @@ describe('useWorkflowService', () => {
       workflowStore.activeWorkflow = first as LoadedComfyWorkflow
       vi.mocked(app.loadGraphData).mockImplementation(
         async (_data, _clean, _restore, workflow) => {
-          if (workflow) return
+          if (workflow) return true
           workflowStore.attachWorkflow(replacement, 2)
           workflowStore.activeWorkflow = replacement as LoadedComfyWorkflow
+          return true
         }
       )
 
@@ -1183,8 +1260,8 @@ describe('useWorkflowService', () => {
       let releaseHeldLoad = (): void => {}
       vi.mocked(app.loadGraphData).mockImplementationOnce(
         () =>
-          new Promise<void>((resolve) => {
-            releaseHeldLoad = resolve
+          new Promise<boolean>((resolve) => {
+            releaseHeldLoad = () => resolve(true)
           })
       )
       const heldOpen = useWorkflowService().openWorkflow(alsoClosing)
@@ -1197,6 +1274,7 @@ describe('useWorkflowService', () => {
           if (workflow) {
             workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
           }
+          return true
         }
       )
       const closingActive = useWorkflowService().closeWorkflow(active, {
@@ -1265,6 +1343,7 @@ describe('useWorkflowService', () => {
           if (workflow) {
             workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
           }
+          return true
         }
       )
       const closingActive = useWorkflowService().closeWorkflow(active, {
@@ -1305,8 +1384,8 @@ describe('useWorkflowService', () => {
       let releaseHeldLoad = (): void => {}
       vi.mocked(app.loadGraphData).mockImplementationOnce(
         () =>
-          new Promise<void>((resolve) => {
-            releaseHeldLoad = resolve
+          new Promise<boolean>((resolve) => {
+            releaseHeldLoad = () => resolve(true)
           })
       )
       const heldOpen = useWorkflowService().openWorkflow(renamed)
@@ -1318,7 +1397,7 @@ describe('useWorkflowService', () => {
       // not key on it, or the ORIGINAL path stays suppressed forever.
       ;(renamed as { path: string }).path = 'workflows/renamed.json'
       releaseHeldLoad()
-      vi.mocked(app.loadGraphData).mockImplementation(async () => undefined)
+      vi.mocked(app.loadGraphData).mockImplementation(async () => true)
       await Promise.all([heldOpen, closing])
 
       const reopened = createWorkflow(null, {
@@ -1355,8 +1434,8 @@ describe('useWorkflowService', () => {
       let releaseHeldLoad = (): void => {}
       vi.mocked(app.loadGraphData).mockImplementationOnce(
         () =>
-          new Promise<void>((resolve) => {
-            releaseHeldLoad = resolve
+          new Promise<boolean>((resolve) => {
+            releaseHeldLoad = () => resolve(true)
           })
       )
       const heldOpen = useWorkflowService().openWorkflow(closing)
@@ -1368,7 +1447,7 @@ describe('useWorkflowService', () => {
       // Another workflow arrives while the close is awaiting - the stale
       // "was last open" answer must not fire a default-workflow load.
       workflowStore.attachWorkflow(openedMidClose, 1)
-      vi.mocked(app.loadGraphData).mockImplementation(async () => undefined)
+      vi.mocked(app.loadGraphData).mockImplementation(async () => true)
       releaseHeldLoad()
       await Promise.all([heldOpen, closePromise])
 
@@ -1403,7 +1482,7 @@ describe('useWorkflowService', () => {
           if (workflow && typeof workflow !== 'string') {
             workflowStore.attachWorkflow(workflow, 0)
             workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
-            return
+            return true
           }
 
           defaultLoadCount++
@@ -1415,6 +1494,7 @@ describe('useWorkflowService', () => {
               resolve()
             }
           })
+          return true
         }
       )
 
@@ -1447,6 +1527,7 @@ describe('useWorkflowService', () => {
       vi.mocked(app.loadGraphData).mockImplementation(
         async (_data, _clean, _restore, wf) => {
           workflowStore.activeWorkflow = wf as LoadedComfyWorkflow
+          return true
         }
       )
     })

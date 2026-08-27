@@ -1250,7 +1250,7 @@ export class ComfyApp {
       silentAssetErrors?: boolean
       workflowNavigationId?: number
     } = {}
-  ) {
+  ): Promise<boolean> {
     const {
       checkForRerouteMigration = false,
       openSource,
@@ -1460,7 +1460,8 @@ export class ComfyApp {
           reportType: 'loadWorkflowError'
         })
         console.error(error)
-        return
+        // Resolves rather than throws: the close/replacement guards read this outcome.
+        return false
       }
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
@@ -1587,6 +1588,7 @@ export class ComfyApp {
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
+      return true
     } finally {
       // Finally: a throwing load still repairs the URL.
       void useSubgraphNavigationStore().updateHash(
