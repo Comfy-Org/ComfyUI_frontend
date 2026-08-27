@@ -139,6 +139,23 @@ function acceptedMeasurements(report: PerfReportV3): PerfMeasurement[] {
   )
 }
 
+function groupComparableCurrentMeasurements(report: PerfReportV3): {
+  groups: Map<string, PerfMeasurement[]>
+  mixedIdentityNames: string[]
+} {
+  const groups = groupByName(acceptedMeasurements(report))
+  const mixedIdentityNames: string[] = []
+  for (const [name, samples] of groups) {
+    if (
+      filterComparableWorkloads(samples[0], samples).length !== samples.length
+    ) {
+      groups.delete(name)
+      mixedIdentityNames.push(name)
+    }
+  }
+  return { groups, mixedIdentityNames }
+}
+
 function readPerfReport(path: string): PerfReport {
   const value: unknown = JSON.parse(readFileSync(path, 'utf-8'))
   return perfReportSchema.parse(value)
@@ -544,10 +561,17 @@ export function renderPerfReport(
   const compatibleHistory = historical.filter(
     (report): report is PerfReportV3 => report.schemaVersion === 3
   )
-  const prGroups = groupByName(acceptedMeasurements(current))
+  const { groups: prGroups, mixedIdentityNames } =
+    groupComparableCurrentMeasurements(current)
 
   const lines: string[] = ['## ⚡ Performance Report\n']
   lines.push(...renderRejectedMeasurements(current))
+  lines.push(
+    ...mixedIdentityNames.flatMap((name) => [
+      `> ⚠️ ${name} rejected because its current samples have mixed workload identities.`,
+      ''
+    ])
+  )
   lines.push(...renderHeadlineSummary(prGroups))
 
   const compatibleBaseline =

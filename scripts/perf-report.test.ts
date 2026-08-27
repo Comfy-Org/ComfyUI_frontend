@@ -124,6 +124,23 @@ describe('performance report', () => {
     expect(output).not.toContain('No regressions detected')
   })
 
+  it('rejects current samples with mixed workload identities', () => {
+    const incompatible = accepted(100)
+    incompatible.measurement.workloadIdentity.topology.hash = 'sha256:different'
+
+    const output = renderPerfReport(
+      report([accepted(10), incompatible]),
+      report([accepted(10)]),
+      []
+    )
+
+    expect(output).toContain(
+      'sample rejected because its current samples have mixed workload identities'
+    )
+    expect(output).toContain('No regression verdict was calculated')
+    expect(output).not.toContain('55ms')
+  })
+
   it('reports CDP task accounting metrics', () => {
     const output = renderPerfReport(report([accepted(20)]), null, [])
 
