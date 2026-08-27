@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -90,6 +90,7 @@ const baseStubs = {
   TopbarBadges: leafStub('topbar-badges'),
   TopbarSubscribeButton: leafStub('topbar-subscribe-button'),
   WorkflowTabs: leafStub('workflow-tabs'),
+  DockedAgentPanel: leafStub('docked-agent-panel'),
   LinearControls: leafStub('linear-controls'),
   LinearPreview: leafStub('linear-preview'),
   LinearProgressBar: leafStub('linear-progress-bar')
@@ -202,5 +203,14 @@ describe('LinearView', () => {
 
     expect(screen.getByTestId('app-builder')).toBeInTheDocument()
     expect(screen.queryByTestId('side-toolbar')).not.toBeInTheDocument()
+  })
+
+  it('docks the agent panel beside the workspace column, not inside it', () => {
+    renderView()
+
+    const column = within(screen.getByTestId('linear-workspace-column'))
+    expect(column.getByTestId('workflow-tabs')).toBeInTheDocument()
+    expect(column.queryByTestId('docked-agent-panel')).toBeNull()
+    expect(screen.getByTestId('docked-agent-panel')).toBeInTheDocument()
   })
 })

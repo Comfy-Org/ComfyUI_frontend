@@ -19,7 +19,6 @@ import './load3dLazy'
 import './maskeditor'
 if (!isCloud) {
   await import('./nodeTemplates')
-  await import('./agentPanel')
 }
 import './noteNode'
 import './painter'
@@ -39,6 +38,7 @@ import './widgetInputs'
 // Cloud-only extensions - tree-shaken in OSS builds
 if (isCloud) {
   await import('./cloudRemoteConfig')
+  await import('./agentPanel')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
 }

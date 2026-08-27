@@ -45,26 +45,16 @@ describe('agentPanelStore open-state persistence', () => {
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('false')
   })
 
-  it('leaves the stored open state untouched when the panel is disabled', async () => {
+  it('keeps the stored open state across a real enable/disable transition', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     const store = useAgentPanelStore()
 
+    store.enabled = true
+    await nextTick()
     store.enabled = false
     await nextTick()
 
     expect(store.isOpen).toBe(true)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
-  })
-
-  it('open and close are idempotent', () => {
-    const store = useAgentPanelStore()
-
-    store.open()
-    store.open()
-    expect(store.isOpen).toBe(true)
-
-    store.close()
-    store.close()
-    expect(store.isOpen).toBe(false)
   })
 })

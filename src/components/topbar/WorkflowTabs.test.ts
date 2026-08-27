@@ -201,7 +201,7 @@ describe('WorkflowTabs feedback button', () => {
 
 describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
-    tabBarLayout.value = 'Integrated'
+    tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = true
     agentPanelHolder.store.isOpen.value = false
     agentPanelHolder.store.toggle.mockClear()
@@ -211,6 +211,15 @@ describe('WorkflowTabs agent entry button', () => {
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = false
     agentPanelHolder.store.isOpen.value = false
+  })
+
+  it('does not render the entry button in the legacy tab bar even with the flag on', () => {
+    tabBarLayout.value = 'Legacy'
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeNull()
   })
 
   it('does not render the entry button while the feature flag is off', () => {

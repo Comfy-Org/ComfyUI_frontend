@@ -88,15 +88,16 @@
         v-if="agentPanelEnabled"
         variant="link"
         size="sm"
+        :aria-pressed="isAgentPanelOpen"
         :class="
           cn(
             'no-drag shrink-0 border border-solid text-base-foreground',
             isAgentPanelOpen
               ? 'border-plum-500 bg-plum-600/20'
-              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
+              : 'border-plum-600 bg-secondary-background hover:border-plum-500'
           )
         "
-        @click="onAgentEntryClick"
+        @click="agentPanelStore.toggle()"
       >
         <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
         <span>{{ $t('agent.askComfyAgent') }}</span>
@@ -174,10 +175,6 @@ const { isLoggedIn } = useCurrentUser()
 const agentPanelStore = useAgentPanelStore()
 const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
   storeToRefs(agentPanelStore)
-
-function onAgentEntryClick(): void {
-  agentPanelStore.toggle()
-}
 
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()

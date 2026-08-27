@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/vue'
+import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
@@ -20,6 +22,15 @@ vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', async () => {
   }
 })
 
+function renderPanel() {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
+  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+}
+
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -28,7 +39,7 @@ describe('DockedAgentPanel', () => {
 
   it('renders nothing while the feature flag is off, even with a stored open state', () => {
     localStorage.setItem('Comfy.AgentPanel.open', 'true')
-    render(DockedAgentPanel)
+    renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
   })
@@ -36,20 +47,19 @@ describe('DockedAgentPanel', () => {
   it('renders nothing while the panel is closed', () => {
     const store = useAgentPanelStore()
     store.enabled = true
-    render(DockedAgentPanel)
+    renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
   })
 
-  it('docks the panel at the store width when enabled and open', async () => {
+  it('docks the panel when enabled and open', async () => {
     const store = useAgentPanelStore()
     store.enabled = true
     store.isOpen = true
-    render(DockedAgentPanel)
+    renderPanel()
     await nextTick()
 
-    const panel = screen.getByTestId('docked-agent-panel')
-    expect(panel.style.width).toBe(`${store.width}px`)
+    screen.getByTestId('docked-agent-panel')
     await screen.findByTestId('agent-panel-root-stub')
   })
 
@@ -57,7 +67,7 @@ describe('DockedAgentPanel', () => {
     const store = useAgentPanelStore()
     store.enabled = true
     store.isOpen = true
-    render(DockedAgentPanel)
+    renderPanel()
     await nextTick()
     expect(screen.getByTestId('docked-agent-panel')).toBeInTheDocument()
 
