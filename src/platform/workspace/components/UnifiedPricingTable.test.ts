@@ -2,7 +2,8 @@ import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -553,7 +554,9 @@ const cycleToggleStub = {
     >{{ option.label }}</button></div>`
 }
 
-function renderWithCycleToggle(props: Record<string, unknown> = {}) {
+function renderWithCycleToggle(
+  props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
+) {
   return render(UnifiedPricingTable, {
     props,
     global: {
@@ -595,6 +598,7 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     renderWithCycleToggle()
 
     await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
 
     expect(screen.getAllByText('monthly credits')).toHaveLength(3)
     expect(screen.queryAllByText('credits per year')).toHaveLength(0)
@@ -612,6 +616,7 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     expect(screen.getByText('Generates ~160,860 5s videos*')).toBeTruthy()
 
     await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
 
     expect(screen.getByText('monthly credits')).toBeTruthy()
     expect(screen.getByText('147,700')).toBeTruthy()

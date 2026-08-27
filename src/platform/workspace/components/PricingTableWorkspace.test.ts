@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -67,6 +67,7 @@ describe('PricingTableWorkspace credit allotment copy', () => {
     renderComponent()
 
     await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
 
     expect(screen.getAllByText('Monthly credits / member')).toHaveLength(3)
     expect(screen.queryAllByText('Yearly credits / member')).toHaveLength(0)
