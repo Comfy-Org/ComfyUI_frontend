@@ -16,6 +16,7 @@ import {
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
@@ -190,7 +191,9 @@ export const useAuthActions = () => {
       )
     }
 
-    useTelemetry()?.startTopupTracking()
+    // Mark the pending top-up directly, not via telemetry, so the balance
+    // refresh on return still fires when telemetry consent is off.
+    usePendingTopup().startPendingTopup()
     window.open(response.checkout_url, '_blank')
   }
 

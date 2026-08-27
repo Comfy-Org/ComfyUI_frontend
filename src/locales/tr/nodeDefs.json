@@ -17772,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "Gerçekçi_görüntü stilini ve isteğe bağlı alt stili seçin.",
+    "description": "logo_raster stilini ve alt stilini seçin.",
     "display_name": "Recraft Stili - Logo Raster",
     "inputs": {
       "substyle": {
@@ -17883,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "1-10 referans görüntüden yeniden kullanılabilir bir Recraft V4 stili oluşturun. Döndürülen style_id, aynı çıktı türündeki tüm Recraft V4 ve V4.1 modelleriyle çalışır. Tüm görüntülerin toplam boyutu 10 MB ile sınırlıdır.",
+    "display_name": "Recraft V4 Stil Oluştur",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Stili tanımlayan referans görüntüler. Benzer referanslar eşleşmeyi keskinleştirir, çeşitli referanslar ise kapsamını genişletir."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Stilin oluşturulacağı çıktı türü: raster görüntüler için recraftv4_styles, SVG için recraftv4_styles_vector."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Recraft V4 veya V4 Pro modelleriyle görseller üretir.",
     "display_name": "Recraft V4 Metinden Görsele",
@@ -17892,7 +17912,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Üretim için kullanılacak model."
+        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlı üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
       },
       "model_size": {
         "name": "boyut"
@@ -17916,10 +17936,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "Uygulanacak Recraft V4 stilinin UUID'si; örneğin Recraft V4 Stil Oluştur düğümünden veya önceki bir çalıştırmanın style_id çıktısından. style_references ile birleştirilemez."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Stilin ne kadar yakından takip edileceği: precise ayrıntılı olarak yeniden üretir, flexible genel görünümü eşleştirir. Yalnızca bir stil sağlandığında kullanılır."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Anında stil oluşturmak için kullanılan referans görüntüler; üretime ek olarak ücretlendirilir. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +17969,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Üretim için kullanılacak model."
+        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlı üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
       },
       "model_size": {
         "name": "boyut"
@@ -17957,10 +17993,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "Uygulanacak Recraft V4 vektör stilinin UUID'si; örneğin Recraft V4 Stil Oluştur düğümünden veya önceki bir çalıştırmanın style_id çıktısından. style_references ile birleştirilemez."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Stilin ne kadar yakından takip edileceği: precise ayrıntılı olarak yeniden üretir, flexible genel görünümü eşleştirir. Yalnızca bir stil sağlandığında kullanılır."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Anında vektör stili oluşturmak için kullanılan referans görüntüler; üretime ek olarak ücretlendirilir. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,57 +24665,7 @@
       },
       "resolution": {
         "name": "çözünürlük",
-        "tooltip": "Çıktı video çözünürlüğü. 4K, veo-3.1-lite ve veo-3.0 modelleri için mevcut değildir."
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Video oluşturma için tohum (rastgele için 0)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Google'ın Veo API'sini kullanarak metin istemlerinden videolar oluşturur",
-    "display_name": "Google Veo2 Video Oluşturma",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "en_boy_oranı",
-        "tooltip": "Çıktı videosunun en boy oranı"
-      },
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "duration_seconds": {
-        "name": "süre_saniye",
-        "tooltip": "Çıktı videosunun saniye cinsinden süresi"
-      },
-      "enhance_prompt": {
-        "name": "istemi_geliştir",
-        "tooltip": "İstemi yapay zeka yardımıyla geliştirip geliştirmeme"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Video oluşturmayı yönlendirmek için isteğe bağlı referans görüntü"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "Video oluşturma için kullanılacak Veo 2 modeli"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem",
-        "tooltip": "Videoda kaçınılması gerekenleri yönlendirmek için negatif metin istemi"
-      },
-      "person_generation": {
-        "name": "kişi_oluşturma",
-        "tooltip": "Videoda insan oluşturmaya izin verip vermeme"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Videonun metin açıklaması"
+        "tooltip": "Çıktı video çözünürlüğü. 4K, veo-3.1-lite modeli için kullanılamaz."
       },
       "seed": {
         "name": "tohum",
