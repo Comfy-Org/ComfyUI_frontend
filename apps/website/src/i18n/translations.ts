@@ -651,9 +651,9 @@ const translations = {
     'zh-CN': 'MiniMax 商业许可'
   },
   'enterprise.minimaxBand.text': {
-    en: 'Comfy is the only official reseller of MiniMax H3 commercial-use licenses. Add full local commercial rights, LoRA training included, to your Enterprise plan.',
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Add full local commercial rights, LoRA training included, to your Enterprise plan.',
     'zh-CN':
-      'Comfy 是 MiniMax H3 商业使用许可的唯一官方经销商。在你的企业版计划之上增加完整的本地商业使用权利，并包含 LoRA 训练。'
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。在你的企业版计划之上增加完整的本地商业使用权利，并包含 LoRA 训练。'
   },
   'enterprise.minimaxBand.cta': { en: 'Get your license', 'zh-CN': '获取许可' },
 
@@ -5925,9 +5925,9 @@ const translations = {
     'zh-CN': '为商业创作获取 H3 许可。'
   },
   'minimaxMusic3.reviews.highlightDescription': {
-    en: 'Comfy is the only official reseller of MiniMax H3 commercial-use licenses. Music 3 stays free for commercial use under Apache 2.0.',
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Music 3 itself stays free for commercial use under Apache 2.0.',
     'zh-CN':
-      'Comfy 是 MiniMax H3 商业使用许可的唯一官方经销商。Music 3 依旧可在 Apache 2.0 许可下免费商用。'
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。Music 3 本身依旧可在 Apache 2.0 许可下免费商用。'
   },
   'minimaxMusic3.reviews.highlightCta': {
     en: 'GET YOUR LICENSE',
@@ -6005,9 +6005,9 @@ const translations = {
     'zh-CN': '为商业创作获取 H3 许可。'
   },
   'minimax.reviews.highlightDescription': {
-    en: 'Comfy is the only official reseller of MiniMax H3 commercial-use licenses. Full commercial rights to your outputs, LoRA training included.',
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Full commercial rights to your outputs, LoRA training included.',
     'zh-CN':
-      'Comfy 是 MiniMax H3 商业使用许可的唯一官方经销商。产出的完整商业权利归你，包含 LoRA 训练。'
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。产出的完整商业权利归你，包含 LoRA 训练。'
   },
   'minimax.reviews.highlightCta': {
     en: 'GET YOUR LICENSE',
@@ -6026,13 +6026,13 @@ const translations = {
   // exclusive-reseller announcement; eyebrow and meta drop "Coming soon" on
   // announcement day.
   'minimaxLicense.meta.title': {
-    en: 'MiniMax H3 Commercial Licenses on Comfy — Coming Soon',
-    'zh-CN': 'Comfy 上的 MiniMax H3 商业许可 — 即将推出'
+    en: 'MiniMax Commercial License on Comfy — Coming Soon',
+    'zh-CN': 'Comfy 上的 MiniMax 商业许可 — 即将推出'
   },
   'minimaxLicense.meta.description': {
-    en: 'License MiniMax H3 for commercial work through Comfy, the only official reseller of MiniMax H3 commercial-use licenses. Full commercial rights to your outputs, LoRA training included.',
+    en: 'Get a MiniMax commercial license through Comfy, the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus Audio & Music. Full commercial rights to your outputs, LoRA training included.',
     'zh-CN':
-      '通过 Comfy 获取 MiniMax H3 商业许可，将 H3 用于商业创作。Comfy 是 MiniMax H3 商业使用许可的唯一官方经销商。产出的完整商业权利归你，包含 LoRA 训练。'
+      '通过 Comfy 获取 MiniMax 商业许可。Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 及音频与音乐模型。产出的完整商业权利归你，包含 LoRA 训练。'
   },
   'minimaxLicense.breadcrumb.model': {
     en: 'MiniMax Commercial License',
@@ -6044,13 +6044,13 @@ const translations = {
   },
   'minimaxLicense.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
   'minimaxLicense.hero.title': {
-    en: 'License MiniMax H3 for commercial work',
-    'zh-CN': '获取 MiniMax H3 商业许可'
+    en: 'MiniMax Commercial License',
+    'zh-CN': 'MiniMax 商业许可'
   },
   'minimaxLicense.hero.description': {
-    en: 'Comfy is the only official reseller of MiniMax H3 commercial-use licenses. Full commercial rights to your outputs, fine-tuning and LoRA training included. One model across ads, VFX, and character work.',
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses, for running MiniMax models locally on your own hardware. Full commercial rights to your outputs, fine-tuning and LoRA training, and client and downstream work included.',
     'zh-CN':
-      'Comfy 是 MiniMax H3 商业使用许可的唯一官方经销商。产出的完整商业权利归你，包含微调与 LoRA 训练。一个模型，覆盖广告、视觉特效与角色创作。'
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商，面向在自有硬件上本地运行 MiniMax 模型的场景。产出的完整商业权利、微调与 LoRA 训练，以及客户与下游项目均包含在内。'
   },
   'minimaxLicense.hero.primaryCta': {
     en: 'REQUEST LICENSE',
@@ -6067,6 +6067,10 @@ const translations = {
   'minimaxLicense.hero.tagAudioMusic': {
     en: 'Audio and music included',
     'zh-CN': '含音频与音乐模型'
+  },
+  'minimaxLicense.hero.tagGlobal': {
+    en: 'Available globally',
+    'zh-CN': '全球可用'
   },
   'minimaxLicense.steps.heading': {
     en: 'Getting started',

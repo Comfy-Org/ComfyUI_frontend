@@ -2,21 +2,20 @@ import type { ModelLaunchPage } from '../templates/model-launch/types'
 
 import { minimaxLinks } from './minimax'
 
-// The H3 launch sizzle reel and its phone still, shared with /minimax-h3 — the
-// campaign art the announcement frames are cut from.
-const HERO_SIZZLE_SRC =
-  'https://media.comfy.org/website/minimax/hero-sizzle.mp4'
-const HERO_FALLBACK_SRC =
-  'https://media.comfy.org/website/minimax/hero-fallback.jpg'
+// The frosted backdrop every announcement page shares — keeps the hero text
+// readable and matches the blog hero treatment.
+const COMING_SOON_HERO = 'https://media.comfy.org/website/coming-soon/hero.webp'
 
 // CTA hrefs in this config must be absolute (modelLaunchPages.test.ts), so the
 // contact and H3 routes are spelled out rather than taken from baseRoutes.
 const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
 
-// Staged ahead of the MiniMax reseller agreement being signed. On announcement
-// day: point the two hero media URLs at the approved license sizzle, and
-// retire the `minimaxLicense.hero.eyebrow` "Coming soon" label or reword it.
+// Staged ahead of the MiniMax reseller agreement being signed. If an approved
+// short sizzle lands, set hero.videoSrc (+ mobileFallbackImageSrc for phones)
+// and the overlay plays it behind the scrim in place of the backdrop. On
+// announcement day, retire the `minimaxLicense.hero.eyebrow` "Coming soon"
+// label or reword it.
 export const minimaxLicensePage: ModelLaunchPage = {
   metaTitleKey: 'minimaxLicense.meta.title',
   metaDescriptionKey: 'minimaxLicense.meta.description',
@@ -24,8 +23,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'minimaxLicense.breadcrumb.updated',
   hero: {
     layout: 'overlay',
-    videoSrc: HERO_SIZZLE_SRC,
-    mobileFallbackImageSrc: HERO_FALLBACK_SRC,
+    placeholderImageSrc: COMING_SOON_HERO,
     eyebrowKey: 'minimaxLicense.hero.eyebrow',
     titleKey: 'minimaxLicense.hero.title',
     descriptionKey: 'minimaxLicense.hero.description',
@@ -40,7 +38,8 @@ export const minimaxLicensePage: ModelLaunchPage = {
     },
     badgeKeys: [
       'minimaxLicense.hero.tagOfficialReseller',
-      'minimaxLicense.hero.tagAudioMusic'
+      'minimaxLicense.hero.tagAudioMusic',
+      'minimaxLicense.hero.tagGlobal'
     ]
   },
   sectionOrder: ['steps', 'faq', 'closingCta'],
@@ -91,6 +90,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
       }
     ]
   },
+  // Open-weight successor models roll into an active license per the deal, but
+  // that line stays OFF the page until the contract's "qualifying" language is
+  // tightened (Kevin, 08-27) — stick to what's covered today.
   faq: {
     headingKey: 'minimaxLicense.faq.heading',
     items: [
@@ -101,9 +103,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '谁需要 MiniMax H3 商业许可？'
         },
         answer: {
-          en: 'Anyone running H3 locally for commercial work: business use, client work, or products you ship. Open weights let anyone download H3 and start creating; the license covers commercial use of what you make with it locally.',
+          en: 'Anyone running MiniMax models locally for commercial work: business use, client work, or products you ship. Open weights let anyone download the models and start creating; the license is what makes commercial use of your local outputs legal.',
           'zh-CN':
-            '任何在本地运行 H3 进行商业创作的人：商业用途、客户项目，或你要发布的产品。开源权重让任何人都能下载 H3 开始创作；许可涵盖的，是你在本地用它创作出的内容的商业使用。'
+            '任何在本地运行 MiniMax 模型进行商业创作的人：商业用途、客户项目，或你要发布的产品。开源权重让任何人都能下载模型开始创作；许可让你本地产出的商业使用合法合规。'
         }
       },
       {
@@ -137,9 +139,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '有哪些方案可选？'
         },
         answer: {
-          en: 'Professional and Enterprise. Enterprise customers get access to every H3 model version, including undistilled weights and new releases as they ship. Request a license and we will help you pick.',
+          en: 'Professional and Enterprise. Professional is a fixed-price license for studios shipping client work. Enterprise adds volume pricing, unlimited seats, and access to undistilled weights that Professional does not get. Request a license and we will help you pick.',
           'zh-CN':
-            '专业版和企业版。企业版客户可使用 H3 的所有模型版本，包括未蒸馏权重，以及后续发布的新版本。申请许可，我们会帮你选择。'
+            '专业版和企业版。专业版是面向交付客户项目的工作室的固定价格许可。企业版增加批量定价、不限席位，以及专业版没有的未蒸馏权重使用权。申请许可，我们会帮你选择。'
         }
       },
       {
@@ -149,21 +151,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '许可涵盖 MiniMax 的音频和音乐模型吗？'
         },
         answer: {
-          en: "Yes. H3 commercial licenses through Comfy cover MiniMax's audio and music models too, so video, audio, and music sit under one agreement. MiniMax Music 3 is the exception: it ships under Apache 2.0 and is already free for commercial use.",
+          en: 'Yes. MiniMax commercial licenses through Comfy cover MiniMax H3 and MiniMax Audio & Music, available globally, so video, audio, and music sit under one agreement. MiniMax Music 3 is the exception: it ships under Apache 2.0 and is already free for commercial use.',
           'zh-CN':
-            '涵盖。通过 Comfy 获取的 H3 商业许可同样适用于 MiniMax 的音频和音乐模型，视频、音频与音乐都在同一份协议之下。MiniMax Music 3 是例外：它采用 Apache 2.0 许可，本就可以免费商用。'
-        }
-      },
-      {
-        id: 'future-models',
-        question: {
-          en: 'What about future MiniMax models?',
-          'zh-CN': '未来的 MiniMax 模型怎么办？'
-        },
-        answer: {
-          en: 'If MiniMax ships a successor model as open weights, it rolls into your license automatically at no extra charge, so existing customers are covered on day one. Closed-weight releases are not covered.',
-          'zh-CN':
-            '如果 MiniMax 以开源权重发布后继模型，它会自动纳入你的许可，无需额外付费，现有客户从发布首日即被覆盖。闭源权重的版本不在许可范围内。'
+            '涵盖。通过 Comfy 获取的 MiniMax 商业许可涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，全球可用，视频、音频与音乐都在同一份协议之下。MiniMax Music 3 是例外：它采用 Apache 2.0 许可，本就可以免费商用。'
         }
       },
       {
@@ -173,9 +163,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '哪些情况不在许可范围内？'
         },
         answer: {
-          en: 'Licenses are for building your own products and content. They do not cover running an inference platform or marketplace that sells H3 access to others.',
+          en: 'Reselling or sublicensing the model, and running a model marketplace, API aggregator, inference-as-a-service, or model-routing platform. The license is for building your own products and content.',
           'zh-CN':
-            '许可用于构建你自己的产品和内容，不涵盖运营向他人出售 H3 访问权限的推理平台或交易市场。'
+            '转售或再许可模型，以及运营模型市场、API 聚合、推理即服务或模型路由平台。许可用于构建你自己的产品和内容。'
         }
       }
     ]
