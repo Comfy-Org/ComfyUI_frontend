@@ -56,6 +56,21 @@ const activeLanguageIds = ref<Record<string, string>>(
   Object.fromEntries(envs.map((env) => [env.id, env.languages[0]?.id ?? '']))
 )
 
+/*
+ * Every snippet is padded to the tallest one's height so switching env or
+ * language tabs never resizes the panel — a resize here shifts the whole
+ * hero below it. Line count is an exact height proxy: the <pre> never wraps
+ * (long lines scroll horizontally) and all snippets share text-xs/5 type,
+ * so rendered height is lines x 1.25rem.
+ */
+const maxSnippetLines = Math.max(
+  0,
+  ...envs.flatMap((env) =>
+    env.languages.map((lang) => lang.code.split('\n').length)
+  )
+)
+const snippetMinHeight = { minHeight: `${maxSnippetLines * 1.25}rem` }
+
 function snippetFor(env: CodeEnv): CodeSnippet | undefined {
   return (
     env.languages.find((lang) => lang.id === activeLanguageIds.value[env.id]) ??
@@ -141,11 +156,14 @@ function snippetFor(env: CodeEnv): CodeSnippet | undefined {
             <pre
               v-if="lang.html"
               class="text-code-body font-mono text-xs/5"
+              :style="snippetMinHeight"
               v-html="lang.html"
             />
-            <pre v-else class="text-code-body font-mono text-xs/5">{{
-              lang.code
-            }}</pre>
+            <pre
+              v-else
+              class="text-code-body font-mono text-xs/5"
+              :style="snippetMinHeight"
+              >{{ lang.code }}</pre>
           </TabsContent>
         </TabsRoot>
       </TabsContent>
