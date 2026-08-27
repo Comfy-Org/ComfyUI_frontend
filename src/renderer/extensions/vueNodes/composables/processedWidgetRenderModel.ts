@@ -96,7 +96,6 @@ export interface ComputeProcessedWidgetsOptions {
   isGraphReady: boolean
   rootGraph: LGraph | null
   ui: WidgetUiCallbacks
-  forceDisabled?: boolean
 }
 
 function normalizeWidgetValue(value: unknown): WidgetValue {
@@ -349,7 +348,6 @@ interface WidgetProcessingContext {
   missingMediaStore: ReturnType<typeof useMissingMediaStore>
   nodeDefStore: ReturnType<typeof useNodeDefStore>
   ui: WidgetUiCallbacks
-  forceDisabled: boolean
 }
 
 function processWidget(
@@ -462,7 +460,6 @@ export function computeProcessedWidgets({
   isGraphReady,
   rootGraph,
   ui,
-  forceDisabled = false
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData) return []
 
@@ -516,7 +513,6 @@ export function computeProcessedWidgets({
     missingMediaStore,
     nodeDefStore,
     ui,
-    forceDisabled
   }
 
   return Array.from(new Set(ids))
