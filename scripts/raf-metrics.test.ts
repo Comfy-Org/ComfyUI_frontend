@@ -53,7 +53,7 @@ describe('rAF measurement validity', () => {
     [collection({ boundaryTimedOut: true }), 'rAF stop boundary timed out'],
     [
       collection({ visibilityChanged: true }),
-      'document visibility changed (visible to visible)'
+      'document visibility toggled during the measurement window'
     ],
     [
       collection({ startVisibility: 'hidden' }),

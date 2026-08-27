@@ -57,11 +57,13 @@ export function getRafRejectionReason(
   if (!collection) return 'rAF collector missing at stop'
   if (collection.boundaryTimedOut) return 'rAF stop boundary timed out'
   if (
-    collection.visibilityChanged ||
     collection.startVisibility !== 'visible' ||
     collection.endVisibility !== 'visible'
   ) {
     return `document visibility changed (${collection.startVisibility} to ${collection.endVisibility})`
+  }
+  if (collection.visibilityChanged) {
+    return 'document visibility toggled during the measurement window'
   }
   if (
     collection.intervalsMs.some(
