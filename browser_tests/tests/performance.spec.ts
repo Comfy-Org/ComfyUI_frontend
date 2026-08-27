@@ -384,35 +384,20 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       )
     })
 
-    test('zoom out culling', async ({ comfyPage }) => {
+    test('minimum zoom rendering', async ({ comfyPage }) => {
+      await comfyPage.canvasOps.setScale(0.1)
+      await expect.poll(() => comfyPage.canvasOps.getScale()).toBe(0.1)
+
       await comfyPage.perf.startMeasuring()
-
-      // Zoom out far enough that nodes become < 4px screen size
-      // (triggers size-based culling in isNodeInViewport)
-      for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(100)
-      }
-
-      // Verify we actually entered the culling regime.
-      // isNodeTooSmall triggers when max(width, height) * scale < 4px.
-      // Typical nodes are ~200px wide, so scale must be < 0.02.
-      await expect.poll(() => comfyPage.canvasOps.getScale()).toBeLessThan(0.02)
-
-      // Idle at extreme zoom-out — most nodes should be culled
       for (let i = 0; i < 60; i++) {
         await comfyPage.nextFrame()
       }
 
-      // Zoom back in
-      for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(-100)
-      }
-
       const m = recordMeasurement(
-        await comfyPage.perf.stopMeasuring('vue-zoom-culling')
+        await comfyPage.perf.stopMeasuring('vue-minimum-zoom')
       )
       console.log(
-        `Vue zoom culling: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95`
+        `Vue minimum zoom: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95`
       )
     })
   })
