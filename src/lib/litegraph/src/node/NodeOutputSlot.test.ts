@@ -55,6 +55,28 @@ describe('NodeOutputSlot deprecated links getter', () => {
     expect(source.outputs[0].links).toBeNull()
   })
 
+  it('does not let a getter read change empty-link serialization', () => {
+    const { source, target } = createConnectedGraph()
+    source.connect(0, target, 0)
+
+    void source.outputs[0].links
+    target.disconnectInput(0)
+
+    const output = source.outputs[0]
+    expect(output).toBeInstanceOf(NodeOutputSlot)
+    if (!(output instanceof NodeOutputSlot)) throw new Error('Expected slot')
+    expect(output.toJSON().links).toBeNull()
+  })
+
+  it('retains an empty array after disconnecting a specific target', () => {
+    const { source, target } = createConnectedGraph()
+    source.connect(0, target, 0)
+
+    source.disconnectOutput(0, target)
+
+    expect(source.outputs[0].links).toEqual([])
+  })
+
   it('returns null for an unconnected slot and for a graphless node', () => {
     const { source } = createConnectedGraph()
     expect(source.outputs[0].links).toBeNull()
@@ -122,6 +144,21 @@ describe('NodeOutputSlot deprecated links getter', () => {
     expect(() => links.push(toLinkId(404))).not.toThrow()
     expect(slot.links).toEqual([])
   })
+
+  it('does not resolve a detached slot by matching its name and type', () => {
+    const { source, target } = createConnectedGraph()
+    const attached = source.outputs[0]
+    const detached = new NodeOutputSlot(
+      { name: attached.name, type: attached.type },
+      source
+    )
+    const link = source.connect(0, target, 0)!
+
+    detached.links = []
+
+    expect(target.inputs[0].link).toBe(link.id)
+    expect(attached.links).toEqual([link.id])
+  })
 })
 
 describe('NodeOutputSlot construction', () => {
@@ -135,5 +172,15 @@ describe('NodeOutputSlot construction', () => {
           node
         )
     ).not.toThrow()
+  })
+
+  it('preserves explicit empty legacy link presence', () => {
+    const node = new LGraphNode('Host')
+    const slot = new NodeOutputSlot(
+      fromAny({ name: 'out', type: 'INT', links: [] }),
+      node
+    )
+
+    expect(slot.toJSON().links).toEqual([])
   })
 })

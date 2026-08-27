@@ -190,19 +190,14 @@ describe('recording template', () => {
       expect(code).not.toContain('loadWorkflow')
     })
 
-    it('seeds feature flags via ff: localStorage keys before navigation', () => {
+    it('does not seed localStorage feature flags for cloud recordings', () => {
       const { code } = generate({
         testName: 'demo',
         featureFlags: { onboarding_tour_enabled: true, custom_flag: 12 },
         target: 'cloud'
       })
-      const seedAt = code.indexOf('addInitScript')
-      expect(seedAt).toBeGreaterThan(-1)
-      expect(seedAt).toBeLessThan(code.indexOf('page.goto('))
-      expect(code).toContain("'ff:' + key")
-      expect(code).toContain(
-        '{"onboarding_tour_enabled":true,"custom_flag":12}'
-      )
+      expect(code).not.toContain('addInitScript')
+      expect(code).not.toContain("'ff:' + key")
     })
 
     it('omits flag seeding when no flags are selected', () => {

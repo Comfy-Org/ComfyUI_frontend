@@ -15,6 +15,7 @@ import { runCommand } from '../cli/run'
 import { devServerUrl } from '../checks/devServerUrl'
 import { box, info } from '../ui/logger'
 import type { Distribution } from '../devserver/distributions'
+import { buildFfQuery } from '../featureFlags'
 
 interface RunnerOptions {
   testName: string
@@ -154,7 +155,9 @@ export async function runRecording(
           // buttons, which is everything a recording needs.
           PW_CODEGEN_NO_INSPECTOR: '1',
           // Without this the fixture records against :8188's bundled frontend.
-          PLAYWRIGHT_TEST_URL: devServerUrl()
+          PLAYWRIGHT_TEST_URL:
+            devServerUrl() +
+            (target === 'cloud' ? buildFfQuery(options.featureFlags ?? {}) : '')
         }
       }
     )
