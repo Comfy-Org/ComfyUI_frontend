@@ -342,6 +342,30 @@ export const useWorkflowService = () => {
    * dialog was shown and the workflow never painted) or when the open
    * was skipped because the workflow is mid-close; true otherwise
    */
+  /**
+   * A failed replacement load leaves the shared root graph cleaned or
+   * partially configured while the previous workflow stays selected
+   * (16075 review). Repaint the retained workflow from its just-saved
+   * state so selection, canvas, and change tracking agree again. No
+   * retry loop: a failure here leaves the first failure's dialog
+   * standing.
+   */
+  const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
+    const retained = workflowStore.activeWorkflow
+    if (!retained || retained.path === failed.path || !retained.isLoaded) return
+    await app.loadGraphData(
+      toRaw(retained.activeState) as ComfyWorkflowJSON,
+      /* clean=*/ true,
+      /* restore_view=*/ true,
+      retained,
+      {
+        checkForRerouteMigration: false,
+        deferWarnings: true,
+        skipAssetScans: true
+      }
+    )
+  }
+
   const openWorkflow = (
     workflow: ComfyWorkflow,
     options: { force?: boolean; navigationIntentId?: number } = {}
@@ -382,6 +406,7 @@ export const useWorkflowService = () => {
           // Same invariant as the catch: a failed load's intent must not
           // stay newest (guarded no-op when the publish already superseded).
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          await restoreRetainedWorkflow(workflow)
           return false
         }
         showPendingWarnings(undefined, {
