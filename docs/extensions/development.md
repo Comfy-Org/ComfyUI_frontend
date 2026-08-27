@@ -150,11 +150,12 @@ also excluded from App Mode input and output selection.
 
 Declarations apply during startup and node-definition reloads. They are
 accepted only for node types synthesized by the frontend because no backend or
-system definition exists. Types registered with `skip_list` are also excluded
-because they do not receive a Vue node definition. Unknown, skipped, and
-undeclared types remain execution-relevant. A final node definition with
-outputs or `output_node: true` is also kept execution-relevant and produces a
-warning.
+system definition exists. This includes registered frontend types whose
+definition is supplied through `addCustomNodeDefs`. Types registered with
+`skip_list` are also excluded because they do not receive a Vue node
+definition. Unknown, skipped, and undeclared types remain execution-relevant.
+A source or final node definition with outputs or `output_node: true` is also
+kept execution-relevant and produces a warning.
 
 ## Key Points
 

@@ -18,7 +18,8 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   getWidgetIdForNode,
@@ -34,18 +35,37 @@ import type { ViewMode } from '@/utils/appMode'
 function findWidgetByEntityId(
   rootGraph: LGraph,
   widgetId: WidgetId
-): IBaseWidget | undefined {
+): [LGraphNode, IBaseWidget] | undefined {
   for (const node of rootGraph.nodes) {
     const widget = node.widgets?.find(
       (w) => getWidgetIdForNode(node, w) === widgetId
     )
-    if (widget) return widget
+    if (widget) return [node, widget]
   }
   return undefined
 }
 
 export function nodeTypeValidForApp(type: string) {
   return !useNodeDefStore().isLayoutOnlyNodeType(type)
+}
+
+export function nodeValidForApp(node: LGraphNode) {
+  return nodeTypeValidForApp(node.type)
+}
+
+export function widgetValidForApp(
+  node: LGraphNode,
+  widget: IBaseWidget
+): boolean {
+  if (!nodeValidForApp(node)) return false
+  if (!node.isSubgraphNode()) return true
+
+  const source = resolvePromotedWidgetSource(
+    node.graph?.rootGraph,
+    node,
+    widget
+  )
+  return source ? nodeValidForApp(source.sourceNode) : false
 }
 
 export const useAppModeStore = defineStore('appMode', () => {
@@ -111,9 +131,9 @@ export const useAppModeStore = defineStore('appMode', () => {
       outputs: rawOutputs.flatMap((nodeId) => {
         const parsedNodeId = parseNodeId(nodeId)
         if (!parsedNodeId) return []
-        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
-          ? [parsedNodeId]
-          : []
+        const node = resolveNode(parsedNodeId)
+        if (node) return nodeValidForApp(node) ? [parsedNodeId] : []
+        return ChangeTracker.isLoadingGraph ? [parsedNodeId] : []
       })
     }
   }
@@ -133,18 +153,26 @@ export const useAppModeStore = defineStore('appMode', () => {
     const [storedId, widgetName, config] = input
 
     if (typeof storedId === 'string' && isWidgetId(storedId)) {
-      const widget = findWidgetByEntityId(rootGraph, storedId)
-      if (widget) return buildEntry(storedId, widgetName, config)
+      const resolved = findWidgetByEntityId(rootGraph, storedId)
+      if (
+        resolved &&
+        (ChangeTracker.isLoadingGraph || widgetValidForApp(...resolved))
+      ) {
+        return buildEntry(storedId, widgetName, config)
+      }
       const { nodeId } = parseWidgetId(storedId)
-      if (rootGraph.getNodeById?.(nodeId)) {
+      const node = rootGraph.getNodeById?.(nodeId)
+      if (node && ChangeTracker.isLoadingGraph && nodeValidForApp(node)) {
         return buildEntry(storedId, widgetName, config)
       }
       return null
     }
 
     if (typeof storedId === 'string' && storedId.includes(':')) {
-      const [, widget] = resolveNodeWidget(storedId, widgetName)
-      if (!widget?.widgetId) return null
+      const [node, widget] = resolveNodeWidget(storedId, widgetName)
+      if (!node || !widget?.widgetId || !widgetValidForApp(node, widget)) {
+        return null
+      }
       return buildEntry(widget.widgetId, widgetName, config)
     }
 
@@ -153,7 +181,11 @@ export const useAppModeStore = defineStore('appMode', () => {
       ? rootGraph.getNodeById?.(directNodeId)
       : null
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
-    if (directNode && directWidget) {
+    if (
+      directNode &&
+      directWidget &&
+      widgetValidForApp(directNode, directWidget)
+    ) {
       const derivedId = getWidgetIdForNode(directNode, directWidget)
       if (derivedId) return buildEntry(derivedId, widgetName, config)
     }
@@ -163,9 +195,12 @@ export const useAppModeStore = defineStore('appMode', () => {
       return node.inputs.flatMap((inputSlot): LinearInput[] => {
         if (!inputSlot.widgetId) return []
         const target = resolveSubgraphInputTarget(node, inputSlot.name)
+        const widget = node.getWidgetFromSlot(inputSlot)
         if (
           target?.nodeId !== String(storedId) ||
-          target.widgetName !== widgetName
+          target.widgetName !== widgetName ||
+          !widget ||
+          !widgetValidForApp(node, widget)
         ) {
           return []
         }

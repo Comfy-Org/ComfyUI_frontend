@@ -1195,8 +1195,18 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const changedSubgraph = getSubgraphDefinition(changed)
-        changedSubgraph.nodes[0].widgets_values = ['Updated content']
-        changedSubgraph.links?.pop()
+        const layoutNode = changedSubgraph.nodes[0]
+        layoutNode.widgets_values = ['Updated content']
+        const incidentLinkIndex = changedSubgraph.links?.findIndex((link) =>
+          Array.isArray(link)
+            ? link[1] === layoutNode.id || link[3] === layoutNode.id
+            : link.origin_id === layoutNode.id ||
+              link.target_id === layoutNode.id
+        )
+        if (incidentLinkIndex === undefined || incidentLinkIndex < 0) {
+          throw new Error('layout-only incident link missing')
+        }
+        changedSubgraph.links?.splice(incidentLinkIndex, 1)
         mockCanvasState(changed)
 
         tracker.captureCanvasState()
@@ -1252,6 +1262,199 @@ describe('ChangeTracker', () => {
           changed
         )
         expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('ignores promoted layout-only values through two subgraph boundaries', async () => {
+        const nodeType = 'DeepPromotedLayoutFrame'
+        registerLayoutOnlyNodeType(nodeType)
+        const rootGraph = createTestRootGraph()
+        const outer = rootGraph.createSubgraph(createTestSubgraphData())
+        const inner = rootGraph.createSubgraph(createTestSubgraphData())
+        const outerHost = createTestSubgraphNode(outer)
+        rootGraph.add(outerHost)
+        const innerHost = createTestSubgraphNode(inner, {
+          parentGraph: outer
+        })
+        outer.add(innerHost)
+
+        const interior = new LGraphNode(nodeType, nodeType)
+        const input = interior.addInput('text', 'STRING')
+        const widget = interior.addWidget(
+          'text',
+          'text',
+          'Initial content',
+          () => undefined
+        )
+        input.widget = { name: widget.name }
+        inner.add(interior)
+        const innerPromotion = promoteValueWidgetViaSubgraphInput(
+          innerHost,
+          interior,
+          widget
+        )
+        if (!innerPromotion.ok) throw new Error(innerPromotion.reason)
+        const innerWidget = innerHost.widgets?.find(
+          (candidate) => candidate.name === 'text'
+        )
+        if (!innerWidget) throw new Error('inner promoted widget missing')
+        const outerPromotion = promoteValueWidgetViaSubgraphInput(
+          outerHost,
+          innerHost,
+          innerWidget
+        )
+        if (!outerPromotion.ok) throw new Error(outerPromotion.reason)
+        const outerInput = outerHost.inputs.find(
+          (candidate) => candidate.name === 'text'
+        )
+        if (!outerInput?.widgetId) {
+          throw new Error('outer promoted widget missing')
+        }
+
+        const initial = await requireValidWorkflow(rootGraph.serialize())
+        const tracker = createTracker(initial)
+        useWidgetValueStore().setValue(
+          outerInput.widgetId,
+          'Updated host content'
+        )
+        const changed = await requireValidWorkflow(rootGraph.serialize())
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('ignores layout-only promotion topology changes', async () => {
+        const nodeType = 'PromotedLayoutTopology'
+        registerLayoutOnlyNodeType(nodeType)
+        const rootGraph = createTestRootGraph()
+        const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
+        const host = createTestSubgraphNode(subgraph)
+        rootGraph.add(host)
+        const interior = new LGraphNode(nodeType, nodeType)
+        const input = interior.addInput('text', 'STRING')
+        const widget = interior.addWidget(
+          'text',
+          'text',
+          'Initial content',
+          () => undefined
+        )
+        input.widget = { name: widget.name }
+        subgraph.add(interior)
+        const initial = await requireValidWorkflow(rootGraph.serialize())
+        const tracker = createTracker(initial)
+
+        const promotion = promoteValueWidgetViaSubgraphInput(
+          host,
+          interior,
+          widget
+        )
+        if (!promotion.ok) throw new Error(promotion.reason)
+        const changed = await requireValidWorkflow(rootGraph.serialize())
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('keeps promoted values relevant when an executable node also consumes them', async () => {
+        const nodeType = 'MixedFanoutLayoutFrame'
+        registerLayoutOnlyNodeType(nodeType)
+        const rootGraph = createTestRootGraph()
+        const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
+        const host = createTestSubgraphNode(subgraph)
+        rootGraph.add(host)
+        const layoutNode = new LGraphNode(nodeType, nodeType)
+        const layoutInput = layoutNode.addInput('text', 'STRING')
+        const layoutWidget = layoutNode.addWidget(
+          'text',
+          'text',
+          'Initial content',
+          () => undefined
+        )
+        layoutInput.widget = { name: layoutWidget.name }
+        subgraph.add(layoutNode)
+        const promotion = promoteValueWidgetViaSubgraphInput(
+          host,
+          layoutNode,
+          layoutWidget
+        )
+        if (!promotion.ok) throw new Error(promotion.reason)
+
+        const executableNode = new LGraphNode('ExecutableNode')
+        const executableInput = executableNode.addInput('text', 'STRING')
+        executableInput.widget = { name: 'text' }
+        executableNode.addWidget('text', 'text', '', () => undefined)
+        subgraph.add(executableNode)
+        subgraph.inputNode.slots[0].connect(executableInput, executableNode)
+        const hostInput = host.inputs.find(
+          (candidate) => candidate.name === 'text'
+        )
+        if (!hostInput?.widgetId) throw new Error('host widget missing')
+
+        const initial = await requireValidWorkflow(rootGraph.serialize())
+        const tracker = createTracker(initial)
+        useWidgetValueStore().setValue(hostInput.widgetId, 'Updated content')
+        const changed = await requireValidWorkflow(rootGraph.serialize())
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
+
+      it('does not let legacy widget names hide current executable values', async () => {
+        const nodeType = 'LegacyLayoutFrame'
+        registerLayoutOnlyNodeType(nodeType)
+        const initial = await createSubgraphState()
+        const subgraph = getSubgraphDefinition(initial)
+        const executableNode = subgraph.nodes[0]
+        const host = initial.nodes[0]
+        host.inputs ??= []
+        host.inputs[0] = {
+          ...host.inputs[0],
+          name: 'input',
+          type: '*',
+          widget: { name: 'input' }
+        }
+        host.widgets_values = [1]
+        host.widgets_values_named = { input: 1 }
+        subgraph.nodes.push({
+          id: 999,
+          type: nodeType,
+          pos: [0, 0],
+          size: [100, 50],
+          flags: {},
+          order: 1,
+          mode: 0,
+          inputs: [],
+          outputs: [],
+          properties: {}
+        })
+        subgraph.widgets = [{ id: String(999), name: 'input' }]
+        executableNode.type = 'ExecutableNode'
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        changed.nodes[0].widgets_values_named = { input: 2 }
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
       })
 
       it('clears redoQueue on new change', () => {

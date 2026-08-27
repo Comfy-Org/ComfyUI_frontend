@@ -30,7 +30,11 @@ import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
-import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import {
+  nodeValidForApp,
+  useAppModeStore,
+  widgetValidForApp
+} from '@/stores/appModeStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -124,7 +128,7 @@ function handleClick(e: MouseEvent) {
   const [node, widget] = getHovered(e) ?? []
   if (
     node?.mode !== LGraphEventMode.ALWAYS ||
-    !nodeTypeValidForApp(node.type) ||
+    !nodeValidForApp(node) ||
     node.has_errors
   )
     return canvasInteractions.forwardEventToCanvas(e)
@@ -138,7 +142,13 @@ function handleClick(e: MouseEvent) {
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
-  if (!isSelectInputsMode.value || widget.options.canvasOnly) return
+  if (
+    !isSelectInputsMode.value ||
+    widget.options.canvasOnly ||
+    !widgetValidForApp(node, widget)
+  ) {
+    return
+  }
 
   const widgetId = widget.widgetId
   if (!widgetId) return
@@ -165,6 +175,7 @@ const renderedOutputs = computed(() => {
       (n) =>
         n.constructor.nodeData?.output_node &&
         n.mode === LGraphEventMode.ALWAYS &&
+        nodeValidForApp(n) &&
         !n.has_errors
     )
     .map(nodeToDisplayTuple)

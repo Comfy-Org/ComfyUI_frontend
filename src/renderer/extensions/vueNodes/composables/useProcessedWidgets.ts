@@ -14,7 +14,7 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { app } from '@/scripts/app'
-import { nodeTypeValidForApp } from '@/stores/appModeStore'
+import { nodeValidForApp, widgetValidForApp } from '@/stores/appModeStore'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import {
@@ -60,13 +60,26 @@ export function useProcessedWidgets(
   const canSelectInputs = computed(() => {
     const nodeData = nodeDataGetter()
     if (!nodeData) return false
+    const hostNode = getHostNode(nodeData)
     return (
       isSelectInputsMode.value &&
       nodeData.mode === LGraphEventMode.ALWAYS &&
-      nodeTypeValidForApp(nodeData.type) &&
-      !nodeHasError(nodeData, canvasStore.rootGraphId, getHostNode(nodeData))
+      (!hostNode || nodeValidForApp(hostNode)) &&
+      !nodeHasError(nodeData, canvasStore.rootGraphId, hostNode)
     )
   })
+
+  function canSelectInput(widgetId: WidgetId): boolean {
+    if (!canSelectInputs.value) return false
+    const nodeData = nodeDataGetter()
+    if (!nodeData) return false
+    const hostNode = getHostNode(nodeData)
+    if (!hostNode) return true
+    const widget = hostNode.widgets?.find(
+      (candidate) => candidate.widgetId === widgetId
+    )
+    return widget ? widgetValidForApp(hostNode, widget) : false
+  }
 
   const processedWidgets = computed((): ProcessedWidget[] =>
     computeProcessedWidgets({
@@ -82,6 +95,7 @@ export function useProcessedWidgets(
 
   return {
     canSelectInputs,
+    canSelectInput,
     nodeType,
     processedWidgets
   }

@@ -280,26 +280,6 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
   }
 }
 
-function updateVueAppNodeDefs(
-  app: ComfyApp,
-  defs: Record<string, ComfyNodeDef> = {}
-) {
-  const updateNodeDefs = Reflect.get(app, 'updateVueAppNodeDefs')
-  if (typeof updateNodeDefs !== 'function') {
-    throw new Error('node definition updater missing')
-  }
-  const trustedLayoutOnlyNodeDefs = new Map<ComfyNodeDef, string>()
-  for (const [nodeType, nodeDef] of Object.entries(defs)) {
-    if (nodeDef.layout_only === true) {
-      trustedLayoutOnlyNodeDefs.set(nodeDef, nodeType)
-    }
-  }
-  updateNodeDefs.call(app, defs, {
-    backendNodeTypes: new Set(Object.keys(defs)),
-    trustedLayoutOnlyNodeDefs
-  })
-}
-
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
@@ -1154,7 +1134,7 @@ describe('ComfyApp', () => {
   })
 
   describe('workflow lifecycle', () => {
-    it('classifies declared outputless frontend-only node types', () => {
+    it('classifies declared outputless frontend-only node types', async () => {
       const nodeType = 'test/DeclaredLayoutOnlyNode'
       class DeclaredLayoutOnlyNode extends LGraphNode {}
       LiteGraph.registerNodeType(nodeType, DeclaredLayoutOnlyNode)
@@ -1162,10 +1142,13 @@ describe('ComfyApp', () => {
         name: 'test.declared-layout-only-node',
         layoutOnlyNodeTypes: [nodeType]
       })
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 
       try {
-        updateVueAppNodeDefs(app)
+        await app.registerNodes()
 
         expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(true)
         expect(warn).not.toHaveBeenCalled()
@@ -1175,7 +1158,7 @@ describe('ComfyApp', () => {
       }
     })
 
-    it('rejects layout-only metadata added by node definition hooks', () => {
+    it('rejects layout-only metadata added by node definition hooks', async () => {
       const nodeType = 'test/HookMutatedBackendNode'
       const backendNodeDef: ComfyNodeDef = {
         name: nodeType,
@@ -1198,8 +1181,13 @@ describe('ComfyApp', () => {
           return []
         }
       )
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({
+        [nodeType]: backendNodeDef
+      })
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
 
-      updateVueAppNodeDefs(app, { [nodeType]: backendNodeDef })
+      await app.registerNodes()
 
       expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
       expect(warn).toHaveBeenCalledWith(
@@ -1236,6 +1224,67 @@ describe('ComfyApp', () => {
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('Ignoring untrusted layout-only metadata')
       )
+    })
+
+    it('preserves source execution shape when Vue hooks remove outputs', async () => {
+      const nodeType = 'test/HookClearedBackendOutputs'
+      const backendNodeDef: ComfyNodeDef = {
+        name: nodeType,
+        display_name: 'Hook Cleared Backend Outputs',
+        category: 'test',
+        description: '',
+        input: {},
+        output: ['*'],
+        output_node: false,
+        layout_only: true,
+        python_module: 'test'
+      }
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({
+        [nodeType]: backendNodeDef
+      })
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+      mockExtensionService.invokeExtensions.mockImplementation(
+        (hook: string, nodeDefs: ComfyNodeDef[]) => {
+          if (hook !== 'beforeRegisterVueAppNodeDefs') return []
+          const nodeDef = nodeDefs.find((value) => value.name === nodeType)
+          if (!nodeDef) throw new Error('backend node definition missing')
+          nodeDef.output = []
+          return []
+        }
+      )
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      await app.registerNodes()
+
+      expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('source node definition has outputs')
+      )
+    })
+
+    it('supports extension functions on node definition objects', async () => {
+      const nodeType = 'test/FunctionBearingBackendNode'
+      const backendNodeDef: ComfyNodeDef = {
+        name: nodeType,
+        display_name: 'Function Bearing Backend Node',
+        category: 'test',
+        description: '',
+        input: {},
+        output: [],
+        output_node: false,
+        python_module: 'test'
+      }
+      Reflect.set(backendNodeDef, 'extensionHandler', () => undefined)
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({
+        [nodeType]: backendNodeDef
+      })
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+
+      await expect(app.registerNodes()).resolves.toBeUndefined()
+
+      expect(useNodeDefStore().nodeDefsByName[nodeType]).toBeDefined()
     })
 
     it('accepts frontend definitions added during registration', async () => {
@@ -1277,7 +1326,7 @@ describe('ComfyApp', () => {
       }
     })
 
-    it('isolates system definitions from node definition hooks', () => {
+    it('isolates system definitions from node definition hooks', async () => {
       let noteHookCalls = 0
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       mockExtensionService.invokeExtensions.mockImplementation(
@@ -1290,9 +1339,12 @@ describe('ComfyApp', () => {
           return []
         }
       )
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
 
-      updateVueAppNodeDefs(app)
-      updateVueAppNodeDefs(app)
+      await app.registerNodes()
+      await app.registerNodes()
 
       expect(noteHookCalls).toBe(2)
       expect(SYSTEM_NODE_DEFS.Note.name).toBe('Note')
@@ -1303,7 +1355,7 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('validates layout-only declarations after node definition hooks', () => {
+    it('validates layout-only declarations after node definition hooks', async () => {
       const nodeType = 'test/LayoutOnlyHookOrdering'
       class LayoutOnlyHookOrdering extends LGraphNode {}
       LiteGraph.registerNodeType(nodeType, LayoutOnlyHookOrdering)
@@ -1323,9 +1375,12 @@ describe('ComfyApp', () => {
           return []
         }
       )
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
 
       try {
-        updateVueAppNodeDefs(app)
+        await app.registerNodes()
 
         expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
         expect(warn).toHaveBeenCalledWith(
@@ -1862,6 +1917,38 @@ describe('ComfyApp', () => {
   })
 
   describe('reloadNodeDefs', () => {
+    it('waits for registration hooks before classifying refreshed definitions', async () => {
+      const nodeType = 'test/AsyncHookOutputNode'
+      const nodeDef: ComfyNodeDef = {
+        name: nodeType,
+        display_name: 'Async Hook Output Node',
+        category: 'test',
+        description: '',
+        input: {},
+        output: [],
+        output_node: false,
+        layout_only: true,
+        python_module: 'test'
+      }
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({ [nodeType]: nodeDef })
+      vi.spyOn(app, 'registerNodeDef').mockImplementation(
+        async (_nodeId, registeredNodeDef) => {
+          await Promise.resolve()
+          registeredNodeDef.output = ['*']
+        }
+      )
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      await app.reloadNodeDefs()
+
+      expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('source node definition has outputs')
+      )
+    })
+
     it('syncs refreshed combo options into promoted combo host state', async () => {
       const initialOptions = ['missing.safetensors']
       const refreshedOptions = ['missing.safetensors', 'present.safetensors']

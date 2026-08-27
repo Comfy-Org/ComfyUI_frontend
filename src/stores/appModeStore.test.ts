@@ -86,7 +86,11 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettings
 }))
 
-import { nodeTypeValidForApp, useAppModeStore } from './appModeStore'
+import {
+  nodeTypeValidForApp,
+  useAppModeStore,
+  widgetValidForApp
+} from './appModeStore'
 
 function createBuilderWorkflow(
   activeMode: string = 'builder:inputs'
@@ -147,6 +151,8 @@ const entitySteps = `${rootGraphId}:1:steps` as WidgetId
 function nodeWithWidgets(id: number, widgetNames: string[]) {
   return fromAny<LGraphNode, unknown>({
     id,
+    type: 'TestNode',
+    isSubgraphNode: () => false,
     widgets: widgetNames.map((name) => ({
       name,
       widgetId: `${rootGraphId}:${id}:${name}` as WidgetId
@@ -183,6 +189,85 @@ describe('appModeStore', () => {
 
     expect(nodeTypeValidForApp('LayoutFrame')).toBe(false)
     expect(nodeTypeValidForApp('ExecutionNode')).toBe(true)
+  })
+
+  it('prunes persisted inputs and outputs for layout-only nodes', () => {
+    useNodeDefStore().addNodeDef({
+      name: 'LayoutFrame',
+      display_name: 'Layout Frame',
+      category: 'test',
+      description: '',
+      input: {},
+      output: [],
+      output_node: false,
+      layout_only: true,
+      python_module: 'test'
+    })
+    const layoutNode = nodeWithWidgets(1, ['prompt'])
+    layoutNode.type = 'LayoutFrame'
+    vi.mocked(app.rootGraph).id = rootGraphId
+    vi.mocked(app.rootGraph).nodes = [layoutNode]
+    vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      id === toNodeId(1) ? layoutNode : null
+    )
+    mockResolveNode.mockImplementation((id) =>
+      id === toNodeId(1) ? layoutNode : undefined
+    )
+
+    const result = store.pruneLinearData({
+      inputs: [[entityPrompt, 'prompt']],
+      outputs: [toNodeId(1)]
+    })
+
+    expect(result).toEqual({ inputs: [], outputs: [] })
+  })
+
+  it('rejects persisted and new selections for promoted layout-only widgets', () => {
+    const nodeType = 'PromotedLayoutFrame'
+    useNodeDefStore().addNodeDef({
+      name: nodeType,
+      display_name: nodeType,
+      category: 'test',
+      description: '',
+      input: {},
+      output: [],
+      output_node: false,
+      layout_only: true,
+      python_module: 'test'
+    })
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'Prompt', type: 'STRING' }]
+    })
+    const interior = new LGraphNodeClass(nodeType, nodeType)
+    const interiorInput = interior.addInput('Prompt', 'STRING')
+    const interiorWidget = interior.addWidget(
+      'string',
+      'text',
+      '',
+      () => undefined
+    )
+    interiorInput.widget = { name: interiorWidget.name }
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interiorInput, interior)
+    const host = createTestSubgraphNode(subgraph, { id: 5 })
+    const rootGraph = host.graph as LGraph
+    rootGraph.add(host)
+    host._internalConfigureAfterSlots()
+    const hostWidget = host.widgets?.find((widget) => widget.name === 'Prompt')
+    if (!hostWidget?.widgetId) throw new Error('promoted widget missing')
+    vi.mocked(app.rootGraph).id = rootGraph.id
+    vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+    vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      rootGraph.getNodeById(id)
+    )
+
+    const result = store.pruneLinearData({
+      inputs: [[hostWidget.widgetId, hostWidget.name]],
+      outputs: []
+    })
+
+    expect(widgetValidForApp(host, hostWidget)).toBe(false)
+    expect(result.inputs).toEqual([])
   })
 
   describe('enterBuilder', () => {
@@ -1119,6 +1204,8 @@ describe('appModeStore', () => {
         `${rootGraphId}:${sourceNodeId}:${sourceWidgetName}` as WidgetId
       const rootNode = fromAny<LGraphNode, unknown>({
         id: sourceNodeId,
+        type: 'RootNode',
+        isSubgraphNode: () => false,
         widgets: [{ name: sourceWidgetName, widgetId: rootEntityId }]
       })
       const hostWidget = {
@@ -1176,21 +1263,31 @@ describe('appModeStore', () => {
 
     it('migrates legacy `hostLocator:subgraphInputName` tuples to entity-id form', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
-      const hostId = 5
-      const hostLocator = `${rootGraphId}:${hostId}`
-      const promotedEntityId =
-        `${rootGraphId}:${hostId}:subgraph_input_name` as WidgetId
-      const hostNode = fromAny<LGraphNode, unknown>({
-        id: hostId,
-        isSubgraphNode: () => true,
-        widgets: [{ name: 'subgraph_input_name', widgetId: promotedEntityId }]
+      const subgraphInputName = 'subgraph_input_name'
+      const sourceWidgetName = 'text'
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: subgraphInputName, type: 'STRING' }]
       })
-      vi.mocked(app.rootGraph).id = rootGraphId
-      vi.mocked(app.rootGraph).nodes = [hostNode]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: SerializedNodeId | null | undefined) =>
-          id == hostId ? hostNode : null
+      const interior = new LGraphNodeClass('Interior')
+      const interiorInput = interior.addInput(subgraphInputName, 'STRING')
+      interior.addWidget('string', sourceWidgetName, '', () => undefined)
+      interiorInput.widget = { name: sourceWidgetName }
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interiorInput, interior)
+      const host = createTestSubgraphNode(subgraph, { id: 5 })
+      const rootGraph = host.graph as LGraph
+      rootGraph.add(host)
+      host._internalConfigureAfterSlots()
+      const hostLocator = `${rootGraph.id}:${host.id}`
+      const promotedEntityId = widgetId(
+        rootGraph.id,
+        host.id,
+        subgraphInputName
+      )
+      vi.mocked(app.rootGraph).id = rootGraph.id
+      vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        rootGraph.getNodeById(id)
       )
 
       const result = store.pruneLinearData({

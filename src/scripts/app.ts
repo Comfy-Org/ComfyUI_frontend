@@ -1,5 +1,5 @@
 import { useEventListener, useResizeObserver } from '@vueuse/core'
-import _ from 'es-toolkit/compat'
+import _, { cloneDeep } from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
@@ -1139,22 +1139,29 @@ export class ComfyApp {
       ...SYSTEM_NODE_DEFS
     }
 
-    const nodeDefSourceTypes = new Map<ComfyNodeDefV1, string>()
-    const trustedLayoutOnlyNodeDefs = new Set<ComfyNodeDefV1>()
+    const nodeDefSources = new Map<
+      ComfyNodeDefV1,
+      {
+        nodeType: string
+        trustedLayoutOnly: boolean
+        hasExecutionOutputs: boolean
+      }
+    >()
     const nodeDefArray = Object.entries(allNodeDefs).map(
       ([nodeType, sourceNodeDef]) => {
-        const nodeDef = structuredClone(sourceNodeDef)
-        nodeDefSourceTypes.set(nodeDef, nodeType)
+        const nodeDef = cloneDeep(sourceNodeDef)
         const trustedBackendType =
           provenance.trustedLayoutOnlyNodeDefs.get(sourceNodeDef)
         const trustedSystemNodeDef = SYSTEM_NODE_DEFS[nodeType]
-        if (
-          trustedBackendType === nodeType ||
-          (trustedSystemNodeDef === sourceNodeDef &&
-            sourceNodeDef.layout_only === true)
-        ) {
-          trustedLayoutOnlyNodeDefs.add(nodeDef)
-        }
+        nodeDefSources.set(nodeDef, {
+          nodeType,
+          trustedLayoutOnly:
+            trustedBackendType === nodeType ||
+            (trustedSystemNodeDef === sourceNodeDef &&
+              sourceNodeDef.layout_only === true),
+          hasExecutionOutputs:
+            sourceNodeDef.output_node || (sourceNodeDef.output?.length ?? 0) > 0
+        })
         return nodeDef
       }
     )
@@ -1168,8 +1175,7 @@ export class ComfyApp {
       )
     )
     const classifiedNodeDefs = applyLayoutOnlyNodeTypes(nodeDefArray, {
-      trustedLayoutOnlyNodeDefs,
-      nodeDefSourceTypes,
+      nodeDefSources,
       frontendOnlyNodeTypes: new Set(Object.keys(frontendOnlyDefs)),
       skippedFrontendOnlyNodeTypes,
       declaredLayoutOnlyNodeTypes
@@ -2501,9 +2507,11 @@ export class ComfyApp {
   async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
     const provenance = captureNodeDefProvenance(defs)
-    for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
-    }
+    await Promise.all(
+      Object.entries(defs).map(([nodeId, nodeDef]) =>
+        this.registerNodeDef(nodeId, nodeDef)
+      )
+    )
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {

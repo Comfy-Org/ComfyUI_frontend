@@ -7,6 +7,7 @@
     :processed-widgets
     :node-type
     :can-select-inputs
+    :can-select-input
     :node-id="nodeData?.id"
     :class="
       shouldHandleNodePointerEvents
@@ -67,10 +68,11 @@ onErrorCaptured((error) => {
   return false
 })
 
-const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
-  () => nodeData,
-  () => widgetIds
-)
+const { canSelectInput, canSelectInputs, nodeType, processedWidgets } =
+  useProcessedWidgets(
+    () => nodeData,
+    () => widgetIds
+  )
 
 // Tracks widget-row growth that the node-level RO can't see
 if (nodeData?.id != null) {

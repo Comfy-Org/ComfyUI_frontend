@@ -1,8 +1,14 @@
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 interface LayoutOnlyNodeTypeSources {
-  trustedLayoutOnlyNodeDefs: ReadonlySet<ComfyNodeDef>
-  nodeDefSourceTypes: ReadonlyMap<ComfyNodeDef, string>
+  nodeDefSources: ReadonlyMap<
+    ComfyNodeDef,
+    {
+      nodeType: string
+      trustedLayoutOnly: boolean
+      hasExecutionOutputs: boolean
+    }
+  >
   frontendOnlyNodeTypes: ReadonlySet<string>
   skippedFrontendOnlyNodeTypes: ReadonlySet<string>
   declaredLayoutOnlyNodeTypes: ReadonlySet<string>
@@ -17,8 +23,7 @@ export function applyLayoutOnlyNodeTypes(
   sources: LayoutOnlyNodeTypeSources
 ): ComfyNodeDef[] {
   const {
-    trustedLayoutOnlyNodeDefs,
-    nodeDefSourceTypes,
+    nodeDefSources,
     frontendOnlyNodeTypes,
     skippedFrontendOnlyNodeTypes,
     declaredLayoutOnlyNodeTypes
@@ -37,7 +42,8 @@ export function applyLayoutOnlyNodeTypes(
   }
 
   return nodeDefs.map((nodeDef) => {
-    const sourceType = nodeDefSourceTypes.get(nodeDef)
+    const source = nodeDefSources.get(nodeDef)
+    const sourceType = source?.nodeType
     const normalizedNodeDef =
       sourceType !== undefined && nodeDef.name !== sourceType
         ? { ...nodeDef, name: sourceType }
@@ -52,7 +58,7 @@ export function applyLayoutOnlyNodeTypes(
       frontendOnlyNodeTypes.has(normalizedNodeDef.name) &&
       declaredLayoutOnlyNodeTypes.has(normalizedNodeDef.name)
     const isLayoutOnly =
-      trustedLayoutOnlyNodeDefs.has(nodeDef) || declaredFrontendOnlyType
+      source?.trustedLayoutOnly === true || declaredFrontendOnlyType
 
     if (!isLayoutOnly) {
       if (normalizedNodeDef.layout_only !== true) return normalizedNodeDef
@@ -62,9 +68,15 @@ export function applyLayoutOnlyNodeTypes(
       return { ...normalizedNodeDef, layout_only: false }
     }
 
-    if (hasExecutionOutputs(normalizedNodeDef)) {
+    if (
+      source?.hasExecutionOutputs === true ||
+      hasExecutionOutputs(normalizedNodeDef)
+    ) {
+      const executionShape = source?.hasExecutionOutputs
+        ? 'source node definition'
+        : 'final node definition'
       console.warn(
-        `Ignoring layout-only classification for "${normalizedNodeDef.name}": the final node definition has outputs or is an output node.`
+        `Ignoring layout-only classification for "${normalizedNodeDef.name}": the ${executionShape} has outputs or is an output node.`
       )
       return { ...normalizedNodeDef, layout_only: false }
     }

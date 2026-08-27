@@ -45,7 +45,11 @@
           v-if="!isConvertedWidget(widget)"
           :widget-id="widget.widgetId"
           :name="widget.simplified.name"
-          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+          :enable="
+            widget.widgetId !== undefined &&
+            canSelectInput(widget.widgetId) &&
+            !widget.simplified.options?.disabled
+          "
         >
           <component
             :is="widget.vueComponent"
@@ -78,6 +82,7 @@ import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -97,11 +102,13 @@ const {
   processedWidgets,
   nodeType,
   canSelectInputs = false,
+  canSelectInput = () => canSelectInputs,
   nodeId
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
+  canSelectInput?: (widgetId: WidgetId) => boolean
   nodeId?: NodeId
 }>()
 

@@ -91,8 +91,17 @@ const nonExecutionBoundaryNodeProperties = new Set(['bounding', 'pinned'])
 type IsLayoutOnlyNodeType = (nodeType: string) => boolean
 
 interface SubgraphHostProjection {
-  layoutOnlyWidgetNames: ReadonlySet<string>
+  layoutOnlyInputNames: ReadonlySet<string>
+  layoutOnlyInputIndices: ReadonlySet<number>
+  layoutOnlyLegacyWidgetNames: ReadonlySet<string>
   layoutOnlyLegacyWidgetIndices: ReadonlySet<number>
+}
+
+interface LinkEndpoints {
+  originId: SerializedNodeId | null
+  originSlot: unknown
+  targetId: SerializedNodeId | null
+  targetSlot: unknown
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -133,31 +142,50 @@ function getExecutionNodeState(
     executionNode.id = normalizeNodeId(node.id)
   }
   if (Array.isArray(node.inputs)) {
-    executionNode.inputs = node.inputs.map(getExecutionSlotState)
+    executionNode.inputs = node.inputs
+      .filter((input, index) => {
+        if (!projection) return true
+        const name = asRecord(input)?.name
+        return !(
+          projection.layoutOnlyInputIndices.has(index) ||
+          (typeof name === 'string' &&
+            projection.layoutOnlyInputNames.has(name))
+        )
+      })
+      .map(getExecutionSlotState)
   }
   if (Array.isArray(node.outputs)) {
     executionNode.outputs = node.outputs.map(getExecutionSlotState)
   }
   if (projection) {
+    const promotedWidgetNames = Array.isArray(node.inputs)
+      ? node.inputs.flatMap((value) => {
+          const input = asRecord(value)
+          if (!input || !asRecord(input.widget)) return []
+          return typeof input.name === 'string' ? [input.name] : []
+        })
+      : []
+    const layoutOnlyWidgetNames =
+      promotedWidgetNames.length > 0
+        ? projection.layoutOnlyInputNames
+        : projection.layoutOnlyLegacyWidgetNames
     const namedValues = asRecord(node.widgets_values_named)
     if (namedValues) {
-      executionNode.widgets_values_named = Object.fromEntries(
+      const projectedNamedValues = Object.fromEntries(
         Object.entries(namedValues).filter(
-          ([name]) => !projection.layoutOnlyWidgetNames.has(name)
+          ([name]) => !layoutOnlyWidgetNames.has(name)
         )
       )
+      if (Object.keys(projectedNamedValues).length > 0) {
+        executionNode.widgets_values_named = projectedNamedValues
+      } else {
+        delete executionNode.widgets_values_named
+      }
     }
     if (Array.isArray(node.widgets_values)) {
-      const promotedWidgetNames = Array.isArray(node.inputs)
-        ? node.inputs.flatMap((value) => {
-            const input = asRecord(value)
-            if (!input || !asRecord(input.widget)) return []
-            return typeof input.name === 'string' ? [input.name] : []
-          })
-        : []
       const omittedIndices = new Set<number>()
       for (const [index, name] of promotedWidgetNames.entries()) {
-        if (projection.layoutOnlyWidgetNames.has(name)) {
+        if (projection.layoutOnlyInputNames.has(name)) {
           omittedIndices.add(index)
         }
       }
@@ -166,9 +194,14 @@ function getExecutionNodeState(
           omittedIndices.add(index)
         }
       }
-      executionNode.widgets_values = node.widgets_values.filter(
+      const projectedWidgetValues = node.widgets_values.filter(
         (_value, index) => !omittedIndices.has(index)
       )
+      if (projectedWidgetValues.length > 0) {
+        executionNode.widgets_values = projectedWidgetValues
+      } else {
+        delete executionNode.widgets_values
+      }
     }
   }
   return executionNode
@@ -185,13 +218,56 @@ function getExecutionBoundaryNodeState(value: unknown): unknown {
   return executionNode
 }
 
-function getExecutionLinkState(value: unknown): unknown {
+function remapSlotIndex(
+  value: unknown,
+  omittedIndices?: ReadonlySet<number>
+): unknown {
+  const index = normalizeSlotIndex(value)
+  if (typeof index !== 'number' || !omittedIndices) return index
+
+  let removedBefore = 0
+  for (const omittedIndex of omittedIndices) {
+    if (omittedIndex < index) removedBefore += 1
+  }
+  return index - removedBefore
+}
+
+function getLinkEndpoints(value: unknown): LinkEndpoints {
+  const link = asRecord(value)
+  return {
+    originId: asSerializedNodeId(
+      Array.isArray(value) ? value[1] : link?.origin_id
+    ),
+    originSlot: Array.isArray(value) ? value[2] : link?.origin_slot,
+    targetId: asSerializedNodeId(
+      Array.isArray(value) ? value[3] : link?.target_id
+    ),
+    targetSlot: Array.isArray(value) ? value[4] : link?.target_slot
+  }
+}
+
+function getExecutionLinkState(
+  value: unknown,
+  hostInputIndices: ReadonlyMap<SerializedNodeId, ReadonlySet<number>>,
+  inputNodeId: SerializedNodeId | null,
+  layoutOnlyInputIndices: ReadonlySet<number>
+): unknown {
+  const { originId, originSlot, targetId, targetSlot } = getLinkEndpoints(value)
+  const projectedOriginSlot =
+    originId !== null && originId === inputNodeId
+      ? remapSlotIndex(originSlot, layoutOnlyInputIndices)
+      : normalizeSlotIndex(originSlot)
+  const projectedTargetSlot =
+    targetId !== null
+      ? remapSlotIndex(targetSlot, hostInputIndices.get(targetId))
+      : normalizeSlotIndex(targetSlot)
+
   if (Array.isArray(value)) {
     return [
       normalizeNodeId(value[1]),
-      normalizeSlotIndex(value[2]),
+      projectedOriginSlot,
       normalizeNodeId(value[3]),
-      normalizeSlotIndex(value[4])
+      projectedTargetSlot
     ]
   }
 
@@ -199,9 +275,9 @@ function getExecutionLinkState(value: unknown): unknown {
   if (!link) return value
   return [
     normalizeNodeId(link.origin_id),
-    normalizeSlotIndex(link.origin_slot),
+    projectedOriginSlot,
     normalizeNodeId(link.target_id),
-    normalizeSlotIndex(link.target_slot)
+    projectedTargetSlot
   ]
 }
 
@@ -264,20 +340,59 @@ function isIncidentToNode(
   )
 }
 
+function getNodeById(
+  nodes: unknown[]
+): Map<SerializedNodeId, Record<string, unknown>> {
+  const nodesById = new Map<SerializedNodeId, Record<string, unknown>>()
+  for (const value of nodes) {
+    const node = asRecord(value)
+    const nodeId = asSerializedNodeId(node?.id)
+    if (node && nodeId !== null) nodesById.set(nodeId, node)
+  }
+  return nodesById
+}
+
+function isProjectedLayoutOnlyTarget(
+  targetId: SerializedNodeId,
+  targetSlot: unknown,
+  layoutOnlyNodeIds: ReadonlySet<SerializedNodeId>,
+  nodesById: ReadonlyMap<SerializedNodeId, Record<string, unknown>>,
+  subgraphHostProjections: ReadonlyMap<string, SubgraphHostProjection>
+): boolean {
+  if (layoutOnlyNodeIds.has(targetId)) return true
+
+  const targetNode = nodesById.get(targetId)
+  if (!targetNode || typeof targetNode.type !== 'string') return false
+  const projection = subgraphHostProjections.get(targetNode.type)
+  const slotIndex = normalizeSlotIndex(targetSlot)
+  if (!projection || typeof slotIndex !== 'number') return false
+  const input = Array.isArray(targetNode.inputs)
+    ? asRecord(targetNode.inputs[slotIndex])
+    : null
+  return (
+    projection.layoutOnlyInputIndices.has(slotIndex) ||
+    (typeof input?.name === 'string' &&
+      projection.layoutOnlyInputNames.has(input.name))
+  )
+}
+
 function getSubgraphHostProjection(
   value: unknown,
-  isLayoutOnlyNodeType: IsLayoutOnlyNodeType
+  isLayoutOnlyNodeType: IsLayoutOnlyNodeType,
+  subgraphHostProjections: ReadonlyMap<string, SubgraphHostProjection>
 ): SubgraphHostProjection | null {
   const subgraph = asRecord(value)
   if (!subgraph || !Array.isArray(subgraph.nodes)) return null
 
+  const nodesById = getNodeById(subgraph.nodes)
   const layoutOnlyNodeIds = getLayoutOnlyNodeIds(
     subgraph.nodes,
     isLayoutOnlyNodeType
   )
-  if (layoutOnlyNodeIds.size === 0) return null
 
-  const layoutOnlyWidgetNames = new Set<string>()
+  const layoutOnlyInputNames = new Set<string>()
+  const layoutOnlyInputIndices = new Set<number>()
+  const layoutOnlyLegacyWidgetNames = new Set<string>()
   const layoutOnlyLegacyWidgetIndices = new Set<number>()
   if (Array.isArray(subgraph.widgets)) {
     for (const [index, value] of subgraph.widgets.entries()) {
@@ -290,7 +405,7 @@ function getSubgraphHostProjection(
       ) {
         continue
       }
-      layoutOnlyWidgetNames.add(widget.name)
+      layoutOnlyLegacyWidgetNames.add(widget.name)
       layoutOnlyLegacyWidgetIndices.add(index)
     }
   }
@@ -304,54 +419,109 @@ function getSubgraphHostProjection(
     for (const [inputIndex, value] of subgraph.inputs.entries()) {
       const input = asRecord(value)
       if (!input || typeof input.name !== 'string') continue
-      const targetNodeIds = subgraph.links.flatMap((value) => {
-        const link = asRecord(value)
-        const originId = asSerializedNodeId(
-          Array.isArray(value) ? value[1] : link?.origin_id
-        )
-        const originSlot = normalizeSlotIndex(
-          Array.isArray(value) ? value[2] : link?.origin_slot
-        )
-        if (originId !== inputNodeId || originSlot !== inputIndex) return []
-        const targetId = asSerializedNodeId(
-          Array.isArray(value) ? value[3] : link?.target_id
-        )
-        return targetId === null ? [] : [targetId]
+      const targets = subgraph.links.flatMap((value) => {
+        const { originId, originSlot, targetId, targetSlot } =
+          getLinkEndpoints(value)
+        if (
+          originId !== inputNodeId ||
+          normalizeSlotIndex(originSlot) !== inputIndex
+        ) {
+          return []
+        }
+        return targetId === null ? [] : [{ targetId, targetSlot }]
       })
       if (
-        targetNodeIds.length > 0 &&
-        targetNodeIds.every((nodeId) => layoutOnlyNodeIds.has(nodeId))
+        targets.every(({ targetId, targetSlot }) =>
+          isProjectedLayoutOnlyTarget(
+            targetId,
+            targetSlot,
+            layoutOnlyNodeIds,
+            nodesById,
+            subgraphHostProjections
+          )
+        )
       ) {
-        layoutOnlyWidgetNames.add(input.name)
+        layoutOnlyInputNames.add(input.name)
+        layoutOnlyInputIndices.add(inputIndex)
       }
     }
   }
 
-  return layoutOnlyWidgetNames.size > 0
-    ? { layoutOnlyWidgetNames, layoutOnlyLegacyWidgetIndices }
+  return layoutOnlyInputNames.size > 0 || layoutOnlyLegacyWidgetNames.size > 0
+    ? {
+        layoutOnlyInputNames,
+        layoutOnlyInputIndices,
+        layoutOnlyLegacyWidgetNames,
+        layoutOnlyLegacyWidgetIndices
+      }
     : null
+}
+
+function projectionsEqual(
+  first: SubgraphHostProjection | undefined,
+  second: SubgraphHostProjection | null
+): boolean {
+  if (!first || !second) return first === undefined && second === null
+  const setsEqual = <T>(a: ReadonlySet<T>, b: ReadonlySet<T>) =>
+    a.size === b.size && [...a].every((value) => b.has(value))
+  return (
+    setsEqual(first.layoutOnlyInputNames, second.layoutOnlyInputNames) &&
+    setsEqual(first.layoutOnlyInputIndices, second.layoutOnlyInputIndices) &&
+    setsEqual(
+      first.layoutOnlyLegacyWidgetNames,
+      second.layoutOnlyLegacyWidgetNames
+    ) &&
+    setsEqual(
+      first.layoutOnlyLegacyWidgetIndices,
+      second.layoutOnlyLegacyWidgetIndices
+    )
+  )
+}
+
+function collectSubgraphDefinitions(
+  value: unknown,
+  definitionsById: Map<string, Record<string, unknown>>
+) {
+  const definitions = asRecord(value)
+  if (!definitions || !Array.isArray(definitions.subgraphs)) return
+  for (const value of definitions.subgraphs) {
+    const subgraph = asRecord(value)
+    if (!subgraph || typeof subgraph.id !== 'string') continue
+    definitionsById.set(subgraph.id, subgraph)
+    collectSubgraphDefinitions(subgraph.definitions, definitionsById)
+  }
 }
 
 function getSubgraphHostProjections(
   value: unknown,
   isLayoutOnlyNodeType: IsLayoutOnlyNodeType
 ): Map<string, SubgraphHostProjection> {
-  const definitions = asRecord(value)
-  if (!definitions || !Array.isArray(definitions.subgraphs)) return new Map()
-
+  const definitionsById = new Map<string, Record<string, unknown>>()
+  collectSubgraphDefinitions(value, definitionsById)
   const projections = new Map<string, SubgraphHostProjection>()
-  for (const value of definitions.subgraphs) {
-    const subgraph = asRecord(value)
-    if (!subgraph || typeof subgraph.id !== 'string') continue
-    const projection = getSubgraphHostProjection(subgraph, isLayoutOnlyNodeType)
-    if (projection) projections.set(subgraph.id, projection)
+  for (let pass = 0; pass < definitionsById.size; pass++) {
+    let changed = false
+    for (const [subgraphId, subgraph] of definitionsById) {
+      const projection = getSubgraphHostProjection(
+        subgraph,
+        isLayoutOnlyNodeType,
+        projections
+      )
+      const previous = projections.get(subgraphId)
+      if (projectionsEqual(previous, projection)) continue
+      changed = true
+      if (projection) projections.set(subgraphId, projection)
+      else projections.delete(subgraphId)
+    }
+    if (!changed) break
   }
   return projections
 }
 
 function getExecutionDefinitionsState(
   value: unknown,
-  isLayoutOnlyNodeType: IsLayoutOnlyNodeType
+  isLayoutOnlyNodeType: IsLayoutOnlyNodeType,
+  subgraphHostProjections: ReadonlyMap<string, SubgraphHostProjection>
 ): unknown {
   const definitions = asRecord(value)
   if (!definitions || !Array.isArray(definitions.subgraphs)) return value
@@ -361,25 +531,100 @@ function getExecutionDefinitionsState(
     subgraphs: _.sortBy(
       definitions.subgraphs,
       (subgraph) => asRecord(subgraph)?.id
-    ).map((subgraph) => getExecutionGraphState(subgraph, isLayoutOnlyNodeType))
+    ).map((subgraph) => {
+      const subgraphId = asRecord(subgraph)?.id
+      return getExecutionGraphState(
+        subgraph,
+        isLayoutOnlyNodeType,
+        subgraphHostProjections,
+        typeof subgraphId === 'string'
+          ? subgraphHostProjections.get(subgraphId)
+          : undefined
+      )
+    })
   }
+}
+
+function getHostInputIndices(
+  nodes: unknown[],
+  subgraphHostProjections: ReadonlyMap<string, SubgraphHostProjection>
+): Map<SerializedNodeId, ReadonlySet<number>> {
+  const hostInputIndices = new Map<SerializedNodeId, ReadonlySet<number>>()
+  for (const value of nodes) {
+    const node = asRecord(value)
+    const nodeId = asSerializedNodeId(node?.id)
+    if (
+      !node ||
+      nodeId === null ||
+      typeof node.type !== 'string' ||
+      !Array.isArray(node.inputs)
+    ) {
+      continue
+    }
+    const projection = subgraphHostProjections.get(node.type)
+    if (!projection) continue
+    const omittedIndices = new Set<number>()
+    for (const [index, value] of node.inputs.entries()) {
+      const name = asRecord(value)?.name
+      if (
+        projection.layoutOnlyInputIndices.has(index) ||
+        (typeof name === 'string' && projection.layoutOnlyInputNames.has(name))
+      ) {
+        omittedIndices.add(index)
+      }
+    }
+    if (omittedIndices.size > 0) {
+      hostInputIndices.set(nodeId, omittedIndices)
+    }
+  }
+  return hostInputIndices
+}
+
+function isProjectedLink(
+  value: unknown,
+  hostInputIndices: ReadonlyMap<SerializedNodeId, ReadonlySet<number>>,
+  inputNodeId: SerializedNodeId | null,
+  layoutOnlyInputIndices: ReadonlySet<number>
+): boolean {
+  const { originId, originSlot, targetId, targetSlot } = getLinkEndpoints(value)
+  const normalizedOriginSlot = normalizeSlotIndex(originSlot)
+  const normalizedTargetSlot = normalizeSlotIndex(targetSlot)
+  return (
+    (originId !== null &&
+      originId === inputNodeId &&
+      typeof normalizedOriginSlot === 'number' &&
+      layoutOnlyInputIndices.has(normalizedOriginSlot)) ||
+    (targetId !== null &&
+      typeof normalizedTargetSlot === 'number' &&
+      hostInputIndices.get(targetId)?.has(normalizedTargetSlot) === true)
+  )
 }
 
 function getExecutionGraphState(
   value: unknown,
-  isLayoutOnlyNodeType: IsLayoutOnlyNodeType
+  isLayoutOnlyNodeType: IsLayoutOnlyNodeType,
+  inheritedSubgraphHostProjections?: ReadonlyMap<
+    string,
+    SubgraphHostProjection
+  >,
+  selfProjection?: SubgraphHostProjection
 ): unknown {
   const graph = asRecord(value)
   if (!graph) return value
 
   const executionGraph = omitProperties(graph, nonExecutionGraphProperties)
-  const subgraphHostProjections = getSubgraphHostProjections(
-    graph.definitions,
-    isLayoutOnlyNodeType
-  )
+  const subgraphHostProjections =
+    inheritedSubgraphHostProjections ??
+    getSubgraphHostProjections(graph.definitions, isLayoutOnlyNodeType)
+  const layoutOnlyInputIndices =
+    selfProjection?.layoutOnlyInputIndices ?? new Set<number>()
+  const inputNodeId = asSerializedNodeId(asRecord(graph.inputNode)?.id)
   const layoutOnlyNodeIds = Array.isArray(graph.nodes)
     ? getLayoutOnlyNodeIds(graph.nodes, isLayoutOnlyNodeType)
     : new Set<SerializedNodeId>()
+  const hostInputIndices = Array.isArray(graph.nodes)
+    ? getHostInputIndices(graph.nodes, subgraphHostProjections)
+    : new Map<SerializedNodeId, ReadonlySet<number>>()
   if (Array.isArray(graph.nodes)) {
     executionGraph.nodes = _.sortBy(
       graph.nodes
@@ -391,15 +636,33 @@ function getExecutionGraphState(
   if (Array.isArray(graph.links)) {
     executionGraph.links = _.sortBy(
       graph.links
-        .filter((link) => !isIncidentToNode(link, layoutOnlyNodeIds))
-        .map(getExecutionLinkState),
+        .filter(
+          (link) =>
+            !isIncidentToNode(link, layoutOnlyNodeIds) &&
+            !isProjectedLink(
+              link,
+              hostInputIndices,
+              inputNodeId,
+              layoutOnlyInputIndices
+            )
+        )
+        .map((link) =>
+          getExecutionLinkState(
+            link,
+            hostInputIndices,
+            inputNodeId,
+            layoutOnlyInputIndices
+          )
+        ),
       (link) => JSON.stringify(link)
     )
   } else if (!('links' in graph)) {
     executionGraph.links = []
   }
   if (Array.isArray(graph.inputs)) {
-    executionGraph.inputs = graph.inputs.map(getExecutionSlotState)
+    executionGraph.inputs = graph.inputs
+      .filter((_input, index) => !layoutOnlyInputIndices.has(index))
+      .map(getExecutionSlotState)
   }
   if (Array.isArray(graph.outputs)) {
     executionGraph.outputs = graph.outputs.map(getExecutionSlotState)
@@ -413,8 +676,25 @@ function getExecutionGraphState(
   if ('definitions' in graph) {
     executionGraph.definitions = getExecutionDefinitionsState(
       graph.definitions,
-      isLayoutOnlyNodeType
+      isLayoutOnlyNodeType,
+      subgraphHostProjections
     )
+  }
+  if (Array.isArray(graph.widgets)) {
+    const nodesById = Array.isArray(graph.nodes)
+      ? getNodeById(graph.nodes)
+      : new Map<SerializedNodeId, Record<string, unknown>>()
+    executionGraph.widgets = graph.widgets.filter((value) => {
+      const widget = asRecord(value)
+      const targetId = asSerializedNodeId(widget?.id)
+      if (targetId === null || typeof widget?.name !== 'string') return true
+      if (layoutOnlyNodeIds.has(targetId)) return false
+      const targetNode = nodesById.get(targetId)
+      if (!targetNode || typeof targetNode.type !== 'string') return true
+      return !subgraphHostProjections
+        .get(targetNode.type)
+        ?.layoutOnlyInputNames.has(widget.name)
+    })
   }
   return executionGraph
 }
@@ -424,10 +704,15 @@ function executionStateChanged(
   currentState: ComfyWorkflowJSON
 ): boolean {
   const { isLayoutOnlyNodeType } = useNodeDefStore()
-  return !_.isEqual(
-    getExecutionGraphState(previousState, isLayoutOnlyNodeType),
-    getExecutionGraphState(currentState, isLayoutOnlyNodeType)
+  const previousExecutionState = getExecutionGraphState(
+    previousState,
+    isLayoutOnlyNodeType
   )
+  const currentExecutionState = getExecutionGraphState(
+    currentState,
+    isLayoutOnlyNodeType
+  )
+  return !_.isEqual(previousExecutionState, currentExecutionState)
 }
 
 const reportedInactiveCalls = new Set<string>()
