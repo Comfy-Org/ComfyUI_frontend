@@ -267,7 +267,7 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     await page.goto(`${APP_URL}/?pricing=team`)
 
     await expect(
-      page.getByRole('heading', { name: 'Choose a Plan' })
+      page.getByRole('heading', { name: 'Plans for Team Workspace' })
     ).toBeVisible({ timeout: 45_000 })
     await expect(page).not.toHaveURL(/[?&]pricing=/)
   })
