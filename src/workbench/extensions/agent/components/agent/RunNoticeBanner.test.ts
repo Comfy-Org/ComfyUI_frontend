@@ -23,20 +23,20 @@ describe('RunNoticeBanner', () => {
 
   it('names the one workflow the agent can edit', () => {
     mount()
-    expect(
-      screen.getByText(
-        'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
-      )
-    ).not.toBeNull()
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
+    expect(screen.getByText('3d_hunyuan-v2.1')).toHaveClass(
+      'underline',
+      'decoration-solid'
+    )
   })
 
   it('shows the expanded run notice in the maximized panel', () => {
     mount('3d_hunyuan-v2.1', true)
-    expect(
-      screen.getByText(
-        'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
-      )
-    ).not.toBeNull()
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
   })
 
   it('hides the notice and persists the dismissal when X is clicked', async () => {
