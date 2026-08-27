@@ -27,7 +27,7 @@
         <i
           :class="
             cn(
-              'icon-[lucide--component] size-4 self-center',
+              'icon-[lucide--coins] size-4 self-center',
               !inactivePlan && 'text-credit'
             )
           "
@@ -93,7 +93,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
@@ -146,7 +146,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -156,7 +156,7 @@
       </div>
     </template>
 
-    <template v-else-if="inactivePlan">
+    <template v-else-if="showsInactivePlanState">
       <div class="h-px w-full bg-interface-stroke" />
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between gap-2 text-sm">
@@ -176,7 +176,7 @@
             </Button>
           </span>
           <span class="flex items-center gap-1 font-bold">
-            <i class="icon-[lucide--component] size-4" />
+            <i class="icon-[lucide--coins] size-4" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -188,16 +188,7 @@
 
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
-        v-if="billingPolicyCapabilities.showsSubscribeUpsellUI"
-        variant="subscribe"
-        size="lg"
-        class="w-full font-normal"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
-      <Button
-        v-else
+        v-if="canTopUp"
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
         :class="
@@ -210,6 +201,15 @@
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-else
+        variant="subscribe"
+        size="lg"
+        class="w-full font-normal"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
     </div>
   </div>
@@ -228,16 +228,17 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
+  isSalesManagedTier,
   toTierKey,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { pendingTopupNeedsRefresh } from '@/platform/telemetry/topupTracker'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useDialogService } from '@/services/dialogService'
 
@@ -255,10 +256,9 @@ const {
   canAccessSubscriptionFeatures,
   currentTeamCreditStop,
   fetchBalance,
-  fetchStatus,
-  type
+  fetchStatus
 } = useBillingContext()
-const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const {
   monthlyBonusCredits,
   prepaidCredits,
@@ -267,12 +267,12 @@ const {
   prepaidCreditsValue,
   isLoadingBalance
 } = useSubscriptionCredits()
-const { permissions } = useWorkspaceUI()
-const { showPricingTable } = useSubscriptionDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
+const { pendingTopupNeedsRefresh, isPendingTopupCompleted } = usePendingTopup()
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
@@ -283,12 +283,21 @@ const tierKey = computed(() => {
 const creditPoolTotalCredits = computed<number | null>(() => {
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
-    getTierCredits(tierKey.value)
+    (isSalesManagedTier(subscription.value?.tier)
+      ? null
+      : getTierCredits(tierKey.value))
   if (monthlyCredits === null) return null
   return subscription.value?.duration === 'ANNUAL'
     ? monthlyCredits * 12
     : monthlyCredits
 })
+
+// The server keeps top-up open for sales-managed plans whatever their
+// subscription row says, so their real balance must never be zeroed into the
+// reactivate-to-use-credits treatment reserved for lapsed self-serve plans.
+const showsInactivePlanState = computed(
+  () => inactivePlan === true && !canTopUp.value
+)
 
 const usage = computed(() =>
   computeMonthlyUsage(
@@ -340,10 +349,14 @@ const creditPoolTotalCompact = computed(() => {
 })
 
 const displayTotal = computed(() =>
-  zeroState || inactivePlan ? formatCreditCount(0) : totalCredits.value
+  zeroState || showsInactivePlanState.value
+    ? formatCreditCount(0)
+    : totalCredits.value
 )
 const displayPrepaid = computed(() =>
-  zeroState || inactivePlan ? formatCreditCount(0) : prepaidCredits.value
+  zeroState || showsInactivePlanState.value
+    ? formatCreditCount(0)
+    : prepaidCredits.value
 )
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
@@ -356,22 +369,25 @@ const monthlyUsageLabel = computed(() =>
 )
 
 const showBreakdown = computed(
-  () => canAccessSubscriptionFeatures.value && !zeroState && !inactivePlan
+  () =>
+    canAccessSubscriptionFeatures.value &&
+    !zeroState &&
+    !showsInactivePlanState.value
 )
+// The monthly allowance bar is a Cloud-only presentation; Local/Desktop shows
+// only the total and additional-credit balances.
 const showBar = computed(
   () =>
+    isCloud &&
     showBreakdown.value &&
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
-// Workspace-owner gating only applies to team billing; legacy (personal,
-// including local/desktop) accounts have no workspace concept to gate on.
 const showActionButton = computed(
   () =>
-    canAccessSubscriptionFeatures.value &&
+    (canTopUp.value || canSubscribeSelfServe.value) &&
     !zeroState &&
-    !inactivePlan &&
-    (type.value !== 'workspace' || permissions.value.canTopUp)
+    !showsInactivePlanState.value
 )
 
 const isMonthlyDepleted = computed(
@@ -427,7 +443,9 @@ async function refreshCredits() {
       customerEventsService.error.value ?? 'Fetching customer events failed'
     )
   }
-  telemetry?.checkForCompletedTopup(response.events)
+  if (isPendingTopupCompleted(response.events)) {
+    telemetry?.trackApiCreditTopupSucceeded()
+  }
 }
 
 let refreshRequested = false

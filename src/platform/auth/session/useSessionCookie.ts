@@ -1,5 +1,6 @@
 import { isCloud } from '@/platform/distribution/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -119,6 +120,9 @@ export const useSessionCookie = () => {
     try {
       await establishSession(currentOwnerUidOrThrow(), true)
     } catch (error) {
+      // The session cookie is the only credential <img>/media loads carry, so
+      // a swallowed creation failure means images break with no other signal.
+      reportError(error, { errorType: 'session_cookie_creation_failure' })
       console.warn('Failed to create session cookie:', error)
     }
   }

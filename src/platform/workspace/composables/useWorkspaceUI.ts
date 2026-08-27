@@ -2,7 +2,10 @@ import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
@@ -11,15 +14,11 @@ import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
-  canInviteMembers: boolean
-  canManageInvites: boolean
-  canManageMembers: boolean
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
   canDowngradeToPersonal: boolean
-  canTopUp: boolean
 }
 
 /** UI configuration for workspace role */
@@ -56,17 +55,13 @@ function getPermissions(
   const billingPermissions = {
     canManageSubscription: canManageBilling,
     canManageSubscriptionLifecycle: canManageBilling,
-    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner,
-    canTopUp: canManageBilling
+    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner
   }
 
   if (role === 'member') {
     return {
       canViewOtherMembers: true,
       canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canManageMembers: false,
       canLeaveWorkspace,
       canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
@@ -77,9 +72,6 @@ function getPermissions(
     return {
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canManageMembers: false,
       canLeaveWorkspace,
       canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
@@ -89,9 +81,6 @@ function getPermissions(
   return {
     canViewOtherMembers: true,
     canViewPendingInvites: true,
-    canInviteMembers: true,
-    canManageInvites: true,
-    canManageMembers: true,
     canLeaveWorkspace,
     canAccessWorkspaceMenu: true,
     ...billingPermissions
@@ -179,6 +168,9 @@ function useWorkspaceUIInternal() {
     { immediate: true }
   )
 
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
+  const { canReactivate, canSubscribeSelfServe } = useBillingCapabilities()
+
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(
       workspaceType.value,
@@ -188,6 +180,32 @@ function useWorkspaceUIInternal() {
       store.activeWorkspace !== null,
       isTeamPlan.value
     )
+  )
+
+  // legacy_stripe workspaces have no capability projection row, so the
+  // server-resolved can_reactivate is false for them and cannot gate the
+  // action; that rail stays on the membership check.
+  //
+  // Every reactivation surface reads this — the affordances and the handlers
+  // that execute them. They must not diverge: an affordance shown on a
+  // condition the handler does not share offers an action that silently fails,
+  // and the reverse hides a working one.
+  const canReactivatePlan = computed(() =>
+    isCloud && shouldUseWorkspaceBilling.value
+      ? canReactivate.value
+      : permissions.value.canManageSubscriptionLifecycle
+  )
+
+  // Whether the self-serve pricing catalog applies to this workspace at all.
+  // The server resolves can_subscribe_self_serve false for sales-managed tiers
+  // (Enterprise, unrecognized), so every pricing-table entry point — menu
+  // items, settings links, and the ?pricing= deep link — reads this one value.
+  // Same rail split as canReactivatePlan: legacy_stripe has no capability
+  // projection row and stays on the membership check.
+  const canOpenPricingSurface = computed(() =>
+    isCloud && shouldUseWorkspaceBilling.value
+      ? canSubscribeSelfServe.value
+      : permissions.value.canManageSubscription
   )
 
   const uiConfig = computed<WorkspaceUIConfig>(() => {
@@ -231,6 +249,8 @@ function useWorkspaceUIInternal() {
   return {
     // Permissions and config
     permissions,
+    canReactivatePlan,
+    canOpenPricingSurface,
     uiConfig,
     workspaceType,
     workspaceRole,

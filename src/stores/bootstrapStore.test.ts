@@ -66,14 +66,9 @@ const mockDistributionTypes = vi.hoisted(() => ({
 }))
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
-const mockCaptureException = vi.hoisted(() => vi.fn())
-vi.mock('@sentry/vue', () => ({
-  captureException: mockCaptureException
-}))
-
-const mockAddError = vi.hoisted(() => vi.fn())
-vi.mock('@datadog/browser-rum', () => ({
-  datadogRum: { addError: mockAddError }
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 function requestFailure(status: number) {
@@ -141,8 +136,7 @@ describe('bootstrapStore', () => {
   describe('cloud mode', () => {
     beforeEach(() => {
       mockDistributionTypes.isCloud = true
-      mockCaptureException.mockReset()
-      mockAddError.mockReset()
+      mockReportError.mockReset()
     })
 
     it('waits for Firebase init before loading stores, then proceeds regardless of auth state', async () => {
@@ -182,7 +176,7 @@ describe('bootstrapStore', () => {
         await bootstrapPromise
 
         expect(settingStore.isReady).toBe(true)
-        expect(mockCaptureException).not.toHaveBeenCalled()
+        expect(mockReportError).not.toHaveBeenCalled()
       } finally {
         vi.useRealTimers()
       }
@@ -199,13 +193,9 @@ describe('bootstrapStore', () => {
         await vi.advanceTimersByTimeAsync(16_000 + 3_000 + 16_001)
         await bootstrapPromise
 
-        expect(mockCaptureException).toHaveBeenCalledOnce()
-        expect(mockCaptureException).toHaveBeenCalledWith(expect.any(Error), {
-          tags: { error_type: 'bootstrap_auth_wait_timeout' }
-        })
-        expect(mockAddError).toHaveBeenCalledOnce()
-        expect(mockAddError).toHaveBeenCalledWith(expect.any(Error), {
-          error_type: 'bootstrap_auth_wait_timeout'
+        expect(mockReportError).toHaveBeenCalledOnce()
+        expect(mockReportError).toHaveBeenCalledWith(expect.anything(), {
+          errorType: 'bootstrap_auth_wait_timeout'
         })
         // Bootstrap must not stay stuck: stores load even when Firebase never fires.
         expect(settingStore.isReady).toBe(true)

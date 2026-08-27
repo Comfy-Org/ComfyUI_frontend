@@ -20,14 +20,18 @@ const reasons: TranslationKey[] = [
         <img
           src="https://media.comfy.org/website/about/c-logo.webp"
           alt="Comfy logo"
-          class="mt-6 w-full"
+          loading="lazy"
+          decoding="async"
+          class="mt-6 aspect-square w-full object-contain"
         />
       </template>
       <template #right-card-mobile>
         <img
           src="https://media.comfy.org/website/about/c-logo.webp"
           alt="Comfy logo"
-          class="mt-6 w-full max-w-xs"
+          loading="lazy"
+          decoding="async"
+          class="mt-6 aspect-square w-full max-w-xs object-contain"
         />
       </template>
     </WireNodeLayout>

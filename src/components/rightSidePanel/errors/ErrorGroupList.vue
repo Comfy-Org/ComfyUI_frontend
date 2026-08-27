@@ -29,26 +29,70 @@
         class="overflow-hidden rounded-lg border border-secondary-background"
       >
         <!-- Errors summary hero -->
-        <div
-          data-testid="errors-summary-hero"
-          class="flex items-center gap-2 bg-base-foreground/5 p-2"
-        >
-          <span
-            class="flex h-12 min-w-9 shrink-0 items-center justify-center px-1 text-[2rem]/none font-extrabold text-destructive-background-hover tabular-nums"
+        <div data-testid="errors-summary-hero" class="bg-base-foreground/5">
+          <div role="status" class="flex items-center gap-2 p-2">
+            <span v-if="hasMixedSeverityTotals" class="sr-only">
+              {{
+                t('rightSidePanel.severityCountsStatus', {
+                  errors: errorCount,
+                  setup: missingCount
+                })
+              }}
+            </span>
+            <span
+              :class="
+                cn(
+                  'flex h-12 min-w-9 shrink-0 items-center justify-center px-1 text-[2rem]/none font-extrabold tabular-nums',
+                  hero.countClass
+                )
+              "
+            >
+              {{ hero.count }}
+            </span>
+            <span
+              aria-hidden="true"
+              class="h-9 w-px shrink-0 bg-interface-stroke"
+            />
+            <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
+              <span class="text-xs/tight font-semibold text-base-foreground">
+                {{ hero.title }}
+              </span>
+              <span class="text-xs/tight text-muted-foreground">
+                {{ hero.description }}
+              </span>
+            </div>
+          </div>
+          <div
+            v-if="hasMixedSeverityTotals"
+            data-testid="errors-summary-filters"
+            class="flex flex-wrap items-center gap-2 px-2 pb-2"
           >
-            {{ totalErrorCount }}
-          </span>
-          <span
-            aria-hidden="true"
-            class="h-9 w-px shrink-0 bg-interface-stroke"
-          />
-          <div class="flex min-w-0 flex-1 flex-col gap-1 px-2">
-            <span class="text-xs/tight font-semibold text-base-foreground">
-              {{ t('rightSidePanel.errorsDetected', totalErrorCount) }}
-            </span>
-            <span class="text-xs/tight text-muted-foreground">
-              {{ t('rightSidePanel.resolveBeforeRun') }}
-            </span>
+            <Button
+              v-for="chip in severityChips"
+              :key="chip.severity"
+              type="button"
+              variant="outline"
+              size="sm"
+              :data-testid="'errors-summary-filter-' + chip.severity"
+              :aria-pressed="chip.active"
+              :class="
+                cn(
+                  'h-7 shrink-0 gap-1 rounded-lg px-3 text-xs font-semibold hover:bg-transparent',
+                  chip.active && 'gap-2 pr-2',
+                  SEVERITY_CHIP_CLASS[chip.severity][
+                    chip.active ? 'active' : 'idle'
+                  ]
+                )
+              "
+              @click="toggleSeverityFilter(chip.severity)"
+            >
+              {{ chip.label }}
+              <i
+                v-if="chip.active"
+                aria-hidden="true"
+                class="icon-[lucide--x] size-3.5"
+              />
+            </Button>
           </div>
         </div>
 
@@ -77,14 +121,24 @@
           </i18n-t>
         </div>
 
+        <!-- In-block so the chips stay mounted as the release control -->
+        <div
+          v-if="visibleGroups.length === 0"
+          role="status"
+          class="border-t border-secondary-background px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
+        >
+          {{ t('rightSidePanel.noneSearchDesc') }}
+        </div>
+
         <!-- Group by Class Type -->
         <TransitionGroup tag="div" name="list-scale" class="relative">
           <ErrorCardSection
-            v-for="group in filteredGroups"
+            v-for="group in visibleGroups"
             :key="group.groupKey"
             :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
             :title="group.displayTitle"
             :count="group.count"
+            :severity="group.severity"
             :collapse="isSectionCollapsed(group.groupKey) && !isSearching"
             class="border-t border-secondary-background first:border-t-0"
             @update:collapse="setSectionCollapsed(group.groupKey, $event)"
@@ -349,7 +403,7 @@ import { usePackInstall } from '@/workbench/extensions/manager/composables/nodeP
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
-import type { ErrorGroup } from './types'
+import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
@@ -361,6 +415,40 @@ interface ExecutionItemListEntry {
   label: string
   displayDetails?: string
 }
+
+interface ContextStrip {
+  keypath: string
+  count: number
+  nodes: number
+}
+
+/** Count-only `none` keys keep node-less errors from reading as "0 nodes". */
+const SUMMARY_KEYPATHS = {
+  error: {
+    none: 'rightSidePanel.errorsSummary',
+    single: 'rightSidePanel.errorNodeSummary',
+    multiple: 'rightSidePanel.errorNodesSummary'
+  },
+  setup: {
+    none: 'rightSidePanel.setupSummary',
+    single: 'rightSidePanel.setupNodeSummary',
+    multiple: 'rightSidePanel.setupNodesSummary'
+  }
+} as const
+
+const HIDDEN_BY_FILTER = { error: 'missing', missing: 'error' } as const
+
+const SEVERITY_CHIP_CLASS = {
+  error: {
+    idle: 'border-interface-stroke text-destructive-background-hover',
+    active:
+      'border-destructive-background-hover/50 text-destructive-background-hover'
+  },
+  missing: {
+    idle: 'border-interface-stroke text-warning-foreground',
+    active: 'border-warning-background/50 text-warning-foreground'
+  }
+} as const
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
@@ -452,9 +540,178 @@ const {
   errorNodeCount
 } = useErrorGroups(searchQuery)
 
-const totalErrorCount = computed(() =>
-  filteredGroups.value.reduce((sum, group) => sum + group.count, 0)
+const errorCount = computed(() =>
+  filteredGroups.value
+    .filter((group) => group.severity === 'error')
+    .reduce((sum, group) => sum + group.count, 0)
 )
+const missingCount = computed(() =>
+  filteredGroups.value
+    .filter((group) => group.severity === 'missing')
+    .reduce((sum, group) => sum + group.count, 0)
+)
+const hasMixedSeverity = computed(
+  () => errorCount.value > 0 && missingCount.value > 0
+)
+
+const severityTotals = computed(() => {
+  const totals: Record<ErrorGroupSeverity, number> = { error: 0, missing: 0 }
+  for (const group of allErrorGroups.value) {
+    totals[group.severity] += group.count
+  }
+  return totals
+})
+
+const severityFilter = ref<ErrorGroupSeverity | null>(null)
+// Workflow-wide, not search-scoped: a search emptying one severity must not
+// disable an engaged filter.
+const hasMixedSeverityTotals = computed(
+  () => severityTotals.value.error > 0 && severityTotals.value.missing > 0
+)
+const activeSeverityFilter = computed(() =>
+  hasMixedSeverityTotals.value ? severityFilter.value : null
+)
+const visibleGroups = computed(() => {
+  const severity = activeSeverityFilter.value
+  if (!severity) return filteredGroups.value
+  return filteredGroups.value.filter((group) => group.severity === severity)
+})
+
+function toggleSeverityFilter(severity: ErrorGroupSeverity) {
+  severityFilter.value = severityFilter.value === severity ? null : severity
+}
+
+/**
+ * Dedupes the Set-valued computed (fresh reference per recompute) so the
+ * watchers below only fire when the matched membership changes.
+ */
+const selectionEmphasisSignature = computed(() =>
+  hasSelection.value
+    ? [
+        ...selectionMatchedGroupKeys.value,
+        ...selectionMatchedCardIds.value,
+        ...selectionMatchedAssetNodeIds.value
+      ]
+        .sort()
+        .join('\n')
+    : ''
+)
+
+/** Issue identity per severity — membership, so same-count replacements are visible. */
+const severityIssueKeys = computed<Record<ErrorGroupSeverity, Set<string>>>(
+  () => ({
+    error: new Set(
+      allErrorGroups.value
+        .filter((group) => group.type === 'execution')
+        .flatMap((group) =>
+          group.cards.flatMap((card) =>
+            card.errors.map(
+              (error, index) =>
+                `${group.groupKey}|${card.id}|${error.message}#${index}`
+            )
+          )
+        )
+    ),
+    missing: new Set([
+      ...missingPackGroups.value.flatMap((pack) =>
+        pack.nodeTypes.map(
+          (nodeType) =>
+            `pack|${pack.packId}|${typeof nodeType === 'string' ? nodeType : `${nodeType.type}|${nodeType.nodeId}`}`
+        )
+      ),
+      ...swapNodeGroups.value.flatMap((swap) =>
+        swap.nodeTypes.map(
+          (nodeType) =>
+            `swap|${swap.type}|${typeof nodeType === 'string' ? nodeType : nodeType.nodeId}`
+        )
+      ),
+      ...missingModelGroups.value.flatMap((group) =>
+        group.models.flatMap((model) =>
+          model.referencingNodes.map(
+            (ref) =>
+              `model|${group.directory}|${model.name}|${ref.nodeId}|${ref.widgetName}`
+          )
+        )
+      ),
+      ...missingMediaGroups.value.flatMap((group) =>
+        group.items.flatMap((item) =>
+          item.referencingNodes.map(
+            (ref) =>
+              `media|${group.mediaType}|${item.name}|${ref.nodeId}|${ref.widgetName}`
+          )
+        )
+      )
+    ])
+  })
+)
+
+// Release-only, never auto-select; an unchanged selection does not release,
+// since engaging the filter against it is the user's explicit call.
+watch(severityIssueKeys, (next, prev) => {
+  const active = severityFilter.value
+  if (!active) return
+  const hidden = HIDDEN_BY_FILTER[active]
+  const hiddenGainedMember = [...next[hidden]].some(
+    (key) => !prev[hidden].has(key)
+  )
+  if (hiddenGainedMember || next[active].size === 0) {
+    severityFilter.value = null
+  }
+})
+
+watch(selectionEmphasisSignature, () => {
+  const active = severityFilter.value
+  if (!active) return
+  const matchedKeys = selectionMatchedGroupKeys.value
+  if (matchedKeys.size === 0) return
+  const hidden = HIDDEN_BY_FILTER[active]
+  const selectionHasHiddenSeverity = allErrorGroups.value.some(
+    (group) => matchedKeys.has(group.groupKey) && group.severity === hidden
+  )
+  if (selectionHasHiddenSeverity) severityFilter.value = null
+})
+
+const hero = computed(() => {
+  if (hasMixedSeverity.value) {
+    const total = errorCount.value + missingCount.value
+    return {
+      count: total,
+      countClass: 'text-base-foreground',
+      title: t('rightSidePanel.issuesDetected', total),
+      description: t('rightSidePanel.resolveBeforeRun')
+    }
+  }
+  if (missingCount.value > 0) {
+    return {
+      count: missingCount.value,
+      countClass: 'text-warning-foreground',
+      title: t('rightSidePanel.setupRequired'),
+      description: t('rightSidePanel.finishSetupBeforeRun')
+    }
+  }
+  return {
+    count: errorCount.value,
+    countClass: 'text-destructive-background-hover',
+    title: t('rightSidePanel.errorsDetected', errorCount.value),
+    description: t('rightSidePanel.resolveErrorsBeforeRun')
+  }
+})
+
+const severityChips = computed(() => [
+  {
+    severity: 'error' as const,
+    active: activeSeverityFilter.value === 'error',
+    label:
+      activeSeverityFilter.value === 'error'
+        ? t('rightSidePanel.errorsFilterActive', errorCount.value)
+        : t('rightSidePanel.errorsFilter', errorCount.value)
+  },
+  {
+    severity: 'missing' as const,
+    active: activeSeverityFilter.value === 'missing',
+    label: t('rightSidePanel.setupFilter', missingCount.value)
+  }
+])
 
 const hasSelectionEmphasis = computed(
   () => hasSelection.value && selectionErrorCount.value > 0
@@ -465,11 +722,14 @@ const selectionStripNodeLabel = computed(
 
 // The strip is a status line, not a view of the current filter — summary
 // numbers are workflow-wide, never search-filtered.
-const workflowErrorCount = computed(() =>
-  allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
+const workflowErrorCount = computed(
+  () => severityTotals.value.error + severityTotals.value.missing
 )
+const workflowBlockingErrorCount = computed(() => severityTotals.value.error)
+const hasErrorSeverity = computed(() => severityTotals.value.error > 0)
+const hasMissingSeverity = computed(() => severityTotals.value.missing > 0)
 
-const strip = computed(() => {
+const strip = computed<ContextStrip>(() => {
   if (hasSelectionEmphasis.value) {
     return {
       keypath:
@@ -480,14 +740,31 @@ const strip = computed(() => {
       count: selectionErrorCount.value
     }
   }
+  if (hasErrorSeverity.value && hasMissingSeverity.value) {
+    return {
+      keypath:
+        errorNodeCount.value === 0
+          ? 'rightSidePanel.errorsSummary'
+          : 'rightSidePanel.nodesAffected',
+      nodes: errorNodeCount.value,
+      count:
+        errorNodeCount.value === 0
+          ? workflowBlockingErrorCount.value
+          : errorNodeCount.value
+    }
+  }
+  const keypaths = hasErrorSeverity.value
+    ? SUMMARY_KEYPATHS.error
+    : SUMMARY_KEYPATHS.setup
+  const nodeCountKey =
+    errorNodeCount.value === 0
+      ? 'none'
+      : errorNodeCount.value === 1
+        ? 'single'
+        : 'multiple'
+
   return {
-    keypath:
-      errorNodeCount.value === 0
-        ? // Node-less errors (e.g. prompt-level) would read as "0 nodes"
-          'rightSidePanel.errorsSummary'
-        : errorNodeCount.value === 1
-          ? 'rightSidePanel.errorNodeSummary'
-          : 'rightSidePanel.errorNodesSummary',
+    keypath: keypaths[nodeCountKey],
     nodes: errorNodeCount.value,
     count: workflowErrorCount.value
   }
@@ -496,16 +773,6 @@ const strip = computed(() => {
 function isCardInSelection(cardId: string): boolean {
   return selectionMatchedCardIds.value.has(cardId)
 }
-
-/**
- * Dedupes the Set-valued computed (fresh reference per recompute) so the
- * emphasis watcher below only fires when the matched membership changes.
- */
-const selectionEmphasisSignature = computed(() =>
-  hasSelection.value
-    ? Array.from(selectionMatchedGroupKeys.value).sort().join('\n')
-    : ''
-)
 
 /**
  * Selection acts as emphasis, not a filter: expand the groups containing
