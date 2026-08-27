@@ -674,13 +674,16 @@ describe('Composer', () => {
     )
     expect(workflowChip).toHaveClass(
       'group',
-      'h-5',
       'bg-primary-background/30',
-      'border-primary-background/30',
+      'ring-1',
+      'ring-inset',
+      'ring-primary-background/30',
       'text-primary-background-hover',
-      'rounded-sm'
+      'rounded-sm',
+      'text-xs/[15px]',
+      'font-normal'
     )
-    expect(workflowChip).not.toHaveClass('h-7')
+    expect(workflowChip).not.toHaveClass('h-5', 'h-7', 'font-medium')
     expect(inlineInput).toContainElement(screen.getByRole('textbox'))
     const removeButton = screen.getByRole('button', {
       name: 'Remove Water world reference'

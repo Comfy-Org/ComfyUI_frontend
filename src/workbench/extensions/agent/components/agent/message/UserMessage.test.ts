@@ -79,9 +79,22 @@ describe('UserMessage', () => {
     )
     expect(firstWorkflowChip).toHaveClass(
       'bg-primary-background/30',
-      'border-primary-background/30',
+      'ring-1',
+      'ring-inset',
+      'ring-primary-background/30',
       'text-primary-background-hover',
-      'rounded-sm'
+      'rounded-sm',
+      'text-xs/[15px]',
+      'font-normal'
+    )
+    expect(firstWorkflowChip).not.toHaveClass('font-medium')
+    expect(bubble).toHaveClass(
+      'flex',
+      'flex-wrap',
+      'gap-1',
+      'text-agent-fg-muted',
+      'text-sm/5',
+      'font-normal'
     )
     expect(within(bubble).getByText('Workflow 2')).toBeVisible()
     expect(
