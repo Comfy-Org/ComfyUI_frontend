@@ -50,6 +50,12 @@ behavior. `clearHistoryMenuAssetsNote` says media assets will not be deleted,
 and `clearHistoryDialogAssetsNote` says generated assets survive clearing their
 jobs and remain available in the assets panel.
 
+The assets sidebar is also coupled to history today: its output tab reads
+`historyAssets`, which are reconstructed from `/history`. Clearing a history
+job therefore removes its outputs from the sidebar even when the underlying
+media files survive. The migration must make sidebar output visibility derive
+from output assets independently of history state.
+
 ## Decision
 
 The lifecycle split is directional: jobs fan out to their generated output
@@ -95,7 +101,7 @@ contract. It must not ship partially. The migration requires:
 - Tests that assert job deletion as a side effect of output asset deletion
   codify a violation of this decision and need updating alongside the
   implementation.
-- Job deletion flows may (and should) delete produced assets; that direction
-  is the sanctioned fan-out.
+- Every job deletion flow, including clear history, must delete all generated
+  output assets produced by each deleted job.
 - Any future proposal to derive asset visibility from job state (or vice
   versa) needs a superseding ADR.
