@@ -93,8 +93,8 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 :aria-label="t('agent.switchWorkflow')"
                 :class="
                   cn(
-                    'group text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-medium transition-colors',
-                    !current && 'text-agent-fg-muted hover:text-agent-fg flex-1'
+                    'group text-agent-fg hover:bg-agent-surface-hover inline-flex h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-xs/4 font-normal transition-colors',
+                    current ? 'flex-1' : 'border border-white/15 bg-white/4.5'
                   )
                 "
               >
@@ -109,12 +109,9 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   data-testid="workflow-selector-icon"
                   class="text-agent-fg-subtle group-hover:text-agent-fg icon-[comfy--workflow] size-3.5 shrink-0"
                 />
-                <span
-                  class="min-w-0 truncate underline decoration-solid underline-offset-2"
-                  >{{
-                    current?.name ?? t('agent.selectWorkflowForAgent')
-                  }}</span
-                >
+                <span class="min-w-0 truncate">{{
+                  current?.name ?? t('agent.selectWorkflowForAgent')
+                }}</span>
                 <span
                   v-if="current?.isPersisted === false || current?.modified"
                   data-testid="unsaved-dot"
