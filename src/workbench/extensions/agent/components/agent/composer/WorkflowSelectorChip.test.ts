@@ -63,7 +63,8 @@ const trigger = () =>
 describe('WorkflowSelectorChip', () => {
   it('names the active workflow on the trigger and lists every open tab', async () => {
     const { user } = renderChip()
-    expect(trigger()).toHaveTextContent('portrait')
+    const workflowName = within(trigger()).getByText('portrait')
+    expect(workflowName).toHaveClass('underline', 'decoration-solid')
 
     await user.hover(trigger())
     expect(
