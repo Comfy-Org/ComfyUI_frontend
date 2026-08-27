@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { MapProxyHandler } from '@/lib/litegraph/src/MapProxyHandler'
 import { installCleanExtensionFixture } from '@/lib/litegraph/test/fixtures/cleanExtensionCompatFixture'
 import type {
   CleanExtensionCounters,
@@ -191,8 +192,12 @@ describe('clean extension compatibility fixture', () => {
   )
 
   it('counts facade accesses, stable views, and graph resolution separately', () => {
+    const linkFacadeReads = vi.spyOn(MapProxyHandler.prototype, 'get')
     const result = runMode('legacy-facade')
     const { counters } = result.fixture
+    const indexedLinkReads = linkFacadeReads.mock.calls.filter(
+      ([, property]) => typeof property === 'string' && /^\d+$/.test(property)
+    )
 
     expect(counters).toMatchObject({
       inputLinkReads: 2,
@@ -202,6 +207,7 @@ describe('clean extension compatibility fixture', () => {
       positionComponentReads: 8,
       sizeComponentReads: 8
     })
+    expect(indexedLinkReads).toHaveLength(counters.graphLinkReads)
 
     result.fixture.sweepLegacyFacades(result.nodes, result.graph)
     expect(counters.outputLinksReads).toBe(4)
