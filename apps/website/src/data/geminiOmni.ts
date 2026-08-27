@@ -61,12 +61,13 @@ const geminiOmniLinks = {
     'https://cloud.comfy.org/?template=api_google_gemini_omni_flash_1_1_t2v',
   cloudRunVideoEdit:
     'https://cloud.comfy.org/?template=api_google_gemini_omni_flash_1_1_edit',
-  // Deliberately not `${externalLinks.workflows}/model/gemini-omni`, the way
-  // /ltx-2.5 links its hub model page: every Gemini Omni entry comes back from
-  // the live hub API with `models: null`, so no model family page is generated
-  // and that URL 404s. This is the same hub data gap that keeps Wan 3.0 out of
-  // the Models filter, and it is fixed upstream by setting the model field.
-  // Point at the overview workflow, which resolves today.
+  // Deliberately not a hub model-family page the way /ltx-2.5 links one. The
+  // catalog now tags these entries `models: ['Gemini Omni 1.1 Flash']`, which
+  // slugifies to `gemini-omni-1-1-flash`, but that page is still not generated:
+  // `deriveModelGroups` requires MIN_CLUSTER_SIZE 5 AND MIN_CLUSTER_USAGE 500,
+  // or membership of PRIORITY_MODELS. The cluster has exactly 5 templates and 0
+  // usage, and no Gemini entry is a priority model, so the URL 404s until usage
+  // builds. Point at the overview workflow, which resolves today.
   hubOverview: 'https://comfy.org/workflows/a0e9a3b16f63-a0e9a3b16f63/'
 } as const
 

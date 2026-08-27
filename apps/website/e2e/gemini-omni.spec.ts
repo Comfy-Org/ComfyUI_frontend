@@ -211,6 +211,56 @@ test.describe('Gemini Omni — how to direct your shot', () => {
     }
   })
 
+  // `description` is optional on a step and this page is the first to omit one.
+  // The step-count and title assertions above pass whether the paragraph is
+  // absent or rendered empty, so target the step itself: each step renders a
+  // "Step 0N" label and a title, and a third paragraph only when it configures
+  // a description.
+  test('a step configuring no description renders no paragraph', async ({
+    page
+  }) => {
+    const without = STEPS.items.filter((step) => !step.description)
+    const withDescription = STEPS.items.filter((step) => step.description)
+    expect(
+      without.length,
+      'vacuous unless at least one step omits its description'
+    ).toBeGreaterThan(0)
+
+    const stepsList = page
+      .locator('section')
+      .filter({
+        has: page.getByRole('heading', { level: 2, name: STEPS_HEADING })
+      })
+      .locator('ol > li')
+
+    for (const step of without) {
+      await expect(
+        stepsList.filter({ hasText: step.title.en }).locator('p')
+      ).toHaveCount(2)
+    }
+    for (const step of withDescription) {
+      await expect(
+        stepsList.filter({ hasText: step.title.en }).locator('p')
+      ).toHaveCount(3)
+    }
+  })
+
+  test('footer links back to this page in both locales', async ({ page }) => {
+    const footerLink = page
+      .locator('footer')
+      .getByRole('link', { name: t('footer.geminiOmni', 'en') })
+    await expect(footerLink).toHaveAttribute('href', getRoutes('en').geminiOmni)
+
+    await page.goto(ZH_PATH)
+    const zhFooterLink = page
+      .locator('footer')
+      .getByRole('link', { name: t('footer.geminiOmni', 'zh-CN') })
+    await expect(zhFooterLink).toHaveAttribute(
+      'href',
+      getRoutes('zh-CN').geminiOmni
+    )
+  })
+
   test('the single steps CTA opens the run template', async ({ page }) => {
     const cta = page
       .locator('section')
