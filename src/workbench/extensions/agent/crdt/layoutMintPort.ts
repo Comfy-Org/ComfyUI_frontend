@@ -1,31 +1,10 @@
 /**
- * The layoutStore mint port (plan 3.3): observes the layout store's change
- * seam - the shared inner path both `applyOperation` entries funnel through -
- * and mints semantic {@link GraphOperation}s for human edits. A listener over
- * an injected change feed, not a store method: behavior stays in a system
- * (ADR 0003/0008), workbench stays free of renderer imports (the same
- * constraint that shapes `LitegraphMutator`), and BOTH transaction entries
- * are covered because both finalize through the same change queue.
- *
- * Provenance rides `operation.actor` (stamped synchronously at apply time,
- * so the store's deferred change delivery still carries it): local human
- * edits carry the session's local-actor prefix; a remote applier runs inside
- * the store's actor scope as {@link AGENT_REMOTE_ACTOR} so its echoes are
- * distinguishable and never re-minted (KA-6's sender half).
- *
- * Teardown is first-class: workflow load/switch/close drives `LGraph.clear()`
- * through the store with no call-carried provenance, so `clearGraph` changes
- * are INERT unless inside an explicit {@link LayoutMintPort.runIntentionalClear}
- * window, and the load path holds the shared session's teardown brackets
- * around every graph load. The intentional-clear window also captures clear's
- * payload: `removed_nodes` is the AUTHORITATIVE mint-time node set, read
- * BEFORE the clear runs (post-clear the graph is already empty).
- *
- * delete_node's `removed_links` payload is severed before change delivery,
- * so it comes from the link port's severance log: litegraph severs a node's
- * links synchronously (each recorded by the link port) before the store's
- * deleteNode change delivers on its microtask, and this port consumes the
- * capture at mint time.
+ * Layout-store mint port over the injected change feed (both applyOperation
+ * entries funnel through it). Provenance rides operation.actor - stamped at
+ * apply, so deferred delivery still carries it; remote applies run as
+ * AGENT_REMOTE_ACTOR and never re-mint (KA-6). Teardown clears are inert
+ * outside runIntentionalClear, whose capture is the authoritative pre-clear
+ * node set; delete_node consumes the link port's severance capture.
  */
 import type { NodeId, WorkflowNode } from '@comfyorg/comfy-multi-player'
 

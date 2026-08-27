@@ -1,34 +1,11 @@
 /**
- * The linkStore mint port (plan 3.3): `src/stores/linkStore.ts` is the
- * post-ECS source of truth for link topology - litegraph's own
- * `registerLinkTopology`/`unregisterLinkTopology` bridge calls it
- * synchronously for EVERY link change (human drag, programmatic, undo/redo,
- * load-driven), which is why this is the blessed connect port: a canvas
- * adapter would miss everything but the drag.
- *
- * A listener over an injected event feed, like the layout port: the wiring
- * site adapts the store's public actions (Pinia `$onAction`) into
- * {@link LinkEventFeed}, so this module stays a system with no store import.
- * Store actions run synchronously, so provenance is the session's
- * synchronous remote-apply scope (these stores carry no actor).
- *
- * Register and replace mint a CONCRETE `connect` (a human canvas edit always
- * lands on an existing input slot; the grow variant is agent-authoring
- * vocabulary). A replace needs no separate severance: the new claim on the
- * same `("input", to_node, to_slot)` register displaces the incumbent by LWW.
- *
- * Delete cannot mint: the frozen vocabulary has NO standalone disconnect
- * (`FROZEN_OPS` pins five kinds; plan-J records "no standalone disconnect").
- * A delete is instead (a) captured into the severance log so an immediately
- * following node delete can carry `removed_links` (litegraph severs a node's
- * links synchronously before the layout `deleteNode` change delivers on its
- * microtask), and (b) if no delete consumes it, surfaced as an observable
- * local-graph-vs-doc divergence - never silent (the surfacing-honesty
- * principle). The sweep runs a double microtask after capture, which is
- * strictly after the layout store's single-microtask change delivery.
- *
- * Subgraph-interior links are also unrepresentable (`connect` carries no
- * `path`; only `set_widget` is subgraph-scoped) and surface the same way.
+ * The blessed connect port: litegraph's registerLinkTopology bridge calls
+ * linkStore synchronously for EVERY link change, so nothing escapes this seam.
+ * Register/replace mint a CONCRETE connect (a replace displaces the incumbent
+ * register by LWW - no severance). Deletes cannot mint (no disconnect op in
+ * the frozen vocabulary): they feed the severance log for delete_node, and an
+ * unconsumed local severance surfaces as observable divergence after a double
+ * microtask (strictly after the layout store's single-microtask delivery).
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
