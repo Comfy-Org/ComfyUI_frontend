@@ -301,7 +301,7 @@ describe('GraphCanvas execution progress updates', () => {
     }
   }
 
-  it.each([
+  it.for([
     { totalNodes: 1, activeEntries: 0 },
     { totalNodes: 1, activeEntries: 1 },
     { totalNodes: 8, activeEntries: 8 }
@@ -326,7 +326,7 @@ describe('GraphCanvas execution progress updates', () => {
     }
   )
 
-  it.each([
+  it.for([
     { totalNodes: 1, activeEntries: 1 },
     { totalNodes: 8, activeEntries: 8 }
   ])(
