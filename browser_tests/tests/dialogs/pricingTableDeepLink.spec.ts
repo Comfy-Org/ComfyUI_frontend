@@ -728,7 +728,11 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       confirmationDialog.getByText('$630', { exact: true }).last()
     ).toBeVisible()
     await expect(
-      confirmationDialog.getByText('1,772,400', { exact: true })
+      // `.last()`: the yearly figure now also renders in the embedded
+      // PricingTableWorkspace behind the dialog (previously it showed the
+      // monthly amount), so scope to the confirm summary like the `$630`
+      // assertion above.
+      confirmationDialog.getByText('1,772,400', { exact: true }).last()
     ).toBeVisible()
     expect(subscribeRequests).toHaveLength(0)
     await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)
