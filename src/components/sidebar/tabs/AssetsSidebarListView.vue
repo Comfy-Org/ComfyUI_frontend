@@ -43,7 +43,14 @@
             @mouseenter="onAssetEnter(item.asset.id)"
             @mouseleave="onAssetLeave(item.asset.id)"
             @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
-            @click.stop="emit('select-asset', item.asset, selectableAssets)"
+            @click.stop="
+              emit(
+                'select-asset',
+                item.asset,
+                toSelectionModifiers($event),
+                selectableAssets
+              )
+            "
             @dblclick.stop="emit('preview-asset', item.asset)"
             @preview-click="emit('preview-asset', item.asset)"
             @stack-toggle="void toggleStack(item.asset)"
@@ -77,6 +84,8 @@ import type { OutputStackListItem } from '@/platform/assets/composables/useOutpu
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { toSelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
+import type { SelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -104,7 +113,12 @@ const {
 const assetsStore = useAssetsStore()
 
 const emit = defineEmits<{
-  (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
+  (
+    e: 'select-asset',
+    asset: AssetItem,
+    modifiers: SelectionModifiers,
+    assets?: AssetItem[]
+  ): void
   (e: 'preview-asset', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void

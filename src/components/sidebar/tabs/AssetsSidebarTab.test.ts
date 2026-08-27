@@ -52,28 +52,6 @@ vi.mock('@/platform/assets/composables/useAssetGridSelection', async () => {
   }
 })
 
-vi.mock('@/platform/assets/composables/useAssetSelection', async () => {
-  const { ref } = await import('vue')
-
-  return {
-    useAssetSelection: () => ({
-      isSelected: vi.fn(() => false),
-      selectedIds: ref(new Set<string>()),
-      handleAssetClick: vi.fn(),
-      selectAll: vi.fn(),
-      setSelectedIds: vi.fn(),
-      hasSelection: ref(false),
-      clearSelection: vi.fn(),
-      getSelectedAssets: vi.fn(() => []),
-      reconcileSelection: vi.fn(),
-      getOutputCount: vi.fn(() => 2),
-      getTotalOutputCount: vi.fn(() => 0),
-      activate: vi.fn(),
-      deactivate: vi.fn()
-    })
-  }
-})
-
 vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => ({
     downloadAssets: vi.fn(),

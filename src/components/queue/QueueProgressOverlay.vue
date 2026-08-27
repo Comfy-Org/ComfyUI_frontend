@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
@@ -234,24 +234,21 @@ const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
-const focusAssetInSidebar = async (item: JobListItem) => {
+const focusAssetInSidebar = (item: JobListItem) => {
   const task = item.taskRef
   const jobId = task?.jobId
   const preview = task?.previewOutput
   if (!jobId || !preview) return
 
-  const assetId = String(jobId)
+  assetSelectionStore.focusAsset(String(jobId), { source: 'output' })
   openAssetsSidebar()
-  await nextTick()
-  assetSelectionStore.setSelection([assetId])
-  assetSelectionStore.setLastSelectedAssetId(assetId)
 }
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
     trackFeatureUsed()
     await openResultGallery(item)
-    await focusAssetInSidebar(item)
+    focusAssetInSidebar(item)
   }
 )
 
