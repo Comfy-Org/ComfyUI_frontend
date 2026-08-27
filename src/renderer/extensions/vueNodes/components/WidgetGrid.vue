@@ -46,8 +46,7 @@
           :widget-id="widget.widgetId"
           :name="widget.simplified.name"
           :enable="
-            widget.widgetId !== undefined &&
-            canSelectInput(widget.widgetId) &&
+            inputSelectionEnabled(widget.widgetId) &&
             !widget.simplified.options?.disabled
           "
         >
@@ -102,7 +101,7 @@ const {
   processedWidgets,
   nodeType,
   canSelectInputs = false,
-  canSelectInput = () => canSelectInputs,
+  canSelectInput,
   nodeId
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
@@ -111,6 +110,11 @@ const {
   canSelectInput?: (widgetId: WidgetId) => boolean
   nodeId?: NodeId
 }>()
+
+function inputSelectionEnabled(widgetId: WidgetId | undefined): boolean {
+  if (widgetId === undefined) return false
+  return canSelectInput?.(widgetId) ?? canSelectInputs
+}
 
 const gridTemplateRows = computed(() =>
   processedWidgets

@@ -1949,6 +1949,47 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('reapplies custom source definitions before reload classification', async () => {
+      const nodeType = 'test/ReloadedFrontendOutputNode'
+      class ReloadedFrontendOutputNode extends LGraphNode {}
+      LiteGraph.registerNodeType(nodeType, ReloadedFrontendOutputNode)
+      useExtensionStore().registerExtension({
+        name: 'test.reloaded-frontend-output-node',
+        layoutOnlyNodeTypes: [nodeType]
+      })
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      app.vueAppReady = true
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue({})
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string, defs?: Record<string, ComfyNodeDef>) => {
+          if (hook !== 'addCustomNodeDefs' || !defs) return
+          defs[nodeType] = {
+            name: nodeType,
+            display_name: 'Reloaded Frontend Output Node',
+            category: 'test',
+            description: '',
+            input: {},
+            output: ['*'],
+            output_node: false,
+            python_module: 'test'
+          }
+        }
+      )
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+      try {
+        await app.reloadNodeDefs()
+
+        expect(useNodeDefStore().isLayoutOnlyNodeType(nodeType)).toBe(false)
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('source node definition has outputs')
+        )
+      } finally {
+        LiteGraph.unregisterNodeType(nodeType)
+      }
+    })
+
     it('syncs refreshed combo options into promoted combo host state', async () => {
       const initialOptions = ['missing.safetensors']
       const refreshedOptions = ['missing.safetensors', 'present.safetensors']

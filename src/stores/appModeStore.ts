@@ -17,8 +17,8 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
@@ -53,6 +53,37 @@ export function nodeValidForApp(node: LGraphNode) {
   return nodeTypeValidForApp(node.type)
 }
 
+function hasAppModeConsumer(
+  host: SubgraphNode,
+  inputName: string,
+  visitedByHost: WeakMap<SubgraphNode, Set<string>>
+): boolean {
+  const visited = visitedByHost.get(host) ?? new Set<string>()
+  if (visited.has(inputName)) return false
+  visited.add(inputName)
+  visitedByHost.set(host, visited)
+
+  const input = host.subgraph.inputNode.slots.find(
+    (slot) => slot.name === inputName
+  )
+  if (!input) return false
+
+  for (const linkId of input.linkIds) {
+    const link = host.subgraph.getLink(linkId)
+    if (!link) continue
+    const { inputNode, input: targetInput } = link.resolve(host.subgraph)
+    if (!inputNode || !targetInput) continue
+    if (inputNode.isSubgraphNode()) {
+      if (hasAppModeConsumer(inputNode, targetInput.name, visitedByHost)) {
+        return true
+      }
+    } else if (nodeValidForApp(inputNode)) {
+      return true
+    }
+  }
+  return false
+}
+
 export function widgetValidForApp(
   node: LGraphNode,
   widget: IBaseWidget
@@ -60,12 +91,8 @@ export function widgetValidForApp(
   if (!nodeValidForApp(node)) return false
   if (!node.isSubgraphNode()) return true
 
-  const source = resolvePromotedWidgetSource(
-    node.graph?.rootGraph,
-    node,
-    widget
-  )
-  return source ? nodeValidForApp(source.sourceNode) : false
+  const input = inputForWidget(node, widget)
+  return input ? hasAppModeConsumer(node, input.name, new WeakMap()) : false
 }
 
 export const useAppModeStore = defineStore('appMode', () => {
@@ -154,15 +181,12 @@ export const useAppModeStore = defineStore('appMode', () => {
 
     if (typeof storedId === 'string' && isWidgetId(storedId)) {
       const resolved = findWidgetByEntityId(rootGraph, storedId)
-      if (
-        resolved &&
-        (ChangeTracker.isLoadingGraph || widgetValidForApp(...resolved))
-      ) {
+      if (resolved && widgetValidForApp(...resolved)) {
         return buildEntry(storedId, widgetName, config)
       }
       const { nodeId } = parseWidgetId(storedId)
       const node = rootGraph.getNodeById?.(nodeId)
-      if (node && ChangeTracker.isLoadingGraph && nodeValidForApp(node)) {
+      if (node && !node.isSubgraphNode() && nodeValidForApp(node)) {
         return buildEntry(storedId, widgetName, config)
       }
       return null

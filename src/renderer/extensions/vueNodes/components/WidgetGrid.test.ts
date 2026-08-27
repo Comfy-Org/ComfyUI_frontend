@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 const WidgetStub = markRaw(
   defineComponent({
@@ -23,10 +24,11 @@ const InputSlotStub = defineComponent({
 
 const AppInputStub = defineComponent({
   props: {
-    name: { type: String, required: true }
+    enable: { type: Boolean, default: false },
+    name: { type: String, default: undefined }
   },
   template:
-    '<div data-testid="app-input" :data-widget-name="name"><slot /></div>'
+    '<div data-testid="app-input" :data-enable="String(enable)" :data-widget-name="name"><slot /></div>'
 })
 
 function widget(name: string, type: string, index: number): WidgetGridItem {
@@ -79,5 +81,36 @@ describe('WidgetGrid', () => {
         .map((element) => element.dataset.widgetName)
     ).toEqual(['replacement', 'converted-widget-picker'])
     expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
+  })
+
+  it('falls back to the node selection state without a per-widget callback', () => {
+    const item: WidgetGridItem = {
+      simplified: {
+        name: 'seed',
+        type: 'number',
+        value: 1,
+        options: {}
+      },
+      vueComponent: { template: '<div />' },
+      visible: true,
+      renderKey: 'seed',
+      widgetId: widgetId('graph', toNodeId(1), 'seed')
+    }
+    render(WidgetGrid, {
+      props: {
+        processedWidgets: [item],
+        nodeType: 'TestNode',
+        canSelectInputs: true
+      },
+      global: {
+        stubs: { AppInput: AppInputStub, InputSlot: true },
+        directives: { tooltip: () => undefined }
+      }
+    })
+
+    expect(screen.getByTestId('app-input')).toHaveAttribute(
+      'data-enable',
+      'true'
+    )
   })
 })

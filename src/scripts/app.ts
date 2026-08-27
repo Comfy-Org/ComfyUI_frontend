@@ -2507,11 +2507,7 @@ export class ComfyApp {
   async reloadNodeDefs() {
     const defs = await this.getNodeDefs()
     const provenance = captureNodeDefProvenance(defs)
-    await Promise.all(
-      Object.entries(defs).map(([nodeId, nodeDef]) =>
-        this.registerNodeDef(nodeId, nodeDef)
-      )
-    )
+    await this.registerNodesFromDefs(defs)
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {

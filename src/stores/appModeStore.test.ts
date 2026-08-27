@@ -191,7 +191,7 @@ describe('appModeStore', () => {
     expect(nodeTypeValidForApp('ExecutionNode')).toBe(true)
   })
 
-  it('prunes persisted inputs and outputs for layout-only nodes', () => {
+  it('prunes persisted layout-only selections while the graph is loading', () => {
     useNodeDefStore().addNodeDef({
       name: 'LayoutFrame',
       display_name: 'Layout Frame',
@@ -213,6 +213,7 @@ describe('appModeStore', () => {
     mockResolveNode.mockImplementation((id) =>
       id === toNodeId(1) ? layoutNode : undefined
     )
+    ChangeTracker.isLoadingGraph = true
 
     const result = store.pruneLinearData({
       inputs: [[entityPrompt, 'prompt']],
@@ -222,7 +223,7 @@ describe('appModeStore', () => {
     expect(result).toEqual({ inputs: [], outputs: [] })
   })
 
-  it('rejects persisted and new selections for promoted layout-only widgets', () => {
+  it('rejects promoted layout-only selections while the graph is loading', () => {
     const nodeType = 'PromotedLayoutFrame'
     useNodeDefStore().addNodeDef({
       name: nodeType,
@@ -260,6 +261,7 @@ describe('appModeStore', () => {
     vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
       rootGraph.getNodeById(id)
     )
+    ChangeTracker.isLoadingGraph = true
 
     const result = store.pruneLinearData({
       inputs: [[hostWidget.widgetId, hostWidget.name]],
@@ -268,6 +270,67 @@ describe('appModeStore', () => {
 
     expect(widgetValidForApp(host, hostWidget)).toBe(false)
     expect(result.inputs).toEqual([])
+  })
+
+  it('keeps promoted selections with an executable consumer', () => {
+    const layoutNodeType = 'MixedFanoutLayoutFrame'
+    useNodeDefStore().addNodeDef({
+      name: layoutNodeType,
+      display_name: layoutNodeType,
+      category: 'test',
+      description: '',
+      input: {},
+      output: [],
+      output_node: false,
+      layout_only: true,
+      python_module: 'test'
+    })
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'Prompt', type: 'STRING' }]
+    })
+    const layoutNode = new LGraphNodeClass(layoutNodeType, layoutNodeType)
+    const layoutInput = layoutNode.addInput('Prompt', 'STRING')
+    const layoutWidget = layoutNode.addWidget(
+      'string',
+      'text',
+      '',
+      () => undefined
+    )
+    layoutInput.widget = { name: layoutWidget.name }
+    subgraph.add(layoutNode)
+    subgraph.inputNode.slots[0].connect(layoutInput, layoutNode)
+
+    const executionNode = new LGraphNodeClass('ExecutionNode', 'ExecutionNode')
+    const executionInput = executionNode.addInput('Prompt', 'STRING')
+    const executionWidget = executionNode.addWidget(
+      'string',
+      'text',
+      '',
+      () => undefined
+    )
+    executionInput.widget = { name: executionWidget.name }
+    subgraph.add(executionNode)
+    subgraph.inputNode.slots[0].connect(executionInput, executionNode)
+
+    const host = createTestSubgraphNode(subgraph, { id: 5 })
+    const rootGraph = host.graph as LGraph
+    rootGraph.add(host)
+    host._internalConfigureAfterSlots()
+    const hostWidget = host.widgets?.find((widget) => widget.name === 'Prompt')
+    if (!hostWidget?.widgetId) throw new Error('promoted widget missing')
+    vi.mocked(app.rootGraph).id = rootGraph.id
+    vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+    vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      rootGraph.getNodeById(id)
+    )
+
+    const result = store.pruneLinearData({
+      inputs: [[hostWidget.widgetId, hostWidget.name]],
+      outputs: []
+    })
+
+    expect(widgetValidForApp(host, hostWidget)).toBe(true)
+    expect(result.inputs).toEqual([[hostWidget.widgetId, hostWidget.name]])
   })
 
   describe('enterBuilder', () => {
@@ -591,6 +654,22 @@ describe('appModeStore', () => {
           writable: true
         })
       }
+    })
+
+    it('keeps a direct canonical entry while its widget is unavailable', () => {
+      const node = nodeWithWidgets(1, [])
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [node]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node : null
+      )
+
+      expect(
+        store.pruneLinearData({
+          inputs: [[entityPrompt, 'prompt']],
+          outputs: []
+        })
+      ).toEqual({ inputs: [[entityPrompt, 'prompt']], outputs: [] })
     })
 
     it('resolves mixed int/string node ids to the same node', () => {

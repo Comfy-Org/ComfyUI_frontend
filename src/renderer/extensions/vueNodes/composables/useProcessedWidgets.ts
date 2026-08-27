@@ -14,7 +14,11 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { app } from '@/scripts/app'
-import { nodeValidForApp, widgetValidForApp } from '@/stores/appModeStore'
+import {
+  nodeTypeValidForApp,
+  nodeValidForApp,
+  widgetValidForApp
+} from '@/stores/appModeStore'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import {
@@ -64,7 +68,9 @@ export function useProcessedWidgets(
     return (
       isSelectInputsMode.value &&
       nodeData.mode === LGraphEventMode.ALWAYS &&
-      (!hostNode || nodeValidForApp(hostNode)) &&
+      nodeTypeValidForApp(nodeData.type) &&
+      !!hostNode &&
+      nodeValidForApp(hostNode) &&
       !nodeHasError(nodeData, canvasStore.rootGraphId, hostNode)
     )
   })
@@ -74,7 +80,7 @@ export function useProcessedWidgets(
     const nodeData = nodeDataGetter()
     if (!nodeData) return false
     const hostNode = getHostNode(nodeData)
-    if (!hostNode) return true
+    if (!hostNode) return false
     const widget = hostNode.widgets?.find(
       (candidate) => candidate.widgetId === widgetId
     )

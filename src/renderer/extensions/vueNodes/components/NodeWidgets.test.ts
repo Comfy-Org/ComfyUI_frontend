@@ -1,13 +1,16 @@
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { fromAny } from '@total-typescript/shoehorn'
+import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { NodeState } from '@/types/nodeState'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -33,7 +36,7 @@ const WidgetStub = {
 const AppInputStub = {
   props: ['widgetId', 'name', 'enable'],
   template:
-    '<div class="app-input-stub" :data-entity-id="widgetId"><slot /></div>'
+    '<div class="app-input-stub" :data-enable="String(enable)" :data-entity-id="widgetId"><slot /></div>'
 }
 
 vi.mock(
@@ -235,6 +238,38 @@ describe('NodeWidgets', () => {
     )
 
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
+  })
+
+  it('disables App Mode selection while the live host is unavailable', () => {
+    const nodeId = toNodeId('layout-node')
+    const id = widgetId(GRAPH_ID, nodeId, 'text')
+    const nodeType = 'LayoutFrame'
+    renderComponent({
+      nodeData: createMockNodeData(nodeType, nodeId),
+      widgetIds: [id],
+      setupStores: () => {
+        useWorkflowStore().activeWorkflow = fromAny({
+          activeMode: 'builder:inputs',
+          initialMode: null
+        })
+        useNodeDefStore().addNodeDef({
+          name: nodeType,
+          display_name: nodeType,
+          category: 'test',
+          description: '',
+          input: {},
+          output: [],
+          output_node: false,
+          layout_only: true,
+          python_module: 'test'
+        })
+        registerWidgetState(id, { type: 'text' })
+      }
+    })
+
+    expect(
+      screen.getByTestId('node-widgets').querySelector('.app-input-stub')
+    ).toHaveAttribute('data-enable', 'false')
   })
 
   it('marks widgets with host execution errors', () => {
