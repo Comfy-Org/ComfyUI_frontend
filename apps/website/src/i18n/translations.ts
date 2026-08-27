@@ -6022,7 +6022,7 @@ const translations = {
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
   'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
-  // MiniMax commercial license page (/minimax-license) — staged for the
+  // MiniMax commercial license page (/minimax/license) — staged for the
   // exclusive-reseller announcement; eyebrow and meta drop "Coming soon" on
   // announcement day.
   'minimaxLicense.meta.title': {

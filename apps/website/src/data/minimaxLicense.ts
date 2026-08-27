@@ -155,6 +155,18 @@ export const minimaxLicensePage: ModelLaunchPage = {
         }
       },
       {
+        id: 'future-models',
+        question: {
+          en: 'What about future MiniMax models?',
+          'zh-CN': '未来的 MiniMax 模型怎么办？'
+        },
+        answer: {
+          en: 'If MiniMax ships a successor model as open weights, it rolls into your license automatically at no extra charge, so existing customers are covered on day one. Closed-weight releases are not covered.',
+          'zh-CN':
+            '如果 MiniMax 以开源权重发布后继模型，它会自动纳入你的许可，无需额外付费，现有客户从发布首日即被覆盖。闭源权重的版本不在许可范围内。'
+        }
+      },
+      {
         id: 'not-covered',
         question: {
           en: 'What is not covered?',
