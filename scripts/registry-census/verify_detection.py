@@ -54,6 +54,7 @@ GATES = {
     'poison-op-break': (CRITERION_LABELS['op_clean'],),
     'poison-serialize-throw': (CRITERION_LABELS['op_clean'],),
     'poison-desync': (CRITERION_LABELS['op_clean'],),
+    'poison-foreign-widget': (CRITERION_LABELS['op_clean'],),
     'poison-store-read-throw': (CRITERION_LABELS['op_clean'],),
 }
 
@@ -190,6 +191,14 @@ def main() -> int:
         'serialize: serialize op err carries the poison',
         'poison: onSerialize throws'
         in (ops('poison-serialize-throw').get('serialize') or {}).get('err', ''),
+    )
+    check(
+        'foreign-widget: prototype method loss is recorded despite the'
+        ' mangled-row exclusion',
+        'foreign widget prototype methods lost:'
+        in (ops('poison-foreign-widget').get('wPushForeignClass') or {}).get(
+            'err', ''
+        ),
     )
 
     check(
