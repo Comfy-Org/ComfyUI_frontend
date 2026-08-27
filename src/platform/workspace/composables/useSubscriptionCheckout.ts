@@ -33,7 +33,8 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
-  clearPendingSubscriptionCheckout,
+  blockingOperationIdFromError,
+  clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
@@ -991,6 +992,15 @@ export function useSubscriptionCheckout(
       if (await recoverOutstandingPayment(error)) return
       if (await refreshExpiredProrationQuote(error, planSlug)) return
       if (embeddedCheckoutEnabled && (await recoverStaleQuote(error))) return
+      if (
+        await resumeBlockingOperation(error, {
+          tier: tierKey,
+          cycle: billingCycle,
+          checkoutType
+        })
+      ) {
+        return
+      }
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
@@ -1007,6 +1017,22 @@ export function useSubscriptionCheckout(
           ? error.message
           : t('subscription.subscribeFailed')
     })
+  }
+
+  /**
+   * Adopt the operation that refused this change, so a customer whose stored
+   * pointer is gone — cleared, expired, or created on another device — can
+   * still act on it. No-ops until the refusal reports the id (BE-10062).
+   */
+  async function resumeBlockingOperation(
+    error: unknown,
+    context: SubscriptionOutcomeContext
+  ): Promise<boolean> {
+    const operationId = blockingOperationIdFromError(error)
+    if (!operationId) return false
+    savePendingCheckout(operationId, context)
+    await advanceToSuccessOnOperation(operationId, context)
+    return true
   }
 
   async function recoverStaleQuote(error: unknown): Promise<boolean> {
@@ -1298,37 +1324,34 @@ export function useSubscriptionCheckout(
     initialActionUrl?: string
   ) {
     activeCheckoutOperationId.value = opId
-    try {
-      const metadata = {
-        tier: context.tier,
-        cycle: context.cycle,
-        checkoutType: context.checkoutType,
-        paymentIntentSource,
-        attemptStartedAt: context.attemptStartedAt,
-        ...(embeddedCheckoutEnabled && {
-          suppressProcessingToast: true,
-          autoHandleRequiresAction: true
-        })
-      }
-      const terminalOperation = initialActionUrl
-        ? billingOperationStore.startOperation(
-            opId,
-            'subscription',
-            metadata,
-            initialActionUrl
-          )
-        : billingOperationStore.startOperation(opId, 'subscription', metadata)
-      if (embeddedCheckoutEnabled) isSubscribing.value = false
-      const operation = await terminalOperation
-      if (
-        operation.status === 'succeeded' &&
-        activeCheckoutOperationId.value === opId &&
-        operation.workspaceId === workspaceStore.activeWorkspaceId
-      ) {
-        checkoutStep.value = 'success'
-      }
-    } finally {
-      clearPendingSubscriptionCheckout(opId)
+    const metadata = {
+      tier: context.tier,
+      cycle: context.cycle,
+      checkoutType: context.checkoutType,
+      paymentIntentSource,
+      attemptStartedAt: context.attemptStartedAt,
+      ...(embeddedCheckoutEnabled && {
+        suppressProcessingToast: true,
+        autoHandleRequiresAction: true
+      })
+    }
+    const terminalOperation = initialActionUrl
+      ? billingOperationStore.startOperation(
+          opId,
+          'subscription',
+          metadata,
+          initialActionUrl
+        )
+      : billingOperationStore.startOperation(opId, 'subscription', metadata)
+    if (embeddedCheckoutEnabled) isSubscribing.value = false
+    const operation = await terminalOperation
+    clearPendingSubscriptionCheckoutIfTerminal(opId, operation.status)
+    if (
+      operation.status === 'succeeded' &&
+      activeCheckoutOperationId.value === opId &&
+      operation.workspaceId === workspaceStore.activeWorkspaceId
+    ) {
+      checkoutStep.value = 'success'
     }
   }
 
@@ -1447,6 +1470,15 @@ export function useSubscriptionCheckout(
       )
         return
       if (embeddedCheckoutEnabled && (await recoverStaleQuote(error))) return
+      if (
+        await resumeBlockingOperation(error, {
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType
+        })
+      ) {
+        return
+      }
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false

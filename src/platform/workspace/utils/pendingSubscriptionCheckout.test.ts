@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { PendingSubscriptionCheckout } from './pendingSubscriptionCheckout'
 import {
+  blockingOperationIdFromError,
   clearPendingSubscriptionCheckout,
   getPendingSubscriptionCheckout,
   savePendingSubscriptionCheckout
@@ -81,5 +82,53 @@ describe('pendingSubscriptionCheckout', () => {
 
     clearPendingSubscriptionCheckout('op-new')
     expect(getPendingSubscriptionCheckout()).toBeNull()
+  })
+})
+
+// ASSUMPTION PENDING BE-10062: the refusal is expected to name the blocking
+// operation as `details.billing_op_id` on the standard ErrorResponse envelope
+// (`{ code, message, details? }`), the schema's existing slot for structured
+// error context. The flat case below hedges against it landing top-level
+// instead. Both fixtures need reconciling with whatever BE-10062 ships.
+describe('blockingOperationIdFromError', () => {
+  const refusal = (extra: object) =>
+    Object.assign(new Error('a subscription change is already in progress'), {
+      code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS',
+      ...extra
+    })
+
+  it('reads the blocking operation from the error details', () => {
+    expect(
+      blockingOperationIdFromError(
+        refusal({ details: { billing_op_id: 'op-blocking' } })
+      )
+    ).toBe('op-blocking')
+  })
+
+  it('reads a top-level blocking operation id', () => {
+    expect(
+      blockingOperationIdFromError(refusal({ billing_op_id: 'op-blocking' }))
+    ).toBe('op-blocking')
+  })
+
+  it('reports nothing while the refusal omits the operation id', () => {
+    expect(blockingOperationIdFromError(refusal({}))).toBeNull()
+    expect(blockingOperationIdFromError(refusal({ details: {} }))).toBeNull()
+    expect(
+      blockingOperationIdFromError(refusal({ details: { billing_op_id: '' } }))
+    ).toBeNull()
+  })
+
+  it('ignores errors that are not a change-in-progress refusal', () => {
+    expect(
+      blockingOperationIdFromError(
+        Object.assign(new Error('stale'), {
+          code: 'SUBSCRIPTION_QUOTE_STALE',
+          details: { billing_op_id: 'op-unrelated' }
+        })
+      )
+    ).toBeNull()
+    expect(blockingOperationIdFromError(new Error('network'))).toBeNull()
+    expect(blockingOperationIdFromError(undefined)).toBeNull()
   })
 })
