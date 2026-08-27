@@ -2,11 +2,13 @@ import type { ModelLaunchPage } from '../templates/model-launch/types'
 
 import { minimaxLinks } from './minimax'
 
-// The license-page hero loop and its phone still (dark H3 renders), served
-// from public/ so they ship with the page. Phones render the still and never
-// fetch the video, same as /minimax-h3.
-const HERO_VIDEO_SRC = '/videos/minimax-license/hero.mp4'
-const HERO_POSTER_SRC = '/videos/minimax-license/hero-poster.jpg'
+// The license-page hero loop and its phone still (dark H3 renders), served from
+// media.comfy.org. Phones render the still and never fetch the video, same as
+// /minimax-h3.
+const HERO_VIDEO_SRC =
+  'https://media.comfy.org/website/minimax-license/hero.mp4'
+const HERO_POSTER_SRC =
+  'https://media.comfy.org/website/minimax-license/hero-poster.jpg'
 
 // CTA hrefs in this config must be absolute (modelLaunchPages.test.ts), so the
 // contact and H3 routes are spelled out rather than taken from baseRoutes.
