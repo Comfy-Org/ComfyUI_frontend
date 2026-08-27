@@ -3,6 +3,7 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { ref } from 'vue'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import SurfaceToggle from '../../components/common/SurfaceToggle.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
@@ -202,10 +203,12 @@ const copiedLabel = t('ui.copied', locale)
       </template>
     </SectionHeader>
 
+    <SurfaceToggle :locale="locale" active="cli" class="mt-10" />
+
     <TabsRoot
       v-model="activeConnectionId"
       activation-mode="manual"
-      class="mt-10 block"
+      class="mt-6 block"
       @update:model-value="onConnectionTabChange"
     >
       <TabsList
@@ -346,8 +349,20 @@ const copiedLabel = t('ui.copied', locale)
       </TabsContent>
     </TabsRoot>
 
-    <p class="mt-8 max-w-2xl text-xs text-primary-warm-gray">
-      {{ t('cli.setup.betaNote', locale) }}
-    </p>
+    <div class="mt-8 flex max-w-2xl flex-col gap-2">
+      <p class="text-xs text-primary-warm-gray">
+        {{ t('cli.setup.betaNote', locale) }}
+      </p>
+      <p class="text-xs text-primary-warm-gray">
+        {{ t('cli.setup.docsPrefix', locale)
+        }}<a
+          :href="externalLinks.docsCliReference"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+          >{{ t('cli.setup.docsLinkLabel', locale) }}</a
+        >{{ t('cli.setup.docsSuffix', locale) }}
+      </p>
+    </div>
   </section>
 </template>

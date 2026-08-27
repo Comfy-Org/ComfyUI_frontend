@@ -2770,20 +2770,20 @@ const translations = {
     'zh-CN': '开源。在你自己的机器上免费运行。'
   },
   'cli.setup.requirementPrefix': {
-    en: 'To run cloud jobs from the CLI, you need a ',
-    'zh-CN': '如需通过 CLI 运行云端任务，你需要'
+    en: 'Cloud runs spend Comfy credits — from a top-up or an existing ',
+    'zh-CN': '云端运行消耗 Comfy 积分——来自充值或现有的'
   },
   'cli.setup.requirementLinkLabel': {
-    en: 'subscription of any tier',
-    'zh-CN': '任意套餐的订阅'
+    en: 'Comfy Cloud subscription',
+    'zh-CN': 'Comfy Cloud 订阅'
   },
   'cli.setup.requirementSuffix': {
     en: '.',
     'zh-CN': '。'
   },
   'cli.setup.requirementFootnote': {
-    en: " A credit top-up alone isn't enough to run generations.",
-    'zh-CN': '仅充值积分不足以运行生成任务。'
+    en: ' Browsing templates, models, and nodes is free with a Comfy account.',
+    'zh-CN': '浏览模板、模型和节点只需一个 Comfy 账户，完全免费。'
   },
   'cli.setup.local.requirementPrefix': {
     en: 'Local runs are free on your own hardware, and the CLI is ',
@@ -2879,6 +2879,40 @@ const translations = {
     en: 'comfy generate is in beta: flag names, model aliases, and output formats may change. The underlying partner endpoints are stable.',
     'zh-CN':
       'comfy generate 处于测试阶段：参数名、模型别名和输出格式可能变化。底层合作伙伴端点是稳定的。'
+  },
+  'cli.setup.docsPrefix': {
+    en: 'Every command and flag lives in the ',
+    'zh-CN': '所有命令和参数详见'
+  },
+  'cli.setup.docsLinkLabel': {
+    en: 'command reference',
+    'zh-CN': '命令参考'
+  },
+  'cli.setup.docsSuffix': {
+    en: '.',
+    'zh-CN': '。'
+  },
+
+  // Shared MCP/CLI surface toggle
+  'surfaces.tabsLabel': {
+    en: 'Comfy agent surfaces',
+    'zh-CN': 'Comfy 智能体入口'
+  },
+  'surfaces.mcp.name': {
+    en: 'Comfy MCP',
+    'zh-CN': 'Comfy MCP'
+  },
+  'surfaces.mcp.tagline': {
+    en: 'Chat-native. Tools in your agent conversation.',
+    'zh-CN': '对话原生。工具就在智能体会话里。'
+  },
+  'surfaces.cli.name': {
+    en: 'Comfy CLI',
+    'zh-CN': 'Comfy CLI'
+  },
+  'surfaces.cli.tagline': {
+    en: 'Terminal-native. Scripts, batches, and CI.',
+    'zh-CN': '终端原生。脚本、批量与 CI。'
   },
 
   // CLI – SkillsSection
@@ -3148,9 +3182,9 @@ const translations = {
     'zh-CN': '需要付费吗？'
   },
   'cli.faq.3.a': {
-    en: "The CLI is free and open source. Runs on your own hardware are free; partner models are the exception — they run on partner infrastructure and spend Comfy credits. Cloud runs use Comfy Cloud credits and need a [subscription of any tier](https://comfy.org/cloud/pricing); a credit top-up alone isn't enough.",
+    en: 'The CLI is free and open source, and browsing templates, models, and nodes is free with a Comfy account. Runs on your own hardware are free; partner models are the exception — they run on partner infrastructure and spend Comfy credits. Cloud runs spend Comfy credits too, from a top-up or an existing [Comfy Cloud subscription](https://comfy.org/cloud/pricing).',
     'zh-CN':
-      'CLI 免费且开源。在你自己硬件上的运行是免费的；合作伙伴模型是例外——它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行使用 Comfy Cloud 积分，需要[任意套餐的订阅](https://comfy.org/cloud/pricing)，仅充值积分是不够的。'
+      'CLI 免费且开源，浏览模板、模型和节点只需一个 Comfy 账户，完全免费。在你自己硬件上的运行是免费的；合作伙伴模型是例外——它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行同样消耗 Comfy 积分，来自充值或现有的 [Comfy Cloud 订阅](https://comfy.org/cloud/pricing)。'
   },
   'cli.faq.4.q': {
     en: 'How does cloud vs local routing work?',
