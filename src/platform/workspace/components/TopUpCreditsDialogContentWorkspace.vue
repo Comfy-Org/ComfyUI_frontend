@@ -65,7 +65,10 @@
             {{ displayTotal }}
           </span>
         </div>
-        <p class="m-0 text-xs text-muted-foreground">
+        <p
+          v-if="hasSavedPaymentMethod !== null"
+          class="m-0 text-xs text-muted-foreground"
+        >
           {{ paymentNote }}
           <button
             v-if="hasSavedPaymentMethod === false"
@@ -353,9 +356,9 @@ const pricingUrl = computed(() =>
 )
 
 const paymentNote = computed(() =>
-  hasSavedPaymentMethod.value === false
-    ? t('credits.topUp.paymentDetailsRequiredNote')
-    : t('credits.topUp.chargedImmediatelyNote')
+  hasSavedPaymentMethod.value
+    ? t('credits.topUp.chargedImmediatelyNote')
+    : t('credits.topUp.paymentDetailsRequiredNote')
 )
 
 const creditsModel = computed({

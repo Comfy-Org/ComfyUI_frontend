@@ -47,6 +47,17 @@ describe('useHasSavedPaymentMethod', () => {
     expect(hasSavedPaymentMethod.value).toBe(true)
   })
 
+  it('resolves false when only non-default methods are saved', async () => {
+    mockListSavedPaymentMethods.mockResolvedValue([
+      { id: 'pm-1', type: 'card', is_default: false }
+    ])
+
+    const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
+    await flushLookup()
+
+    expect(hasSavedPaymentMethod.value).toBe(false)
+  })
+
   it('resolves false when no payment methods are saved', async () => {
     mockListSavedPaymentMethods.mockResolvedValue([])
 

@@ -363,19 +363,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
-  it('keeps the saved-card note when the payment method lookup fails', async () => {
-    setHasSavedPaymentMethod(null)
-
-    renderDialog()
-    await clickAddCredits()
-
-    expect(
-      await screen.findByText(
-        'Your saved payment method is charged immediately.'
-      )
-    ).toBeInTheDocument()
-  })
-
   it('allows returning to amount selection before payment', async () => {
     renderDialog()
     await clickAddCredits()
