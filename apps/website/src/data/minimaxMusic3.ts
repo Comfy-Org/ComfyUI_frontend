@@ -351,7 +351,8 @@ export const minimaxMusic3Page: ModelLaunchPage = {
     highlight: {
       titleKey: 'minimaxMusic3.reviews.highlightTitle',
       descriptionKey: 'minimaxMusic3.reviews.highlightDescription',
-      ctaKey: 'minimaxMusic3.reviews.highlightCta'
+      ctaKey: 'minimaxMusic3.reviews.highlightCta',
+      route: 'minimaxLicense'
     }
   }
 }

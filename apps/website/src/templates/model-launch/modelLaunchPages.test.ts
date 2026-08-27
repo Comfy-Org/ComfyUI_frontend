@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { flux3Page } from '../../data/flux3'
 import { ltxPage } from '../../data/ltx'
 import { minimaxPage } from '../../data/minimax'
+import { minimaxLicensePage } from '../../data/minimaxLicense'
 import { minimaxMusic3Page } from '../../data/minimaxMusic3'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
@@ -16,6 +17,7 @@ import type { ModelLaunchPage } from './types'
 const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimax', page: minimaxPage },
   { name: 'minimaxMusic3', page: minimaxMusic3Page },
+  { name: 'minimaxLicense', page: minimaxLicensePage },
   { name: 'flux3', page: flux3Page },
   { name: 'seedance', page: seedancePage },
   { name: 'ltx', page: ltxPage },
@@ -123,6 +125,12 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     }
     if (page.hero.posterSrc !== undefined) {
       expect(page.hero.posterSrc).toMatch(IMAGE_URL)
+    }
+    if (page.hero.placeholderImageSrc !== undefined) {
+      expect(page.hero.placeholderImageSrc).toMatch(IMAGE_URL)
+    }
+    if (page.hero.mobileFallbackImageSrc !== undefined) {
+      expect(page.hero.mobileFallbackImageSrc).toMatch(IMAGE_URL)
     }
 
     // Collected rather than asserted per card so a failure names the offenders.
