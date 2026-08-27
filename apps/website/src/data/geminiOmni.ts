@@ -13,15 +13,15 @@ import { externalLinks } from '../config/routes'
 // poster is the branded title-card frame rather than frame 0, which is mid-wipe
 // and reads as an empty box.
 //
-// `-v2` is not decoration. hero-poster.webp was first uploaded as a different
-// image, and these objects ship `cache-control: public,max-age=3600`, so the
-// edge keeps serving the old bytes for up to an hour no matter how many times
-// the same key is re-uploaded. A new key is the only same-hour bust. Version
-// the filename again on the next poster swap.
+// The `v2` suffixes are not decoration. Both the hero video and its poster were
+// first uploaded under un-versioned keys, and these objects ship
+// `cache-control: public,max-age=3600`, so the edge keeps serving the old bytes
+// for up to an hour no matter how many times the same key is re-uploaded. A new
+// key is the only same-hour bust. Version the filename again on the next swap.
 const media = {
   hero: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/gemini-omni/hero.mp4',
+    src: 'https://media.comfy.org/website/gemini-omni/hero_v2.mp4',
     posterSrc: 'https://media.comfy.org/website/gemini-omni/hero-poster-v2.webp'
   },
   seasons: {
