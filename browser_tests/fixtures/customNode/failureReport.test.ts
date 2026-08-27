@@ -1,17 +1,14 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { describe, expect, it } from 'vitest'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
 
-test.describe('failureSummary', () => {
-  test('keeps an empty failure label concise', () => {
+describe('failureSummary', () => {
+  it('keeps an empty failure label concise', () => {
     expect(failureSummary('tier failures', [], 'tier-failures.json')).toBe(
       'tier failures'
     )
   })
 
-  test('shows only the first line of the first ten failures', () => {
+  it('shows only the first line of the first ten failures', () => {
     const failures = Array.from(
       { length: 12 },
       (_, index) => `failure ${index + 1}\nlarge nested detail`
