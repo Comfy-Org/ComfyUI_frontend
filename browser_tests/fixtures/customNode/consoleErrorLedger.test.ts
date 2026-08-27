@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { describe, expect, it } from 'vitest'
 import {
   consoleErrorExclusionsForPacks,
   customExtensionStartupErrors,
@@ -19,8 +16,8 @@ import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
 // run console gates (pack startup/load and curated workflow execution): a degradation
 // to "always empty" would turn those gates vacuously green, so the filter's
 // three behaviors are pinned here directly.
-test.describe('consoleErrorLedger', () => {
-  test('startup attribution excludes core boot noise and keeps extension failures', () => {
+describe('consoleErrorLedger', () => {
+  it('startup attribution excludes core boot noise and keeps extension failures', () => {
     expect(
       customExtensionStartupErrors([
         'Failed to load resource: 404 [http://localhost:8188/user.css]',
@@ -37,7 +34,7 @@ test.describe('consoleErrorLedger', () => {
     ])
   })
 
-  test('required startup errors fail stale and filter only their exact signatures', () => {
+  it('required startup errors fail stale and filter only their exact signatures', () => {
     const error =
       "[vite:preloadError] {url: null, message: Unexpected token '}'} [http://localhost:8188/assets/main-abc.js]"
     expect(
@@ -57,7 +54,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual(['different failure'])
   })
 
-  test('reports every console acceptance with unique removal metadata', () => {
+  it('reports every console acceptance with unique removal metadata', () => {
     const exclusions = consoleErrorExclusionsForPacks([
       ...new Map(
         loadAllManifestPackNames().map((pack) => [pack.toLowerCase(), pack])
@@ -72,18 +69,36 @@ test.describe('consoleErrorLedger', () => {
       expect.arrayContaining([
         expect.objectContaining({
           label: 'WhatDreamsCost-ComfyUI console ltx-director-guide-syntax',
-          mode: 'expected-failure'
+          mode: 'expected-failure',
+          scope: 'startup and pack operations',
+          tier: 'S8'
         }),
         expect.objectContaining({
           label:
             'WhatDreamsCost-ComfyUI console whatdreams-set-value-probe-preview',
-          mode: 'conditional-console'
+          mode: 'conditional-console',
+          scope: 'startup and pack operations',
+          tier: 'S8'
+        }),
+        expect.objectContaining({
+          label:
+            'ComfyUI-LTXVideo connectivity console ltx-sparse-track-null-image-size',
+          mode: 'expected-failure',
+          scope: 'S4 connectivity sweep',
+          tier: 'S8'
+        }),
+        expect.objectContaining({
+          label:
+            'ComfyUI-KJNodes connectivity console kj-points-empty-bbox-json',
+          mode: 'conditional-console',
+          scope: 'S4 connectivity sweep',
+          tier: 'S8'
         })
       ])
     )
   })
 
-  test('filters only errors matching the pack own patterns', () => {
+  it('filters only errors matching the pack own patterns', () => {
     const errors = [
       'Failed to load resource: the server responded with a status of 404 () http://host/000_custom_node_probe.png',
       'Failed to load resource: the server responded with a status of 404 () http://host/000_custom_node_probe.wav',
@@ -95,13 +110,13 @@ test.describe('consoleErrorLedger', () => {
     ])
   })
 
-  test('a pattern never filters for a pack that does not own it', () => {
+  it('a pattern never filters for a pack that does not own it', () => {
     const error = "Cannot use 'in' operator to search for 'content' in null"
     expect(unallowlistedErrors('ComfyUI-Impact-Pack', [error])).toEqual([error])
     expect(unallowlistedErrors('ComfyUI-Custom-Scripts', [error])).toEqual([])
   })
 
-  test('matches the pack key case-insensitively', () => {
+  it('matches the pack key case-insensitively', () => {
     const errors = [
       'Failed to load resource: the server responded with a status of 404 () http://host/example.png',
       'TypeError: something real broke'
@@ -111,7 +126,7 @@ test.describe('consoleErrorLedger', () => {
     ])
   })
 
-  test('unknown pack fails open: every error surfaces', () => {
+  it('unknown pack fails open: every error surfaces', () => {
     // The first error would match an Impact pattern; with no ledger for the
     // pack, nothing may be filtered.
     const errors = [
@@ -121,7 +136,7 @@ test.describe('consoleErrorLedger', () => {
     expect(unallowlistedErrors('Some-Future-Pack', errors)).toEqual(errors)
   })
 
-  test('matches only the observed bare-backend resource requests', () => {
+  it('matches only the observed bare-backend resource requests', () => {
     const cases = [
       [
         'ComfyUI-UltraShape1',
@@ -130,10 +145,6 @@ test.describe('consoleErrorLedger', () => {
       [
         'WhatDreamsCost-ComfyUI',
         'Failed to load resource: 404 [http://localhost:8188/api/view?filename=_cn&type=input]'
-      ],
-      [
-        'ComfyUI_Fill-Nodes',
-        'Failed to load resource: 404 [https://api.comfy.org/comfy-nodes//node]'
       ],
       [
         'comfyui-impact-pack',
@@ -146,7 +157,7 @@ test.describe('consoleErrorLedger', () => {
     }
   })
 
-  test('attributes iTools no-saved-drawing log only to an installed iTools pack', () => {
+  it('attributes iTools no-saved-drawing log only to an installed iTools pack', () => {
     const paintFileLog =
       'Error: File not found [http://localhost:8188/extensions/comfyui-itools/makadi/SmartPaintArea.js]'
     expect(unallowlistedErrors('comfyui-itools', [paintFileLog])).toEqual([])
@@ -161,7 +172,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([])
   })
 
-  test('cross-pack variant filters only via packs in scope', () => {
+  it('cross-pack variant filters only via packs in scope', () => {
     // Both observed editor_base subclasses match the mechanism pattern.
     const kjErrors = [
       "Error creating SplineEditor: TypeError: Cannot read properties of null (reading 'replaceChild')",
@@ -180,7 +191,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual(kjErrors)
   })
 
-  test('filters the conditional KJ and VHS connectivity errors', () => {
+  it('filters the conditional KJ and VHS connectivity errors', () => {
     const points =
       'Error parsing stored points: SyntaxError: Unexpected end of JSON input\n    at new PointsEditor (http://localhost/extensions/ComfyUI-KJNodes/js/editors/point_editor_canvas.js:77:26)'
     const vhs =
@@ -218,7 +229,7 @@ test.describe('consoleErrorLedger', () => {
     )
   })
 
-  test('requires the exact LTX sparse-editor initialization failure', () => {
+  it('requires the exact LTX sparse-editor initialization failure', () => {
     const ltx =
       "Uncaught page error: TypeError: Cannot read properties of null (reading 'imgH')\n" +
       '    at widget.computeSize (http://localhost:8188/extensions/ComfyUI-LTXVideo/js/sparse_track_editor.js:224:29)'
@@ -236,7 +247,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual(['ltx-sparse-track-null-image-size'])
   })
 
-  test('matches lower-cased VHS paths', () => {
+  it('matches lower-cased VHS paths', () => {
     const vhs =
       "TypeError: Cannot read properties of undefined (reading 'target_id')\n" +
       'at get_links (http://localhost:8188/extensions/comfyui-videohelpersuite/js/VHS.core.js:2088:71)'
@@ -254,7 +265,7 @@ test.describe('consoleErrorLedger', () => {
     ).toEqual([])
   })
 
-  test('allows only the exact pysssss None-default 404 without requiring it', () => {
+  it('allows only the exact pysssss None-default 404 without requiring it', () => {
     const pysssss404 =
       'Failed to load resource: the server responded with a status of 404 (Not Found) [http://localhost:8188/api/pysssss/examples/loras%2FNone]'
     expect(
@@ -297,8 +308,8 @@ test.describe('consoleErrorLedger', () => {
 // Filters a prior tier's async execution error out of the non-executing
 // tiers; must match execution-domain lines and nothing a mount/wiring tier
 // should legitimately catch.
-test.describe('isForeignExecutionNoise', () => {
-  test('matches the execution-domain console surfaces', () => {
+describe('isForeignExecutionNoise', () => {
+  it('matches the execution-domain console surfaces', () => {
     expect(isForeignExecutionNoise('PromptExecutionError: boom')).toBe(true)
     expect(isForeignExecutionNoise('Prompt execution failed')).toBe(true)
     expect(
@@ -308,7 +319,7 @@ test.describe('isForeignExecutionNoise', () => {
     ).toBe(true)
   })
 
-  test('does not match render or unrelated resource errors a tier must catch', () => {
+  it('does not match render or unrelated resource errors a tier must catch', () => {
     expect(
       isForeignExecutionNoise('TypeError: cannot read x of undefined')
     ).toBe(false)

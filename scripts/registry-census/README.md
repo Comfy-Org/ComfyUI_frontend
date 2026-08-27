@@ -1,8 +1,10 @@
 # Registry corpus & ecosystem matrix
 
-A PR advisory that mirrors every registry pack (~5,100) and executes the
-frontend JS of the ~1,900 that ship any, against the commit under review, and
-reports a population verdict.
+A required PR and merge-queue gate that mirrors every registry pack (~5,100)
+and executes the frontend JS of the ~1,900 that ship any against relevant
+commits under review, then reports a population verdict. The aggregate check
+still appears on docs- and site-only pull requests after verifying that every
+expensive matrix dependency was skipped.
 
 **The corpus size and the executed count are different numbers, and the verdict
 is against the executed count.** Roughly 3,100 packs ship no extension-shaped JS
@@ -51,10 +53,10 @@ change through a reviewed bump.
   pack, opens a PR, and summarizes what moved.
 - Locally: `python3 scripts/registry-census/fetch_corpus.py --write-pins`
 
-**A red `CI: Ecosystem Matrix` on a pin-bump PR means the ecosystem moved, not
-that the diff broke something.** That is what the bump PR is for. Outside a
-pin bump or a cold rebuild of the unpinned tail, a red means the diff. Keeping
-those causes apart is the whole point.
+**A red `Custom Nodes Ecosystem Matrix test` on a pin-bump PR means the
+ecosystem moved, not that the diff broke something.** That is what the bump PR
+is for. Outside a pin bump or a cold rebuild of the unpinned tail, a red means
+the diff. Keeping those causes apart is the whole point.
 
 Every matrix run opens with a `pin-status` job printing the pin date, the age,
 and the bump URL, and raises a `::warning::` annotation once the pins are more
@@ -245,7 +247,7 @@ the runner is ephemeral and tokenless.
 
 ## Runbook
 
-The advisory is red. In order:
+The required gate is red. In order:
 
 1. **Exit 2 — verdict withheld.** This is a harness failure, not an ecosystem
    result. Read the banner: short population (a shard died — check the
@@ -268,12 +270,12 @@ The advisory is red. In order:
    matrix run since the change is worth less than it appeared. Do not
    silence it.
 
-**Blast radius:** the matrix is an advisory PR check, not a required check.
-`ProtectMain` requires `test`, `lint-and-format`, `e2e-status` and
-`website-e2e`, so a red matrix informs but does not block. Promotion requires
-both adding the legacy and Vue `matrix-verdict` checks to required checks and
-adding a `merge_group` trigger; doing only the first leaves merge groups
-waiting for checks this workflow never reports.
+**Blast radius:** the workflow reports one aggregate check named
+`Custom Nodes Ecosystem Matrix test` for every pull request and merge-queue
+candidate. Branch protection should require that aggregate, not the internal
+legacy and Vue `matrix-verdict` jobs. On a relevant change, a red, skipped, or
+cancelled dependency makes the aggregate red. On an irrelevant pull request,
+the aggregate passes only after all expensive dependencies report skipped.
 
 ## Detection proof (counter-evidence)
 
