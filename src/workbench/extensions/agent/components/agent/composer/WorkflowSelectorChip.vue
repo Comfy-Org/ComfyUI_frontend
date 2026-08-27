@@ -109,9 +109,12 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   data-testid="workflow-selector-icon"
                   class="text-agent-fg-subtle group-hover:text-agent-fg icon-[comfy--workflow] size-3.5 shrink-0"
                 />
-                <span class="min-w-0 truncate">{{
-                  current?.name ?? t('agent.selectWorkflowForAgent')
-                }}</span>
+                <span
+                  class="min-w-0 truncate underline decoration-solid underline-offset-2"
+                  >{{
+                    current?.name ?? t('agent.selectWorkflowForAgent')
+                  }}</span
+                >
                 <span
                   v-if="current?.isPersisted === false || current?.modified"
                   data-testid="unsaved-dot"
