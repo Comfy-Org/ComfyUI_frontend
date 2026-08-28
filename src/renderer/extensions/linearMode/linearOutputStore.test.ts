@@ -15,10 +15,7 @@ const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()
 }))
 
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapInputFileToAssetItem: vi.fn(),
-  mapTaskOutputToAssetItem: vi.fn()
-}))
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({

@@ -10,10 +10,7 @@ import OutputHistoryActiveQueueItem from './OutputHistoryActiveQueueItem.vue'
 const i18n = createI18n({ legacy: false, locale: 'en' })
 setActivePinia(createTestingPinia({ stubActions: false }))
 
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapInputFileToAssetItem: vi.fn(),
-  mapTaskOutputToAssetItem: vi.fn()
-}))
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({

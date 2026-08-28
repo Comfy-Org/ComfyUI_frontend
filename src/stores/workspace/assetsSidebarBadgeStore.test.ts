@@ -1,10 +1,7 @@
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapInputFileToAssetItem: vi.fn(),
-  mapTaskOutputToAssetItem: vi.fn()
-}))
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
