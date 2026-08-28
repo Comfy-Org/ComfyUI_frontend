@@ -14,12 +14,9 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { resultItemType } from '@/schemas/apiSchema'
-import type { ExecutedWsMessage, ResultItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { parseNodeOutput } from '@/stores/resultItemParsing'
 
 import {
   firstRunTourSteps,
@@ -49,40 +46,8 @@ function useFirstRunTourControllerInternal() {
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
-  const firstRunOutput = shallowRef<ResultItem | null>(null)
-  const tourJobId = ref<string | null>(null)
-  const runCorrelationActive = ref(false)
-  const queuedJobIdsBeforeRun = shallowRef(new Set<string>())
-  const pendingRunOutputs = new Map<string, ResultItem>()
-
-  /**
-   * The state that ties an accepted job back to this tour's run, reset as a
-   * unit so the callers cannot drift apart. Starting a run is the one
-   * difference: it snapshots the queue the new job has to be absent from, and
-   * keeps the image an earlier run in the same tour already produced.
-   */
-  function resetRunCorrelation({ forNewRun = false } = {}) {
-    queuedJobIdsBeforeRun.value = new Set(
-      forNewRun ? Object.keys(executionStore.queuedJobs) : []
-    )
-    pendingRunOutputs.clear()
-    tourJobId.value = null
-    runCorrelationActive.value = forNewRun
-    if (!forNewRun) firstRunOutput.value = null
-  }
-
-  /**
-   * A run outlives the tour that started it, so ending the tour cannot end the
-   * correlation: the user who walks to the end while the image is still
-   * generating would lose it. An uncorrelated run can never be correlated once
-   * the tour's workflow is gone, so that one is dropped instead of leaked.
-   */
-  function releaseRunCorrelation() {
-    pendingRunOutputs.clear()
-    if (tourJobId.value !== null) return
-    queuedJobIdsBeforeRun.value = new Set()
-    runCorrelationActive.value = false
-  }
+  /** Only a tour walked to the end made a first result to be congratulated for. */
+  const tourWasCompleted = ref(false)
 
   /**
    * The half of the tour's context that exists before the tour does: a canvas
@@ -150,33 +115,10 @@ function useFirstRunTourControllerInternal() {
    * while a worker is allocated. Allocation routinely outlasts any deadline
    * short enough to be useful, so keying on status would fail healthy runs.
    */
-  const acceptedTourJobId = computed(
-    () =>
-      (runCorrelationActive.value
-        ? Object.entries(executionStore.queuedJobs).find(
-            ([jobId, job]) =>
-              !queuedJobIdsBeforeRun.value.has(jobId) &&
-              job.workflow === tourWorkflow.value
-          )?.[0]
-        : undefined) ?? null
-  )
-  const tourRunPresent = computed(
-    () =>
-      tourJobId.value !== null &&
-      runCorrelationActive.value &&
-      executionStore.queuedJobs[tourJobId.value]?.workflow ===
-        tourWorkflow.value
-  )
-
-  watch(
-    acceptedTourJobId,
-    (jobId) => {
-      if (!jobId || tourJobId.value) return
-      tourJobId.value = jobId
-      firstRunOutput.value ??= pendingRunOutputs.get(jobId) ?? null
-      stopAcceptDeadline()
-    },
-    { flush: 'sync' }
+  const tourRunAccepted = computed(() =>
+    Object.values(executionStore.queuedJobs).some(
+      (job) => job.workflow === tourWorkflow.value
+    )
   )
 
   /**
@@ -211,15 +153,10 @@ function useFirstRunTourControllerInternal() {
    * same flush, and the terminal branches above overwrite unconditionally — so
    * the outcome wins whichever watcher runs first.
    */
-  watch(
-    tourRunPresent,
-    (present, wasPresent) => {
-      if (present) stopAcceptDeadline()
-      else if (wasPresent && runState.value === 'generating')
-        runState.value = 'failed'
-    },
-    { flush: 'sync' }
-  )
+  watch(tourRunAccepted, (accepted) => {
+    if (accepted) stopAcceptDeadline()
+    else if (runState.value === 'generating') runState.value = 'failed'
+  })
 
   let acceptTimer: ReturnType<typeof setTimeout> | undefined
   function stopAcceptDeadline() {
@@ -228,6 +165,7 @@ function useFirstRunTourControllerInternal() {
   }
   function startAcceptDeadline() {
     stopAcceptDeadline()
+    if (tourRunAccepted.value) return
     acceptTimer = setTimeout(() => {
       stopAcceptDeadline()
       if (runState.value === 'generating') runState.value = 'failed'
@@ -248,45 +186,6 @@ function useFirstRunTourControllerInternal() {
   })
   useEventListener(api, 'reconnected', stopOfflineGrace)
 
-  /** A preview's temp file still seeds; the saved result behind it is better. */
-  const awaitingSavedOutput = computed(
-    () => firstRunOutput.value === null || firstRunOutput.value.type === 'temp'
-  )
-
-  useEventListener(api, 'executed', (event) => {
-    const { detail } = event as CustomEvent<ExecutedWsMessage>
-    if (
-      !runCorrelationActive.value ||
-      !awaitingSavedOutput.value ||
-      queuedJobIdsBeforeRun.value.has(detail.prompt_id) ||
-      (tourJobId.value !== null && detail.prompt_id !== tourJobId.value)
-    )
-      return
-    // Every media key, not just `images`: a template can save under `video` or
-    // under a key only its custom node knows, and only the item itself says
-    // whether what came back is an image the continuations can be seeded with.
-    const images = parseNodeOutput(detail.node, detail.output).filter(
-      (item) => item.isImage
-    )
-    const image = images.find(({ type }) => type !== 'temp') ?? images[0]
-    if (!image) return
-    const parsedType = resultItemType.safeParse(image.type)
-    const output: ResultItem = {
-      filename: image.filename,
-      subfolder: image.subfolder,
-      type: parsedType.success ? parsedType.data : 'output'
-    }
-    if (tourJobId.value !== null) {
-      firstRunOutput.value = output
-      return
-    }
-    // Buffered under the same preference as the direct branch: a preview that
-    // beat the queue metadata must not lock out the saved result behind it.
-    const buffered = pendingRunOutputs.get(detail.prompt_id)
-    if (!buffered || buffered.type === 'temp')
-      pendingRunOutputs.set(detail.prompt_id, output)
-  })
-
   /**
    * A run outlives the step that starts it, so the click moves the tour on. One
    * the paywall will refuse never queues, so the tour parks and leaves the
@@ -305,7 +204,6 @@ function useFirstRunTourControllerInternal() {
         return
       }
 
-      resetRunCorrelation({ forNewRun: true })
       runState.value = 'generating'
       startAcceptDeadline()
       engine.next()
@@ -318,14 +216,16 @@ function useFirstRunTourControllerInternal() {
     (active) => {
       if (active) return
       // Every ending leaves the user somewhere to go next, so every ending arms
-      // the nudge; only what it can offer depends on what the run produced.
+      // the nudge; only what it says depends on how the tour ended.
+      const ending = engine.lastEnding
+      tourWasCompleted.value =
+        ending?.tour === 'firstRun' && ending.outcome === 'completed'
       nudgeArmed.value = true
       stopOfflineGrace()
       stopAcceptDeadline()
       releaseFirstRunTargets()
-      runState.value = 'idle'
       tourWorkflow.value = null
-      releaseRunCorrelation()
+      runState.value = 'idle'
     }
   )
 
@@ -348,7 +248,6 @@ function useFirstRunTourControllerInternal() {
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
-    resetRunCorrelation()
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
@@ -371,7 +270,7 @@ function useFirstRunTourControllerInternal() {
   return {
     beginTour,
     nudgeArmed: readonly(nudgeArmed),
-    nudgeOutput: readonly(firstRunOutput),
+    tourWasCompleted: readonly(tourWasCompleted),
     dismissNudge
   }
 }
