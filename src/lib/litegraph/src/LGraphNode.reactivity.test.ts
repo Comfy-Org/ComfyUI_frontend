@@ -70,6 +70,33 @@ describe('_setConcreteSlots', () => {
     expect(onChange).toHaveBeenCalledOnce()
   })
 
+  test('preserves widget slot position identity when geometry is unchanged', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    let spacerHeight = 20
+    const spacer = node.addWidget('number', 'spacer', 0, () => undefined, {})
+    spacer.computeSize = () => [100, spacerHeight]
+    const widget = node.addWidget('number', 'value', 0, () => undefined, {})
+    const input = node.addInput('value', 'INT')
+    input.widget = { name: widget.name }
+    input._widget = widget
+    graph.add(node)
+    node._setConcreteSlots()
+
+    node.arrange()
+    const slot = node.inputs[0]
+    const initialPosition = slot.pos
+    node.arrange()
+
+    expect(slot.pos).toBe(initialPosition)
+
+    spacerHeight = 40
+    node.arrange()
+
+    expect(slot.pos).not.toBe(initialPosition)
+    expect(slot.pos?.[1]).toBeGreaterThan(initialPosition?.[1] ?? 0)
+  })
+
   test('preserves widget-backed slot position identity', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

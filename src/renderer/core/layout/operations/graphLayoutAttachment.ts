@@ -59,10 +59,13 @@ function deleteNodeAttachmentOwner(graphId: UUID, node: LGraphNode): boolean {
 }
 interface NodeGeometryProjection {
   buffer: Rectangle
+  contentSizeVersion: number
   geometryVersion: number
+  layoutRef: ReturnType<typeof layoutStore.getNodeLayoutRef> | undefined
   position: LegacyPoint
   positionView: LegacyPoint
   renderedSize: LegacySize
+  renderedSizeDirty: boolean
   size: LegacySize
   sizeView: LegacySize
 }
@@ -82,13 +85,16 @@ function nodeGeometryProjection(node: LGraphNode): NodeGeometryProjection {
   const size = buffer.size
   const projection: NodeGeometryProjection = {
     buffer,
+    contentSizeVersion: -1,
     geometryVersion: -1,
+    layoutRef: undefined,
     position,
     positionView: createMutationView(position, {
       commit: () => commitNodePosition(node),
       synchronize: () => refreshNodeGeometry(node)
     }),
     renderedSize: [0, 0],
+    renderedSizeDirty: true,
     size,
     sizeView: createMutationView(size, {
       commit: () => commitNodeSize(node),
@@ -112,39 +118,53 @@ export function nodeSizeBuffer(node: LGraphNode): LegacySize {
 }
 
 export function nodePositionView(node: LGraphNode): LegacyPoint {
-  return nodeGeometryProjection(node).positionView
+  const projection = nodeGeometryProjection(node)
+  void projection.layoutRef?.value
+  return projection.positionView
 }
 
 export function nodeSizeView(node: LGraphNode): LegacySize {
-  return nodeGeometryProjection(node).sizeView
+  const projection = nodeGeometryProjection(node)
+  void projection.layoutRef?.value
+  return projection.sizeView
 }
 
 export function refreshNodeGeometry(node: LGraphNode): LegacySize {
   const projection = nodeGeometryProjection(node)
   const attachment = nodeAttachments.get(node)
+  let geometryChanged = false
   if (
     attachment &&
-    projection.geometryVersion !== layoutStore.geometryVersion
+    projection.geometryVersion !== layoutStore.nodeGeometryVersion
   ) {
-    projection.geometryVersion = layoutStore.geometryVersion
+    projection.geometryVersion = layoutStore.nodeGeometryVersion
     layoutStore.readNodeRect(
       attachment.graphId,
       attachment.id,
       projection.buffer
     )
+    geometryChanged = true
   }
 
-  const contentSize = attachment
-    ? layoutStore.contentSizeOf(attachment.graphId, attachment.id)
-    : undefined
-  projection.renderedSize[0] = Math.max(
-    projection.size[0],
-    contentSize?.width ?? 0
-  )
-  projection.renderedSize[1] = Math.max(
-    projection.size[1],
-    contentSize?.height ?? 0
-  )
+  if (
+    projection.contentSizeVersion !== layoutStore.contentSizeVersion ||
+    projection.renderedSizeDirty ||
+    geometryChanged
+  ) {
+    const contentSize = attachment
+      ? layoutStore.contentSizeOf(attachment.graphId, attachment.id)
+      : undefined
+    projection.renderedSize[0] = Math.max(
+      projection.size[0],
+      contentSize?.width ?? 0
+    )
+    projection.renderedSize[1] = Math.max(
+      projection.size[1],
+      contentSize?.height ?? 0
+    )
+    projection.contentSizeVersion = layoutStore.contentSizeVersion
+    projection.renderedSizeDirty = false
+  }
   return projection.renderedSize
 }
 
@@ -177,16 +197,22 @@ function commitNodePosition(node: LGraphNode): void {
 }
 
 export function setNodeSize(node: LGraphNode, value: LegacySize): void {
-  const size = nodeGeometryProjection(node).size
+  const projection = nodeGeometryProjection(node)
+  const size = projection.size
   size[0] = value[0]
   size[1] = value[1]
   commitNodeSize(node)
 }
 
 function commitNodeSize(node: LGraphNode): void {
+  const projection = nodeGeometryProjection(node)
+  // Both whole-array assignments and indexed writes through the stable
+  // mutation view converge here. Detached nodes do not receive a layout-store
+  // geometry revision, so invalidate their derived rendering size before the
+  // attachment guard as well.
+  projection.renderedSizeDirty = true
   const attachment = nodeAttachments.get(node)
   if (node.id === UNASSIGNED_NODE_ID || !attachment) return
-  const projection = nodeGeometryProjection(node)
   if (
     layoutStore.readNodeRect(
       attachment.graphId,
@@ -260,8 +286,9 @@ function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
   )
   nodeAttachments.set(node, { graphId, id: node.id })
   setNodeAttachmentOwner(graphId, node)
+  projection.layoutRef = layoutStore.getNodeLayoutRef(graphId, node.id)
   if (geometrySynchronized) {
-    projection.geometryVersion = layoutStore.geometryVersion
+    projection.geometryVersion = layoutStore.nodeGeometryVersion
   }
 }
 
@@ -295,18 +322,23 @@ export function transferLayoutAttachment(
   const attachment = transferableNodeAttachment(node, replacement)
   if (!attachment) return false
 
+  const replacementProjection = nodeGeometryProjection(replacement)
   const geometrySynchronized = layoutStore.readNodeRect(
     attachment.graphId,
     attachment.id,
-    nodeGeometryProjection(replacement).buffer
+    replacementProjection.buffer
   )
 
   nodeAttachments.delete(node)
+  nodeGeometryProjection(node).layoutRef = undefined
   nodeAttachments.set(replacement, attachment)
   setNodeAttachmentOwner(attachment.graphId, replacement)
+  replacementProjection.layoutRef = layoutStore.getNodeLayoutRef(
+    attachment.graphId,
+    attachment.id
+  )
   if (geometrySynchronized) {
-    nodeGeometryProjection(replacement).geometryVersion =
-      layoutStore.geometryVersion
+    replacementProjection.geometryVersion = layoutStore.nodeGeometryVersion
   }
   return true
 }
@@ -316,7 +348,9 @@ export function detachNodeLayout(node: LGraphNode): void {
   if (!attachment) return
   const { graphId, id: nodeId } = attachment
 
-  layoutStore.readNodeRect(graphId, nodeId, nodeGeometryProjection(node).buffer)
+  const projection = nodeGeometryProjection(node)
+  layoutStore.readNodeRect(graphId, nodeId, projection.buffer)
+  projection.layoutRef = undefined
   nodeAttachments.delete(node)
   if (!deleteNodeAttachmentOwner(graphId, node)) return
   layoutStore.applyOperation({

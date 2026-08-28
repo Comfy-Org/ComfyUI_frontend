@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Erstellt mithilfe von Googles Gemini-Omni-Flash-Modellen aus einem Text-Prompt ein Video mit Audio. Optional können Referenzbilder und/oder -videos bereitgestellt werden, um das Ergebnis zu steuern oder zu bearbeiten. Beschreiben Sie die gewünschte Länge (3–10 s) direkt im Prompt.",
+    "display_name": "Google Gemini Omni (Video)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Das zur Videogenerierung verwendete Gemini-Videomodell."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "Videospuren generieren",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Analysiert eine 3D-Modelldatei (GLB, GLTF, OBJ, STL) und wandelt sie für die Mesh-Verarbeitungs-Nodes (decimate, remesh, UV unwrap, bake, ...) in ein bearbeitbares MESH um. Alle Szenen-Nodes/Primitiven werden mit angewendeten Transformationen zu einem Mesh zusammengeführt; Texturen und Materialfaktoren stammen aus dem ersten Material. Gegenstück zu MeshToFile3D.",
+    "display_name": "3D-Komponenten abrufen",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D-Modelldatei aus Load 3D oder einem anderen 3D-Node. FBX/USDZ werden nicht unterstützt – konvertieren Sie sie zuerst in GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Mesh",
         "tooltip": null
       }
     }
