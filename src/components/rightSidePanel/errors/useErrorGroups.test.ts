@@ -155,7 +155,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useErrorGroups } from './useErrorGroups'
+import { AGENT_PROMPT_ERROR_TYPES, useErrorGroups } from './useErrorGroups'
 import type { AgentPromptErrorType } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
@@ -1396,6 +1396,10 @@ describe('useErrorGroups', () => {
       AgentPromptErrorType,
       string
     >
+
+    expect([...AGENT_PROMPT_ERROR_TYPES].sort()).toEqual(
+      Object.keys(promptErrorTitleSeeds).sort()
+    )
 
     for (const type of AGENT_PROMPT_ERROR_TYPE_MEMBERS) {
       const resolved = resolvePromptErrorMessage(

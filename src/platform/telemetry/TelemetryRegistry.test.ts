@@ -268,25 +268,25 @@ describe('TelemetryRegistry', () => {
     }> = [
       {
         method: 'trackAgentMessageFeedback',
-        expected: feedbackMetadata,
+        expected: { ...feedbackMetadata },
         invoke: (registry) =>
           registry.trackAgentMessageFeedback(feedbackMetadata)
       },
       {
         method: 'trackAgentPanelOpened',
-        expected: panelOpenedMetadata,
+        expected: { ...panelOpenedMetadata },
         invoke: (registry) =>
           registry.trackAgentPanelOpened(panelOpenedMetadata)
       },
       {
         method: 'trackAgentPanelClosed',
-        expected: panelClosedMetadata,
+        expected: { ...panelClosedMetadata },
         invoke: (registry) =>
           registry.trackAgentPanelClosed(panelClosedMetadata)
       },
       {
         method: 'trackAgentEntryButtonClicked',
-        expected: entryClickedMetadata,
+        expected: { ...entryClickedMetadata },
         invoke: (registry) =>
           registry.trackAgentEntryButtonClicked(entryClickedMetadata)
       },
@@ -297,13 +297,13 @@ describe('TelemetryRegistry', () => {
       },
       {
         method: 'trackAgentMessageSent',
-        expected: messageSentMetadata,
+        expected: { ...messageSentMetadata },
         invoke: (registry) =>
           registry.trackAgentMessageSent(messageSentMetadata)
       },
       {
         method: 'trackAgentNodeTagged',
-        expected: nodeTaggedMetadata,
+        expected: { ...nodeTaggedMetadata },
         invoke: (registry) => registry.trackAgentNodeTagged(nodeTaggedMetadata)
       },
       {
@@ -313,7 +313,7 @@ describe('TelemetryRegistry', () => {
       },
       {
         method: 'trackAgentWorkflowApplied',
-        expected: workflowAppliedMetadata,
+        expected: { ...workflowAppliedMetadata },
         invoke: (registry) =>
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
       }
