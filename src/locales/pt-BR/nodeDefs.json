@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Gere um vídeo com áudio a partir de um prompt de texto usando os modelos Gemini Omni Flash do Google. Opcionalmente, forneça imagens e/ou vídeos de referência para orientar ou editar o resultado. Descreva a duração desejada (3-10s) diretamente no prompt.",
+    "display_name": "Google Gemini Omni (Vídeo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo de vídeo Gemini usado para gerar o vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "comprimento_da_trilha",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Analisa um arquivo de modelo 3D (GLB, GLTF, OBJ, STL) em uma MESH editável para os nós de processamento de malha (decimate, remesh, UV unwrap, bake, ...). Todos os nós/primitivas da cena são mesclados em uma única malha com suas transformações aplicadas; as texturas e os fatores de material vêm do primeiro material. Equivalente ao MeshToFile3D.",
+    "display_name": "Obter componentes 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Arquivo de modelo 3D de Load 3D ou de outro nó 3D. FBX/USDZ não são compatíveis — converta para GLB primeiro."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }

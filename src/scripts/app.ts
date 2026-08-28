@@ -1748,9 +1748,7 @@ export class ComfyApp {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
-            applyPromotedWidgetControl(node, 'beforeQueued', {
-              isPartialExecution
-            })
+            applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
           // Capture workflow before await — activeWorkflow may change if the
@@ -1954,9 +1952,7 @@ export class ComfyApp {
             isPartialExecution
           })
           for (const node of queuedNodes) {
-            applyPromotedWidgetControl(node, 'afterQueued', {
-              isPartialExecution
-            })
+            applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
