@@ -53,6 +53,13 @@ describe('readImageWidgetValue', () => {
     expect(readImageWidgetValue(node)).toBe('updated.png [input]')
   })
 
+  it('preserves a null store value instead of falling back', () => {
+    const node = makeNode()
+    useWidgetValueStore().setValue(widgetId(GRAPH_ID, node.id, 'image'), null)
+
+    expect(readImageWidgetValue(node)).toBeNull()
+  })
+
   it('falls back to the widget object when the store has no entry', () => {
     const node = makeNode({ registered: false, widgetValue: 'legacy.png' })
 

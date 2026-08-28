@@ -12,10 +12,10 @@ function imageWidgetId(node: LGraphNode): WidgetId | null {
 
 export function readImageWidgetValue(node: LGraphNode): unknown {
   const id = imageWidgetId(node)
-  return (
-    (id ? useWidgetValueStore().getWidget(id)?.value : undefined) ??
-    node.widgets?.find((w) => w.name === IMAGE_WIDGET)?.value
-  )
+  const storedWidget = id ? useWidgetValueStore().getWidget(id) : undefined
+  return storedWidget
+    ? storedWidget.value
+    : node.widgets?.find((w) => w.name === IMAGE_WIDGET)?.value
 }
 
 export function writeImageWidgetValue(node: LGraphNode, value: string): void {

@@ -210,6 +210,14 @@ describe('useMaskEditorSaver', () => {
     // when there are no pre-existing outputs for the node.
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId('maskeditor-saver-test', toNodeId(42), 'image')
+      )?.value
+    ).toBe('clipspace-painted-masked-123.png [input]')
+    expect(mockNode.properties['image']).toBe(
+      'clipspace-painted-masked-123.png [input]'
+    )
   })
 
   it('omits subfolder from the upload FormData under the unified contract', async () => {
