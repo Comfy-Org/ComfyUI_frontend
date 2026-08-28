@@ -11,6 +11,7 @@ import {
   categoryLabelKeys,
   filterByCategory,
   learningCrumbs,
+  learningKeywords,
   learningMetaDescription,
   learningMetaTitle,
   tutorialPath
@@ -39,18 +40,7 @@ const learningTitle = t('learning.title', locale)
 const label = category ? t(categoryLabelKeys[category], locale) : undefined
 const title = learningMetaTitle(locale, category)
 const description = learningMetaDescription(locale, category)
-const keywords = category
-  ? undefined
-  : [
-      'comfyui tutorial',
-      'comfyui tutorials',
-      'learn comfyui',
-      'comfyui course',
-      'comfyui training',
-      'comfyui basics',
-      'comfyui vfx',
-      'comfyui animation'
-    ]
+const keywords = learningKeywords(category)
 
 const tutorialList = itemListNode(
   url,

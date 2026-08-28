@@ -10,6 +10,7 @@ import {
   populatedCategories,
   recommendedFor,
   tutorialDescription,
+  tutorialMetaTitle,
   tutorialPath
 } from '../src/data/learningTutorials'
 import { externalLinks } from '../src/config/routes'
@@ -30,24 +31,32 @@ const EXPECTED_META = {
     heading: 'ComfyUI Basics',
     description:
       'Beginner ComfyUI tutorials: learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
+    metaDescription:
+      'Free ComfyUI tutorials for beginners. Learn the node graph first, then add LoRAs, style transfer, and ControlNets, with a workflow to open at every step.',
     title: 'ComfyUI Basics for Beginners: Node Graph, LoRAs, ControlNet'
   },
   vfx: {
     heading: 'VFX Tutorials',
     description:
       'Hands-on ComfyUI VFX tutorials: cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
+    metaDescription:
+      'Free ComfyUI VFX tutorials with the workflows behind them: cleanplates, sky replacement, deaging, mattes, and frame adjustments for your own shots.',
     title: 'ComfyUI VFX Tutorials: Cleanplates, Sky Replacement, Deaging'
   },
   animations: {
     heading: 'Animation Tutorials',
     description:
       'Hands-on ComfyUI animation tutorials: character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
+    metaDescription:
+      'Free ComfyUI animation tutorials with workflows: character sheets, keyframes, in-betweening, backgrounds, and compositing, from concept art to final shot.',
     title: 'ComfyUI Animation Tutorials: Character Sheets and Keyframes'
   },
   ads: {
     heading: 'Ad Creative Tutorials',
     description:
       'Hands-on ComfyUI ad creative tutorials: moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
+    metaDescription:
+      'Free ComfyUI tutorials for ad creative, each with its workflow: moodboards, storyboards, product photography, talent casting, B-roll, and OOH mockups.',
     title: 'ComfyUI Ad Creative Tutorials: Moodboards to Product Shots'
   }
 } as const
@@ -193,7 +202,7 @@ test.describe('Learning category pages @smoke', () => {
     await expect(page).toHaveTitle(EXPECTED_META.vfx.title)
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       'content',
-      EXPECTED_META.vfx.description
+      EXPECTED_META.vfx.metaDescription
     )
   })
 
@@ -262,7 +271,7 @@ test.describe('Learning tutorial page @smoke', () => {
       .click()
 
     await expect(page).toHaveURL(tutorialPath(firstTutorial))
-    await expect(page).toHaveTitle(`${firstTutorial.title.en} - Comfy`)
+    await expect(page).toHaveTitle(tutorialMetaTitle(firstTutorial, 'en'))
   })
 
   test('the page exposes an indexable heading and autoplay video', async ({
@@ -371,7 +380,7 @@ test.describe('Learning tutorial page @smoke', () => {
   test('renders under the zh-CN locale', async ({ page }) => {
     const zhPath = `/zh-CN${tutorialPath(firstTutorial)}`
     await page.goto(zhPath)
-    await expect(page).toHaveTitle(`${firstTutorial.title['zh-CN']} - Comfy`)
+    await expect(page).toHaveTitle(tutorialMetaTitle(firstTutorial, 'zh-CN'))
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       firstTutorial.title['zh-CN']
     )

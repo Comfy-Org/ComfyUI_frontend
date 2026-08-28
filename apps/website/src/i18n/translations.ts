@@ -1829,6 +1829,11 @@ const translations = {
     'zh-CN':
       '面向初学者的 ComfyUI 教程：从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
   },
+  'learning.categories.basics.metaDescription': {
+    en: 'Free ComfyUI tutorials for beginners. Learn the node graph first, then add LoRAs, style transfer, and ControlNets, with a workflow to open at every step.',
+    'zh-CN':
+      '面向初学者的免费 ComfyUI 教程。先学节点图，再加入 LoRA、风格迁移与 ControlNet，每一步都有可打开的工作流。'
+  },
   'learning.categories.vfx.heading': {
     en: 'VFX Tutorials',
     'zh-CN': 'VFX 教程'
@@ -1841,6 +1846,11 @@ const translations = {
     en: 'Hands-on ComfyUI VFX tutorials: cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
     'zh-CN':
       '实战 ComfyUI VFX 教程：净板、天空替换、减龄、遮罩与镜头处理，均可亲自打开并运行。'
+  },
+  'learning.categories.vfx.metaDescription': {
+    en: 'Free ComfyUI VFX tutorials with the workflows behind them: cleanplates, sky replacement, deaging, mattes, and frame adjustments for your own shots.',
+    'zh-CN':
+      '免费 ComfyUI VFX 教程与配套工作流：净板、天空替换、减龄、遮罩与帧调整，可用于你自己的镜头。'
   },
   'learning.categories.animations.heading': {
     en: 'Animation Tutorials',
@@ -1855,6 +1865,11 @@ const translations = {
     'zh-CN':
       '实战 ComfyUI 动画教程：角色设定表、关键帧、中间帧、背景与合成，均可亲自运行。'
   },
+  'learning.categories.animations.metaDescription': {
+    en: 'Free ComfyUI animation tutorials with workflows: character sheets, keyframes, in-betweening, backgrounds, and compositing, from concept art to final shot.',
+    'zh-CN':
+      '免费 ComfyUI 动画教程与工作流：角色设定表、关键帧、中间帧、背景与合成，从概念美术到完成镜头。'
+  },
   'learning.categories.ads.heading': {
     en: 'Ad Creative Tutorials',
     'zh-CN': '广告创意教程'
@@ -1867,6 +1882,11 @@ const translations = {
     en: 'Hands-on ComfyUI ad creative tutorials: moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
     'zh-CN':
       '实战 ComfyUI 广告创意教程：情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
+  },
+  'learning.categories.ads.metaDescription': {
+    en: 'Free ComfyUI tutorials for ad creative, each with its workflow: moodboards, storyboards, product photography, talent casting, B-roll, and OOH mockups.',
+    'zh-CN':
+      '面向广告创意的免费 ComfyUI 教程，每个都配有工作流：情绪板、故事板、产品摄影、演员预演、B-Roll 与户外广告样机。'
   },
   // LearningWatchPage
   'learning.watch.nowWatching': { en: 'Now watching', 'zh-CN': '正在观看' },
