@@ -24,11 +24,8 @@ function progressValue(state: ProgressState | undefined) {
   return state?.state === 'running' ? state.value / state.max : undefined
 }
 
-function noOp() {}
-
 export function createNodeProgressCanvasSync(
-  nodeToLocator: (node: LGraphNode) => NodeLocatorId,
-  onIndexLookup: () => void = noOp
+  nodeToLocator: (node: LGraphNode) => NodeLocatorId
 ): NodeProgressCanvasSync {
   let activeCanvas: LGraphCanvas | null = null
   let activeGraph: LGraph | null = null
@@ -126,7 +123,6 @@ export function createNodeProgressCanvasSync(
       const previousProgress = progressValue(previousStates[locator])
       const nextProgress = progressValue(states[locator])
       if (Object.is(previousProgress, nextProgress)) continue
-      onIndexLookup()
       for (const node of nodesByLocator.get(locator) ?? []) {
         progressChanged = setNodeProgress(node, nextProgress) || progressChanged
       }

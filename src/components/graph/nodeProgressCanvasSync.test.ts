@@ -85,32 +85,33 @@ function locatorForNode(node: LGraphNode): NodeLocatorId {
   )
 }
 
-it('does one graph build, then only looks up changed and removed keys', () => {
+it('does one graph build, then only touches changed and removed nodes', () => {
   const nodes = Array.from({ length: 1_000 }, (_, index) =>
     createNode(index + 1)
   )
   const { graph } = createGraph(nodes.map(({ node }) => node))
   const canvas = createCanvas()
   const conversions = vi.fn(locatorForNode)
-  const lookups = vi.fn()
-  const sync = createNodeProgressCanvasSync(conversions, lookups)
+  const sync = createNodeProgressCanvasSync(conversions)
   const locator = createNodeLocatorId(null, toNodeId(1))
   const equalStates = { [locator]: runningState('1', 25) }
+
+  function clearNodeWork() {
+    nodes.forEach(({ reads, writes }) => {
+      reads.mockClear()
+      writes.mockClear()
+    })
+  }
 
   sync.sync(equalStates, canvas, graph)
   expect(conversions).toHaveBeenCalledTimes(1_000)
   expect(nodes[0].value()).toBe(0.25)
 
   conversions.mockClear()
-  lookups.mockClear()
-  nodes.forEach(({ reads, writes }) => {
-    reads.mockClear()
-    writes.mockClear()
-  })
+  clearNodeWork()
 
   sync.sync({ ...equalStates }, canvas, graph)
   expect(conversions).not.toHaveBeenCalled()
-  expect(lookups).not.toHaveBeenCalled()
   expect(
     nodes.every(
       ({ reads, writes }) =>
@@ -119,28 +120,35 @@ it('does one graph build, then only looks up changed and removed keys', () => {
   ).toBe(true)
 
   sync.sync({ [locator]: runningState('1', 50) }, canvas, graph)
-  expect(lookups).toHaveBeenCalledTimes(1)
+  expect(nodes[0].reads).toHaveBeenCalledOnce()
   expect(nodes[0].writes).toHaveBeenCalledExactlyOnceWith(0.5)
-  expect(nodes.slice(1).every(({ writes }) => !writes.mock.calls.length)).toBe(
-    true
-  )
+  expect(
+    nodes
+      .slice(1)
+      .every(
+        ({ reads, writes }) =>
+          !reads.mock.calls.length && !writes.mock.calls.length
+      )
+  ).toBe(true)
 
-  lookups.mockClear()
-  nodes[0].writes.mockClear()
+  clearNodeWork()
   sync.sync({}, canvas, graph)
-  expect(lookups).toHaveBeenCalledTimes(1)
+  expect(nodes[0].reads).toHaveBeenCalledOnce()
   expect(nodes[0].writes).toHaveBeenCalledExactlyOnceWith(undefined)
 
-  lookups.mockClear()
-  nodes[0].writes.mockClear()
+  clearNodeWork()
   const unmatched = createNodeLocatorId(null, toNodeId(1_001))
   sync.sync({ [unmatched]: runningState('1001', 25) }, canvas, graph)
-  expect(lookups).toHaveBeenCalledTimes(1)
-  expect(nodes.every(({ writes }) => !writes.mock.calls.length)).toBe(true)
+  expect(
+    nodes.every(
+      ({ reads, writes }) =>
+        !reads.mock.calls.length && !writes.mock.calls.length
+    )
+  ).toBe(true)
 
-  lookups.mockClear()
+  clearNodeWork()
   sync.sync({ [locator]: runningState('1', 75) }, canvas, graph)
-  expect(lookups).toHaveBeenCalledTimes(2)
+  expect(nodes[0].reads).toHaveBeenCalledOnce()
   expect(nodes[0].writes).toHaveBeenCalledExactlyOnceWith(0.75)
 })
 
