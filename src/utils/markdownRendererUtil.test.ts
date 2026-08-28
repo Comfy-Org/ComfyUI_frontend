@@ -103,15 +103,21 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('a&quot;onmouseover')
     })
 
-    it('keeps full entity escaping for titles', () => {
-      const html = renderMarkdownToHtml('[y](https://example.com/x "a&b<c>")')
+    it('titles keep the full escape while hrefs stay quote-only', () => {
+      const html = renderMarkdownToHtml(
+        '[y](https://example.com/x?a=1&amp;b=2 "q\\"t")'
+      )
 
-      // Deliberate asymmetry with hrefs: titles are not URLs, so they keep
-      // the full escape (the href in the same output leaves & raw). The
-      // sanitizer's serializer re-emits < bare inside the quoted attribute,
-      // which is valid; the ampersand pin is what proves the full escape ran.
-      expect(html).toContain('title="a&amp;b<c>"')
-      expect(html).toContain('href="https://example.com/x"')
+      // Titles are not URLs, so only they take the full escape.
+      expect(html).toContain('title="q&quot;t"')
+      expect(html).toContain('href="https://example.com/x?a=1&amp;b=2"')
+      expect(html).not.toContain('&amp;amp;')
+    })
+
+    it('escapes a quote in image alt text', () => {
+      const html = renderMarkdownToHtml('![q"t](https://example.com/i.png)')
+
+      expect(html).toContain('alt="q&quot;t"')
     })
 
     it('quote-escapes an image src without touching its ampersands', () => {
@@ -224,6 +230,22 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('title="This is a title"')
       expect(html).toContain('target="_blank"')
       expect(html).toContain('rel="noopener noreferrer"')
+    })
+
+    it('does not double-encode entity-bearing autolink text', () => {
+      const html = renderMarkdownToHtml(
+        'See https://example.com/view?a=1&amp;b=2 for results'
+      )
+
+      expect(html).toContain('>https://example.com/view?a=1&amp;b=2</a>')
+      expect(html).not.toContain('&amp;amp;')
+    })
+
+    it('renders raw-ampersand autolink text single-encoded', () => {
+      const html = renderMarkdownToHtml('Go to https://example.com/a?x=1&y=2')
+
+      expect(html).toContain('>https://example.com/a?x=1&amp;y=2</a>')
+      expect(html).not.toContain('&amp;amp;')
     })
 
     it('should handle bare URLs (autolinks)', () => {

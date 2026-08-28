@@ -32,6 +32,7 @@ import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 describe('useModelUpload', () => {
   beforeEach(() => {
     showDialog.mockClear()
+    flags.privateModelsEnabled = false
   })
 
   it.for([false, true])(

@@ -32,9 +32,9 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     const filePath = resolve(__dirname, 'LiteGraphCanvasSplitterOverlay.vue')
     const source = readFileSync(filePath, 'utf-8')
 
-    // GlobalToast positions itself with anchor(GRAPH_CANVAS_ANCHOR_*, ...);
-    // without this declaration every anchor() silently resolves its fallback
-    // and the toast never tracks the canvas panel.
+    // Without this declaration the toast's anchor() calls silently resolve
+    // their fallbacks and never track the canvas panel.
+    // GRAPH_CANVAS_ANCHOR contains no regex metacharacters.
     expect(source).toMatch(
       new RegExp(
         `class="[^"]*graph-canvas-panel[^"]*\\[anchor-name:${GRAPH_CANVAS_ANCHOR}\\]`
