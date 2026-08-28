@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "با استفاده از مدل‌های Gemini Omni Flash گوگل، از یک prompt متنی ویدئویی همراه با صدا تولید کنید. در صورت تمایل، تصاویر و/یا ویدئوهای مرجع ارائه دهید تا نتیجه هدایت یا ویرایش شود. طول موردنظر (۳-۱۰ ثانیه) را مستقیماً در prompt شرح دهید.",
+    "display_name": "Google Gemini Omni (ویدئو)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل ویدئویی Gemini که برای تولید ویدئو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "تولید مسیرها",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "طول مسیر",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "یک فایل مدل ۳D (GLB، GLTF، OBJ، STL) را به یک MESH قابل‌ویرایش برای nodeهای پردازش مش (decimate، remesh، بازکردن UV، bake، ...) تجزیه می‌کند. همه nodeها/اجزای اولیهٔ صحنه در یک مش ادغام می‌شوند و تبدیل‌هایشان اعمال می‌گردد؛ بافت‌ها و ضرایب متریال از نخستین متریال گرفته می‌شوند. همتای MeshToFile3D.",
+    "display_name": "دریافت مؤلفه‌های ۳D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "فایل مدل ۳D از Load 3D یا node ۳D دیگر. FBX/USDZ پشتیبانی نمی‌شوند؛ ابتدا به GLB تبدیل کنید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
