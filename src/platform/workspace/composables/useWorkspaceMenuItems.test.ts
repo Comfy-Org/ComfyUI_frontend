@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   isFreeTier: false,
   isInPersonalWorkspace: false,
   planSlug: 'pro-monthly' as string | null,
+  tier: null as string | null,
   shouldUseWorkspaceBilling: true,
   isSubscriptionCancelled: false
 }))
@@ -35,7 +36,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
       endDate: '2026-08-01T00:00:00Z',
-      planSlug: state.planSlug
+      planSlug: state.planSlug,
+      tier: state.tier
     }))
   })
 }))
@@ -102,6 +104,7 @@ describe('useWorkspaceMenuItems', () => {
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
     state.planSlug = 'pro-monthly'
+    state.tier = null
     state.shouldUseWorkspaceBilling = true
     state.isSubscriptionCancelled = false
   })
@@ -154,6 +157,45 @@ describe('useWorkspaceMenuItems', () => {
     expect(menuItems.value.map((item) => item.label)).toContain(
       'subscription.cancelPlan'
     )
+  })
+
+  it.for(['ENTERPRISE', 'GALACTIC'] as const)(
+    'withholds cancellation from a sales-managed %s plan on the legacy rail',
+    (tier) => {
+      state.shouldUseWorkspaceBilling = false
+      state.canManageSubscriptionLifecycle = true
+      state.tier = tier
+
+      const { menuItems } = useWorkspaceMenuItems()
+
+      expect(menuItems.value.map((item) => item.label)).not.toContain(
+        'subscription.cancelPlan'
+      )
+    }
+  )
+
+  it('hides Delete for an Enterprise workspace owner', () => {
+    state.canManageSubscription = true
+    state.planSlug = 'enterprise_monthly'
+    state.tier = 'ENTERPRISE'
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'workspacePanel.menu.deleteWorkspace'
+    )
+  })
+
+  it('keeps Leave available for an Enterprise workspace member', () => {
+    state.canLeaveWorkspace = true
+    state.planSlug = 'enterprise_monthly'
+    state.tier = 'ENTERPRISE'
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).toEqual([
+      'workspacePanel.menu.leaveWorkspace'
+    ])
   })
 
   it('withholds cancellation for an already-cancelled plan', () => {

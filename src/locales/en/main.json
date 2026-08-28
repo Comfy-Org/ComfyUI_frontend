@@ -106,6 +106,7 @@
     "enter": "Enter",
     "enterSubgraph": "Enter subgraph",
     "inSubgraph": "in subgraph '{name}'",
+    "missingNodeTypesInGroup": "missing: {types}",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
@@ -2687,6 +2688,9 @@
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
       "chargedImmediatelyNote": "Your saved payment method is charged immediately.",
+      "paymentDetailsRequiredNote": "You'll be asked to add a payment method to complete this purchase.",
+      "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.",
+      "manageBillingError": "Failed to open the billing portal. Please try again.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2874,6 +2878,9 @@
     "planLoadError": "We couldn't load your plan details.",
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
+    "unknownTierName": "Current plan",
+    "salesManagedRunBlockedTitle": "Plan inactive",
+    "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",
     "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
@@ -4072,23 +4079,6 @@
     "successDescription": "You can now upload your workflow to your creator page",
     "uploadWorkflowButton": "Upload my workflow"
   },
-  "desktopDialogs": {
-    "reinstallVenv": {
-      "title": "Reinstall ComfyUI (Fresh Start)?",
-      "message": "Sorry, we can't launch ComfyUI because some installed packages aren't compatible.\n\nClick Reinstall to restore ComfyUI and get back up and running.\n\nPlease note: if you've added custom nodes, you'll need to reinstall them after this process.",
-      "buttons": {
-        "Learn More": "Learn More",
-        "Reinstall": "Reinstall"
-      }
-    },
-    "invalidDialog": {
-      "title": "Invalid Dialog",
-      "message": "Invalid dialog ID was provided.",
-      "buttons": {
-        "Close": "Close"
-      }
-    }
-  },
   "vueNodesSlot": {
     "iterative": "(Iterative)"
   },
@@ -5074,16 +5064,27 @@
         }
       },
       "nudge": {
-        "ran": {
-          "title": "That was one of hundreds",
-          "body": "You just made your first. Explore what else you can build."
+        "title": "Your first output. Here's what's next.",
+        "body": "Each one starts from the image you just made.",
+        "animate": {
+          "title": "Animate it",
+          "detail": "Image to video · 5s"
         },
-        "noTour": {
+        "upscale": {
+          "title": "Upscale it",
+          "detail": "Same image, more detail",
+          "badge": "4x"
+        },
+        "restyle": {
+          "title": "Restyle with Nano Banana",
+          "detail": "Partner model · Any paid plan"
+        },
+        "fallback": {
           "title": "Hundreds more where that came from",
           "body": "Browse the templates and pick something to build."
         },
-        "dismiss": "Not now",
-        "explore": "Explore templates"
+        "loadFailed": "That template couldn't be loaded. Please try again.",
+        "explore": "Browse all templates"
       }
     }
   }
