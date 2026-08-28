@@ -6,6 +6,7 @@
  * calculation logic while providing their own position data.
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -13,8 +14,14 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type {
+  Point as LayoutPoint,
+  SlotLayout
+} from '@/renderer/core/layout/types'
+import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
 
 export interface SlotPositionContext {
   /** Node's X position in graph coordinates */
@@ -139,8 +146,7 @@ function calculateOutputSlotPos(
 }
 
 /**
- * Get slot position using layout tree if available, fallback to node's position
- * Unified implementation used by both LitegraphLinkAdapter and useLinkLayoutSync
+ * Get a slot center from current node and slot geometry.
  * @param node The LGraphNode
  * @param slotIndex The slot index
  * @param isInput Whether this is an input slot
@@ -151,45 +157,9 @@ export function getSlotPosition(
   slotIndex: number,
   isInput: boolean
 ): Point {
-  // Only use DOM-registered slot positions when Vue nodes mode is enabled
-  if (LiteGraph.vueNodesMode) {
-    // Try to get precise position from slot layout (DOM-registered)
-    const nodeId = node.id
-    const slotKey = getSlotKey(nodeId, slotIndex, isInput)
-    const slotLayout = layoutStore.getSlotLayout(slotKey)
-    if (slotLayout) {
-      return [slotLayout.position.x, slotLayout.position.y]
-    }
+  if (LiteGraph.vueNodesMode)
+    return getVueSlotPosition(node, slotIndex, isInput)
 
-    // Fallback: derive position from node layout tree and slot model
-    const rootGraphId = node.graph?.rootGraph.id
-    const nodeLayout = rootGraphId
-      ? layoutStore.getNodeLayout(rootGraphId, nodeId)
-      : null
-
-    if (nodeLayout) {
-      // Create context from layout tree data
-      const context: SlotPositionContext = {
-        nodeX: nodeLayout.position.x,
-        nodeY: nodeLayout.position.y,
-        nodeWidth: nodeLayout.size.width,
-        nodeHeight: nodeLayout.size.height,
-        collapsed: node.flags.collapsed || false,
-        collapsedWidth: node._collapsed_width,
-        slotStartY: node.constructor.slot_start_y,
-        inputs: node.inputs,
-        outputs: node.outputs,
-        widgets: node.widgets
-      }
-
-      // Use helper to calculate position
-      return isInput
-        ? calculateInputSlotPos(context, slotIndex)
-        : calculateOutputSlotPos(context, slotIndex)
-    }
-  }
-
-  // Fallback: calculate directly from node properties (legacy litegraph behavior)
   const context: SlotPositionContext = {
     nodeX: node.pos[0],
     nodeY: node.pos[1],
@@ -206,6 +176,201 @@ export function getSlotPosition(
   return isInput
     ? calculateInputSlotPos(context, slotIndex)
     : calculateOutputSlotPos(context, slotIndex)
+}
+
+function getVueSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): Point {
+  const [nodeX, nodeY] = node.pos
+  const offset = getRenderedSlotOffset(node, slotIndex, isInput)
+  if (offset) return [nodeX + offset.x, nodeY + offset.y]
+
+  const nodeWidth = node.flags.collapsed
+    ? (node._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH)
+    : node.renderingSize[0]
+  return calculateVueSlotPosition(
+    node,
+    slotIndex,
+    isInput,
+    nodeX,
+    nodeY,
+    nodeWidth
+  )
+}
+
+function getRenderedSlotOffset(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): LayoutPoint | null {
+  if (!node.graph) return null
+  return layoutStore.getSlotOffset(
+    node.graph.rootGraph.id,
+    node.id,
+    slotIndex,
+    isInput ? 'input' : 'output',
+    node.flags.collapsed ? 'collapsed' : 'expanded'
+  )
+}
+
+function calculateVueSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean,
+  nodeX: number,
+  nodeY: number,
+  nodeWidth: number
+): Point {
+  if (node.flags.collapsed) {
+    return [
+      isInput ? nodeX : nodeX + nodeWidth,
+      nodeY - LiteGraph.NODE_TITLE_HEIGHT * 0.5
+    ]
+  }
+
+  return isInput
+    ? calculateVueInputSlotPosition(node, slotIndex, nodeX, nodeY)
+    : calculateVueOutputSlotPosition(node, slotIndex, nodeX, nodeY, nodeWidth)
+}
+
+function calculateVueInputSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  nodeX: number,
+  nodeY: number
+): Point {
+  const input = node.inputs[slotIndex]
+  if (!input) return [nodeX, nodeY]
+
+  const widgetSlotY = getWidgetSlotY(node, input)
+  if (widgetSlotY !== undefined) {
+    return [nodeX, getVueNodeContentY(node, nodeY) + widgetSlotY]
+  }
+
+  const renderedIndex = node.inputs
+    .slice(0, slotIndex)
+    .filter((candidate) => !isWidgetInputSlot(candidate)).length
+  return [
+    nodeX,
+    getVueNodeContentY(node, nodeY) + getVueSlotY(node, renderedIndex)
+  ]
+}
+
+function getWidgetSlotY(
+  node: LGraphNode,
+  input: INodeInputSlot
+): number | undefined {
+  if (!isWidgetInputSlot(input)) return undefined
+  if (input.pos) return input.pos[1]
+
+  const widget =
+    input._widget ??
+    node.widgets?.find((candidate) => candidate.name === input.widget.name)
+  return widget && widget.y + LiteGraph.NODE_SLOT_HEIGHT * 0.5
+}
+
+function calculateVueOutputSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  nodeX: number,
+  nodeY: number,
+  nodeWidth: number
+): Point {
+  if (!node.outputs[slotIndex]) {
+    return [nodeX + nodeWidth, nodeY]
+  }
+
+  return [
+    nodeX + nodeWidth,
+    getVueNodeContentY(node, nodeY) + getVueSlotY(node, slotIndex)
+  ]
+}
+
+function getVueSlotY(node: LGraphNode, slotIndex: number): number {
+  return (
+    (slotIndex + (node.type === 'Reroute' ? 0.5 : 0.7)) *
+    LiteGraph.NODE_SLOT_HEIGHT
+  )
+}
+
+function getVueNodeContentY(node: LGraphNode, nodeY: number): number {
+  return node.title_mode === TitleMode.NO_TITLE
+    ? nodeY - LiteGraph.NODE_TITLE_HEIGHT
+    : nodeY
+}
+
+export function getSlotLayout(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): SlotLayout | null {
+  const slot = isInput ? node.inputs[slotIndex] : node.outputs[slotIndex]
+  if (!slot) return null
+
+  return createSlotLayout(
+    node,
+    slotIndex,
+    isInput,
+    getSlotPosition(node, slotIndex, isInput)
+  )
+}
+
+function createSlotLayout(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean,
+  [x, y]: Point
+): SlotLayout {
+  const size = LiteGraph.NODE_SLOT_HEIGHT
+  const half = size * 0.5
+  return {
+    nodeId: node.id,
+    index: slotIndex,
+    type: isInput ? 'input' : 'output',
+    position: { x, y },
+    bounds: { x: x - half, y: y - half, width: size, height: size }
+  }
+}
+
+export function getGraphSlotLayout(
+  graph: LGraph,
+  nodeId: LGraphNode['id'],
+  slotIndex: number,
+  isInput: boolean
+): SlotLayout | null {
+  const node = graph.getNodeById(nodeId)
+  return node ? getSlotLayout(node, slotIndex, isInput) : null
+}
+
+export function getSlotLayoutAtPoint(
+  graph: LGraph,
+  point: LayoutPoint,
+  node?: LGraphNode
+): SlotLayout | null {
+  if (node) return getNodeSlotLayoutAtPoint(node, point)
+  const nodes = nodesInRenderOrder(graph)
+  for (let index = nodes.length - 1; index >= 0; index--) {
+    const layout = getNodeSlotLayoutAtPoint(nodes[index], point)
+    if (layout) return layout
+  }
+  return null
+}
+
+function getNodeSlotLayoutAtPoint(
+  node: LGraphNode,
+  point: LayoutPoint
+): SlotLayout | null {
+  for (const [index] of node.inputs.entries()) {
+    const layout = getSlotLayout(node, index, true)
+    if (layout && pointInBounds(point, layout.bounds)) return layout
+  }
+  for (const [index] of node.outputs.entries()) {
+    const layout = getSlotLayout(node, index, false)
+    if (layout && pointInBounds(point, layout.bounds)) return layout
+  }
+  return null
 }
 
 /**

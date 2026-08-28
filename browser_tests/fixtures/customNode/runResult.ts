@@ -56,21 +56,37 @@ export function describeRunOutcome(result: RunResult): string {
 // cache temperature - a node that PASSed on a cold cache reads PARTIAL on the
 // next run. The `executed` message stays excluded: it replays for cached nodes
 // without naming them, so it cannot distinguish the two.
-function executedNodesFrom(events: PromptEvent[]): string[] {
+function executedNodesFrom(
+  events: PromptEvent[],
+  graphNodeIds?: string[]
+): string[] {
+  const inGraph = (node: string) =>
+    graphNodeIds === undefined || graphNodeIds.includes(node)
   const executed = new Set<string>()
   for (const event of events) {
-    if (event.type === 'executing' && event.node !== null)
+    if (
+      event.type === 'executing' &&
+      event.node !== null &&
+      inGraph(event.node)
+    )
       executed.add(event.node)
     if (event.type === 'execution_cached')
-      for (const node of event.nodes) executed.add(node)
+      for (const node of event.nodes) if (inGraph(node)) executed.add(node)
   }
   return [...executed]
 }
 
-function outputsFrom(events: PromptEvent[]): Record<string, unknown> {
+function outputsFrom(
+  events: PromptEvent[],
+  graphNodeIds?: string[]
+): Record<string, unknown> {
   const outputs: Record<string, unknown> = {}
   for (const event of events) {
-    if (event.type === 'executed' && event.node !== null)
+    if (
+      event.type === 'executed' &&
+      event.node !== null &&
+      (graphNodeIds === undefined || graphNodeIds.includes(event.node))
+    )
       outputs[event.node] = event.output
   }
   return outputs
@@ -80,9 +96,6 @@ export function classifyRun(input: {
   events: PromptEvent[]
   expectedNodeIds: string[]
   proofOutputNodeByExpectedNode?: Record<string, string>
-  // All node ids in the queued graph. An error naming a node outside it is a
-  // stray from another prompt (late websocket delivery, or a duplicate queue
-  // from the client-flap retry) and must not be pinned on this run.
   graphNodeIds?: string[]
   timedOut?: boolean
 }): RunResult {
@@ -93,8 +106,8 @@ export function classifyRun(input: {
     graphNodeIds,
     timedOut = false
   } = input
-  const executedNodes = executedNodesFrom(events)
-  const outputsByNode = outputsFrom(events)
+  const executedNodes = executedNodesFrom(events, graphNodeIds)
+  const outputsByNode = outputsFrom(events, graphNodeIds)
 
   if (timedOut) return { outcome: 'TIMEOUT', executedNodes, outputsByNode }
 

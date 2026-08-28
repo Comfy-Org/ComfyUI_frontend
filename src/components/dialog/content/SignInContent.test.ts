@@ -112,6 +112,17 @@ beforeEach(() => {
 })
 
 describe('SignInContent', () => {
+  it('links legal terms directly to canonical Comfy pages', () => {
+    renderSignInContent()
+
+    expect(
+      screen.getByRole('link', { name: 'Terms of Service' })
+    ).toHaveAttribute('href', 'https://comfy.org/terms-of-service/')
+    expect(
+      screen.getByRole('link', { name: 'Privacy Policy' })
+    ).toHaveAttribute('href', 'https://comfy.org/privacy-policy/')
+  })
+
   it('withholds the sign-up form while region detection is pending', async () => {
     const settle = inChina.defer()
     renderSignInContent()
