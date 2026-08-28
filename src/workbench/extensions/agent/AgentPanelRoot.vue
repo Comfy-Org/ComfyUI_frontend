@@ -56,7 +56,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
-import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
   MAX_ATTACHMENT_BYTES,
   useAttachment
@@ -67,7 +66,6 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
 import type {
   AgentActiveTabData,
@@ -652,12 +650,6 @@ function onCopyMarkdown(id: string): void {
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
-const coachStep: CoachStep = {
-  target: '#agent-panel-root',
-  title: t('agent.coachTitle'),
-  body: t('agent.coachBody')
-}
-
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   exitNodeSelectionMode()
   const nodeTags = consumeSelection()
@@ -1039,9 +1031,5 @@ function onPanelDrop(event: DragEvent): void {
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
     </AgentPanel>
-    <OnboardingCoach
-      :step="coachStep"
-      storage-key="Comfy.AgentPanel.onboarded"
-    />
   </div>
 </template>
