@@ -339,8 +339,13 @@ describe('normalizeConfiguredTopology', () => {
     expect(normalized.links?.map((link) => link.id)).toEqual([2, 3])
     expect(normalized.nodes?.[1].inputs?.[0].link).toBe(2)
     expect(console.warn).toHaveBeenCalledWith(
-      'Dropping competing link to occupied input 2:0',
-      expect.objectContaining({ droppedLinkId: 2, survivorLinkId: 1 })
+      expect.any(String),
+      expect.objectContaining({
+        droppedLinkId: 1,
+        survivorLinkId: 2,
+        targetNodeId: toNodeId(2),
+        targetSlot: 0
+      })
     )
   })
 })
@@ -725,7 +730,7 @@ describe('realignInputLinkSlots', () => {
     )
   })
 
-  it('rejects all moves when one link cannot be realigned', () => {
+  it('realigns remaining links when one move is rejected', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const source = new LGraphNode('Source')
@@ -751,7 +756,7 @@ describe('realignInputLinkSlots', () => {
     realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect(blocked.target_slot).toBe(0)
-    expect(movable.target_slot).toBe(2)
+    expect(movable.target_slot).toBe(3)
     expect(console.error).toHaveBeenCalledWith(
       'Failed to realign input link slots',
       expect.objectContaining({ code: 'occupied-target' })
