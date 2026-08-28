@@ -126,6 +126,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 
       const displayContent = container.querySelector('.comfy-markdown-content')
       expect(displayContent).toHaveClass('visible')
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
 
       await dblClickToEdit(container)
 
@@ -434,6 +435,7 @@ Another line with more content.`
       expect(container.querySelector('.comfy-markdown-content')).toHaveClass(
         'visible'
       )
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
 
       await dblClickToEdit(container)
       expect(screen.getByRole('textbox')).toBeInTheDocument()
