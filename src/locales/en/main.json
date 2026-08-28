@@ -5257,7 +5257,9 @@
       "readDocs": "Read the docs",
       "reject": "Skip for now",
       "accept": "Start using Comfy Agent",
-      "videoPlaceholder": "Video unavailable"
+      "videoPlaceholder": "Video unavailable",
+      "loadError": "Could not load your Agent preference. Try again.",
+      "saveError": "Could not save your preference. Try again."
     }
   }
 }
