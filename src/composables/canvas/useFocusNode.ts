@@ -1,5 +1,6 @@
 import { nextTick } from 'vue'
 
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type {
@@ -32,6 +33,16 @@ async function navigateToGraph(targetGraph: LGraph) {
 export function useFocusNode() {
   const canvasStore = useCanvasStore()
 
+  async function focusNodeInstance(node: LGraphNode) {
+    const canvas = canvasStore.canvas
+    if (!canvas || !node.graph) return
+
+    await navigateToGraph(node.graph as LGraph)
+    canvas.animateToBounds(node.boundingRect, {
+      viewport: visibleCanvasViewport(canvas)
+    })
+  }
+
   /* Locate and focus a node on the canvas by its execution ID. */
   async function focusNode(
     nodeId: string,
@@ -44,8 +55,7 @@ export function useFocusNode() {
       : getNodeByExecutionId(app.rootGraph, nodeId)
     if (!graphNode?.graph) return
 
-    await navigateToGraph(graphNode.graph as LGraph)
-    canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
+    await focusNodeInstance(graphNode)
   }
 
   return {
