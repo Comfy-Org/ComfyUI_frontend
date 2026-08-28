@@ -884,6 +884,19 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockResubscribe).not.toHaveBeenCalled()
   })
 
+  it('keeps ended Team credits inactive when self-serve capabilities are unavailable', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    mockCanSubscribeSelfServe.value = false
+    renderComponent()
+
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-inactive-plan',
+      'true'
+    )
+  })
+
   it('does not show stale renewal copy for an explicitly ended active state', () => {
     mockSubscriptionStatus.value = 'ended'
     renderComponent()
