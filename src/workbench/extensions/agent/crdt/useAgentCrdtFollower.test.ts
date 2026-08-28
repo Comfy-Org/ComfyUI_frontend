@@ -8,7 +8,7 @@
  */
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
@@ -68,10 +68,20 @@ vi.mock('./docFrameClient', () => ({
   }
 }))
 
+const projectorState = vi.hoisted(() => ({
+  current: null as {
+    project: ReturnType<typeof vi.fn>
+    reset: ReturnType<typeof vi.fn>
+  } | null
+}))
+
 vi.mock('./semanticProjector', () => ({
   SemanticProjector: class {
     project = vi.fn()
     reset = vi.fn()
+    constructor() {
+      projectorState.current = this as never
+    }
   }
 }))
 
@@ -125,6 +135,7 @@ describe('useAgentCrdtFollower', () => {
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
+    projectorState.current = null
     clientState.destroy.mockClear()
     apiState.api.removeEventListener.mockClear()
   })
@@ -229,16 +240,52 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('resets and resubscribes on a socket reconnect', () => {
+  it('resubscribes on a socket reconnect without resetting the projector', () => {
     const { unmount, status } = mountFollower('wf-1')
+    projectorState.current?.reset.mockClear()
     dispatchFrame('doc_subscribed', { ok: true })
     expect(status().connected).toBe(true)
 
     apiState.target.dispatchEvent(new Event('reconnected'))
 
+    // Same-lineage recovery: the bridge's state-vector catch-up is
+    // incremental, so the projector's canvas-matching snapshot must survive.
+    // Resetting it rediffed EMPTY -> full against a materialized canvas and
+    // duplicated the graph.
     expect(status().connected).toBe(false)
     expect(bridge().resubscribe).toHaveBeenCalled()
+    expect(projectorState.current?.reset).not.toHaveBeenCalled()
     unmount()
+  })
+
+  it('retains the projector across a doc_reset refetch', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    projectorState.current?.reset.mockClear()
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9 })
+
+    // The bridge replaced its doc; the refetched state diffs against the
+    // projector's record of the still-populated canvas, so only the delta
+    // applies.
+    expect(status().connected).toBe(false)
+    expect(status().updatesApplied).toBe(0)
+    expect(projectorState.current?.reset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('resets the projector on a workflow switch, with the doc replaced by the bridge', () => {
+    const { unmount, workflowId } = mountFollower('wf-1')
+    projectorState.current?.reset.mockClear()
+
+    workflowId.value = 'wf-2'
+    return nextTick().then(() => {
+      // The canvas itself is being replaced here, so document and projection
+      // state restart together.
+      expect(projectorState.current?.reset).toHaveBeenCalled()
+      expect(bridge().subscribe).toHaveBeenCalledWith('wf-2')
+      unmount()
+    })
   })
 
   it('re-drives subscription intent on every status frame', () => {

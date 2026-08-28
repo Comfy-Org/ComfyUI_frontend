@@ -46,6 +46,17 @@ export type GraphMutation =
       readonly name: string
       readonly value: unknown
     }
+  | {
+      /**
+       * The doc stopped tracking this widget (the key exists in the previous
+       * snapshot only). Clean materialization would leave the widget at its
+       * node-type default, so incremental projection restores that default -
+       * an explicit operation, never an implicit skip.
+       */
+      readonly kind: 'clear_widget'
+      readonly id: NodeId
+      readonly name: string
+    }
   | { readonly kind: 'connect'; readonly link: LinkSpec }
   | {
       readonly kind: 'disconnect'

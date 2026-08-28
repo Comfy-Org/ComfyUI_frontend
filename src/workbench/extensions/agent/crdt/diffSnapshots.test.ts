@@ -78,6 +78,15 @@ function applyToModel(
           })
         break
       }
+      case 'clear_widget': {
+        const n = nodes.get(String(m.id))
+        if (n) {
+          const widgets = { ...n.widgets }
+          delete widgets[m.name]
+          nodes.set(String(m.id), { ...n, widgets })
+        }
+        break
+      }
       case 'connect':
         links.set(m.link.id, m.link)
         break
@@ -155,6 +164,51 @@ describe('diffSnapshots (unit)', () => {
     ])
   })
 
+  it('replaces a retyped node id with ordered remove + add and re-attaches its links', () => {
+    const before = snapshot(
+      [
+        { id: '1', type: 'A', pos: [0, 0], widgets: {} },
+        { id: '2', type: 'B', pos: [0, 0], widgets: { seed: 1 } }
+      ],
+      [{ id: 'l1', originId: '1', originSlot: 0, targetId: '2', targetSlot: 0 }]
+    )
+    const after = snapshot(
+      [
+        { id: '1', type: 'A', pos: [0, 0], widgets: {} },
+        { id: '2', type: 'C', pos: [0, 0], widgets: { seed: 1 } }
+      ],
+      [{ id: 'l1', originId: '1', originSlot: 0, targetId: '2', targetSlot: 0 }]
+    )
+    const muts = diffSnapshots(before, after)
+    const kinds = muts.map((m) => m.kind)
+
+    // The old LiteGraph class cannot be reconciled in place: the replacement
+    // is ordered disconnect -> remove -> add -> connect so the link endpoints
+    // exist whenever they are touched.
+    expect(kinds).toEqual(['disconnect', 'remove_node', 'add_node', 'connect'])
+    expect(muts[2]).toEqual({
+      kind: 'add_node',
+      node: {
+        id: toNodeId('2'),
+        type: 'C',
+        pos: [0, 0],
+        widgets: { seed: 1 }
+      }
+    })
+  })
+
+  it('emits an explicit clear for a previous-only widget key', () => {
+    const before = snapshot([
+      { id: '1', type: 'A', pos: [0, 0], widgets: { seed: 1, steps: 20 } }
+    ])
+    const after = snapshot([
+      { id: '1', type: 'A', pos: [0, 0], widgets: { seed: 1 } }
+    ])
+    expect(diffSnapshots(before, after)).toEqual([
+      { kind: 'clear_widget', id: toNodeId('1'), name: 'steps' }
+    ])
+  })
+
   it('re-emits a connect when a link is rewired to a new slot', () => {
     const before = snapshot(
       [
@@ -188,18 +242,23 @@ describe('diffSnapshots (unit)', () => {
 
 // ---- property tests: the follower's convergence guarantee ------------------
 
-// Real ComfyUI invariants the generator must respect, otherwise it exercises
-// impossible states the diff intentionally does not model:
-//   - a node id keeps a FIXED type for its lifetime (no id reuse with a new
-//     type; a replacement is a delete + add of a new id), and
-//   - a node type has a FIXED widget-name set; only widget VALUES change.
-// So type and widget keys are pinned per id; only pos and widget values vary.
-const NODE_SCHEMA: Record<string, { type: string; widgetKeys: string[] }> = {
-  '1': { type: 'LoadImage', widgetKeys: [] },
-  '2': { type: 'LoadVideo', widgetKeys: ['fps'] },
-  '3': { type: 'KSampler', widgetKeys: ['seed', 'steps'] },
-  '4': { type: 'SaveImage', widgetKeys: ['filename'] },
-  '5': { type: 'VAEDecode', widgetKeys: ['tile'] }
+// The generator models what two VALID successive snapshots can disagree on.
+// Two of the diff's original assumptions were review findings and are now
+// exercised on purpose:
+//   - the same node id CAN carry a different type between snapshots (the doc
+//     is authoritative; the diff replaces the node with ordered remove+add);
+//   - a widget key tracked in the previous snapshot CAN be absent from the
+//     next one (the diff emits an explicit clear, so incremental projection
+//     matches clean materialization).
+const NODE_SCHEMA: Record<string, { types: string[]; widgetKeys: string[] }> = {
+  '1': { types: ['LoadImage'], widgetKeys: [] },
+  '2': { types: ['LoadVideo', 'LoadVideoV2'], widgetKeys: ['fps'] },
+  '3': {
+    types: ['KSampler', 'KSamplerAdvanced'],
+    widgetKeys: ['seed', 'steps']
+  },
+  '4': { types: ['SaveImage'], widgetKeys: ['filename'] },
+  '5': { types: ['VAEDecode', 'VAEDecodeTiled'], widgetKeys: ['tile'] }
 }
 
 const arbNode = (id: string): fc.Arbitrary<NodeDesc> => {
@@ -207,18 +266,20 @@ const arbNode = (id: string): fc.Arbitrary<NodeDesc> => {
   const widgetArb =
     schema.widgetKeys.length === 0
       ? fc.constant<Record<string, unknown>>({})
-      : (fc
-          .tuple(
-            ...schema.widgetKeys.map(() => fc.oneof(fc.integer(), fc.string()))
+      : fc
+          .subarray(schema.widgetKeys)
+          .chain((keys) =>
+            keys.length === 0
+              ? fc.constant<Record<string, unknown>>({})
+              : (fc
+                  .tuple(...keys.map(() => fc.oneof(fc.integer(), fc.string())))
+                  .map((values) =>
+                    Object.fromEntries(keys.map((key, i) => [key, values[i]]))
+                  ) as fc.Arbitrary<Record<string, unknown>>)
           )
-          .map((values) =>
-            Object.fromEntries(
-              schema.widgetKeys.map((key, i) => [key, values[i]])
-            )
-          ) as fc.Arbitrary<Record<string, unknown>>)
   return fc.record({
     id: fc.constant(id),
-    type: fc.constant(schema.type),
+    type: fc.constantFrom(...schema.types),
     pos: fc.tuple(
       fc.integer({ min: -500, max: 500 }),
       fc.integer({ min: -500, max: 500 })

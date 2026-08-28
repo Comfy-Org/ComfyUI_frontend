@@ -302,14 +302,19 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
   const onDocReset: EventListener = (event) => {
     // Lineage break: the bridge already dropped its doc and resubscribed with
-    // an empty state vector. Forget the projected snapshot so the fresh folded
-    // state re-materializes from zero instead of diffing against a canvas
-    // seeded by the dead lineage.
+    // an empty state vector. The PROJECTOR is retained: its snapshot records
+    // what is on the canvas, so diffing it against the refetched state applies
+    // exactly the delta. Resetting it here would rediff EMPTY -> full against
+    // a still-populated canvas and duplicate every node; projector reset is
+    // reserved for the workflow-change watch, where the canvas itself is
+    // replaced.
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
-    projector.reset()
+    // The projector is retained (its snapshot records the canvas; the
+    // refetch diffs incrementally) - only the dev panel's known-id set
+    // rebuilds, because the lineage broke.
     knownDocNodeIds = new Set()
     recordDevEvent(
       'doc_reset',
@@ -329,11 +334,20 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     )
   }
   const onReconnected: EventListener = () => {
+    // Same-lineage recovery: the bridge keeps its doc and catches up via its
+    // state vector, so the projector's canvas-matching snapshot stays valid
+    // and the catch-up projects incrementally. Resetting it here rediffed
+    // EMPTY -> full against the already-materialized canvas and let LiteGraph
+    // reassign IDs for duplicate adds.
     connected.value = false
     clearStaleProbe()
-    projector.reset()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
+  }
+  const onFrameError: EventListener = (event) => {
+    // The bridge already requested the same-lineage replay; this surfaces the
+    // failure as its own status instead of a silent stall.
+    lastFrameType.value = event.type
   }
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
@@ -357,6 +371,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   bridge.addEventListener('doc_ops_result', onOpsResult)
   bridge.addEventListener('doc_reset', onDocReset)
   bridge.addEventListener('schema_error', onSchemaError)
+  bridge.addEventListener('frame_error', onFrameError)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
 
@@ -412,6 +427,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       bridge.removeEventListener('doc_ops_result', onOpsResult)
       bridge.removeEventListener('doc_reset', onDocReset)
       bridge.removeEventListener('schema_error', onSchemaError)
+      bridge.removeEventListener('frame_error', onFrameError)
       bridge.destroy()
     } finally {
       client.destroy()
