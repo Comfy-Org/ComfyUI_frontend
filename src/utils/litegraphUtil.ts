@@ -138,7 +138,10 @@ export function addToComboValues(widget: IComboWidget, value: string) {
  * (the `selectOnly` interaction mode).
  *
  * Guard every editing operation with this. A new way to edit the canvas has
- * to opt in: add the guard, or the operation will run during picking.
+ * to opt in: add the guard, or the operation will run during picking. Pointer
+ * gestures are gated by a second layer inside the library itself
+ * (LGraphCanvas's own `selectOnly` checks in its pointer paths) - both layers
+ * exist on purpose; command/composable call sites use this helper.
  *
  * Deliberately unguarded: workflow-lifecycle commands (new/open/load-default)
  * SWAP the workflow rather than edit the picked canvas - switching workflows

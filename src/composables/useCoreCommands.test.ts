@@ -175,6 +175,21 @@ vi.mock('@/composables/node/startModelNodeDragFromAsset', () => ({
   startModelNodeDragFromAsset: mockStartModelNodeDrag
 }))
 
+const mockTryToggleWidgetPromotion = vi.hoisted(() => vi.fn())
+vi.mock('@/core/graph/subgraph/promotionUtils', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  tryToggleWidgetPromotion: mockTryToggleWidgetPromotion
+}))
+
+const mockUnpackSubgraph = vi.hoisted(() => vi.fn())
+vi.mock(
+  '@/composables/graph/useSubgraphOperations',
+  async (importOriginal) => ({
+    ...(await importOriginal<Record<string, unknown>>()),
+    useSubgraphOperations: () => ({ unpackSubgraph: mockUnpackSubgraph })
+  })
+)
+
 const mockChangeTracker = vi.hoisted(() => ({
   captureCanvasState: vi.fn()
 }))
@@ -437,6 +452,7 @@ describe('useCoreCommands', () => {
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
       app.canvas.selectOnly = false
+      ;(app.canvas as unknown as { graph?: unknown }).graph = undefined
     })
 
     it('should copy selected items when selection exists', async () => {
@@ -567,6 +583,73 @@ describe('useCoreCommands', () => {
       }
     )
 
+    it('does not group selected nodes in selection-only mode', async () => {
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Graph.GroupSelectedNodes').function()
+
+      // The guard returns before the body; even the empty-selection toast
+      // (the body's first observable) never fires.
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('runs the group command body outside selection-only mode', async () => {
+      await findCommand('Comfy.Graph.GroupSelectedNodes').function()
+
+      expect(mockToastAdd).toHaveBeenCalled()
+    })
+
+    it('does not convert to subgraph in selection-only mode', async () => {
+      const convertToSubgraph = vi.fn(() => null)
+      ;(app.canvas as unknown as { graph: unknown }).graph = {
+        convertToSubgraph
+      }
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Graph.ConvertToSubgraph').function()
+
+      expect(convertToSubgraph).not.toHaveBeenCalled()
+    })
+
+    it('converts to subgraph outside selection-only mode', async () => {
+      const convertToSubgraph = vi.fn(() => null)
+      ;(app.canvas as unknown as { graph: unknown }).graph = {
+        convertToSubgraph
+      }
+
+      await findCommand('Comfy.Graph.ConvertToSubgraph').function()
+
+      expect(convertToSubgraph).toHaveBeenCalledOnce()
+    })
+
+    it('does not unpack a subgraph in selection-only mode', async () => {
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Graph.UnpackSubgraph').function()
+
+      expect(mockUnpackSubgraph).not.toHaveBeenCalled()
+    })
+
+    it('unpacks a subgraph outside selection-only mode', async () => {
+      await findCommand('Comfy.Graph.UnpackSubgraph').function()
+
+      expect(mockUnpackSubgraph).toHaveBeenCalledOnce()
+    })
+
+    it('does not toggle widget promotion in selection-only mode', async () => {
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Graph.ToggleWidgetPromotion').function()
+
+      expect(mockTryToggleWidgetPromotion).not.toHaveBeenCalled()
+    })
+
+    it('toggles widget promotion outside selection-only mode', async () => {
+      await findCommand('Comfy.Graph.ToggleWidgetPromotion').function()
+
+      expect(mockTryToggleWidgetPromotion).toHaveBeenCalledOnce()
+    })
+
     it('does not fit groups to contents in selection-only mode', async () => {
       const group = new LGraphGroup('Group')
       app.canvas.selectedItems = new Set([
@@ -631,7 +714,26 @@ describe('useCoreCommands', () => {
   describe('Subgraph metadata commands', () => {
     beforeEach(() => {
       mockSubgraph.extra = {}
+      app.canvas.selectOnly = false
     })
+
+    it.for([
+      'Comfy.Subgraph.SetDescription',
+      'Comfy.Subgraph.SetSearchAliases'
+    ])(
+      'does not edit subgraph metadata via %s in selection-only mode',
+      async (commandId) => {
+        app.canvas.subgraph = mockSubgraph
+        app.canvas.selectOnly = true
+        const command = useCoreCommands().find((cmd) => cmd.id === commandId)!
+
+        await command.function()
+
+        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+        expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
+        expect(mockSubgraph.extra).toEqual({})
+      }
+    )
 
     describe('SetDescription command', () => {
       it('should do nothing when not in subgraph', async () => {

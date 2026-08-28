@@ -9,9 +9,14 @@ const canvas = vi.hoisted(() => ({
   setGraph: vi.fn(),
   animateToBounds: vi.fn()
 }))
+const canvasHolder = vi.hoisted(() => ({ current: null as unknown }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ canvas })
+  useCanvasStore: () => ({
+    get canvas() {
+      return canvasHolder.current
+    }
+  })
 }))
 vi.mock('@/composables/canvas/visibleCanvasViewport', () => ({
   visibleCanvasViewport: () => viewport
@@ -22,6 +27,7 @@ import { useFocusNode } from './useFocusNode'
 
 describe('useFocusNode', () => {
   beforeEach(() => {
+    canvasHolder.current = canvas
     canvas.graph = undefined
     canvas.subgraph = undefined
     canvas.setGraph.mockReset()
@@ -85,6 +91,25 @@ describe('useFocusNode', () => {
     await useFocusNode().focusNode('missing', new Map())
 
     expect(canvas.setGraph).not.toHaveBeenCalled()
+    expect(canvas.animateToBounds).not.toHaveBeenCalled()
+  })
+
+  it('does not frame when the canvas disappears across the graph switch', async () => {
+    const graph = { isRootGraph: false } as LGraph
+    const node = {
+      graph,
+      boundingRect: [1, 2, 3, 4]
+    } as unknown as LGraphNode
+
+    const pending = useFocusNode().focusNode(
+      'node-1',
+      new Map([['node-1', node]])
+    )
+    // The workflow was torn down while the switch was in flight: the
+    // post-await re-read must see the gone canvas and frame nothing.
+    canvasHolder.current = null
+    await pending
+
     expect(canvas.animateToBounds).not.toHaveBeenCalled()
   })
 })
