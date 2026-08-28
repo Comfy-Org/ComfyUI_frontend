@@ -21,6 +21,16 @@ const EXPECTED_WIDGET_ORDER = [
   'pre_attach_second'
 ]
 
+// Vue renders from the widget value store, not from node.widgets, and a legacy
+// row carries no name in the DOM. The fixture gives each widget its creation
+// index as its value, which the row surfaces as `model-value`, so that is what
+// the rendered order is read back through.
+const CREATION_INDEX: Record<string, string> = {
+  pre_attach_first: '0',
+  pre_attach_second: '1',
+  pre_attach_third: '2'
+}
+
 // Nodes 2.0 through settings rather than the @vue-nodes tag: that tag makes
 // the fixture wait for a rendered node at startup, which this suite's blank
 // startup graph never has.
@@ -99,10 +109,26 @@ test.describe('legacy widget registration', { tag: '@custom-nodes' }, () => {
 
     const node = comfyPage.vueNodes.getNodeLocator(created!.id)
     await expect(node).toBeVisible()
+    const rows = node.getByTestId(TestIds.widgets.widget)
     await expect(
-      node.getByTestId(TestIds.widgets.widget),
+      rows,
       'Nodes 2.0 mounted the node with no widget rows'
     ).toHaveCount(EXPECTED_WIDGET_ORDER.length)
+
+    const renderedValues = await rows.evaluateAll((elements) =>
+      elements.map((element) =>
+        element.querySelector('[model-value]')?.getAttribute('model-value')
+      )
+    )
+    expect(
+      renderedValues.every((value) => value != null),
+      'a rendered row carries no model-value - this spec can no longer observe render order'
+    ).toBe(true)
+    expect(
+      renderedValues,
+      'Nodes 2.0 rendered the widget rows in the wrong order'
+    ).toEqual(EXPECTED_WIDGET_ORDER.map((name) => CREATION_INDEX[name]))
+
     await expectNoVisibleErrors(comfyPage.page, 'after mounting legacy widgets')
   })
 })
