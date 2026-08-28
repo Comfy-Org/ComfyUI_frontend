@@ -24,11 +24,14 @@ const hoisted = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/components/queue/job/JobDetailsPopover.vue', () => ({
-  default: hoisted.jobDetailsPopoverStub
-}))
+vi.mock<unknown>(
+  import('@/components/queue/job/JobDetailsPopover.vue'),
+  () => ({
+    default: hoisted.jobDetailsPopoverStub
+  })
+)
 
-vi.mock('reka-ui', async (importOriginal) => {
+vi.mock<unknown>(import('reka-ui'), async (importOriginal) => {
   const actual = await importOriginal<typeof RekaUi>()
   const { computed, defineComponent, h, inject, provide } = await import('vue')
   const popoverOpenKey = Symbol('popoverOpen')
@@ -135,7 +138,7 @@ const AssetsListItemStub = defineComponent({
   `
 })
 
-vi.mock('vue-i18n', () => {
+vi.mock<unknown>(import('vue-i18n'), () => {
   return {
     createI18n: () => ({
       global: {

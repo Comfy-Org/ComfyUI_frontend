@@ -32,20 +32,20 @@ const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
 const selectedItems: unknown[] = []
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     canvas: { setDirty, graph: { getNodeById }, animateToBounds },
     selectedItems
   })
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({
     getInputSpecForWidget: mockGetInputSpecForWidget
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackUiButtonClicked: mockTrackUiButtonClicked
   })

@@ -5,7 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
 
-vi.mock('vue-i18n', async (importOriginal) => {
+vi.mock<unknown>(import('vue-i18n'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),
@@ -15,7 +15,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
   }
 })
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: vi.fn() })
 }))
 

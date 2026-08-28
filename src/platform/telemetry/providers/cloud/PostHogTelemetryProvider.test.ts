@@ -61,30 +61,33 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     onUserResolved: hoisted.mockOnUserResolved,
     onUserLogout: hoisted.mockOnUserLogout
   })
 }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
   const { ref } = await vi.importActual<typeof VueModule>('vue')
   hoisted.refs.remoteConfig = ref<Record<string, unknown> | null>(null)
   return { remoteConfig: hoisted.refs.remoteConfig }
 })
 
-vi.mock('posthog-js', () => hoisted.mockPosthog)
+vi.mock<unknown>(import('posthog-js'), () => hoisted.mockPosthog)
 
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
+vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => hoisted.executionContext
 }))
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
-  hoisted.refs.tier = ref<string | null>(null)
-  return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
-})
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { ref } = await vi.importActual<typeof VueModule>('vue')
+    hoisted.refs.tier = ref<string | null>(null)
+    return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
+  }
+)
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 

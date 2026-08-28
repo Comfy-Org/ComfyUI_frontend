@@ -26,20 +26,20 @@ const state = vi.hoisted(() => ({
   activeSidebarTab: null as { id: string } | null
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isDesktop: false,
   isNightly: false
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({
     getSidebarTabs: () => state.sidebarTabs,
     sidebarTab: { activeSidebarTab: state.activeSidebarTab }
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) => {
       if (key === 'Comfy.Sidebar.Size') return 'large'
@@ -49,11 +49,11 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('@/stores/userStore', () => ({
+vi.mock<unknown>(import('@/stores/userStore'), () => ({
   useUserStore: () => ({ isMultiUserServer: state.isMultiUserServer })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     commands: [
       { id: 'Workspace.ToggleSidebarTab.assets', function: spies.toggleAssets }
@@ -61,15 +61,15 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({ canvas: null })
 }))
 
-vi.mock('@/platform/keybindings/keybindingStore', () => ({
+vi.mock<unknown>(import('@/platform/keybindings/keybindingStore'), () => ({
   useKeybindingStore: () => ({ getKeybindingByCommandId: () => undefined })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackUiButtonClicked: spies.trackUiButtonClicked })
 }))
 

@@ -11,7 +11,7 @@ import { toNodeId } from '@/types/nodeId'
 
 const { appState } = vi.hoisted(() => ({ appState: { node: null as unknown } }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: { graph: { getNodeById: () => appState.node } } }
 }))
 

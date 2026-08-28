@@ -37,15 +37,18 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-vi.mock('@/renderer/extensions/minimap/composables/useMinimap', () => ({
-  useMinimap: () => ({
-    containerStyles: {
-      value: { backgroundColor: '#fff', borderRadius: '8px' }
-    }
+vi.mock<unknown>(
+  import('@/renderer/extensions/minimap/composables/useMinimap'),
+  () => ({
+    useMinimap: () => ({
+      containerStyles: {
+        value: { backgroundColor: '#fff', borderRadius: '8px' }
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     execute: mockExecute,
     getCommand: mockGetCommand,
@@ -53,14 +56,14 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     appScalePercentage: 100,
     setAppZoomFromPercentage: mockSetAppZoom
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: mockSettingGet
   })

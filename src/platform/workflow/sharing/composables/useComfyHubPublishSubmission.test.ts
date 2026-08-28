@@ -11,8 +11,8 @@ const mockProfile = vi.hoisted(
   () => ({ value: null }) as { value: ComfyHubProfile | null }
 )
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubProfileGate'),
   () => ({
     useComfyHubProfileGate: () => ({
       profile: mockProfile
@@ -20,19 +20,25 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  useWorkflowShareService: () => ({
-    getShareableAssets: mockGetShareableAssets
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    useWorkflowShareService: () => ({
+      getShareableAssets: mockGetShareableAssets
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workflow/sharing/services/comfyHubService', () => ({
-  useComfyHubService: () => ({
-    requestAssetUploadUrl: mockRequestAssetUploadUrl,
-    uploadFileToPresignedUrl: mockUploadFileToPresignedUrl,
-    publishWorkflow: mockPublishWorkflow
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/comfyHubService'),
+  () => ({
+    useComfyHubService: () => ({
+      requestAssetUploadUrl: mockRequestAssetUploadUrl,
+      uploadFileToPresignedUrl: mockUploadFileToPresignedUrl,
+      publishWorkflow: mockPublishWorkflow
+    })
   })
-}))
+)
 
 const mockWorkflowStore = vi.hoisted(() => ({
   activeWorkflow: {
@@ -40,9 +46,12 @@ const mockWorkflowStore = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => mockWorkflowStore
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => mockWorkflowStore
+  })
+)
 
 const { useComfyHubPublishSubmission } =
   await import('./useComfyHubPublishSubmission')

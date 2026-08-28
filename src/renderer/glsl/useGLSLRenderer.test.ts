@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 
-vi.mock('vue', async () => {
+vi.mock(import('vue'), async () => {
   const actual = await vi.importActual('vue')
   return {
     ...actual,
@@ -10,7 +10,7 @@ vi.mock('vue', async () => {
   }
 })
 
-vi.mock('@/renderer/glsl/glslUtils', () => ({
+vi.mock(import('@/renderer/glsl/glslUtils'), () => ({
   detectPassCount: vi.fn().mockReturnValue(1)
 }))
 

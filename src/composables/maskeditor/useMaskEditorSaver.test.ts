@@ -16,7 +16,7 @@ const mockDataStore: Record<string, unknown> = {
   outputData: null
 }
 
-vi.mock('@/stores/maskEditorDataStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorDataStore'), () => ({
   useMaskEditorDataStore: vi.fn(() => mockDataStore)
 }))
 
@@ -79,18 +79,18 @@ const mockEditorStore: Record<string, HTMLCanvasElement | null> = {
   imgCanvas: null
 }
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: vi.fn(() => mockEditorStore)
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     apiURL: vi.fn((route: string) => `http://localhost:8188${route}`)
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: { setDirty: vi.fn() },
     nodeOutputs: {} as Record<string, unknown>,
@@ -100,16 +100,19 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
-    nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => ({
+      nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
+      nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
+    }))
+  })
+)
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 

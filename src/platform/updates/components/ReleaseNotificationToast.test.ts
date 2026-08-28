@@ -19,7 +19,7 @@ const { toastErrorHandlerMock } = vi.hoisted(() => ({
   toastErrorHandlerMock: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false,
   get isDesktop() {
@@ -28,7 +28,7 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 // Mock dependencies
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: vi.fn(() => ({
     locale: { value: 'en' },
     t: vi.fn((key: string) => {
@@ -50,27 +50,27 @@ vi.mock('vue-i18n', () => ({
   }))
 }))
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
 }))
 
-vi.mock('@/utils/markdownRendererUtil', () => ({
+vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: vi.fn(() => ({
     toastErrorHandler: toastErrorHandlerMock
   }))
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: vi.fn(() => ({
     execute: commandExecuteMock
   }))
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: vi.fn(() => ({
     buildDocsUrl: vi.fn((path: string) => `https://docs.comfy.org${path}`),
     staticUrls: {},
@@ -88,7 +88,7 @@ const mockReleaseStore = {
   fetchReleases: vi.fn()
 }
 
-vi.mock('../common/releaseStore', () => ({
+vi.mock<unknown>(import('../common/releaseStore'), () => ({
   useReleaseStore: vi.fn(() => mockReleaseStore)
 }))
 

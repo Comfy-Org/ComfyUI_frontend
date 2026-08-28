@@ -27,18 +27,21 @@ const initialMock = () => ({
 
 let mockStore: ReturnType<typeof initialMock>
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 
-vi.mock('@/components/maskeditor/controls/SliderControl.vue', () => ({
-  default: {
-    name: 'SliderControlStub',
-    props: ['label', 'min', 'max', 'step', 'modelValue'],
-    emits: ['update:modelValue'],
-    template: `<button data-slider="true" @click="$emit('update:modelValue', 0.5)">{{ modelValue }}</button>`
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/controls/SliderControl.vue'),
+  () => ({
+    default: {
+      name: 'SliderControlStub',
+      props: ['label', 'min', 'max', 'step', 'modelValue'],
+      emits: ['update:modelValue'],
+      template: `<button data-slider="true" @click="$emit('update:modelValue', 0.5)">{{ modelValue }}</button>`
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

@@ -15,7 +15,7 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
 
 // Mock the api module
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getHistory: vi.fn(),
     internalURL: vi.fn((path) => `http://localhost:3000${path}`),
@@ -27,7 +27,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the asset service
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetsByTag: vi.fn(),
     getAssetsPageByTag: vi.fn(),
@@ -45,14 +45,14 @@ vi.mock('@/platform/assets/services/assetService', () => ({
 
 // Mock distribution type - hoisted so it can be changed per test
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
 // Mock modelToNodeStore with proper node providers and category lookups
-vi.mock('@/stores/modelToNodeStore', () => ({
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
   useModelToNodeStore: () => ({
     getAllNodeProviders: vi.fn((category: string) => {
       const providers: Record<
@@ -102,7 +102,7 @@ const mockOutputOverrides = vi.hoisted(() => ({
 // Mock TaskItemImpl
 const PREVIEWABLE_MEDIA_TYPES = new Set(['images', 'video', 'audio'])
 
-vi.mock('@/stores/queueStore', () => ({
+vi.mock<unknown>(import('@/stores/queueStore'), () => ({
   TaskItemImpl: class {
     public flatOutputs: Array<{
       supportsPreview: boolean
@@ -163,28 +163,31 @@ vi.mock('@/stores/queueStore', () => ({
 }))
 
 // Mock asset mappers - add unique timestamps
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapInputFileToAssetItem: vi.fn((name, index, type) => ({
-    id: `${type}-${index}`,
-    name,
-    size: 0,
-    created_at: new Date(Date.now() - index * 1000).toISOString(),
-    tags: [type],
-    preview_url: `http://test.com/${name}`
-  })),
-  mapTaskOutputToAssetItem: vi.fn((task, output) => {
-    const index = parseInt(task.jobId.split('_')[1]) || 0
-    return {
-      id: task.jobId,
-      name: output.filename,
+vi.mock<unknown>(
+  import('@/platform/assets/composables/media/assetMappers'),
+  () => ({
+    mapInputFileToAssetItem: vi.fn((name, index, type) => ({
+      id: `${type}-${index}`,
+      name,
       size: 0,
       created_at: new Date(Date.now() - index * 1000).toISOString(),
-      tags: ['output'],
-      preview_url: output.url,
-      user_metadata: {}
-    }
+      tags: [type],
+      preview_url: `http://test.com/${name}`
+    })),
+    mapTaskOutputToAssetItem: vi.fn((task, output) => {
+      const index = parseInt(task.jobId.split('_')[1]) || 0
+      return {
+        id: task.jobId,
+        name: output.filename,
+        size: 0,
+        created_at: new Date(Date.now() - index * 1000).toISOString(),
+        tags: ['output'],
+        preview_url: output.url,
+        user_metadata: {}
+      }
+    })
   })
-}))
+)
 
 describe('assetsStore - Refactored (Option A)', () => {
   let store: ReturnType<typeof useAssetsStore>

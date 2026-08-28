@@ -7,13 +7,16 @@ const mocks = vi.hoisted(() => ({
   selectedItems: [] as unknown[]
 }))
 
-vi.mock('@/composables/canvas/useSelectedLiteGraphItems', () => ({
-  useSelectedLiteGraphItems: () => ({
-    getSelectedNodes: vi.fn(() => [])
+vi.mock<unknown>(
+  import('@/composables/canvas/useSelectedLiteGraphItems'),
+  () => ({
+    useSelectedLiteGraphItems: () => ({
+      getSelectedNodes: vi.fn(() => [])
+    })
   })
-}))
+)
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     getCanvas: vi.fn(),
     get selectedItems() {
@@ -23,19 +26,22 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: null
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      activeWorkflow: null
+    })
   })
-}))
+)
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({
     revokeSubgraphPreviews: vi.fn()
   })
 }))
 
-vi.mock('@/stores/subgraphStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphStore'), () => ({
   useSubgraphStore: () => ({
     publishSubgraph: mocks.publishSubgraph
   })

@@ -23,7 +23,7 @@ const {
   }
 })
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     isActiveSubscription: mockIsActiveSubscription,
     isInitialized: mockIsInitialized,

@@ -16,8 +16,8 @@ const mockOpenManager = vi.fn()
 const mockMissingNodePacks = ref<Array<{ id: string; name: string }>>([])
 const mockIsLoading = ref(false)
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useMissingNodes',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/useMissingNodes'),
   () => ({
     useMissingNodes: () => ({
       missingNodePacks: mockMissingNodePacks,
@@ -26,8 +26,8 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/usePackInstall',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/usePackInstall'),
   () => ({
     usePackInstall: () => ({
       isInstalling: mockIsInstalling,
@@ -36,22 +36,31 @@ vi.mock(
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    isPackInstalled: mockIsPackInstalled
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: () => ({
+      isPackInstalled: mockIsPackInstalled
+    })
   })
-}))
+)
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: () => ({
-    shouldShowManagerButtons: mockShouldShowManagerButtons,
-    openManager: mockOpenManager
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
+  () => ({
+    useManagerState: () => ({
+      shouldShowManagerButtons: mockShouldShowManagerButtons,
+      openManager: mockOpenManager
+    })
   })
-}))
+)
 
-vi.mock('@/workbench/extensions/manager/types/comfyManagerTypes', () => ({
-  ManagerTab: { Missing: 'missing', All: 'all' }
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/types/comfyManagerTypes'),
+  () => ({
+    ManagerTab: { Missing: 'missing', All: 'all' }
+  })
+)
 
 import MissingPackGroupRow from './MissingPackGroupRow.vue'
 

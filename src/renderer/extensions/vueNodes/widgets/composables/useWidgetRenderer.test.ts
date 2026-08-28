@@ -20,14 +20,14 @@ const {
   WidgetToggleSwitch
 } = FOR_TESTING
 
-vi.mock('@/stores/queueStore', () => ({
+vi.mock<unknown>(import('@/stores/queueStore'), () => ({
   useQueueStore: vi.fn(() => ({
     historyTasks: []
   }))
 }))
 
 // Mock the settings store for components that might use it
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: vi.fn(() => 'before')
   })

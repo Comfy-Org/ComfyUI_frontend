@@ -15,7 +15,7 @@ const {
   mockIsAssetPreviewSupported: vi.fn(() => true)
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
+vi.mock(import('@vueuse/core'), async (importOriginal) => {
   const actual = await importOriginal<typeof VueUseCore>()
   return {
     ...actual,
@@ -23,7 +23,7 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   }
 })
 
-vi.mock('../utils/assetPreviewUtil', () => ({
+vi.mock(import('../utils/assetPreviewUtil'), () => ({
   findServerPreviewUrl: mockFindServerPreviewUrl,
   isAssetPreviewSupported: mockIsAssetPreviewSupported
 }))

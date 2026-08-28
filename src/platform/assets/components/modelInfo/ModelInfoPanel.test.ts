@@ -8,21 +8,24 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 
 import ModelInfoPanel from './ModelInfoPanel.vue'
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
     copyToClipboard: vi.fn()
   })
 }))
 
 const mockDistribution = vi.hoisted(() => ({ isCloud: false }))
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  get isCloud() {
-    return mockDistribution.isCloud
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    get isCloud() {
+      return mockDistribution.isCloud
+    }
+  })
+)
 
-vi.mock('@/platform/assets/composables/useModelTypes', async () => {
+vi.mock(import('@/platform/assets/composables/useModelTypes'), async () => {
   const { ref } = await import('vue')
   return {
     useModelTypes: () => ({

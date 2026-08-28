@@ -24,15 +24,17 @@ const mockApp = vi.hoisted(() => ({
   rootGraph: null as LGraph | null
 }))
 
-vi.mock('@/scripts/app', () => ({ app: mockApp }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
-vi.mock('@/composables/graph/useGraphHierarchy', () => ({
+vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({
   useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
 }))
 
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => undefined
+}))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) => {
       if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true

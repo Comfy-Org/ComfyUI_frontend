@@ -15,15 +15,15 @@ const {
   mockUserId: { value: 'user-1' as string | null }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://app.test'
 }))
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: { subscribe: mockSubscribe },
   WorkspaceApiError: class WorkspaceApiError extends Error {
     constructor(
@@ -36,13 +36,13 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
     }
   }
 }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBeginCheckout: mockTrackBeginCheckout,
     trackBillingEvent: mockTrackBillingEvent
   })
 }))
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
   AuthStoreError: class AuthStoreError extends Error {
     constructor(message: string) {

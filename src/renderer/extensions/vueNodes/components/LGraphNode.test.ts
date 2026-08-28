@@ -31,29 +31,35 @@ const mockData = vi.hoisted(() => ({
   mockLgraphNode: null as Record<string, unknown> | null
 }))
 
-vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    getNodeByLocatorId: vi.fn(
-      () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
-    )
+vi.mock<unknown>(
+  import('@/utils/graphTraversalUtil'),
+  async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>
+    return {
+      ...actual,
+      getNodeByLocatorId: vi.fn(
+        () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+      )
+    }
   }
-})
+)
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
-  return {
-    useTransformState: () => ({
-      screenToCanvas: vi.fn(),
-      canvasToScreen: vi.fn(),
-      camera: { z: 1 },
-      isNodeInViewport: vi.fn()
-    })
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => {
+    return {
+      useTransformState: () => ({
+        screenToCanvas: vi.fn(),
+        canvasToScreen: vi.fn(),
+        camera: { z: 1 },
+        isNodeInViewport: vi.fn()
+      })
+    }
   }
-})
+)
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
   () => {
     const handleNodeSelect = vi.fn()
     return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
@@ -61,39 +67,42 @@ vi.mock(
 )
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
+  import('@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'),
   () => ({
     useVueElementTracking: vi.fn()
   })
 )
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
     canvas: { setDirty: vi.fn() }
   }
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     toastErrorHandler: vi.fn()
   })
 }))
 
-vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
-  useNodeLayout: () => ({
-    position: { x: 100, y: 50 },
-    size: computed(() => ({ width: 200, height: 100 })),
-    zIndex: 0,
-    startDrag: vi.fn(),
-    handleDrag: vi.fn(),
-    endDrag: vi.fn(),
-    moveTo: vi.fn()
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/layout/useNodeLayout'),
+  () => ({
+    useNodeLayout: () => ({
+      position: { x: 100, y: 50 },
+      size: computed(() => ({ width: 200, height: 100 })),
+      zIndex: 0,
+      startDrag: vi.fn(),
+      handleDrag: vi.fn(),
+      endDrag: vi.fn(),
+      moveTo: vi.fn()
+    })
   })
-}))
+)
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/execution/useNodeExecutionState',
+  import('@/renderer/extensions/vueNodes/execution/useNodeExecutionState'),
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
@@ -105,15 +114,18 @@ vi.mock(
   })
 )
 
-vi.mock('@/renderer/extensions/vueNodes/preview/useNodePreviewState', () => ({
-  useNodePreviewState: vi.fn(() => ({
-    latestPreviewUrl: computed(() => ''),
-    shouldShowPreviewImg: computed(() => false)
-  }))
-}))
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/preview/useNodePreviewState'),
+  () => ({
+    useNodePreviewState: vi.fn(() => ({
+      latestPreviewUrl: computed(() => ''),
+      shouldShowPreviewImg: computed(() => false)
+    }))
+  })
+)
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize',
+  import('@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'),
   () => ({
     useNodeResize: vi.fn(() => ({
       startResize: vi.fn(),

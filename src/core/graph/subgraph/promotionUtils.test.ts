@@ -46,7 +46,7 @@ function promotedWidgetRef(host: SubgraphNode, name: string): IBaseWidget {
 }
 
 const updatePreviewsMock = vi.hoisted(() => vi.fn())
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: updatePreviewsMock })
 }))
 

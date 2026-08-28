@@ -21,7 +21,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -30,7 +30,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn())
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -40,13 +40,13 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({
     add: mockToastAdd
   })
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   createI18n: () => ({
     global: {
       t: (key: string) => key
@@ -66,7 +66,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 const mockAcceptInvite = vi.hoisted(() => vi.fn())
-vi.mock('../stores/teamWorkspaceStore', () => ({
+vi.mock<unknown>(import('../stores/teamWorkspaceStore'), () => ({
   useTeamWorkspaceStore: () => ({
     acceptInvite: mockAcceptInvite
   })

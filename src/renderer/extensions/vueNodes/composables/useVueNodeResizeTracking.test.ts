@@ -48,25 +48,28 @@ const testState = vi.hoisted(() => ({
   updateNodeSlotOffsets: vi.fn()
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   useDocumentVisibility: () => ref<'visible' | 'hidden'>('visible'),
   createSharedComposable: <T>(fn: T) => fn
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     linearMode: testState.linearMode,
     rootGraphId: ROOT_GRAPH_ID
   })
 }))
 
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
+vi.mock<unknown>(
+  import('@/composables/element/useCanvasPositionConversion'),
+  () => ({
+    useSharedCanvasPositionConversion: () => ({
+      clientPosToCanvasPos: ([x, y]: [number, number]) => [x, y]
+    })
   })
-}))
+)
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
     reportContentSize: testState.reportContentSize,
     updateNodeSlotOffsets: testState.updateNodeSlotOffsets,

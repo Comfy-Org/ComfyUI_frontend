@@ -8,7 +8,7 @@ import CustomizationDialog from './CustomizationDialog.vue'
 const DEFAULT_ICON = 'pi-bookmark-fill'
 const DEFAULT_COLOR = '#a1a1aa'
 
-vi.mock('@/stores/nodeBookmarkStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeBookmarkStore'), () => ({
   useNodeBookmarkStore: () => ({
     defaultBookmarkIcon: DEFAULT_ICON,
     defaultBookmarkColor: DEFAULT_COLOR,
@@ -16,7 +16,7 @@ vi.mock('@/stores/nodeBookmarkStore', () => ({
   })
 }))
 
-vi.mock('primevue/selectbutton', () => ({
+vi.mock<unknown>(import('primevue/selectbutton'), () => ({
   default: {
     name: 'SelectButton',
     template: '<div />',
@@ -24,40 +24,43 @@ vi.mock('primevue/selectbutton', () => ({
   }
 }))
 
-vi.mock('@/components/ui/dialog/Dialog.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/Dialog.vue'), () => ({
   default: { name: 'Dialog', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogPortal.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogPortal.vue'), () => ({
   default: { name: 'DialogPortal', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogOverlay.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogOverlay.vue'), () => ({
   default: { name: 'DialogOverlay', template: '<div />' }
 }))
-vi.mock('@/components/ui/dialog/DialogContent.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogContent.vue'), () => ({
   default: { name: 'DialogContent', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogHeader.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogHeader.vue'), () => ({
   default: { name: 'DialogHeader', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogFooter.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogFooter.vue'), () => ({
   default: { name: 'DialogFooter', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogTitle.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogTitle.vue'), () => ({
   default: { name: 'DialogTitle', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogClose.vue'), () => ({
   default: { name: 'DialogClose', template: '<button />' }
 }))
 
-vi.mock('@/components/common/ColorCustomizationSelector.vue', () => ({
-  default: {
-    name: 'ColorCustomizationSelector',
-    template: '<div />',
-    props: ['modelValue', 'colorOptions']
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/common/ColorCustomizationSelector.vue'),
+  () => ({
+    default: {
+      name: 'ColorCustomizationSelector',
+      template: '<div />',
+      props: ['modelValue', 'colorOptions']
+    }
+  })
+)
 
-vi.mock('@/components/ui/button/Button.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
   default: {
     name: 'Button',
     template: `<button @click="$emit('click')"><slot /></button>`,

@@ -12,14 +12,14 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
 let mockQueryParams: Record<string, string | string[] | undefined> = {}
 const mockRouterReplace = vi.fn()
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: vi.fn(() => ({
     query: mockQueryParams
   })),
@@ -32,56 +32,59 @@ const mockImportPublishedAssets = vi.fn()
 const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
 const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     isLoggedIn: mockIsLoggedIn
   })
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     mode: { value: 'graph' },
     isAppMode: { value: false }
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackShareLinkOpened: mockTrackShareLinkOpened
   })
 }))
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  SharedWorkflowLoadError: class extends Error {
-    readonly isRetryable: boolean
-    constructor(message: string, isRetryable: boolean) {
-      super(message)
-      this.name = 'SharedWorkflowLoadError'
-      this.isRetryable = isRetryable
-    }
-  },
-  useWorkflowShareService: () => ({
-    getSharedWorkflow: vi.fn(),
-    importPublishedAssets: mockImportPublishedAssets
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    SharedWorkflowLoadError: class extends Error {
+      readonly isRetryable: boolean
+      constructor(message: string, isRetryable: boolean) {
+        super(message)
+        this.name = 'SharedWorkflowLoadError'
+        this.isRetryable = isRetryable
+      }
+    },
+    useWorkflowShareService: () => ({
+      getSharedWorkflow: vi.fn(),
+      importPublishedAssets: mockImportPublishedAssets
+    })
   })
-}))
+)
 
 const mockLoadGraphData = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     loadGraphData: mockLoadGraphData
   }
 }))
 
 const mockToastAdd = vi.fn()
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({
     add: mockToastAdd
   })
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: vi.fn((key: string) => {
       if (key === 'g.error') return 'Error'
@@ -112,13 +115,13 @@ const mockDialogStack = vi.hoisted(
 )
 const mockUpdateDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showLayoutDialog: mockShowLayoutDialog
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     dialogStack: mockDialogStack,
     closeDialog: mockCloseDialog,
@@ -126,11 +129,14 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
-  useWorkflowTemplateSelectorDialog: () => ({
-    hide: mockHideTemplateSelector
+vi.mock<unknown>(
+  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  () => ({
+    useWorkflowTemplateSelectorDialog: () => ({
+      hide: mockHideTemplateSelector
+    })
   })
-}))
+)
 
 function makePayload(
   overrides: Partial<SharedWorkflowPayload> = {}

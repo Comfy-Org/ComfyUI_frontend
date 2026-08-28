@@ -41,12 +41,12 @@ const mockRenderer = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/renderer/glsl/useGLSLRenderer', () => ({
+vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
   useGLSLRenderer: (_config?: GLSLRendererConfig) => mockRenderer.create()
 }))
 
 const nodeOutputs = reactive<Record<string, unknown>>({})
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({
     setNodePreviewsByNodeId: vi.fn(),
     setNodePreviewsByLocatorId: vi.fn(),
@@ -55,18 +55,21 @@ vi.mock('@/stores/nodeOutputStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    nodeIdToNodeLocatorId: (id: string | number) => String(id),
-    nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      nodeIdToNodeLocatorId: (id: string | number) => String(id),
+      nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
+    })
   })
-}))
+)
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' } }
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: () => false })
 }))
 

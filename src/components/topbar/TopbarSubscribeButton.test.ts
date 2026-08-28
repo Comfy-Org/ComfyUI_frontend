@@ -9,7 +9,7 @@ import TopbarSubscribeButton from './TopbarSubscribeButton.vue'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -17,8 +17,8 @@ vi.mock('@/platform/distribution/types', () => ({
 
 const mockShowPricingTable = vi.fn()
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: vi.fn(() => ({
       showPricingTable: mockShowPricingTable
@@ -26,20 +26,20 @@ vi.mock(
   })
 )
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
     isFreeTier: { value: true }
   }))
 }))
 
-vi.mock('pinia')
+vi.mock(import('pinia'))
 
-vi.mock('firebase/app', () => ({
+vi.mock(import('firebase/app'), () => ({
   initializeApp: vi.fn(),
   getApp: vi.fn()
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock<unknown>(import('firebase/auth'), () => ({
   getAuth: vi.fn(),
   setPersistence: vi.fn(),
   browserLocalPersistence: {},

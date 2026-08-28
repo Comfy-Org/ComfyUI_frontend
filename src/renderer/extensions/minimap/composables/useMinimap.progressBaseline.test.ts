@@ -78,7 +78,7 @@ const {
   }
 })
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useDocumentVisibility: () => ({ value: 'visible' }),
   useIntervalFn: (callback: () => void) => {
     counters.pollRegistrations++
@@ -104,29 +104,32 @@ vi.mock('@vueuse/core', () => ({
   }
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: () => defaultSettingStore.visible,
     set: defaultSettingStore.set
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ activeSubgraph: null })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({ activeSubgraph: null })
+  })
+)
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => mockCanvasStore
 }))
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => ({
     nodeProgressStates: progressStates,
     nodeLocationProgressStates: progressStates
   })
 }))
 
-vi.mock('@/stores/linkStore', () => ({
+vi.mock<unknown>(import('@/stores/linkStore'), () => ({
   useLinkStore: () => ({
     graphTopologies: () => {
       counters.topologyReads++
@@ -140,13 +143,13 @@ vi.mock('@/stores/linkStore', () => ({
   })
 }))
 
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
   useColorPaletteStore: () => ({
     completedActivePalette: { light_theme: false }
   })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: (name: string, listener: EventListener) => {
       counters.listenersAdded++
@@ -160,7 +163,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: null }
 }))
 

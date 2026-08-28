@@ -8,13 +8,16 @@ const mockActiveWorkspace = vi.hoisted(() => ({
   value: null as WorkspaceWithRole | null
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    switchWorkspace: mockSwitchWorkspace
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      switchWorkspace: mockSwitchWorkspace
+    })
   })
-}))
+)
 
-vi.mock('pinia', () => ({
+vi.mock<unknown>(import('pinia'), () => ({
   storeToRefs: () => ({
     activeWorkspace: mockActiveWorkspace
   })

@@ -46,46 +46,52 @@ const {
   }
 }))
 
-vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogClose.vue'), () => ({
   default: (
     _props: unknown,
     { slots }: { slots: { default?: () => unknown } }
   ) => slots.default?.()
 }))
 
-vi.mock(
-  '@/renderer/extensions/layerEditor/composables/useLayerEditorSession',
+vi.mock<unknown>(
+  import('@/renderer/extensions/layerEditor/composables/useLayerEditorSession'),
   () => ({
     isTextEditingTarget: (target: EventTarget | null) =>
       (target as HTMLElement | null)?.tagName === 'INPUT',
     useLayerEditorSession: () => session
   })
 )
-vi.mock('@/renderer/extensions/compositor/composables/compositorSave', () => ({
-  saveCompositorLayerState: saveLayerState,
-  saveCompositorPreview: savePreview
-}))
 vi.mock(
-  '@/renderer/extensions/compositor/composables/useCompositorAutoSave',
+  import('@/renderer/extensions/compositor/composables/compositorSave'),
+  () => ({
+    saveCompositorLayerState: saveLayerState,
+    saveCompositorPreview: savePreview
+  })
+)
+vi.mock(
+  import('@/renderer/extensions/compositor/composables/useCompositorAutoSave'),
   () => ({
     useCompositorAutoSave: vi.fn(() => ({ stop: autoSaveStop }))
   })
 )
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: { changeTracker: { afterChange, beforeChange } }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      activeWorkflow: { changeTracker: { afterChange, beforeChange } }
+    })
   })
-}))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+)
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
 vi.mock(
-  '@/renderer/extensions/compositor/composables/compositorSession',
+  import('@/renderer/extensions/compositor/composables/compositorSession'),
   () => ({
     loadCompositorSession
   })
 )
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({ getNodeImageUrls: () => [] })
 }))
 

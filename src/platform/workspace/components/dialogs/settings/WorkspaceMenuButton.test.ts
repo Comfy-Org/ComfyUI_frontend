@@ -34,23 +34,29 @@ const mockShowLeaveWorkspaceDialog = vi.fn()
 const mockShowDeleteWorkspaceDialog = vi.fn()
 const mockShowEditWorkspaceDialog = vi.fn()
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canLeaveWorkspace: mockCanLeaveWorkspace.value,
-      canManageSubscription: mockCanManageSubscription.value
-    })),
-    uiConfig: mockUiConfig
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => ({
+        canLeaveWorkspace: mockCanLeaveWorkspace.value,
+        canManageSubscription: mockCanManageSubscription.value
+      })),
+      uiConfig: mockUiConfig
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      isWorkspaceSubscribed: mockIsWorkspaceSubscribed
+    })
   })
-}))
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showLeaveWorkspaceDialog: mockShowLeaveWorkspaceDialog,
     showDeleteWorkspaceDialog: mockShowDeleteWorkspaceDialog,

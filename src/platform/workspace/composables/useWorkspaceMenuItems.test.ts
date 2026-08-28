@@ -26,11 +26,11 @@ const dialogMocks = vi.hoisted(() => ({
   showLeaveWorkspaceDialog: vi.fn()
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     billingStatus: computed(() => state.billingStatus),
     isFreeTier: computed(() => state.isFreeTier),
@@ -42,53 +42,59 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canCancel: {
-      get value() {
-        return state.canCancel
-      }
-    }
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return {
-          canLeaveWorkspace: state.canLeaveWorkspace,
-          canManageSubscription: state.canManageSubscription,
-          canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canCancel: {
+        get value() {
+          return state.canCancel
         }
       }
-    },
-    uiConfig: computed(() => ({
-      showEditWorkspaceMenuItem: false,
-      workspaceMenuAction: null,
-      workspaceMenuDisabledTooltip: null
-    })),
-    isInPersonalWorkspace: computed(() => state.isInPersonalWorkspace),
-    isActiveSubscription: computed(() => state.isActiveSubscription),
-    isSubscriptionCancelled: computed(() => state.isSubscriptionCancelled),
-    isDeleteDisabled: {
-      get value() {
-        return state.isDeleteDisabled
-      }
-    },
-    deleteDisabledTooltipKey: computed(() => null)
+    })
   })
-}))
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return {
+            canLeaveWorkspace: state.canLeaveWorkspace,
+            canManageSubscription: state.canManageSubscription,
+            canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+          }
+        }
+      },
+      uiConfig: computed(() => ({
+        showEditWorkspaceMenuItem: false,
+        workspaceMenuAction: null,
+        workspaceMenuDisabledTooltip: null
+      })),
+      isInPersonalWorkspace: computed(() => state.isInPersonalWorkspace),
+      isActiveSubscription: computed(() => state.isActiveSubscription),
+      isSubscriptionCancelled: computed(() => state.isSubscriptionCancelled),
+      isDeleteDisabled: {
+        get value() {
+          return state.isDeleteDisabled
+        }
+      },
+      deleteDisabledTooltipKey: computed(() => null)
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => dialogMocks
 }))
 

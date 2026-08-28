@@ -20,7 +20,7 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
-vi.mock('@/platform/assets/services/assetService', async () => {
+vi.mock(import('@/platform/assets/services/assetService'), async () => {
   const actual = await vi.importActual<typeof AssetServiceModule>(
     '@/platform/assets/services/assetService'
   )
@@ -35,7 +35,7 @@ vi.mock('@/platform/assets/services/assetService', async () => {
   }
 })
 
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
+vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), async () => {
   const actual = await vi.importActual<typeof FetchJobsModule>(
     '@/platform/remote/comfyui/jobs/fetchJobs'
   )

@@ -8,11 +8,11 @@ import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/component
 
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
 

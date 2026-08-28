@@ -24,17 +24,20 @@ const { mockMaxSeats, mockIsPlanLoading, mockMembers, mockWorkspaceType } =
     }
   })
 
-vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
-  useTeamPlan: () => ({
-    maxSeats: mockMaxSeats,
-    hasMemberSeats: computed(
-      () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
-    ),
-    isPlanLoading: mockIsPlanLoading
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useTeamPlan'),
+  () => ({
+    useTeamPlan: () => ({
+      maxSeats: mockMaxSeats,
+      hasMemberSeats: computed(
+        () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
+      ),
+      isPlanLoading: mockIsPlanLoading
+    })
   })
-}))
+)
 
-vi.mock('pinia', async (importOriginal) => {
+vi.mock<unknown>(import('pinia'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),
@@ -42,49 +45,55 @@ vi.mock('pinia', async (importOriginal) => {
   }
 })
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { computed, ref } = require('vue') as typeof import('vue')
-  return {
-    useTeamWorkspaceStore: () => ({
-      workspaceName: ref('Acme Team'),
-      isInPersonalWorkspace: computed(
-        () => mockWorkspaceType.value === 'personal'
-      ),
-      members: mockMembers,
-      fetchMembers: mockFetchMembers,
-      fetchPendingInvites: mockFetchPendingInvites
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+    const { computed, ref } = require('vue') as typeof import('vue')
+    return {
+      useTeamWorkspaceStore: () => ({
+        workspaceName: ref('Acme Team'),
+        isInPersonalWorkspace: computed(
+          () => mockWorkspaceType.value === 'personal'
+        ),
+        members: mockMembers,
+        fetchMembers: mockFetchMembers,
+        fetchPendingInvites: mockFetchPendingInvites
+      })
+    }
   }
-})
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { ref } = require('vue') as typeof import('vue')
-  return {
-    useWorkspaceUI: () => ({
-      workspaceType: mockWorkspaceType,
-      workspaceRole: ref('owner')
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+    const { ref } = require('vue') as typeof import('vue')
+    return {
+      useWorkspaceUI: () => ({
+        workspaceType: mockWorkspaceType,
+        workspaceRole: ref('owner')
+      })
+    }
   }
-})
+)
 
-vi.mock(
-  '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'),
   () => ({
     default: { name: 'SubscriptionPanelContentWorkspace', template: '<div />' }
   })
 )
 
-vi.mock(
-  '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'),
   () => ({
     default: { name: 'MembersPanelContent', template: '<div />' }
   })
 )
 
-vi.mock(
-  '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'),
   () => ({
     default: {
       name: 'BillingStatusBanner',

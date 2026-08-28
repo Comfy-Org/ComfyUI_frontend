@@ -16,23 +16,23 @@ const { buildSessionPsdBlob, downloadBlob, loadCompositorSession, toastAdd } =
   }))
 
 vi.mock(
-  '@/renderer/extensions/compositor/composables/compositorSession',
+  import('@/renderer/extensions/compositor/composables/compositorSession'),
   () => ({
     loadCompositorSession
   })
 )
 vi.mock(
-  '@/renderer/extensions/layerEditor/composables/useLayerEditorExport',
+  import('@/renderer/extensions/layerEditor/composables/useLayerEditorExport'),
   () => ({
     buildSessionPsdBlob,
     psdExportFilename: () => 'comfyui-layers-test.psd'
   })
 )
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 

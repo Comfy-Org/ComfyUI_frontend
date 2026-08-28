@@ -15,7 +15,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import PackVersionBadge from './PackVersionBadge.vue'
 
 // Mock config to prevent __COMFYUI_FRONTEND_VERSION__ error
-vi.mock('@/config', () => ({
+vi.mock(import('@/config'), () => ({
   default: {
     app_title: 'ComfyUI',
     app_version: '1.0.0'
@@ -37,19 +37,22 @@ const mockInstalledPacks = {
 
 const mockIsPackEnabled = vi.fn(() => true)
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    installedPacks: mockInstalledPacks,
-    isPackInstalled: (id: string) =>
-      !!mockInstalledPacks[id as keyof typeof mockInstalledPacks],
-    isPackEnabled: mockIsPackEnabled,
-    getInstalledPackVersion: (id: string) =>
-      mockInstalledPacks[id as keyof typeof mockInstalledPacks]?.ver
-  }))
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: vi.fn(() => ({
+      installedPacks: mockInstalledPacks,
+      isPackInstalled: (id: string) =>
+        !!mockInstalledPacks[id as keyof typeof mockInstalledPacks],
+      isPackEnabled: mockIsPackEnabled,
+      getInstalledPackVersion: (id: string) =>
+        mockInstalledPacks[id as keyof typeof mockInstalledPacks]?.ver
+    }))
+  })
+)
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'),
   () => ({
     usePackUpdateStatus: vi.fn(() => ({
       isUpdateAvailable: false

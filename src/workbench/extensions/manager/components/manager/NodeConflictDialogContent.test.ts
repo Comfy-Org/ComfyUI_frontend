@@ -9,14 +9,17 @@ import NodeConflictDialogContent from '@/workbench/extensions/manager/components
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 // Mock getConflictMessage utility
-vi.mock('@/workbench/extensions/manager/utils/conflictMessageUtil', () => ({
-  getConflictMessage: vi.fn((conflict) => {
-    return `${conflict.type}: ${conflict.current_value} vs ${conflict.required_value}`
+vi.mock(
+  import('@/workbench/extensions/manager/utils/conflictMessageUtil'),
+  () => ({
+    getConflictMessage: vi.fn((conflict) => {
+      return `${conflict.type}: ${conflict.current_value} vs ${conflict.required_value}`
+    })
   })
-}))
+)
 
 // Mock dependencies
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: vi.fn(() => ({
     t: vi.fn((key: string) => {
       const translations: Record<string, string> = {
@@ -35,8 +38,8 @@ vi.mock('vue-i18n', () => ({
 const mockConflictData = ref<ConflictDetectionResult[]>([])
 
 // Mock useConflictDetection composable
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictDetection',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictDetection'),
   () => ({
     useConflictDetection: () => ({
       conflictedPackages: computed(() => mockConflictData.value)

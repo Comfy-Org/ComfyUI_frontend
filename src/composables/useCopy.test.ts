@@ -9,7 +9,7 @@ const copyMocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useEventListener: vi.fn(
     (
       _target: EventTarget,
@@ -22,13 +22,13 @@ vi.mock('@vueuse/core', () => ({
   )
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     canvas: copyMocks.canvas
   })
 }))
 
-vi.mock('@/workbench/eventHelpers', () => ({
+vi.mock(import('@/workbench/eventHelpers'), () => ({
   shouldIgnoreCopyPaste: vi.fn(() => false)
 }))
 

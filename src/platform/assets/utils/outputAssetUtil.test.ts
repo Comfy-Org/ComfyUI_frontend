@@ -20,13 +20,13 @@ const mocks = vi.hoisted(() => ({
   isCloud: false
 }))
 
-vi.mock('@/services/jobOutputCache', () => ({
+vi.mock(import('@/services/jobOutputCache'), () => ({
   getJobDetail: mocks.getJobDetail,
   getPreviewableOutputsFromJobDetail: mocks.getPreviewableOutputsFromJobDetail,
   getJobAssets: mocks.getJobAssets
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mocks.isCloud
   }

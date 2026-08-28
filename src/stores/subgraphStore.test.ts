@@ -20,15 +20,15 @@ const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false,
   isDesktop: false
 }))
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 // Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
-vi.mock('@/platform/telemetry', () => ({
+vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
 }))
 
 // Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
@@ -38,20 +38,20 @@ vi.mock('@/scripts/api', () => ({
     addEventListener: vi.fn()
   }
 }))
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => ({
     prompt: () => 'testname',
     confirm: () => true
   }))
 }))
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: vi.fn(() => ({
     getCanvas: () => comfyApp.canvas
   }))
 }))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       _deserializeItems: vi.fn((i) => i),

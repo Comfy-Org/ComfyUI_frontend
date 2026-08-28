@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key,
     n: (value: number) => String(value)
@@ -20,21 +20,24 @@ const { mockMembers, mockPendingInvites, mockMaxSeats, mockOccupiedSeats } =
     mockOccupiedSeats: { value: 1 as number | null }
   }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     maxSeats: mockMaxSeats,
     occupiedSeats: mockOccupiedSeats
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    members: mockMembers,
-    pendingInvites: mockPendingInvites
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      members: mockMembers,
+      pendingInvites: mockPendingInvites
+    })
   })
-}))
+)
 
-vi.mock('./InviteMembersForm.vue', () => ({
+vi.mock<unknown>(import('./InviteMembersForm.vue'), () => ({
   default: {
     name: 'InviteMembersForm',
     props: ['maxSeats', 'source', 'submitLabel', 'placeholder'],

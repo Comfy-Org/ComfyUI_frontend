@@ -5,13 +5,13 @@ import { getSurveyCompletedStatus } from './auth'
 
 const fetchApi = vi.fn()
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: (...args: unknown[]) => fetchApi(...args)
   }
 }))
 
-vi.mock('@sentry/vue', () => ({
+vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: vi.fn(),
   captureException: vi.fn(),
   // reportError() probes this; without it the probe throws, reportError

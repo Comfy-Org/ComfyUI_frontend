@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 const sizeHolder = vi.hoisted(() => ({ width: 0, height: 0 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),
@@ -45,7 +45,7 @@ function createDefaultPainterState() {
   }
 }
 
-vi.mock('@/composables/painter/usePainter', () => ({
+vi.mock<unknown>(import('@/composables/painter/usePainter'), () => ({
   PAINTER_TOOLS: { BRUSH: 'brush', ERASER: 'eraser' } as const,
   usePainter: () => {
     if (!painterHolder.state) painterHolder.state = createDefaultPainterState()

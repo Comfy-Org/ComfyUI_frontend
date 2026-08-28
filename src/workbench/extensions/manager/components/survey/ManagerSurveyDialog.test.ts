@@ -16,13 +16,13 @@ const mocks = vi.hoisted(
     }
 )
 
-vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
   const { ref } = await import('vue')
   mocks.remoteConfig = ref<RemoteConfig>({})
   return { remoteConfig: mocks.remoteConfig }
 })
 
-vi.mock('@/composables/auth/useCurrentUser', async () => {
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), async () => {
   const { ref } = await import('vue')
   mocks.resolvedUserInfo = ref<{ id: string } | null>(null)
   return {

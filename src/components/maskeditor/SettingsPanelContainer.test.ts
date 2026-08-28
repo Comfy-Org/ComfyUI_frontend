@@ -8,30 +8,39 @@ const mockStore = vi.hoisted(() => ({
   currentTool: 'pen' as Tools
 }))
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 
-vi.mock('@/components/maskeditor/BrushSettingsPanel.vue', () => ({
-  default: {
-    name: 'BrushSettingsPanelStub',
-    template: '<div>brush-panel</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/BrushSettingsPanel.vue'),
+  () => ({
+    default: {
+      name: 'BrushSettingsPanelStub',
+      template: '<div>brush-panel</div>'
+    }
+  })
+)
 
-vi.mock('@/components/maskeditor/ColorSelectSettingsPanel.vue', () => ({
-  default: {
-    name: 'ColorSelectSettingsPanelStub',
-    template: '<div>color-panel</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/ColorSelectSettingsPanel.vue'),
+  () => ({
+    default: {
+      name: 'ColorSelectSettingsPanelStub',
+      template: '<div>color-panel</div>'
+    }
+  })
+)
 
-vi.mock('@/components/maskeditor/PaintBucketSettingsPanel.vue', () => ({
-  default: {
-    name: 'PaintBucketSettingsPanelStub',
-    template: '<div>bucket-panel</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/PaintBucketSettingsPanel.vue'),
+  () => ({
+    default: {
+      name: 'PaintBucketSettingsPanelStub',
+      template: '<div>bucket-panel</div>'
+    }
+  })
+)
 
 describe('SettingsPanelContainer', () => {
   beforeEach(() => {

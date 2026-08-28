@@ -19,13 +19,13 @@ const mocks = vi.hoisted(() => ({
   beginTour: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mocks.isCloud
   }
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
   ...(await importOriginal<VueUseCore>()),
   useBreakpoints: () => ({
     greaterOrEqual: () => ({
@@ -36,17 +36,20 @@ vi.mock('@vueuse/core', async (importOriginal) => ({
   })
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    isSubscriptionEnabled: () => mocks.subscriptionEnabled
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscription'),
+  () => ({
+    useSubscription: () => ({
+      isSubscriptionEnabled: () => mocks.subscriptionEnabled
+    })
   })
-}))
+)
 
-vi.mock('@/services/useNewUserService', () => ({
+vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get onboardingTourEnabled() {
@@ -56,18 +59,18 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: mocks.execute })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) => mocks.settings[key],
     set: mocks.setSetting
   })
 }))
 
-vi.mock('../tour/useFirstRunTourController', () => ({
+vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
 

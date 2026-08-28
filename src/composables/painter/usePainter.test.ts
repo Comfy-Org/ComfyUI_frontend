@@ -10,37 +10,37 @@ import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: vi.fn(() => ({
     t: (key: string, params?: Record<string, unknown>) =>
       params ? `${key}:${JSON.stringify(params)}` : key
   }))
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useElementSize: vi.fn(() => ({
     width: ref(512),
     height: ref(512)
   }))
 }))
 
-vi.mock('@/composables/maskeditor/StrokeProcessor', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/StrokeProcessor'), () => ({
   StrokeProcessor: vi.fn(() => ({
     addPoint: vi.fn(() => []),
     endStroke: vi.fn(() => [])
   }))
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => {
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => {
   const store = { addAlert: vi.fn() }
   return { useToastStore: () => store }
 })
 
-vi.mock('@/stores/nodeOutputStore', () => {
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => {
   const store = {
     getNodeImageUrls: vi.fn(() => undefined),
     nodeOutputs: {},
@@ -49,7 +49,7 @@ vi.mock('@/stores/nodeOutputStore', () => {
   return { useNodeOutputStore: () => store }
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     fetchApi: vi.fn()
@@ -61,7 +61,7 @@ const mockProperties: Record<string, unknown> = {}
 const mockIsInputConnected = vi.fn(() => false)
 const mockGetInputNode = vi.fn(() => null)
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       graph: {

@@ -11,7 +11,7 @@ import type { WorkflowPack } from '@/workbench/extensions/manager/composables/no
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@vueuse/core', async () => {
+vi.mock(import('@vueuse/core'), async () => {
   const actual = await vi.importActual('@vueuse/core')
   return {
     ...actual,
@@ -23,33 +23,39 @@ vi.mock('@vueuse/core', async () => {
 
 // Mock the dependencies
 vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks',
+  import('@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'),
   () => ({
     useWorkflowPacks: vi.fn()
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: vi.fn()
+  })
+)
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: vi.fn()
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    activeWorkflow: null
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => ({
+      activeWorkflow: null
+    }))
+  })
+)
 
 const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
 

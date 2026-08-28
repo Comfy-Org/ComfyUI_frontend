@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('es-toolkit/compat', async (importOriginal) => {
+vi.mock<unknown>(import('es-toolkit/compat'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),
@@ -12,7 +12,7 @@ vi.mock('es-toolkit/compat', async (importOriginal) => {
   }
 })
 
-vi.mock('@/scripts/utils', () => ({
+vi.mock(import('@/scripts/utils'), () => ({
   getStorageValue: vi.fn((key: string) => localStorage.getItem(key)),
   setStorageValue: vi.fn((key: string, value: string) => {
     localStorage.setItem(key, value)

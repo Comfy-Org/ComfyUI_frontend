@@ -10,7 +10,7 @@ import {
   createAssetWithoutUserMetadata
 } from '@/platform/assets/fixtures/ui-mock-assets'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key
   })

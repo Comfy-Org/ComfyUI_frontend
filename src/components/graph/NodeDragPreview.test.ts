@@ -7,8 +7,8 @@ import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
   () => ({
     default: { template: '<div data-testid="node-preview" />' }
   })

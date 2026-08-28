@@ -325,15 +325,15 @@ const {
   }
 })
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('pinia', async (importOriginal) => {
+vi.mock<unknown>(import('pinia'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),
@@ -341,34 +341,43 @@ vi.mock('pinia', async (importOriginal) => {
   }
 })
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    activeWorkspace: mockActiveWorkspace,
-    members: mockMembers,
-    pendingInvites: mockPendingInvites,
-    originalOwnerId: mockOriginalOwnerId,
-    resendInvite: mockResendInvite
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      activeWorkspace: mockActiveWorkspace,
+      members: mockMembers,
+      pendingInvites: mockPendingInvites,
+      originalOwnerId: mockOriginalOwnerId,
+      resendInvite: mockResendInvite
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: mockPermissions,
-    uiConfig: mockUiConfig,
-    workspaceRole: mockWorkspaceRole
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: mockPermissions,
+      uiConfig: mockUiConfig,
+      workspaceRole: mockWorkspaceRole
+    })
   })
-}))
+)
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canChangeSeats: mockCanChangeSeats,
-    canInviteMembers: mockCanInviteMembers
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canChangeSeats: mockCanChangeSeats,
+      canInviteMembers: mockCanInviteMembers
+    })
   })
-}))
+)
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userPhotoUrl: ref(null),
     userEmail: ref('owner@example.com'),
@@ -376,14 +385,14 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ show: mockShowSubscriptionDialog })
   })
 )
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     isActiveSubscription: mockCanAccessSubscriptionFeatures,
@@ -405,14 +414,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ show: vi.fn() })
   })
 )
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showRemoveMemberDialog: mockShowRemoveMemberDialog,
     showRevokeInviteDialog: mockShowRevokeInviteDialog,
@@ -425,7 +434,7 @@ vi.mock('@/services/dialogService', () => ({
 
 const mockBillingControlEnabled = vi.hoisted(() => ({ value: true }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get billingControlEnabled() {

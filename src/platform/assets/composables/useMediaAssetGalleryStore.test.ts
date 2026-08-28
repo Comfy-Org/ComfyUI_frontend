@@ -7,7 +7,7 @@ import { ResultItemImpl } from '@/stores/queueStore'
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { useMediaAssetGalleryStore } from './useMediaAssetGalleryStore'
 
-vi.mock('@/stores/queueStore', () => ({
+vi.mock(import('@/stores/queueStore'), () => ({
   ResultItemImpl: vi.fn<typeof ResultItemImpl>()
 }))
 

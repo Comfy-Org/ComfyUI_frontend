@@ -86,32 +86,32 @@ const { mockHandles } = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     shouldUseAssetBrowser: (nodeType: string, widgetName: string) =>
       mockHandles.assetService.shouldUseAssetBrowser(nodeType, widgetName)
   }
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({
     workflow: mockHandles.workspaceWorkflow
   })
 }))
 
-vi.mock('@/stores/executionErrorStore', () => ({
+vi.mock<unknown>(import('@/stores/executionErrorStore'), () => ({
   useExecutionErrorStore: () => mockHandles.executionErrorStore
 }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
   useModelToNodeStore: () => mockHandles.modelToNodeStore
 }))
 
-vi.mock('@/platform/missingModel/missingModelScan', () => ({
+vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
   scanAllModelCandidates: (
     graph: LGraph,
     isAssetSupported: (nodeType: string, widgetName: string) => boolean,
@@ -128,21 +128,21 @@ vi.mock('@/platform/missingModel/missingModelScan', () => ({
   ) => mockHandles.verifyAssetSupportedCandidates(candidates, signal)
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => mockHandles.toastStore
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getFolderPaths: () => mockHandles.api.getFolderPaths()
   }
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   fetchModelMetadata: (url: string) => mockHandles.fetchModelMetadata(url)
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   isAncestorPathActive: (graph: LGraph, nodeId: string) =>
     mockHandles.isAncestorPathActive(graph, nodeId),
   isCandidateScopeActive: (graph: LGraph, candidate: MissingModelCandidate) =>

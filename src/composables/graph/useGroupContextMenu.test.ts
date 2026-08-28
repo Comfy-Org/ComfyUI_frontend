@@ -20,17 +20,20 @@ const {
   >(() => ({}))
 }))
 
-vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
+vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
   showNodeOptions: mockShowNodeOptions
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({ updateSelectedItems: mockUpdateSelectedItems })
 }))
 
-vi.mock('@/lib/litegraph/src/canvas/getCanvasContextMenuTarget', () => ({
-  getCanvasContextMenuTarget: mockGetCanvasContextMenuTarget
-}))
+vi.mock<unknown>(
+  import('@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'),
+  () => ({
+    getCanvasContextMenuTarget: mockGetCanvasContextMenuTarget
+  })
+)
 
 interface StubCanvas {
   graph: object

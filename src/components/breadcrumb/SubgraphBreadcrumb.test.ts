@@ -6,23 +6,26 @@ import SubgraphBreadcrumb from './SubgraphBreadcrumb.vue'
 
 const canvasState = vi.hoisted(() => ({ linearMode: false }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ activeWorkflow: { filename: 'workflow.json' } })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({ activeWorkflow: { filename: 'workflow.json' } })
+  })
+)
 
-vi.mock('@/stores/subgraphNavigationStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphNavigationStore'), () => ({
   useSubgraphNavigationStore: () => ({ navigationStack: [] })
 }))
 
-vi.mock('@/stores/subgraphStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphStore'), () => ({
   useSubgraphStore: () => ({ isSubgraphBlueprint: () => false })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({ linearMode: canvasState.linearMode })
 }))
 
-vi.mock('@/composables/element/useOverflowObserver', () => ({
+vi.mock<unknown>(import('@/composables/element/useOverflowObserver'), () => ({
   useOverflowObserver: () => ({
     dispose: vi.fn(),
     checkOverflow: vi.fn(),

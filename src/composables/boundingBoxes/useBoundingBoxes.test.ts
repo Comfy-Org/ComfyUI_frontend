@@ -15,11 +15,11 @@ const { appState, outputState } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: { graph: { getNodeById: () => appState.node } } }
 }))
 
-vi.mock('@/stores/nodeOutputStore', async () => {
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), async () => {
   const { ref } = await import('vue')
   const nodeOutputs = ref<Record<string, unknown>>({})
   outputState.nodeOutputs = nodeOutputs

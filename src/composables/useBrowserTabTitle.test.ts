@@ -4,7 +4,7 @@ import { effectScope, nextTick, reactive } from 'vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 
 // Mock i18n module
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, fallback: string) =>
     key === 'g.nodesRunning' ? 'nodes running' : fallback
 }))
@@ -26,7 +26,7 @@ const executionStore = reactive<{
   executingNodeProgress: 0,
   nodeProgressStates: {}
 })
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => executionStore
 }))
 
@@ -34,7 +34,7 @@ vi.mock('@/stores/executionStore', () => ({
 const settingStore = reactive({
   get: vi.fn((_key: string) => 'Enabled')
 })
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => settingStore
 }))
 
@@ -48,15 +48,18 @@ const workflowStore = reactive<{
 }>({
   activeWorkflow: null
 })
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => workflowStore
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => workflowStore
+  })
+)
 
 // Mock the workspace store
 const workspaceStore = reactive({
   shiftDown: false
 })
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => workspaceStore
 }))
 

@@ -20,7 +20,7 @@ const dateMock = vi.hoisted(() => vi.fn(() => '2024. 1. 1.'))
 const storageMap = vi.hoisted(() => new Map<string, unknown>())
 
 // Mock dependencies
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: vi.fn(() => ({
     d: dateMock,
     t: translateMock
@@ -33,22 +33,25 @@ vi.mock('vue-i18n', () => ({
   }))
 }))
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    isPackInstalled: vi.fn(() => false),
-    isPackEnabled: vi.fn(() => true),
-    isPackInstalling: vi.fn(() => false),
-    installedPacksIds: []
-  }))
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: vi.fn(() => ({
+      isPackInstalled: vi.fn(() => false),
+      isPackEnabled: vi.fn(() => true),
+      isPackInstalling: vi.fn(() => false),
+      installedPacksIds: []
+    }))
+  })
+)
 
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
   useColorPaletteStore: vi.fn(() => ({
     completedActivePalette: { light_theme: true }
   }))
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   whenever: vi.fn(),
   useStorage: vi.fn((key: string, defaultValue: unknown) => {
     if (!storageMap.has(key)) storageMap.set(key, defaultValue)
@@ -61,13 +64,13 @@ vi.mock('@vueuse/core', () => ({
   useDocumentVisibility: vi.fn(() => ref<'visible' | 'hidden'>('visible'))
 }))
 
-vi.mock('@/config', () => ({
+vi.mock<unknown>(import('@/config'), () => ({
   default: {
     app_version: '1.24.0-1'
   }
 }))
 
-vi.mock('@/stores/systemStatsStore', () => ({
+vi.mock<unknown>(import('@/stores/systemStatsStore'), () => ({
   useSystemStatsStore: vi.fn(() => ({
     systemStats: {
       system: { os: 'Darwin' },

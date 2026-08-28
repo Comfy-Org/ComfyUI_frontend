@@ -11,13 +11,16 @@ const mocks = vi.hoisted(() => ({
   resolveOutputAssetItems: vi.fn()
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => {
-  const actual = await importOriginal<typeof OutputAssetUtil>()
-  return {
-    ...actual,
-    resolveOutputAssetItems: mocks.resolveOutputAssetItems
+vi.mock(
+  import('@/platform/assets/utils/outputAssetUtil'),
+  async (importOriginal) => {
+    const actual = await importOriginal<typeof OutputAssetUtil>()
+    return {
+      ...actual,
+      resolveOutputAssetItems: mocks.resolveOutputAssetItems
+    }
   }
-})
+)
 
 type Deferred<T> = {
   promise: Promise<T>

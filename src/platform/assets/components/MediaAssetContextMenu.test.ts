@@ -10,21 +10,21 @@ import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContex
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as FormatUtil from '@/utils/formatUtil'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
+vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
   supportsWorkflowMetadata: () => true
 }))
 
-vi.mock('@/utils/formatUtil', async (importOriginal) => ({
+vi.mock(import('@/utils/formatUtil'), async (importOriginal) => ({
   ...(await importOriginal<typeof FormatUtil>()),
   isPreviewableMediaType: () => true
 }))
@@ -38,7 +38,7 @@ const mediaAssetActions = {
   deleteAssets: vi.fn().mockResolvedValue(false)
 }
 
-vi.mock('../composables/useMediaAssetActions', () => ({
+vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
   useMediaAssetActions: () => mediaAssetActions
 }))
 

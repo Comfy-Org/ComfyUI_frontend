@@ -49,7 +49,7 @@ const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
 } as const
 
-vi.mock('@/composables/useAppMode', async (importOriginal) => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
   return {
     ...actual,
@@ -65,36 +65,39 @@ import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
 // Mock the workflowStore
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
-    '@/platform/workflow/management/stores/workflowStore'
-  )
-  return {
-    ComfyWorkflow,
-    useWorkflowStore: vi.fn(() => ({
-      nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
-      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
-      executionIdToCurrentId: mockExecutionIdToCurrentId,
-      get activeWorkflow() {
-        return mockActiveWorkflow.value
-      },
-      get openWorkflows() {
-        return mockOpenWorkflows.value
-      },
-      isOpen: (workflow: { path?: string }) =>
-        mockOpenWorkflows.value.some((w) => w.path === workflow.path)
-    }))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
+      '@/platform/workflow/management/stores/workflowStore'
+    )
+    return {
+      ComfyWorkflow,
+      useWorkflowStore: vi.fn(() => ({
+        nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
+        nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
+        executionIdToCurrentId: mockExecutionIdToCurrentId,
+        get activeWorkflow() {
+          return mockActiveWorkflow.value
+        },
+        get openWorkflows() {
+          return mockOpenWorkflows.value
+        },
+        isOpen: (workflow: { path?: string }) =>
+          mockOpenWorkflows.value.some((w) => w.path === workflow.path)
+      }))
+    }
   }
-})
+)
 
-vi.mock('@/platform/distribution/types', async () => ({
+vi.mock(import('@/platform/distribution/types'), async () => ({
   ...(await vi.importActual<typeof DistributionTypes>(
     '@/platform/distribution/types'
   )),
   isCloud: true
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackExecutionError: mockTrackExecutionError,
     trackExecutionOutcome: mockTrackExecutionOutcome,
@@ -108,7 +111,7 @@ declare global {
   interface Window {}
 }
 
-vi.mock('@/composables/node/useNodeProgressText', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
   useNodeProgressText: () => ({
     showTextPreview: mockShowTextPreview
   })
@@ -120,7 +123,7 @@ vi.mock('@/composables/node/useNodeProgressText', () => ({
  */
 type EventHandler = (...args: unknown[]) => void
 const apiEventHandlers = new Map<string, EventHandler>()
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn((event: string, handler: EventHandler) => {
       apiEventHandlers.set(event, handler)
@@ -133,20 +136,20 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({
     revokePreviewsByExecutionId: vi.fn()
   })
 }))
 
-vi.mock('@/stores/jobPreviewStore', () => ({
+vi.mock<unknown>(import('@/stores/jobPreviewStore'), () => ({
   useJobPreviewStore: () => ({
     clearPreview: vi.fn()
   })
 }))
 
 // Mock the app import with proper implementation
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {
       getNodeById: vi.fn(),

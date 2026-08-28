@@ -28,19 +28,19 @@ const electron = {
   getPlatform: vi.fn(() => 'darwin')
 }
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isDesktop: true
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => settingStore
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => dialogService
 }))
 
-vi.mock('@/utils/envUtil', () => ({
+vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => electron
 }))
 

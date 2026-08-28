@@ -22,11 +22,11 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 const SUBGRAPH_ID = '00000000-0000-4000-8000-000000000002'
 const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
 // Mock dependencies
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
+vi.mock(import('@/utils/graphTraversalUtil'), async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
   return {
     ...actual,
@@ -34,13 +34,13 @@ vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
   }
 })
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     toastErrorHandler: vi.fn()
   })
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: vi.fn((key) => key)
   }),
@@ -51,7 +51,7 @@ vi.mock('vue-i18n', () => ({
   }))
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   st: vi.fn((key) => key),
   t: vi.fn((key) => key),
   i18n: {

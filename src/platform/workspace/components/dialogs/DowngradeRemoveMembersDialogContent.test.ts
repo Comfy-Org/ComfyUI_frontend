@@ -8,13 +8,13 @@ import DowngradeRemoveMembersDialogContent from './DowngradeRemoveMembersDialogC
 const mockCloseDialog = vi.fn()
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({
     add: mockToastAdd
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog
   })

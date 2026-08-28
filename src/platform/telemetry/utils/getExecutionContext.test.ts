@@ -13,22 +13,25 @@ const hoisted = vi.hoisted(() => ({
   mockTemplateByName: null as null | { sourceModule?: string }
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({
     nodeDefsByName: hoisted.mockNodeDefsByName
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return hoisted.mockActiveWorkflow
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return hoisted.mockActiveWorkflow
+      }
+    })
   })
-}))
+)
 
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/repositories/workflowTemplatesStore'),
   () => ({
     useWorkflowTemplatesStore: () => ({
       get knownTemplateNames() {
@@ -50,7 +53,7 @@ function mockNode(
   }
 }
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   reduceAllNodes: vi.fn((_graph, reducer, initial) => {
     let result = initial
     for (const node of hoisted.mockNodes) {
@@ -60,7 +63,7 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: {} }
 }))
 

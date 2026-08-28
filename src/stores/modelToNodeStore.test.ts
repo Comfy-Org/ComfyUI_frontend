@@ -89,7 +89,7 @@ const mockNodeDefsByName = Object.fromEntries(
   MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
 )
 
-vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
+vi.mock<unknown>(import('@/stores/nodeDefStore'), async (importOriginal) => {
   const original = await importOriginal<NodeDefStoreType>()
 
   return {

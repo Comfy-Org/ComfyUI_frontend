@@ -14,13 +14,13 @@ const { showDialog, toastAdd } = vi.hoisted(() => ({
   toastAdd: vi.fn()
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog })
 }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
-vi.mock('vue-i18n', async () => {
+vi.mock<unknown>(import('vue-i18n'), async () => {
   const actual = await vi.importActual('vue-i18n')
   return {
     ...actual,

@@ -16,7 +16,7 @@ const mockFetchStatus = vi.fn()
 const mockManageSubscription = vi.fn<() => Promise<void>>()
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 const mockTopup =
@@ -33,14 +33,14 @@ const mockCanTopUp = vi.hoisted(() => ({
 }))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 const mockHasSavedPaymentMethod = vi.hoisted(() => ({
   ref: undefined as { value: boolean | null } | undefined
 }))
 
-vi.mock(
-  '@/platform/workspace/composables/useHasSavedPaymentMethod',
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useHasSavedPaymentMethod'),
   async () => {
     const { ref } = await import('vue')
     mockHasSavedPaymentMethod.ref = ref<boolean | null>(null)
@@ -69,7 +69,7 @@ const mockBillingOperationState = vi.hoisted(() => ({
     | undefined
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     fetchBalance: mockFetchBalance,
     fetchStatus: mockFetchStatus,
@@ -78,42 +78,51 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
-  const { ref } = await import('vue')
-  mockBillingOperationState.isAddingCredits = ref(false)
-  mockBillingOperationState.topupActionOperation = ref(undefined)
-  return {
-    useBillingOperationStore: () => ({
-      hasPendingOperations: true,
-      get isAddingCredits() {
-        return mockBillingOperationState.isAddingCredits?.value ?? false
-      },
-      get topupActionOperation() {
-        return mockBillingOperationState.topupActionOperation?.value
-      },
-      startOperation: mockStartOperation,
-      retryPaymentAuthentication: mockRetryPaymentAuthentication
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/billingOperationStore'),
+  async () => {
+    const { ref } = await import('vue')
+    mockBillingOperationState.isAddingCredits = ref(false)
+    mockBillingOperationState.topupActionOperation = ref(undefined)
+    return {
+      useBillingOperationStore: () => ({
+        hasPendingOperations: true,
+        get isAddingCredits() {
+          return mockBillingOperationState.isAddingCredits?.value ?? false
+        },
+        get topupActionOperation() {
+          return mockBillingOperationState.topupActionOperation?.value
+        },
+        startOperation: mockStartOperation,
+        retryPaymentAuthentication: mockRetryPaymentAuthentication
+      })
+    }
   }
-})
+)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', async () => {
-  const { ref } = await import('vue')
-  mockCanTopUp.ref = ref(true)
-  return {
-    useBillingCapabilities: () => ({ canTopUp: mockCanTopUp.ref })
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  async () => {
+    const { ref } = await import('vue')
+    mockCanTopUp.ref = ref(true)
+    return {
+      useBillingCapabilities: () => ({ canTopUp: mockCanTopUp.ref })
+    }
   }
-})
+)
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({ show: mockShowSettings })
-}))
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingsDialog'),
+  () => ({
+    useSettingsDialog: () => ({ show: mockShowSettings })
+  })
+)
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ closeDialog: mockCloseDialog })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
     trackBillingEvent: mockTrackBillingEvent
@@ -121,22 +130,22 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/billing/usePendingTopup', () => ({
+vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     buildDocsUrl: () => 'https://docs.comfy.org',
     docsPaths: { partnerNodesPricing: '' }
   })
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
-vi.mock('@/base/credits/comfyCredits', () => ({
+vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
   usdToCredits: (usd: number) => usd
 }))

@@ -6,12 +6,12 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import UserCredit from './UserCredit.vue'
 
-vi.mock('firebase/app', () => ({
+vi.mock(import('firebase/app'), () => ({
   initializeApp: vi.fn(),
   getApp: vi.fn()
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock<unknown>(import('firebase/auth'), () => ({
   getAuth: vi.fn(),
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -20,7 +20,7 @@ vi.mock('firebase/auth', () => ({
   signOut: vi.fn()
 }))
 
-vi.mock('pinia')
+vi.mock(import('pinia'))
 
 const mockBalance = vi.hoisted(() => ({
   value: {
@@ -32,7 +32,7 @@ const mockBalance = vi.hoisted(() => ({
 
 const mockIsFetchingBalance = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({
     balance: mockBalance.value,
     isFetchingBalance: mockIsFetchingBalance.value

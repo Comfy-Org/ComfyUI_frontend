@@ -13,50 +13,59 @@ const workflowStoreState = vi.hoisted(() => ({
   persistedWorkflows: [] as ComfyWorkflow[]
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { ComfyWorkflow } =
-    await import('@/platform/workflow/management/stores/comfyWorkflow')
-  return {
-    ComfyWorkflow,
-    useWorkflowStore: () => ({
-      get workflows() {
-        return workflowStoreState.persistedWorkflows
-      },
-      get persistedWorkflows() {
-        return workflowStoreState.persistedWorkflows
-      },
-      bookmarkedWorkflows: [],
-      openWorkflows: [],
-      activeWorkflow: undefined,
-      isSyncLoading: false,
-      syncWorkflows: vi.fn()
-    }),
-    useWorkflowBookmarkStore: () => ({ loadBookmarks: vi.fn() })
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const { ComfyWorkflow } =
+      await import('@/platform/workflow/management/stores/comfyWorkflow')
+    return {
+      ComfyWorkflow,
+      useWorkflowStore: () => ({
+        get workflows() {
+          return workflowStoreState.persistedWorkflows
+        },
+        get persistedWorkflows() {
+          return workflowStoreState.persistedWorkflows
+        },
+        bookmarkedWorkflows: [],
+        openWorkflows: [],
+        activeWorkflow: undefined,
+        isSyncLoading: false,
+        syncWorkflows: vi.fn()
+      }),
+      useWorkflowBookmarkStore: () => ({ loadBookmarks: vi.fn() })
+    }
   }
-})
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({})
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({})
+  })
+)
 
-vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
-  useSearchQueryTracking: () => undefined
-}))
+vi.mock(
+  import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
+  () => ({
+    useSearchQueryTracking: () => undefined
+  })
+)
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
-vi.mock('@/composables/useAppMode', async () => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { computed } = await import('vue')
   return { useAppMode: () => ({ isAppMode: computed(() => true) }) }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: () => undefined })
 }))
 

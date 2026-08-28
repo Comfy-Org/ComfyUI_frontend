@@ -28,42 +28,42 @@ const {
   mockTrackWidgetFavoriteToggled: vi.fn()
 }))
 
-vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
+vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
   promoteWidget: vi.fn()
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({
     getInputSpecForWidget: mockGetInputSpecForWidget
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     canvas: { setDirty: vi.fn() }
   })
 }))
 
-vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/favoritedWidgetsStore'), () => ({
   useFavoritedWidgetsStore: () => ({
     isFavorited: mockIsFavorited,
     toggleFavorite: mockToggleFavorite
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
   })
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     prompt: vi.fn()
   })
 }))
 
-vi.mock('@/components/button/MoreButton.vue', () => ({
+vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
   default: (_: unknown, { slots }: { slots: Slots }) =>
     h('div', slots.default?.({ close: () => {} }))
 }))

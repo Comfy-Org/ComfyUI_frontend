@@ -21,7 +21,7 @@ import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
 
-vi.mock('@vueuse/core', async () => {
+vi.mock<unknown>(import('@vueuse/core'), async () => {
   const actual = await vi.importActual('@vueuse/core')
   return {
     ...(actual as Record<string, unknown>),
@@ -35,7 +35,7 @@ vi.mock('@vueuse/core', async () => {
 const mockResolveNode = vi.hoisted(() =>
   vi.fn<(id: NodeId) => LGraphNode | null>()
 )
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   resolveNode: (id: NodeId) => mockResolveNode(id)
 }))
 
@@ -51,11 +51,11 @@ type MockOutputStore = {
 
 const useNodeOutputStoreMock = vi.hoisted(() => vi.fn<() => MockOutputStore>())
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => useNodeOutputStoreMock()
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     canvas: {
       graph: {
@@ -65,7 +65,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
-vi.mock('@/stores/widgetValueStore', () => ({
+vi.mock<unknown>(import('@/stores/widgetValueStore'), () => ({
   useWidgetValueStore: () => ({
     getNodeWidgets: vi.fn(() => [])
   })

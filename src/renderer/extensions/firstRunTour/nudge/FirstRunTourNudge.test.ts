@@ -89,7 +89,7 @@ const mocks = await vi.hoisted(async () => {
   }
 })
 
-vi.mock('../tour/useFirstRunTourController', () => ({
+vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({
     nudgeArmed: mocks.nudgeArmed,
     nudgeOutput: mocks.nudgeOutput,
@@ -97,8 +97,8 @@ vi.mock('../tour/useFirstRunTourController', () => ({
   })
 }))
 
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/repositories/workflowTemplatesStore'),
   () => ({
     useWorkflowTemplatesStore: () => ({
       getTemplateByName: (name: string) =>
@@ -109,7 +109,7 @@ vi.mock(
   })
 )
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     get dialogStack() {
       return mocks.openDialogs.value
@@ -117,12 +117,15 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
-  useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
-}))
+vi.mock<unknown>(
+  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  () => ({
+    useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
+  })
+)
 
-vi.mock(
-  '@/platform/workflow/templates/composables/useTemplateWorkflows',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
   () => ({
     useTemplateWorkflows: () => ({
       loadTemplates: mocks.loadTemplates,
@@ -131,11 +134,11 @@ vi.mock(
   })
 )
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({ add: mocks.addToast })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackOnboardingTour: mocks.trackOnboardingTour })
 }))
 

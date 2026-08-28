@@ -45,7 +45,7 @@ const selectAsLatestFn = vi.fn((id: string | null) => {
   selectedIdRef.value = id
 })
 
-vi.mock('@/lib/litegraph/src/CanvasPointer', () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/CanvasPointer'), () => ({
   CanvasPointer: class {
     isTrackpadGesture() {
       return false
@@ -53,7 +53,7 @@ vi.mock('@/lib/litegraph/src/CanvasPointer', () => ({
   }
 }))
 
-vi.mock('@/renderer/extensions/linearMode/useOutputHistory', () => ({
+vi.mock(import('@/renderer/extensions/linearMode/useOutputHistory'), () => ({
   useOutputHistory: () => ({
     outputs: {
       media: mediaRef,
@@ -74,39 +74,45 @@ vi.mock('@/renderer/extensions/linearMode/useOutputHistory', () => ({
   })
 }))
 
-vi.mock('@/renderer/extensions/linearMode/linearOutputStore', () => ({
-  useLinearOutputStore: () => ({
-    get activeWorkflowInProgressItems() {
-      return activeWorkflowInProgressItemsRef.value
-    },
-    get selectedId() {
-      return selectedIdRef.value
-    },
-    set selectedId(v: string | null) {
-      selectedIdRef.value = v
-    },
-    select: selectFn,
-    selectAsLatest: selectAsLatestFn
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/linearOutputStore'),
+  () => ({
+    useLinearOutputStore: () => ({
+      get activeWorkflowInProgressItems() {
+        return activeWorkflowInProgressItemsRef.value
+      },
+      get selectedId() {
+        return selectedIdRef.value
+      },
+      set selectedId(v: string | null) {
+        selectedIdRef.value = v
+      },
+      select: selectFn,
+      selectAsLatest: selectAsLatestFn
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return activeWorkflowPathRef.value
-        ? { path: activeWorkflowPathRef.value }
-        : undefined
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return activeWorkflowPathRef.value
+          ? { path: activeWorkflowPathRef.value }
+          : undefined
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/stores/appModeStore', () => ({
+vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
   useAppModeStore: () => ({
     hasOutputs: hasOutputsRef
   })
 }))
 
-vi.mock('@/stores/queueStore', () => ({
+vi.mock<unknown>(import('@/stores/queueStore'), () => ({
   useQueueStore: () => ({
     get runningTasks() {
       return runningTasksRef.value
@@ -117,8 +123,8 @@ vi.mock('@/stores/queueStore', () => ({
   })
 }))
 
-vi.mock(
-  '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'),
   () => ({
     default: {
       name: 'OutputHistoryActiveQueueItem',
@@ -127,22 +133,29 @@ vi.mock(
   })
 )
 
-vi.mock('@/renderer/extensions/linearMode/OutputHistoryItem.vue', () => ({
-  default: {
-    name: 'OutputHistoryItem',
-    props: ['output'],
-    template:
-      '<div data-testid="output-history-item">{{ output?.filename }}</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/OutputHistoryItem.vue'),
+  () => ({
+    default: {
+      name: 'OutputHistoryItem',
+      props: ['output'],
+      template:
+        '<div data-testid="output-history-item">{{ output?.filename }}</div>'
+    }
+  })
+)
 
-vi.mock('@/renderer/extensions/linearMode/OutputPreviewItem.vue', () => ({
-  default: {
-    name: 'OutputPreviewItem',
-    props: ['latentPreview'],
-    template: '<div data-testid="output-preview-item">{{ latentPreview }}</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/OutputPreviewItem.vue'),
+  () => ({
+    default: {
+      name: 'OutputPreviewItem',
+      props: ['latentPreview'],
+      template:
+        '<div data-testid="output-preview-item">{{ latentPreview }}</div>'
+    }
+  })
+)
 
 function makeAsset(id: string): AssetItem {
   return fromPartial({ id, name: `${id}.png`, tags: [], user_metadata: {} })

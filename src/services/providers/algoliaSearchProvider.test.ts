@@ -19,7 +19,7 @@ globalWithAlgolia.__ALGOLIA_APP_ID__ = 'test-app-id'
 globalWithAlgolia.__ALGOLIA_API_KEY__ = 'test-api-key'
 
 // Mock algoliasearch
-vi.mock('algoliasearch/dist/lite/builds/browser', () => ({
+vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
   liteClient: vi.fn()
 }))
 

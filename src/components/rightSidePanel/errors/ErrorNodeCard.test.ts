@@ -17,13 +17,13 @@ const mockGenerateErrorReport = vi.fn(
   (_data?: unknown) => '# ComfyUI Error Report\n...'
 )
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getLogs: () => mockGetLogs()
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {
       serialize: () => mockSerialize()
@@ -31,13 +31,13 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/errorReportUtil', () => ({
+vi.mock(import('@/utils/errorReportUtil'), () => ({
   generateErrorReport: (data: unknown) => mockGenerateErrorReport(data)
 }))
 
 const mockTrackHelpResourceClicked = vi.fn()
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackUiButtonClicked: vi.fn(),
     trackHelpResourceClicked: mockTrackHelpResourceClicked
@@ -45,13 +45,13 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 const mockExecuteCommand = vi.fn()
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: vi.fn(() => ({
     execute: mockExecuteCommand
   }))
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: vi.fn(() => ({
     staticUrls: {
       githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'

@@ -92,25 +92,25 @@ function buildDragStub() {
   }
 }
 
-vi.mock('@/composables/useLoad3dViewer', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3dViewer'), () => ({
   useLoad3dViewer: () => viewerState.current
 }))
 
-vi.mock('@/composables/useLoad3dDrag', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3dDrag'), () => ({
   useLoad3dDrag: (opts: { onModelDrop?: (file: File) => Promise<void> }) => {
     capturedDragOptions.current = opts
     return dragState.current
   }
 }))
 
-vi.mock('@/services/load3dService', () => ({
+vi.mock<unknown>(import('@/services/load3dService'), () => ({
   useLoad3dService: () => ({
     getOrCreateViewerSync: () => viewerState.current,
     getLoad3dAsync: getLoad3dAsyncMock
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ closeDialog: dialogCloseMock })
 }))
 

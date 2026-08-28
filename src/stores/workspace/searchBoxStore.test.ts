@@ -5,7 +5,7 @@ import type { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
 // Mock dependencies
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useMouse: vi.fn(() => ({
     x: { value: 100 },
     y: { value: 200 }
@@ -13,7 +13,7 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 const mockSettingStore = createMockSettingStore()
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => mockSettingStore)
 }))
 

@@ -10,13 +10,13 @@ const mocks = vi.hoisted(() => ({
   lastExecutionError: null as object | null
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: mocks.addEventListener
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     queuePrompt: mocks.queuePrompt,
     get lastExecutionError() {

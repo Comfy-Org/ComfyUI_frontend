@@ -22,46 +22,52 @@ import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return {
-    ...actual,
-    LiteGraph: {
-      ...(actual.LiteGraph as Record<string, unknown>),
-      createNode: vi.fn(),
-      registered_node_types: {}
+vi.mock<unknown>(
+  import('@/lib/litegraph/src/litegraph'),
+  async (importOriginal) => {
+    const actual = await importOriginal<Record<string, unknown>>()
+    return {
+      ...actual,
+      LiteGraph: {
+        ...(actual.LiteGraph as Record<string, unknown>),
+        createNode: vi.fn(),
+        registered_node_types: {}
+      }
     }
   }
-})
+)
 
-vi.mock('@/core/graph/nodeShell/nodeShellState', () => ({
+vi.mock(import('@/core/graph/nodeShell/nodeShellState'), () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
   transferReplacementOwnership: vi.fn(() => true)
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: null },
   sanitizeNodeName: (name: string) => name.replace(/[&<>"'`=]/g, '')
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: vi.fn(() => ({
     add: mockToastAdd
   }))
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  ComfyWorkflow: class {},
-  useWorkflowStore: vi.fn(() => workflowMocks)
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    ComfyWorkflow: class {},
+    useWorkflowStore: vi.fn(() => workflowMocks)
+  })
+)
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   st: (_key: string, fallback: string) => fallback,
   t: (key: string, params?: Record<string, unknown>) =>
     params ? `${key}:${JSON.stringify(params)}` : key

@@ -20,7 +20,7 @@ const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
   }
 })
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     currentUser: null,
     isAuthenticated: false,
@@ -28,7 +28,7 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
-vi.mock('@/stores/executionStore', async (importOriginal) => {
+vi.mock<unknown>(import('@/stores/executionStore'), async (importOriginal) => {
   const actual = await importOriginal<typeof ExecutionStoreModule>()
   return {
     WORKFLOW_STATUS_I18N_KEYS: actual.WORKFLOW_STATUS_I18N_KEYS,
@@ -41,30 +41,36 @@ vi.mock('@/stores/executionStore', async (importOriginal) => {
   }
 })
 
-vi.mock('@/composables/usePragmaticDragAndDrop', () => ({
+vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),
   usePragmaticDroppable: vi.fn()
 }))
 
-vi.mock('@/composables/useWorkflowActionsMenu', () => ({
+vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), () => ({
   useWorkflowActionsMenu: () => ({
     menuItems: { value: [] }
   })
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    closeWorkflow: mockCloseWorkflow
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      closeWorkflow: mockCloseWorkflow
+    })
   })
-}))
+)
 
-vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
-  useWorkflowThumbnail: () => ({
-    getThumbnail: vi.fn(() => null)
+vi.mock<unknown>(
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'),
+  () => ({
+    useWorkflowThumbnail: () => ({
+      getThumbnail: vi.fn(() => null)
+    })
   })
-}))
+)
 
-vi.mock('./WorkflowTabPopover.vue', () => ({
+vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
   default: {
     render: () => null,
     methods: {

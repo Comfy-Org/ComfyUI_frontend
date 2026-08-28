@@ -15,7 +15,7 @@ const { mockSetDirty, mockFitView } = vi.hoisted(() => ({
   mockFitView: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     subgraph: undefined as unknown,
     graph: undefined as unknown,
@@ -53,14 +53,14 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     getCanvas: () => app.canvas
   })
 }))
-vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ fitView: mockFitView })
 }))
 

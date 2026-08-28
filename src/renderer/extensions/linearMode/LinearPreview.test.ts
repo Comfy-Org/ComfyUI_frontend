@@ -25,7 +25,7 @@ const spies = vi.hoisted(() => ({
   deleteAssets: vi.fn()
 }))
 
-vi.mock('@/composables/useAppMode', async () => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { computed } = await import('vue')
   return {
     useAppMode: () => ({
@@ -35,22 +35,28 @@ vi.mock('@/composables/useAppMode', async () => {
   }
 })
 
-vi.mock('@/renderer/extensions/linearMode/useOutputHistory', async () => {
-  const { computed } = await import('vue')
-  return {
-    useOutputHistory: () => ({
-      allOutputs: () => [],
-      isWorkflowActive: computed(() => outputHistoryState.isWorkflowActive),
-      cancelActiveWorkflowJobs: spies.cancelActiveWorkflowJobs
-    })
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/useOutputHistory'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useOutputHistory: () => ({
+        allOutputs: () => [],
+        isWorkflowActive: computed(() => outputHistoryState.isWorkflowActive),
+        cancelActiveWorkflowJobs: spies.cancelActiveWorkflowJobs
+      })
+    }
   }
-})
+)
 
-vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useMediaAssetActions'),
+  () => ({
+    useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
+  })
+)
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, loadGraphData: vi.fn() }
 }))
 

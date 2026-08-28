@@ -16,12 +16,12 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import SignInForm from './SignInForm.vue'
 
 // Mock firebase auth modules
-vi.mock('firebase/app', () => ({
+vi.mock(import('firebase/app'), () => ({
   initializeApp: vi.fn(),
   getApp: vi.fn()
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock<unknown>(import('firebase/auth'), () => ({
   getAuth: vi.fn(),
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -33,14 +33,14 @@ vi.mock('firebase/auth', () => ({
 
 // Mock the auth composables and stores
 const mockSendPasswordReset = vi.fn()
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: vi.fn(() => ({
     sendPasswordReset: mockSendPasswordReset
   }))
 }))
 
 const mockLoadingRef = ref(false)
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({
     get loading() {
       return mockLoadingRef.value
@@ -50,7 +50,7 @@ vi.mock('@/stores/authStore', () => ({
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: vi.fn(() => ({
     add: mockToastAdd
   }))

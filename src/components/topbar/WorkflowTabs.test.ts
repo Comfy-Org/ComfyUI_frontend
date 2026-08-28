@@ -16,7 +16,7 @@ const distribution = vi.hoisted(() => ({
 
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
@@ -28,14 +28,14 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) =>
       key === 'Comfy.UI.TabBarLayout' ? tabBarLayout.value : undefined
   })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     isLoggedIn: { value: false },
     userEmail: { value: undefined }
@@ -43,15 +43,15 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/support/feedbackDialog', () => ({
+vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog
 }))
 
-vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
+vi.mock(import('@/composables/useWorkflowStatusDismissal'), () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
 
-vi.mock('@/composables/element/useOverflowObserver', () => ({
+vi.mock<unknown>(import('@/composables/element/useOverflowObserver'), () => ({
   useOverflowObserver: () => ({
     isOverflowing: { value: false },
     disposed: { value: false },
@@ -60,55 +60,61 @@ vi.mock('@/composables/element/useOverflowObserver', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    openWorkflow: vi.fn(),
-    closeWorkflow: vi.fn()
-  })
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () =>
-    reactive({
-      openWorkflows: [],
-      activeWorkflow: null
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      openWorkflow: vi.fn(),
+      closeWorkflow: vi.fn()
     })
-}))
+  })
+)
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () =>
+      reactive({
+        openWorkflows: [],
+        activeWorkflow: null
+      })
+  })
+)
+
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: vi.fn() })
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
-vi.mock('@/utils/mouseDownUtil', () => ({
+vi.mock(import('@/utils/mouseDownUtil'), () => ({
   whileMouseDown: vi.fn()
 }))
 
-vi.mock('./WorkflowOverflowMenu.vue', () => ({
+vi.mock(import('./WorkflowOverflowMenu.vue'), () => ({
   default: defineComponent({
     name: 'WorkflowOverflowMenuStub',
     render: () => h('div')
   })
 }))
 
-vi.mock('./WorkflowTab.vue', () => ({
+vi.mock(import('./WorkflowTab.vue'), () => ({
   default: defineComponent({
     name: 'WorkflowTabStub',
     render: () => h('div')
   })
 }))
 
-vi.mock('./CurrentUserButton.vue', () => ({
+vi.mock(import('./CurrentUserButton.vue'), () => ({
   default: defineComponent({
     name: 'CurrentUserButtonStub',
     render: () => h('div')
   })
 }))
 
-vi.mock('./LoginButton.vue', () => ({
+vi.mock(import('./LoginButton.vue'), () => ({
   default: defineComponent({
     name: 'LoginButtonStub',
     render: () => h('div')

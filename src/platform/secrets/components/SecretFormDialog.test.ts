@@ -12,7 +12,7 @@ const mockState = vi.hoisted(() => ({
   credentialOptions: [] as SecretCredentialOption[]
 }))
 
-vi.mock('../composables/useSecretForm', () => ({
+vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
   useSecretForm: () => ({
     form: { provider: '', name: '', secretValue: '' },
     errors: {},
@@ -29,55 +29,55 @@ vi.mock('../composables/useSecretForm', () => ({
   })
 }))
 
-vi.mock('primevue/inputtext', () => ({
+vi.mock<unknown>(import('primevue/inputtext'), () => ({
   default: { name: 'InputText', template: '<input />' }
 }))
-vi.mock('primevue/password', () => ({
+vi.mock<unknown>(import('primevue/password'), () => ({
   default: { name: 'Password', template: '<input type="password" />' }
 }))
 
-vi.mock('@/components/ui/button/Button.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
   default: { name: 'Button', template: '<button><slot /></button>' }
 }))
 
-vi.mock('@/components/ui/select/Select.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/Select.vue'), () => ({
   default: { name: 'Select', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/select/SelectContent.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/SelectContent.vue'), () => ({
   default: { name: 'SelectContent', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/select/SelectItem.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/SelectItem.vue'), () => ({
   default: { name: 'SelectItem', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/SelectTrigger.vue'), () => ({
   default: { name: 'SelectTrigger', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/select/SelectValue.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/select/SelectValue.vue'), () => ({
   default: { name: 'SelectValue', template: '<span />' }
 }))
 
-vi.mock('@/components/ui/dialog/Dialog.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/Dialog.vue'), () => ({
   default: { name: 'Dialog', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogPortal.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogPortal.vue'), () => ({
   default: { name: 'DialogPortal', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogOverlay.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogOverlay.vue'), () => ({
   default: { name: 'DialogOverlay', template: '<div />' }
 }))
-vi.mock('@/components/ui/dialog/DialogContent.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogContent.vue'), () => ({
   default: {
     name: 'DialogContent',
     template: '<div data-testid="dialog-content"><slot /></div>'
   }
 }))
-vi.mock('@/components/ui/dialog/DialogHeader.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogHeader.vue'), () => ({
   default: { name: 'DialogHeader', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogTitle.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogTitle.vue'), () => ({
   default: { name: 'DialogTitle', template: '<div><slot /></div>' }
 }))
-vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
+vi.mock<unknown>(import('@/components/ui/dialog/DialogClose.vue'), () => ({
   default: { name: 'DialogClose', template: '<button />' }
 }))
 

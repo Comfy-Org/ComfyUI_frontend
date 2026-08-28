@@ -20,17 +20,17 @@ const mocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(() => false),
   isVideoNode: vi.fn(() => false),
   resolveNode: vi.fn()
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => ''),
     getRandParam: vi.fn(() => ''),
@@ -40,16 +40,19 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { reactive } = await import('vue')
-  mocks.workflowStore = reactive({
-    activeWorkflow: { path: WORKFLOW_A } as { path: string } | null,
-    openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }],
-    nodeIdToNodeLocatorId: (id: string | number) => String(id),
-    nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
-  })
-  return { useWorkflowStore: () => mocks.workflowStore }
-})
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const { reactive } = await import('vue')
+    mocks.workflowStore = reactive({
+      activeWorkflow: { path: WORKFLOW_A } as { path: string } | null,
+      openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }],
+      nodeIdToNodeLocatorId: (id: string | number) => String(id),
+      nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
+    })
+    return { useWorkflowStore: () => mocks.workflowStore }
+  }
+)
 
 const createMockNode = (id: number): LGraphNode =>
   fromAny<LGraphNode, unknown>({ id: toNodeId(id), type: 'KSampler' })

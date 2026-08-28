@@ -8,7 +8,7 @@ import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/com
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
   () => ({
     useAssetWidgetData: () => ({
       category: computed(() => 'checkpoints'),
@@ -36,11 +36,14 @@ function createMockMediaAssets() {
 
 let mockMediaAssets = createMockMediaAssets()
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => mockMediaAssets
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/composables/media/useAssetsApi'),
+  () => ({
+    useAssetsApi: () => mockMediaAssets
+  })
+)
 
-vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
+vi.mock(import('@/platform/assets/composables/useAssetFilterOptions'), () => ({
   useAssetFilterOptions: () => ({
     ownershipOptions: computed(() => []),
     availableBaseModels: computed(() => []),
@@ -48,7 +51,7 @@ vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
   })
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'), () => ({
   resolveOutputAssetItems: (...args: unknown[]) =>
     mockResolveOutputAssetItems(...args)
 }))

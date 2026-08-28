@@ -43,7 +43,7 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
   }
@@ -52,18 +52,18 @@ vi.mock('@/scripts/app', () => ({
 const mockResolveNode = vi.hoisted(() =>
   vi.fn<(id: SerializedNodeId) => LGraphNode | undefined>(() => undefined)
 )
-vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
   ...(await importOriginal()),
   resolveNode: mockResolveNode
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     getCanvas: () => ({ read_only: false })
   })
 }))
 
-vi.mock('@/components/builder/useEmptyWorkflowDialog', () => ({
+vi.mock(import('@/components/builder/useEmptyWorkflowDialog'), () => ({
   useEmptyWorkflowDialog: () => mockEmptyWorkflowDialog
 }))
 
@@ -81,7 +81,7 @@ const mockSettings = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => mockSettings
 }))
 

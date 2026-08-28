@@ -13,7 +13,8 @@ const testState = vi.hoisted(
   })
 )
 
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
+// eslint-disable-next-line import-x/no-restricted-paths
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), async () => {
   const { reactive } = await import('vue')
   testState.canvasStore = reactive({ canvas: null })
   return { useCanvasStore: () => testState.canvasStore }

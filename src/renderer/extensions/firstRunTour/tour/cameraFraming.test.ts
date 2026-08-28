@@ -24,7 +24,7 @@ function scaleFor(bounds: ReadOnlyRect, fill: number): number {
 }
 
 const appState = vi.hoisted(() => ({ canvas: undefined as unknown }))
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     get canvas() {
       return appState.canvas

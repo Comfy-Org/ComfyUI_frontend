@@ -29,7 +29,7 @@ const { mockFocusNode, mockRefreshMissingModels } = vi.hoisted(() => ({
   mockRefreshMissingModels: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     refreshMissingModels: mockRefreshMissingModels,
     rootGraph: {
@@ -39,7 +39,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(() => []),
   getNodeByExecutionId: vi.fn(),
   getActiveGraphNodeIds: vi.fn(() => new Set()),
@@ -48,13 +48,13 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   mapAllNodes: vi.fn(() => [])
 }))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: vi.fn()
   }))
 }))
 
-vi.mock('@/composables/canvas/useFocusNode', () => ({
+vi.mock(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: vi.fn(() => ({
     focusNode: mockFocusNode
   }))
@@ -63,7 +63,7 @@ vi.mock('@/composables/canvas/useFocusNode', () => ({
 // Its pack lookup resolves after the test file ends, and the console.warn on a
 // rejection lands while the worker's rpc is closing - an unhandled error that
 // fails the whole run with every test green. Mocked as the sibling suites do.
-vi.mock('@/stores/comfyRegistryStore', () => ({
+vi.mock<unknown>(import('@/stores/comfyRegistryStore'), () => ({
   useComfyRegistryStore: () => ({
     inferPackFromNodeName: vi.fn(),
     // TabErrors mounts the node-pack tree, which cancels this on unmount.
@@ -71,7 +71,7 @@ vi.mock('@/stores/comfyRegistryStore', () => ({
   })
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   downloadModel: vi.fn(),
   fetchModelMetadata: vi.fn(async () => ({
     fileSize: null,

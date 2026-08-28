@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useWidgetStore } from '@/stores/widgetStore'
 
-vi.mock('@/scripts/widgets', () => ({
+vi.mock<unknown>(import('@/scripts/widgets'), () => ({
   ComfyWidgets: {
     INT: vi.fn(),
     FLOAT: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('@/scripts/widgets', () => ({
   }
 }))
 
-vi.mock('@/schemas/nodeDefSchema', () => ({
+vi.mock<unknown>(import('@/schemas/nodeDefSchema'), () => ({
   getInputSpecType: (spec: unknown[]) => spec[0]
 }))
 

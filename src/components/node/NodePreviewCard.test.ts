@@ -7,8 +7,8 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import NodePreviewCard from './NodePreviewCard.vue'
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
   () => ({
     default: { template: '<div data-testid="node-preview" />' }
   })

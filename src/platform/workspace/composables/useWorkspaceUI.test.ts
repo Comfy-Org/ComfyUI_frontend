@@ -19,34 +19,37 @@ const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockBillingControlEnabled = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspace() {
-      return mockStore.activeWorkspace
-    },
-    get isInPersonalWorkspace() {
-      return mockStore.activeWorkspace?.type === 'personal'
-    },
-    get isWorkspaceSubscribed() {
-      return false
-    },
-    get isCurrentUserOriginalOwner() {
-      return mockStore.isCurrentUserOriginalOwner
-    },
-    get originalOwnerId() {
-      return mockStore.originalOwnerId
-    },
-    ensureMembersLoaded: mockStore.ensureMembersLoaded
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspace() {
+        return mockStore.activeWorkspace
+      },
+      get isInPersonalWorkspace() {
+        return mockStore.activeWorkspace?.type === 'personal'
+      },
+      get isWorkspaceSubscribed() {
+        return false
+      },
+      get isCurrentUserOriginalOwner() {
+        return mockStore.isCurrentUserOriginalOwner
+      },
+      get originalOwnerId() {
+        return mockStore.originalOwnerId
+      },
+      ensureMembersLoaded: mockStore.ensureMembersLoaded
+    })
   })
-}))
+)
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: computed(
       () => mockShouldUseWorkspaceBilling.value
@@ -54,15 +57,18 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canReactivate: computed(() => mockCanReactivate.value),
-    canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
-    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canReactivate: computed(() => mockCanReactivate.value),
+      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
+      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
+    })
   })
-}))
+)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     isActiveSubscription: ref(mockIsActiveSubscription.value),
     isTeamPlan: ref(mockIsTeamPlan.value),
@@ -70,7 +76,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get billingControlEnabled() {

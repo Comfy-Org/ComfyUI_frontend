@@ -16,14 +16,14 @@ const mocks = vi.hoisted(() => ({
   }))
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key
   }),
   createI18n: mocks.createI18nMock
 }))
 
-vi.mock('@/composables/graph/useSelectionOperations', () => ({
+vi.mock<unknown>(import('@/composables/graph/useSelectionOperations'), () => ({
   useSelectionOperations: () => ({
     copySelection: vi.fn(),
     duplicateSelection: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('@/composables/graph/useSelectionOperations', () => ({
   })
 }))
 
-vi.mock('@/composables/graph/useNodeArrangement', () => ({
+vi.mock<unknown>(import('@/composables/graph/useNodeArrangement'), () => ({
   useNodeArrangement: () => ({
     alignOptions: [{ localizedName: 'align-left', icon: 'align-left' }],
     distributeOptions: [{ localizedName: 'distribute', icon: 'distribute' }],
@@ -41,7 +41,7 @@ vi.mock('@/composables/graph/useNodeArrangement', () => ({
   })
 }))
 
-vi.mock('@/composables/graph/useSubgraphOperations', () => ({
+vi.mock<unknown>(import('@/composables/graph/useSubgraphOperations'), () => ({
   useSubgraphOperations: () => ({
     convertToSubgraph: mocks.convertToSubgraph,
     unpackSubgraph: mocks.unpackSubgraph,
@@ -49,7 +49,7 @@ vi.mock('@/composables/graph/useSubgraphOperations', () => ({
   })
 }))
 
-vi.mock('@/composables/graph/useFrameNodes', () => ({
+vi.mock<unknown>(import('@/composables/graph/useFrameNodes'), () => ({
   useFrameNodes: () => ({
     frameNodes: mocks.frameNodes
   })

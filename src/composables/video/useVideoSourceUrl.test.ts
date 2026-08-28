@@ -17,25 +17,28 @@ const mocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { apiURL: (path: string) => `/api${path}` }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { getPreviewFormatParam: () => '' }
 }))
 
-vi.mock('@/platform/distribution/cloudPreviewUtil', () => ({
+vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
   appendCloudResParam: vi.fn()
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    nodeToNodeLocatorId: (node: { id: string }) => String(node.id)
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      nodeToNodeLocatorId: (node: { id: string }) => String(node.id)
+    })
   })
-}))
+)
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({
     nodeOutputs: mocks.nodeOutputs,
     nodePreviewImages: mocks.nodePreviewImages,
@@ -43,7 +46,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
   })
 }))
 
-vi.mock('@/stores/widgetValueStore', () => ({
+vi.mock<unknown>(import('@/stores/widgetValueStore'), () => ({
   useWidgetValueStore: () => ({
     getWidget: mocks.getWidget
   })

@@ -13,17 +13,20 @@ const { mockRemint, mockTrackUnifiedAuthRetry, flagState } = vi.hoisted(() => ({
   flagState: { unifiedCloudAuthEnabled: true }
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackUnifiedAuthRetry: mockTrackUnifiedAuthRetry
   })
 }))
 
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({ remintUnifiedOnce: mockRemint })
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/workspaceAuthStore'),
+  () => ({
+    useWorkspaceAuthStore: () => ({ remintUnifiedOnce: mockRemint })
+  })
+)
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get unifiedCloudAuthEnabled() {
@@ -35,7 +38,7 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 // The axios interceptor gates on shouldRemintCloudRequest(), which is a no-op
 // off-cloud; the unit env is not a cloud build, so force it on.
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 describe('fetchWithUnifiedRemint', () => {
   const ok = { status: 200 } as Response

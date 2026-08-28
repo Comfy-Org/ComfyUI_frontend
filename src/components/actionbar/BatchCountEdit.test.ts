@@ -10,7 +10,7 @@ import BatchCountEdit from './BatchCountEdit.vue'
 
 const maxBatchCount = 16
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (settingId: string) =>
       settingId === 'Comfy.QueueButton.BatchCountLimit' ? maxBatchCount : 1
