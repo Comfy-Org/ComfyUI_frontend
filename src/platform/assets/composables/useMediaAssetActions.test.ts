@@ -912,7 +912,9 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should export temp history outputs through their job IDs', async () => {
-      mockGetAssetType.mockReturnValueOnce('temp').mockReturnValueOnce('output')
+      mockGetAssetType.mockImplementation((asset: AssetItem) =>
+        asset.id === 'temp-job' ? 'temp' : 'output'
+      )
       const tempOutput = createOutputAsset(
         'temp-job',
         'ComfyUI_temp_audio.flac',
@@ -941,9 +943,9 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should export inputs with output-shaped metadata through their asset IDs', async () => {
-      mockGetAssetType
-        .mockReturnValueOnce('input')
-        .mockReturnValueOnce('output')
+      mockGetAssetType.mockImplementation((asset: AssetItem) =>
+        asset.id === 'input-asset' ? 'input' : 'output'
+      )
       const inputWithJobMetadata = createMockAsset({
         id: 'input-asset',
         name: 'reference.png',
@@ -1004,6 +1006,24 @@ describe('useMediaAssetActions', () => {
         job2: ['img2.png']
       })
       expect(payload.naming_strategy).toBe('group_by_job_time')
+    })
+
+    it('should omit name filters when a job-level selection overlaps a child', async () => {
+      const parent = createOutputAsset('parent', 'cover.png', 'job1', 3)
+      const child = createOutputAsset('child', 'img1.png', 'job1')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([parent, child])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockCreateAssetExport).toHaveBeenCalledWith({
+        job_ids: ['job1'],
+        naming_strategy: 'preserve',
+        include_previews: true
+      })
     })
 
     it('should preserve multiple selected outputs from one job', async () => {
@@ -1108,6 +1128,16 @@ describe('useMediaAssetActions', () => {
 
       const actions = useMediaAssetActions()
       actions.downloadAssets([j1, j1Duplicate])
+
+      await expectExportToastFileCount(3)
+    })
+
+    it('should count an overlapping job-level selection and child once', async () => {
+      const parent = createOutputAsset('parent', 'cover.png', 'job1', 3)
+      const child = createOutputAsset('child', 'img1.png', 'job1')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([parent, child])
 
       await expectExportToastFileCount(3)
     })
