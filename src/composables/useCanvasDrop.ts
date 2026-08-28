@@ -25,8 +25,6 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
       args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
     onDrop: async (event) => {
-      // Sidebar drops create nodes, write model widgets, or insert
-      // workflows - all edits of the picked canvas.
       if (isSelectOnly(comfyApp.canvas)) return
       const loc = event.location.current.input
       const dndData = event.source.data

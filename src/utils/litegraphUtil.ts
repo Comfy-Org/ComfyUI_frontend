@@ -49,8 +49,6 @@ export async function createNode(
   if (!name) {
     return null
   }
-  // Node creation is an edit of the picked canvas (the file-drop path's
-  // second gate, after the drop handler's own).
   if (isSelectOnly(canvas)) {
     return null
   }
@@ -153,10 +151,12 @@ export function addToComboValues(widget: IComboWidget, value: string) {
  *   not the command registry, which keyboard shortcuts bypass);
  * - node creation from NODE DEFINITIONS is gated at useLitegraphService's
  *   addNodeOnGraph (search popover, libraries, bookmarks, ghost-drops, job
- *   menu), with three surface guards closing the non-definition creation
+ *   menu), with four surface guards closing the non-definition mutation
  *   paths: the document file-drop handler (app.ts), the sidebar drop
- *   handler (useCanvasDrop), and workflow insertion
- *   (workflowService.insertWorkflow).
+ *   handler (useCanvasDrop), workflow insertion
+ *   (workflowService.insertWorkflow), and in-place node replacement
+ *   (useNodeReplacement's replaceNodesInPlace, reached from the missing
+ *   nodes Errors panel).
  *
  * Deliberately unguarded: workflow-lifecycle commands (new/open/load-default)
  * SWAP the workflow rather than edit the picked canvas - switching workflows
@@ -169,10 +169,9 @@ export function addToComboValues(widget: IComboWidget, value: string) {
  * click-replace paths (handleNodeSelect and
  * toggleNodeSelectionAfterPointerUp in useNodeEventHandlers), the drag path
  * in useNodePointerInteractions, useSlotLinkInteraction,
- * useVueNodeResizeTracking - plus useNodeReplacement's replaceNode and
- * widgetInputs' programmatic widget conversion, which are reachable only
- * through surfaces guarded above. Classic-canvas picking never reaches
- * them; arming picking under Vue nodes requires guarding them first.
+ * useVueNodeResizeTracking - plus widgetInputs' programmatic widget
+ * conversion. Arming picking under Vue nodes requires guarding them
+ * first.
  */
 export const isSelectOnly = (
   canvas: LGraphCanvas | null | undefined

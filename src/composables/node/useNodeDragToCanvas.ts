@@ -73,8 +73,7 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
   const canvas = useCanvasStore().canvas
   if (!canvas) return false
   if (!isOverCanvas(clientX, clientY)) return false
-  // A picking refusal is silent-nothing, not a failure: consume the drop
-  // before the error toast below can fire.
+  // A picking refusal is silent-nothing: true skips the error toast below.
   if (isSelectOnly(canvas)) return true
 
   const pos = canvas.convertEventToCanvasOffset({

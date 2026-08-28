@@ -687,9 +687,10 @@ export class ComfyApp {
         event.preventDefault()
         event.stopPropagation()
 
-        // Dropped files create nodes or load workflows - both are edits of
-        // the picked canvas.
-        if (isSelectOnly(this.canvas)) return
+        if (isSelectOnly(this.canvas)) {
+          this.dragOverNode = null
+          return
+        }
 
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it
@@ -2145,6 +2146,9 @@ export class ComfyApp {
    * @param {File} file
    */
   private async handleMeshFile(file: File): Promise<LGraphNode | null> {
+    // Refuse before uploading: the refusal otherwise lands after the file
+    // is already on the server.
+    if (isSelectOnly(this.canvas)) return null
     const uploadedPath = await Load3dUtils.uploadFile(file, '3d')
     if (!uploadedPath) return null
 
