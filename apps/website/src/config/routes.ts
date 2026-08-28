@@ -119,6 +119,8 @@ export const externalLinks = {
   docsMcpMd: 'https://docs.comfy.org/agent-tools/mcp.md',
   docsMcpLocalMd:
     'https://docs.comfy.org/agent-tools/mcp.md#local-comfy-mcp-connection',
+  docsComfyRouter:
+    'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
   docsPlatform: 'https://docs.comfy.org/development/overview',
   docsPlatformExamples: 'https://docs.comfy.org/platform/examples',
   docsSdk: 'https://docs.comfy.org/development/api-development/sdks',
