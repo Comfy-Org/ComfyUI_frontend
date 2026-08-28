@@ -5,6 +5,9 @@ const mockGetAuthHeader = vi.fn()
 const mockAuthState = vi.hoisted(() => ({
   currentUser: { uid: 'user-a' } as { uid: string } | null
 }))
+const mockGetApiKeyHeader = vi.fn<() => Record<string, string> | null>(
+  () => null
+)
 const originalFetch = globalThis.fetch
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -18,6 +21,12 @@ vi.mock('@/stores/authStore', () => ({
     get currentUser() {
       return mockAuthState.currentUser
     }
+  })
+}))
+
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: () => ({
+    getAuthHeader: mockGetApiKeyHeader
   })
 }))
 
@@ -60,15 +69,37 @@ describe('useSessionCookie', () => {
     })
   })
 
-  it('createSessionOrThrow fails fast without a Firebase token', async () => {
+  it('createSessionOrThrow fails fast when no credential exists at all', async () => {
     mockGetIdToken.mockResolvedValue(null)
+    mockGetApiKeyHeader.mockReturnValue(null)
     const { useSessionCookie } =
       await import('@/platform/auth/session/useSessionCookie')
 
     await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
-      'No Firebase token available for session creation'
+      'No credential available for session creation'
     )
     expect(globalThis.fetch).not.toHaveBeenCalled()
+  })
+
+  it('createSessionOrThrow uses the API key when Firebase is absent', async () => {
+    // API-key sessions have no Firebase identity but still need the session
+    // cookie: <img> and the WebSocket handshake can only send cookies.
+    mockGetIdToken.mockResolvedValue(null)
+    mockGetApiKeyHeader.mockReturnValue({ 'X-API-KEY': 'comfyui-test-key' })
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), { status: 200 })
+    )
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+
+    await useSessionCookie().createSessionOrThrow()
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/auth/session',
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'X-API-KEY': 'comfyui-test-key' })
+      })
+    )
   })
 
   it('createSession coalesces concurrent callers into one POST', async () => {

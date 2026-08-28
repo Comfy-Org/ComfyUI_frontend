@@ -1,5 +1,6 @@
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 interface InFlightCreateSession {
@@ -39,11 +40,20 @@ export const useSessionCookie = () => {
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
     const authStore = useAuthStore()
     const firebaseToken = await authStore.getIdToken()
-    if (!firebaseToken) {
-      throw new Error('No Firebase token available for session creation')
+    if (firebaseToken) {
+      return { Authorization: `Bearer ${firebaseToken}` }
     }
 
-    return { Authorization: `Bearer ${firebaseToken}` }
+    // API-key sessions have no Firebase identity, but they still need the
+    // session cookie: <img> tags and the WebSocket handshake cannot attach
+    // X-API-KEY, so the cookie is the only credential those requests carry.
+    // The backend mints a key-carrying cookie for key-authenticated sessions.
+    const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
+    if (apiKeyHeader) {
+      return apiKeyHeader
+    }
+
+    throw new Error('No credential available for session creation')
   }
 
   /** Creates or refreshes the session cookie after login or token refresh. */
