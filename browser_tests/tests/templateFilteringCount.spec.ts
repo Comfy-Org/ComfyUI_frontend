@@ -229,10 +229,7 @@ test.describe(
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(1)
 
-      const clearButton = comfyPage.templatesDialog.root.getByRole('button', {
-        name: /Clear Filters/i
-      })
-      await clearButton.click()
+      await comfyPage.templatesDialog.clearFilters.click()
 
       await expect(comfyPage.templates.allTemplateCards).toHaveCount(2)
 

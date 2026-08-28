@@ -17,13 +17,6 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ onUserResolved: mockOnUserResolved })
 }))
 
-const topupMocks = vi.hoisted(() => ({
-  startTopupTracking: vi.fn(),
-  clearTopupTracking: vi.fn(),
-  checkForCompletedTopup: vi.fn().mockReturnValue(true)
-}))
-vi.mock('@/platform/telemetry/topupTracker', () => topupMocks)
-
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
   normalizeSurveyResponses: mockNormalizeSurveyResponses
@@ -38,6 +31,8 @@ import type {
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   RunButtonProperties,
   ShareFlowMetadata,
   ShellLayoutMetadata,
@@ -56,13 +51,8 @@ const waitForMixpanelInit = () =>
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
 
-beforeEach(() => {
-  localStorage.clear()
-})
-
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     delete (window as unknown as ConfigWindow).__CONFIG__
   })
 
@@ -86,7 +76,6 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
 
 describe('MixpanelTelemetryProvider — with configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -279,7 +268,6 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
 describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -460,6 +448,35 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     )
   })
 
+  it.for<
+    [
+      OnboardingTourStage,
+      (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+    ]
+  >([
+    ['started', TelemetryEvents.ONBOARDING_TOUR_STARTED],
+    ['step_shown', TelemetryEvents.ONBOARDING_TOUR_STEP_SHOWN],
+    ['completed', TelemetryEvents.ONBOARDING_TOUR_COMPLETED],
+    ['skipped', TelemetryEvents.ONBOARDING_TOUR_SKIPPED]
+  ])(
+    'trackOnboardingTour(%s) dispatches %s',
+    async ([stage, expectedEvent]) => {
+      const provider = new MixpanelTelemetryProvider()
+      await waitForMixpanelInit()
+      mockMixpanel.track.mockClear()
+
+      const metadata: OnboardingTourMetadata = {
+        tour: 'appMode',
+        step_count: 6,
+        step_number: 2,
+        coach_id: 'app-run-button'
+      }
+      provider.trackOnboardingTour(stage, metadata)
+
+      expect(mockMixpanel.track).toHaveBeenCalledWith(expectedEvent, metadata)
+    }
+  )
+
   it('omits share_id from existing Mixpanel events', async () => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
@@ -501,25 +518,5 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
         is_app_mode: true
       }
     )
-  })
-})
-
-describe('MixpanelTelemetryProvider — topup delegation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    delete (window as unknown as ConfigWindow).__CONFIG__
-  })
-
-  it('forwards topup lifecycle calls to the topupTracker utility', () => {
-    const provider = new MixpanelTelemetryProvider()
-
-    provider.startTopupTracking()
-    provider.clearTopupTracking()
-    const result = provider.checkForCompletedTopup([])
-
-    expect(topupMocks.startTopupTracking).toHaveBeenCalled()
-    expect(topupMocks.clearTopupTracking).toHaveBeenCalled()
-    expect(topupMocks.checkForCompletedTopup).toHaveBeenCalledWith([])
-    expect(result).toBe(true)
   })
 })

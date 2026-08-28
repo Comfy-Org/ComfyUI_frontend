@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Kes"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Seçili Düğüm için Katman Editörünü Aç"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Varsayılan İş Akışını Yükle"
   },

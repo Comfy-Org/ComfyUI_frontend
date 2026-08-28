@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -121,7 +122,7 @@ function makeAsset(
   jobId: string,
   opts?: { allOutputs?: ResultItemImpl[]; outputCount?: number }
 ): AssetItem {
-  return {
+  return fromPartial({
     id,
     name: `${id}.png`,
     tags: [],
@@ -135,7 +136,7 @@ function makeAsset(
         ? { outputCount: opts.outputCount }
         : {})
     }
-  }
+  })
 }
 
 function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
@@ -150,7 +151,6 @@ function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
 
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mediaRef.value = []
     pendingResolveRef.value = new Set()
     inProgressItemsRef.value = []
@@ -163,8 +163,6 @@ describe(useOutputHistory, () => {
     pendingTasksRef.value = []
     resolvedOutputsCacheRef.clear()
     jobDetailResults.clear()
-    selectAsLatestFn.mockReset()
-    resolveIfReadyFn.mockReset()
   })
 
   describe('sessionMedia filtering', () => {

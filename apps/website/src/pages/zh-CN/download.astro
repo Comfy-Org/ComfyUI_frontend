@@ -12,6 +12,7 @@ import {
   absoluteUrl,
   comfyUiApplicationNode,
   comfyUiSoftwareId,
+  comfyUiSourceCodeNode,
   pageContext,
 } from '../../utils/jsonLd'
 
@@ -33,7 +34,7 @@ const { siteUrl, locale } = pageContext(
     },
     { name: t('breadcrumb.download', locale) },
   ]}
-  extraJsonLd={[comfyUiApplicationNode(siteUrl)]}
+  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
   keywords={['comfyui app', 'comfyui desktop app', 'comfyui download', 'ComfyUI 下载', 'ComfyUI 桌面应用', 'ComfyUI 应用', 'ComfyUI Windows', 'ComfyUI macOS', 'ComfyUI Linux']}
 >
   <CloudBannerSection locale="zh-CN" />

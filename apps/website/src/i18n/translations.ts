@@ -6,9 +6,89 @@ const translations = {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
   },
+  'tags.openWeights': {
+    en: 'Open Weights',
+    'zh-CN': '开放权重'
+  },
+  'tags.openSource': {
+    en: 'Open Source',
+    'zh-CN': '开源'
+  },
   'tags.imageToVideo': {
     en: 'Image To Video',
     'zh-CN': '图像生成视频'
+  },
+  'tags.imageGeneration': {
+    en: 'Image Generation',
+    'zh-CN': '图像生成'
+  },
+  'tags.styleTransfer': {
+    en: 'Style Transfer',
+    'zh-CN': '风格迁移'
+  },
+  'tags.moodboards': {
+    en: 'Moodboards',
+    'zh-CN': '情绪板'
+  },
+  'tags.storyboarding': {
+    en: 'Storyboarding',
+    'zh-CN': '故事板'
+  },
+  'tags.productPhotography': {
+    en: 'Product Photography',
+    'zh-CN': '产品摄影'
+  },
+  'tags.previsualization': {
+    en: 'Previsualization',
+    'zh-CN': '预演'
+  },
+  'tags.bRoll': {
+    en: 'B-Roll',
+    'zh-CN': 'B-Roll 素材'
+  },
+  'tags.outOfHome': {
+    en: 'Out-of-Home',
+    'zh-CN': '户外广告'
+  },
+  'tags.characterDesign': {
+    en: 'Character Design',
+    'zh-CN': '角色设计'
+  },
+  'tags.keyframing': {
+    en: 'Keyframing',
+    'zh-CN': '关键帧'
+  },
+  'tags.backgrounds': {
+    en: 'Backgrounds',
+    'zh-CN': '背景'
+  },
+  'tags.threeD': {
+    en: '3D',
+    'zh-CN': '3D'
+  },
+  'tags.inBetweening': {
+    en: 'In-Betweening',
+    'zh-CN': '中间帧'
+  },
+  'tags.compositing': {
+    en: 'Compositing',
+    'zh-CN': '合成'
+  },
+  'tags.fundamentals': {
+    en: 'Fundamentals',
+    'zh-CN': '基础入门'
+  },
+  'tags.nodeGraph': {
+    en: 'Node Graph',
+    'zh-CN': '节点图'
+  },
+  'tags.lora': {
+    en: 'LoRA',
+    'zh-CN': 'LoRA'
+  },
+  'tags.controlNet': {
+    en: 'ControlNet',
+    'zh-CN': 'ControlNet'
   },
 
   // UI (global, reusable across sections)
@@ -16,6 +96,9 @@ const translations = {
     en: 'Copy',
     'zh-CN': '复制'
   },
+  'ui.breadcrumb': { en: 'Breadcrumb', 'zh-CN': '面包屑导航' },
+  'ui.readMore': { en: 'Read more', 'zh-CN': '展开' },
+  'ui.readLess': { en: 'Read less', 'zh-CN': '收起' },
   'ui.copied': {
     en: 'Copied',
     'zh-CN': '已复制'
@@ -25,6 +108,10 @@ const translations = {
   'cta.tryWorkflow': {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
+  },
+  'cta.tryForFree': {
+    en: 'Try for Free',
+    'zh-CN': '免费试用'
   },
   'cta.getStarted': {
     en: 'GET STARTED',
@@ -39,6 +126,8 @@ const translations = {
     'zh-CN': '观看演示'
   },
 
+  // Education CTA (customer story block)
+
   // HeroSection
   'hero.title': {
     en: 'Professional Control\nof Visual AI',
@@ -52,6 +141,98 @@ const translations = {
   'hero.runFirstWorkflow': {
     en: 'Run your first workflow',
     'zh-CN': '运行你的第一个工作流'
+  },
+  'hero.getStartedFree': {
+    en: 'Get started for free',
+    'zh-CN': '免费开始使用'
+  },
+
+  // FeaturedWorkflowsSection
+  'featuredWorkflows.label': {
+    en: 'FEATURED · STAFF PICK',
+    'zh-CN': '精选 · 官方推荐'
+  },
+  'featuredWorkflows.prev': {
+    en: 'Previous featured workflow',
+    'zh-CN': '上一个精选工作流'
+  },
+  'featuredWorkflows.next': {
+    en: 'Next featured workflow',
+    'zh-CN': '下一个精选工作流'
+  },
+
+  // Model release carousel (home page)
+  'modelRelease.eyebrow': {
+    en: 'New Model Release',
+    'zh-CN': '新模型发布'
+  },
+  'modelRelease.seedance.title': {
+    en: 'Seedance 2.5',
+    'zh-CN': 'Seedance 2.5'
+  },
+  'modelRelease.seedance.body': {
+    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut.",
+    'zh-CN':
+      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。'
+  },
+  'modelRelease.seedance.explore': {
+    en: 'Explore Seedance 2.5',
+    'zh-CN': '探索 Seedance 2.5'
+  },
+  'modelRelease.seedance.videoAriaLabel': {
+    en: 'Seedance 2.5 preview',
+    'zh-CN': 'Seedance 2.5 预览'
+  },
+  'modelRelease.ltx.title': {
+    en: 'LTX 2.5',
+    'zh-CN': 'LTX 2.5'
+  },
+  'modelRelease.ltx.body': {
+    en: 'The fastest video generation model, now with sharper prompt adherence and audio. Cinematic detail on faces and fine textures with Diffusion Fidelity Rendering.',
+    'zh-CN':
+      '最快的视频生成模型，如今提示词遵循度与音频表现全面升级。凭借 Diffusion Fidelity Rendering，人物面部与细腻纹理都能呈现电影级细节。'
+  },
+  'modelRelease.ltx.explore': {
+    en: 'Explore LTX 2.5',
+    'zh-CN': '探索 LTX 2.5'
+  },
+  'modelRelease.ltx.videoAriaLabel': {
+    en: 'LTX 2.5 preview',
+    'zh-CN': 'LTX 2.5 预览'
+  },
+  'modelRelease.wanAnimate2.title': {
+    en: 'Wan Animate 2',
+    'zh-CN': 'Wan Animate 2'
+  },
+  'modelRelease.wanAnimate2.body': {
+    en: 'Upload a reference image of your character and a video of the motion you want. Wan Animate 2 transfers that motion onto your character, end to end.',
+    'zh-CN':
+      '上传一张角色参考图，再加上一段你想要的动作视频，Wan Animate 2 就会把该动作完整迁移到你的角色上。'
+  },
+  'modelRelease.wanAnimate2.explore': {
+    en: 'Explore Wan Animate 2',
+    'zh-CN': '探索 Wan Animate 2'
+  },
+  'modelRelease.wanAnimate2.videoAriaLabel': {
+    en: 'Wan Animate 2 preview',
+    'zh-CN': 'Wan Animate 2 预览'
+  },
+  'modelRelease.minimax.title': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'modelRelease.minimax.body': {
+    en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it.',
+    'zh-CN':
+      '完整的多模态输入输出，原生立体声剪辑。最高 2K，每次生成 5 至 15 秒。H3 真正基于输入音频进行条件生成，而其他模型则会覆盖或丢弃它。'
+  },
+  'modelRelease.minimax.explore': {
+    en: 'Explore MiniMax H3',
+    'zh-CN': '探索 MiniMax H3'
+  },
+  'modelRelease.minimax.videoAriaLabel': {
+    en: 'MiniMax H3 preview',
+    'zh-CN': 'MiniMax H3 预览'
   },
 
   // ProductShowcaseSection
@@ -83,8 +264,8 @@ const translations = {
       '如果您是 ComfyUI 新手，可以从 App 模式开始——这是工作流的简化视图。您随时可以切换回节点图视图以深入了解。'
   },
   'showcase.feature3.title': {
-    en: 'Community Workflows on Comfy Hub',
-    'zh-CN': 'Comfy Hub 上的社区工作流'
+    en: 'Community Workflows on Comfy Workflows',
+    'zh-CN': 'Comfy Workflows 上的社区工作流'
   },
   'showcase.feature3.description': {
     en: 'Browse and remix thousands of community-shared workflows. Start from a proven template and customize it to your needs.',
@@ -94,40 +275,36 @@ const translations = {
   'showcase.badgeHow': { en: 'HOW', 'zh-CN': '了解' },
   'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运行方式' },
 
-  // UseCaseSection
-  'useCase.label': {
-    en: 'Industries that create with ComfyUI',
-    'zh-CN': '使用 ComfyUI 创作的行业'
+  // IndustriesSection
+  'industries.label': {
+    en: 'Industries',
+    'zh-CN': '行业'
   },
-  'useCase.navLabel': {
+  'industries.navLabel': {
     en: 'Industry categories',
     'zh-CN': '行业分类'
   },
-  'useCase.vfx': {
-    en: 'VFX &\nAnimation',
-    'zh-CN': '视觉特效 &\n动画'
+  'industries.vfx': {
+    en: 'VFX & Animation',
+    'zh-CN': '视觉特效 & 动画'
   },
-  'useCase.advertising': {
-    en: 'Advertising &\nCreative Studios',
-    'zh-CN': '广告 &\n创意工作室'
+  'industries.advertising': {
+    en: 'Advertising & Creative Studios',
+    'zh-CN': '广告 & 创意工作室'
   },
-  'useCase.gaming': {
+  'industries.gaming': {
     en: 'Gaming',
     'zh-CN': '电子游戏'
   },
-  'useCase.ecommerce': {
-    en: 'eCommerce &\nFashion',
-    'zh-CN': '电商 &\n时尚'
+  'industries.ecommerce': {
+    en: 'eCommerce & Fashion',
+    'zh-CN': '电商 & 时尚'
   },
-  'useCase.more': {
-    en: '& More',
-    'zh-CN': '& 更多'
+  'industries.body': {
+    en: 'Powered by 60,000+ nodes, thousands of workflows, and a community that builds faster than any one company could.',
+    'zh-CN': '60,000+ 节点，数千条工作流，一个比任何公司速度都更快的社区。'
   },
-  'useCase.body': {
-    en: 'Powered by 60,000+ nodes, thousands of workflows,\nand a community that builds faster than any one company could.',
-    'zh-CN': '60,000+ 节点，数千条工作流，\n一个比任何公司速度都更快的社区。'
-  },
-  'useCase.cta': {
+  'industries.cta': {
     en: 'EXPLORE WORKFLOWS',
     'zh-CN': '探索工作流'
   },
@@ -150,8 +327,8 @@ const translations = {
     'zh-CN': '下载桌面版'
   },
   'getStarted.step1.launchCloud': {
-    en: 'Launch Cloud',
-    'zh-CN': '启动云端'
+    en: 'Try Cloud for free',
+    'zh-CN': '免费试用云端'
   },
   'getStarted.step1.or': {
     en: ' or ',
@@ -285,6 +462,10 @@ const translations = {
   'api.hero.viewDocs': {
     en: 'VIEW DOCS',
     'zh-CN': '查看文档'
+  },
+  'api.hero.trySdk': {
+    en: 'TRY COMFY SDK',
+    'zh-CN': '试用 Comfy SDK'
   },
 
   // Enterprise – TeamSection
@@ -462,6 +643,24 @@ const translations = {
     en: 'Comfy Enterprise plans come with support from the team that builds the engine: direct access to our engineering team and a whiteglove onboarding.',
     'zh-CN':
       'Comfy 企业版计划附带引擎开发团队的支持：直接访问我们的工程团队和白手套式入职服务。'
+  },
+
+  // Enterprise – MiniMax commercial license band
+  'enterprise.minimaxBand.label': {
+    en: 'MINIMAX LICENSING',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'enterprise.minimaxBand.text': {
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Add full local commercial rights, LoRA training included, to your Enterprise plan.',
+    'zh-CN':
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。在你的企业版计划之上增加完整的本地商业使用权利，并包含 LoRA 训练。'
+  },
+  'enterprise.minimaxBand.cta': { en: 'Get your license', 'zh-CN': '获取许可' },
+
+  // Enterprise – FAQ
+  'enterprise.faq.heading': {
+    en: 'FAQs',
+    'zh-CN': '常见问题'
   },
 
   // API – StepsSection
@@ -743,6 +942,36 @@ const translations = {
   'download.hero.installGithub': {
     en: 'INSTALL FROM GITHUB',
     'zh-CN': '从 GITHUB 安装'
+  },
+
+  // Download – MobileDownloadEmailForm
+  'download.emailForm.heading': {
+    en: 'Get download link',
+    'zh-CN': '获取下载链接'
+  },
+  'download.emailForm.emailLabel': {
+    en: 'Email address',
+    'zh-CN': '邮箱地址'
+  },
+  'download.emailForm.placeholder': {
+    en: 'you@email.com',
+    'zh-CN': 'you@email.com'
+  },
+  'download.emailForm.submit': {
+    en: 'Send download link',
+    'zh-CN': '发送下载链接'
+  },
+  'download.emailForm.success': {
+    en: 'The link is sent to {email}!',
+    'zh-CN': '下载链接已发送至 {email}！'
+  },
+  'download.emailForm.invalidEmail': {
+    en: 'Please enter a valid email address.',
+    'zh-CN': '请输入有效的邮箱地址。'
+  },
+  'download.emailForm.error': {
+    en: 'Something went wrong. Please try again.',
+    'zh-CN': '出错了，请重试。'
   },
 
   // Download – CloudBannerSection
@@ -1069,6 +1298,11 @@ const translations = {
     en: 'FAQs',
     'zh-CN': '常见问题'
   },
+  'cloud.faq.footer': {
+    en: 'For pricing, plans, credits, and billing details, see the <a href="/cloud/pricing#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
+    'zh-CN':
+      '有关定价、计划、积分和账单的详细信息，请查看<a href="/zh-CN/cloud/pricing#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
+  },
   'cloud.faq.1.q': {
     en: 'What is Comfy Cloud / ComfyUI Cloud?',
     'zh-CN': '什么是 Comfy Cloud / ComfyUI Cloud？'
@@ -1109,8 +1343,9 @@ const translations = {
     'zh-CN': 'Comfy Cloud 使用什么机器或 GPU？'
   },
   'cloud.faq.5.a': {
-    en: 'Comfy Cloud runs on Blackwell RTX 6000 Pros — 96GB VRAM.',
-    'zh-CN': 'Comfy Cloud 运行在 Blackwell RTX 6000 Pro 上——96GB 显存。'
+    en: 'Comfy Cloud runs on Blackwell RTX 6000 Pros — 96GB VRAM, with a library of 900+ pre-installed models and support for many of the most-used custom nodes from the ComfyUI community. We expand node support regularly based on demand and compatibility.',
+    'zh-CN':
+      'Comfy Cloud 运行在 Blackwell RTX 6000 Pro 上——96GB 显存，拥有 900+ 预装模型库，并支持 ComfyUI 社区中许多最常用的自定义节点。我们会根据需求和兼容性定期扩展节点支持。'
   },
   'cloud.faq.6.q': {
     en: 'Can I use my existing workflows with Comfy Cloud?',
@@ -1135,18 +1370,18 @@ const translations = {
     'zh-CN': '我可以使用自己的模型或检查点吗？'
   },
   'cloud.faq.8.a': {
-    en: 'You can always check Cloud to see the list of extensions and models that we support, for free.\nCurrently, we support a wide variety of preinstalled models.\nFor those on the Creator or Pro plans, you can bring in your own fine-tuned LoRAs from CivitAI to perfect your own style.\nImporting from HuggingFace and direct file upload for larger models is on our roadmap.',
+    en: 'You can always check Cloud to see the list of extensions and models that we support, for free.\nCurrently, we support a wide variety of preinstalled models.\nFor those on the Creator, Pro, or Team plans, you can bring in your own fine-tuned LoRAs from CivitAI or HuggingFace to perfect your own style.\nDirect file upload for larger models is on our roadmap.',
     'zh-CN':
-      '您可以随时在 Cloud 上免费查看我们支持的扩展和模型列表。\n目前我们支持大量预装模型。\n对于 Creator 或 Pro 计划用户，您可以导入自己从 CivitAI 微调的 LoRA 来打造专属风格。\n从 HuggingFace 导入和大型模型的直接上传功能已在我们的路线图中。'
+      '您可以随时在 Cloud 上免费查看我们支持的扩展和模型列表。\n目前我们支持大量预装模型。\n对于 Creator、Pro 或 Team 计划用户，您可以导入自己从 CivitAI 或 HuggingFace 微调的 LoRA 来打造专属风格。\n大型模型的直接文件上传功能已在我们的路线图中。'
   },
   'cloud.faq.9.q': {
     en: 'Can I run long or multiple workflows?',
     'zh-CN': '我可以运行长时间或多个工作流吗？'
   },
   'cloud.faq.9.a': {
-    en: "Each workflow can run for up to 60 minutes, with one active job at a time. We're adding higher tiers and parallel runs soon for even more flexibility.",
+    en: 'Each workflow has a max runtime of 30 minutes on Standard and Creator, raised to 1 hour on Pro. Jobs over the limit are cancelled automatically to keep the system fair and stable. You can queue up to 100 workflows at once, and run 1 / 3 / 5 concurrently via API on Standard / Creator / Pro. Need higher API rate limits? Contact enterprise@comfy.org.',
     'zh-CN':
-      '每个工作流最长可运行 60 分钟，同时运行一个活跃任务。我们即将推出更高层级和并行运行，提供更大灵活性。'
+      'Standard 和 Creator 上，单个工作流的最长运行时长为 30 分钟；Pro 上提升至 1 小时。超出限制的任务会被自动取消，以保持系统的公平与稳定。您可以同时排队最多 100 个工作流，并在 Standard / Creator / Pro 上通过 API 分别并发运行 1 / 3 / 5 个工作流。需要更高的 API 速率限制？请联系 enterprise@comfy.org。'
   },
   'cloud.faq.10.q': {
     en: 'How is my user data stored and secured in Comfy Cloud?',
@@ -1158,76 +1393,111 @@ const translations = {
       '默认情况下，您的所有输入、输出和工作流都是您账户的私有数据。\n如需增强安全功能或企业级选项，请通过 support@comfy.org 联系我们的团队了解更多详情。'
   },
   'cloud.faq.11.q': {
-    en: 'How does pricing for Comfy Cloud work?',
-    'zh-CN': 'Comfy Cloud 的定价是怎样的？'
-  },
-  'cloud.faq.11.a': {
-    en: 'Your monthly plan grants you a single credit balance that you can spend anywhere. Partner Nodes (formerly API nodes) will have set credit prices per usage. For Cloud workflows, you will be charged credits based on the exact duration of your workflow run — longer runs consume more credits.',
-    'zh-CN':
-      '您的月度计划会授予一个可在任何地方使用的积分余额。合作伙伴节点（原 API 节点）按使用量设定积分价格。对于云端工作流，将根据工作流运行的确切时长收取积分——运行时间越长消耗的积分越多。'
-  },
-  'cloud.faq.12.q': {
-    en: "What's the difference between Partner Node credits and my Cloud subscription?",
-    'zh-CN': '合作伙伴节点积分和我的 Cloud 订阅有什么区别？'
-  },
-  'cloud.faq.12.a': {
-    en: 'Comfy Cloud has a credit system that is used for both Partner nodes (formerly API nodes) and running workflows on cloud.\n1. Partner Nodes (Pay-as-you-go): These nodes (formerly called API nodes) run third-party models via API calls and can be used on both Comfy Cloud and Comfy Desktop. Each node has its own usage cost, determined by the API provider, and we directly match their pricing.\n2. Running workflows on cloud: Exclusive to Comfy Cloud, you get a set amount of credits per month, with the amount differing based on your plan. More credits can be topped up anytime. Credits are only used up for GPU time while workflows are running — not while editing or building them. No idle costs, no setup, and no infrastructure to manage.',
-    'zh-CN':
-      'Comfy Cloud 有一个积分系统，用于合作伙伴节点（原 API 节点）和在云端运行工作流。\n1. 合作伙伴节点（按需付费）：这些节点（原称 API 节点）通过 API 调用运行第三方模型，可在 Comfy Cloud 和 Comfy 桌面版上使用。每个节点有其自身的使用成本，由 API 提供商决定，我们直接匹配他们的定价。\n2. 在云端运行工作流：Comfy Cloud 专属，您每月获得一定数量的积分，数量根据您的计划而不同。积分可随时充值。积分仅在工作流运行时用于 GPU 时间——编辑或构建时不消耗。无闲置成本，无需设置，无需管理基础设施。'
-  },
-  'cloud.faq.13.q': {
-    en: 'Can I cancel my subscription?',
-    'zh-CN': '我可以取消订阅吗？'
-  },
-  'cloud.faq.13.a': {
-    en: "Yes. You can cancel your subscription anytime through your account's billing settings, powered by Stripe. Your plan will remain active until the end of your current billing period.",
-    'zh-CN':
-      '可以。您可以随时通过账户的账单设置取消订阅（由 Stripe 提供支持）。您的计划将在当前计费周期结束前保持有效。'
-  },
-  'cloud.faq.14.q': {
-    en: "Where can I find my invoices or add my company's tax ID?",
-    'zh-CN': '我在哪里可以找到发票或添加公司税号？'
-  },
-  'cloud.faq.14.a': {
-    en: "You can manage all billing details directly through your Stripe portal.\nGo to Settings → Plans & Credits → Invoice History to open the Stripe portal. From there, you can view and download invoices, update your billing information, and add your company's tax ID.",
-    'zh-CN':
-      '您可以通过 Stripe 门户直接管理所有账单详情。\n前往设置 → 计划与积分 → 发票历史以打开 Stripe 门户。在那里，您可以查看和下载发票、更新账单信息并添加公司税号。'
-  },
-  'cloud.faq.15.q': {
     en: 'Will ComfyUI always be free to run locally?',
     'zh-CN': 'ComfyUI 本地运行会一直免费吗？'
   },
-  'cloud.faq.15.a': {
+  'cloud.faq.11.a': {
     en: "Yes, absolutely. ComfyUI will always be free and open source. You can deploy it however you want, such as downloading it from GitHub, using Docker, custom setups, etc.\n\nComfy Cloud is an optional hosted service for those who prefer convenience, accessibility, or don't have powerful GPUs.",
     'zh-CN':
       '是的，绝对如此。ComfyUI 将始终免费且开源。您可以按任何方式部署它，例如从 GitHub 下载、使用 Docker、自定义设置等。\n\nComfy Cloud 是一项可选的托管服务，适合偏好便捷性、可访问性或没有强大 GPU 的用户。'
+  },
+  'cloud.faq.12.q': {
+    en: 'How much does Comfy Cloud cost?',
+    'zh-CN': 'Comfy Cloud 的费用是多少？'
+  },
+  'cloud.faq.12.a': {
+    en: 'Plans start at $20/mo with a credit-based model. For full pricing details — credits, plans, Team plan, billing, and refunds — see the <a href="/cloud/pricing#faq" class="text-primary-comfy-yellow underline">Pricing FAQs</a>.',
+    'zh-CN':
+      '计划起价为每月 $20，采用基于积分的模式。如需完整的定价详情——积分、计划、团队计划、账单和退款——请查看 <a href="/zh-CN/cloud/pricing#faq" class="text-primary-comfy-yellow underline">定价常见问题</a>。'
   },
 
   'buildWhat.row1': { en: 'BUILD WHAT', 'zh-CN': '构建' },
   'buildWhat.row2a': { en: "DOESN'T EXIST", 'zh-CN': '尚不存在的' },
   'buildWhat.row2b': { en: 'YET', 'zh-CN': '事物' },
 
-  // PriceSection
-  'pricing.title': { en: 'Pricing', 'zh-CN': '价格' },
+  // PricingSection
+  'pricing.title': { en: 'Choose a plan', 'zh-CN': '价格' },
   'pricing.subtitle': {
     en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
     'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
   },
   'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
+  'pricing.period.monthly': { en: 'Monthly', 'zh-CN': '按月' },
+  'pricing.period.yearly': {
+    en: 'Yearly (Up to 20% off)',
+    'zh-CN': '按年（最高 20% 优惠）'
+  },
+  'pricing.period.billedMonthly': { en: 'Billed monthly', 'zh-CN': '按月计费' },
+  'pricing.period.billedYearly': {
+    en: '{total} billed yearly',
+    'zh-CN': '按年计费 {total}'
+  },
+  'pricing.savePercent': {
+    en: 'Save {pct}% ({amount})',
+    'zh-CN': '节省 {pct}%（{amount}）'
+  },
+  'pricing.team.videosEstimate': {
+    en: 'Generates ~{count} 5s videos*',
+    'zh-CN': '约可生成 {count} 个 5 秒视频*'
+  },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
+  'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
+  'pricing.banner.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，准备好了再升级。'
+  },
+  'pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+
+  'pricing.feature.educationalSavings': {
+    en: 'Educational savings – 10% off',
+    'zh-CN': '教育优惠 – 立减 10%'
+  },
+  'pricing.feature.educationalSavingsYearly': {
+    en: 'Educational savings – 25% off',
+    'zh-CN': '教育优惠 – 立减 25%'
+  },
+  'pricing.feature.shortRuntime': {
+    en: '30 minute max workflow runtime',
+    'zh-CN': '单个工作流最长运行 30 分钟'
+  },
+  'pricing.feature.addCredits': {
+    en: 'Add more credits anytime',
+    'zh-CN': '可随时增加积分'
+  },
+  'pricing.feature.importModels': {
+    en: 'Import your own models',
+    'zh-CN': '导入你自己的模型'
+  },
+  'pricing.feature.longRuntime': {
+    en: 'Longer workflow runtime (up to 1 hr)',
+    'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  },
+  'pricing.feature.inviteMembers': {
+    en: 'Invite members',
+    'zh-CN': '邀请成员'
+  },
+  'pricing.feature.concurrentWorkflows': {
+    en: 'Members can run workflows concurrently',
+    'zh-CN': '成员可并行运行工作流'
+  },
+  'pricing.feature.sharedCreditPool': {
+    en: 'Shared credit pool for all members',
+    'zh-CN': '所有成员共享积分池'
+  },
+  'pricing.feature.roleBasedPermissions': {
+    en: 'Role-based permissions',
+    'zh-CN': '基于角色的权限'
+  },
 
   'pricing.plan.free.label': { en: 'FREE', 'zh-CN': '免费版' },
-  'pricing.plan.free.summary': {
-    en: "Explore Comfy's possibilities",
-    'zh-CN': '探索 Comfy 的可能性'
-  },
   'pricing.plan.free.price': { en: '$0', 'zh-CN': '$0' },
-  'pricing.plan.free.credits': {
-    en: 'Includes 400 monthly credits',
-    'zh-CN': '每月包含 400 积分'
-  },
+  'pricing.plan.free.credits': { en: '400', 'zh-CN': '400' },
   'pricing.plan.free.estimate': {
-    en: '~35 5s videos*',
+    en: 'Generates ~35 5s videos*',
     'zh-CN': '约可生成 35 个 5 秒视频*'
   },
   'pricing.plan.free.cta': { en: 'START FREE', 'zh-CN': '免费开始' },
@@ -1241,113 +1511,101 @@ const translations = {
   },
 
   'pricing.plan.standard.label': { en: 'STANDARD', 'zh-CN': '标准版' },
-  'pricing.plan.standard.summary': {
-    en: 'For individuals creating workflows',
-    'zh-CN': '面向个人工作流创作者'
-  },
   'pricing.plan.standard.price': { en: '$20', 'zh-CN': '$20' },
-  'pricing.plan.standard.credits': {
-    en: 'Includes 4,200 monthly credits with top-ups available',
-    'zh-CN': '每月包含 4,200 积分，并支持充值'
-  },
+  'pricing.plan.standard.yearlyPrice': { en: '$16', 'zh-CN': '$16' },
+  'pricing.plan.standard.yearlyTotal': { en: '$192', 'zh-CN': '$192' },
+  'pricing.plan.standard.eduPrice': { en: '$18', 'zh-CN': '$18' },
+  'pricing.plan.standard.eduYearlyPrice': { en: '$15', 'zh-CN': '$15' },
+  'pricing.plan.standard.eduYearlyTotal': { en: '$180', 'zh-CN': '$180' },
+  'pricing.plan.standard.credits': { en: '4,200', 'zh-CN': '4,200' },
   'pricing.plan.standard.estimate': {
-    en: '~380 5s videos*',
+    en: 'Generates ~380 5s videos*',
     'zh-CN': '约可生成 380 个 5 秒视频*'
   },
   'pricing.plan.standard.cta': {
     en: 'SUBSCRIBE TO STANDARD',
     'zh-CN': '订阅标准版'
   },
-  'pricing.plan.standard.featureIntro': {
-    en: 'Everything in Free, plus:',
-    'zh-CN': '包含免费版全部能力，另加：'
-  },
-  'pricing.plan.standard.feature1': {
-    en: '30-minute max runtime per workflow',
-    'zh-CN': '单个工作流最长运行 30 分钟'
-  },
-  'pricing.plan.standard.feature2': {
-    en: 'Add more credits anytime',
-    'zh-CN': '可随时增加积分'
-  },
-  'pricing.plan.standard.feature3': {
-    en: 'Run 1 workflow concurrently (via API)',
-    'zh-CN': '通过 API 并发运行 1 个工作流'
-  },
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
-  'pricing.plan.creator.summary': {
-    en: 'Small teams building fine-tuned, repeatable workflows',
-    'zh-CN': '小团队构建精细调优、可复用的工作流'
-  },
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
-  'pricing.plan.creator.credits': {
-    en: 'Includes 7,400 monthly credits with top-ups available',
-    'zh-CN': '每月包含 7,400 积分，并支持充值'
-  },
+  'pricing.plan.creator.yearlyPrice': { en: '$28', 'zh-CN': '$28' },
+  'pricing.plan.creator.yearlyTotal': { en: '$336', 'zh-CN': '$336' },
+  'pricing.plan.creator.eduPrice': { en: '$31.50', 'zh-CN': '$31.50' },
+  'pricing.plan.creator.eduYearlyPrice': { en: '$26.25', 'zh-CN': '$26.25' },
+  'pricing.plan.creator.eduYearlyTotal': { en: '$315', 'zh-CN': '$315' },
+  'pricing.plan.creator.credits': { en: '7,400', 'zh-CN': '7,400' },
   'pricing.plan.creator.estimate': {
-    en: '~670 5s videos*',
+    en: 'Generates ~670 5s videos*',
     'zh-CN': '约可生成 670 个 5 秒视频*'
   },
   'pricing.plan.creator.cta': {
     en: 'SUBSCRIBE TO CREATOR',
     'zh-CN': '订阅创作者版'
   },
-  'pricing.plan.creator.featureIntro': {
-    en: 'Everything in Standard, plus:',
-    'zh-CN': '包含标准版全部能力，另加：'
-  },
-  'pricing.plan.creator.feature1': {
-    en: 'Import your own LoRAs',
-    'zh-CN': '导入你自己的 LoRA'
-  },
-  'pricing.plan.creator.feature2': {
-    en: 'Run up to 3 workflows concurrently (via API)',
-    'zh-CN': '通过 API 最多并发运行 3 个工作流'
-  },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
-  'pricing.plan.pro.summary': {
-    en: 'For growing teams running Comfy in production',
-    'zh-CN': '面向在生产环境使用 Comfy 的成长型团队'
-  },
   'pricing.plan.pro.price': { en: '$100', 'zh-CN': '$100' },
-  'pricing.plan.pro.credits': {
-    en: 'Includes 21,100 monthly credits with top-ups available',
-    'zh-CN': '每月包含 21,100 积分，并支持充值'
-  },
+  'pricing.plan.pro.yearlyPrice': { en: '$80', 'zh-CN': '$80' },
+  'pricing.plan.pro.yearlyTotal': { en: '$960', 'zh-CN': '$960' },
+  'pricing.plan.pro.eduPrice': { en: '$90', 'zh-CN': '$90' },
+  'pricing.plan.pro.eduYearlyPrice': { en: '$75', 'zh-CN': '$75' },
+  'pricing.plan.pro.eduYearlyTotal': { en: '$900', 'zh-CN': '$900' },
+  'pricing.plan.pro.credits': { en: '21,100', 'zh-CN': '21,100' },
   'pricing.plan.pro.estimate': {
-    en: '~1,915 5s videos*',
+    en: 'Generates ~1,915 5s videos*',
     'zh-CN': '约可生成 1,915 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
-  'pricing.plan.pro.featureIntro': {
-    en: 'Everything in Creator, plus:',
-    'zh-CN': '包含创作者版全部能力，另加：'
+
+  'pricing.plan.team.label': { en: 'TEAM', 'zh-CN': '团队版' },
+  'pricing.plan.team.cta': {
+    en: 'SUBSCRIBE TO TEAM',
+    'zh-CN': '订阅团队版'
   },
-  'pricing.plan.pro.feature1': {
-    en: 'Longer workflow runtime (up to 1 hour)',
-    'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  'pricing.plan.team.everythingInProPlus': {
+    en: 'Everything in Pro, plus:',
+    'zh-CN': '包含专业版的全部功能，另加：'
   },
-  'pricing.plan.pro.feature2': {
-    en: 'Run up to 5 workflows concurrently (via API)',
-    'zh-CN': '通过 API 最多并发运行 5 个工作流'
+  'pricing.team.sliderLabel': {
+    en: 'Team monthly credit commitment',
+    'zh-CN': '团队每月积分承诺'
+  },
+  'pricing.team.description': {
+    en: 'Built for teams collaborating on workflows together.',
+    'zh-CN': '为协作开发工作流的团队打造。'
+  },
+  'pricing.plan.team.comingSoon': {
+    en: 'Coming soon...',
+    'zh-CN': '即将推出…'
+  },
+  'pricing.plan.team.sharedWorkflowsAndAssets': {
+    en: 'Shared workflows & assets',
+    'zh-CN': '共享工作流与资产'
+  },
+  'pricing.plan.team.projects': {
+    en: 'Projects',
+    'zh-CN': '项目'
+  },
+  'pricing.plan.feature.status.coming': {
+    en: 'Coming soon',
+    'zh-CN': '即将推出'
+  },
+  'pricing.plan.feature.status.included': {
+    en: 'Included',
+    'zh-CN': '已包含'
+  },
+  'pricing.plan.feature.status.excluded': {
+    en: 'Not included',
+    'zh-CN': '未包含'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
-  'pricing.enterprise.heading': {
-    en: 'Looking for Enterprise Solutions?',
-    'zh-CN': '在寻找企业级解决方案？'
-  },
   'pricing.enterprise.description': {
-    en: 'For teams running Comfy in production, and at scale.',
-    'zh-CN': '面向在生产环境和规模化场景中运行 Comfy 的团队。'
+    en: 'Need more members? Looking for more flexibility or custom features?',
+    'zh-CN': '需要更多成员？想要更多灵活性或定制功能？'
   },
-  'pricing.enterprise.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
-  'pricing.enterprise.featureIntro': {
-    en: 'Everything in Pro, plus:',
-    'zh-CN': '包含专业版全部能力，另加：'
-  },
+  'pricing.enterprise.cta': { en: 'Contact Us', 'zh-CN': '联系我们' },
   'pricing.enterprise.feature1': {
     en: 'Annual commitments with bulk pricing and custom compute packages',
     'zh-CN': '支持年度承诺、批量定价与定制算力套餐'
@@ -1375,6 +1633,10 @@ const translations = {
     en: "What's included\nin the Comfy plan",
     'zh-CN': 'Comfy 计划\n包含哪些内容'
   },
+  'pricing.included.comingSoon': {
+    en: '(coming soon)',
+    'zh-CN': '（即将推出）'
+  },
   'pricing.included.feature1.title': {
     en: 'Machine Setup',
     'zh-CN': '机器配置'
@@ -1388,9 +1650,9 @@ const translations = {
     'zh-CN': '单个任务时限'
   },
   'pricing.included.feature2.description': {
-    en: 'On our Standard and Creator plans, each workflow has a maximum run time of 30 minutes. On the Pro plan, the limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
+    en: 'Each workflow run has a maximum duration of 30 minutes. On the Pro plan, the time limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
     'zh-CN':
-      'Standard 和 Creator 计划下，每个工作流最长运行时间为 30 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
+      '每个工作流运行的最长时长为 30 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
   },
   'pricing.included.feature3.title': {
     en: 'Usage',
@@ -1415,9 +1677,9 @@ const translations = {
     'zh-CN': '随时加购积分'
   },
   'pricing.included.feature5.description': {
-    en: 'Purchase additional credits at any time. Top-up credits are valid for 1 year from the date of purchase and do not roll over with your monthly plan.',
+    en: 'Purchase additional credits at any time. Unused top-ups roll over to the next month automatically for up to 1 year.',
     'zh-CN':
-      '可随时购买额外积分。充值积分自购买之日起 1 年内有效，且不会随月度计划结转。'
+      '可随时购买额外积分。未使用的充值积分将自动顺延至下个月，最长可保留 1 年。'
   },
   'pricing.included.feature6.title': {
     en: 'Pre-installed models',
@@ -1434,16 +1696,16 @@ const translations = {
   'pricing.included.feature7.description': {
     en: "Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. We're expanding support regularly based on demand and compatibility.",
     'zh-CN':
-      'Comfy Cloud 目前支持 ComfyUI 社区中最常用的多种自定义节点，并根据需求和兼容性持续扩展支持范围。'
+      'Comfy Cloud 目前支持 ComfyUI 社区中最常用的多种自定义节点。我们会根据需求和兼容性持续扩展支持范围。'
   },
   'pricing.included.feature8.title': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
   },
   'pricing.included.feature8.description': {
-    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and Comfy Desktop. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
+    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across <strong>Comfy Cloud and local ComfyUI</strong>. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
     'zh-CN':
-      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和 Comfy 桌面版间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 <strong>Comfy Cloud 和本地 ComfyUI</strong> 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
   },
   'pricing.included.feature9.title': {
     en: 'Job queue',
@@ -1458,26 +1720,22 @@ const translations = {
     'zh-CN': '自定义 LoRA 导入'
   },
   'pricing.included.feature10.description': {
-    en: 'For those on the Creator or Pro plans, you can bring in your own models & LoRAs from CivitAI or Huggingface to perfect your own style.',
+    en: 'For those on the Creator, Pro, or Team plans, you can bring in your own models & LoRAs from CivitAI or Huggingface to perfect your own style.',
     'zh-CN':
-      'Creator 或 Pro 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
+      'Creator、Pro 或 Team 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
   },
   'pricing.included.feature11.title': {
-    en: 'Run Workflows via API',
-    'zh-CN': '通过 API 运行工作流'
-  },
-  'pricing.included.feature11.description': {
-    en: 'Run Comfy workflows programmatically via API, with concurrency limits based on your plan. Perfect for integrating ComfyUI into your applications, automating batch processing, or building production pipelines. For higher rate limits, reach out to <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
-    'zh-CN':
-      '通过 API 以编程方式运行 Comfy 工作流，并发上限由您的计划决定。非常适合将 ComfyUI 集成到您的应用、自动化批量处理或构建生产级流水线。如需更高的速率限制，请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
-  },
-  'pricing.included.feature12.title': {
     en: 'Parallel job execution',
     'zh-CN': '并行任务执行'
   },
-  'pricing.included.feature12.description': {
+  'pricing.included.feature11.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
+  },
+
+  'pricing.faq.heading': {
+    en: 'FAQs',
+    'zh-CN': '常见问题'
   },
 
   // VideoPlayer
@@ -1490,61 +1748,91 @@ const translations = {
   'player.subtitlesOn': { en: 'Subtitles on', 'zh-CN': '开启字幕' },
   'player.subtitlesOff': { en: 'Subtitles off', 'zh-CN': '关闭字幕' },
 
-  // LearningHeroSection
-  'learning.heroTitle.before': { en: 'Learn', 'zh-CN': '学习' },
-  'learning.heroTitle.after': { en: '.', 'zh-CN': '。' },
-  'learning.heroTitle.line2': {
-    en: 'Build what doesn’t exist yet.',
-    'zh-CN': '构建尚未存在之物。'
+  // LearningDirectorySection
+  'learning.title': { en: 'Learning', 'zh-CN': '学习' },
+  'learning.tagline': {
+    en: 'Hands-on ComfyUI tutorials and workflows, by discipline.',
+    'zh-CN': '按创作领域分类的 ComfyUI 实战教程与工作流。'
   },
-
-  // LearningFeaturedWorkflowSection
-  'learning.featured.title': {
-    en: 'Sky Replacement',
-    'zh-CN': '天空替换'
+  'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
+  'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
+  'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
+  'learning.categories.all.blurb': {
+    en: 'Every tutorial and workflow',
+    'zh-CN': '所有教程与工作流'
   },
-  'learning.featured.author': {
-    en: 'by Doug Hogan',
-    'zh-CN': '作者：Doug Hogan'
+  'learning.categories.basics': { en: 'Basics', 'zh-CN': '基础' },
+  'learning.categories.basics.blurb': {
+    en: 'Fundamentals and getting started',
+    'zh-CN': '基础入门与上手指南'
   },
-  'learning.featured.description': {
-    en: 'A sky replacement workflow built on Wan AI models. WanVideoSampler and WanVideoDecode synthesize new sky visuals into existing footage. CLIPVisionLoader and WanVideoClipVisionEncode ensure replacements feel native, not composited.',
+  'learning.categories.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'learning.categories.vfx.blurb': {
+    en: 'Compositing, cleanup and shot work',
+    'zh-CN': '合成、清理与镜头处理'
+  },
+  'learning.categories.animations': { en: 'Animations', 'zh-CN': '动画' },
+  'learning.categories.animations.blurb': {
+    en: 'Motion, retiming and character',
+    'zh-CN': '运动、变速与角色'
+  },
+  'learning.categories.ads': { en: 'Ads', 'zh-CN': '广告' },
+  'learning.categories.ads.blurb': {
+    en: 'Product shots and campaign assets',
+    'zh-CN': '产品展示与广告素材'
+  },
+  // Per-vertical h1 + description/meta copy, swapped when a category filter is
+  // active (see learningHeading / learningDescription).
+  'learning.categories.basics.heading': {
+    en: 'ComfyUI Basics',
+    'zh-CN': 'ComfyUI 基础教程'
+  },
+  'learning.categories.basics.description': {
+    en: 'Beginner ComfyUI tutorials — learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
     'zh-CN':
-      '基于 Wan AI 模型构建的天空替换工作流。WanVideoSampler 与 WanVideoDecode 将全新的天空视觉合成到现有素材中。CLIPVisionLoader 与 WanVideoClipVisionEncode 确保替换效果自然融合，而非生硬叠加。'
+      '面向初学者的 ComfyUI 教程——从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
   },
-  'learning.featured.watchDemo': {
-    en: 'Watch Demo',
-    'zh-CN': '观看演示'
+  'learning.categories.vfx.heading': {
+    en: 'VFX Tutorials',
+    'zh-CN': 'VFX 教程'
   },
-
-  // LearningTutorialsSection
-  'learning.tutorials.heading': {
-    en: 'Featured Demos',
-    'zh-CN': '精选演示'
+  'learning.categories.vfx.description': {
+    en: 'Hands-on ComfyUI VFX tutorials — cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
+    'zh-CN':
+      '实战 ComfyUI VFX 教程——净板、天空替换、减龄、遮罩与镜头处理，均可亲自打开并运行。'
   },
-  'learning.tutorials.titlePrefix': {
-    en: 'Learn how to:',
-    'zh-CN': '学习如何：'
+  'learning.categories.animations.heading': {
+    en: 'Animation Tutorials',
+    'zh-CN': '动画教程'
   },
+  'learning.categories.animations.description': {
+    en: 'Hands-on ComfyUI animation tutorials — character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
+    'zh-CN':
+      '实战 ComfyUI 动画教程——角色设定表、关键帧、中间帧、背景与合成，均可亲自运行。'
+  },
+  'learning.categories.ads.heading': {
+    en: 'Ad Creative Tutorials',
+    'zh-CN': '广告创意教程'
+  },
+  'learning.categories.ads.description': {
+    en: 'Hands-on ComfyUI ad creative tutorials — moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
+    'zh-CN':
+      '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
+  },
+  // LearningWatchPage
+  'learning.watch.nowWatching': { en: 'Now watching', 'zh-CN': '正在观看' },
+  'learning.watch.watchMore': { en: 'Watch more', 'zh-CN': '观看更多' },
+  'learning.watch.recommended': { en: 'Recommended', 'zh-CN': '推荐' },
 
   // LearningCallToActionSection
   'learning.cta.heading': {
-    en: 'Schedule a demo and see how ComfyUI fits your team’s creative needs.',
-    'zh-CN': '预约演示，了解 ComfyUI 如何契合你的团队创作需求。'
+    en: 'Everything Comfy ships. All in one place.',
+    'zh-CN': 'Comfy 的全部内容，一处尽享。'
   },
-  'learning.cta.contactSales': {
-    en: 'Contact Sales',
-    'zh-CN': '联系销售'
+  'learning.cta.runComfy': {
+    en: 'Run Comfy for free',
+    'zh-CN': '免费运行 Comfy'
   },
-
-  // LearningEventsSection
-  'learning.events.heading': { en: 'Events', 'zh-CN': '活动' },
-  'learning.events.description': {
-    en: 'Check out our upcoming live streams and community meetings. We’re always open to your questions, ideas, and conversations.',
-    'zh-CN':
-      '查看我们即将举办的直播和社区聚会。我们随时欢迎你的提问、想法和交流。'
-  },
-  'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
 
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
@@ -1849,24 +2137,56 @@ const translations = {
     'zh-CN': 'Comfy MCP - 让任何 AI 智能体驱动 ComfyUI'
   },
   'mcp.meta.description': {
-    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol. Generate images, video, audio, and 3D from Claude Code, Claude Desktop, and any MCP-compatible client.',
+    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol. Generate images, video, audio, and 3D from Claude Code, Claude Desktop, and any MCP-compatible client. On Comfy Cloud GPUs, or on your own machine.',
     'zh-CN':
-      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎，可在 Claude Code、Claude Desktop 及任何兼容 MCP 的客户端中生成图像、视频、音频和 3D 内容。'
+      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎，可在 Claude Code、Claude Desktop 及任何兼容 MCP 的客户端中生成图像、视频、音频和 3D 内容。在 Comfy Cloud 的 GPU 上运行，或就在你自己的机器上。'
   },
 
   // MCP – HeroSection
   'mcp.hero.heading': {
-    en: 'Drive ComfyUI from\nany AI agent.',
-    'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI。'
+    en: 'Drive ComfyUI from\nany AI agent,\nlocal or cloud.',
+    'zh-CN': '让任何 AI 智能体\n驱动 ComfyUI，\n本地或云端。'
   },
   'mcp.hero.subtitle': {
-    en: 'Comfy MCP exposes the full ComfyUI engine over the Model Context Protocol — so your assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    en: 'Turn your agent into a creative technologist. Generate images, video, audio and 3D, search models, nodes and templates, and run real workflows. Built for batch generation, reproducibility and teamwork.',
     'zh-CN':
-      'Comfy MCP 通过模型上下文协议暴露完整的 ComfyUI 引擎——让你的助手能够接入生态系统、构建工作流，并生成图像、视频、音频或 3D 内容。'
+      '让你的智能体成为创意技术专家。生成图像、视频、音频和 3D，搜索模型、节点与模板，并运行真实工作流。为批量生成、可复现性与团队协作而打造。'
   },
-  'mcp.hero.demoPrompt': {
-    en: "match this frame's palette, make the hero key art",
-    'zh-CN': '匹配这一帧的配色，生成主视觉关键画面'
+  'mcp.hero.demoPromptKeyframeBoard': {
+    en: 'board the launch film — 8 key frames from the brief',
+    'zh-CN': '为发布影片做分镜——从简报生成 8 张关键帧'
+  },
+  'mcp.hero.demoPromptCharacterConcepts': {
+    en: 'explore 4 hero directions — pick one to take forward',
+    'zh-CN': '探索 4 个主角方向——挑一个继续推进'
+  },
+  'mcp.hero.demoPromptStyleTransfer': {
+    en: 'stylize all 12 previz frames — photoreal, one pass',
+    'zh-CN': '把 12 张预演帧统一风格化——写实，一次完成'
+  },
+  'mcp.hero.demoPromptFrameToVideo': {
+    en: 'animate each shot — first + last frame, 9:16, batch',
+    'zh-CN': '逐镜生成动画——首帧加尾帧，9:16，批量'
+  },
+  'mcp.hero.demoPromptProductPlacement': {
+    en: 'drop the can into all 8 hero shots, matched light',
+    'zh-CN': '把罐子放进 8 张主视觉里，光影匹配'
+  },
+  'mcp.hero.demoPromptCharacterDesign': {
+    en: 'design the hero — 4 turnarounds, game-ready',
+    'zh-CN': '设计主角——4 视图转面，可直接用于游戏'
+  },
+  'mcp.hero.demoPrompt3dAsset': {
+    en: 'build a 3D hero prop for the scene I have open',
+    'zh-CN': '为我打开的场景做一个 3D 主道具'
+  },
+  'mcp.hero.demoPromptCampaignKeyArt': {
+    en: "match this frame's palette, make the campaign key art",
+    'zh-CN': '匹配这一帧的配色，生成营销主视觉'
+  },
+  'mcp.hero.demoPromptSetExtension': {
+    en: 'extend the set — matte painting from this plate',
+    'zh-CN': '扩展场景——用这张底板做接景绘制'
   },
   'mcp.hero.viewDocs': {
     en: 'VIEW DOCS',
@@ -1876,81 +2196,237 @@ const translations = {
     en: 'INSTALL MCP',
     'zh-CN': '安装 MCP'
   },
-  'mcp.hero.runWorkflow': {
-    en: 'RUN A WORKFLOW',
-    'zh-CN': '运行工作流'
-  },
   'mcp.hero.demoGenerate': {
     en: 'GENERATE',
     'zh-CN': '生成'
   },
-  'mcp.hero.demoActionGenerateImage': {
-    en: 'GENERATE-IMAGE',
-    'zh-CN': '生成图像'
+  'mcp.hero.demoToolKeyframeBoard': {
+    en: 'keyframe board',
+    'zh-CN': '关键帧分镜'
   },
-  'mcp.hero.demoActionGenerate3d': {
-    en: 'GENERATE-3D ASSET',
-    'zh-CN': '生成 3D 资产'
+  'mcp.hero.demoToolCharacterConcepts': {
+    en: 'character concepts',
+    'zh-CN': '角色概念'
   },
-  'mcp.hero.demoActionUpscale': {
-    en: 'UPSCALE-IMAGE',
-    'zh-CN': '放大图像'
+  'mcp.hero.demoToolStyleTransfer': {
+    en: 'style transfer',
+    'zh-CN': '风格迁移'
+  },
+  'mcp.hero.demoToolFrameToVideo': {
+    en: 'frame to video',
+    'zh-CN': '帧生视频'
+  },
+  'mcp.hero.demoToolProductPlacement': {
+    en: 'product placement',
+    'zh-CN': '产品植入'
+  },
+  'mcp.hero.demoToolCharacterDesign': {
+    en: 'character design',
+    'zh-CN': '角色设计'
+  },
+  'mcp.hero.demoTool3dAsset': {
+    en: '3d asset',
+    'zh-CN': '3D 资产'
+  },
+  'mcp.hero.demoToolCampaignKeyArt': {
+    en: 'campaign key art',
+    'zh-CN': '营销主视觉'
+  },
+  'mcp.hero.demoToolSetExtension': {
+    en: 'set extension',
+    'zh-CN': '场景扩展'
+  },
+  'mcp.hero.demoStatusIdle': {
+    en: "your agent has Comfy's tools",
+    'zh-CN': '你的智能体已接入 Comfy 工具'
+  },
+  'mcp.hero.demoStatusBridging': {
+    en: 'bridging {app} → {tool}…',
+    'zh-CN': '正在桥接 {app} → {tool}…'
+  },
+  'mcp.hero.demoStatusRunning': {
+    en: 'running {tool}…',
+    'zh-CN': '正在运行 {tool}…'
   },
 
-  // MCP – SetupStepsSection
+  // MCP – SetupSection
   'mcp.setup.label': {
     en: 'GET STARTED',
     'zh-CN': '快速开始'
   },
   'mcp.setup.heading': {
-    en: 'Set up Comfy MCP in three steps',
-    'zh-CN': '三步完成 Comfy MCP 配置'
+    en: 'Set up Comfy MCP',
+    'zh-CN': '配置 Comfy MCP'
   },
   'mcp.setup.subtitle': {
-    en: 'Add Comfy Cloud as a custom connector in Claude, Cursor, Codex, or any MCP-compatible client. Sign in once, and the full ComfyUI toolset is available right in your chat.',
+    en: 'Pick where it runs: Comfy Cloud GPUs, or your own machine.\nAdd the server yourself or ask your agent to install it, and the full ComfyUI toolset lands in your chat.',
     'zh-CN':
-      '将 Comfy Cloud 添加为 Claude、Cursor、Codex 或任意兼容 MCP 客户端的自定义连接器。登录一次，ComfyUI 全套工具即可直接在对话中使用。'
+      '选择运行位置：Comfy Cloud 的 GPU，或你自己的机器。\n自行添加服务器，或让智能体代劳，ComfyUI 全套工具即可进入你的对话。'
   },
-  'mcp.setup.step1.label': { en: 'STEP 1', 'zh-CN': '第 1 步' },
-  'mcp.setup.step1.title': {
+  'mcp.setup.connections.tabsLabel': {
+    en: 'Pick your connection',
+    'zh-CN': '选择你的连接方式'
+  },
+  'mcp.setup.connections.cloud.name': {
+    en: 'Comfy Cloud',
+    'zh-CN': 'Comfy Cloud'
+  },
+  'mcp.setup.connections.cloud.tagline': {
+    en: 'Nothing to install. Runs on Comfy Cloud GPUs.',
+    'zh-CN': '无需安装。在 Comfy Cloud 的 GPU 上运行。'
+  },
+  'mcp.setup.connections.local.name': {
+    en: 'Local ComfyUI',
+    'zh-CN': '本地 ComfyUI'
+  },
+  'mcp.setup.connections.local.tagline': {
+    en: 'Open source. Runs free on your own machine.',
+    'zh-CN': '开源。在你自己的机器上免费运行。'
+  },
+  'mcp.setup.requirementPrefix': {
+    en: 'To use Comfy Cloud via MCP, you need a ',
+    'zh-CN': '如需通过 MCP 使用 Comfy Cloud，你需要'
+  },
+  'mcp.setup.requirementLinkLabel': {
+    en: 'subscription of any tier',
+    'zh-CN': '任意套餐的订阅'
+  },
+  'mcp.setup.requirementSuffix': {
+    en: '.',
+    'zh-CN': '。'
+  },
+  'mcp.setup.requirementFootnote': {
+    en: " A credit top-up alone isn't enough to run generations.",
+    'zh-CN': '仅充值积分不足以运行生成任务。'
+  },
+  'mcp.setup.manual.title': {
+    en: 'Install manually',
+    'zh-CN': '手动安装'
+  },
+  'mcp.setup.manual.description': {
+    en: 'Add this URL as a custom connector or remote MCP server in your client, then sign in when prompted.',
+    'zh-CN':
+      '将此 URL 添加为客户端的自定义连接器或远程 MCP 服务器，然后按提示登录。'
+  },
+  'mcp.setup.manual.tabsLabel': {
+    en: 'Pick your client',
+    'zh-CN': '选择你的客户端'
+  },
+  'mcp.setup.agent.title': {
     en: 'Ask your agent to install Comfy MCP',
     'zh-CN': '让你的智能体安装 Comfy MCP'
   },
-  'mcp.setup.step1.command': {
+  'mcp.setup.agent.recommended': {
+    en: 'Recommended',
+    'zh-CN': '推荐'
+  },
+  'mcp.setup.agent.command': {
     en: 'Help me install Comfy MCP.\nFollow the setup guide at {url}',
     'zh-CN': '帮我安装 Comfy MCP。\n请按照 {url} 上的设置指南操作。'
   },
-  'mcp.setup.step1.description': {
-    en: 'Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',
+  'mcp.setup.agent.description': {
+    en: 'Prefer to let your agent do it? Paste this into Claude, Cursor, Codex, or any MCP-compatible agent. It reads the docs and adds the connector for you.',
     'zh-CN':
-      '将它粘贴到 Claude、Cursor、Codex 或任意兼容 MCP 的智能体中。它会读取文档并为你添加连接器。'
+      '想让智能体代劳？将它粘贴到 Claude、Cursor、Codex 或任意兼容 MCP 的智能体中。它会读取文档并为你添加连接器。'
   },
-  'mcp.setup.step2.label': { en: 'STEP 2', 'zh-CN': '第 2 步' },
-  'mcp.setup.step2.title': {
-    en: 'Or add it by hand',
-    'zh-CN': '或手动添加'
+  'mcp.setup.clients.claudeCode.step': {
+    en: 'Run this in your terminal, then use /mcp to pick comfy-cloud and authenticate.',
+    'zh-CN': '在终端运行以下命令，然后通过 /mcp 选择 comfy-cloud 并完成认证。'
   },
-  'mcp.setup.step2.description': {
-    en: 'Prefer manual setup? Add Comfy Cloud as a custom connector with the MCP URL. The docs cover every client.',
+  'mcp.setup.walkthroughAlt': {
+    en: '{client} setup walkthrough',
+    'zh-CN': '{client} 设置演示'
+  },
+  'mcp.setup.clients.claudeDesktop.manualTitle': {
+    en: 'Add Custom Connector',
+    'zh-CN': '添加自定义连接器'
+  },
+  'mcp.setup.clients.claudeDesktop.step': {
+    en: 'Click Customize in the sidebar, open Connectors, choose Add custom connector, paste the URL above, and sign in.',
     'zh-CN':
-      '想手动配置？用 MCP URL 将 Comfy Cloud 添加为自定义连接器。文档涵盖各类客户端。'
+      '点击侧边栏的 Customize，进入 Connectors，选择添加自定义连接器，粘贴上方 URL 并登录。'
   },
-  'mcp.setup.step2.cta': {
-    en: 'COMFY CLOUD MCP DOCS',
-    'zh-CN': 'COMFY CLOUD MCP 文档'
+  'mcp.setup.clients.cursor.step': {
+    en: 'Add the URL above to ~/.cursor/mcp.json with an X-API-Key header. Create your key at ',
+    'zh-CN':
+      '将上方 URL 添加到 ~/.cursor/mcp.json，并附带 X-API-Key 请求头。在此创建密钥：'
   },
-  'mcp.setup.step3.label': { en: 'STEP 3', 'zh-CN': '第 3 步' },
-  'mcp.setup.step3.title': {
-    en: 'Connect and sign in',
-    'zh-CN': '连接并登录'
+  'mcp.setup.clients.cursor.linkLabel': {
+    en: 'platform.comfy.org',
+    'zh-CN': 'platform.comfy.org'
   },
-  'mcp.setup.step3.description': {
-    en: 'Click Connect, sign in, and every Comfy Cloud skill is ready in your client.',
-    'zh-CN': '点击"连接"并登录，所有 Comfy Cloud 技能即可在你的客户端中使用。'
+  'mcp.setup.clients.codex.step': {
+    en: 'Run this in your terminal, then codex mcp login comfy-cloud to sign in.',
+    'zh-CN': '在终端运行以下命令，然后执行 codex mcp login comfy-cloud 登录。'
   },
-  'mcp.setup.step3.cta': {
-    en: 'COMFY CLOUD SKILLS',
-    'zh-CN': 'COMFY CLOUD 技能'
+  'mcp.setup.clients.openclaw.step': {
+    en: 'Run these in your terminal, then openclaw mcp login comfy to sign in.',
+    'zh-CN': '在终端运行以下命令，然后执行 openclaw mcp login comfy 登录。'
+  },
+  'mcp.setup.clients.other.name': {
+    en: 'Others',
+    'zh-CN': '其他'
+  },
+  'mcp.setup.clients.other.step': {
+    en: 'Add the URL above as a remote MCP server. No OAuth in your client? Use an X-API-Key header instead. Full walkthroughs live in the ',
+    'zh-CN':
+      '将上方 URL 添加为远程 MCP 服务器。客户端不支持 OAuth？改用 X-API-Key 请求头。完整教程见'
+  },
+  'mcp.setup.clients.other.linkLabel': {
+    en: 'setup docs',
+    'zh-CN': '设置文档'
+  },
+  'mcp.setup.skillsNote': {
+    en: 'Using Claude Code? The Comfy skills plugin adds ready-made slash commands. ',
+    'zh-CN': '在用 Claude Code？Comfy 技能插件提供现成的斜杠命令。'
+  },
+  'mcp.setup.skillsLink': {
+    en: 'View on GitHub',
+    'zh-CN': '在 GitHub 上查看'
+  },
+  'mcp.setup.local.requirementPrefix': {
+    en: 'The local ComfyUI connection runs free on your own hardware, and the MCP is ',
+    'zh-CN': '本地 ComfyUI 连接在你自己的硬件上免费运行，MCP '
+  },
+  'mcp.setup.local.requirementLinkLabel': {
+    en: 'open source on GitHub',
+    'zh-CN': '在 GitHub 上开源'
+  },
+  'mcp.setup.local.requirementSuffix': {
+    en: '.',
+    'zh-CN': '。'
+  },
+  'mcp.setup.local.manual.title': {
+    en: 'Install the server',
+    'zh-CN': '安装服务器'
+  },
+  'mcp.setup.local.manual.description': {
+    en: 'Install comfy-mcp from PyPI with the command above, then register it in your client. Your client launches the server, and the server drives the ComfyUI on your machine.',
+    'zh-CN':
+      '使用上方命令从 PyPI 安装 comfy-mcp，然后在客户端中注册。客户端会启动服务器，服务器驱动你机器上的 ComfyUI。'
+  },
+  'mcp.setup.local.agent.command': {
+    en: 'Help me set up the local Comfy MCP connection.\nFollow the setup guide at {url}',
+    'zh-CN': '帮我配置本地 Comfy MCP 连接。\n请按照 {url} 上的设置指南操作。'
+  },
+  'mcp.setup.local.clients.claudeCode.step': {
+    en: 'Run this in your terminal, then restart Claude Code so the tools appear.',
+    'zh-CN': '在终端运行以下命令，然后重启 Claude Code 以加载工具。'
+  },
+  'mcp.setup.local.clients.claudeDesktop.step': {
+    en: 'Open Settings, choose Developer, then Edit Config, add this to claude_desktop_config.json, and restart Claude Desktop.',
+    'zh-CN':
+      '打开 Settings，选择 Developer，点击 Edit Config，将以下内容添加到 claude_desktop_config.json，然后重启 Claude Desktop。'
+  },
+  'mcp.setup.local.clients.cursor.step': {
+    en: 'Add this to ~/.cursor/mcp.json, or to .cursor/mcp.json inside a project.',
+    'zh-CN':
+      '将以下内容添加到 ~/.cursor/mcp.json，或项目内的 .cursor/mcp.json。'
+  },
+  'mcp.setup.local.clients.other.step': {
+    en: 'Any client that can launch a stdio MCP server works: point it at the comfy-mcp command. Full walkthroughs live in the ',
+    'zh-CN':
+      '任何能启动 stdio MCP 服务器的客户端都可以：将其指向 comfy-mcp 命令即可。完整教程见'
   },
 
   // MCP – WhyBuildSection
@@ -1963,49 +2439,55 @@ const translations = {
     'zh-CN': 'Comfy MCP？'
   },
   'mcp.why.subtitle': {
-    en: 'A trusted infrastructure that lets engineers and professionals ship faster.',
-    'zh-CN': '一套值得信赖的基础设施，让工程师和专业人士交付更快。'
+    en: 'The first MCP built for production pipelines: trusted infrastructure that lets engineers and professionals ship faster.',
+    'zh-CN':
+      '首个为生产管线打造的 MCP：值得信赖的基础设施，让工程师和专业人士交付更快。'
   },
   'mcp.why.1.title': {
     en: 'Open protocol,\nany client.',
     'zh-CN': '开放协议，\n任意客户端。'
   },
   'mcp.why.1.description': {
-    en: 'MCP is an open standard, so any MCP-compatible client can connect. Today Comfy supports Claude Code and Claude Desktop, with more clients coming.',
+    en: 'MCP is an open standard, so any MCP-compatible client can connect: Claude Code, Claude Desktop, Codex, Cursor, and more. Sign in with OAuth or an API key on cloud; local runs need no account at all.',
     'zh-CN':
-      'MCP 是开放标准，因此任何兼容 MCP 的客户端都能接入。目前 Comfy 支持 Claude Code 和 Claude Desktop，更多客户端即将推出。'
+      'MCP 是开放标准，任何兼容 MCP 的客户端都能接入：Claude Code、Claude Desktop、Codex、Cursor 等。云端通过 OAuth 或 API 密钥登录；本地运行完全不需要账户。'
   },
   'mcp.why.2.title': {
     en: 'The full engine,\nnot a sandbox.',
     'zh-CN': '完整引擎，\n非沙箱环境。'
   },
   'mcp.why.2.description': {
-    en: 'Same tool your team uses. Fully connected multi-step, multi-GPU workflows. Everything available now and in the future.',
+    en: 'Same tool your team uses. Fully connected multi-step, multi-GPU workflows, with best-practice templates that update as the ecosystem moves. Everything available now and in the future.',
     'zh-CN':
-      '与你团队使用的相同工具。完整连接的多步骤、多 GPU 工作流。当前及未来的所有功能均可使用。'
+      '与你团队使用的相同工具。完整连接的多步骤、多 GPU 工作流，以及随生态更新的最佳实践模板。当前及未来的所有功能均可使用。'
   },
   'mcp.why.3.title': {
-    en: 'Outputs you keep.',
-    'zh-CN': '输出归你所有。'
+    en: 'Reproducible\nby design.',
+    'zh-CN': '为可复现性\n而设计。'
   },
   'mcp.why.3.description': {
-    en: 'Downloads go to your Comfy library — store, reuse, remix, and share without leaving the ecosystem.',
+    en: 'Every generation is a workflow: rerun it, share it by URL, hand it to a teammate. Made for long-term projects, not one-off generations. Outputs land in your Comfy library to store, reuse, and remix.',
     'zh-CN':
-      '下载内容保存到你的 Comfy 库——在生态系统内存储、复用、二次创作和分享。'
+      '每次生成都是一个工作流：可以重跑、通过 URL 分享、交给队友。为长期项目而生，而非一次性生成。输出保存到你的 Comfy 库，随时存储、复用和二次创作。'
   },
   'mcp.why.4.title': {
-    en: 'Powered by\nComfy Cloud.',
-    'zh-CN': '由 Comfy Cloud\n提供支持。'
+    en: 'Your GPUs,\nor ours.',
+    'zh-CN': '你的 GPU，\n或我们的。'
   },
   'mcp.why.4.description': {
-    en: 'Run without a local GPU through the same infrastructure your team already trusts.',
-    'zh-CN': '无需本地 GPU，通过你团队信赖的相同基础设施运行。'
+    en: 'Run without a GPU on Comfy Cloud, or go local and let the agent do the hard part: it reads your machine (models, custom nodes, VRAM), untangles complex open-source workflows, and builds ones your hardware can actually run.',
+    'zh-CN':
+      '无需 GPU，在 Comfy Cloud 上运行；或选择本地，把难题交给智能体：它了解你的机器（模型、自定义节点、显存），理清复杂的开源工作流，构建你的硬件真正跑得动的工作流。'
   },
 
   // MCP – ToolsSection
   'mcp.tools.heading': {
     en: 'Everything ComfyUI can do,\nnow available as tools.',
     'zh-CN': 'ComfyUI 能做的一切，\n现在都可作为工具调用。'
+  },
+  'mcp.tools.film.alt': {
+    en: 'Comfy MCP launch film: an agent driving ComfyUI workflows end to end',
+    'zh-CN': 'Comfy MCP 发布影片：智能体端到端驱动 ComfyUI 工作流'
   },
   'mcp.tools.1.title': {
     en: 'Generate anything',
@@ -2037,13 +2519,68 @@ const translations = {
     'zh-CN': '运行真实工作流'
   },
   'mcp.tools.3.description': {
-    en: 'Turn any ComfyUI workflow into a callable tool. The full power of the engine, driven by your agent.',
+    en: 'Submit graphs, track jobs, and pull outputs back. It reads the workflows you already have, so you start where you are: save, share, and reuse them, or open any run on the ComfyUI canvas — the full engine, driven by tool calls.',
     'zh-CN':
-      '将任何 ComfyUI 工作流转换为可调用的工具。由你的智能体驱动完整的引擎能力。'
+      '提交计算图、跟踪任务并取回输出。它能读取你已有的工作流，让你从现有基础直接开始：保存、分享、复用，或在 ComfyUI 画布上打开任意运行——完整的引擎，由工具调用驱动。'
   },
   'mcp.tools.3.alt': {
     en: 'Comfy MCP running a ComfyUI workflow as a callable tool from a chat',
     'zh-CN': 'Comfy MCP 在对话中将 ComfyUI 工作流作为可调用工具运行'
+  },
+  'mcp.tools.4.title': {
+    en: 'Direct any model',
+    'zh-CN': '直接调用任意模型'
+  },
+  'mcp.tools.4.description': {
+    en: 'MiniMax H3, Seedance, Flux, GPT-Image, Nano Banana, Kling, Z-Image, ElevenLabs, HY3D, and more. Closed partner APIs and open-source models, reached through one set of tools.',
+    'zh-CN':
+      'MiniMax H3、Seedance、Flux、GPT-Image、Nano Banana、Kling、Z-Image、ElevenLabs、HY3D 等。封闭的合作伙伴 API 与开源模型，通过同一套工具即可调用。'
+  },
+  'mcp.tools.4.alt': {
+    en: 'Comfy MCP directing closed partner APIs and open-source models through one set of tools',
+    'zh-CN': 'Comfy MCP 通过同一套工具调用封闭合作伙伴 API 和开源模型'
+  },
+  'mcp.tools.5.title': {
+    en: 'Generate in batches',
+    'zh-CN': '批量生成'
+  },
+  'mcp.tools.5.description': {
+    en: 'Stack a batch on the Queue, track it, and pull back every output. Dozens of runs from a single call.',
+    'zh-CN':
+      '将一批任务加入队列，跟踪进度，并取回每一个输出。一次调用即可完成数十次运行。'
+  },
+  'mcp.tools.5.alt': {
+    en: 'Comfy MCP stacking a batch on the Queue and pulling back every output',
+    'zh-CN': 'Comfy MCP 将一批任务加入队列并取回每个输出'
+  },
+  'mcp.tools.6.title': {
+    en: 'Ship it as an app',
+    'zh-CN': '作为应用发布'
+  },
+  'mcp.tools.6.description': {
+    en: 'Turn any workflow into an app with a shareable URL. Collaborators run it in the browser — only the inputs you expose, nothing to install.',
+    'zh-CN':
+      '将任意工作流变成带可分享链接的应用。协作者在浏览器中运行——只暴露你开放的输入，无需安装任何东西。'
+  },
+  'mcp.tools.6.alt': {
+    en: 'Comfy MCP turning a workflow into a shareable browser app',
+    'zh-CN': 'Comfy MCP 将工作流变成可在浏览器中分享的应用'
+  },
+
+  // MCP – UseCasesSection
+  'mcp.useCases.heading': {
+    en: 'Production use cases.',
+    'zh-CN': '生产级用例。'
+  },
+  'mcp.useCases.subtitle': {
+    en: 'One prompt, a real campaign: batch pack shots for every SKU, character sheets from a saved workflow, outputs filed straight back into your project folders.',
+    'zh-CN':
+      '一条提示，一整个真实项目：为每个 SKU 批量生成产品图，用已保存的工作流生成角色设定表，输出直接归档到你的项目文件夹。'
+  },
+  'mcp.useCases.alt': {
+    en: 'Comfy MCP running production jobs: batch pack-shot variations per SKU and a character sheet from a saved workflow',
+    'zh-CN':
+      'Comfy MCP 运行生产任务：为每个 SKU 批量生成产品图变体，并用已保存的工作流生成角色设定表'
   },
 
   // MCP – HowItWorksSection
@@ -2057,9 +2594,9 @@ const translations = {
     'zh-CN': '连接'
   },
   'mcp.howItWorks.step1.description': {
-    en: 'Add the Comfy Cloud MCP server to Claude Code or Claude Desktop and sign in once with OAuth. No API keys to manage.',
+    en: 'Connect the cloud server with one URL and an OAuth sign-in, or pip install the open-source local server. Most clients happily run both.',
     'zh-CN':
-      '将 Comfy Cloud MCP 服务器添加到 Claude Code 或 Claude Desktop，通过 OAuth 一次性登录。无需管理 API 密钥。'
+      '通过一个 URL 和 OAuth 登录连接云端服务器，或用 pip 安装开源本地服务器。大多数客户端可以同时运行两者。'
   },
   'mcp.howItWorks.step2.number': { en: '02', 'zh-CN': '02' },
   'mcp.howItWorks.step2.title': {
@@ -2087,75 +2624,85 @@ const translations = {
     'zh-CN': '常见问答'
   },
   'mcp.faq.1.q': {
-    en: 'Which clients are supported?',
-    'zh-CN': '支持哪些客户端？'
+    en: 'Which agents are supported?',
+    'zh-CN': '支持哪些智能体？'
   },
   'mcp.faq.1.a': {
-    en: 'Claude Code and Claude Desktop today, both signing in with OAuth. Support for more clients is coming.',
+    en: 'Any MCP-compatible client. For the cloud connection, add https://cloud.comfy.org/mcp as a custom connector or remote MCP server, then sign in when prompted. For the local connection, your client launches the open-source comfy-mcp server: Claude Code, Claude Desktop, Cursor, and any client that supports stdio servers. Send the docs https://docs.comfy.org/agent-tools/mcp.md to your agent and it will figure out the installation for you.',
     'zh-CN':
-      '目前支持 Claude Code 和 Claude Desktop，均通过 OAuth 登录。更多客户端的支持即将推出。'
+      '任何兼容 MCP 的客户端。云端连接：将 https://cloud.comfy.org/mcp 添加为自定义连接器或远程 MCP 服务器，然后在提示时登录。本地连接：由客户端启动开源的 comfy-mcp 服务器，支持 Claude Code、Claude Desktop、Cursor 以及任何支持 stdio 服务器的客户端。将文档 https://docs.comfy.org/agent-tools/mcp.md 发送给你的智能体，它会为你完成安装。'
   },
   'mcp.faq.2.q': {
+    en: "What's the server URL?",
+    'zh-CN': '服务器 URL 是什么？'
+  },
+  'mcp.faq.2.a': {
+    en: 'For the cloud connection: https://cloud.comfy.org/mcp — add it as a custom connector or remote MCP server in any client, then sign in when prompted. The local connection has no URL: your client launches the comfy-mcp command directly and talks to it over stdio.',
+    'zh-CN':
+      '云端连接：https://cloud.comfy.org/mcp——在任意客户端中将它添加为自定义连接器或远程 MCP 服务器，然后在提示时登录。本地连接没有 URL：客户端直接启动 comfy-mcp 命令，通过 stdio 与它通信。'
+  },
+  'mcp.faq.3.q': {
+    en: "What's the difference between the cloud and local connections?",
+    'zh-CN': '云端连接和本地连接有什么区别？'
+  },
+  'mcp.faq.3.a': {
+    en: "The cloud connection is hosted: one URL, nothing to install, and workflows run on Comfy Cloud GPUs with our model catalog. The local connection is open source: your client launches the comfy-mcp server on your machine, and it drives your own ComfyUI — your models, your custom nodes, your GPU.\nWhich one to choose: new users should start with cloud — it is the simplest setup, and the more compatible choice for claude.ai, ChatGPT, and Claude Desktop. Pick local if you already run ComfyUI on your machine or work mostly in a coding agent like Claude Code, Cursor, or Codex. One caveat for Mac users: today's big open-weight models will not run at a workable speed on the Apple GPU, so run those on cloud.",
+    'zh-CN':
+      '云端连接是托管服务：一个 URL，无需安装，工作流在 Comfy Cloud 的 GPU 上运行，并可使用我们的模型目录。本地连接是开源的：客户端在你的机器上启动 comfy-mcp 服务器，驱动你自己的 ComfyUI——你的模型、你的自定义节点、你的 GPU。\n如何选择：新用户建议从云端开始——配置最简单，对 claude.ai、ChatGPT 和 Claude Desktop 的兼容性也更好。如果你已经在本机运行 ComfyUI，或主要在 Claude Code、Cursor、Codex 等编程智能体中工作，选本地。Mac 用户注意：如今的大型开源权重模型在 Apple GPU 上跑不出实用的速度，请在云端运行。'
+  },
+  'mcp.faq.4.q': {
+    en: 'Can I use both connections at once?',
+    'zh-CN': '可以同时使用两种连接吗？'
+  },
+  'mcp.faq.4.a': {
+    en: 'Yes. Most clients happily run two MCP servers side by side, and they authenticate independently: the cloud connection signs in to your Comfy account, while the local one needs no sign-in at all until you run partner models. Prototype free on your own GPU, then send the heavy batch to cloud GPUs from the same chat.',
+    'zh-CN':
+      '可以。大多数客户端可以同时运行两个 MCP 服务器，且各自独立认证：云端连接登录你的 Comfy 账户，本地连接在运行合作伙伴模型之前完全不需要登录。你可以先在自己的 GPU 上免费打样，再在同一个对话里把大批量任务发到云端 GPU。'
+  },
+  'mcp.faq.5.q': {
     en: 'Do I need an API key?',
     'zh-CN': '我需要 API 密钥吗？'
   },
-  'mcp.faq.2.a': {
-    en: 'Not for Claude Code or Claude Desktop. They use OAuth. An API key is only needed for headless or CI setups with no browser.',
-    'zh-CN':
-      'Claude Code 和 Claude Desktop 不需要，它们使用 OAuth。仅在没有浏览器的无头或 CI 环境中才需要 API 密钥。'
-  },
-  'mcp.faq.3.q': {
-    en: 'Do the slash commands work in Claude Desktop?',
-    'zh-CN': '斜杠命令在 Claude Desktop 中可以使用吗？'
-  },
-  'mcp.faq.3.a': {
-    en: 'No. They ship in the Claude Code plugin. Desktop connects to the same MCP server, so the tools work; just ask in plain language.',
-    'zh-CN':
-      '不可以。斜杠命令包含在 Claude Code 插件中。Claude Desktop 连接的是同一个 MCP 服务器，因此工具可以正常使用；直接用自然语言提问即可。'
-  },
-  'mcp.faq.4.q': {
-    en: "The sign-in didn't open a browser.",
-    'zh-CN': '登录时没有打开浏览器。'
-  },
-  'mcp.faq.4.a': {
-    en: 'In Claude Code, run /mcp, select comfy-cloud, and choose Authenticate. In Claude Desktop, reopen the connector from Customize → Connectors.',
-    'zh-CN':
-      '在 Claude Code 中，运行 /mcp，选择 comfy-cloud，然后选择 Authenticate（授权）。在 Claude Desktop 中，从“自定义 → 连接器”重新打开该连接器。'
-  },
-  'mcp.faq.5.q': {
-    en: 'How do I connect in Claude Code?',
-    'zh-CN': '如何在 Claude Code 中连接？'
-  },
   'mcp.faq.5.a': {
-    en: 'Add the marketplace and install the comfy-cloud plugin, then run /mcp → comfy-cloud → Authenticate. It adds the connection and slash commands in one step.',
+    en: 'In short, no. On the local connection, driving your own ComfyUI needs no key and no account. You only sign in when you run partner models: through comfy-cli with a browser sign-in, or with a Comfy API key. On the cloud connection, Claude Code, Claude Desktop, Codex, and OpenClaw sign in with OAuth; Cursor and Hermes need a Comfy API key for now. Just copy https://docs.comfy.org/agent-tools/mcp.md and your agent will figure out the installation for you.',
     'zh-CN':
-      '添加插件市场并安装 comfy-cloud 插件，然后运行 /mcp → comfy-cloud → Authenticate（授权）。一步即可添加连接和斜杠命令。'
+      '简而言之，不需要。本地连接方面，驱动你自己的 ComfyUI 不需要密钥，也不需要账户。只有在运行合作伙伴模型时才需要登录：通过 comfy-cli 在浏览器中登录，或使用 Comfy API 密钥。云端连接方面，Claude Code、Claude Desktop、Codex 和 OpenClaw 通过 OAuth 登录；Cursor 和 Hermes 目前需要 Comfy API 密钥。只需复制 https://docs.comfy.org/agent-tools/mcp.md，你的智能体就会为你完成安装。'
   },
   'mcp.faq.6.q': {
-    en: "What's the server URL for Claude Desktop?",
-    'zh-CN': 'Claude Desktop 的服务器 URL 是什么？'
+    en: 'Does it cost anything?',
+    'zh-CN': '需要付费吗？'
   },
   'mcp.faq.6.a': {
-    en: 'Add a custom connector in Customize → Connectors pointing to https://cloud.comfy.org/mcp, then sign in when prompted.',
+    en: "On the local connection, runs on your own hardware are free, and the server is open source. Partner models are the exception: they run on partner infrastructure and spend Comfy credits from your account, so you sign in before using them. On the cloud connection, connecting and searching are free, and running a generation uses Comfy Cloud credits — you need a [subscription of any tier](https://comfy.org/cloud/pricing); a credit top-up alone isn't enough. Either way, your agent confirms with you before it spends.",
     'zh-CN':
-      '在“自定义 → 连接器”中添加一个指向 https://cloud.comfy.org/mcp 的自定义连接器，然后在提示时登录。'
+      '本地连接方面，在你自己硬件上的生成是免费的，服务器也是开源的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗你 Comfy 账户中的积分，因此使用前需要登录。云端连接方面，连接和搜索免费，运行生成会使用 Comfy Cloud 积分——你需要[任意套餐的订阅](https://comfy.org/cloud/pricing)，仅充值积分是不够的。无论哪种方式，智能体在消费前都会先与你确认。'
   },
   'mcp.faq.7.q': {
+    en: 'Is Comfy MCP open source?',
+    'zh-CN': 'Comfy MCP 开源吗？'
+  },
+  'mcp.faq.7.a': {
+    en: 'The local connection is: comfy-mcp lives at https://github.com/Comfy-Org/comfy-mcp and installs from PyPI with pip install comfy-mcp. The cloud connection is a hosted service in front of Comfy Cloud.',
+    'zh-CN':
+      '本地连接是开源的：comfy-mcp 的代码在 https://github.com/Comfy-Org/comfy-mcp，可通过 pip install comfy-mcp 从 PyPI 安装。云端连接是构建在 Comfy Cloud 之上的托管服务。'
+  },
+  'mcp.faq.8.q': {
     en: 'What can my agent do once connected?',
     'zh-CN': '连接后我的智能体能做什么？'
   },
-  'mcp.faq.7.a': {
-    en: 'Generate images, video, audio, and 3D; search models, nodes, and templates; and run ComfyUI workflows, all from a chat.',
-    'zh-CN':
-      '生成图像、视频、音频和 3D；搜索模型、节点和模板；并运行 ComfyUI 工作流——全部在对话中完成。'
-  },
-  'mcp.faq.8.q': {
-    en: 'Is it generally available?',
-    'zh-CN': '现已正式发布了吗？'
-  },
   'mcp.faq.8.a': {
-    en: 'Comfy Cloud MCP is in open beta and available to everyone.',
-    'zh-CN': 'Comfy Cloud MCP 目前处于公开测试阶段，所有人均可使用。'
+    en: "• Generate images, video, audio, and 3D — including all open-source workflows and partner models like Seedance, GPT-Image, Nano Banana, and Kling\n• Build, edit, and run workflows; save and re-run workflows\n• Run and read in large batches\n• Search models, nodes, and template workflows\n• Read and execute shared workflow URLs\n• Upload and download assets for you\n\nEverything is in natural language, with no nodes or node graphs if you don't want them. On the cloud connection there is nothing to download and no GPU needed; the local connection drives the ComfyUI already installed on your machine.",
+    'zh-CN':
+      '• 生成图像、视频、音频和 3D——包括所有开源工作流以及 Seedance、GPT-Image、Nano Banana 和 Kling 等合作伙伴模型\n• 构建、编辑和运行工作流；保存并重新运行工作流\n• 大批量运行和读取\n• 搜索模型、节点和模板工作流\n• 读取并执行分享的工作流链接\n• 为你上传和下载资产\n\n一切都用自然语言完成，如果你愿意，无需节点、无需节点图。云端连接无需下载、无需 GPU；本地连接则驱动你机器上已安装的 ComfyUI。'
+  },
+  'mcp.faq.9.q': {
+    en: 'Where do my outputs go?',
+    'zh-CN': '我的输出会保存到哪里？'
+  },
+  'mcp.faq.9.a': {
+    en: 'On the cloud connection, into your Comfy Cloud asset library, so you can reuse, remix, and share them — and open any run on the canvas to keep editing. You can also ask your agent to download the assets locally for you. On the local connection, outputs land in your ComfyUI output folder, and your agent can copy them anywhere you name.',
+    'zh-CN':
+      '云端连接：保存到你的 Comfy Cloud 资产库，你可以复用、二次创作和分享——还能在画布上打开任意运行继续编辑。你也可以让智能体把资产下载到本地。本地连接：输出保存在你的 ComfyUI 输出文件夹中，智能体可以把它们复制到你指定的任何位置。'
   },
 
   // SiteNav
@@ -2171,7 +2718,11 @@ const translations = {
     en: 'Comfy Enterprise',
     'zh-CN': 'Comfy 企业版'
   },
-  'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
+  'nav.comfyHub': { en: 'Comfy Workflows', 'zh-CN': 'Comfy Workflows' },
+  'nav.fdct': {
+    en: 'Forward Deployed Creatives',
+    'zh-CN': '前沿驻场创意人才'
+  },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
   'nav.learning': { en: 'Learning', 'zh-CN': '学习' },
   'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
@@ -2181,14 +2732,14 @@ const translations = {
   'nav.youtube': { en: 'YouTube', 'zh-CN': 'YouTube' },
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
+  'nav.brand': { en: 'Brand', 'zh-CN': '品牌' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
   'nav.launches': { en: 'Launches', 'zh-CN': '发布' },
+  'nav.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
-  'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
-  'nav.ctaDesktopPrefix': { en: 'DOWNLOAD', 'zh-CN': '下载' },
+  'nav.launchCloud': { en: 'TRY CLOUD FOR FREE', 'zh-CN': '免费试用云端' },
   'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
-  'nav.ctaCloudPrefix': { en: 'LAUNCH', 'zh-CN': '启动' },
-  'nav.ctaCloudCore': { en: 'CLOUD', 'zh-CN': '云端' },
+  'nav.ctaCloudCore': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
   'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
@@ -2196,7 +2747,12 @@ const translations = {
   'breadcrumb.download': { en: 'Download', 'zh-CN': '下载' },
   'breadcrumb.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'breadcrumb.pricing': { en: 'Pricing', 'zh-CN': '定价' },
+  'breadcrumb.fdct': {
+    en: 'Forward Deployed Creative Technologists',
+    'zh-CN': '前沿驻场创意技术专家'
+  },
   'breadcrumb.supportedNodes': { en: 'Supported Nodes', 'zh-CN': '支持的节点' },
+  'breadcrumb.events': { en: 'Events', 'zh-CN': '活动' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.close': { en: 'Close', 'zh-CN': '关闭' },
@@ -2217,21 +2773,26 @@ const translations = {
   'nav.reddit': { en: 'Reddit', 'zh-CN': 'Reddit' },
   'nav.x': { en: 'X', 'zh-CN': 'X' },
   'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
+  'nav.linkedin': { en: 'LinkedIn', 'zh-CN': 'LinkedIn' },
   'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
   'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW: COMFY MCP',
-    'zh-CN': '全新发布：Comfy MCP'
+    en: 'NEW RELEASE: LTX 2.5',
+    'zh-CN': '全新发布：LTX 2.5'
   },
   'nav.featuredProductsAlt': {
-    en: 'Comfy MCP feature image',
-    'zh-CN': 'Comfy MCP 精选图片'
+    en: 'LTX 2.5 feature image',
+    'zh-CN': 'LTX 2.5 精选图片'
+  },
+  'nav.featuredProductsCta': {
+    en: 'EXPLORE NOW',
+    'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Get started with Comfy MCP',
-    'zh-CN': '开始使用 Comfy MCP'
+    en: 'Explore the LTX 2.5 release',
+    'zh-CN': '探索 LTX 2.5 版本'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -2267,9 +2828,20 @@ const translations = {
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
   'footer.company': { en: 'Company', 'zh-CN': '公司' },
   'footer.contact': { en: 'Contact', 'zh-CN': '联系我们' },
+  'footer.minimaxH3': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  'footer.minimaxMusic3': {
+    en: 'MiniMax Music 3',
+    'zh-CN': 'MiniMax Music 3'
+  },
+  'footer.minimaxLicense': {
+    en: 'MiniMax Commercial License',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'footer.seedance': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
   'footer.about': { en: 'About', 'zh-CN': '关于' },
   'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
   'footer.privacyPolicy': { en: 'Privacy Policy', 'zh-CN': '隐私政策' },
+  'footer.trustSafety': { en: 'Trust & Safety', 'zh-CN': '信任与安全' },
   'footer.support': { en: 'Support', 'zh-CN': '支持' },
   'footer.sales': { en: 'Sales', 'zh-CN': '销售' },
   'footer.press': { en: 'Press', 'zh-CN': '媒体' },
@@ -3983,6 +4555,46 @@ const translations = {
     'zh-CN': '我们会为您处理请求。'
   },
 
+  // Contact – Q&A (rendered on /contact and emitted as FAQPage json-ld via
+  // src/data/contactFaq.ts)
+  'contact.faq.heading': { en: 'Common questions', 'zh-CN': '常见问题' },
+  'contact.faq.q1': {
+    en: 'How do I get a MiniMax commercial license?',
+    'zh-CN': '如何获取 MiniMax 商业许可？'
+  },
+  'contact.faq.a1': {
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus MiniMax Audio & Music for running the models locally on your own hardware. Licenses come in two tiers, Professional and Enterprise. Request a license through this form, or read more on the [MiniMax Commercial License page](https://comfy.org/minimax/license).',
+    'zh-CN':
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license)了解更多。'
+  },
+  'contact.faq.q2': {
+    en: 'What are Forward Deployed Creatives?',
+    'zh-CN': '什么是前沿驻场创意人才？'
+  },
+  'contact.faq.a2': {
+    en: 'Comfy experts who embed with your team, build production workflows in your environment, train LoRAs on your style, and teach your team to run and extend everything they build. Tell us what you are making through this form, or [meet the Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives).',
+    'zh-CN':
+      'Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives)。'
+  },
+  'contact.faq.q3': {
+    en: 'What does Comfy Enterprise include?',
+    'zh-CN': 'Comfy 企业版包含什么？'
+  },
+  'contact.faq.a3': {
+    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/cloud/enterprise), or request a demo through this form.',
+    'zh-CN':
+      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise)，或通过此表单预约演示。'
+  },
+  'contact.faq.q4': {
+    en: 'Is Comfy SOC 2 compliant?',
+    'zh-CN': 'Comfy 符合 SOC 2 标准吗？'
+  },
+  'contact.faq.a4': {
+    en: 'A SOC 2 Type II audit is in progress. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation.',
+    'zh-CN':
+      'SOC 2 Type II 审计正在进行中。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。'
+  },
+
   'demos.category.templates': { en: 'TEMPLATES', 'zh-CN': '模板' },
   'demos.category.gettingStarted': { en: 'GETTING STARTED', 'zh-CN': '入门' },
 
@@ -4078,6 +4690,14 @@ const translations = {
     en: 'VIEW ARTICLE',
     'zh-CN': '查看文章'
   },
+  'carousel.previous': {
+    en: 'Previous',
+    'zh-CN': '上一条'
+  },
+  'carousel.next': {
+    en: 'Next',
+    'zh-CN': '下一条'
+  },
   'customers.feedback.quote1': {
     en: 'ComfyUI is so important to us because it allows us to know that we always play on the bleeding edge. Not only because of the technology itself, but because of the entire community behind it. The community is what makes it so special.',
     'zh-CN':
@@ -4155,6 +4775,131 @@ const translations = {
     en: 'Read the full tutorial →',
     'zh-CN': '阅读完整教程 →'
   },
+  'models.faq.heading': {
+    en: 'Frequently Asked Questions',
+    'zh-CN': '常见问题'
+  },
+  'models.faq.whatIs.question': {
+    en: 'What is {name}?',
+    'zh-CN': '什么是 {name}？'
+  },
+  'models.faq.whatIs.localAnswer': {
+    en: "{name} is {description}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect {name} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are {count} community workflow templates using {name} on Comfy Workflows, ready to load and customize.",
+    'zh-CN':
+      '{name} 是{description}。您可以在 ComfyUI 中本地运行它，完全掌控每一个参数，也可以通过 Comfy Cloud 访问它。ComfyUI 基于节点的工作流编辑器可以让您将 {name} 与 ControlNet、LoRA、放大模型和自定义节点连接起来，构建您需要的任何工作流程。Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板，可随时加载和自定义。'
+  },
+  'models.faq.whatIs.cloudAnswer': {
+    en: "{name} is {description}. You can access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect {name} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are {count} community workflow templates using {name} on Comfy Workflows, ready to load and customize.",
+    'zh-CN':
+      '{name} 是{description}。您可以通过 Comfy Cloud 访问它。ComfyUI 基于节点的工作流编辑器可以让您将 {name} 与 ControlNet、LoRA、放大模型和自定义节点连接起来，构建您需要的任何工作流程。Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板，可随时加载和自定义。'
+  },
+  'models.faq.howToUse.question': {
+    en: 'How do I use {name} in ComfyUI?',
+    'zh-CN': '如何在 ComfyUI 中使用 {name}？'
+  },
+  'models.faq.howToUse.withDocs': {
+    en: 'Follow the step-by-step tutorial at {url}. You can also load {templates} directly in ComfyUI.',
+    'zh-CN':
+      '按照 {url} 上的分步教程操作。您也可以直接在 ComfyUI 中加载{templates}。'
+  },
+  'models.faq.howToUse.withoutDocs': {
+    en: 'Open ComfyUI and browse {templates}. Load one as a starting point, then customize the nodes and parameters to fit your use case.',
+    'zh-CN':
+      '打开 ComfyUI，浏览{templates}。加载其中一个作为起点，然后自定义节点和参数以满足您的需求。'
+  },
+  'models.faq.templates.singular': {
+    en: 'the community workflow template that uses {name}',
+    'zh-CN': '使用 {name} 的社区工作流模板'
+  },
+  'models.faq.templates.plural': {
+    en: 'any of the {count} community workflow templates that use {name}',
+    'zh-CN': '{count} 个使用 {name} 的社区工作流模板'
+  },
+  'models.faq.workflowCount.question': {
+    en: 'How many ComfyUI workflows use {name}?',
+    'zh-CN': '有多少个 ComfyUI 工作流使用 {name}？'
+  },
+  'models.faq.workflowCount.singular': {
+    en: 'There is {count} community workflow template that uses {name} on Comfy Workflows. It is ready to run in ComfyUI and can be customized to suit your project.',
+    'zh-CN':
+      'Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板。该模板可以在 ComfyUI 中直接运行，并可根据您的项目进行自定义。'
+  },
+  'models.faq.workflowCount.plural': {
+    en: 'There are {count} community workflow templates that use {name} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.',
+    'zh-CN':
+      'Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板。每个模板都可以在 ComfyUI 中直接运行，并可根据您的项目进行自定义。'
+  },
+  'models.faq.isFree.question': {
+    en: 'Is {name} free to use in ComfyUI?',
+    'zh-CN': '在 ComfyUI 中使用 {name} 是免费的吗？'
+  },
+  'models.faq.isFree.localAnswer': {
+    en: 'ComfyUI is free and open source. {name} weights are available to download from Hugging Face. You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.',
+    'zh-CN':
+      'ComfyUI 是免费且开源的。{name} 的权重文件可从 Hugging Face 下载。仅在 Comfy Cloud 上运行时才需要为算力付费；在您自己的硬件上进行本地推理始终是免费的。'
+  },
+  'models.faq.isFree.cloudAnswer': {
+    en: 'This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/cloud/pricing',
+    'zh-CN':
+      '此模型仅在 Comfy Cloud 上运行。按算力用量付费，详情请参阅 comfy.org/cloud/pricing。'
+  },
+  'models.dirDescription.diffusion_models': {
+    en: 'a diffusion model that generates images or video from text and image prompts',
+    'zh-CN': '一个根据文本和图像提示生成图像或视频的扩散模型'
+  },
+  'models.dirDescription.checkpoints': {
+    en: 'an all-in-one checkpoint model that bundles a diffusion model, text encoder, and VAE',
+    'zh-CN': '一个集扩散模型、文本编码器和 VAE 于一体的全能 checkpoint 模型'
+  },
+  'models.dirDescription.loras': {
+    en: 'a LoRA (Low-Rank Adaptation) that fine-tunes an existing model for a specific style or subject',
+    'zh-CN': '一个用于针对特定风格或主题微调现有模型的 LoRA（低秩适应）'
+  },
+  'models.dirDescription.controlnet': {
+    en: 'a ControlNet that steers image generation using structural guides like depth maps, edges, or poses',
+    'zh-CN': '一个通过深度图、边缘或姿态等结构化引导来控制图像生成的 ControlNet'
+  },
+  'models.dirDescription.clip_vision': {
+    en: 'a CLIP Vision encoder that converts images into embeddings for conditioning or style transfer',
+    'zh-CN':
+      '一个将图像转换为嵌入向量、用于条件控制或风格迁移的 CLIP Vision 编码器'
+  },
+  'models.dirDescription.vae': {
+    en: 'a VAE (Variational Autoencoder) that encodes and decodes latent representations',
+    'zh-CN': '一个用于编码和解码潜在表示的 VAE（变分自编码器）'
+  },
+  'models.dirDescription.text_encoders': {
+    en: 'a text encoder that converts prompts into embeddings used to guide generation',
+    'zh-CN': '一个将提示词转换为嵌入向量、用于指导生成的文本编码器'
+  },
+  'models.dirDescription.audio_encoders': {
+    en: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
+    'zh-CN': '一个将音频转换为嵌入向量、用于音频条件生成的音频编码器'
+  },
+  'models.dirDescription.upscale_models': {
+    en: 'an upscale model that increases image resolution while preserving or enhancing detail',
+    'zh-CN': '一个在提升图像分辨率的同时保留或增强细节的放大模型'
+  },
+  'models.dirDescription.latent_upscale_models': {
+    en: 'a latent upscale model that refines latents at higher resolution before decoding',
+    'zh-CN': '一个在解码前以更高分辨率优化潜在特征的潜空间放大模型'
+  },
+  'models.dirDescription.style_models': {
+    en: 'a style model that transfers artistic style onto generated images',
+    'zh-CN': '一个将艺术风格迁移到生成图像上的风格模型'
+  },
+  'models.dirDescription.model_patches': {
+    en: 'a model patch that modifies or extends the behavior of an existing base model',
+    'zh-CN': '一个修改或扩展现有基础模型行为的模型补丁'
+  },
+  'models.dirDescription.partner_nodes': {
+    en: 'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements',
+    'zh-CN': '一个无需本地硬件、可通过 ComfyUI 合作伙伴节点访问的云端 API 模型'
+  },
+  'models.dirDescription.default': {
+    en: 'an AI model',
+    'zh-CN': '一个 AI 模型'
+  },
   'models.index.title': {
     en: 'Supported Models',
     'zh-CN': '支持的模型'
@@ -4200,8 +4945,8 @@ const translations = {
     'zh-CN': '{count} 个工作流'
   },
   'models.list.contact.label': {
-    en: 'COMFY HUB',
-    'zh-CN': 'COMFY HUB'
+    en: 'COMFY WORKFLOWS',
+    'zh-CN': 'COMFY WORKFLOWS'
   },
   'models.showcase.label': { en: 'AI MODELS', 'zh-CN': 'AI 模型' },
   'models.showcase.heading': {
@@ -4237,9 +4982,9 @@ const translations = {
     'zh-CN': 'Wan 2.2\n文字转视频'
   },
   'models.list.contact.heading': {
-    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Hub</a> for the newest workflows.',
+    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Workflows</a> for the newest workflows.',
     'zh-CN':
-      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Hub</a> 查看最新工作流。'
+      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Workflows</a> 查看最新工作流。'
   },
 
   // Payment status pages
@@ -4283,6 +5028,18 @@ const translations = {
   'payment.failed.secondaryCta': {
     en: 'READ SUBSCRIPTION DOCS',
     'zh-CN': '查看订阅文档'
+  },
+  'payment.failed.statusPrompt.prefix': {
+    en: 'Check our',
+    'zh-CN': '请查看我们的'
+  },
+  'payment.failed.statusPrompt.statusLink': {
+    en: 'status page',
+    'zh-CN': '状态页面'
+  },
+  'payment.failed.statusPrompt.suffix': {
+    en: 'for more information.',
+    'zh-CN': '了解更多信息。'
   },
 
   // AffiliateHeroSection
@@ -4345,12 +5102,13 @@ const translations = {
     'zh-CN': '可用于您内容的品牌 Logo'
   },
   'affiliate.assets.subheading': {
-    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
-    'zh-CN': '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
+    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval. Get the <a href="https://comfy.org/brand" class="text-primary-comfy-yellow underline">full brand assets here</a>.',
+    'zh-CN':
+      '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。点击<a href="https://comfy.org/brand" class="text-primary-comfy-yellow underline">此处获取完整品牌素材</a>。'
   },
-  'affiliate.assets.downloadLabel': {
-    en: 'Download zip',
-    'zh-CN': '下载压缩包'
+  'affiliate.assets.ctaLabel': {
+    en: 'Go to brand portal',
+    'zh-CN': '前往品牌门户'
   },
 
   // AffiliateFAQSection
@@ -4407,8 +5165,8 @@ const translations = {
     'zh-CN': '下载桌面版'
   },
   'launches.hero.secondary': {
-    en: 'Launch Cloud',
-    'zh-CN': '启动云端'
+    en: 'Try Cloud for free',
+    'zh-CN': '免费试用云端'
   },
   'launches.hero.visualAlt': {
     en: 'Comfy',
@@ -4446,6 +5204,1414 @@ const translations = {
   'launches.section.title': {
     en: 'Latest Launches',
     'zh-CN': '最新发布'
+  },
+
+  'ltx.meta.title': {
+    en: 'LTX 2.5 on Comfy: Open-Source AI Video Model',
+    'zh-CN': 'Comfy 上的 LTX 2.5：开源 AI 视频模型'
+  },
+  'ltx.meta.description': {
+    en: 'Run LTX 2.5 on Comfy. Open weights, free to run on your own GPU, or directed on the canvas alongside every other model on Comfy Cloud.',
+    'zh-CN':
+      '在 Comfy 上运行 LTX 2.5。开放权重，可在你自己的 GPU 上免费运行，也可以在画布上与其他所有模型一同执导，支持 Comfy Cloud。'
+  },
+  'ltx.breadcrumb.model': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
+  'ltx.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'ltx.hero.title': {
+    en: 'LTX 2.5 is here',
+    'zh-CN': 'LTX 2.5 已上线'
+  },
+  'ltx.hero.description': {
+    en: 'LTX is the fastest video generation model on the planet, and this version sharpens prompt adherence, visuals, and audio quality across the board. With a new Diffusion Fidelity Rendering capability, fine textures, faces, and complex shots hold up at cinematic-grade detail.',
+    'zh-CN':
+      'LTX 是全球最快的视频生成模型，这一版本全面提升了提示词遵循度、画面表现与音频质量。凭借全新的 Diffusion Fidelity Rendering 能力，细腻的纹理、人物面部与复杂镜头都能保持电影级的细节。'
+  },
+  'ltx.hero.tagOpenSource': { en: 'Open Source', 'zh-CN': '开源' },
+  'ltx.hero.tagPartnerNode': { en: 'Partner Node', 'zh-CN': '合作伙伴节点' },
+  'ltx.hero.tagImageToVideo': { en: 'Image to Video', 'zh-CN': '图像转视频' },
+  'ltx.hero.tagTextToVideo': { en: 'Text to Video', 'zh-CN': '文本转视频' },
+  'ltx.models.heading': {
+    en: 'Made with LTX 2.5',
+    'zh-CN': '用 LTX 2.5 制作'
+  },
+  'ltx.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+  'ltx.hero.primaryCta': {
+    en: 'RUN LTX 2.5',
+    'zh-CN': '运行 LTX 2.5'
+  },
+  'ltx.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
+  'ltx.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'ltx.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'ltx.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'ltx.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'ltx.runOptions.subtitle': {
+    en: 'Run LTX 2.5 in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中运行 LTX 2.5。用 API 批量制作，或部署到自有环境。'
+  },
+  'ltx.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'ltx.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'ltx.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'ltx.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'ltx.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+
+  // Gemini Omni 1.1 Flash launch page (/gemini-omni). zh-CN hand-translated.
+  // Hero copy is Rob's blog line verbatim; headings and CTA labels are read off
+  // June's Figma (node 12752-37723). No Q&A block yet: the Figma's is still the
+  // Seedance 2.0 placeholder and Rob's copy has not landed.
+  'geminiOmni.meta.title': {
+    en: 'Gemini Omni 1.1 Flash on Comfy: Google AI Video Model',
+    'zh-CN': 'Comfy 上的 Gemini Omni 1.1 Flash：Google AI 视频模型'
+  },
+  'geminiOmni.meta.description': {
+    en: 'Run Gemini Omni 1.1 Flash on Comfy. One node covers text to video, image to video, reference to video, editing and scene extension, with output up to 4K and audio on every clip.',
+    'zh-CN':
+      '在 Comfy 上运行 Gemini Omni 1.1 Flash。一个节点即可覆盖文本生成视频、图像生成视频、参考生成视频、视频编辑与场景延展，输出最高可达 4K，每个片段都带音频。'
+  },
+  'geminiOmni.breadcrumb.model': {
+    en: 'Gemini Omni 1.1 Flash',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
+  },
+  'geminiOmni.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'geminiOmni.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'geminiOmni.hero.titleModel': {
+    en: 'Gemini Omni 1.1 Flash',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
+  },
+  'geminiOmni.hero.titleRest': { en: ' is here', 'zh-CN': ' 已上线' },
+  'geminiOmni.hero.description': {
+    en: "Omni 1.1 Flash is Google's new video model, now on Comfy. It's built for fast generation. One node covers text-to-video, image-to-video, reference-to-video, editing, and scene extension, with output up to 4K and audio on every clip.",
+    'zh-CN':
+      'Omni 1.1 Flash 是 Google 的新一代视频模型，现已登陆 Comfy。它为快速生成而打造。一个节点即可覆盖文本生成视频、图像生成视频、参考生成视频、视频编辑与场景延展，输出最高可达 4K，每个片段都带音频。'
+  },
+  'geminiOmni.hero.primaryCta': { en: 'RUN IT NOW', 'zh-CN': '立即运行' },
+  'geminiOmni.hero.secondaryCta': {
+    en: 'EXPLORE WORKFLOWS',
+    'zh-CN': '探索工作流'
+  },
+  'geminiOmni.hero.tagPartnerNode': {
+    en: 'Partner node',
+    'zh-CN': '合作伙伴节点'
+  },
+  'geminiOmni.hero.tagImageToVideo': {
+    en: 'Image to Video',
+    'zh-CN': '图像转视频'
+  },
+  'geminiOmni.hero.tagTextToVideo': {
+    en: 'Text to Video',
+    'zh-CN': '文本转视频'
+  },
+  'geminiOmni.hero.tagReferenceToVideo': {
+    en: 'Reference to Video',
+    'zh-CN': '参考转视频'
+  },
+  'geminiOmni.models.heading': {
+    en: 'Made with Omni 1.1 Flash',
+    'zh-CN': '用 Omni 1.1 Flash 制作'
+  },
+  'geminiOmni.steps.heading': {
+    en: 'How to direct your shot',
+    'zh-CN': '如何执导你的镜头'
+  },
+  'geminiOmni.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'geminiOmni.steps.secondaryCta': {
+    en: 'RUN OMNI 1.1 FLASH',
+    'zh-CN': '运行 Omni 1.1 Flash'
+  },
+  'geminiOmni.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'geminiOmni.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'geminiOmni.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'geminiOmni.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'geminiOmni.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中构建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'geminiOmni.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'geminiOmni.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'geminiOmni.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'geminiOmni.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'geminiOmni.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+
+  // Seedance 2.5 SEO page (/seedance-2.5). zh-CN hand-translated; some body
+  // copy carries placeholder intent from Figma and may change (June, CRE-145).
+  'seedance.meta.title': {
+    en: 'Seedance 2.5 on Comfy — Cinematic AI Video Model',
+    'zh-CN': 'Comfy 上的 Seedance 2.5 — 电影级 AI 视频模型'
+  },
+  'seedance.meta.description': {
+    en: 'Run ByteDance Seedance 2.5 on Comfy: multi-shot cinematic video with native audio, from text or image. Draft free on Wan 2.2 and spend credits only on the final render.',
+    'zh-CN':
+      '在 Comfy 上运行字节跳动 Seedance 2.5：从文本或图像生成带原生音频的多镜头电影级视频。先用 Wan 2.2 免费打样，只在最终渲染时消耗积分。'
+  },
+  'seedance.breadcrumb.model': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
+  'seedance.breadcrumb.updated': {
+    en: 'Updated July 2026',
+    'zh-CN': '更新于 2026 年 7 月'
+  },
+  'seedance.hero.title': {
+    en: 'Seedance 2.5 is here',
+    'zh-CN': 'Seedance 2.5 已上线'
+  },
+  'seedance.hero.description': {
+    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut. Now available in 1080p with video extension.",
+    'zh-CN':
+      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。现已支持 1080p 及视频扩展。'
+  },
+  'seedance.hero.primaryCta': {
+    en: 'RUN SEEDANCE 2.5',
+    'zh-CN': '运行 Seedance 2.5'
+  },
+  'seedance.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
+  'seedance.models.heading': {
+    en: 'Shot on Seedance',
+    'zh-CN': '用 Seedance 拍摄'
+  },
+  'seedance.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+  'seedance.hero.tagPartnerNode': {
+    en: 'Partner node',
+    'zh-CN': '合作伙伴节点'
+  },
+  'seedance.hero.tagImageToVideo': {
+    en: 'Image to Video',
+    'zh-CN': '图像生成视频'
+  },
+  'seedance.hero.tagTextToVideo': {
+    en: 'Text to Video',
+    'zh-CN': '文本生成视频'
+  },
+  'seedance.hero.promptSample': {
+    en: 'Saturated neon color, mirror-ball light flecks, soft glow bloom,',
+    'zh-CN': '饱和的霓虹色彩、镜面球光斑、柔和的辉光晕染，'
+  },
+  'seedance.hero.promptCta': {
+    en: 'GENERATE VIDEO',
+    'zh-CN': '生成视频'
+  },
+  'seedance.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'seedance.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'seedance.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'seedance.steps.heading': {
+    en: 'How to direct your first shot',
+    'zh-CN': '如何执导你的第一个镜头'
+  },
+  'seedance.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'seedance.steps.primaryCta': {
+    en: 'RUN WAN 2.2 FOR FREE',
+    'zh-CN': '免费运行 Wan 2.2'
+  },
+  'seedance.steps.secondaryCta': {
+    en: 'RUN SEEDANCE 2.5',
+    'zh-CN': '运行 Seedance 2.5'
+  },
+  'seedance.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'seedance.runOptions.subtitle': {
+    en: 'Run Seedance in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN':
+      '今天就在浏览器中运行 Seedance。用 API 批量制作，或部署到自有环境。'
+  },
+  // shared across all four run-option cards; the per-product `products.*.cta`
+  // labels overflow on mobile
+  'seedance.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'seedance.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'seedance.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'seedance.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'seedance.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  // Events page (/events)
+  // zh-CN strings pending native review
+  'events.page.title': {
+    en: 'Events - Livestreams, Hackathons & Community Meetups | Comfy',
+    'zh-CN': '活动 - 直播、黑客松与社区聚会 | Comfy'
+  },
+  'events.page.description': {
+    en: 'Upcoming livestreams, hackathons, and events worldwide. Join upcoming Comfy events or catch up on past livestreams, hackathons, and community meetups.',
+    'zh-CN':
+      '即将举行的直播、黑客松以及遍布全球的活动。参加即将举行的 Comfy 活动，或回看过往的直播、黑客松和社区聚会。'
+  },
+  'events.hero.eyebrow': { en: 'EVENTS', 'zh-CN': '活动' },
+  'events.hero.title': {
+    en: 'Creators, all in one place',
+    'zh-CN': '创作者，齐聚一堂'
+  },
+  'events.hero.subtitle': {
+    en: 'Upcoming livestreams, hackathons, and events worldwide',
+    'zh-CN': '即将举行的直播、黑客松以及遍布全球的活动'
+  },
+  'events.hero.prevSlide': {
+    en: 'Previous featured event',
+    'zh-CN': '上一个精选活动'
+  },
+  'events.hero.nextSlide': {
+    en: 'Next featured event',
+    'zh-CN': '下一个精选活动'
+  },
+  'events.upcoming.title': {
+    en: 'Upcoming events',
+    'zh-CN': '即将举行的活动'
+  },
+  'events.upcoming.livestream': { en: 'Livestream', 'zh-CN': '直播' },
+  'events.upcoming.addToCalendar': {
+    en: 'Add to calendar',
+    'zh-CN': '添加到日历'
+  },
+  'events.upcoming.calendarGoogle': {
+    en: 'Google Calendar',
+    'zh-CN': 'Google 日历'
+  },
+  'events.upcoming.calendarApple': {
+    en: 'Apple Calendar',
+    'zh-CN': 'Apple 日历'
+  },
+  'events.upcoming.calendarOutlook': {
+    en: 'Outlook',
+    'zh-CN': 'Outlook'
+  },
+  'events.past.title': {
+    en: 'See our past events',
+    'zh-CN': '回顾过往活动'
+  },
+  'events.past.filterAll': { en: 'ALL', 'zh-CN': '全部' },
+  'events.past.watchNow': { en: 'WATCH NOW', 'zh-CN': '立即观看' },
+  'events.past.loadMore': { en: 'LOAD MORE', 'zh-CN': '加载更多' },
+  'events.videoDialog.close': { en: 'Close', 'zh-CN': '关闭' },
+  'events.category.livestream': { en: 'Livestream', 'zh-CN': '直播' },
+  'events.category.hackathon': { en: 'Hackathon', 'zh-CN': '黑客松' },
+  'events.category.community': { en: 'Community', 'zh-CN': '社区' },
+
+  // Brand Portal page (/brand)
+  'brand.page.title': {
+    en: 'Brand — Comfy',
+    'zh-CN': '品牌 — Comfy'
+  },
+  'brand.page.description': {
+    en: 'The Comfy brand portal: logos, color, typography, and voice. Everything you need to build something that looks and sounds like Comfy.',
+    'zh-CN':
+      'Comfy 品牌门户：标志、色彩、字体与语调。打造与 Comfy 观感一致、表达一致所需的一切。'
+  },
+  'brand.hero.label': {
+    en: 'Brand Portal',
+    'zh-CN': '品牌门户'
+  },
+  'brand.hero.heading': {
+    en: 'Create with ComfyUI',
+    'zh-CN': '用 ComfyUI 创作'
+  },
+  'brand.hero.subheading': {
+    en: 'Logo, color, type, and voice. Everything you need to build something that looks and sounds like us.',
+    'zh-CN': '标志、色彩、字体与语调。打造与我们观感一致、表达一致所需的一切。'
+  },
+  'brand.hero.viewGuidelines': {
+    en: 'View brand guidelines',
+    'zh-CN': '查看品牌规范'
+  },
+  'brand.hero.downloadLogos': {
+    en: 'Download logos',
+    'zh-CN': '下载标志'
+  },
+  'brand.logos.heading': {
+    en: 'One mark, many dimensions.',
+    'zh-CN': '一个标志，多种维度。'
+  },
+  'brand.logos.subheading': {
+    en: 'Logos come in light and dark options. Use as provided. Do not distort, recolor, or outline. Make sure the logo is legible against its background.',
+    'zh-CN':
+      '标志提供浅色和深色两种版本。请按原样使用，不要变形、改色或描边。确保标志在其背景上清晰可辨。'
+  },
+  'brand.colors.heading': {
+    en: 'Every color earns its place.',
+    'zh-CN': '每种颜色都各得其所。'
+  },
+  'brand.colors.subheading': {
+    en: 'Our color palette helps build brand recognition. When people think of Comfy, we want them to associate it with the following colors.',
+    'zh-CN':
+      '我们的调色板有助于建立品牌辨识度。当人们想到 Comfy 时，我们希望他们联想到以下这些颜色。'
+  },
+  'brand.colors.copy': {
+    en: 'Copy',
+    'zh-CN': '复制'
+  },
+  'brand.colors.copied': {
+    en: 'Copied',
+    'zh-CN': '已复制'
+  },
+  'brand.voice.heading': {
+    en: 'Precise, never cute.',
+    'zh-CN': '精准，绝不卖弄。'
+  },
+  'brand.voice.direct.title': {
+    en: 'Direct',
+    'zh-CN': '直接'
+  },
+  'brand.voice.direct.body': {
+    en: 'We state things. We don’t hedge, qualify, or suggest. Short sentences. Active voice. One idea at a time.',
+    'zh-CN':
+      '我们直陈其事。不含糊、不设限、不暗示。短句。主动语态。一次只讲一个观点。'
+  },
+  'brand.voice.precise.title': {
+    en: 'Precise',
+    'zh-CN': '精准'
+  },
+  'brand.voice.precise.body': {
+    en: 'We use the real names for things. Nodes, samplers, seeds, checkpoints. We don’t talk around the product or reach for metaphor when the technical term is already good.',
+    'zh-CN':
+      '我们直呼其名：nodes、samplers、seeds、checkpoints。当技术术语已经足够贴切时，我们不绕弯子，也不借用比喻。'
+  },
+  'brand.voice.human.title': {
+    en: 'Human-first',
+    'zh-CN': '以人为先'
+  },
+  'brand.voice.human.body': {
+    en: 'The human creates. Comfy makes every step visible. We never write as though the AI is doing the work.',
+    'zh-CN':
+      '创作的是人。Comfy 让每一步都清晰可见。我们绝不把功劳写成是 AI 完成的。'
+  },
+  'brand.voice.antihype.title': {
+    en: 'Anti-hype',
+    'zh-CN': '拒绝浮夸'
+  },
+  'brand.voice.antihype.body': {
+    en: 'We don’t write “stunning,” “revolutionary,” or “effortless.” We don’t promise magic. Our tagline says exactly what we mean: Method, not magic.',
+    'zh-CN':
+      '我们不写“惊艳”“革命性”或“毫不费力”。我们不承诺魔法。我们的口号恰如其分：方法，而非魔法。'
+  },
+  'brand.voice.doLabel': {
+    en: 'Do',
+    'zh-CN': '推荐'
+  },
+  'brand.voice.dontLabel': {
+    en: 'Don’t',
+    'zh-CN': '避免'
+  },
+  'brand.voice.do.0': {
+    en: 'Route your prompt through a ControlNet. Wire the output to the VAE decode.',
+    'zh-CN': '让你的 prompt 经过 ControlNet，再将输出连接到 VAE decode。'
+  },
+  'brand.voice.do.1': {
+    en: 'Comfy runs on your hardware. Nothing leaves your machine.',
+    'zh-CN': 'Comfy 在你自己的硬件上运行。任何数据都不会离开你的机器。'
+  },
+  'brand.voice.dont.0': {
+    en: 'Simply connect your AI blocks and watch the magic happen!',
+    'zh-CN': '只需连接你的 AI 模块，见证奇迹的发生！'
+  },
+  'brand.voice.dont.1': {
+    en: 'Oops! Something went wrong. Please try again later.',
+    'zh-CN': '哎呀！出了点问题，请稍后再试。'
+  },
+  'brand.trademark.heading': {
+    en: 'Trademark guidelines.',
+    'zh-CN': '商标使用规范。'
+  },
+  'brand.trademark.body1': {
+    en: 'Comfy and ComfyUI are trademarks of Comfy Org. You’re welcome to reference them in content that accurately describes your work with our platform. Tutorials, reviews, integrations, and affiliate content all qualify.',
+    'zh-CN':
+      'Comfy 和 ComfyUI 是 Comfy Org 的商标。欢迎在准确描述你与我们平台相关工作的内容中引用它们。教程、评测、集成以及联盟内容均可。'
+  },
+  'brand.trademark.body2': {
+    en: 'A few rules: don’t modify the logo, don’t use the Comfy name in your own product or company name, and don’t present your content in a way that implies official endorsement or partnership beyond what’s been agreed.',
+    'zh-CN':
+      '几条规则：不要修改标志，不要在你自己的产品或公司名称中使用 Comfy 这一名称，也不要以暗示官方认可或合作关系（超出双方已达成的约定）的方式呈现你的内容。'
+  },
+  'brand.trademark.body3': {
+    en: 'For permissions outside these guidelines,',
+    'zh-CN': '如需本规范之外的授权，请'
+  },
+  'brand.trademark.contact': {
+    en: 'Contact Us',
+    'zh-CN': '联系我们'
+  },
+  'brand.questions.heading': {
+    en: 'Questions?',
+    'zh-CN': '有疑问？'
+  },
+  'brand.questions.body': {
+    en: 'For press, partnerships, or anything outside these guidelines,',
+    'zh-CN': '如涉及媒体、合作，或本规范未涵盖的任何事宜，请'
+  },
+  'brand.questions.contact': {
+    en: 'Contact Us',
+    'zh-CN': '联系我们'
+  },
+
+  // Shared by every model-launch gallery card (see templates/model-launch).
+  'modelLaunch.tagFree': { en: 'Free', 'zh-CN': '免费' },
+  'modelLaunch.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
+  // Flux 3 model page (/flux-3)
+  'flux3.meta.title': {
+    en: 'Flux 3 on Comfy — Video With Native Audio',
+    'zh-CN': 'Comfy 上的 Flux 3 — 带原生音频的视频模型'
+  },
+  'flux3.meta.description': {
+    en: "Run Flux 3 on Comfy: Black Forest Labs' multimodal model generates video with native audio, up to 20 seconds in one generation, from text, image, video or keyframes.",
+    'zh-CN':
+      '在 Comfy 上运行 Flux 3：Black Forest Labs 的多模态模型可生成带原生音频的视频，单次生成最长 20 秒，支持文本、图像、视频或关键帧输入。'
+  },
+  'flux3.breadcrumb.model': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
+  'flux3.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'flux3.hero.title': {
+    en: 'Flux 3',
+    'zh-CN': 'Flux 3'
+  },
+  'flux3.hero.titleRest': {
+    en: ' is here',
+    'zh-CN': ' 已上线'
+  },
+  'flux3.hero.description': {
+    en: 'Flux 3 generates video with native audio, up to 20 seconds in a single generation. Go text to video or image to video. Run it on Comfy Cloud today. Open weights coming soon.',
+    'zh-CN':
+      'Flux 3 可生成带原生音频的视频，单次生成最长 20 秒。支持文本生成视频与图像生成视频。今天就在 Comfy Cloud 上运行它。开源权重即将推出。'
+  },
+  'flux3.hero.tagPartnerNodes': {
+    en: 'Partner nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'flux3.hero.tagOpenWeightsSoon': {
+    en: 'Open weights coming soon',
+    'zh-CN': '开源权重即将推出'
+  },
+  'flux3.hero.primaryCta': {
+    en: 'RUN FLUX 3',
+    'zh-CN': '运行 Flux 3'
+  },
+  'flux3.hero.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
+  },
+  'flux3.cta.heading': {
+    en: 'Twenty seconds with sound, in one generation.',
+    'zh-CN': '二十秒，自带声音，一次生成。'
+  },
+  'flux3.cta.primaryCta': {
+    en: 'RUN FLUX 3',
+    'zh-CN': '运行 Flux 3'
+  },
+  'flux3.cta.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
+  },
+  'flux3.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'flux3.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'flux3.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'flux3.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+  'flux3.models.heading': {
+    en: 'Made with Flux 3',
+    'zh-CN': '用 Flux 3 制作'
+  },
+  'flux3.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'flux3.runOptions.subtitle': {
+    en: 'Run Flux 3 in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中运行 Flux 3。用 API 批量制作，或部署到自有环境。'
+  },
+  'flux3.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'flux3.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'flux3.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'flux3.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'footer.flux3': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
+  // Wan Animate 2 model page (/wan-animate-2)
+  'wanAnimate2.meta.title': {
+    en: 'Wan Animate 2 on Comfy — Open-Source Character Animation',
+    'zh-CN': 'Comfy 上的 Wan Animate 2 — 开源角色动画模型'
+  },
+  'wanAnimate2.meta.description': {
+    en: 'Run Wan Animate 2 on Comfy: upload a reference image of your character plus a driving video, and it transfers that motion onto your character. Open source, on Comfy Cloud or your own hardware.',
+    'zh-CN':
+      '在 Comfy 上运行 Wan Animate 2：上传角色参考图和一段驱动视频，即可把动作迁移到你的角色上。开源模型，可在 Comfy Cloud 或自有硬件上运行。'
+  },
+  'wanAnimate2.breadcrumb.model': {
+    en: 'Wan Animate 2',
+    'zh-CN': 'Wan Animate 2'
+  },
+  'wanAnimate2.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'wanAnimate2.hero.title': {
+    en: 'Wan Animate 2 is here',
+    'zh-CN': 'Wan Animate 2 已上线'
+  },
+  'wanAnimate2.hero.description': {
+    en: 'Introducing Wan Animate 2, the new state of the art model for character animation: upload a reference image of your character plus a video of the motion you want, and it transfers that motion onto your character.',
+    'zh-CN':
+      '隆重推出 Wan Animate 2，业界领先的角色动画模型：上传一张角色参考图，再加上一段你想要的动作视频，它就会把该动作迁移到你的角色上。'
+  },
+  'wanAnimate2.hero.primaryCta': {
+    en: 'RUN WAN ANIMATE 2',
+    'zh-CN': '运行 Wan Animate 2'
+  },
+  'wanAnimate2.hero.tagOpenSource': {
+    en: 'Open Source',
+    'zh-CN': '开源'
+  },
+  'wanAnimate2.hero.tagReferenceToVideo': {
+    en: 'Reference to Video',
+    'zh-CN': '参考图生成视频'
+  },
+  'wanAnimate2.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'wanAnimate2.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'wanAnimate2.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'wanAnimate2.steps.heading': {
+    en: 'How to direct your first shot',
+    'zh-CN': '如何执导你的第一个镜头'
+  },
+  'wanAnimate2.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'wanAnimate2.steps.primaryCta': {
+    en: 'RUN WAN ANIMATE 2',
+    'zh-CN': '运行 Wan Animate 2'
+  },
+  'wanAnimate2.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'wanAnimate2.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中构建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'wanAnimate2.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'wanAnimate2.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'wanAnimate2.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'wanAnimate2.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'wanAnimate2.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
+  'footer.wanAnimate2': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
+  'footer.ltx': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
+  'footer.geminiOmni': {
+    en: 'Gemini Omni 1.1 Flash',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
+  },
+  'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
+  // Wan 3.0 model page (/wan-3.0)
+  'wan3.meta.title': {
+    en: 'Wan 3.0 on Comfy — Text, Image and Reference to Video',
+    'zh-CN': 'Comfy 上的 Wan 3.0 — 文生、图生与参考生视频'
+  },
+  'wan3.meta.description': {
+    en: 'Run Wan 3.0 on Comfy Cloud. Generate up to 30 seconds of video from a text prompt, an image, or video, image and audio references, with sound produced alongside the picture.',
+    'zh-CN':
+      '在 Comfy Cloud 上运行 Wan 3.0。可从文字提示词、图像，或视频、图像与音频参考生成最长 30 秒的视频，并同时生成画面与声音。'
+  },
+  'wan3.breadcrumb.model': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  'wan3.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'wan3.hero.title': { en: 'Wan 3.0 is here', 'zh-CN': 'Wan 3.0 已上线' },
+  'wan3.hero.description': {
+    en: "Wan 3.0 is a step change from previous Wan models. It generates what earlier versions couldn't: a full 30-second scene in one take, as low as 480p for speed and iteration, and up to 1080p for production quality. Available on Comfy Cloud and via Partner Nodes today.",
+    'zh-CN':
+      'Wan 3.0 相比以往的 Wan 模型是一次跨越式提升。它能做到早期版本做不到的事：一镜到底生成完整的 30 秒场景，低至 480p 以便快速迭代，最高 1080p 达到成片质量。现已在 Comfy Cloud 及合作伙伴节点上提供。'
+  },
+  'wan3.hero.tagTextToVideo': { en: 'Text to Video', 'zh-CN': '文生视频' },
+  'wan3.hero.tagImageToVideo': { en: 'Image to Video', 'zh-CN': '图生视频' },
+  'wan3.hero.tagReferenceToVideo': {
+    en: 'Reference to Video',
+    'zh-CN': '参考生视频'
+  },
+  'wan3.hero.primaryCta': { en: 'RUN WAN 3.0', 'zh-CN': '运行 Wan 3.0' },
+  'wan3.hero.secondaryCta': {
+    en: 'BROWSE WORKFLOWS',
+    'zh-CN': '浏览工作流'
+  },
+  'wan3.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'wan3.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'wan3.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'wan3.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'wan3.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'wan3.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中搭建工作流。用 API 批量制作，或部署到自有环境。'
+  },
+  'wan3.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'wan3.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'wan3.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'wan3.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  'minimax.meta.title': {
+    en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
+    'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
+  },
+  'minimax.meta.description': {
+    en: 'Run MiniMax H3 on Comfy: Open Weights or Partner Nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5-15s per generation. Free to start.',
+    'zh-CN':
+      '在 Comfy 上运行 MiniMax H3：以开源权重形式提供，也可通过合作伙伴节点使用，多模态输入/输出，每个片段都带原生立体声音频，最高 2K，每次生成 5–15 秒。免费开始使用。'
+  },
+  'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
+  // MiniMax Music 3 SEO page (/minimax-music-3). zh-CN hand-translated.
+  'minimaxMusic3.meta.title': {
+    en: 'MiniMax Music 3 on Comfy — Open-Weights Music Model',
+    'zh-CN': 'Comfy 上的 MiniMax Music 3 — 开源权重音乐模型'
+  },
+  'minimaxMusic3.meta.description': {
+    en: 'Run MiniMax Music 3 on Comfy. Open weights for text to music, directed on the canvas alongside every other model, on Comfy Cloud or your own GPU.',
+    'zh-CN':
+      '在 Comfy 上运行 MiniMax Music 3。文本生成音乐的开源权重模型，可在画布上与其他所有模型一同执导，支持 Comfy Cloud 或你自己的 GPU。'
+  },
+  'minimaxMusic3.breadcrumb.model': {
+    en: 'MiniMax Music 3',
+    'zh-CN': 'MiniMax Music 3'
+  },
+  'minimaxMusic3.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'minimaxMusic3.hero.titleModel': {
+    en: 'MiniMax Music 3',
+    'zh-CN': 'MiniMax Music 3'
+  },
+  'minimaxMusic3.hero.titleRest': { en: ' is here', 'zh-CN': ' 已上线' },
+  'minimaxMusic3.hero.description': {
+    en: 'Full songs up to five minutes in one generation. Feed lyrics and a music description, and get coherent structure, expressive vocals, and evolving arrangements. Quality holds steady across the whole track, and the open weights are free for most commercial use under the MiniMax Community License.',
+    'zh-CN':
+      '一次生成最长五分钟的完整歌曲。输入歌词和音乐描述，即可获得连贯的结构、富有表现力的人声和层层递进的编曲。整首曲目质量稳定如一，且开源权重依据 MiniMax 社区许可，对多数商业用途免费。'
+  },
+  'minimaxMusic3.hero.tagOpenWeights': {
+    en: 'Open Weight',
+    'zh-CN': '开源权重'
+  },
+  'minimaxMusic3.hero.tagTextToMusic': {
+    en: 'Text to Audio',
+    'zh-CN': '文本生成音频'
+  },
+  'minimaxMusic3.hero.primaryCta': {
+    en: 'RUN WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+  'minimaxMusic3.hero.secondaryCta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'minimaxMusic3.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'minimaxMusic3.pricing.banner.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，准备好了再升级。'
+  },
+  'minimaxMusic3.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'minimaxMusic3.pricing.banner.cta': {
+    en: 'TRY FREE',
+    'zh-CN': '免费试用'
+  },
+  'minimaxMusic3.steps.heading': {
+    en: 'Make your first song',
+    'zh-CN': '制作你的第一首歌'
+  },
+  'minimaxMusic3.steps.step': { en: 'Step', 'zh-CN': '步骤' },
+  'minimaxMusic3.steps.primaryCta': {
+    en: 'RUN WORKFLOW',
+    'zh-CN': '运行工作流'
+  },
+  'minimaxMusic3.steps.secondaryCta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'minimaxMusic3.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'minimaxMusic3.runOptions.subtitle': {
+    en: 'Run MiniMax Music 3 in the browser today. Batch with the API, or bring it in-house.',
+    'zh-CN':
+      '今天就在浏览器中运行 MiniMax Music 3。用 API 批量生成，或部署到自有环境。'
+  },
+  'minimaxMusic3.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'minimaxMusic3.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'minimaxMusic3.reviews.highlightTitle': {
+    en: 'License MiniMax H3 for commercial work.',
+    'zh-CN': '为商业创作获取 H3 许可。'
+  },
+  'minimaxMusic3.reviews.highlightDescription': {
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Music 3 stays free for most commercial use under its Community License.',
+    'zh-CN':
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。Music 3 在其社区许可下对多数商业用途依旧免费。'
+  },
+  'minimaxMusic3.reviews.highlightCta': {
+    en: 'GET YOUR LICENSE',
+    'zh-CN': '获取许可'
+  },
+  'minimax.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  // The hero h1 renders titleModel bright and titleRest muted (Figma two-tone
+  // heading); together they read "MiniMax H3 is here".
+  'minimax.hero.titleModel': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'minimax.hero.titleRest': {
+    en: ' is here',
+    'zh-CN': ' 已上线'
+  },
+  'minimax.hero.description': {
+    en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it. H3 is available as Open Weights and through Partner Nodes.',
+    'zh-CN':
+      '完整的多模态输入/输出，每个片段都带原生立体声。最高 2K，每次生成 5 到 15 秒。H3 会真正以输入音频为条件进行生成，而其他模型往往覆盖或丢弃它。H3 以开源权重形式提供，也可通过合作伙伴节点使用。'
+  },
+  'minimax.hero.primaryCta': {
+    en: 'RUN MINIMAX H3',
+    'zh-CN': '运行 MiniMax H3'
+  },
+  'minimax.hero.secondaryCta': { en: 'TRY WORKFLOWS', 'zh-CN': '试用工作流' },
+  'minimax.hero.tagOpenWeights': { en: 'Open Weights', 'zh-CN': '开源权重' },
+  'minimax.hero.tagPartnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'minimax.models.heading': {
+    en: 'Made with MiniMax H3',
+    'zh-CN': '用 MiniMax H3 制作'
+  },
+  'minimax.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+  'minimax.cta.heading': {
+    en: 'Up to 2K, with sound, in one generation.',
+    'zh-CN': '最高 2K，自带声音，一次生成。'
+  },
+  'minimax.cta.primaryCta': {
+    en: 'RUN MINIMAX H3',
+    'zh-CN': '运行 MiniMax H3'
+  },
+  'minimax.cta.secondaryCta': {
+    en: 'TRY WORKFLOWS',
+    'zh-CN': '试用工作流'
+  },
+  'minimax.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'minimax.runOptions.subtitle': {
+    en: 'Run MiniMax in the browser today. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN': '今天就在浏览器中运行 MiniMax。用 API 批量制作，或部署到自有环境。'
+  },
+  // shared across all four run-option cards; the per-product `products.*.cta`
+  // labels overflow on mobile
+  'minimax.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'minimax.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'minimax.reviews.highlightTitle': {
+    en: 'License H3 for commercial work.',
+    'zh-CN': '为商业创作获取 H3 许可。'
+  },
+  'minimax.reviews.highlightDescription': {
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Full commercial rights to your outputs, LoRA training included.',
+    'zh-CN':
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。产出的完整商业权利归你，包含 LoRA 训练。'
+  },
+  'minimax.reviews.highlightCta': {
+    en: 'GET YOUR LICENSE',
+    'zh-CN': '获取许可'
+  },
+  'minimax.pricing.banner.title': {
+    en: "Start free. Upgrade when you're ready.",
+    'zh-CN': '免费开始，准备好了再升级。'
+  },
+  'minimax.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'minimaxLicense.meta.title': {
+    en: 'MiniMax Commercial License on Comfy',
+    'zh-CN': 'Comfy 上的 MiniMax 商业许可'
+  },
+  'minimaxLicense.meta.description': {
+    en: 'Get a MiniMax commercial license through Comfy, the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus Audio & Music. Full commercial rights to your outputs, LoRA training included.',
+    'zh-CN':
+      '通过 Comfy 获取 MiniMax 商业许可。Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 及音频与音乐模型。产出的完整商业权利归你，包含 LoRA 训练。'
+  },
+  'minimaxLicense.breadcrumb.model': {
+    en: 'MiniMax Commercial License',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'minimaxLicense.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'minimaxLicense.hero.title': {
+    en: 'MiniMax\nCommercial License',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'minimaxLicense.hero.description': {
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses, for running MiniMax models locally on your own hardware. Full commercial rights to your outputs, fine-tuning and LoRA training, and client and downstream work included.',
+    'zh-CN':
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商，面向在自有硬件上本地运行 MiniMax 模型的场景。产出的完整商业权利、微调与 LoRA 训练，以及客户与下游项目均包含在内。'
+  },
+  'minimaxLicense.hero.primaryCta': {
+    en: 'REQUEST LICENSE',
+    'zh-CN': '申请许可'
+  },
+  'minimaxLicense.hero.secondaryCta': {
+    en: 'TRY H3 ON COMFY CLOUD',
+    'zh-CN': '在 Comfy Cloud 上试用 H3'
+  },
+  'minimaxLicense.hero.tagOfficialReseller': {
+    en: 'Only official reseller',
+    'zh-CN': '唯一官方经销商'
+  },
+  'minimaxLicense.hero.tagAudioMusic': {
+    en: 'Audio and music included',
+    'zh-CN': '含音频与音乐模型'
+  },
+  'minimaxLicense.hero.tagGlobal': {
+    en: 'Available globally',
+    'zh-CN': '全球可用'
+  },
+  'minimaxLicense.steps.heading': {
+    en: 'Two license tiers',
+    'zh-CN': '两种许可级别'
+  },
+  'minimaxLicense.steps.step': { en: 'Tier', 'zh-CN': '级别' },
+  'minimaxLicense.steps.primaryCta': {
+    en: 'REQUEST LICENSE',
+    'zh-CN': '申请许可'
+  },
+  'minimaxLicense.steps.secondaryCta': {
+    en: 'SEE MINIMAX H3',
+    'zh-CN': '了解 MiniMax H3'
+  },
+  'minimaxLicense.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'minimaxLicense.cta.heading': {
+    en: 'One model, every use case. Licensed for yours.',
+    'zh-CN': '一个模型，覆盖每种用例。为你的用例获取许可。'
+  },
+  'minimaxLicense.cta.primaryCta': {
+    en: 'REQUEST LICENSE',
+    'zh-CN': '申请许可'
+  },
+  'minimaxLicense.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'minimaxLicense.runOptions.subtitle': {
+    en: 'Run H3 on Comfy Cloud with commercial rights included, batch with the API, or bring it in-house with a commercial license.',
+    'zh-CN':
+      '在 Comfy Cloud 上运行 H3，商业权利已包含；用 API 批量生成，或凭商业许可部署到自有环境。'
+  },
+  'minimaxLicense.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'minimaxLicense.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'minimaxLicense.reviews.highlightTitle': {
+    en: "Forward Deployed Creatives: we'll build it with you.",
+    'zh-CN': '前沿驻场创意人才：与你一起构建。'
+  },
+  'minimaxLicense.reviews.highlightDescription': {
+    en: 'Comfy experts who embed with your team, train LoRAs on your style, and build production workflows your team keeps.',
+    'zh-CN':
+      'Comfy 专家驻场加入你的团队，用你的风格训练 LoRA，并构建归你团队所有的生产级工作流。'
+  },
+  'minimaxLicense.reviews.highlightCta': {
+    en: 'MEET THE TEAM',
+    'zh-CN': '认识团队'
+  },
+  // FDCT page (/forward-deployed-creatives) — Forward Deployed Creatives
+  'fdct.meta.title': {
+    en: 'Forward Deployed Creatives | Comfy',
+    'zh-CN': '前沿驻场创意人才 | Comfy'
+  },
+  'fdct.meta.description': {
+    en: 'Comfy experts who embed with your team, build your ComfyUI workflows, and teach your team to scale them.',
+    'zh-CN':
+      'Comfy 专家驻场加入你的团队，为你构建 ComfyUI 工作流，并教会你的团队扩展规模。'
+  },
+  'fdct.hero.title': {
+    en: 'Forward Deployed Creatives',
+    'zh-CN': '前沿驻场创意人才'
+  },
+  'fdct.hero.subtitle': {
+    en: 'Comfy experts who embed with your team, build your ComfyUI workflows, and teach your team to scale them.',
+    'zh-CN':
+      'Comfy 专家驻场加入你的团队，为你构建 ComfyUI 工作流，并教会你的团队扩展规模。'
+  },
+  'fdct.hero.eyebrow': {
+    en: 'creative services',
+    'zh-CN': '创意服务'
+  },
+  'fdct.hero.contactCta': { en: 'Contact us', 'zh-CN': '联系我们' },
+  'fdct.builders.title': {
+    en: 'Builders, not advisors',
+    'zh-CN': '实干者，而非顾问'
+  },
+  'fdct.builders.lead': {
+    en: 'From “is this possible?” to a workflow your team owns. A Forward Deployed Creative is the person who builds it.',
+    'zh-CN':
+      '从“这可能吗？”到你的团队自己拥有的工作流。前沿驻场创意人才就是把它构建出来的人。'
+  },
+  'fdct.builders.nodeLabel': {
+    en: 'A Forward Deployed Creative',
+    'zh-CN': '一位前沿驻场创意人才'
+  },
+  'fdct.builders.reason1': {
+    en: 'validates the use case. We build the workflow and install it in your environment.',
+    'zh-CN': '验证用例。我们构建工作流，并将其部署到你的环境中。'
+  },
+  'fdct.builders.reason2': {
+    en: 'teaches your team to run it. Training and enablement are a part of the process.',
+    'zh-CN': '教你的团队运行它。培训与赋能是流程的一部分。'
+  },
+  'fdct.builders.reason3': {
+    en: 'comes from real production. Feature film, commercial, experiential work that shipped.',
+    'zh-CN': '来自真实制作。电影长片、商业广告与体验项目，都是实际交付的作品。'
+  },
+  'fdct.builders.reason4': {
+    en: 'leaves you something you own. You keep the workflow and your team is trained to change it.',
+    'zh-CN':
+      '留下真正属于你的成果。工作流归你所有，你的团队经过培训后可自行修改。'
+  },
+  'fdct.howItWorks.title': { en: 'How it works', 'zh-CN': '如何运作' },
+  'fdct.howItWorks.step1.title': { en: 'Validate', 'zh-CN': '验证' },
+  'fdct.howItWorks.step1.description': {
+    en: 'We prove the outcome is achievable on your own material.',
+    'zh-CN': '我们用你自己的素材证明目标成果切实可行。'
+  },
+  'fdct.howItWorks.step2.title': { en: 'Build', 'zh-CN': '构建' },
+  'fdct.howItWorks.step2.description': {
+    en: 'Inside your Comfy Enterprise environment.',
+    'zh-CN': '在你的 Comfy Enterprise 环境中。'
+  },
+  'fdct.howItWorks.step3.title': { en: 'Enable', 'zh-CN': '赋能' },
+  'fdct.howItWorks.step3.description': {
+    en: 'We train your team to run, modify, and extend it themselves.',
+    'zh-CN': '我们培训你的团队独立运行、修改和扩展它。'
+  },
+  'fdct.howItWorks.step4.title': { en: 'Own', 'zh-CN': '拥有' },
+  'fdct.howItWorks.step4.description': {
+    en: 'What we build is yours, and you can change it without us.',
+    'zh-CN': '我们构建的成果归你所有，你无需我们也能修改它。'
+  },
+  'fdct.howItWorks.footnote': {
+    en: "The direct line stays open. We're here when your team needs us.",
+    'zh-CN': '直达通道始终敞开。你的团队需要时，我们随时都在。'
+  },
+  'fdct.whatYouGet.title': { en: 'What you will get', 'zh-CN': '你将获得什么' },
+  'fdct.whatYouGet.item1': {
+    en: 'Use-case validation and a proof-of-concept build',
+    'zh-CN': '用例验证与概念验证构建'
+  },
+  'fdct.whatYouGet.item2': {
+    en: 'A production-grade workflow, built and installed',
+    'zh-CN': '生产级工作流，构建并完成部署'
+  },
+  'fdct.whatYouGet.item3': {
+    en: 'Enablement until your team is self-sufficient',
+    'zh-CN': '持续赋能，直到你的团队能够独立运作'
+  },
+  'fdct.whatYouGet.item4': {
+    en: 'White-glove access under your enterprise agreement',
+    'zh-CN': '企业协议下的白手套贴心服务'
+  },
+  'fdct.whatYouGet.item5': {
+    en: 'Reusable creative assets your team keeps',
+    'zh-CN': '可复用的创意资产，归你的团队所有'
+  },
+  'fdct.technologists.title': {
+    en: 'Featured creatives',
+    'zh-CN': '精选创意人才'
+  },
+  'fdct.technologists.lead': {
+    en: 'Forward Deployed Creatives come from real production: feature film, commercial, and experiential backgrounds, with ComfyUI on the back end of shipped work. We match creatives to each engagement based on the work, your stack, and the timeline.',
+    'zh-CN':
+      '前沿驻场创意人才来自真实制作一线：拥有电影长片、商业广告与体验项目背景，ComfyUI 支撑着已交付的作品。我们会根据项目内容、你的技术栈和时间表，为每次合作匹配合适的创意人才。'
+  },
+  'fdct.technologists.seeWork': {
+    en: 'See {name}’s work',
+    'zh-CN': '查看 {name} 的作品'
+  },
+  'fdct.technologists.close': { en: 'Close', 'zh-CN': '关闭' },
+  'fdct.technologists.dougHogan.description': {
+    en: "Doug's work spans Netflix, Universal Studios, Warner Bros., and Samsung, with deep expertise in VFX and studio production. As a Nuke compositor and Python tool builder, he teaches VFX, Nuke, and generative AI.",
+    'zh-CN':
+      'Doug 的作品遍及 Netflix、环球影业、华纳兄弟和三星，在视觉特效与影棚制作方面拥有深厚经验。作为 Nuke 合成师和 Python 工具开发者，他教授 VFX、Nuke 和生成式 AI。'
+  },
+  'fdct.technologists.chrisV.description': {
+    en: "Chris's work spans global brands, artists, Fortune 500 keynote stages, and Art Basel Miami, with deep expertise in generative AI and production infrastructure. Sitting between artist and engineer, he architects custom VFX and AI pipelines.",
+    'zh-CN':
+      'Chris 的作品覆盖全球品牌、艺术家、财富 500 强主题演讲舞台以及迈阿密巴塞尔艺术展，在生成式 AI 与制作基础设施方面拥有深厚经验。他游走于艺术家与工程师之间，构建定制的 VFX 与 AI 流水线。'
+  },
+  'fdct.technologists.robLosch.description': {
+    en: "Rob has been in ComfyUI since day one. He has numerous workflows covering marketing and advertising, and he can pinpoint the exact workflow you're looking for.",
+    'zh-CN':
+      'Rob 从第一天起就活跃在 ComfyUI。他拥有大量覆盖营销与广告场景的工作流，并能精准找到你正在寻找的那一个。'
+  },
+  'fdct.technologists.robertPaige.description': {
+    en: "Robert's work spans rapid-growth companies like Instacart and Lyft, with deep expertise in creative ecosystems and AI integration. At the intersection of craft and system, he architects production infrastructure that helps organizations tell their story.",
+    'zh-CN':
+      'Robert 曾服务于 Instacart、Lyft 等高速成长的公司，在创意生态与 AI 集成方面拥有深厚经验。他游走于工艺与系统之间，构建帮助组织讲好品牌故事的制作基础设施。'
+  },
+  'fdct.tags.entertainment': { en: 'Entertainment', 'zh-CN': '娱乐' },
+  'fdct.tags.nuke': { en: 'Nuke', 'zh-CN': 'Nuke' },
+  'fdct.tags.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'fdct.tags.generativeAi': { en: 'Generative AI', 'zh-CN': '生成式 AI' },
+  'fdct.tags.production': { en: 'Production', 'zh-CN': '制作' },
+  'fdct.tags.marketing': { en: 'Marketing', 'zh-CN': '营销' },
+  'fdct.tags.advertising': { en: 'Advertising', 'zh-CN': '广告' },
+  'fdct.tags.imageGeneration': { en: 'Image Generation', 'zh-CN': '图像生成' },
+  'fdct.tags.imageToVideo': { en: 'Image to Video', 'zh-CN': '图生视频' },
+  'fdct.tags.audioEditing': { en: 'Audio Editing', 'zh-CN': '音频编辑' },
+  'fdct.tags.characterReference': {
+    en: 'Character Reference',
+    'zh-CN': '角色参考'
+  },
+  'fdct.tags.video': { en: 'Video', 'zh-CN': '视频' },
+  'fdct.tags.virtualTryOn': { en: 'Virtual Try On', 'zh-CN': '虚拟试穿' },
+  'fdct.tags.fashion': { en: 'Fashion', 'zh-CN': '时尚' },
+  'fdct.tags.imageEdit': { en: 'Image Edit', 'zh-CN': '图像编辑' },
+  'fdct.tags.inpainting': { en: 'Inpainting', 'zh-CN': '局部重绘' },
+  'fdct.tags.film': { en: 'Film', 'zh-CN': '电影' },
+  'fdct.tags.architecture': { en: 'Architecture', 'zh-CN': '建筑' },
+  'fdct.projects.title': { en: 'Featured projects', 'zh-CN': '精选项目' },
+  // Workflow-card titles (also used as the card image alt text). Proper nouns
+  // and model names (Seedance, LTX, LoRA, Nano Banana, LLM, OOH, VFX) stay in
+  // Latin; the zh-CN copy localizes only the descriptive parts and still needs
+  // a native review pass, like the descriptions below.
+  'fdct.projects.productAdvertisementVideo.title': {
+    en: 'Product Advertisement Video',
+    'zh-CN': '产品广告视频'
+  },
+  'fdct.projects.ltxCleanplateForVfx.title': {
+    en: 'LTX Cleanplate for VFX',
+    'zh-CN': 'LTX 视觉特效空景板'
+  },
+  'fdct.projects.lipdubLoraVoiceClone.title': {
+    en: 'LTX 2.3 - Lipdub LoRA + Voice Clone',
+    'zh-CN': 'LTX 2.3 - 对口型 LoRA + 语音克隆'
+  },
+  'fdct.projects.vfxUtilities.title': {
+    en: 'VFX Utilities',
+    'zh-CN': '视觉特效工具集'
+  },
+  'fdct.projects.viralVideosCharacterSwap.title': {
+    en: 'Seedance 2.0 - Viral Videos Character Swap',
+    'zh-CN': 'Seedance 2.0 - 热门视频角色替换'
+  },
+  'fdct.projects.faceSwapWorkflow.title': {
+    en: 'Face Swap Workflow',
+    'zh-CN': '换脸工作流'
+  },
+  'fdct.projects.virtualTryOn4In1.title': {
+    en: 'Virtual Try On with Character - 4 in 1',
+    'zh-CN': '角色虚拟试穿 - 4 合 1'
+  },
+  'fdct.projects.characterOutfitFashionVideo.title': {
+    en: 'Character & Outfit to Fashion Video',
+    'zh-CN': '角色与服装转时尚视频'
+  },
+  'fdct.projects.talentCasting.title': {
+    en: 'Talent Casting',
+    'zh-CN': '试镜选角'
+  },
+  'fdct.projects.seedanceLlmPromptHelper.title': {
+    en: 'Seedance 2.0 + LLM Prompt Helper',
+    'zh-CN': 'Seedance 2.0 + LLM 提示词助手'
+  },
+  'fdct.projects.nanoBanana2LiteImageEdit.title': {
+    en: 'Nano Banana 2 Lite: Image Edit',
+    'zh-CN': 'Nano Banana 2 Lite：图像编辑'
+  },
+  'fdct.projects.changeAnyObjects.title': {
+    en: 'Change Any Objects',
+    'zh-CN': '替换任意物体'
+  },
+  'fdct.projects.storyboardToVideoSeedance.title': {
+    en: 'Storyboard To Video - Seedance 2.0',
+    'zh-CN': '分镜转视频 - Seedance 2.0'
+  },
+  'fdct.projects.oohVisualization.title': {
+    en: 'Comfy for Advertising - OOH Visualization',
+    'zh-CN': 'Comfy 广告应用 - OOH 户外可视化'
+  },
+  'fdct.projects.photoToBlueprintToModel.title': {
+    en: 'Photo to Blueprint to Model',
+    'zh-CN': '照片转蓝图转模型'
+  },
+  'fdct.projects.generateRealisticVariations.title': {
+    en: 'Generate Realistic Variations',
+    'zh-CN': '生成逼真变体'
+  },
+  // Workflow-card descriptions in the technologist dialog; en copy is
+  // placeholder until final descriptions land (the design mock is lorem).
+  'fdct.projects.productAdvertisementVideo.description': {
+    en: 'Turn product stills into a polished advertisement spot, from generated shots to final cut.',
+    'zh-CN': '将产品静态图转化为精良的广告片，从生成镜头到最终成片一气呵成。'
+  },
+  'fdct.projects.ltxCleanplateForVfx.description': {
+    en: 'Generate clean plates for VFX compositing with LTX, removing subjects while keeping the shot intact.',
+    'zh-CN':
+      '使用 LTX 为视觉特效合成生成空景板，在保留镜头原貌的同时移除拍摄主体。'
+  },
+  'fdct.projects.lipdubLoraVoiceClone.description': {
+    en: 'Lipdub a performance with LTX 2.3, pairing a LoRA-trained look with a cloned voice track.',
+    'zh-CN': '使用 LTX 2.3 为表演对口型，将 LoRA 训练的形象与克隆音轨相结合。'
+  },
+  'fdct.projects.vfxUtilities.description': {
+    en: 'A utility kit for VFX shots: passes, mattes, and helpers for image and video work.',
+    'zh-CN':
+      '面向视觉特效镜头的实用工具集：分层通道、遮罩以及图像和视频处理辅助工具。'
+  },
+  'fdct.projects.viralVideosCharacterSwap.description': {
+    en: 'Swap characters into trending video formats with Seedance 2.0 while keeping motion intact.',
+    'zh-CN':
+      '使用 Seedance 2.0 将角色替换进热门视频模板，同时完整保留原有动作。'
+  },
+  'fdct.projects.faceSwapWorkflow.description': {
+    en: 'Swap a face across a full video while preserving the original performance and lighting.',
+    'zh-CN': '在整段视频中替换人脸，同时保留原有表演与光影效果。'
+  },
+  // en copy for Chris's highlights comes from the workflows hub pages.
+  'fdct.projects.virtualTryOn4In1.description': {
+    en: "Create virtual try-ons with your character and outfit images using ComfyUI's Nano Banana Pro model. Generate 4 variations in one prompt.",
+    'zh-CN':
+      '使用 ComfyUI 的 Nano Banana Pro 模型，用你的角色与服装图像生成虚拟试穿效果，一条提示词即可生成 4 个变体。'
+  },
+  'fdct.projects.characterOutfitFashionVideo.description': {
+    en: 'Transform character and outfit images into dynamic fashion videos.',
+    'zh-CN': '将角色与服装图像转化为动感的时尚视频。'
+  },
+  'fdct.projects.talentCasting.description': {
+    en: 'Turn a headshot into a branded still and a quick motion test for casting previs, using Gemini image-to-image and Kling image-to-video.',
+    'zh-CN':
+      '通过 Gemini 图生图与 Kling 图生视频，将头像照片转化为品牌风格静帧与快速动态测试，用于选角预览。'
+  },
+  // Robert Paige's highlights — en copy from the workflows hub pages.
+  'fdct.projects.seedanceLlmPromptHelper.description': {
+    en: 'Feed two reference images and a short text description; an LLM writes a detailed Seedance 2.0 prompt and generates the video.',
+    'zh-CN':
+      '输入两张参考图和一句简单描述，LLM 会自动生成详细的 Seedance 2.0 提示词并产出视频。'
+  },
+  'fdct.projects.nanoBanana2LiteImageEdit.description': {
+    en: "Edit an image with Nano Banana 2 Lite, Google Gemini's fastest image model, with a side-by-side of the original and result.",
+    'zh-CN':
+      '使用 Google Gemini 系列中最快的图像模型 Nano Banana 2 Lite 编辑图像，并生成原图与结果的并排对比。'
+  },
+  'fdct.projects.changeAnyObjects.description': {
+    en: 'Replace objects in a video from a text prompt or reference image, using SAM3 masking and Wan2.1 VACE.',
+    'zh-CN':
+      '通过文本提示或参考图替换视频中的物体，由 SAM3 遮罩与 Wan2.1 VACE 模型驱动。'
+  },
+  'fdct.faq.title': { en: 'Q&A', 'zh-CN': '问答' },
+  'fdct.faq.q1': {
+    en: 'Can this be a consulting or professional-services contract standalone?',
+    'zh-CN': '可以单独签订咨询或专业服务合同吗？'
+  },
+  'fdct.faq.a1': {
+    en: 'No. It is an add-on to your Comfy enterprise agreement. We bring deep Comfy expertise to your use case, as an optional add on to your enterprise contract.',
+    'zh-CN':
+      '不可以。它是你 Comfy 企业协议的附加服务。我们将深厚的 Comfy 专业能力带到你的用例中，作为企业合同的可选附加项。'
+  },
+  'fdct.faq.q2': {
+    en: 'Is it included in every enterprise contract?',
+    'zh-CN': '每份企业合同都包含这项服务吗？'
+  },
+  'fdct.faq.a2': {
+    en: 'No. It is available to any enterprise customer as an add-on, not bundled automatically into every contract.',
+    'zh-CN':
+      '不包含。它作为附加服务向所有企业客户开放，不会自动捆绑进每份合同。'
+  },
+  'fdct.faq.q3': {
+    en: 'Will someone be embedded full-time with our team?',
+    'zh-CN': '会有人全职驻场加入我们的团队吗？'
+  },
+  'fdct.faq.a3': {
+    en: 'Forward Deployed Creatives work with you on defined milestones and deliverables, with optional in-person time as well. We will customize this based on what your team needs.',
+    'zh-CN':
+      '前沿驻场创意人才按明确的里程碑和交付物与你协作，也可选择安排现场时间。我们会根据你团队的需求定制协作方式。'
+  },
+  'fdct.faq.q4': {
+    en: 'What happens after the initial build?',
+    'zh-CN': '初始构建完成之后会怎样？'
+  },
+  'fdct.faq.a4': {
+    en: 'You own the workflow and your team is trained to change it. We provide ongoing support and stay available under the enterprise agreement for the next thing, plus optional workshops and one-on-one training.',
+    'zh-CN':
+      '工作流归你所有，你的团队经过培训后可以自行修改。我们在企业协议下提供持续支持、随时待命迎接下一个项目，还可选择工作坊和一对一培训。'
+  },
+  'fdct.faq.q5': {
+    en: 'Who are the people we would actually work with?',
+    'zh-CN': '我们实际会和哪些人合作？'
+  },
+  'fdct.faq.a5': {
+    en: 'Production-credible creatives from feature film, commercial, and experiential backgrounds. Short intro bios/videos on the solution page let you see who you are getting before you sign.',
+    'zh-CN':
+      '来自电影长片、商业广告和体验项目背景、具备真实制作履历的创意人才。解决方案页面上的简短介绍和视频，让你在签约前就能了解将与谁合作。'
+  },
+  'fdct.bands.enterprise.label': {
+    en: 'FOR ENTERPRISE',
+    'zh-CN': '面向企业'
+  },
+  'fdct.bands.enterprise.text': {
+    en: "Tell us what you're trying to make. A Forward Deployed Creative can validate it and help you build from there.",
+    'zh-CN':
+      '告诉我们你想做什么。前沿驻场创意人才可以验证它，并帮助你从此开始构建。'
+  },
+  'fdct.bands.enterprise.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
+  'fdct.bands.minimax.label': {
+    en: 'MINIMAX LICENSING',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'fdct.bands.minimax.text': {
+    en: 'A license gets you the model; Forward Deployed Creatives get you to production. Comfy is the only official reseller of MiniMax commercial-use licenses.',
+    'zh-CN':
+      '许可给你模型，前沿驻场创意人才带你走向生产。Comfy 是 MiniMax 商业使用许可的唯一官方经销商。'
+  },
+  'fdct.bands.minimax.cta': { en: 'Get your license', 'zh-CN': '获取许可' },
+  'fdct.closing.title': {
+    en: 'Build your custom workflows with Comfy experts.',
+    'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

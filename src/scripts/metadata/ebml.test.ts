@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -47,8 +47,6 @@ describe('WebM/EBML metadata', () => {
   })
 
   describe('FileReader failure modes', () => {
-    afterEach(() => vi.restoreAllMocks())
-
     const file = new File([new Uint8Array(16)], 'test.webm')
 
     it('resolves empty when the FileReader fires error', async () => {

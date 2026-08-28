@@ -4,7 +4,7 @@ import * as Y from 'yjs'
 import { toNodeId } from '@/types/nodeId'
 
 import {
-  NODE_LAYOUT_DEFAULTS,
+  layoutToYNode,
   yNodeToLayout
 } from '@/renderer/core/layout/utils/mappers'
 import type { NodeLayoutMap } from '@/renderer/core/layout/utils/mappers'
@@ -21,29 +21,32 @@ describe('mappers', () => {
     }
 
     const doc = new Y.Doc()
-    const ynode = doc.getMap('node') as NodeLayoutMap
-    ynode.set('id', layout.id)
-    ynode.set('position', layout.position)
-    ynode.set('size', layout.size)
-    ynode.set('zIndex', layout.zIndex)
-    ynode.set('visible', layout.visible)
-    ynode.set('bounds', layout.bounds)
+    const ynode = layoutToYNode(layout)
+    doc.getMap('nodes').set('node', ynode)
 
-    const back = yNodeToLayout(ynode)
-    expect(back).toEqual(layout)
+    expect(yNodeToLayout(ynode)).toEqual(layout)
   })
 
-  it('yNodeToLayout applies defaults for missing fields', () => {
+  it('derives position, size and bounds from the one stored rect', () => {
     const doc = new Y.Doc()
     const ynode = doc.getMap('node') as NodeLayoutMap
-    // Don't set any fields - they should all use defaults
+    ynode.set('rect', [5, 6, 70, 80])
 
     const back = yNodeToLayout(ynode)
-    expect(back.id).toBe(NODE_LAYOUT_DEFAULTS.id)
-    expect(back.position).toEqual(NODE_LAYOUT_DEFAULTS.position)
-    expect(back.size).toEqual(NODE_LAYOUT_DEFAULTS.size)
-    expect(back.zIndex).toEqual(NODE_LAYOUT_DEFAULTS.zIndex)
-    expect(back.visible).toEqual(NODE_LAYOUT_DEFAULTS.visible)
-    expect(back.bounds).toEqual(NODE_LAYOUT_DEFAULTS.bounds)
+
+    expect(back.position).toEqual({ x: 5, y: 6 })
+    expect(back.size).toEqual({ width: 70, height: 80 })
+    expect(back.bounds).toEqual({ x: 5, y: 6, width: 70, height: 80 })
+  })
+
+  it('yields a usable layout for a map with no rect', () => {
+    const doc = new Y.Doc()
+    const ynode = doc.getMap('node') as NodeLayoutMap
+
+    const back = yNodeToLayout(ynode)
+
+    expect(back.size.width).toBeGreaterThan(0)
+    expect(back.size.height).toBeGreaterThan(0)
+    expect(back.bounds).toEqual({ ...back.position, ...back.size })
   })
 })

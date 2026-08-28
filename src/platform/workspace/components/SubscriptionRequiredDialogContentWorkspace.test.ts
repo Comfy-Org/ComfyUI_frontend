@@ -6,6 +6,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionRequiredDialogContentWorkspace from './SubscriptionRequiredDialogContentWorkspace.vue'
 
@@ -15,6 +16,8 @@ const mockHandleAddCreditCard = vi.fn()
 const mockHandleConfirmTransition = vi.fn()
 const mockHandleResubscribe = vi.fn()
 const mockHandleSuccessClose = vi.fn()
+const mockApplyPromotionCode = vi.fn()
+const mockInvalidateQuote = vi.fn()
 const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
@@ -54,8 +57,12 @@ const PricingTableStub = {
 
 const AddPaymentPreviewStub = {
   name: 'SubscriptionAddPaymentPreviewWorkspace',
+  props: ['quoteIsCurrent'],
   template: `<div data-testid="add-payment-preview">
+    <span data-testid="quote-current">{{ quoteIsCurrent }}</span>
     <button data-testid="add-card-btn" @click="$emit('addCreditCard')">Add Card</button>
+    <button data-testid="apply-promo-btn" @click="$emit('applyPromotionCode', 'SAVE20')">Apply promo</button>
+    <button data-testid="invalidate-quote-btn" @click="$emit('invalidateQuote')">Invalidate quote</button>
   </div>`
 }
 
@@ -78,6 +85,7 @@ function renderComponent(
     onClose?: () => void
     reason?: PaymentIntentSource
     isPersonal?: boolean
+    initialCheckout?: SubscriptionCheckoutSelection
   } = {}
 ) {
   return render(SubscriptionRequiredDialogContentWorkspace, {
@@ -86,6 +94,9 @@ function renderComponent(
       ...(props.reason ? { reason: props.reason } : {}),
       ...(props.isPersonal !== undefined
         ? { isPersonal: props.isPersonal }
+        : {}),
+      ...(props.initialCheckout
+        ? { initialCheckout: props.initialCheckout }
         : {})
     },
     global: {
@@ -105,7 +116,6 @@ function renderComponent(
 
 describe('SubscriptionRequiredDialogContentWorkspace', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockUseSubscriptionCheckout.mockReturnValue({
       checkoutStep: mockCheckoutStep,
       isLoadingPreview: ref(false),
@@ -113,13 +123,18 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
       isSubscribing: ref(false),
       isResubscribing: ref(false),
       previewData: mockPreviewData,
+      quoteIsCurrent: ref(true),
+      isApplyingPromotionCode: ref(false),
       selectedTierKey: ref('standard'),
       selectedBillingCycle: ref('yearly'),
+      activeCheckoutActionUrl: ref(null),
       isPolling: ref(false),
       handleSubscribeClick: mockHandleSubscribeClick,
       handleBackToPricing: mockHandleBackToPricing,
       handleAddCreditCard: mockHandleAddCreditCard,
       handleConfirmTransition: mockHandleConfirmTransition,
+      applyPromotionCode: mockApplyPromotionCode,
+      invalidateQuote: mockInvalidateQuote,
       handleResubscribe: mockHandleResubscribe,
       handleSuccessClose: mockHandleSuccessClose
     })
@@ -139,8 +154,31 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
 
     expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
       expect.any(Function),
-      'out_of_credits'
+      'out_of_credits',
+      { tierPlanType: 'team' }
     )
+  })
+
+  it('marks the legacy Personal table as a personal-plan target', () => {
+    renderComponent({ isPersonal: true })
+
+    expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { tierPlanType: 'personal' }
+    )
+  })
+
+  it('opens a personal deep-linked checkout on mount', () => {
+    const initialCheckout = {
+      planMode: 'personal',
+      tierKey: 'creator',
+      billingCycle: 'monthly'
+    } as const
+
+    renderComponent({ isPersonal: true, initialCheckout })
+
+    expect(mockHandleSubscribeClick).toHaveBeenCalledWith(initialCheckout)
   })
 
   it('shows the team workspace header by default', () => {
@@ -195,6 +233,19 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     renderComponent()
     expect(screen.getByTestId('add-payment-preview')).toBeInTheDocument()
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
+  })
+
+  it('keeps the legacy checkout current and wires promotion controls', async () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewData.value = { transition_type: 'new_subscription' }
+    renderComponent()
+
+    expect(screen.getByTestId('quote-current')).toHaveTextContent('true')
+    await userEvent.click(screen.getByTestId('apply-promo-btn'))
+    await userEvent.click(screen.getByTestId('invalidate-quote-btn'))
+
+    expect(mockApplyPromotionCode).toHaveBeenCalledWith('SAVE20')
+    expect(mockInvalidateQuote).toHaveBeenCalledOnce()
   })
 
   it('shows transition preview when transition_type is upgrade', () => {

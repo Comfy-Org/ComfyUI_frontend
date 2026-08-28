@@ -25,7 +25,7 @@
       ref="feedbackRef"
       data-testid="feedback-embed"
       data-tf-auto-resize
-      :data-tf-widget="typeformId"
+      :data-tf-widget="APP_MODE_FEEDBACK_TYPEFORM_ID"
     />
   </Popover>
   <SidebarIcon
@@ -68,7 +68,7 @@ const sidebarOnLeft = computed(
 )
 
 const feedbackRef = useTemplateRef<HTMLDivElement>('feedbackRef')
-const { typeformError, isValidTypeformId, typeformId } = useTypeformEmbed(
+const { typeformError, isValidTypeformId } = useTypeformEmbed(
   feedbackRef,
   APP_MODE_FEEDBACK_TYPEFORM_ID
 )

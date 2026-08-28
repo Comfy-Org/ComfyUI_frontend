@@ -19,7 +19,9 @@ export const hasNonEmptyValue = (
   return true
 }
 
-export const isOtherValue = (current: string | string[] | undefined): boolean =>
+export const isOtherValue = (
+  current: string | string[] | undefined
+): boolean =>
   Array.isArray(current) ? current.includes('other') : current === 'other'
 
 const conditionMatches = (

@@ -1,27 +1,38 @@
-import type { AuditLog } from '@/services/customerEventsService'
-
 import type {
   AddCreditsClickMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
-  ShareLinkOpenedMetadata,
   ExecutionErrorMetadata,
+  ExecutionOutcomeMetadata,
   ExecutionSuccessMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  ImageLoadFailureMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourNudgeMetadata,
+  OnboardingTourNudgeStage,
+  OnboardingTourStage,
+  OnboardingTourStepMetadata,
+  OnboardingTourStepStage,
+  OnboardingTourSuggestionMetadata,
+  OnboardingTourSuggestionStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
   ResubscribeClickMetadata,
   RunButtonProperties,
+  ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
@@ -37,9 +48,13 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  UnifiedAuthRefreshMetadata,
+  UnifiedAuthRetryMetadata,
+  WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
+  WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
 } from './types'
 
@@ -78,6 +93,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAuthFailed(metadata: AuthErrorMetadata): void {
     this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
+  }
+
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRetry?.(metadata))
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
   }
 
   trackUserLoggedIn(): void {
@@ -140,27 +167,16 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackWorkspaceInviteSent?.(metadata))
   }
 
+  trackWorkspaceInviteFailed(metadata: WorkspaceInviteFailedMetadata): void {
+    this.dispatch((provider) => provider.trackWorkspaceInviteFailed?.(metadata))
+  }
+
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackBillingEvent?.(event))
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.dispatch((provider) => provider.trackRunButton?.(properties))
-  }
-
-  startTopupTracking(): void {
-    this.dispatch((provider) => provider.startTopupTracking?.())
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return this.providers.some((provider) => {
-      try {
-        return provider.checkForCompletedTopup?.(events) ?? false
-      } catch (error) {
-        console.error('[Telemetry] Provider dispatch failed', error)
-        return false
-      }
-    })
-  }
-
-  clearTopupTracking(): void {
-    this.dispatch((provider) => provider.clearTopupTracking?.())
   }
 
   trackSurvey(
@@ -168,6 +184,30 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     responses?: SurveyResponses
   ): void {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
+  }
+
+  trackOnboardingTour(
+    stage: OnboardingTourStepStage,
+    metadata: OnboardingTourStepMetadata
+  ): void
+  trackOnboardingTour(
+    stage: OnboardingTourNudgeStage,
+    metadata: OnboardingTourNudgeMetadata
+  ): void
+  trackOnboardingTour(
+    stage: OnboardingTourSuggestionStage,
+    metadata: OnboardingTourSuggestionMetadata
+  ): void
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.dispatch((provider) => {
+      const track = provider.trackOnboardingTour as
+        | ((s: OnboardingTourStage, m: OnboardingTourMetadata) => void)
+        | undefined
+      track?.call(provider, stage, metadata)
+    })
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
@@ -268,6 +308,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackWorkflowExecution?.())
   }
 
+  trackExecutionOutcome(metadata: ExecutionOutcomeMetadata): void {
+    this.dispatch((provider) => provider.trackExecutionOutcome?.(metadata))
+  }
+
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
     this.dispatch((provider) => provider.trackExecutionError?.(metadata))
   }
@@ -286,6 +330,26 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
+  }
+
+  trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
+    this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffMismatch?.(metadata)
+    )
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackNamedValuesShadowDiffSummary?.(metadata)
+    )
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -136,7 +136,9 @@ function makeInstance() {
     eventManager,
     adapterRef: { current: null },
     forceRender: vi.fn(),
-    handleResize: vi.fn()
+    handleResize: vi.fn(),
+    preRenderCallbacks: [],
+    postRenderCallbacks: []
   })
 
   return {
@@ -158,10 +160,6 @@ describe('Load3d', () => {
 
   beforeEach(() => {
     ctx = makeInstance()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('gizmo delegation', () => {
@@ -353,7 +351,10 @@ describe('Load3d', () => {
       expect(sceneResize).toHaveBeenCalledWith(800, 400)
     })
 
-    it('renderMainScene applies the letterboxed viewport and feeds aspect to the camera', () => {
+    function makeRenderMainSceneContext(
+      backgroundType: 'color' | 'image' = 'color',
+      activeCamera: THREE.Camera = ctx.cameraManager.activeCamera
+    ) {
       const setViewport = vi.fn()
       const setScissor = vi.fn()
       const setScissorTest = vi.fn()
@@ -362,6 +363,10 @@ describe('Load3d', () => {
       const render = vi.fn()
       const updateAspectRatio = vi.fn()
       const renderBackground = vi.fn()
+      const getCurrentBackgroundInfo = vi.fn(() => ({
+        type: backgroundType,
+        value: ''
+      }))
 
       const scene = {} as THREE.Scene
 
@@ -383,19 +388,133 @@ describe('Load3d', () => {
         targetHeight: 200,
         targetAspectRatio: 2,
         isViewerMode: false,
-        cameraManager: { ...ctx.cameraManager, updateAspectRatio },
-        sceneManager: { ...ctx.sceneManager, renderBackground, scene }
+        cameraManager: {
+          ...ctx.cameraManager,
+          updateAspectRatio,
+          activeCamera
+        },
+        sceneManager: {
+          ...ctx.sceneManager,
+          renderBackground,
+          getCurrentBackgroundInfo,
+          scene
+        }
+      })
+
+      return {
+        setViewport,
+        setScissor,
+        setScissorTest,
+        clear,
+        render,
+        updateAspectRatio,
+        renderBackground,
+        scene
+      }
+    }
+
+    it('renderMainScene renders the full canvas with an extrapolated view offset so the letterboxed rect is unchanged', () => {
+      const r = makeRenderMainSceneContext()
+      const camera = ctx.cameraManager.activeCamera as THREE.PerspectiveCamera
+
+      let viewAtRender: THREE.PerspectiveCamera['view'] = null
+      r.render.mockImplementationOnce(() => {
+        viewAtRender = camera.view ? { ...camera.view } : null
       })
 
       ctx.load3d.renderMainScene()
 
-      expect(setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
-      expect(setScissor).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
-      expect(setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
-      expect(setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
-      expect(updateAspectRatio).toHaveBeenCalledWith(2)
-      expect(setScissorTest).toHaveBeenCalledWith(true)
-      expect(render).toHaveBeenCalledWith(scene, ctx.cameraManager.activeCamera)
+      // Container 800x600, target aspect 2:1 → letterboxed rect 800x400 at y=100
+      expect(r.setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(r.setScissor).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(r.setScissorTest).toHaveBeenCalledWith(true)
+      expect(r.clear).toHaveBeenCalledOnce()
+      expect(r.updateAspectRatio).toHaveBeenCalledWith(2)
+      expect(r.render).toHaveBeenNthCalledWith(1, r.scene, camera)
+
+      expect(viewAtRender).not.toBeNull()
+      expect(viewAtRender!.enabled).toBe(true)
+      expect(viewAtRender!.fullWidth).toBe(800)
+      expect(viewAtRender!.fullHeight).toBe(400)
+      expect(viewAtRender!.offsetX).toBeCloseTo(0)
+      expect(viewAtRender!.offsetY).toBe(-100)
+      expect(viewAtRender!.width).toBe(800)
+      expect(viewAtRender!.height).toBe(600)
+
+      expect(camera.view?.enabled ?? false).toBe(false)
+    })
+
+    it('renderMainScene dims the letterbox bars after rendering the scene', () => {
+      const r = makeRenderMainSceneContext()
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.render).toHaveBeenCalledTimes(3)
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 0, 800, 100)
+      expect(r.setScissor).toHaveBeenNthCalledWith(2, 0, 0, 800, 100)
+      expect(r.setViewport).toHaveBeenNthCalledWith(3, 0, 500, 800, 100)
+      expect(r.setScissor).toHaveBeenNthCalledWith(3, 0, 500, 800, 100)
+    })
+
+    it('renderMainScene keeps a color background covering the whole canvas', () => {
+      const r = makeRenderMainSceneContext('color')
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.renderBackground).toHaveBeenCalledWith()
+      // No viewport narrowing before the bars are dimmed.
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 0, 800, 100)
+    })
+
+    it('renderMainScene confines an image background to the letterboxed rect', () => {
+      const r = makeRenderMainSceneContext('image')
+
+      ctx.load3d.renderMainScene()
+
+      // Viewport/scissor narrow to the letterbox rect for the background
+      // pass, then restore to the full canvas for the scene pass.
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.setViewport).toHaveBeenNthCalledWith(3, 0, 0, 800, 600)
+      expect(r.setScissor).toHaveBeenNthCalledWith(3, 0, 0, 800, 600)
+
+      const backgroundOrder = r.renderBackground.mock.invocationCallOrder[0]
+      expect(backgroundOrder).toBeGreaterThan(
+        r.setViewport.mock.invocationCallOrder[1]
+      )
+      expect(backgroundOrder).toBeLessThan(
+        r.setViewport.mock.invocationCallOrder[2]
+      )
+    })
+
+    it('renderMainScene applies the view offset to orthographic cameras too', () => {
+      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1)
+      const r = makeRenderMainSceneContext('color', camera)
+
+      let viewEnabledAtRender = false
+      r.render.mockImplementationOnce(() => {
+        viewEnabledAtRender = camera.view?.enabled ?? false
+      })
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.render).toHaveBeenNthCalledWith(1, r.scene, camera)
+      expect(viewEnabledAtRender).toBe(true)
+      expect(camera.view?.enabled ?? false).toBe(false)
+    })
+
+    it('renderMainScene falls back to the letterboxed viewport for cameras without view-offset support', () => {
+      const camera = new THREE.Camera()
+      const r = makeRenderMainSceneContext('color', camera)
+
+      ctx.load3d.renderMainScene()
+
+      expect(r.setViewport).toHaveBeenNthCalledWith(1, 0, 0, 800, 600)
+      expect(r.setViewport).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.setScissor).toHaveBeenNthCalledWith(2, 0, 100, 800, 400)
+      expect(r.render).toHaveBeenCalledTimes(1)
+      expect(r.render).toHaveBeenCalledWith(r.scene, camera)
+      expect(r.renderBackground).toHaveBeenCalledWith()
     })
 
     it('setBackgroundImage updates background size with letterbox dimensions when a texture is loaded', async () => {
@@ -547,7 +666,7 @@ describe('Load3d', () => {
         STATUS_MOUSE_ON_SCENE: false,
         STATUS_MOUSE_ON_VIEWER: false,
         INITIAL_RENDER_DONE: false,
-        clock: new THREE.Clock(),
+        timer: new THREE.Timer(),
         animationManager: {
           update: animationUpdate,
           isAnimationPlaying: false,
@@ -995,7 +1114,7 @@ describe('Load3d', () => {
       return { cameraStub, sceneCaptureMock }
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects thumbnail capture when no model is loaded', async () => {
       Object.assign(ctx.load3d, {
         modelManager: { ...ctx.modelManager, currentModel: null }
       })
@@ -1028,14 +1147,6 @@ describe('Load3d', () => {
   })
 
   describe('exportModel', () => {
-    beforeEach(() => {
-      cloneSkinnedMock.mockReset()
-      exportGLBMock.mockReset()
-      exportOBJMock.mockReset()
-      exportSTLMock.mockReset()
-      exportFBXMock.mockReset()
-    })
-
     function setupForExport(overrides: {
       currentModel: THREE.Object3D | null
       originalModel?: THREE.Object3D | null
@@ -1053,7 +1164,7 @@ describe('Load3d', () => {
       })
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects export when no model is loaded', async () => {
       setupForExport({ currentModel: null })
 
       await expect(ctx.load3d.exportModel('fbx')).rejects.toThrow(
@@ -1201,7 +1312,7 @@ describe('Load3d', () => {
       )
     })
 
-    it('throws on unsupported format', async () => {
+    it('rejects an unsupported format', async () => {
       const model = new THREE.Object3D()
       setupForExport({ currentModel: model })
       vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -1233,7 +1344,7 @@ describe('Load3d', () => {
       expect(cloneSkinnedMock).not.toHaveBeenCalled()
     })
 
-    it('refuses a direct export when the requested format differs from the source', async () => {
+    it('rejects direct export when the requested format differs from the source', async () => {
       exportDirectMock.mockReset()
       detectFormatFromURLMock.mockReturnValue('spz')
       vi.spyOn(console, 'error').mockImplementation(() => {})

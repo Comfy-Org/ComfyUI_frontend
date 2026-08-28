@@ -6,6 +6,7 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -63,10 +64,7 @@ const LOADER_NODE = { id: '2', title: 'LoaderNode' }
 
 function seedTwoErrorGroups(pinia: TestingPinia) {
   const executionErrorStore = useExecutionErrorStore(pinia)
-  executionErrorStore.lastNodeErrors = fromAny<
-    typeof executionErrorStore.lastNodeErrors,
-    unknown
-  >({
+  executionErrorStore.recordNodeErrors({
     '1': {
       class_type: 'KSampler',
       dependent_outputs: [],
@@ -83,7 +81,11 @@ function seedTwoErrorGroups(pinia: TestingPinia) {
       class_type: 'CLIPLoader',
       dependent_outputs: [],
       errors: [
-        { type: 'weird_error', message: 'Something odd happened', details: '' }
+        {
+          type: 'weird_error',
+          message: 'Something odd happened',
+          details: ''
+        }
       ]
     }
   })
@@ -122,7 +124,6 @@ function isSectionExpanded(section: HTMLElement) {
 
 describe('ErrorGroupList selection emphasis', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.mocked(isLGraphNode).mockReturnValue(true)
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
       fromAny<LGraphNode, unknown>(
@@ -220,7 +221,7 @@ describe('ErrorGroupList selection emphasis', () => {
       unknown
     >([SAMPLER_NODE])
     await waitFor(() => {
-      expect(strip).toHaveTextContent('SamplerNode — 1 error')
+      expect(strip).toHaveTextContent('SamplerNode — 1 issue')
     })
 
     canvasStore.selectedItems = fromAny<
@@ -228,12 +229,62 @@ describe('ErrorGroupList selection emphasis', () => {
       unknown
     >([SAMPLER_NODE, LOADER_NODE])
     await waitFor(() => {
-      expect(strip).toHaveTextContent('2 nodes selected — 2 errors')
+      expect(strip).toHaveTextContent('2 nodes selected — 2 issues')
     })
 
     canvasStore.selectedItems = []
     await waitFor(() => {
       expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
+  })
+
+  it('labels a missing-only selection as an issue', async () => {
+    const pinia = createPinia()
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        isMissing: true,
+        isAssetSupported: false
+      }
+    ])
+    renderList(pinia)
+    const canvasStore = useCanvasStore(pinia)
+
+    canvasStore.selectedItems = fromAny<
+      typeof canvasStore.selectedItems,
+      unknown
+    >([SAMPLER_NODE])
+
+    const strip = screen.getByTestId('selection-context-strip')
+    await waitFor(() => {
+      expect(strip).toHaveTextContent('SamplerNode — 1 issue')
+    })
+    expect(strip).not.toHaveTextContent(/\berrors?\b/i)
+  })
+
+  it('preserves special characters in execution item accessible names', () => {
+    const nodeDisplayName = 'A & B <C>'
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      fromAny<LGraphNode, unknown>(
+        String(nodeId) === '1'
+          ? { ...SAMPLER_NODE, title: nodeDisplayName }
+          : LOADER_NODE
+      )
+    )
+    const pinia = createPinia()
+    seedTwoErrorGroups(pinia)
+
+    renderList(pinia)
+
+    expect(
+      screen.getByRole('button', { name: /Info for A & B <C>/ })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Locate A & B <C>/ })
+    ).toBeInTheDocument()
+    expect(screen.queryAllByLabelText(/&(?:amp|lt|gt);/)).toHaveLength(0)
   })
 })

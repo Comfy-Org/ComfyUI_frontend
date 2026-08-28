@@ -96,10 +96,7 @@
         <i class="icon-[lucide--message-square-text]" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
-      <LoginButton
-        v-else-if="flags.showSignInButton ?? isDesktop"
-        class="p-1"
-      />
+      <LoginButton v-else class="p-1" />
     </div>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
@@ -109,18 +106,25 @@
 import { useScroll } from '@vueuse/core'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  onUpdated,
+  ref,
+  watch
+} from 'vue'
 import type { WatchStopHandle } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildFeedbackTypeformUrl } from '@/platform/support/config'
+import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -149,7 +153,6 @@ const { isLoggedIn } = useCurrentUser()
 
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
-const { flags } = useFeatureFlags()
 
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
@@ -157,11 +160,7 @@ const isIntegratedTabBar = computed(
 const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
 
 function openFeedback() {
-  window.open(
-    buildFeedbackTypeformUrl('topbar'),
-    '_blank',
-    'noopener,noreferrer'
-  )
+  openFeedbackDialog('topbar')
 }
 
 const containerRef = ref<HTMLElement | null>(null)
@@ -222,12 +221,7 @@ const handleWheel = (event: WheelEvent) => {
   })
 }
 
-const scrollContent = computed(
-  () =>
-    (containerRef.value?.querySelector(
-      '.p-scrollpanel-content'
-    ) as HTMLElement | null) ?? null
-)
+const scrollContent = ref<HTMLElement | null>(null)
 
 const scroll = (direction: number) => {
   const el = scrollContent.value
@@ -268,52 +262,45 @@ let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
 let stopArrivedWatch: WatchStopHandle | null = null
 let stopOverflowWatch: WatchStopHandle | null = null
 
-watch(
-  scrollContent,
-  (el, _prev, onCleanup) => {
-    stopArrivedWatch?.()
-    stopOverflowWatch?.()
-    overflowObserver?.dispose()
+onMounted(() => {
+  const el = containerRef.value?.querySelector<HTMLElement>(
+    '.p-scrollpanel-content'
+  )
+  if (!el) return
+  scrollContent.value = el
 
-    if (!el) return
+  const scrollState = useScroll(el)
 
-    const scrollState = useScroll(el)
+  stopArrivedWatch = watch(
+    [() => scrollState.arrivedState.left, () => scrollState.arrivedState.right],
+    ([atLeft, atRight]) => {
+      leftArrowEnabled.value = !atLeft
+      rightArrowEnabled.value = !atRight
+    },
+    { immediate: true }
+  )
 
-    stopArrivedWatch = watch(
-      [
-        () => scrollState.arrivedState.left,
-        () => scrollState.arrivedState.right
-      ],
-      ([atLeft, atRight]) => {
-        leftArrowEnabled.value = !atLeft
-        rightArrowEnabled.value = !atRight
-      },
-      { immediate: true }
-    )
+  overflowObserver = useOverflowObserver(el)
+  stopOverflowWatch = watch(
+    overflowObserver.isOverflowing,
+    (isOverflow) => {
+      showOverflowArrows.value = isOverflow
+      if (!isOverflow) return
+      void nextTick(() => {
+        // Force a new check after arrows are updated
+        scrollState.measure()
+        void ensureActiveTabVisible({ waitForDom: false })
+      })
+    },
+    { immediate: true }
+  )
+})
 
-    overflowObserver = useOverflowObserver(el)
-    stopOverflowWatch = watch(
-      overflowObserver.isOverflowing,
-      (isOverflow) => {
-        showOverflowArrows.value = isOverflow
-        if (!isOverflow) return
-        void nextTick(() => {
-          // Force a new check after arrows are updated
-          scrollState.measure()
-          void ensureActiveTabVisible({ waitForDom: false })
-        })
-      },
-      { immediate: true }
-    )
-
-    onCleanup(() => {
-      stopArrivedWatch?.()
-      stopOverflowWatch?.()
-      overflowObserver?.dispose()
-    })
-  },
-  { immediate: true }
-)
+onBeforeUnmount(() => {
+  stopArrivedWatch?.()
+  stopOverflowWatch?.()
+  overflowObserver?.dispose()
+})
 
 onUpdated(() => {
   if (!overflowObserver?.disposed.value) {
