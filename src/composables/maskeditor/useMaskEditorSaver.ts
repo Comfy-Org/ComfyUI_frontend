@@ -1,6 +1,7 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import { writeImageWidgetValue } from '@/composables/maskeditor/imageWidgetAdapter'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -14,7 +15,6 @@ import { app } from '@/scripts/app'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 // Private layer filename functions
 interface ImageLayerFilenames {
@@ -41,7 +41,7 @@ export function useMaskEditorSaver() {
   const nodeOutputStore = useNodeOutputStore()
 
   const save = async (): Promise<void> => {
-    const sourceNode = dataStore.sourceNode as LGraphNode
+    const sourceNode = dataStore.sourceNode
     if (!sourceNode || !dataStore.inputData) {
       throw new Error('No source node or input data')
     }
