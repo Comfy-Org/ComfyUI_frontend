@@ -26,7 +26,7 @@ const baseRoutes = {
   mcp: '/mcp',
   platform: '/platform',
   platformServerless: '/platform/serverless',
-  platformRouter: '/platform/router',
+  platformModels: '/platform/models',
   platformBuilder: '/platform/builder',
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',

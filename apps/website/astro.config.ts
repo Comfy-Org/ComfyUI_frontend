@@ -24,6 +24,8 @@ export default defineConfig({
       '/customers/series-entertainment/',
     '/zh-CN/terms-of-service': '/terms-of-service/',
     '/api': '/platform/',
+    '/platform/router': '/platform/models/',
+    '/zh-CN/platform/router': '/zh-CN/platform/models/',
     '/cloud/enterprise': '/enterprise/',
     '/zh-CN/cloud/enterprise': '/zh-CN/enterprise/',
     '/zh-CN/api': '/zh-CN/platform/',

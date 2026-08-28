@@ -180,7 +180,7 @@ const storageRates = [
         {{ t('platform.pricing.storageExample', locale) }}
       </p>
       <p class="text-xs text-smoke-700">
-        {{ t('platform.pricing.routerNote', locale) }}
+        {{ t('platform.pricing.modelsNote', locale) }}
       </p>
     </div>
   </section>

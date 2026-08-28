@@ -29,7 +29,7 @@ const featured: Example[] = [
     id: 'higgsfield',
     title: t('platform.examples.higgsfield.title', locale),
     description: t('platform.examples.higgsfield.description', locale),
-    tags: ['Router', 'Seedance', 'Next.js'],
+    tags: ['Models API', 'Seedance', 'Next.js'],
     bg: 'bg-secondary-mauve'
   }
 ]
@@ -127,7 +127,7 @@ const more: Omit<Example, 'bg'>[] = [
             </span>
           </div>
         </div>
-        <div class="flex flex-1 flex-col bg-transparency-white-t4 p-6">
+        <div class="bg-transparency-white-t4 flex flex-1 flex-col p-6">
           <h3 class="text-base font-normal text-primary-warm-white">
             {{ example.title }}
           </h3>
@@ -151,7 +151,7 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow/50 flex flex-col rounded-3xl border border-white/10 bg-transparency-white-t4 p-5 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:outline-none"
+        class="focus-visible:ring-primary-comfy-yellow/50 bg-transparency-white-t4 flex flex-col rounded-3xl border border-white/10 p-5 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:outline-none"
       >
         <div class="flex flex-wrap gap-1.5">
           <span

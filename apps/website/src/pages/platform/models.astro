@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
+import ExamplesSection from '../../templates/platform/ExamplesSection.vue'
+import ModelsApiCallsSection from '../../templates/platform/ModelsApiCallsSection.vue'
+import ModelsApiFeaturesSection from '../../templates/platform/ModelsApiFeaturesSection.vue'
+import ModelsApiHero from '../../templates/platform/ModelsApiHero.vue'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title={`${t('platform.products.models.title', 'en')} · ${t('platform.meta.title', 'en')}`}
+  description={t('platform.products.models.description', 'en')}
+>
+  <ModelsApiHero locale="en" client:load />
+  <ModelsApiCallsSection locale="en" client:visible />
+  <ModelsApiFeaturesSection locale="en" />
+  <ExamplesSection locale="en" />
+  <ClosingCtaSection locale="en" />
+  <ProductCardsSection locale="en" label-key="products.labelProducts" />
+</BaseLayout>

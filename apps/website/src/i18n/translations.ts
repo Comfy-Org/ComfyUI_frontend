@@ -6670,11 +6670,11 @@ const translations = {
     en: 'Enterprise: Managed Builds',
     'zh-CN': '企业版：托管构建'
   },
-  'platform.products.router.title': {
-    en: 'Router',
-    'zh-CN': 'Router'
+  'platform.products.models.title': {
+    en: 'Models API',
+    'zh-CN': 'Models API'
   },
-  'platform.products.router.description': {
+  'platform.products.models.description': {
     en: 'Call partner models — Seedance, Minimax H3, Nano Banana, GPT-Image-2 — and access the latest models with a single API key.',
     'zh-CN':
       '调用合作伙伴模型——Seedance、Minimax H3、Nano Banana、GPT-Image-2——用一个 API 密钥即可访问最新模型。'
@@ -6872,9 +6872,10 @@ const translations = {
     en: 'Worked example: 500 GB of models on standard network storage = $45.50/mo + GPU time.',
     'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $45.50 + GPU 时间。'
   },
-  'platform.pricing.routerNote': {
-    en: 'Router usage shows per-output prices on each model card and draws from the same credit pool.',
-    'zh-CN': 'Router 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
+  'platform.pricing.modelsNote': {
+    en: 'Models API usage shows per-output prices on each model card and draws from the same credit pool.',
+    'zh-CN':
+      'Models API 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
   },
   'platform.faq.betaBanner': {
     en: 'Limited beta: builds can take up to 3 hours and may fail. You get a direct support line while we harden the pipeline.',
@@ -7039,67 +7040,67 @@ const translations = {
       '测试期限额——10 个并发工作节点、10 个构建、3 个部署、每个部署 500 GB 模型——均可申请提高。'
   },
   // ── Router subpage ────────────────────────────────────────────
-  'platform.routerCalls.heading': {
+  'platform.modelsCalls.heading': {
     en: 'Three calls, one queue',
     'zh-CN': '三种调用，一个队列'
   },
-  'platform.routerCalls.subtitle': {
+  'platform.modelsCalls.subtitle': {
     en: 'Direct, queued, or fire-and-forget — pick the call shape. The queue makes sure nothing is dropped.',
     'zh-CN': '直接、排队或即发即忘——选择你要的调用方式。队列确保请求永不丢失。'
   },
-  'platform.routerFeatures.heading': {
+  'platform.modelsFeatures.heading': {
     en: 'One key, every frontier model',
     'zh-CN': '一个密钥，所有前沿模型'
   },
-  'platform.routerFeatures.1.title': {
+  'platform.modelsFeatures.1.title': {
     en: 'Every frontier media model',
     'zh-CN': '所有前沿媒体模型'
   },
-  'platform.routerFeatures.1.description': {
+  'platform.modelsFeatures.1.description': {
     en: '36+ partner providers — Nano Banana, Veo, Kling, Seedance, Flux, Sora, GPT Image, Runway, Luma, ElevenLabs and more — behind stable model IDs.',
     'zh-CN':
       '36+ 家合作伙伴——Nano Banana、Veo、Kling、Seedance、Flux、Sora、GPT Image、Runway、Luma、ElevenLabs 等——都在稳定的模型 ID 之后。'
   },
-  'platform.routerFeatures.2.title': {
+  'platform.modelsFeatures.2.title': {
     en: 'Never dropped',
     'zh-CN': '永不丢弃'
   },
-  'platform.routerFeatures.2.description': {
+  'platform.modelsFeatures.2.description': {
     en: 'Queued requests never die with a 429. They hold a queue position against your workspace concurrency and start the moment a slot frees.',
     'zh-CN':
       '排队中的请求绝不会以 429 告终。它们在你工作区的并发额度内保留队列位置，一有空位立刻开始。'
   },
-  'platform.routerFeatures.3.title': {
+  'platform.modelsFeatures.3.title': {
     en: 'One credit pool',
     'zh-CN': '一个积分池'
   },
-  'platform.routerFeatures.3.description': {
+  'platform.modelsFeatures.3.description': {
     en: 'Pay per use from the same balance that powers Cloud workflows and serverless GPUs. No subscription floor.',
     'zh-CN':
       '按用量付费，与 Cloud 工作流和无服务器 GPU 共用同一余额。没有订阅门槛。'
   },
-  'platform.routerFeatures.4.title': {
+  'platform.modelsFeatures.4.title': {
     en: 'Costs you can attribute',
     'zh-CN': '可归因的成本'
   },
-  'platform.routerFeatures.4.description': {
+  'platform.modelsFeatures.4.description': {
     en: 'Every completed request returns the credits it consumed. Failed provider calls are never billed.',
     'zh-CN': '每个完成的请求都会返回其消耗的积分。失败的调用绝不计费。'
   },
-  'platform.routerFeatures.5.title': {
+  'platform.modelsFeatures.5.title': {
     en: 'Schemas to generate against',
     'zh-CN': '可直接生成代码的 Schema'
   },
-  'platform.routerFeatures.5.description': {
+  'platform.modelsFeatures.5.description': {
     en: 'Every model publishes its own OpenAPI document — the same one the server validates your call against.',
     'zh-CN':
       '每个模型都发布自己的 OpenAPI 文档——服务器校验你的调用时用的正是同一份。'
   },
-  'platform.routerFeatures.6.title': {
+  'platform.modelsFeatures.6.title': {
     en: 'Cancel anytime',
     'zh-CN': '随时取消'
   },
-  'platform.routerFeatures.6.description': {
+  'platform.modelsFeatures.6.description': {
     en: 'A queued request cancels immediately and costs nothing; in-progress calls get a best-effort cancel.',
     'zh-CN': '排队中的请求立即取消且不产生费用；进行中的调用会尽力取消。'
   },

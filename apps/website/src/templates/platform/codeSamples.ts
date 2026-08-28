@@ -9,7 +9,7 @@ const PROMPTS = [
 ]
 const OUTPUTS = ['reef.mp4', 'koi.png']
 
-export const routerCodeTabs: Record<string, CodeTab> = {
+export const modelsApiCodeTabs: Record<string, CodeTab> = {
   python: {
     name: 'Python',
     segments: [
@@ -34,7 +34,7 @@ export const routerCodeTabs: Record<string, CodeTab> = {
       "')"
     ]
   },
-  // POST /v1/models/{provider}/{model}: native JSON in, native JSON out
+  // Models API run route — POST /v1/models/{provider}/{model}: native JSON in, native JSON out
   // (services/comfy-api/docs/router-quickstart.mdx in Comfy-Org/cloud).
   curl: {
     name: 'cURL',

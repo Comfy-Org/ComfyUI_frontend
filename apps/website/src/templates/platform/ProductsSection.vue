@@ -6,7 +6,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BuilderVisual from './BuilderVisual.vue'
 import CodeTabs from './CodeTabs.vue'
-import { routerCodeTabs } from './codeSamples'
+import { modelsApiCodeTabs } from './codeSamples'
 import { platformCtas } from './ctas'
 import ServerlessVisual from './ServerlessVisual.vue'
 
@@ -15,7 +15,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
 const ctas = platformCtas(locale)
 
-const routerTabs = routerCodeTabs
+const modelsTabs = modelsApiCodeTabs
 </script>
 
 <template>
@@ -27,7 +27,7 @@ const routerTabs = routerCodeTabs
     <!-- Serverless API: the headline product, full width -->
     <article
       id="serverless"
-      class="group relative mt-8 grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl border border-white/10 bg-transparency-white-t4 p-6 transition-colors hover:border-white/25 lg:mt-12 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
+      class="group bg-transparency-white-t4 relative mt-8 grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl border border-white/10 p-6 transition-colors hover:border-white/25 lg:mt-12 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
     >
       <a
         :href="routes.platformServerless"
@@ -56,27 +56,27 @@ const routerTabs = routerCodeTabs
       <ServerlessVisual />
     </article>
 
-    <!-- Router and Builder, side by side -->
+    <!-- Models API and Builder, side by side -->
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
       <article
-        id="router"
-        class="group/router relative flex scroll-mt-24 flex-col rounded-4xl border border-white/10 bg-transparency-white-t4 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+        id="models"
+        class="group/models bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-white/10 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
       >
         <a
-          :href="routes.platformRouter"
-          :aria-label="t('platform.products.router.title', locale)"
+          :href="routes.platformModels"
+          :aria-label="t('platform.products.models.title', locale)"
           class="absolute inset-0 rounded-4xl"
         ></a>
         <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">
-          {{ t('platform.products.router.title', locale) }}
+          {{ t('platform.products.models.title', locale) }}
         </h3>
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
-          {{ t('platform.products.router.description', locale) }}
+          {{ t('platform.products.models.description', locale) }}
         </p>
         <div class="relative z-10 mt-6">
           <CodeTabs
-            :tabs="routerTabs"
-            :aria-label="t('platform.products.router.title', locale)"
+            :tabs="modelsTabs"
+            :aria-label="t('platform.products.models.title', locale)"
           />
         </div>
         <div class="relative z-10 mt-auto w-fit pt-8">
@@ -94,7 +94,7 @@ const routerTabs = routerCodeTabs
 
       <article
         id="builder"
-        class="group/builder relative flex scroll-mt-24 flex-col rounded-4xl border border-white/10 bg-transparency-white-t4 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+        class="group/builder bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-white/10 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
       >
         <a
           :href="routes.platformBuilder"

@@ -49,10 +49,10 @@ video = comfy.models.result("kling/v3-omni", handle.request_id)`
 <template>
   <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.routerCalls.heading', locale) }}
+      {{ t('platform.modelsCalls.heading', locale) }}
       <template #subtitle>
         <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
-          {{ t('platform.routerCalls.subtitle', locale) }}
+          {{ t('platform.modelsCalls.subtitle', locale) }}
         </p>
       </template>
     </SectionHeader>
@@ -60,7 +60,7 @@ video = comfy.models.result("kling/v3-omni", handle.request_id)`
     <div class="mx-auto mt-8 max-w-3xl">
       <CodeTabs
         :tabs="callTabs"
-        :aria-label="t('platform.routerCalls.heading', locale)"
+        :aria-label="t('platform.modelsCalls.heading', locale)"
       />
     </div>
   </section>
