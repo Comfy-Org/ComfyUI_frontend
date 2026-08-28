@@ -124,7 +124,8 @@ const {
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utils/litegraphUtil')>()),
   createNode: vi.fn(),
   isImageNode: vi.fn(),
   isVideoNode: vi.fn(),
@@ -2442,6 +2443,25 @@ describe('ComfyApp', () => {
   })
 
   describe('drop handler', () => {
+    it('ignores dropped files while the canvas is picking-only', async () => {
+      const adjustMouseEvent = vi.fn()
+      app.canvas = {
+        ...mockCanvas,
+        selectOnly: true,
+        adjustMouseEvent
+      } as unknown as LGraphCanvas
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      const event = new DragEvent('drop', { cancelable: true })
+      document.dispatchEvent(event)
+      await Promise.resolve()
+
+      // The guard returns after preventDefault: nothing reads the payload.
+      expect(event.defaultPrevented).toBe(true)
+      expect(adjustMouseEvent).not.toHaveBeenCalled()
+      expect(vi.mocked(extractFilesFromDragEvent)).not.toHaveBeenCalled()
+    })
+
     it('syncs the drop position and waits for the replacement workflow before restoring warnings', async () => {
       const graphMouse: [number, number] = [-999, -999]
       const adjustMouseEvent = vi.fn((e: DragEvent) => {

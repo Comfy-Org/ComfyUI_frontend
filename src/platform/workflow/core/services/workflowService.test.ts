@@ -1639,6 +1639,35 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('insertWorkflow', () => {
+    it('does not insert while the canvas is picking-only', async () => {
+      const workflow = { load: vi.fn() } as unknown as ComfyWorkflow
+      Reflect.set(app.canvas, 'selectOnly', true)
+      try {
+        await useWorkflowService().insertWorkflow(workflow)
+
+        expect(workflow.load).not.toHaveBeenCalled()
+      } finally {
+        Reflect.set(app.canvas, 'selectOnly', false)
+      }
+    })
+
+    it('inserts when the canvas is editable', async () => {
+      const deserialize = vi.fn()
+      Reflect.set(app.canvas, '_deserializeItems', deserialize)
+      const workflow = {
+        load: vi.fn().mockResolvedValue({
+          initialState: { nodes: [], links: [] }
+        })
+      } as unknown as ComfyWorkflow
+
+      await useWorkflowService().insertWorkflow(workflow)
+
+      expect(workflow.load).toHaveBeenCalledOnce()
+      expect(deserialize).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('saveWorkflow', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
 
@@ -2510,6 +2539,35 @@ describe('useWorkflowService', () => {
 
       // saveWorkflowAs should not change initialMode when isApp is omitted
       expect(copy.initialMode).toBe('app')
+    })
+  })
+
+  describe('insertWorkflow', () => {
+    it('does not insert while the canvas is picking-only', async () => {
+      const workflow = { load: vi.fn() } as unknown as ComfyWorkflow
+      Reflect.set(app.canvas, 'selectOnly', true)
+      try {
+        await useWorkflowService().insertWorkflow(workflow)
+
+        expect(workflow.load).not.toHaveBeenCalled()
+      } finally {
+        Reflect.set(app.canvas, 'selectOnly', false)
+      }
+    })
+
+    it('inserts when the canvas is editable', async () => {
+      const deserialize = vi.fn()
+      Reflect.set(app.canvas, '_deserializeItems', deserialize)
+      const workflow = {
+        load: vi.fn().mockResolvedValue({
+          initialState: { nodes: [], links: [] }
+        })
+      } as unknown as ComfyWorkflow
+
+      await useWorkflowService().insertWorkflow(workflow)
+
+      expect(workflow.load).toHaveBeenCalledOnce()
+      expect(deserialize).toHaveBeenCalledOnce()
     })
   })
 

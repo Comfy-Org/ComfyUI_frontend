@@ -923,9 +923,10 @@ export const useLitegraphService = () => {
     options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
-    // The choke point every node-creation surface traverses (search popover,
-    // node/model libraries, bookmarks, asset ghost-drops, job menu): one
-    // guard keeps them all out of a picking-only canvas.
+    // The choke point every DEFINITION-based creation surface traverses
+    // (search popover, node/model libraries, bookmarks, asset ghost-drops,
+    // job menu); non-definition paths (file drop, sidebar drop, workflow
+    // insertion) carry their own surface guards.
     if (isSelectOnly(app.canvas)) return null
     options.pos ??= getCanvasCenter()
 

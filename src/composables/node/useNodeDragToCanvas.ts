@@ -6,6 +6,7 @@ import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import type { NodeAddSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -72,6 +73,9 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
   const canvas = useCanvasStore().canvas
   if (!canvas) return false
   if (!isOverCanvas(clientX, clientY)) return false
+  // A picking refusal is silent-nothing, not a failure: consume the drop
+  // before the error toast below can fire.
+  if (isSelectOnly(canvas)) return true
 
   const pos = canvas.convertEventToCanvasOffset({
     clientX,
