@@ -198,10 +198,8 @@ export function useTemplateWorkflows() {
       throw new Error(`Failed to fetch workflow template (${response.status})`)
     }
 
-    const workflow = await validateComfyWorkflow(await response.json())
-    if (!workflow) throw new Error('Invalid workflow template')
-
-    return workflow
+    const workflow = await response.json()
+    return (await validateComfyWorkflow(workflow)) ?? workflow
   }
 
   return {
