@@ -6831,7 +6831,7 @@ const translations = {
   },
   'minimaxLicense.comparison.subtitle': {
     en: 'Both tiers are priced on video-seconds and carry full commercial rights to everything you generate.',
-    'zh-CN': '两种级别均按视频秒数计价，并对你生成的一切内容享有完整商业权利。'
+    'zh-CN': '两种级别均按视频秒数计价，并包含你生成的一切内容的完整商业权利。'
   },
   'minimaxLicense.comparison.footnote': {
     en: 'Prices in USD and exclude tax. This license is for running MiniMax models locally on your own hardware — Comfy Cloud plans already include commercial rights. Enterprise volume pricing and terms are quoted per agreement.',

@@ -100,6 +100,35 @@ test.describe('MiniMax license page @smoke', () => {
   })
 })
 
+test.describe('MiniMax license rate card @mobile', () => {
+  test('stacks each row into per-tier lines', async ({ page }) => {
+    await page.goto(PATH)
+
+    const table = page.getByRole('table', { name: COMPARISON_HEADING })
+    await table.scrollIntoViewIfNeeded()
+
+    await expect(
+      table.getByRole('columnheader', { name: 'Professional' })
+    ).toBeHidden()
+
+    const row = table.getByRole('row').filter({
+      has: page.getByRole('rowheader', { name: 'Monthly price' })
+    })
+    for (const tier of ['Professional', 'Enterprise']) {
+      await expect(row.getByText(tier, { exact: true })).toBeVisible()
+    }
+    await expect(row.getByText('$5,000', { exact: true })).toBeVisible()
+    await expect(
+      row.getByText('Custom, from $20,000', { exact: true })
+    ).toBeVisible()
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth
+    )
+    expect(overflow).toBe(false)
+  })
+})
+
 test.describe('MiniMax license page — zh-CN', () => {
   test('renders the localized hero and steps', async ({ page }) => {
     await page.goto(ZH_PATH)

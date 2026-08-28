@@ -76,7 +76,7 @@ export const minimaxLicenseComparison: ModelLaunchComparison<
     },
     {
       id: 'overage-rate',
-      label: { en: 'Overage per video-second', 'zh-CN': '超额每视频秒' },
+      label: { en: 'Overage per video-second', 'zh-CN': '超额每视频秒单价' },
       values: {
         professional: { en: '$0.036', 'zh-CN': '0.036 美元' },
         enterprise: {

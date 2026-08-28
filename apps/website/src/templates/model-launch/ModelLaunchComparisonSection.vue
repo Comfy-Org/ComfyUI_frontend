@@ -63,7 +63,9 @@ function cellRule(index: number) {
       <div
         class="rounded-4.5xl bg-primary-comfy-ink px-3 py-4 sm:px-6 lg:px-10 lg:py-8"
       >
-        <table class="block w-full border-separate border-spacing-0 md:table">
+        <table
+          class="block w-full border-separate border-spacing-0 md:table md:table-fixed"
+        >
           <caption class="sr-only">
             {{
               heading

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { ModelLaunchComparison } from './types'
@@ -35,16 +35,20 @@ const comparison: ModelLaunchComparison<'professional' | 'enterprise'> = {
 const ctaLabel = 'REQUEST LICENSE'
 
 describe('ModelLaunchComparisonSection', () => {
-  it('pairs every cell with its column header', () => {
+  it('orders every cell to match the column headers', () => {
     render(ModelLaunchComparisonSection, { props: { comparison } })
 
+    const squashed = (el: Element) => el.textContent?.replace(/\s+/g, '') ?? ''
     const row = screen.getByRole('row', { name: /Monthly price/ })
 
-    expect(row.textContent).toContain('$5,000')
-    expect(row.textContent).toContain('Custom')
-    expect(
-      screen.getByRole('columnheader', { name: 'Enterprise' })
-    ).toBeTruthy()
+    expect(screen.getAllByRole('columnheader').map(squashed)).toEqual([
+      'Professional',
+      'Enterprise'
+    ])
+    expect(within(row).getAllByRole('cell').map(squashed)).toEqual([
+      'Professional$5,000',
+      'EnterpriseCustom'
+    ])
   })
 
   it('links the CTA at the configured href by default', () => {
