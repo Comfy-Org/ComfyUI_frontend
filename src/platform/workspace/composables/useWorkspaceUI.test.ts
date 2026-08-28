@@ -549,4 +549,43 @@ describe('useWorkspaceUI', () => {
       expect(ui.showInactiveTeamSubscription.value).toBe(false)
     })
   })
+
+  describe('isSubscriptionEnded', () => {
+    beforeEach(() => {
+      mockSubscriptionStatus.value = 'canceled'
+    })
+
+    it('ends a cancelled plan once its paid period stops granting access', async () => {
+      mockStore.activeWorkspace = teamOwnerWorkspace
+      mockIsCancelled.value = true
+
+      const ui = await loadComposable()
+      expect(ui.isSubscriptionEnded.value).toBe(true)
+    })
+
+    it('keeps a cancelled plan live while it still grants access', async () => {
+      mockStore.activeWorkspace = teamOwnerWorkspace
+      mockIsCancelled.value = true
+      mockCanAccessSubscriptionFeatures.value = true
+
+      const ui = await loadComposable()
+      expect(ui.isSubscriptionEnded.value).toBe(false)
+    })
+
+    it('ends an uncancelled personal plan once billing goes inactive', async () => {
+      mockStore.activeWorkspace = personalWorkspace
+      mockBillingStatus.value = 'inactive'
+
+      const ui = await loadComposable()
+      expect(ui.isSubscriptionEnded.value).toBe(true)
+    })
+
+    it('leaves an uncancelled Team plan live when personal billing is the only inactive signal', async () => {
+      mockStore.activeWorkspace = teamOwnerWorkspace
+      mockBillingStatus.value = 'inactive'
+
+      const ui = await loadComposable()
+      expect(ui.isSubscriptionEnded.value).toBe(false)
+    })
+  })
 })
