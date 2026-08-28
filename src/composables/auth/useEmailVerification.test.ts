@@ -72,8 +72,6 @@ beforeEach(() => {
 afterEach(() => {
   scope?.stop()
   scope = undefined
-  vi.clearAllTimers()
-  vi.useRealTimers()
 })
 
 describe('useEmailVerification', () => {

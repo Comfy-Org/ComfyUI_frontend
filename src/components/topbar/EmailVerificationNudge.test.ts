@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -41,10 +41,6 @@ beforeEach(() => {
   h.composable!.canResend.value = true
   h.composable!.resend.mockReset()
   h.composable!.dismiss.mockReset()
-})
-
-afterEach(() => {
-  vi.clearAllMocks()
 })
 
 const resendButton = () =>

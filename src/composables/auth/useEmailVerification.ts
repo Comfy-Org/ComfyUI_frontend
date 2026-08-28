@@ -23,6 +23,16 @@ const SESSION_START_MS = Date.now()
 
 type EmailVerificationNudgeVariant = 'credits' | 'generic'
 
+/**
+ * `free_tier_grant_state` is not yet in the generated `BillingStatusResponse`
+ * (packages/ingest-types); the ingest billing-status endpoint doesn't return
+ * it yet either, so this narrows what's already an optional read rather than
+ * asserting a value. Drop this once the field lands in the generated type.
+ */
+type WithFreeTierGrantState = {
+  free_tier_grant_state?: 'verification_required' | 'deferred'
+}
+
 function readDismissedAt(): number {
   try {
     const raw = localStorage.getItem(DISMISSED_AT_KEY)
@@ -75,8 +85,8 @@ function useEmailVerificationInternal() {
 
   const freeTierVerificationRequired = computed(
     () =>
-      subscriptionStatus.value?.free_tier_grant_state ===
-      'verification_required'
+      (subscriptionStatus.value as WithFreeTierGrantState | null)
+        ?.free_tier_grant_state === 'verification_required'
   )
 
   const isDismissedThisSession = computed(
