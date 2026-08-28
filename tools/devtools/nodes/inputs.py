@@ -319,6 +319,19 @@ class NodeWithLegacyWidget:
     def node_with_legacy_widget(self):
         return ()
 
+class NodeWithPreAttachLegacyWidgets:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "node_with_pre_attach_legacy_widgets"
+    CATEGORY = "DevTools"
+    DESCRIPTION = ("A node whose widgets are foreign legacy objects created before graph attachment")
+
+    def node_with_pre_attach_legacy_widgets(self):
+        return ()
+
 class NodeWithPriceBadge(IO.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -405,6 +418,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
     "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
+    "DevToolsNodeWithPreAttachLegacyWidgets": NodeWithPreAttachLegacyWidgets,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
@@ -426,6 +440,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
     "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
+    "DevToolsNodeWithPreAttachLegacyWidgets": "Node With Pre-Attach Legacy Widgets",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
