@@ -542,29 +542,6 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows account-team remediation for a sales-managed owner', async () => {
-    paywallPermissions.canTopUp = false
-    paywallPermissions.canManageSubscription = false
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
-      role: 'assistant',
-      parts: [{ type: 'paywall' }],
-      streaming: false,
-      thinking: false
-    })
-
-    expect(
-      await screen.findByText(
-        'This workspace is billed through your Comfy account team. Contact them to add credits.'
-      )
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /credits/i })).toBeNull()
-    expect(
-      screen.queryByRole('button', { name: /upgrade|subscribe/i })
-    ).toBeNull()
-  })
-
   it('keeps Add credits but hides Upgrade at the highest personal tier', async () => {
     paywallBilling.tier = 'PRO'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

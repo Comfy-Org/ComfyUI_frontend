@@ -41,4 +41,26 @@ describe('AgentPaywallCard visual contract', () => {
     await user.click(addCredits!)
     expect(onPaywallAction.mock.calls).toEqual([['upgrade'], ['addCredits']])
   })
+
+  it.for([
+    {
+      presentation: { kind: 'member' as const },
+      body: 'This workspace has used all its credits. Ask your workspace owner to add more.'
+    },
+    {
+      presentation: { kind: 'salesManaged' as const },
+      body: 'This workspace is billed through your Comfy account team. Contact them to add credits.'
+    }
+  ])(
+    'renders $presentation.kind remediation without a dead-end action',
+    ({ presentation, body }) => {
+      render(AgentPaywallCard, {
+        props: { presentation },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByText(body)).toBeInTheDocument()
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    }
+  )
 })
