@@ -80,13 +80,13 @@ class HelpCenterHelper {
   }
 
   /**
-   * Intercept the Zendesk support URL so it never actually loads in the
+   * Intercept the Pylon support form URL so it never actually loads in the
    * new tab opened by the Contact Support command.
    */
   async stubSupportPage(): Promise<void> {
     await this.page
       .context()
-      .route('https://support.comfy.org/**', (route: Route) =>
+      .route('https://comfy-org.portal.usepylon.com/**', (route: Route) =>
         route.fulfill({
           status: 200,
           contentType: 'text/html',

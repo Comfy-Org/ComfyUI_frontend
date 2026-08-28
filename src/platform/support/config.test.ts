@@ -51,6 +51,30 @@ describe('buildFeedbackTypeformUrl', () => {
   })
 })
 
+describe('buildSupportUrl', () => {
+  async function build(params?: { userEmail?: string | null }) {
+    vi.resetModules()
+    const { buildSupportUrl } = await import('./config')
+    return buildSupportUrl(params)
+  }
+
+  it('prefills the requester email using Pylon\u2019s field slug', async () => {
+    const url = new URL(await build({ userEmail: 'user@example.com' }))
+    expect(url.searchParams.get('email')).toBe('user@example.com')
+  })
+
+  it('targets a Pylon-hosted form rather than the retired Zendesk endpoint', async () => {
+    const url = new URL(await build())
+    expect(url.host).toBe('comfy-org.portal.usepylon.com')
+    expect(url.pathname.startsWith('/forms/')).toBe(true)
+  })
+
+  it('omits the query string when the user is not signed in', async () => {
+    expect(new URL(await build()).search).toBe('')
+    expect(new URL(await build({ userEmail: null })).search).toBe('')
+  })
+})
+
 describe('buildFeedbackHiddenFields', () => {
   beforeEach(() => {
     distribution.isCloud = false

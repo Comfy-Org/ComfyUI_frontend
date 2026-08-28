@@ -133,7 +133,7 @@ test.describe('Error dialog', () => {
     )
 
     const url = new URL(popup.url())
-    expect(url.hostname).toBe('support.comfy.org')
+    expect(url.hostname).toBe('comfy-org.portal.usepylon.com')
 
     await popup.close()
   })
