@@ -79,7 +79,7 @@ function createDownloadHarness({
 }
 
 describe('useTemplateModelRowDownloads', () => {
-  it('subscribes before direct host dispatch without loading folder paths', async () => {
+  it('subscribes only to Desktop2 before direct host dispatch', async () => {
     const order: string[] = []
     const loadFolderPaths = vi.fn<() => Promise<FolderPaths>>()
     const request = model('desktop2.safetensors')
@@ -101,12 +101,12 @@ describe('useTemplateModelRowDownloads', () => {
       },
       subscribeLegacyProgress: () => {
         order.push('legacy-subscribe')
-        return () => undefined
+        throw new Error('Legacy progress is unavailable')
       }
     })
     downloads.request(request)
 
-    expect(order).toEqual(['desktop-subscribe', 'legacy-subscribe', 'dispatch'])
+    expect(order).toEqual(['desktop-subscribe', 'dispatch'])
     expect(dispatchDownload).toHaveBeenCalledWith(
       request,
       {},

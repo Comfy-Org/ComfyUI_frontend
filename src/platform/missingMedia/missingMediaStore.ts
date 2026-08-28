@@ -6,6 +6,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
@@ -18,24 +19,35 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
  */
 export const useMissingMediaStore = defineStore('missingMedia', () => {
   const canvasStore = useCanvasStore()
+  const templateInputDownloadStore = useTemplateInputDownloadStore()
 
   const missingMediaCandidates = ref<MissingMediaCandidate[] | null>(null)
 
-  const hasMissingMedia = computed(() => !!missingMediaCandidates.value?.length)
+  const actionableMissingMediaCandidates = computed(() =>
+    (missingMediaCandidates.value ?? []).filter(
+      ({ name }) => !templateInputDownloadStore.blockingFilenames.has(name)
+    )
+  )
+
+  const hasMissingMedia = computed(
+    () => actionableMissingMediaCandidates.value.length > 0
+  )
 
   const missingMediaCount = computed(
-    () => missingMediaCandidates.value?.length ?? 0
+    () => actionableMissingMediaCandidates.value.length
   )
 
   const missingMediaNodeIds = computed(
     () =>
-      new Set(missingMediaCandidates.value?.map((m) => String(m.nodeId)) ?? [])
+      new Set(
+        actionableMissingMediaCandidates.value.map((m) => String(m.nodeId))
+      )
   )
 
   /** `nodeId::widgetName` keys, so per-widget render lookups stay O(1). */
   const missingMediaWidgetKeys = computed<Set<string>>(() => {
     const keys = new Set<string>()
-    for (const candidate of missingMediaCandidates.value ?? []) {
+    for (const candidate of actionableMissingMediaCandidates.value) {
       keys.add(`${String(candidate.nodeId)}::${candidate.widgetName}`)
     }
     return keys
@@ -162,6 +174,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   return {
     missingMediaCandidates,
+    actionableMissingMediaCandidates,
     hasMissingMedia,
     missingMediaCount,
     missingMediaNodeIds,

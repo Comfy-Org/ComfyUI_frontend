@@ -1,4 +1,6 @@
 export interface ComfyDownloadProgress {
+  /** Stable per-job identifier assigned by Desktop. Older versions omit it. */
+  id?: string
   url: string
   filename: string
   directory?: string
@@ -17,6 +19,46 @@ export interface ComfyDownloadProgress {
   error?: string
   isImage?: boolean
 }
+
+export interface ComfyTemplateInputReference {
+  templateId: string
+  assetId: string
+}
+
+export interface ComfyTemplateInputAssetDownload {
+  downloadId: string
+  filename: string
+  progress: number
+  receivedBytes?: number
+  totalBytes?: number
+  status: ComfyDownloadProgress['status']
+  error?: string
+}
+
+export interface ComfyTemplateInputDownloadProgress extends ComfyTemplateInputAssetDownload {
+  templateInputs: ComfyTemplateInputReference[]
+}
+
+export interface ComfyTemplateInputAsset {
+  /** Opaque, template-scoped identifier accepted by `downloadTemplateInputAsset`. */
+  assetId: string
+  filename: string
+  mediaType: 'image' | 'video' | 'audio'
+  previewUrl: string
+  availability: 'present' | 'missing' | 'unknown'
+  activeDownload?: ComfyTemplateInputAssetDownload
+}
+
+export type ComfyTemplateInputAssetDownloadResult =
+  | { status: 'already-present' }
+  | {
+      status: 'accepted' | 'joined'
+      download: ComfyTemplateInputAssetDownload
+    }
+  | {
+      status: 'not-started'
+      reason: 'invalid-request' | 'not-declared' | 'unavailable'
+    }
 
 export interface TerminalRestore {
   buffer: string[]
@@ -85,6 +127,19 @@ export interface ComfyDesktop2Bridge {
     filename: string,
     authToken?: string
   ) => Promise<boolean>
+  /** Resolve only assets declared by this curated template. */
+  getTemplateInputAssets?: (
+    templateId: string
+  ) => Promise<ComfyTemplateInputAsset[] | null>
+  /** Start or join the managed download for one declared template asset. */
+  downloadTemplateInputAsset?: (
+    templateId: string,
+    assetId: string
+  ) => Promise<ComfyTemplateInputAssetDownloadResult>
+  /** Managed download events decorated with every owning template asset. */
+  onTemplateInputDownloadProgress?: (
+    callback: (data: ComfyTemplateInputDownloadProgress) => void
+  ) => () => void
   pauseDownload?: (url: string) => Promise<boolean>
   resumeDownload?: (url: string) => Promise<boolean>
   cancelDownload?: (url: string) => Promise<boolean>

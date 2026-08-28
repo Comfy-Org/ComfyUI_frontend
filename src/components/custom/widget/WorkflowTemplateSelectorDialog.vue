@@ -432,6 +432,7 @@ import { useAsyncState } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
@@ -452,7 +453,7 @@ import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isDesktop } from '@/platform/distribution/types'
 import { isModelDownloadable } from '@/platform/missingModel/missingModelDownload'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
@@ -484,6 +485,10 @@ import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
+import {
+  resolveTemplateInputAssets,
+  startMissingTemplateInputDownloads
+} from '@/platform/workflow/templates/utils/templateInputAssets'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
@@ -752,6 +757,7 @@ const activeDetail = ref<{
   template: TemplateInfo
   prepared: PreparedWorkflowTemplate
   groups: readonly TemplateDetailGroup[]
+  inputAssets: readonly ComfyTemplateInputAsset[]
   modelSetup?: ActiveTemplateModelSetup
 } | null>(null)
 const openPending = ref(false)
@@ -1240,6 +1246,18 @@ async function openPreparedTemplate(
   }
 }
 
+function startTemplateInputDownloads(
+  templateId: string,
+  assets: readonly ComfyTemplateInputAsset[]
+): void {
+  startMissingTemplateInputDownloads(templateId, assets, {
+    getBridge: () => window.__comfyDesktop2,
+    reportError: (error) => {
+      console.error('Error starting template input downloads:', error)
+    }
+  })
+}
+
 const onLoadWorkflow = async (template: TemplateInfo) => {
   if (openPending.value) return
 
@@ -1254,29 +1272,35 @@ const onLoadWorkflow = async (template: TemplateInfo) => {
     )
     if (!prepared || generation !== detailGeneration) return
 
-    const groups = buildTemplateDetailGroups(template, prepared)
-    if (isCloud) {
+    if (!isDesktop) {
       await openPreparedTemplate(prepared, generation)
       return
     }
 
-    if (!isDesktop) {
-      activeDetail.value = { template, prepared, groups }
-      return
-    }
-
+    const groups = buildTemplateDetailGroups(template, prepared)
+    const inputAssetsPromise = resolveTemplateInputAssets(
+      template.name,
+      () => window.__comfyDesktop2
+    )
     const modelRequirements = extractTemplateModelRequirementDetails(
       prepared.workflow
     )
     if (modelRequirements.length === 0) {
+      const inputAssets = await inputAssetsPromise
+      if (generation !== detailGeneration) return
+      startTemplateInputDownloads(template.name, inputAssets)
       await openPreparedTemplate(prepared, generation)
       return
     }
 
     const models = modelRequirements.map(({ model }) => model)
-    const modelAvailability = await resolveModelAvailability(models)
+    const [modelAvailability, inputAssets] = await Promise.all([
+      resolveModelAvailability(models),
+      inputAssetsPromise
+    ])
     if (generation !== detailGeneration) return
     if (modelAvailability.every(({ status }) => status === 'installed')) {
+      startTemplateInputDownloads(template.name, inputAssets)
       await openPreparedTemplate(prepared, generation)
       return
     }
@@ -1288,6 +1312,7 @@ const onLoadWorkflow = async (template: TemplateInfo) => {
       template,
       prepared,
       groups,
+      inputAssets,
       modelSetup: {
         result: deriveTemplateModelSetup(
           modelRequirements,
@@ -1358,14 +1383,17 @@ function onDownloadModel(rowId: string) {
 }
 
 async function onDownloadStarterPack() {
-  const setup = activeDetail.value?.modelSetup
-  if (!setup || setup.pending || openPending.value) return
+  const detail = activeDetail.value
+  const setup = detail?.modelSetup
+  if (!detail || !setup || setup.pending || openPending.value) return
 
   for (const row of setup.result.rows) {
     if (isStarterPackCandidate(row, setup.rowDownloads)) {
       setup.rowDownloads.request(row.model)
     }
   }
+
+  startTemplateInputDownloads(detail.template.name, detail.inputAssets)
 
   await onOpenTemplate()
 }
@@ -1399,7 +1427,7 @@ const activeDetailTitle = computed(() => {
 
 const activeDetailCloudUrl = computed(() => {
   const detail = activeDetail.value
-  if (isCloud || !detail || !isTemplateAvailableOnCloud(detail.template)) {
+  if (!detail || !isTemplateAvailableOnCloud(detail.template)) {
     return undefined
   }
 
