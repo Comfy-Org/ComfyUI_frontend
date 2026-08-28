@@ -95,7 +95,11 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
-import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
+import {
+  STALE_AFTER_MS,
+  summarizeOutboundDocFrame,
+  useAgentCrdtFollower
+} from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 function mountFollower(initial: string | null = null): {
@@ -458,5 +462,45 @@ describe('useAgentCrdtFollower', () => {
       'status',
       expect.any(Function)
     )
+  })
+})
+
+describe('summarizeOutboundDocFrame', () => {
+  it('records metadata only, never the doc_ops payload', () => {
+    const frame = JSON.stringify({
+      type: 'doc_ops',
+      data: {
+        v: 1,
+        workflow_id: 'wf-1',
+        tab: 'tab-1',
+        ops: [
+          {
+            op_id: 'op-1',
+            op: 'set_widget',
+            actor: 'human:u:t',
+            value: 'a private prompt string'
+          },
+          { op_id: 'op-2', op: 'add_node', actor: 'human:u:t' }
+        ]
+      }
+    })
+
+    const summary = summarizeOutboundDocFrame(frame)
+
+    expect(summary).toEqual({
+      bytes: frame.length,
+      type: 'doc_ops',
+      workflow_id: 'wf-1',
+      op_count: 2,
+      ops: [
+        { op_id: 'op-1', op: 'set_widget' },
+        { op_id: 'op-2', op: 'add_node' }
+      ]
+    })
+    expect(JSON.stringify(summary)).not.toContain('private prompt')
+  })
+
+  it('degrades to byte size alone for a non-JSON frame', () => {
+    expect(summarizeOutboundDocFrame('not json')).toEqual({ bytes: 8 })
   })
 })

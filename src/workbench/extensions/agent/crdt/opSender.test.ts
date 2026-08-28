@@ -2,7 +2,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
-import { createOpSender } from './opSender'
+import { createOpSender, toOpsResultView } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
 const WORKFLOW = 'wf-1'
@@ -253,5 +253,109 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(2)])
 
     expect(sent).toHaveLength(1)
+  })
+
+  it('invalidates an in-flight batch instead of resending it after a rebind', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+
+    boundWorkflow = 'wf-2'
+    vi.advanceTimersByTime(10_000)
+
+    // The silent-result resend re-checks the batch's minted workflow: the
+    // ops (and their wf-1 base_version) are never routed to wf-2.
+    expect(sent).toHaveLength(1)
+    expect(settled).toHaveLength(1)
+    expect(settled[0].state).toBe('undeliverable')
+  })
+
+  it('invalidates a queued batch minted before a rebind', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(1)
+
+    boundWorkflow = 'wf-2'
+    ackInFlight()
+
+    expect(sent).toHaveLength(1)
+    expect(settled.map((s) => s.state)).toEqual([
+      'acknowledged',
+      'undeliverable'
+    ])
+  })
+
+  it('ignores a result naming a different workflow', () => {
+    sender.enqueue([addNode(1)])
+
+    resultListener?.({
+      workflowId: 'wf-other',
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+    expect(settled).toHaveLength(0)
+
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: true,
+      applied: sent[0].ops.map((op) => op.op_id),
+      skipped: []
+    })
+    expect(settled).toHaveLength(1)
+    expect(settled[0].state).toBe('acknowledged')
+  })
+})
+
+describe('toOpsResultView', () => {
+  it('carries the workflow and normalizes the single-object failed shape', () => {
+    const view = toOpsResultView({
+      workflowId: 'wf-1',
+      ok: false,
+      applied: ['a'],
+      skipped: [],
+      failed: { op_id: 'op-9', code: 'rejected', message: 'no' }
+    })
+
+    expect(view).toEqual({
+      workflowId: 'wf-1',
+      ok: false,
+      applied: ['a'],
+      skipped: [],
+      failure: { op_id: 'op-9' }
+    })
+  })
+
+  it('resolves the op_id from the newer index/op failed shape', () => {
+    const view = toOpsResultView({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: { index: 2, op: { op_id: 'op-7' }, code: 'x', message: 'y' }
+    })
+
+    expect(view.failure).toEqual({ op_id: 'op-7' })
+  })
+
+  it('takes the first entry of an array failed shape', () => {
+    const view = toOpsResultView({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: [{ op_id: 'op-3' }, { op_id: 'op-4' }]
+    })
+
+    expect(view.failure).toEqual({ op_id: 'op-3' })
+  })
+
+  it('keeps an anonymous failure anonymous and drops non-string ids', () => {
+    const view = toOpsResultView({
+      ok: false,
+      applied: ['a', 7 as unknown as string],
+      skipped: [],
+      failed: 'boom'
+    })
+
+    expect(view.applied).toEqual(['a'])
+    expect(view.failure).toEqual({})
   })
 })

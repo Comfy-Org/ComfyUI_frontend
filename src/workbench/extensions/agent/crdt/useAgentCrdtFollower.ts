@@ -95,6 +95,42 @@ export const apiTransport: DocFrameTransport = {
   }
 }
 
+/**
+ * Frame type, workflow correlation, op ids/types, counts, and byte size -
+ * never the payload itself.
+ */
+export function summarizeOutboundDocFrame(
+  frame: string
+): Record<string, unknown> {
+  const summary: Record<string, unknown> = { bytes: frame.length }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(frame)
+  } catch {
+    return summary
+  }
+  if (typeof parsed !== 'object' || parsed === null) return summary
+  const { type, data } = parsed as { type?: unknown; data?: unknown }
+  if (typeof type === 'string') summary.type = type
+  if (typeof data !== 'object' || data === null) return summary
+  const { workflow_id, ops } = data as { workflow_id?: unknown; ops?: unknown }
+  if (typeof workflow_id === 'string') summary.workflow_id = workflow_id
+  if (Array.isArray(ops)) {
+    summary.op_count = ops.length
+    summary.ops = ops.map((op) => {
+      const record =
+        typeof op === 'object' && op !== null
+          ? (op as { op_id?: unknown; op?: unknown })
+          : {}
+      return {
+        ...(typeof record.op_id === 'string' && { op_id: record.op_id }),
+        ...(typeof record.op === 'string' && { op: record.op })
+      }
+    })
+  }
+  return summary
+}
+
 export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -103,17 +139,17 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
-  // never-throw contract is covered by tests.
+  // never-throw contract is covered by tests. Only frame METADATA is
+  // recorded: a doc_ops payload carries node and widget values (prompts,
+  // filenames), which is more user data than the debugging panel needs even
+  // in a development build.
   const transport: DocFrameTransport = {
     send(frame) {
       const delivered = apiTransport.send(frame)
-      let parsed: unknown = frame
-      try {
-        parsed = JSON.parse(frame)
-      } catch {
-        // Leave the raw string.
-      }
-      recordDevEvent('ws_out', { delivered, frame: parsed })
+      recordDevEvent('ws_out', {
+        delivered,
+        ...summarizeOutboundDocFrame(frame)
+      })
       return delivered
     },
     addEventListener(type, listener) {
