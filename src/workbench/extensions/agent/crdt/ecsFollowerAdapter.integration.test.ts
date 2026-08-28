@@ -99,6 +99,177 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('FEC-14 F2 current-risk gap: a second binding replaces the singleton target session', () => {
+    // Characterizes the current F2 gap, not desired multi-target behavior.
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const firstHost = mint({ nodes: [], links: [] }, catalog)
+    const secondHost = mint(
+      { nodes: [{ id: 2, type: 'Sink', inputs: [], outputs: [] }], links: [] },
+      catalog
+    )
+    const firstFollower = new FollowerDoc()
+    const secondFollower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+
+    mutations.bindScope(scope)
+    adapter.bind(firstFollower)
+    const firstUpdate = Y.encodeStateAsUpdate(firstHost)
+    firstFollower.applyRemoteUpdate(firstUpdate)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'workflow-a',
+        seq: 1,
+        update: firstUpdate,
+        opIds: []
+      })
+    ).toBe(false)
+    expect(adapter.hasPendingEffects).toBe(true)
+
+    mutations.bindScope(otherScope)
+    adapter.bind(secondFollower)
+    expect(adapter.hasPendingEffects).toBe(false)
+
+    const staleFirstHost = mint(
+      {
+        nodes: [{ id: 1, type: 'Source', inputs: [], outputs: [] }],
+        links: []
+      },
+      catalog
+    )
+    const staleFirstUpdate = Y.encodeStateAsUpdate(staleFirstHost)
+    firstFollower.applyRemoteUpdate(staleFirstUpdate)
+    const secondUpdate = Y.encodeStateAsUpdate(secondHost)
+    secondFollower.applyRemoteUpdate(secondUpdate)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'workflow-b',
+        seq: 1,
+        update: secondUpdate,
+        opIds: ['workflow-b-op']
+      })
+    ).toBe(true)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('other-root', 'other-root')
+        .map(({ id }) => id)
+    ).toEqual(['2'])
+
+    adapter.destroy()
+    firstFollower.destroy()
+    secondFollower.destroy()
+    firstHost.destroy()
+    staleFirstHost.destroy()
+    secondHost.destroy()
+  })
+
+  it('FEC-14 F3 current-risk gap: an offscreen commit dirties the active canvas singleton', () => {
+    // Characterizes the current F3 gap, not desired target-aware invalidation.
+    const activeCanvas = { setDirty: vi.fn() }
+    const mutations = createGraphMutations({
+      getScope: () => otherScope,
+      onCommit: () => activeCanvas.setDirty(true, true),
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    mutations.bindScope(otherScope)
+    const host = mint(
+      { nodes: [{ id: 2, type: 'Sink', inputs: [], outputs: [] }], links: [] },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind(follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'offscreen-workflow',
+        seq: 1,
+        update,
+        opIds: ['offscreen-op']
+      })
+    ).toBe(true)
+    expect(activeCanvas.setDirty).toHaveBeenCalledWith(true, true)
+    expect(activeCanvas.setDirty).toHaveBeenCalledTimes(1)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('FEC-14 F4 current-risk gap: same-ID re-add drops creator-carried incarnation', () => {
+    // Characterizes the current F4/DQ-11c gap, not desired incarnation propagation.
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    mutations.bindScope(scope)
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind(follower)
+
+    let seq = 0
+    const deliver = (payload: object) => {
+      const before = Y.encodeStateVector(host)
+      const operationId = `incarnation-${++seq}`
+      const result = applyOps(
+        host,
+        [
+          op(operationId, seq, {
+            ...payload,
+            node_incarnation: 'creator-incarnation-a'
+          })
+        ] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      expect(result.outcomes[0]?.outcome).toBe('applied')
+      const update = Y.encodeStateAsUpdate(host, before)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq,
+          update,
+          opIds: [operationId]
+        })
+      ).toBe(true)
+    }
+
+    deliver({
+      op: 'add_node',
+      node_id: 1,
+      class_type: 'Source',
+      pos: [0, 0],
+      node: { id: 1, type: 'Source', inputs: [], outputs: [] }
+    })
+    deliver({ op: 'delete_node', node_id: 1, removed_links: [] })
+    deliver({
+      op: 'add_node',
+      node_id: 1,
+      class_type: 'Source',
+      pos: [20, 30],
+      node: { id: 1, type: 'Source', inputs: [], outputs: [] }
+    })
+
+    const replacement = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(1)) as
+      | (Record<string, unknown> & { id: string })
+      | undefined
+    // The stamped op's incarnation never crosses the applier/adapter boundary;
+    // delete-wins leaves no replacement shell carrying that identity.
+    expect(replacement).toBeUndefined()
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('removes a local-only node during the first authoritative catch-up', () => {
     const createLayout = vi.fn()
     const deleteLayouts = vi.fn()

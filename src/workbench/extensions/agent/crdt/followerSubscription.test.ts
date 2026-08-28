@@ -188,6 +188,34 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
       encodeBase64(Y.encodeStateVector(new Y.Doc()))
     )
   })
+
+  it('FEC-14 F5 current-risk gap: one bridge cannot retain target A while subscribing target B', () => {
+    // Characterizes the current F5 single-session gap, not desired per-target partitioning.
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe('target-a')
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'target-a'))
+    const targetAFollower = bridge.follower
+    const targetAStateVector = encodeBase64(targetAFollower.stateVector())
+
+    bridge.subscribe('target-b')
+
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { workflow_id: string; state_vector_b64: string }
+    }[]
+    expect(subscribes.at(-1)?.data.workflow_id).toBe('target-b')
+    expect(bridge.follower).not.toBe(targetAFollower)
+    expect(bridge.subscribedWorkflowId).toBe('target-b')
+    expect(subscribes.at(-1)?.data.state_vector_b64).not.toBe(
+      targetAStateVector
+    )
+
+    // The singleton fields now describe only B; A's doc, seq, and subscription
+    // state have no retained target-keyed session to reconnect independently.
+    bridge.resubscribe()
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(3)
+    expect(bridge.subscribedWorkflowId).toBe('target-b')
+  })
 })
 
 describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
