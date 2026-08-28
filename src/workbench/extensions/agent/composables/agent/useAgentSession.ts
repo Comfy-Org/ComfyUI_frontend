@@ -27,6 +27,7 @@ interface SentTag {
   title: string
 }
 
+/** @knipIgnoreUsedByStackedPR */
 export interface WorkflowTurnContext {
   id: string
   tabPath: string
@@ -55,6 +56,12 @@ const PREPARE_TIMEOUT_MS = 3000
 let sessionGeneration = 0
 
 /**
+ * App-lifetime error-id mint: the ids land in an app-scoped store, so an
+ * instance-scoped counter would re-mint duplicates across a remount.
+ */
+let localErrorCount = 0
+
+/**
  * Page-lifetime binding memory: the workflow a resumed turn belongs to must
  * survive a panel remount. Module-level like `sessionGeneration`;
  * newChat/loadThread clear it.
@@ -76,7 +83,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
 
-  let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
     return `local-error-${++localErrorCount}` as TurnId
   }
@@ -100,6 +106,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
+    unsubscribe?.()
+    unsubscribeStatus?.()
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
     const surviving = conversationStore.threadId
@@ -123,7 +131,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           stored,
           () =>
             generation === loadGeneration &&
-            ownedGeneration === sessionGeneration
+            ownedGeneration === sessionGeneration,
+          true
         )
       }
     }
@@ -131,7 +140,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function hydrateFromServer(
     threadId: string,
-    isCurrent: () => boolean = () => true
+    isCurrent: () => boolean = () => true,
+    resetOnFailure = false
   ): Promise<boolean> {
     try {
       const history = await rest.getMessages(threadId)
@@ -147,6 +157,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
+      // Entry-path hydrates committed the identity before fetching; leaving
+      // it standing over the previous transcript renders thread A's rows
+      // under thread B's id. Rehost keeps its transcript (b7) instead.
+      if (resetOnFailure && conversationStore.threadId === threadId) {
+        conversationStore.reset()
+        localStorage.removeItem(THREAD_STORAGE_KEY)
+      }
       return false
     }
   }
@@ -203,13 +220,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     }
     try {
-      const ack = await postTurn(conversationStore.threadId ?? 'new')
-      conversationStore.setThreadId(ack.thread_id)
-      localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
-      if (ack.workflow_id !== undefined) {
-        bindWorkflow(ack.workflow_id)
-        workflow?.adopted(ack.workflow_id, wfContext)
+      let ack
+      try {
+        ack = await postTurn(conversationStore.threadId ?? 'new')
+      } catch (error) {
+        const message =
+          error instanceof AgentApiError
+            ? error.message
+            : error instanceof Error
+              ? error.message
+              : String(error)
+        conversationStore.recordFailedSend(
+          nextLocalErrorId(),
+          text,
+          `${i18n.global.t('agent.sendFailed')}: ${message}`
+        )
+        return false
       }
+      // The server accepted the turn: the store transitions are owed
+      // unconditionally, before any fallible local side effect, or the
+      // reply's events arrive with no open turn to land in.
+      conversationStore.setThreadId(ack.thread_id)
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(
         turnId,
@@ -222,24 +253,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags?.map((tag) => `${tag.title} #${tag.id}`)
       )
       conversationStore.startTurn(turnId)
+      if (ack.workflow_id !== undefined) bindWorkflow(ack.workflow_id)
+      try {
+        localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
+      } catch {
+        // Thread persistence is best-effort, like agentRunModeStore's
+        // useLocalStorage; a quota failure must not fail an accepted turn.
+      }
+      try {
+        if (ack.workflow_id !== undefined)
+          workflow?.adopted(ack.workflow_id, wfContext)
+      } catch {
+        // Consumer bookkeeping cannot retract an accepted turn.
+      }
       if (stopRequestedWhileSending) {
         stopRequestedWhileSending = false
         void stopTurn()
       }
       return true
-    } catch (error) {
-      const message =
-        error instanceof AgentApiError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : String(error)
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        `${i18n.global.t('agent.sendFailed')}: ${message}`
-      )
-      return false
     } finally {
       sending.value = false
     }
@@ -296,7 +327,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = null
     conversationStore.setThreadId(threadId)
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
-    const hydrated = await hydrateFromServer(threadId, isCurrent)
+    const hydrated = await hydrateFromServer(threadId, isCurrent, true)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
