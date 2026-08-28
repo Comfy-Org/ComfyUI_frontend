@@ -737,7 +737,7 @@ describe('useCoreCommands', () => {
     )
 
     it.for(['ENTERPRISE', 'GALACTIC'] as const)(
-      'blocks the run without a subscribe dialog on a sales-managed %s plan',
+      'explains the block instead of a subscribe dialog on a sales-managed %s plan',
       async (tier) => {
         mockDistributionState.isCloud = true
         mockBillingState.canAccessSubscriptionFeatures = false
@@ -747,6 +747,9 @@ describe('useCoreCommands', () => {
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
         expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'warn' })
+        )
       }
     )
 

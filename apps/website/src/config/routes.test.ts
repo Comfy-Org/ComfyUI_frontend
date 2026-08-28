@@ -58,6 +58,16 @@ describe('getRoutes ltx', () => {
   })
 })
 
+describe('getRoutes geminiOmni', () => {
+  it('serves the gemini omni page at its canonical path for en', () => {
+    expect(getRoutes('en').geminiOmni).toBe('/gemini-omni')
+  })
+
+  it('serves a localized gemini omni path for zh-CN', () => {
+    expect(getRoutes('zh-CN').geminiOmni).toBe('/zh-CN/gemini-omni')
+  })
+})
+
 describe('getRoutes minimaxMusic3', () => {
   it('serves the minimax music 3 page at its canonical path for en', () => {
     expect(getRoutes('en').minimaxMusic3).toBe('/minimax-music-3')
@@ -95,5 +105,15 @@ describe('getRoutes fdct', () => {
 
   it('serves a localized fdct path for zh-CN', () => {
     expect(getRoutes('zh-CN').fdct).toBe('/zh-CN/forward-deployed-creatives')
+  })
+})
+
+describe('getRoutes minimaxLicense', () => {
+  it('serves the MiniMax license page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxLicense).toBe('/minimax/license')
+  })
+
+  it('serves a localized MiniMax license path for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxLicense).toBe('/zh-CN/minimax/license')
   })
 })

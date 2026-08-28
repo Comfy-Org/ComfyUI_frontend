@@ -93,7 +93,7 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
 
     expect(result).toMatchObject({
       kind: 'rejected',
-      reason: 'document visibility changed (visible to visible)'
+      reason: 'document visibility toggled during the measurement window'
     })
   })
 })
