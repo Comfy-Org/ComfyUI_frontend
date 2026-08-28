@@ -81,8 +81,6 @@ export function useSelectionOperations() {
 
   const deleteSelection = () => {
     const canvas = app.canvas
-    // Picking nodes for the agent is not editing: deleting stays off until the
-    // mode ends.
     if (isSelectOnly(canvas)) return
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
       toastStore.add({

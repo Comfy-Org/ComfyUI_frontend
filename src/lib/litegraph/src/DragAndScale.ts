@@ -254,7 +254,7 @@ export class DragAndScale {
     const cw = this.element.width / window.devicePixelRatio
     const ch = this.element.height / window.devicePixelRatio
     const [vx, vy, vw, vh] = viewport ?? [0, 0, cw, ch]
-    if (vw <= 0 || vh <= 0) return
+    if (!(vw > 0) || !(vh > 0)) return
     const startX = this.offset[0]
     const startY = this.offset[1]
     const startX2 = startX - cw / this.scale
