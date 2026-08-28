@@ -398,6 +398,7 @@ describe('useAgentCrdtFollower', () => {
   it('warns in dev when a second follower mounts concurrently', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const first = mountFollower('wf-1')
+    expect(warn).not.toHaveBeenCalled()
     const second = mountFollower('wf-2')
 
     expect(warn).toHaveBeenCalledWith(

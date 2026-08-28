@@ -80,10 +80,17 @@ describe('idAllocation', () => {
     expect(state.lastNodeId).toBe(7)
     expect(Number(state.lastLinkId)).toBe(9)
 
+    // The boundary value is ignored too: its own next ++ would allocate
+    // exactly the floor (and the round-3 clamp build saved this value).
     observeNodeId(state, toNodeId(MINT_ID_MIN - 1))
     observeLinkId(state, toLinkId(MINT_ID_MIN - 1))
-    expect(state.lastNodeId).toBe(MINT_ID_MIN - 1)
-    expect(Number(state.lastLinkId)).toBe(MINT_ID_MIN - 1)
+    expect(state.lastNodeId).toBe(7)
+    expect(Number(state.lastLinkId)).toBe(9)
+
+    observeNodeId(state, toNodeId(MINT_ID_MIN - 2))
+    observeLinkId(state, toLinkId(MINT_ID_MIN - 2))
+    expect(state.lastNodeId).toBe(MINT_ID_MIN - 2)
+    expect(Number(state.lastLinkId)).toBe(MINT_ID_MIN - 2)
   })
 })
 
@@ -228,7 +235,7 @@ describe('coordination-free ids across a serialize/configure round-trip', () => 
   })
 })
 
-describe('counter restores clamp below the mint floor', () => {
+describe('counter restores ignore mint-range values', () => {
   const POISONED = MINT_ID_MIN + 5
 
   it('a poisoned root state restore cannot seed the counters', () => {
@@ -315,5 +322,20 @@ describe('counter restores clamp below the mint floor', () => {
     graph.last_link_id = toLinkId(5)
     expect(graph.state.lastNodeId).toBe(5)
     expect(Number(graph.state.lastLinkId)).toBe(5)
+  })
+
+  it('the deprecated setters coerce numeric strings and drop non-numerics', () => {
+    const graph = new LGraph()
+
+    // The untyped 0.4 configure loop feeds these raw JSON values, and
+    // subgraphStore payloads carry string ids.
+    graph.last_node_id = '21' as unknown as number
+    graph.last_link_id = '34' as unknown as ReturnType<typeof toLinkId>
+
+    expect(graph.state.lastNodeId).toBe(21)
+    expect(Number(graph.state.lastLinkId)).toBe(34)
+
+    graph.last_node_id = 'bogus' as unknown as number
+    expect(graph.state.lastNodeId).toBe(21)
   })
 })
