@@ -13,15 +13,12 @@ import {
 
 const GRAPH_ID = 'image-widget-adapter-test'
 
-let nodeCounter = 0
-
 function makeNode({
   registered = true,
   widgetValue = 'original.png [input]',
   hasWidget = true
 } = {}): LGraphNode {
-  nodeCounter += 1
-  const nodeId = toNodeId(nodeCounter)
+  const nodeId = toNodeId(1)
   if (registered) {
     useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, nodeId, 'image'), {
       type: 'string',
