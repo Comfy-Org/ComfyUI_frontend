@@ -60,7 +60,7 @@ const storageRates = [
     <div
       class="mx-auto mt-8 grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-2"
     >
-      <div class="overflow-hidden rounded-3xl border border-white/10">
+      <div class="overflow-hidden rounded-3xl">
         <table class="w-full text-left text-sm">
           <thead>
             <tr class="bg-white/4 text-xs tracking-wider uppercase">
@@ -120,7 +120,7 @@ const storageRates = [
         </p>
       </div>
 
-      <div class="overflow-hidden rounded-3xl border border-white/10">
+      <div class="overflow-hidden rounded-3xl">
         <table class="w-full text-left text-sm">
           <thead>
             <tr class="bg-white/4 text-xs tracking-wider uppercase">

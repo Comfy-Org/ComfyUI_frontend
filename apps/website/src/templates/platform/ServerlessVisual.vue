@@ -138,7 +138,7 @@ function restTone(index: number): string {
 <template>
   <div
     aria-hidden="true"
-    class="relative h-full min-h-72 overflow-hidden rounded-3xl border border-white/10 bg-[#241d2f]"
+    class="relative h-full min-h-72 overflow-hidden rounded-3xl bg-[#241d2f]"
   >
     <div
       class="absolute -translate-y-1/2 text-center"
@@ -196,7 +196,7 @@ function restTone(index: number): string {
     />
 
     <div
-      class="absolute flex justify-between font-mono text-[11px] tracking-[0.08em] text-[#e8e46a]"
+      class="text-primary-comfy-canvas absolute flex justify-between font-mono text-[11px] tracking-[0.08em]"
       :style="{
         left: `${GRID_LEFT}%`,
         right: `${100 - GRID_RIGHT}%`,

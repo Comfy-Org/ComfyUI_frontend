@@ -28,7 +28,7 @@ defineProps<{
       <article
         v-for="card in cards"
         :key="card.title"
-        class="rounded-3xl border border-white/10 bg-transparency-white-t4 p-5 lg:p-6"
+        class="rounded-3xl bg-transparency-white-t4 p-5 lg:p-6"
       >
         <h3 class="text-base font-normal text-primary-warm-white">
           {{ card.title }}

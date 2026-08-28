@@ -7325,8 +7325,8 @@ const translations = {
     'zh-CN': '开发者平台'
   },
   'platform.hero.heading': {
-    en: 'Developer Platform',
-    'zh-CN': '开发者平台'
+    en: 'Comfy Developer Platform',
+    'zh-CN': 'Comfy 开发者平台'
   },
   'platform.hero.subtitle': {
     en: 'Deploy and scale your ComfyUI workflows: every model, one API, built for production pipelines by the ComfyUI team.',

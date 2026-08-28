@@ -28,6 +28,8 @@ const {
   badgeLogoSrc,
   badgeLogoAlt,
   title,
+  titleClass,
+  ctaClass,
   titleHighlight,
   subtitle,
   features = [],
@@ -56,6 +58,8 @@ const {
   badgeLogoSrc?: string
   badgeLogoAlt?: string
   title: string
+  titleClass?: HTMLAttributes['class']
+  ctaClass?: HTMLAttributes['class']
   titleHighlight?: string
   subtitle?: string
   features?: string[]
@@ -104,7 +108,8 @@ const {
             badgeText && 'mt-8',
             compact
               ? 'text-xl tracking-tight md:text-2xl lg:text-3xl'
-              : 'text-2xl tracking-[-1.44px] md:text-4xl lg:text-5xl'
+              : 'text-2xl tracking-[-1.44px] md:text-4xl lg:text-5xl',
+            titleClass
           )
         "
       >
@@ -143,7 +148,7 @@ const {
           :href="primaryCta.href"
           :target="primaryCta.target"
           :size="compact ? 'sm' : 'lg'"
-          :class="cn('uppercase', !compact && 'px-8 py-4 text-base')"
+          :class="cn('uppercase', !compact && 'px-8 py-4 text-base', ctaClass)"
         >
           {{ primaryCta.label }}
         </BrandButton>
@@ -153,7 +158,7 @@ const {
           :target="secondaryCta.target"
           variant="outline"
           :size="compact ? 'sm' : 'lg'"
-          :class="cn('uppercase', !compact && 'px-8 py-4 text-base')"
+          :class="cn('uppercase', !compact && 'px-8 py-4 text-base', ctaClass)"
         >
           {{ secondaryCta.label }}
         </BrandButton>

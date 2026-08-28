@@ -16,6 +16,8 @@ const ctas = platformCtas(locale)
     compact
     class="pt-12 pb-10 md:pt-16 md:pb-14"
     :title="t('platform.hero.heading', locale)"
+    title-class="text-3xl md:text-4xl lg:text-5xl"
+    cta-class="px-7 py-3.5 text-base"
     :subtitle="t('platform.hero.subtitle', locale)"
     :primary-cta="ctas.getStarted"
     :secondary-cta="ctas.docs"
