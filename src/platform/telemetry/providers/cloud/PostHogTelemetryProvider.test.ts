@@ -119,6 +119,52 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).not.toHaveBeenCalled()
     })
 
+    it('prefers the server-injected token over the env token', async () => {
+      vi.stubEnv('DEV', true)
+      vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', 'phc_env_token')
+
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.any(Object)
+      )
+    })
+
+    it('falls back to the env token in dev builds', async () => {
+      vi.stubEnv('DEV', true)
+      vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', 'phc_env_token')
+
+      createProvider({ posthog_project_token: undefined })
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_env_token',
+        expect.any(Object)
+      )
+    })
+
+    it('ignores the env token outside dev builds', async () => {
+      vi.stubEnv('DEV', false)
+      vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', 'phc_env_token')
+
+      createProvider({ posthog_project_token: undefined })
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).not.toHaveBeenCalled()
+    })
+
+    it('disables PostHog on an empty injected token instead of falling back', async () => {
+      vi.stubEnv('DEV', true)
+      vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', 'phc_env_token')
+
+      createProvider({ posthog_project_token: '' })
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).not.toHaveBeenCalled()
+    })
+
     it('calls posthog.init with the token and default config', async () => {
       createProvider()
       await vi.dynamicImportSettled()
@@ -152,6 +198,29 @@ describe('PostHogTelemetryProvider', () => {
           debug: true,
           api_host: 'https://custom.host.com'
         })
+      )
+    })
+
+    it("lets the server's person_profiles win over the client default", async () => {
+      hoisted.refs.remoteConfig.value = {
+        posthog_config: { person_profiles: 'always' }
+      }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'always' })
+      )
+    })
+
+    it('defaults person_profiles to identified_only when the server omits it', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'identified_only' })
       )
     })
 
@@ -1202,12 +1271,11 @@ describe('PostHogTelemetryProvider', () => {
       expect(result.$set_once).toHaveProperty('plan', 'free')
     })
 
-    it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
+    it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {
       const remoteBefore_send = vi.fn()
       hoisted.refs.remoteConfig.value = {
         posthog_config: {
-          before_send: remoteBefore_send,
-          person_profiles: 'always'
+          before_send: remoteBefore_send
         }
       }
 
@@ -1217,7 +1285,19 @@ describe('PostHogTelemetryProvider', () => {
       const initConfig = hoisted.mockInit.mock.calls[0][1]
 
       expect(initConfig.before_send).not.toBe(remoteBefore_send)
-      expect(initConfig.person_profiles).toBe('identified_only')
+
+      const piiEvent = {
+        properties: { email: 'user@example.com', workflow_name: 'wf' },
+        $set: { email: 'user@example.com' },
+        $set_once: { user_email: 'user@example.com', plan: 'free' }
+      }
+      const sent = initConfig.before_send(piiEvent)
+
+      expect(sent.properties).not.toHaveProperty('email')
+      expect(sent.properties).toHaveProperty('workflow_name', 'wf')
+      expect(sent.$set).not.toHaveProperty('email')
+      expect(sent.$set_once).not.toHaveProperty('user_email')
+      expect(sent.$set_once).toHaveProperty('plan', 'free')
     })
   })
 })

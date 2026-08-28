@@ -162,7 +162,7 @@ const DEV_SERVER_COMFYUI_URL =
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
-function handleGcsRedirect(
+export function handleGcsRedirect(
   proxyRes: IncomingMessage,
   req: IncomingMessage,
   res: ServerResponse
@@ -208,7 +208,10 @@ function handleGcsRedirect(
       for (const header of [
         'content-length',
         'content-range',
-        'accept-ranges'
+        'accept-ranges',
+        'cache-control',
+        'etag',
+        'last-modified'
       ]) {
         const value = gcsResponse.headers.get(header)
         if (value) {

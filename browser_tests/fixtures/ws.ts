@@ -2,18 +2,22 @@ import { test as base } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
 export const webSocketFixture = base.extend<{
+  connectWebSocketToServer: boolean
   getWebSocket: () => Promise<WebSocketRoute>
 }>({
+  connectWebSocketToServer: [true, { option: true }],
   getWebSocket: [
-    async ({ context }, use) => {
+    async ({ context, connectWebSocketToServer }, use) => {
       let latest: WebSocketRoute | undefined
       let resolve: ((ws: WebSocketRoute) => void) | undefined
 
       await context.routeWebSocket(/\/ws/, (ws) => {
-        const server = ws.connectToServer()
-        server.onMessage((message) => {
-          ws.send(message)
-        })
+        if (connectWebSocketToServer) {
+          const server = ws.connectToServer()
+          server.onMessage((message) => {
+            ws.send(message)
+          })
+        }
 
         latest = ws
         resolve?.(ws)
