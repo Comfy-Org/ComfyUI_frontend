@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockCurrentUser = vi.hoisted(() => ({
   userEmail: { value: undefined as string | undefined },
@@ -65,7 +65,6 @@ function failScript(
 describe('SyftTelemetryProvider', () => {
   beforeEach(() => {
     vi.resetModules()
-    vi.clearAllMocks()
     document.head.innerHTML = ''
     window.__CONFIG__ = {}
     mockRemoteConfig.value = {}
@@ -76,10 +75,6 @@ describe('SyftTelemetryProvider', () => {
       userEmail: mockCurrentUser.userEmail
     })
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('loads the Syft SDK once when a source id is configured', async () => {

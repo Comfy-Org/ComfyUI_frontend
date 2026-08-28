@@ -14,7 +14,7 @@ const ANALYTICS_PATTERN = '**/va.vercel-scripts.com/**' as const
 const CDP_PATTERN = '**/cdp.customer.io/**' as const
 const YOUTUBE_EMBED_PATTERN = '**/*.youtube-nocookie.com/**' as const
 const MEDIA_PATTERN =
-  /^https:\/\/media\.comfy\.org\/.*\.(webp|webm|mp4|png|jpg|jpeg|vtt)(\?.*)?$/i
+  /^https:\/\/(media|comfy-hub-assets)\.comfy\.org\/.*\.(webp|webm|mp4|png|jpg|jpeg|vtt)(\?.*)?$/i
 const VIDEO_PATTERN = /\.(webm|mp4)(\?|$)/i
 const SUBTITLE_PATTERN = /\.vtt(\?|$)/i
 

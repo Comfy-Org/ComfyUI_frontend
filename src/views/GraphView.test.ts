@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type * as VueUseCore from '@vueuse/core'
@@ -201,16 +199,6 @@ vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
 const { default: GraphView } = await import('./GraphView.vue')
 
 describe('GraphView - reconnect wiring', () => {
-  beforeEach(() => {
-    // The mocked composables hand out module-level `vi.fn()` singletons whose
-    // call history outlives a test, and `vi.restoreAllMocks()` only restores
-    // `vi.spyOn` spies. Clear it so a CI retry starts from zero instead of
-    // inheriting the previous attempt's calls.
-    vi.clearAllMocks()
-    vi.restoreAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('wires the reconnected event to the toast and queue refresh', () => {
     render(GraphView)
 

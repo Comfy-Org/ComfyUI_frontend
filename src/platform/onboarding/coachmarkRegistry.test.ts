@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import {
@@ -35,7 +35,6 @@ describe('coachmarkRegistry', () => {
 describe('targetMounted', () => {
   afterEach(() => {
     clearCoachmarks()
-    document.body.replaceChildren()
   })
 
   it('is true once a laid-out element is registered', () => {
@@ -62,14 +61,8 @@ describe('targetMounted', () => {
 })
 
 describe('waitForTarget', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
   afterEach(() => {
     clearCoachmarks()
-    document.body.replaceChildren()
-    vi.useRealTimers()
   })
 
   /** Lets the poll sample once, and the resulting promise settle. */

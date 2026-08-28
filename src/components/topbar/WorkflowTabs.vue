@@ -82,8 +82,27 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
+      :data-agent-gate-settled="agentPanelStore?.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
+      <Button
+        v-if="agentPanelStore?.enabled"
+        variant="link"
+        size="sm"
+        :aria-pressed="agentPanelStore.isOpen"
+        :class="
+          cn(
+            'no-drag shrink-0 border border-solid text-base-foreground',
+            agentPanelStore.isOpen
+              ? 'border-plum-500 bg-plum-600/20'
+              : 'border-plum-600 bg-secondary-background hover:border-plum-500'
+          )
+        "
+        @click="agentPanelStore.toggle()"
+      >
+        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
+        <span>{{ $t('agent.askComfyAgent') }}</span>
+      </Button>
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
@@ -106,12 +125,23 @@
 import { useScroll } from '@vueuse/core'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  onUpdated,
+  ref,
+  watch
+} from 'vue'
 import type { WatchStopHandle } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -142,6 +172,9 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
+// The literal keeps the agent store out of OSS builds entirely.
+const agentPanelStore =
+  __DISTRIBUTION__ === 'cloud' ? useAgentPanelStore() : null
 
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
@@ -213,12 +246,7 @@ const handleWheel = (event: WheelEvent) => {
   })
 }
 
-const scrollContent = computed(
-  () =>
-    (containerRef.value?.querySelector(
-      '.p-scrollpanel-content'
-    ) as HTMLElement | null) ?? null
-)
+const scrollContent = ref<HTMLElement | null>(null)
 
 const scroll = (direction: number) => {
   const el = scrollContent.value
@@ -259,52 +287,45 @@ let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
 let stopArrivedWatch: WatchStopHandle | null = null
 let stopOverflowWatch: WatchStopHandle | null = null
 
-watch(
-  scrollContent,
-  (el, _prev, onCleanup) => {
-    stopArrivedWatch?.()
-    stopOverflowWatch?.()
-    overflowObserver?.dispose()
+onMounted(() => {
+  const el = containerRef.value?.querySelector<HTMLElement>(
+    '.p-scrollpanel-content'
+  )
+  if (!el) return
+  scrollContent.value = el
 
-    if (!el) return
+  const scrollState = useScroll(el)
 
-    const scrollState = useScroll(el)
+  stopArrivedWatch = watch(
+    [() => scrollState.arrivedState.left, () => scrollState.arrivedState.right],
+    ([atLeft, atRight]) => {
+      leftArrowEnabled.value = !atLeft
+      rightArrowEnabled.value = !atRight
+    },
+    { immediate: true }
+  )
 
-    stopArrivedWatch = watch(
-      [
-        () => scrollState.arrivedState.left,
-        () => scrollState.arrivedState.right
-      ],
-      ([atLeft, atRight]) => {
-        leftArrowEnabled.value = !atLeft
-        rightArrowEnabled.value = !atRight
-      },
-      { immediate: true }
-    )
+  overflowObserver = useOverflowObserver(el)
+  stopOverflowWatch = watch(
+    overflowObserver.isOverflowing,
+    (isOverflow) => {
+      showOverflowArrows.value = isOverflow
+      if (!isOverflow) return
+      void nextTick(() => {
+        // Force a new check after arrows are updated
+        scrollState.measure()
+        void ensureActiveTabVisible({ waitForDom: false })
+      })
+    },
+    { immediate: true }
+  )
+})
 
-    overflowObserver = useOverflowObserver(el)
-    stopOverflowWatch = watch(
-      overflowObserver.isOverflowing,
-      (isOverflow) => {
-        showOverflowArrows.value = isOverflow
-        if (!isOverflow) return
-        void nextTick(() => {
-          // Force a new check after arrows are updated
-          scrollState.measure()
-          void ensureActiveTabVisible({ waitForDom: false })
-        })
-      },
-      { immediate: true }
-    )
-
-    onCleanup(() => {
-      stopArrivedWatch?.()
-      stopOverflowWatch?.()
-      overflowObserver?.dispose()
-    })
-  },
-  { immediate: true }
-)
+onBeforeUnmount(() => {
+  stopArrivedWatch?.()
+  stopOverflowWatch?.()
+  overflowObserver?.dispose()
+})
 
 onUpdated(() => {
   if (!overflowObserver?.disposed.value) {

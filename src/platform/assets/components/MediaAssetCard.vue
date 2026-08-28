@@ -4,7 +4,6 @@
     reaching the panel's empty-space deselection handler.
   -->
   <div
-    ref="cardContainerRef"
     :class="
       cn(
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
@@ -24,7 +23,7 @@
     <!-- Top Area: Media Preview -->
     <div
       class="relative aspect-square overflow-hidden p-0"
-      @click.stop="fileKind !== 'video' && emit('select')"
+      @click.stop="handlePreviewClick"
       @dblclick.stop="fileKind === 'image' && handleZoomClick()"
     >
       <!-- Loading State -->
@@ -39,6 +38,9 @@
         v-else-if="asset && adaptedAsset"
         :asset="adaptedAsset"
         :context="{ type: assetType }"
+        :show-native-controls="
+          fileKind === 'video' ? showNativeVideoControls : undefined
+        "
         class="absolute inset-0"
         @download="handleDownload"
         @video-playing-state-changed="isVideoPlaying = $event"
@@ -82,8 +84,16 @@
 
       <!-- Action buttons overlay (top-right) -->
       <div
-        v-if="showActionsOverlay"
-        class="absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2"
+        v-if="asset && !loading && !isDeleting"
+        :class="
+          cn(
+            'absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2',
+            'pointer-events-none opacity-0 transition-opacity',
+            'group-hover:pointer-events-auto group-hover:opacity-100',
+            'group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100',
+            'touch:pointer-events-auto touch:opacity-100'
+          )
+        "
       >
         <IconGroup background-class="bg-white">
           <Button
@@ -156,7 +166,6 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useElementHover, useFocusWithin } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -201,12 +210,20 @@ function getTopComponent(kind: PreviewKind) {
   return mediaComponents.top[kind] || mediaComponents.top.other
 }
 
-const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
+const {
+  asset,
+  loading,
+  selected,
+  showOutputCount,
+  outputCount,
+  showNativeVideoControls = true
+} = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
+  showNativeVideoControls?: boolean
 }>()
 
 const assetsStore = useAssetsStore()
@@ -226,16 +243,11 @@ const emit = defineEmits<{
   'context-menu': [event: MouseEvent, asset: AssetItem]
 }>()
 
-const cardContainerRef = ref<HTMLElement>()
-
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
 
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
-
-const isHovered = useElementHover(cardContainerRef)
-const { focused: isFocusedWithin } = useFocusWithin(cardContainerRef)
 
 const actions = useMediaAssetActions()
 
@@ -277,6 +289,7 @@ const adaptedAsset = computed(() => {
     size: asset.size,
     tags: asset.tags || [],
     created_at: asset.created_at,
+    updated_at: asset.updated_at,
     duration: asset.user_metadata?.duration
       ? Number(asset.user_metadata.duration)
       : undefined,
@@ -329,12 +342,11 @@ const metaInfo = computed(() => {
   return parts.join(' ')
 })
 
-const showActionsOverlay = computed(() => {
-  if (loading || !asset || isDeleting.value) return false
-  return (
-    isHovered.value || isFocusedWithin.value || selected || isVideoPlaying.value
-  )
-})
+function handlePreviewClick(event: MouseEvent) {
+  const hasSelectionModifier = event.shiftKey || event.metaKey || event.ctrlKey
+  if (fileKind.value === 'video' && !hasSelectionModifier) return
+  emit('select')
+}
 
 const handleZoomClick = () => {
   if (asset && canInspect.value) {

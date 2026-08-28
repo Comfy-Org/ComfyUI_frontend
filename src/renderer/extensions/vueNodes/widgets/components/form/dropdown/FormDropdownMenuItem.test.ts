@@ -82,7 +82,6 @@ async function flushPromises() {
 describe('FormDropdownMenuItem', () => {
   beforeEach(() => {
     intersectionCallbacks.length = 0
-    mockFindServerPreviewUrl.mockReset()
     mockIsAssetPreviewSupported.mockReset().mockReturnValue(true)
   })
 

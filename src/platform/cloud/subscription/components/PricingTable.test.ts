@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 async function flushPromises() {
@@ -24,7 +24,7 @@ function createDeferredPromise<T>() {
 }
 
 const mockCanAccessSubscriptionFeatures = ref(false)
-const mockSubscriptionTier = ref<SubscriptionTier | null>(null)
+const mockSubscriptionTier = ref<IngestSubscriptionTier | null>(null)
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
@@ -117,7 +117,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () =>
     reactive({
-      getAuthHeader: mockGetAuthHeader,
+      getFirebaseAuthHeader: mockGetAuthHeader,
       fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
         fetch(input, init),
       userId: computed(() => mockUserId.value)
@@ -241,14 +241,11 @@ const onChooseTeamWorkspace = vi.fn()
 
 describe('PricingTable', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
     mockUserId.value = 'user-123'
-    mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
-    mockTrackBeginCheckout.mockReset()
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,

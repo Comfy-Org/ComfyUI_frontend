@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
 
-import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const {
   mockCreateInvite,
@@ -68,7 +68,7 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function pendingInviteFor(email: string): PendingInvite {
+function pendingInviteFor(email: string): WorkspacePendingInvite {
   return {
     id: `inv-${email}`,
     email,
@@ -95,7 +95,6 @@ function inviteButton() {
 
 describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockFetchStatus.mockResolvedValue(undefined)
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0

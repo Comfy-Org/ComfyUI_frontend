@@ -18,8 +18,6 @@ const { fetchMock, mockIsDesktop, mockSidebarTabStore, mockStartDownload } =
     mockStartDownload: vi.fn()
   }))
 
-vi.stubGlobal('fetch', fetchMock)
-
 vi.mock('@/platform/distribution/types', () => ({
   get isDesktop() {
     return mockIsDesktop.value
@@ -37,9 +35,8 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
 }))
 
 beforeEach(() => {
+  vi.stubGlobal('fetch', fetchMock)
   clearMetadataCache()
-  vi.restoreAllMocks()
-  vi.resetAllMocks()
   delete window.__comfyDesktop2
 })
 
@@ -178,17 +175,12 @@ describe('fetchModelMetadata', () => {
   })
 
   it('does not treat non-HuggingFace hosts as gated', async () => {
-    fetchMock.mockResolvedValueOnce({
-      ok: false,
-      status: 403,
-      headers: new Headers({ 'x-error-code': 'GatedRepo' })
-    })
-
     const metadata = await fetchModelMetadata(
       'https://huggingface.co.evil.com/org/model/resolve/main/gated.safetensors'
     )
     expect(metadata.gatedRepoUrl).toBeNull()
     expect(metadata.fileSize).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('returns null for unrecognized Civitai URL patterns', async () => {
@@ -217,7 +209,8 @@ describe('fetchModelMetadata', () => {
   })
 
   it('caches successful responses without content-length', async () => {
-    const url = 'https://example.com/no-size.safetensors'
+    const url =
+      'https://huggingface.co/org/model/resolve/main/no-size.safetensors'
     fetchMock.mockResolvedValueOnce({
       ok: true,
       headers: new Headers({})
@@ -232,7 +225,8 @@ describe('fetchModelMetadata', () => {
   })
 
   it('returns null fileSize for an invalid content-length', async () => {
-    const url = 'https://example.com/invalid-size.safetensors'
+    const url =
+      'https://huggingface.co/org/model/resolve/main/invalid-size.safetensors'
     fetchMock.mockResolvedValueOnce({
       ok: true,
       headers: new Headers({ 'content-length': 'abc' })
@@ -241,10 +235,12 @@ describe('fetchModelMetadata', () => {
     const metadata = await fetchModelMetadata(url)
 
     expect(metadata.fileSize).toBeNull()
+    expect(fetchMock).toHaveBeenCalledWith(url, { method: 'HEAD' })
   })
 
   it('retries after a metadata request fails', async () => {
-    const url = 'https://example.com/retry.safetensors'
+    const url =
+      'https://huggingface.co/org/model/resolve/main/network-retry.safetensors'
     fetchMock
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
       .mockResolvedValueOnce({
@@ -401,6 +397,62 @@ describe('openGatedRepoPage', () => {
   })
 })
 
+describe('model URL allowlist', () => {
+  it.for([
+    {
+      name: 'fake_model.safetensors',
+      url: 'http://localhost:8188/api/devtools/fake_model.safetensors'
+    },
+    {
+      name: 'RealESRGAN_x4plus.pth',
+      url: 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
+    }
+  ])('allows exact URL $url', async ({ name, url }) => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-length': '1' })
+    })
+
+    expect(
+      isModelDownloadable({
+        name,
+        url,
+        directory: 'checkpoints'
+      })
+    ).toBe(true)
+
+    const metadata = await fetchModelMetadata(url)
+
+    expect(metadata.fileSize).toBe(1)
+    expect(fetchMock).toHaveBeenCalledWith(url, { method: 'HEAD' })
+  })
+
+  it.for([
+    'http://localhost:6379/api/devtools/fake_model.safetensors',
+    'http://localhost:8188/api/devtools/other_model.safetensors',
+    'http://localhost:8188/api/devtools/fake_model.safetensors?download=true',
+    'http://localhost:8188/api/devtools/fake_model.safetensors#metadata',
+    'http://LOCALHOST:8188/api/devtools/fake_model.safetensors',
+    'http://127.0.0.1:8188/api/devtools/fake_model.safetensors',
+    'http://[::1]:8188/api/devtools/fake_model.safetensors',
+    'http://localhost.evil:8188/api/devtools/fake_model.safetensors',
+    'https://example.com/model.safetensors'
+  ])('blocks URL $url before metadata fetch', async (url) => {
+    expect(
+      isModelDownloadable({
+        name: 'fake_model.safetensors',
+        url,
+        directory: 'checkpoints'
+      })
+    ).toBe(false)
+
+    const metadata = await fetchModelMetadata(url)
+
+    expect(metadata).toEqual({ fileSize: null, gatedRepoUrl: null })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
 describe('isModelDownloadable', () => {
   it('allows civitai.red URLs', () => {
     expect(
@@ -411,16 +463,6 @@ describe('isModelDownloadable', () => {
       })
     ).toBe(true)
   })
-
-  it('rejects non-allowlisted URLs', () => {
-    expect(
-      isModelDownloadable({
-        name: 'model.safetensors',
-        url: 'https://example.com/model.safetensors',
-        directory: 'checkpoints'
-      })
-    ).toBe(false)
-  })
 })
 
 describe('downloadModel', () => {
@@ -430,15 +472,46 @@ describe('downloadModel', () => {
   })
 
   it.for([
-    'https://huggingface.co/org/model/resolve/main/model.safetensors',
-    'http://localhost:8188/models/model.safetensors'
-  ])('opens browser downloads for supported URL schemes (%s)', (url) => {
+    {
+      name: 'model.safetensors',
+      url: 'https://huggingface.co/org/model/resolve/main/model.safetensors'
+    },
+    {
+      name: 'fake_model.safetensors',
+      url: 'http://localhost:8188/api/devtools/fake_model.safetensors'
+    }
+  ])('opens browser downloads for allowlisted URL $url', ({ name, url }) => {
     const clickedAnchors: HTMLAnchorElement[] = []
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
       function (this: HTMLAnchorElement) {
         clickedAnchors.push(this)
       }
     )
+
+    downloadModel(
+      {
+        name,
+        url,
+        directory: 'checkpoints'
+      },
+      {}
+    )
+
+    expect(clickedAnchors).toHaveLength(1)
+    expect(clickedAnchors[0]?.href).toBe(url)
+    expect(clickedAnchors[0]?.download).toBe(name)
+    expect(clickedAnchors[0]?.target).toBe('_blank')
+    expect(clickedAnchors[0]?.rel).toBe('noopener noreferrer')
+  })
+
+  it.for([
+    'javascript:alert(1)',
+    'not a url',
+    'http://localhost:6379/model.safetensors'
+  ])('does not open browser downloads for blocked URLs (%s)', (url) => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
 
     downloadModel(
       {
@@ -449,32 +522,47 @@ describe('downloadModel', () => {
       {}
     )
 
-    expect(clickedAnchors).toHaveLength(1)
-    expect(clickedAnchors[0]?.href).toBe(url)
-    expect(clickedAnchors[0]?.download).toBe('model.safetensors')
-    expect(clickedAnchors[0]?.target).toBe('_blank')
-    expect(clickedAnchors[0]?.rel).toBe('noopener noreferrer')
+    expect(anchorClick).not.toHaveBeenCalled()
   })
 
-  it.for(['javascript:alert(1)', 'not a url'])(
-    'does not open browser downloads for unsafe URLs (%s)',
-    (url) => {
-      const anchorClick = vi
-        .spyOn(HTMLAnchorElement.prototype, 'click')
-        .mockImplementation(() => {})
-
-      downloadModel(
-        {
-          name: 'model.safetensors',
-          url,
-          directory: 'checkpoints'
-        },
-        {}
-      )
-
-      expect(anchorClick).not.toHaveBeenCalled()
+  it('does not dispatch blocked localhost URLs through Desktop2', () => {
+    const desktopDownloadModel =
+      vi.fn<
+        (url: string, filename: string, directory: string) => Promise<boolean>
+      >()
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
     }
-  )
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'http://localhost:6379/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(desktopDownloadModel).not.toHaveBeenCalled()
+  })
+
+  it('does not dispatch blocked localhost URLs through Electron', () => {
+    mockIsDesktop.value = true
+    mockSidebarTabStore.activeSidebarTabId = 'node-library'
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'http://localhost:6379/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(mockStartDownload).not.toHaveBeenCalled()
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe('node-library')
+  })
 
   it('uses the Desktop2 bridge directly instead of the browser fallback', () => {
     const anchorClick = vi

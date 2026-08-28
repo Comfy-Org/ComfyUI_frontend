@@ -23,6 +23,7 @@ import {
   cloudAppFixture as test,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -42,8 +43,7 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const SELF_EMAIL = 'e2e@test.comfy.org'
 
 const BOOT_FEATURES = {
-  billing_control_enabled: true,
-  consolidated_billing_enabled: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 // Disable the experimental Asset API: with it on (cloud default) the unmocked
 // asset endpoints 403 and workflow restore throws uncaught, aborting the
@@ -342,7 +342,10 @@ async function setupCloudApp(
     settings: BOOT_SETTINGS
   })
   await mockGraphBootExtras(page)
-  await mockBilling(page)
+  await mockBilling(page, {
+    workspaceId: ws.id,
+    billingCapabilities: createWorkspaceBillingCapabilities(ws)
+  })
   await mockWorkspace(page, ws, members)
   await bootCloud(page)
 }
@@ -645,7 +648,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
     await expect(backButton).toBeDisabled()
 
-    await page.clock.fastForward(5 * 60_000 + 1)
+    await page.clock.fastForward(23 * 60 * 60_000 + 1)
 
     await expect(backButton).toBeEnabled()
     await expect(

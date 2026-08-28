@@ -172,7 +172,6 @@ function createGraph(graphData = createWorkflowGraphData()): LGraph {
 
 describe('missingModelPipeline', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockHandles.state.enrichedCandidates = []
     mockHandles.missingModelStore.missingModelCandidates = null
     mockHandles.workspaceWorkflow.activeWorkflow = null

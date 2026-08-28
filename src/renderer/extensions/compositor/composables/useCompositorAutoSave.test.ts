@@ -49,7 +49,6 @@ function makeNode() {
 const cacheNode = { id: toNodeId(7) } as unknown as LGraphNode
 
 beforeEach(() => {
-  vi.useFakeTimers()
   setCompositorLayers(
     cacheNode,
     [{ filename: 'a.png', subfolder: '', type: 'temp' }],
@@ -58,7 +57,6 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  vi.useRealTimers()
   clearCompositorLayers(cacheNode)
 })
 

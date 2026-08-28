@@ -48,7 +48,6 @@ describe('WidgetSelect asset mode', () => {
     })
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockShouldUseAssetBrowser.mockReturnValue(true)
   })
 

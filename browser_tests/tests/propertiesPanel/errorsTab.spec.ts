@@ -19,6 +19,8 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
 
       const panel = new PropertiesPanelHelper(comfyPage.page)
       await expect(panel.errorsTabIcon).toBeVisible()
+      // Missing resources alone are setup warnings, not blocking errors.
+      await expect(panel.errorsTabIcon).toHaveAccessibleName('Setup required')
     })
 
     test('Should not show Errors tab when setting is disabled', async ({

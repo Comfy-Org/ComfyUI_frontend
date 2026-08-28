@@ -157,6 +157,56 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph legacy node drag', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    // Legacy drags write to layoutStore every frame because registration is
+    // renderer-independent.
+    const nodePos = await comfyPage.page.evaluate(() => {
+      const app = window.app
+      if (!app) throw new Error('window.app is not available')
+
+      const { canvas } = app
+      const node = app.graph.nodes[0]
+      if (!node) throw new Error('Graph has no nodes')
+
+      canvas.ds.scale = 1
+      canvas.centerOnNode(node)
+      const [x, y] = app.canvasPosToClientPos(node.pos)
+      return { id: node.id, x, y, graphX: node.pos[0] }
+    })
+    await comfyPage.nextFrame()
+
+    await comfyPage.perf.startMeasuring()
+
+    await comfyPage.page.mouse.move(nodePos.x + 40, nodePos.y + 10)
+    await comfyPage.page.mouse.down()
+    for (let i = 0; i < 60; i++) {
+      await comfyPage.page.mouse.move(
+        nodePos.x + 40 + i * 4,
+        nodePos.y + 10 + i * 2
+      )
+      await comfyPage.nextFrame()
+    }
+    await comfyPage.page.mouse.up()
+
+    const m = await comfyPage.perf.stopMeasuring('legacy-node-drag')
+    recordMeasurement(m)
+
+    // Verify the measured interaction was a node drag, not a canvas pan.
+    const movedX = await comfyPage.page.evaluate((id) => {
+      const node = window.app?.graph.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+      return node.pos[0]
+    }, nodePos.id)
+    expect(movedX).not.toBeCloseTo(nodePos.graphX, 0)
+
+    console.log(
+      `Legacy node drag: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
+    )
+  })
+
   test('large graph zoom interaction', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 
@@ -317,6 +367,56 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       console.log(
         `Vue large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
       )
+    })
+
+    test('node resize workload', async ({ comfyPage }) => {
+      const nodeCount = await comfyPage.page
+        .locator('[data-node-id]')
+        .evaluateAll((elements) => {
+          const nodes = elements.slice(0, 100) as HTMLElement[]
+          for (const node of nodes) {
+            node.dataset.perfOriginalWidth = node.style.width
+            node.dataset.perfWidth = `${node.getBoundingClientRect().width}px`
+          }
+          return nodes.length
+        })
+      expect(nodeCount).toBe(100)
+
+      await comfyPage.perf.startMeasuring()
+      for (let index = 0; index < 10; index++) {
+        await comfyPage.page
+          .locator('[data-perf-width]')
+          .evaluateAll((elements) => {
+            for (const element of elements as HTMLElement[]) {
+              const width = Number.parseFloat(element.dataset.perfWidth ?? '')
+              element.style.width = `${width + 1}px`
+            }
+          })
+        await comfyPage.nextFrame()
+        await comfyPage.page
+          .locator('[data-perf-width]')
+          .evaluateAll((elements) => {
+            for (const element of elements as HTMLElement[]) {
+              element.style.width = element.dataset.perfWidth ?? ''
+            }
+          })
+        await comfyPage.nextFrame()
+      }
+
+      const measurement = await comfyPage.perf.stopMeasuring(
+        'vue-node-resize-workload'
+      )
+      recordMeasurement(measurement)
+
+      await comfyPage.page
+        .locator('[data-perf-width]')
+        .evaluateAll((elements) => {
+          for (const element of elements as HTMLElement[]) {
+            element.style.width = element.dataset.perfOriginalWidth ?? ''
+            delete element.dataset.perfOriginalWidth
+            delete element.dataset.perfWidth
+          }
+        })
     })
 
     test('zoom out culling', async ({ comfyPage }) => {

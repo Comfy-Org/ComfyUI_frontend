@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -101,8 +100,6 @@ function addExposedPrompt(root: LGraph, portName: string) {
 }
 
 describe('heuristicRoles', () => {
-  beforeEach(() => setActivePinia(createPinia()))
-
   it('takes the prompt wired to positive when negative comes first', () => {
     const graph = createTestRootGraph()
     addWiredSink(graph)
@@ -302,6 +299,27 @@ describe('heuristicRoles', () => {
     ).toBeNull()
   })
 
+  it('ignores input-name evidence from a virtual consumer', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    const candidate = addNode(graph, 'PrimitiveStringMultiline', {
+      prompts: ['value'],
+      outputs: ['STRING']
+    })
+    const virtualConsumer = addNode(graph, 'Reroute', {
+      inputs: ['positive'],
+      inputType: 'STRING',
+      virtual: true
+    })
+    addNode(graph, 'PrimitiveStringMultiline', { prompts: ['value'] })
+    candidate.connect(0, virtualConsumer, 0)
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'a virtual consumer cannot turn an otherwise ambiguous text node into the positive prompt'
+    ).toBeNull()
+  })
+
   it('ignores a system prompt the same way it ignores a negative one', () => {
     const graph = createTestRootGraph()
     addWiredSink(graph)
@@ -330,7 +348,12 @@ describe('heuristicRoles', () => {
     'negatives',
     'NEGATIVEPROMPT',
     'Undesired content',
-    'Things to avoid'
+    'Things to avoid',
+    'Anti-prompt',
+    'anti prompt',
+    'AntiPrompt',
+    'ANTIPROMPT',
+    'anti_prompts'
   ])('reads %s as a negative prompt rather than the prompt', (title) => {
     const graph = createTestRootGraph()
     addWiredSink(graph)
@@ -342,7 +365,54 @@ describe('heuristicRoles', () => {
     ).toBeNull()
   })
 
-  it.for(['Antique portrait', 'Negro', 'negate mask', 'anti_aliasing'])(
+  it('reads a widget named anti_prompt as a negative prompt', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    addNode(graph, 'CustomEncode', { prompts: ['anti_prompt'] })
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'the widget name names the box just as the node title does'
+    ).toBeNull()
+  })
+
+  it('reads the anti_prompt input a box feeds as a negative prompt', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    const text = addNode(graph, 'CLIPTextEncode', {
+      prompts: ['text'],
+      outputs: ['CONDITIONING']
+    })
+    const sampler = addNode(graph, 'CustomSampler', {
+      inputs: ['anti_prompt'],
+      inputType: 'CONDITIONING'
+    })
+    text.connect(0, sampler, 0)
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'the input a box feeds names it, the same as its own title would'
+    ).toBeNull()
+  })
+
+  it('reads a subgraph port named Anti-Prompt as a negative prompt', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    addExposedPrompt(graph, 'Anti-Prompt')
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'the exposed port is the only label on an interior node titled nothing useful'
+    ).toBeNull()
+  })
+
+  it.for([
+    'Antique portrait',
+    'Negro',
+    'negate mask',
+    'anti_aliasing',
+    'antialiasing strength'
+  ])(
     'still offers %s as the prompt, since only its spelling looks negative',
     (title) => {
       const graph = createTestRootGraph()

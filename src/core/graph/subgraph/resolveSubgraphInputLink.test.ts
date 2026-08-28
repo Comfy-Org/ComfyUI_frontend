@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
@@ -62,9 +60,7 @@ function addLinkedInteriorInput(
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
-  vi.clearAllMocks()
 })
 
 describe('resolveSubgraphInputLink', () => {

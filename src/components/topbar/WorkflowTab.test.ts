@@ -208,10 +208,6 @@ describe('WorkflowTab - workflow status indicator', () => {
 })
 
 describe('WorkflowTab - close button', () => {
-  beforeEach(() => {
-    mockCloseWorkflow.mockClear()
-  })
-
   it('delegates close to workflow service with the tab workflow', async () => {
     renderTab()
     const user = userEvent.setup()

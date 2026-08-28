@@ -1,5 +1,5 @@
 import type {
-  PendingInvite,
+  WorkspacePendingInvite,
   WorkspaceMember
 } from '../../platform/workspace/stores/teamWorkspaceStore'
 
@@ -13,8 +13,8 @@ import type {
 export function useTeamWorkspaceStore() {
   return {
     members: [] as WorkspaceMember[],
-    pendingInvites: [] as PendingInvite[],
-    createInvite: async (email: string): Promise<PendingInvite> => ({
+    pendingInvites: [] as WorkspacePendingInvite[],
+    createInvite: async (email: string): Promise<WorkspacePendingInvite> => ({
       id: `inv-${email}`,
       email,
       inviteDate: new Date(0),
