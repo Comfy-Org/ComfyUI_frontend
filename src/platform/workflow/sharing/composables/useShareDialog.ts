@@ -66,7 +66,8 @@ export function useShareDialog() {
         onClose: hide
       },
       dialogComponentProps: {
-        contentClass: 'sm:max-w-144 rounded-2xl overflow-hidden'
+        contentClass:
+          'max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(36rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden'
       }
     })
   }
