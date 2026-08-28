@@ -57,10 +57,13 @@ export const MIME_ASSET_INFO = 'application/x-comfy-asset-info'
 // The drag payload EXTENDS a result item with optional asset fields - it is
 // one object schema, never an intersection, so a payload missing the extras
 // still parses as a plain result item.
+// Each extra falls back to absent when malformed (.catch): a bad optional
+// enrichment must never reject the whole payload - the plain result item
+// still parses and drops.
 const zDraggedAssetInfo = zResultItem.extend({
-  attachment_ref: z.string().min(1).optional(),
-  media_kind: zMediaKindSchema.optional(),
-  preview_url: z.string().url().optional()
+  attachment_ref: z.string().min(1).optional().catch(undefined),
+  media_kind: zMediaKindSchema.optional().catch(undefined),
+  preview_url: z.string().url().optional().catch(undefined)
 })
 
 export function parseAssetInfo(dataTransfer: DataTransfer) {

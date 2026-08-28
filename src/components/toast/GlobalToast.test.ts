@@ -64,4 +64,35 @@ describe('GlobalToast', () => {
     expect(toastService.removeAllGroups).toHaveBeenCalledOnce()
     expect(toastStore.removeAllRequested).toBe(false)
   })
+
+  it('anchors the main toast to the canvas panel with viewport fallbacks', () => {
+    renderToast()
+    // Toast is stubbed, so the outlets carry no roles or text; the stub
+    // elements' attributes are the only assertion surface.
+    // eslint-disable-next-line testing-library/no-node-access -- stub-attribute pin; no Testing Library query can reach a stub
+    const [main] = document.body.querySelectorAll('toast-stub')
+    const classes = main.getAttribute('class') ?? ''
+
+    // The anchor names must match the [anchor-name:--graph-canvas-panel]
+    // declaration on the canvas SplitterPanel (see
+    // LiteGraphCanvasSplitterOverlay.test); each carries a fallback so the
+    // toast still renders when no anchor target is mounted yet.
+    expect(main.getAttribute('position')).toBe('bottom-right')
+    expect(classes).toContain('anchor(--graph-canvas-panel_top,1rem)')
+    expect(classes).toContain(
+      'anchor(--graph-canvas-panel_right,anchor(--docked-agent-panel_left,calc(100vw-0.75rem)))'
+    )
+  })
+
+  it('keeps the billing-operation toast group on its own top-right outlet', () => {
+    renderToast()
+    // eslint-disable-next-line testing-library/no-node-access -- stub-attribute pin; no Testing Library query can reach a stub
+    const stubs = document.body.querySelectorAll('toast-stub')
+
+    expect(stubs).toHaveLength(2)
+    expect(stubs[1].getAttribute('group')).toBe('billing-operation')
+    expect(stubs[1].getAttribute('position')).toBe('top-right')
+    // The main outlet stays ungrouped so it never swallows billing messages.
+    expect(stubs[0].getAttribute('group')).toBeNull()
+  })
 })

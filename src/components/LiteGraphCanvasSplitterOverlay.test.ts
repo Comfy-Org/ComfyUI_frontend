@@ -25,4 +25,16 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
       /class="[^"]*graph-canvas-panel[^"]*overflow-visible/
     )
   })
+
+  it('declares the --graph-canvas-panel anchor the global toast consumes', () => {
+    const filePath = resolve(__dirname, 'LiteGraphCanvasSplitterOverlay.vue')
+    const source = readFileSync(filePath, 'utf-8')
+
+    // GlobalToast positions itself with anchor(--graph-canvas-panel_*, ...);
+    // without this declaration every anchor() silently resolves its fallback
+    // and the toast never tracks the canvas panel.
+    expect(source).toMatch(
+      /class="[^"]*graph-canvas-panel[^"]*\[anchor-name:--graph-canvas-panel\]/s
+    )
+  })
 })

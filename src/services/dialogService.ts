@@ -39,12 +39,7 @@ const lazyCloudNotificationContent = () =>
 const lazyPublishDialog = () =>
   import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
 
-/**
- * Shrink-wrap the Reka DialogContent around the content's intrinsic width,
- * like the auto-sized PrimeVue root it replaces.
- */
-const HUG_CONTENT_CLASS =
-  'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
+import { HUG_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 
 /**
  * Reka chrome for headless dialogs whose content draws its own panel
