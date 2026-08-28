@@ -5,19 +5,6 @@ export interface LogoInfo {
   position?: string
 }
 
-/** Served by an external `index.json`, so every field may be absent or stale. */
-export interface TemplateMediaInfo {
-  nodeId?: string | number
-  nodeType?: string
-  file?: string
-  mediaType?: string
-}
-
-interface TemplateIoInfo {
-  inputs?: TemplateMediaInfo[]
-  outputs?: TemplateMediaInfo[]
-}
-
 export interface TemplateInfo {
   name: string
   /**
@@ -80,8 +67,6 @@ export interface TemplateInfo {
    * Logo overlays to display on the template thumbnail.
    */
   logos?: LogoInfo[]
-  /** Declared media entry and exit points for continuing from another result. */
-  io?: TemplateIoInfo
 }
 
 export enum TemplateIncludeOnDistributionEnum {
