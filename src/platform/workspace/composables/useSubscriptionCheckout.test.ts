@@ -3241,6 +3241,7 @@ describe('useSubscriptionCheckout', () => {
         {
           checkoutAttemptId: expect.any(String),
           flagState: 'embedded_checkout_on',
+          attemptWorkspaceId: 'workspace-1',
           quoteId: undefined,
           tier: 'standard',
           cycle: 'yearly',
@@ -3275,6 +3276,7 @@ describe('useSubscriptionCheckout', () => {
         {
           checkoutAttemptId: expect.any(String),
           flagState: 'embedded_checkout_on',
+          attemptWorkspaceId: 'workspace-1',
           quoteId: undefined,
           tier: 'standard',
           cycle: 'yearly',
@@ -4017,6 +4019,30 @@ describe('useSubscriptionCheckout', () => {
         source: 'pricing_dialog',
         payment_intent_source: 'subscribe_to_run'
       })
+    })
+
+    // Each reactivation is its own funnel entry: reusing the previous id would
+    // put two started/terminal pairs under one attempt.
+    it('mints a fresh attempt id per reactivation', async () => {
+      const checkout = await setup('subscribe_to_run')
+      mockFetchStatus.mockResolvedValue(undefined)
+      mockFetchBalance.mockResolvedValue(undefined)
+
+      mockResubscribe.mockRejectedValueOnce(new Error('card declined'))
+      await checkout.handleResubscribe()
+      mockResubscribe.mockResolvedValueOnce({
+        billing_op_id: 'op-4',
+        status: 'active'
+      })
+      await checkout.handleResubscribe()
+
+      const attemptIds = mockTrackBillingEvent.mock.calls
+        .map(([event]) => event)
+        .filter((event) => event.operation === 'resubscribe')
+        .map((event) => event.checkout_attempt_id)
+
+      expect(attemptIds.length).toBeGreaterThan(1)
+      expect(new Set(attemptIds).size).toBe(2)
     })
 
     it('emits close on success', async () => {

@@ -175,6 +175,25 @@ be stamped on the billing-op row, which is what lets a pre-op-ID failure
 join backend records rather than only its own outcome. The deferral
 reasoning above stands for the rails that still lack it.
 
+**Two rails the attempt id does not reach yet.** The team-to-personal
+downgrade delegates its preview, subscribe and telemetry to
+`useDowngradeToPersonal`, which owns its own `startOperation()` calls and
+never receives the attempt context, so that flow's events carry no
+`checkout_attempt_id`. It is a coverage gap rather than a correctness one —
+the events are internally consistent, just unjoinable to the attempt that
+opened them. Closing it means the downgrade composable either receives the
+context or mints its own attempt.
+
+**`quote_minted` tracks quotes shown, not quotes minted.** It fires from
+`installPreview()`, so the internal re-quote in
+`assertReactivationAmountUnchanged()` — which re-runs `preview-subscribe`
+purely to confirm the amount has not drifted — produces a backend quote row
+carrying the attempt id with no matching client event. That asymmetry is
+deliberate: the stage is the denominator for preview-to-subscribe
+conversion, and a quote the customer never saw would inflate it. A
+backend-side reconciliation should expect strictly more quote rows than
+`quote_minted` events.
+
 Open follow-ups: what fraction of billing failures are pre- vs.
 post-response (determines whether the backend-coordinated attempt-ID is
 worth pursuing); whether it should reuse an existing correlation-ID

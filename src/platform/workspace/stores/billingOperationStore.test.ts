@@ -1640,6 +1640,70 @@ describe('billingOperationStore', () => {
         expect(challengeEvents('challenge_presented')).toHaveLength(1)
       })
 
+      // The operation opens only once subscribe() has returned, so reading the
+      // workspace live here would label the attempt with wherever the customer
+      // navigated while it was in flight.
+      it('reports the workspace the attempt started in, not the live one', async () => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-ws',
+          status: 'pending',
+          started_at: new Date().toISOString()
+        })
+        const store = useBillingOperationStore()
+        mockActiveWorkspaceId.value = 'workspace-2'
+        void store.startOperation('op-ws', 'subscription', {
+          suppressProcessingToast: true,
+          checkoutAttemptId: 'attempt-1',
+          attemptWorkspaceId: 'workspace-1'
+        })
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(
+          mockTrackBillingEvent.mock.calls
+            .map(([event]) => event)
+            .filter((event) => event.stage === 'started')
+        ).toEqual([
+          expect.objectContaining({
+            billing_op_id: 'op-ws',
+            checkout_attempt_id: 'attempt-1',
+            workspace_id: 'workspace-1'
+          })
+        ])
+        expect(store.getOperation('op-ws')?.workspaceId).toBe('workspace-2')
+      })
+
+      // A `needs_payment_method` response hands its collection page to
+      // startOperation as the action url. That is not a 3DS challenge, and
+      // counting it as one would also latch out the real presentation below.
+      it('does not open the funnel for a payment-method collection page', async () => {
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-pm',
+          status: 'pending',
+          started_at: new Date().toISOString()
+        })
+        const store = useBillingOperationStore()
+        void store.startOperation(
+          'op-pm',
+          'subscription',
+          { suppressProcessingToast: true, checkoutAttemptId: 'attempt-1' },
+          'https://billing.stripe.com/collect-payment-method'
+        )
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(challengeEvents('challenge_presented')).toEqual([])
+
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-pm',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'pi_secret_pm',
+          started_at: new Date().toISOString()
+        })
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(challengeEvents('challenge_presented')).toHaveLength(1)
+      })
+
       it('reports a completed challenge as succeeded', async () => {
         mockHandleNextAction.mockResolvedValue({
           paymentIntent: { status: 'succeeded' }
