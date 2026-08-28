@@ -110,7 +110,7 @@ test.describe('Help Center', () => {
       expect(url.pathname).toBe('/forms/question')
     })
 
-    test('Give Feedback item opens Contact Support in OSS mode', async ({
+    test('Give Feedback item opens the Pylon support form tagged as OSS', async ({
       helpCenter
     }) => {
       const url = await waitForPopup(helpCenter.page, () =>
@@ -119,6 +119,9 @@ test.describe('Help Center', () => {
 
       expect(url.hostname).toBe('comfy-org.portal.usepylon.com')
       expect(url.pathname).toBe('/forms/question')
+      expect(url.searchParams.get('comfy_environment')).toBe(
+        'local_comfyui_oss'
+      )
     })
   })
 

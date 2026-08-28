@@ -52,26 +52,52 @@ describe('buildFeedbackTypeformUrl', () => {
 })
 
 describe('buildSupportUrl', () => {
-  async function build(params?: { userEmail?: string | null }) {
+  beforeEach(() => {
+    distribution.isCloud = false
+    distribution.isNightly = false
+  })
+
+  async function build(params?: {
+    userEmail?: string | null
+    userDisplayName?: string | null
+  }) {
     vi.resetModules()
     const { buildSupportUrl } = await import('./config')
     return buildSupportUrl(params)
   }
 
-  it('prefills the requester email using Pylon\u2019s field slug', async () => {
-    const url = new URL(await build({ userEmail: 'user@example.com' }))
-    expect(url.searchParams.get('email')).toBe('user@example.com')
-  })
-
   it('targets a Pylon-hosted form rather than the retired Zendesk endpoint', async () => {
     const url = new URL(await build())
     expect(url.host).toBe('comfy-org.portal.usepylon.com')
-    expect(url.pathname.startsWith('/forms/')).toBe(true)
+    expect(url.pathname).toBe('/forms/question')
   })
 
-  it('omits the query string when the user is not signed in', async () => {
-    expect(new URL(await build()).search).toBe('')
-    expect(new URL(await build({ userEmail: null })).search).toBe('')
+  it('prefills requester identity using Pylon\u2019s field slugs', async () => {
+    const url = new URL(
+      await build({ userEmail: 'user@example.com', userDisplayName: 'Ada' })
+    )
+    expect(url.searchParams.get('email')).toBe('user@example.com')
+    expect(url.searchParams.get('name')).toBe('Ada')
+  })
+
+  it('omits requester identity when the user is not signed in', async () => {
+    const url = new URL(await build({ userEmail: null, userDisplayName: null }))
+    expect(url.searchParams.get('email')).toBeNull()
+    expect(url.searchParams.get('name')).toBeNull()
+  })
+
+  it('tags the ticket with a valid comfy_environment option per distribution', async () => {
+    const optionFor = async () =>
+      new URL(await build()).searchParams.get('comfy_environment')
+
+    expect(await optionFor()).toBe('local_comfyui_oss')
+
+    distribution.isNightly = true
+    expect(await optionFor()).toBe('local_comfyui_oss')
+
+    distribution.isNightly = false
+    distribution.isCloud = true
+    expect(await optionFor()).toBe('comfy_cloud')
   })
 })
 

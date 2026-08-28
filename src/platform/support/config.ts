@@ -12,7 +12,14 @@ function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
 
 const SUPPORT_BASE_URL = 'https://comfy-org.portal.usepylon.com/forms/question'
 
-const PYLON_REQUESTER_EMAIL_FIELD = 'email'
+const PYLON_COMFY_ENVIRONMENT_OPTION: Record<
+  ReturnType<typeof getDistribution>,
+  string
+> = {
+  ccloud: 'comfy_cloud',
+  'oss-nightly': 'local_comfyui_oss',
+  oss: 'local_comfyui_oss'
+}
 
 export type FeedbackSource = 'topbar' | 'action-bar' | 'help-center'
 
@@ -48,16 +55,21 @@ export function buildFeedbackHiddenFields(
 }
 
 /**
- * Builds the Pylon support form URL, pre-filling the requester email when the
- * user is signed in. Users without login information still get a valid URL.
+ * Builds the Pylon support form URL. Pylon prefills a field from a query
+ * parameter keyed by that field's slug, so signed-in users get their name and
+ * email filled in and every ticket carries the build's Comfy environment.
  */
 export function buildSupportUrl(params?: {
   userEmail?: string | null
+  userDisplayName?: string | null
 }): string {
-  if (!params?.userEmail) return SUPPORT_BASE_URL
-
   const searchParams = new URLSearchParams({
-    [PYLON_REQUESTER_EMAIL_FIELD]: params.userEmail
+    comfy_environment: PYLON_COMFY_ENVIRONMENT_OPTION[getDistribution()]
   })
+
+  if (params?.userDisplayName)
+    searchParams.append('name', params.userDisplayName)
+  if (params?.userEmail) searchParams.append('email', params.userEmail)
+
   return `${SUPPORT_BASE_URL}?${searchParams.toString()}`
 }
