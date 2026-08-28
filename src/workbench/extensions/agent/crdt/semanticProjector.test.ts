@@ -68,7 +68,7 @@ describe('SemanticProjector', () => {
     expect(mutator.batches).toHaveLength(2)
   })
 
-  it('re-materializes the seed after reset (reconnect / workflow switch)', () => {
+  it('re-materializes the seed after reset (workflow switch)', () => {
     const doc = new Y.Doc()
     setNode(doc, '1', 'LoadImage', [0, 0])
     const mutator = new FakeGraphMutator()
@@ -80,5 +80,35 @@ describe('SemanticProjector', () => {
 
     expect(afterReset).toBe(1)
     expect(mutator.batches).toHaveLength(2)
+  })
+
+  it('keeps the pre-batch snapshot when applyBatch throws, so a retry repairs the canvas', () => {
+    const doc = new Y.Doc()
+    setNode(doc, '1', 'LoadImage', [0, 0])
+    const mutator = new FakeGraphMutator()
+    let failNext = true
+    const failingMutator = {
+      applyBatch(batch: MutationBatch): void {
+        if (failNext) {
+          failNext = false
+          throw new Error('node construction failed mid-batch')
+        }
+        mutator.applyBatch(batch)
+      }
+    }
+    const projector = new SemanticProjector(failingMutator)
+
+    expect(() => projector.project(doc)).toThrow()
+
+    // The snapshot was NOT advanced past the failed batch: the retry
+    // re-derives the same delta instead of diffing to zero mutations and
+    // stranding the canvas.
+    const retried = projector.project(doc)
+    expect(retried).toBe(1)
+    expect(mutator.batches).toHaveLength(1)
+    expect(mutator.batches[0].mutations[0]).toMatchObject({ kind: 'add_node' })
+
+    // And a repaired projector converges: nothing further to apply.
+    expect(projector.project(doc)).toBe(0)
   })
 })
