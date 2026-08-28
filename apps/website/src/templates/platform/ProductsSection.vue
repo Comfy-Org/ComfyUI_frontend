@@ -27,7 +27,7 @@ const modelsTabs = modelsApiCodeTabs
     <!-- Serverless API: the headline product, full width -->
     <article
       id="serverless"
-      class="group bg-transparency-white-t4 relative mt-8 grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl border border-white/10 p-6 transition-colors hover:border-white/25 lg:mt-12 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
+      class="group bg-transparency-white-t4 relative mt-8 grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl p-6 lg:mt-12 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
     >
       <a
         :href="routes.platformServerless"
@@ -60,7 +60,7 @@ const modelsTabs = modelsApiCodeTabs
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
       <article
         id="models"
-        class="group/models bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-white/10 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+        class="group/models bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl p-6 lg:scroll-mt-36 lg:p-10"
       >
         <a
           :href="routes.platformModels"
@@ -94,7 +94,7 @@ const modelsTabs = modelsApiCodeTabs
 
       <article
         id="builder"
-        class="group/builder bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-white/10 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+        class="group/builder bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl p-6 lg:scroll-mt-36 lg:p-10"
       >
         <a
           :href="routes.platformBuilder"

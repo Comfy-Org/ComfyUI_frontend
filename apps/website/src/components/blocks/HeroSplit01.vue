@@ -52,7 +52,7 @@ const {
 } = defineProps<{
   locale?: Locale
   class?: HTMLAttributes['class']
-  badgeText: string
+  badgeText?: string
   badgeLogoSrc?: string
   badgeLogoAlt?: string
   title: string
@@ -91,6 +91,7 @@ const {
   >
     <div class="w-full lg:flex-1">
       <ProductHeroBadge
+        v-if="badgeText"
         :text="badgeText"
         :logo-src="badgeLogoSrc"
         :logo-alt="badgeLogoAlt"
@@ -99,7 +100,8 @@ const {
       <h1
         :class="
           cn(
-            'mt-8 leading-[125%] font-light whitespace-pre-line text-primary-comfy-canvas',
+            'leading-[125%] font-light whitespace-pre-line text-primary-comfy-canvas',
+            badgeText && 'mt-8',
             compact
               ? 'text-xl tracking-tight md:text-2xl lg:text-3xl'
               : 'text-2xl tracking-[-1.44px] md:text-4xl lg:text-5xl'

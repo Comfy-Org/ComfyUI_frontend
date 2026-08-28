@@ -15,7 +15,6 @@ const ctas = platformCtas(locale)
     :locale="locale"
     compact
     class="pt-12 pb-10 md:pt-16 md:pb-14"
-    :badge-text="t('platform.hero.badge', locale)"
     :title="t('platform.hero.heading', locale)"
     :subtitle="t('platform.hero.subtitle', locale)"
     :primary-cta="ctas.getStarted"
