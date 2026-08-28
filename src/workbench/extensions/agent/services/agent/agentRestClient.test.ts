@@ -245,6 +245,21 @@ describe('error mapping', () => {
     expect(apiError.body).toBeUndefined()
   })
 
+  it.for(['42', 'null', 'true', '"   "'])(
+    'degrades a JSON-primitive error body %s to the fallback like the canonical parser',
+    async (raw) => {
+      // The canonical parser pins these four in errors.test.ts; the agent
+      // path must degrade them identically, never surface them as messages.
+      respond(new Response(raw, { status: 502 }))
+
+      const error = await createAgentRestClient()
+        .getMessages('t1')
+        .catch((e: unknown) => e)
+
+      expect((error as AgentApiError).message).toBe('HTTP 502')
+    }
+  )
+
   it('falls back to HTTP <status> when the body is empty and no reason phrase exists', async () => {
     respond(new Response(null, { status: 502 }))
 
