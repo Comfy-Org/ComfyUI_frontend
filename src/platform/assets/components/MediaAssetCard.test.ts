@@ -16,8 +16,6 @@ vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({ isAssetDeleting: () => false })
 }))
 
-vi.mock('@/scripts/app', () => ({ app: {} }))
-
 vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
