@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -19,6 +19,7 @@ class ForeignWidget implements IBaseWidget {
   type = 'foreign_test'
   options = {}
   y = 0
+  height = 24
   nameReads = 0
   nameWrites = 0
   valueReads = 0
@@ -91,6 +92,7 @@ function storedValue(widget: IBaseWidget) {
 describe('widgets view', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    LiteGraph.vueNodesMode = false
   })
 
   it('restores order and value when a widget is spliced out and pushed back', () => {
@@ -162,29 +164,43 @@ describe('widgets view', () => {
     expect(storedValue(widget)).toBe(10)
   })
 
-  it.for([
-    [
-      'addCustomWidget',
-      (node: LGraphNode, widget: ForeignWidget) => node.addCustomWidget(widget)
-    ],
-    [
-      'widgets.push',
-      (node: LGraphNode, widget: ForeignWidget) => {
-        node.widgets ||= []
-        node.widgets.push(widget)
-        return node.widgets.at(-1)
-      }
-    ]
-  ] as const)(
-    'preserves foreign widget behavior through $0',
-    ([, addWidget]) => {
+  it.for(
+    ([false, true] as const).flatMap(
+      (vueNodesMode) =>
+        [
+          [
+            vueNodesMode,
+            'addCustomWidget',
+            (node: LGraphNode, widget: ForeignWidget) =>
+              node.addCustomWidget(widget)
+          ],
+          [
+            vueNodesMode,
+            'widgets.push',
+            (node: LGraphNode, widget: ForeignWidget) => {
+              node.widgets ||= []
+              node.widgets.push(widget)
+              return node.widgets.at(-1)
+            }
+          ]
+        ] as const
+    )
+  )(
+    'preserves foreign widget behavior through $1 with VueNodes=$0',
+    ([vueNodesMode, , addWidget]) => {
+      LiteGraph.vueNodesMode = vueNodesMode
       const graph = new LGraph()
       const node = new LGraphNode('test')
       graph.add(node)
       const widget = new ForeignWidget()
+      expect(Object.getOwnPropertyDescriptor(widget, 'height')?.writable).toBe(
+        true
+      )
       const result = addWidget(node, widget)
 
       expect(result).toBe(widget)
+      expect(() => (widget.height = 48)).not.toThrow()
+      expect(widget.height).toBe(48)
       expect(widget.draw()).toBe('drawn')
       expect(widget.mouse()).toBe(true)
       expect(widget.computeSize()).toEqual([120, 24])
