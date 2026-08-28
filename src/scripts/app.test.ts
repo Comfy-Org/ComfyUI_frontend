@@ -95,6 +95,8 @@ const {
     refreshNodeOutputs: vi.fn(),
     replaceOutputsFromLegacy: vi.fn(),
     resetAllOutputsAndPreviews: vi.fn(),
+    snapshotOutputs: vi.fn(),
+    restoreOutputs: vi.fn(),
     stashPreviewsForWorkflow: vi.fn(),
     restorePreviewsForWorkflow: vi.fn(),
     discardPreviewsForWorkflow: vi.fn()
