@@ -11,6 +11,9 @@ const RUM_NOISE_HOSTS = [
 
 const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
 
+const FIREBASE_LOGGER_TIMESTAMP =
+  /^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\]\s*(?=@firebase\/)/
+
 type RumErrorOrigin =
   | { origin: 'first_party' }
   | { origin: 'extension'; extension: string }
@@ -31,6 +34,13 @@ export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
   }
 
   return { origin: 'third_party' }
+}
+
+function stripLeadingTimestamp(event: RumErrorEvent): void {
+  event.error.message = event.error.message.replace(
+    FIREBASE_LOGGER_TIMESTAMP,
+    ''
+  )
 }
 
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
@@ -66,6 +76,7 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
 }
 
 export const rumBeforeSend: RumBeforeSend = (event) => {
+  if (event.type === 'error') stripLeadingTimestamp(event)
   if (!shouldKeepRumEvent(event)) return false
   if (event.type === 'error') tagRumErrorOrigin(event)
   return true
