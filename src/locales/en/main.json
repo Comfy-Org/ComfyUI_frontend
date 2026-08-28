@@ -5100,6 +5100,9 @@
   "agent": {
     "askComfyAgent": "Ask Comfy Agent",
     "title": "Comfy Agent",
-    "loadFailed": "The agent panel failed to load."
+    "loadFailed": "The agent panel failed to load.",
+    "malformedEvent": "The agent sent an event this panel could not read",
+    "sendBusy": "A message is already being sent",
+    "sendFailed": "Message failed to send"
   }
 }
