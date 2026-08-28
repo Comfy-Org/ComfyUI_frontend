@@ -27,10 +27,12 @@ const baseRoutes = {
   cli: '/cli',
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',
+  minimaxLicense: '/minimax/license',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
   fdct: '/forward-deployed-creatives',
   ltx: '/ltx-2.5',
+  geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
   wan3: '/wan-3.0',
   brand: '/brand'
