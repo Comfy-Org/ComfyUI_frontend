@@ -6825,6 +6825,14 @@ const translations = {
     en: 'SEE MINIMAX H3',
     'zh-CN': '了解 MiniMax H3'
   },
+  'minimaxLicense.rateCard.heading': {
+    en: 'License pricing',
+    'zh-CN': '许可定价'
+  },
+  'minimaxLicense.rateCard.subtitle': {
+    en: 'Two tiers, one agreement: video, audio, and music under a single license.',
+    'zh-CN': '两种级别，一份协议：视频、音频与音乐同在一份许可之下。'
+  },
   'minimaxLicense.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'minimaxLicense.cta.heading': {
     en: 'One model, every use case. Licensed for yours.',

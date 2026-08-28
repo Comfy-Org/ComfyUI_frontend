@@ -4,6 +4,8 @@ import CloudPricingSection from '../../components/pricing/CloudPricingSection.vu
 import WhatsIncludedSection from '../../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../../components/pricing/PricingFaq.astro'
 import MinimaxLicenseHeroSection from '../../components/common/MinimaxLicenseHeroSection.vue'
+import ModelLaunchRateCardSection from '../../templates/model-launch/ModelLaunchRateCardSection.vue'
+import { minimaxLicensePage } from '../../data/minimaxLicense'
 import { pricingOffers } from '../../config/pricing'
 import { t } from '../../i18n/translations'
 import {
@@ -40,6 +42,11 @@ const productId = jsonLdId(url, 'product')
   ]}
 >
   <MinimaxLicenseHeroSection client:visible />
+  {
+    minimaxLicensePage.rateCard && (
+      <ModelLaunchRateCardSection rateCard={minimaxLicensePage.rateCard} />
+    )
+  }
   <CloudPricingSection client:load />
   <WhatsIncludedSection />
   <PricingFaq locale={locale} />

@@ -12,6 +12,7 @@ const HERO_TITLE = t('minimaxLicense.hero.title')
 const HERO_CTA = t('minimaxLicense.hero.primaryCta')
 const HERO_VIDEO_PATTERN = /minimax-license\/hero\.mp4/
 const STEPS_HEADING = t('minimaxLicense.steps.heading')
+const RATE_CARD_HEADING = t('minimaxLicense.rateCard.heading')
 const FAQ_HEADING = t('minimaxLicense.faq.heading')
 const CLOSING_HEADING = t('minimaxLicense.cta.heading')
 
@@ -49,8 +50,15 @@ test.describe('MiniMax license page @smoke', () => {
     await expect(cta).toHaveAttribute('href', CONTACT_HREF)
   })
 
-  test('renders steps, Q&A, and the closing CTA', async ({ page }) => {
-    for (const name of [STEPS_HEADING, FAQ_HEADING, CLOSING_HEADING]) {
+  test('renders steps, the rate card, Q&A, and the closing CTA', async ({
+    page
+  }) => {
+    for (const name of [
+      STEPS_HEADING,
+      RATE_CARD_HEADING,
+      FAQ_HEADING,
+      CLOSING_HEADING
+    ]) {
       const heading = page.getByRole('heading', { level: 2, name })
       await heading.scrollIntoViewIfNeeded()
       await expect(heading).toBeVisible()
@@ -63,6 +71,19 @@ test.describe('MiniMax license page @smoke', () => {
       })
       .getByRole('link', { name: t('minimaxLicense.cta.primaryCta') })
     await expect(closing).toHaveAttribute('href', CONTACT_HREF)
+  })
+
+  test('prices the Professional tier on the rate card', async ({ page }) => {
+    const rateCard = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: RATE_CARD_HEADING })
+    })
+    await rateCard.scrollIntoViewIfNeeded()
+    await expect(
+      rateCard.getByRole('columnheader', { name: /Professional/ })
+    ).toContainText('$5,000')
+    await expect(
+      rateCard.getByRole('columnheader', { name: /Enterprise/ })
+    ).toContainText('Custom')
   })
 
   test('footer links back to this page', async ({ page }) => {

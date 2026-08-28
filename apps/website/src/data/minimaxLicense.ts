@@ -42,7 +42,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
       'minimaxLicense.hero.tagGlobal'
     ]
   },
-  sectionOrder: ['steps', 'faq', 'closingCta'],
+  sectionOrder: ['steps', 'rateCard', 'faq', 'closingCta'],
   steps: {
     headingKey: 'minimaxLicense.steps.heading',
     stepLabelKey: 'minimaxLicense.steps.step',
@@ -74,6 +74,96 @@ export const minimaxLicensePage: ModelLaunchPage = {
         }
       }
     ]
+  },
+  // The public rate card. Professional's list price and both tiers' terms are
+  // the customer-facing halves of Schedule 3; per-video-second rates, bundle
+  // volumes, and the Enterprise minimum stay in sales conversations.
+  rateCard: {
+    headingKey: 'minimaxLicense.rateCard.heading',
+    subtitleKey: 'minimaxLicense.rateCard.subtitle',
+    columns: [
+      {
+        id: 'professional',
+        name: { en: 'Professional', 'zh-CN': '专业版' },
+        price: { en: '$5,000', 'zh-CN': '$5,000' },
+        priceNote: { en: 'per month', 'zh-CN': '每月' }
+      },
+      {
+        id: 'enterprise',
+        name: { en: 'Enterprise', 'zh-CN': '企业版' },
+        price: { en: 'Custom', 'zh-CN': '定制' },
+        priceNote: { en: 'annual agreement', 'zh-CN': '年度协议' }
+      }
+    ],
+    rows: [
+      {
+        id: 'term',
+        label: { en: 'Term', 'zh-CN': '期限' },
+        values: [
+          { en: 'Monthly', 'zh-CN': '按月' },
+          { en: '12-month minimum', 'zh-CN': '12 个月起' }
+        ]
+      },
+      {
+        id: 'users',
+        label: { en: 'Licensed users', 'zh-CN': '授权用户' },
+        values: [
+          { en: 'Up to 10', 'zh-CN': '最多 10 个' },
+          { en: 'No cap', 'zh-CN': '不设上限' }
+        ]
+      },
+      {
+        id: 'domains',
+        label: { en: 'Domains', 'zh-CN': '域名' },
+        values: [
+          { en: '1', 'zh-CN': '1 个' },
+          { en: 'Custom', 'zh-CN': '定制' }
+        ]
+      },
+      {
+        id: 'versions',
+        label: { en: 'Model versions', 'zh-CN': '模型版本' },
+        values: [
+          { en: 'Distilled open weights', 'zh-CN': '蒸馏开源权重' },
+          {
+            en: 'All versions, undistilled weights and new releases included',
+            'zh-CN': '所有版本，含未蒸馏权重与新发布'
+          }
+        ]
+      },
+      {
+        id: 'commercial-use',
+        label: { en: 'Commercial use of outputs', 'zh-CN': '产出的商业使用' },
+        values: [
+          { en: 'Full commercial rights', 'zh-CN': '完整商业权利' },
+          { en: 'Full commercial rights', 'zh-CN': '完整商业权利' }
+        ]
+      },
+      {
+        id: 'fine-tuning',
+        label: { en: 'Fine-tuning and LoRA', 'zh-CN': '微调与 LoRA' },
+        values: [
+          { en: 'Included', 'zh-CN': '包含' },
+          { en: 'Included', 'zh-CN': '包含' }
+        ]
+      },
+      {
+        id: 'client-work',
+        label: { en: 'Client and downstream work', 'zh-CN': '客户与下游项目' },
+        values: [
+          { en: 'Included', 'zh-CN': '包含' },
+          { en: 'Included', 'zh-CN': '包含' }
+        ]
+      }
+    ],
+    footnote: {
+      en: 'Enterprise pricing is sized to your generation volume and team. Request a license for a quote.',
+      'zh-CN': '企业版定价按你的生成量和团队规模定制。申请许可获取报价。'
+    },
+    primaryCta: {
+      labelKey: 'minimaxLicense.steps.primaryCta',
+      href: CONTACT_HREF
+    }
   },
   // Open-weight successor models roll into an active license per the deal, but
   // that line stays OFF the page until the contract's "qualifying" language is
@@ -127,6 +217,18 @@ export const minimaxLicensePage: ModelLaunchPage = {
           en: 'Professional is a fixed-price monthly license for studios and teams shipping client work, with up to 10 licensed users on distilled open-weight model versions. Enterprise is an annual agreement with custom volume pricing, no user cap, and every model version, undistilled weights included. Request a license and we will help you pick.',
           'zh-CN':
             '专业版是面向交付客户项目的工作室和团队的固定价格月度许可，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版是年度协议，提供定制批量定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本。申请许可，我们会帮你选择。'
+        }
+      },
+      {
+        id: 'pricing',
+        question: {
+          en: 'How much does a commercial license cost?',
+          'zh-CN': '商业许可多少钱？'
+        },
+        answer: {
+          en: 'Professional is $5,000 a month on a monthly term, with up to 10 licensed users on distilled open-weight model versions. Enterprise is an annual agreement with custom pricing sized to your generation volume, no user cap, and every model version, undistilled weights included. Request a license and we will quote it for your team.',
+          'zh-CN':
+            '专业版为每月 5,000 美元，按月订阅，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版为年度协议，按生成量定制定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本。申请许可，我们会为你的团队提供报价。'
         }
       },
       {

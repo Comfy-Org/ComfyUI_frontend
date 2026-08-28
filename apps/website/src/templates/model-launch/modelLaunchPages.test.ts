@@ -69,6 +69,9 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.steps?.stepLabelKey,
       page.steps?.primaryCta?.labelKey,
       page.steps?.secondaryCta?.labelKey,
+      page.rateCard?.headingKey,
+      page.rateCard?.subtitleKey,
+      page.rateCard?.primaryCta?.labelKey,
       page.closingCta?.headingKey,
       page.closingCta?.primaryCta.labelKey,
       page.closingCta?.secondaryCta?.labelKey,
@@ -101,6 +104,24 @@ describe.for(pages)('$name launch page config', ({ page }) => {
         expect(card.prompt[locale], `${card.id} prompt`).not.toBe('')
       }
     }
+    for (const column of page.rateCard?.columns ?? []) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(column.name[locale], `${column.id} name`).not.toBe('')
+        expect(column.price[locale], `${column.id} price`).not.toBe('')
+      }
+    }
+    for (const row of page.rateCard?.rows ?? []) {
+      // A row missing a value would render an empty cell under that tier.
+      expect(row.values.length, `${row.id} values`).toBe(
+        page.rateCard?.columns.length
+      )
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(row.label[locale], `${row.id} label`).not.toBe('')
+        for (const value of row.values) {
+          expect(value[locale], `${row.id} value`).not.toBe('')
+        }
+      }
+    }
     for (const faq of page.faq?.items ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
         expect(faq.question[locale], `${faq.id} question`).not.toBe('')
@@ -117,6 +138,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.closingCta?.secondaryCta?.href,
       page.steps?.primaryCta?.href,
       page.steps?.secondaryCta?.href,
+      page.rateCard?.primaryCta?.href,
       page.hero.promptBar?.cta.href,
       page.pricing?.banner?.cta.href,
       ...(page.gallery?.cards.map((card) => card.href) ?? [])

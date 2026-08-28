@@ -7,6 +7,7 @@ import ModelLaunchFaqSection from './ModelLaunchFaqSection.vue'
 import ModelLaunchGallerySection from './ModelLaunchGallerySection.vue'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
+import ModelLaunchRateCardSection from './ModelLaunchRateCardSection.vue'
 import ModelLaunchReviewsSection from './ModelLaunchReviewsSection.vue'
 import ModelLaunchStepsSection from './ModelLaunchStepsSection.vue'
 import ModelLaunchRunOptionsSection from './ModelLaunchRunOptionsSection.vue'
@@ -104,6 +105,15 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
               <ModelLaunchPricingSection
                 client:load
                 pricing={page.pricing}
+                locale={locale}
+              />
+            )
+          )
+        case 'rateCard':
+          return (
+            page.rateCard && (
+              <ModelLaunchRateCardSection
+                rateCard={page.rateCard}
                 locale={locale}
               />
             )

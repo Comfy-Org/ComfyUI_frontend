@@ -156,6 +156,31 @@ export interface ModelLaunchSteps {
   secondaryCta?: ModelLaunchCta
 }
 
+// A tier-comparison rate card, for launch pages that sell a license rather
+// than a subscription (/minimax/license was the first one). Columns are the
+// tiers; each row holds one value per column, in column order.
+interface ModelLaunchRateCardColumn {
+  id: string
+  name: LocalizedText
+  price: LocalizedText
+  priceNote?: LocalizedText
+}
+
+interface ModelLaunchRateCardRow {
+  id: string
+  label: LocalizedText
+  values: readonly LocalizedText[]
+}
+
+export interface ModelLaunchRateCard {
+  headingKey: TranslationKey
+  subtitleKey?: TranslationKey
+  columns: readonly ModelLaunchRateCardColumn[]
+  rows: readonly ModelLaunchRateCardRow[]
+  footnote?: LocalizedText
+  primaryCta?: ModelLaunchCta
+}
+
 export interface ModelLaunchRunOptions {
   headingKey: TranslationKey
   subtitleKey: TranslationKey
@@ -181,6 +206,7 @@ export type ModelLaunchSection =
   | 'audioGallery'
   | 'steps'
   | 'pricing'
+  | 'rateCard'
   | 'faq'
   | 'closingCta'
 
@@ -192,6 +218,7 @@ export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
   'gallery',
   'audioGallery',
   'pricing',
+  'rateCard',
   'faq',
   'steps',
   'closingCta'
@@ -210,6 +237,7 @@ export interface ModelLaunchPage {
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
   steps?: ModelLaunchSteps
+  rateCard?: ModelLaunchRateCard
   // Pages that end on a steps CTA row do not need a separate closing CTA.
   closingCta?: ModelLaunchClosingCta
   // Reorders the optional body sections for this page only. Defaults to
