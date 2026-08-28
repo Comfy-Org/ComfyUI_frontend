@@ -201,5 +201,7 @@ describe('tutorialMetaTitle', () => {
   it('leaves titles that already name ComfyUI untouched', () => {
     expect(basics.title.en).toContain('ComfyUI')
     expect(tutorialMetaTitle(basics, 'en')).toBe(basics.title.en)
+    expect(basics.title['zh-CN']).toContain('ComfyUI')
+    expect(tutorialMetaTitle(basics, 'zh-CN')).toBe(basics.title['zh-CN'])
   })
 })
