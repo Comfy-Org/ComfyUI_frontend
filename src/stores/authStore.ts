@@ -255,6 +255,11 @@ export const useAuthStore = defineStore('auth', () => {
       return token ? { Authorization: `Bearer ${token}` } : null
     }
 
+    if (currentUser.value === null) {
+      const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
+      if (apiKeyHeader) return apiKeyHeader
+    }
+
     const workspaceAuth = useWorkspaceAuthStore()
     const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
 
