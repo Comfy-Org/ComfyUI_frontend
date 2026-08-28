@@ -37,5 +37,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         class="absolute inset-0 size-full"
       />
     </div>
+
+    <p class="sr-only">{{ t('cli.session.transcript', locale) }}</p>
   </section>
 </template>

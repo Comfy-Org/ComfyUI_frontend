@@ -149,12 +149,13 @@ function onConnectionTabChange(value: string | number | undefined) {
   captureCliConnectionTabClick(id)
 }
 
-let lastTrackedClientId: string | undefined
-function onClientTabChange(value: string | number | undefined) {
+let lastTrackedClientKey: string | undefined
+function onClientTabChange(connId: string, value: string | number | undefined) {
   if (!value) return
   const id = String(value)
-  if (id === lastTrackedClientId) return
-  lastTrackedClientId = id
+  const key = `${connId}:${id}`
+  if (key === lastTrackedClientKey) return
+  lastTrackedClientKey = key
   captureCliClientTabClick(id)
 }
 
@@ -243,7 +244,7 @@ const copiedLabel = t('ui.copied', locale)
           v-model="activeClientIds[connId]"
           activation-mode="manual"
           class="block"
-          @update:model-value="onClientTabChange"
+          @update:model-value="(value) => onClientTabChange(connId, value)"
         >
           <TabsList
             :aria-label="t('cli.setup.manual.tabsLabel', locale)"

@@ -2949,7 +2949,7 @@ const translations = {
     'zh-CN': '一次真实会话，从头到尾。'
   },
   'cli.session.subtitle': {
-    en: 'Recorded in one take against Comfy Cloud: a partner generate, a workflow run on cloud GPUs, and the bundled skills. Idle seconds trimmed, output untouched.',
+    en: 'Recorded in one take against Comfy Cloud: a generation with a partner model, a workflow run on cloud GPUs, and the bundled skills. Idle seconds trimmed, output untouched.',
     'zh-CN':
       '面向 Comfy Cloud 一镜到底：一次合作伙伴模型生成、一次云端 GPU 工作流运行，以及自带技能。只剪掉了等待的秒数，输出原样保留。'
   },
@@ -2957,6 +2957,11 @@ const translations = {
     en: 'Recorded terminal session: comfy generate saving cat.png, a workflow run on Comfy Cloud, the bundled skills list, and the two images the session saved',
     'zh-CN':
       '终端录屏：comfy generate 保存 cat.png、一次 Comfy Cloud 工作流运行、自带技能列表，以及会话保存的两张图像'
+  },
+  'cli.session.transcript': {
+    en: 'Video transcript: comfy setup connects the CLI to Comfy Cloud. comfy generate renders a prompt with a partner model and saves cat.png. comfy run submits a workflow to cloud GPUs, comfy jobs wait tracks it, and comfy download saves the result as f5308bc5_000.png. comfy skills list prints the bundled skills. The session ends with two files saved: cat.png and f5308bc5_000.png.',
+    'zh-CN':
+      '视频文字稿：comfy setup 将 CLI 连接到 Comfy Cloud。comfy generate 用合作伙伴模型渲染提示词并保存 cat.png。comfy run 将工作流提交到云端 GPU，comfy jobs wait 跟踪任务，comfy download 将结果保存为 f5308bc5_000.png。comfy skills list 打印自带技能列表。会话最终保存两个文件：cat.png 和 f5308bc5_000.png。'
   },
 
   // CLI – SkillsSection
