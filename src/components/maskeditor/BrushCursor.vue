@@ -26,7 +26,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useElementBounding } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 import {
   getEffectiveBrushSize,
@@ -40,11 +41,13 @@ const { containerRef } = defineProps<{
 }>()
 
 const store = useMaskEditorStore()
+const {
+  left: containerOffsetLeft,
+  top: containerOffsetTop,
+  update: updateContainerOffset
+} = useElementBounding(() => containerRef)
 
-const getContainerOffset = () => {
-  const rect = containerRef?.getBoundingClientRect()
-  return { left: rect?.left ?? 0, top: rect?.top ?? 0 }
-}
+watch(() => store.cursorPoint, updateContainerOffset, { flush: 'sync' })
 
 const brushOpacity = computed(() => {
   return store.brushVisible ? 1 : 0
@@ -61,24 +64,23 @@ const brushSize = computed(() => {
   return brushRadius.value * 2
 })
 
-const brushPosition = computed(() => {
-  const containerOffset = getContainerOffset()
-  return {
-    left:
-      store.cursorPoint.x +
-      store.panOffset.x -
-      brushRadius.value -
-      containerOffset.left,
-    top:
-      store.cursorPoint.y +
-      store.panOffset.y -
-      brushRadius.value -
-      containerOffset.top
-  }
+const brushLeft = computed(() => {
+  return (
+    store.cursorPoint.x +
+    store.panOffset.x -
+    brushRadius.value -
+    containerOffsetLeft.value
+  )
 })
 
-const brushLeft = computed(() => brushPosition.value.left)
-const brushTop = computed(() => brushPosition.value.top)
+const brushTop = computed(() => {
+  return (
+    store.cursorPoint.y +
+    store.panOffset.y -
+    brushRadius.value -
+    containerOffsetTop.value
+  )
+})
 
 const borderRadius = computed(() => {
   return store.brushSettings.type === BrushShape.Rect ? '0%' : '50%'

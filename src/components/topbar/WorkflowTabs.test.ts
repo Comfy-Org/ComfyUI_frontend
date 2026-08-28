@@ -15,9 +15,9 @@ const distribution = vi.hoisted(() => ({
 }))
 
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
-const overflowObservers = vi.hoisted(
-  () => [] as Array<{ dispose: ReturnType<typeof vi.fn> }>
-)
+const overflowObservers = vi.hoisted<
+  Array<{ dispose: ReturnType<typeof vi.fn> }>
+>(() => [])
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -47,7 +47,11 @@ vi.mock('primevue/scrollpanel', async () => {
             ),
             h(
               'div',
-              { key: contentKey.value, class: 'p-scrollpanel-content' },
+              {
+                key: contentKey.value,
+                class: 'p-scrollpanel-content',
+                'data-testid': 'scroll-content'
+              },
               slots.default?.()
             )
           ])
@@ -301,8 +305,10 @@ describe('WorkflowTabs scrolling', () => {
   })
 
   it('rebinds overflow observation when scroll content is replaced', async () => {
-    const { user } = renderComponent()
+    const { user, unmount } = renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    const oldScrollContent = screen.getByTestId('scroll-content')
+    const removeOldListener = vi.spyOn(oldScrollContent, 'removeEventListener')
 
     await user.click(
       screen.getByRole('button', { name: 'Replace scroll content' })
@@ -310,5 +316,30 @@ describe('WorkflowTabs scrolling', () => {
 
     await waitFor(() => expect(overflowObservers).toHaveLength(2))
     expect(overflowObservers[0].dispose).toHaveBeenCalledOnce()
+    expect(removeOldListener).toHaveBeenCalledWith(
+      'scroll',
+      expect.any(Function),
+      expect.any(Object)
+    )
+    expect(removeOldListener).toHaveBeenCalledWith(
+      'scrollend',
+      expect.any(Function),
+      expect.any(Object)
+    )
+
+    const newScrollContent = screen.getByTestId('scroll-content')
+    const removeNewListener = vi.spyOn(newScrollContent, 'removeEventListener')
+    unmount()
+
+    expect(removeNewListener).toHaveBeenCalledWith(
+      'scroll',
+      expect.any(Function),
+      expect.any(Object)
+    )
+    expect(removeNewListener).toHaveBeenCalledWith(
+      'scrollend',
+      expect.any(Function),
+      expect.any(Object)
+    )
   })
 })

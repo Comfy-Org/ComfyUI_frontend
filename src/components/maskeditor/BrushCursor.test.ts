@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -121,17 +121,9 @@ describe('BrushCursor', () => {
       mockStore.zoomRatio = 1
 
       const container = document.createElement('div')
-      vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
-        left: 30,
-        top: 60,
-        right: 0,
-        bottom: 0,
-        width: 0,
-        height: 0,
-        x: 0,
-        y: 0,
-        toJSON: () => ({})
-      } as DOMRect)
+      vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(30, 60)
+      )
 
       renderCursor(container)
 
@@ -147,8 +139,8 @@ describe('BrushCursor', () => {
       const container = document.createElement('div')
       const getBoundingClientRect = vi
         .spyOn(container, 'getBoundingClientRect')
-        .mockReturnValueOnce({ left: 30, top: 60 } as DOMRect)
-        .mockReturnValue({ left: 80, top: 110 } as DOMRect)
+        .mockReturnValueOnce(new DOMRect(30, 60))
+        .mockReturnValue(new DOMRect(80, 110))
 
       renderCursor(container)
       await waitFor(() => {
@@ -162,6 +154,25 @@ describe('BrushCursor', () => {
       })
       expect(styleOf(getBrushEl())).toContain('top: -79px')
       expect(getBoundingClientRect).toHaveBeenCalledTimes(2)
+    })
+
+    it('updates when the container moves under a stationary cursor', async () => {
+      const container = document.createElement('div')
+      vi.spyOn(container, 'getBoundingClientRect')
+        .mockReturnValueOnce(new DOMRect(30, 60))
+        .mockReturnValue(new DOMRect(80, 110))
+
+      renderCursor(container)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 50px')
+      })
+
+      await fireEvent.scroll(window)
+
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 0px')
+      })
+      expect(styleOf(getBrushEl())).toContain('top: -80px')
     })
   })
 

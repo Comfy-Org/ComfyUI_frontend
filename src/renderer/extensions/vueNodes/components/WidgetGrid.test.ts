@@ -100,6 +100,10 @@ describe('WidgetGrid', () => {
       'aria-invalid',
       'true'
     )
+    expect(screen.getByTestId('widget-wrapper')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
     expect(screen.getByTestId('app-input')).not.toHaveAttribute('aria-invalid')
   })
 })

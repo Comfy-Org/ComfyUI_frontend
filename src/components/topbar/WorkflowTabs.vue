@@ -127,6 +127,7 @@ import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import {
   computed,
+  effectScope,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -134,7 +135,7 @@ import {
   ref,
   watch
 } from 'vue'
-import type { WatchStopHandle } from 'vue'
+import type { EffectScope } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -284,47 +285,57 @@ watch(
 )
 
 let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
-let stopArrivedWatch: WatchStopHandle | null = null
-let stopOverflowWatch: WatchStopHandle | null = null
+let scrollContentScope: EffectScope | null = null
 
-const bindScrollContent = () => {
+function disposeScrollContent() {
+  overflowObserver?.dispose()
+  overflowObserver = null
+  scrollContentScope?.stop()
+  scrollContentScope = null
+}
+
+function bindScrollContent() {
   const el =
     containerRef.value?.querySelector<HTMLElement>('.p-scrollpanel-content') ??
     null
   if (el === scrollContent.value) return
 
-  stopArrivedWatch?.()
-  stopOverflowWatch?.()
-  overflowObserver?.dispose()
+  disposeScrollContent()
 
   scrollContent.value = el
   if (!el) return
 
-  const scrollState = useScroll(el)
+  scrollContentScope = effectScope()
+  scrollContentScope.run(() => {
+    const scrollState = useScroll(el)
 
-  stopArrivedWatch = watch(
-    [() => scrollState.arrivedState.left, () => scrollState.arrivedState.right],
-    ([atLeft, atRight]) => {
-      leftArrowEnabled.value = !atLeft
-      rightArrowEnabled.value = !atRight
-    },
-    { immediate: true }
-  )
+    watch(
+      [
+        () => scrollState.arrivedState.left,
+        () => scrollState.arrivedState.right
+      ],
+      ([atLeft, atRight]) => {
+        leftArrowEnabled.value = !atLeft
+        rightArrowEnabled.value = !atRight
+      },
+      { immediate: true }
+    )
 
-  overflowObserver = useOverflowObserver(el)
-  stopOverflowWatch = watch(
-    overflowObserver.isOverflowing,
-    (isOverflow) => {
-      showOverflowArrows.value = isOverflow
-      if (!isOverflow) return
-      void nextTick(() => {
-        // Force a new check after arrows are updated
-        scrollState.measure()
-        void ensureActiveTabVisible({ waitForDom: false })
-      })
-    },
-    { immediate: true }
-  )
+    overflowObserver = useOverflowObserver(el)
+    watch(
+      overflowObserver.isOverflowing,
+      (isOverflow) => {
+        showOverflowArrows.value = isOverflow
+        if (!isOverflow) return
+        void nextTick(() => {
+          // Force a new check after arrows are updated
+          scrollState.measure()
+          void ensureActiveTabVisible({ waitForDom: false })
+        })
+      },
+      { immediate: true }
+    )
+  })
 }
 
 onMounted(bindScrollContent)
@@ -333,11 +344,7 @@ useMutationObserver(containerRef, bindScrollContent, {
   subtree: true
 })
 
-onBeforeUnmount(() => {
-  stopArrivedWatch?.()
-  stopOverflowWatch?.()
-  overflowObserver?.dispose()
-})
+onBeforeUnmount(disposeScrollContent)
 
 onUpdated(() => {
   bindScrollContent()

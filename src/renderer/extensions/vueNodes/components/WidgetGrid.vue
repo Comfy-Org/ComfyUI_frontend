@@ -56,6 +56,7 @@
             :node-id
             :node-type
             :invalid="widget.hasError"
+            :aria-invalid="widget.hasError || undefined"
             :class="
               cn(
                 'col-span-2',
