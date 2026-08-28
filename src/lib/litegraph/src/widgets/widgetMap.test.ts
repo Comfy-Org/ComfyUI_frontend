@@ -27,6 +27,12 @@ class AccessorHeightWidget implements IBaseWidget {
   }
 }
 
+class SetterOnlyHeightWidget extends AccessorHeightWidget {
+  override set height(_value: number) {
+    this.heightWrites++
+  }
+}
+
 describe('toConcreteWidget', () => {
   it('preserves the identity of a plain native widget', () => {
     const node = new LGraphNode('test')
@@ -106,5 +112,16 @@ describe('toConcreteWidget', () => {
     expect(result).toBe(widget)
     expect(widget.heightWrites).toBe(1)
     expect(widget.height).toBe(48)
+  })
+
+  it('combines a foreign height setter with the concrete getter', () => {
+    const node = new LGraphNode('test')
+    const widget = new SetterOnlyHeightWidget()
+
+    const result = toConcreteWidget(widget, node)
+    widget.height = 48
+
+    expect(widget.heightWrites).toBe(1)
+    expect(result.height).not.toBeUndefined()
   })
 })
