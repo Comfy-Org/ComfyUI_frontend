@@ -1844,7 +1844,8 @@ describe('08-fix1 receipts and pins', () => {
     expect(second.boundWorkflowId.value).toBe('wf-1')
     second.start()
     expect(second.boundWorkflowId.value).toBe('wf-1')
-    await Promise.resolve()
+    expect(rest.getMessages).toHaveBeenCalledTimes(1)
+    await vi.mocked(rest.getMessages).mock.results[0].value
     await Promise.resolve()
   })
 
@@ -1945,5 +1946,149 @@ describe('08-fix2 receipts and pins', () => {
     const second = await session.sendMessage('fine now')
     expect(second).toBe(true)
     expect(rest.postMessage).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('08-fix3 receipts and pins', () => {
+  beforeEach(resetHarness)
+
+  it('(r3a) a send acked while the target load is in flight survives its 404 and resumes on retry', async () => {
+    let rejectHistory!: (error: unknown) => void
+    const getMessages = vi
+      .fn<(threadId: string) => Promise<AgentMessages>>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-a', 'thread A prompt'),
+        historyRow(2, 'assistant', 'turn-a', 'thread A reply')
+      ])
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            rejectHistory = reject
+          })
+      )
+      .mockResolvedValueOnce([])
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValue({ thread_id: 'th-b', message_id: 'msg-b' })
+    const rest = fakeRest({ getMessages, postMessage })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.loadThread('th-a')
+
+    const load = session.loadThread('th-b')
+    await session.sendMessage('acked mid-load')
+    emit(deltaIn('th-b', 'msg-b', 'partial'))
+    rejectHistory(new AgentApiError('gone', 404, undefined))
+    await load
+
+    expect(session.threadId.value).toBeNull()
+    expect(session.entries.value).toEqual([])
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+
+    await session.loadThread('th-b')
+    const conversation = useAgentConversationStore()
+    expect(conversation.activeTurnId).toBe('msg-b')
+    const users = session.entries.value.flatMap((e) =>
+      e.role === 'user' ? [e.text] : []
+    )
+    expect(users).toEqual(['acked mid-load'])
+  })
+
+  it('(r3b) a send acked while the target load is in flight survives its 500 and resumes on retry', async () => {
+    let rejectHistory!: (error: unknown) => void
+    const getMessages = vi
+      .fn<(threadId: string) => Promise<AgentMessages>>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-a', 'thread A prompt'),
+        historyRow(2, 'assistant', 'turn-a', 'thread A reply')
+      ])
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            rejectHistory = reject
+          })
+      )
+      .mockResolvedValueOnce([])
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValue({ thread_id: 'th-b', message_id: 'msg-b' })
+    const rest = fakeRest({ getMessages, postMessage })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.loadThread('th-a')
+
+    const load = session.loadThread('th-b')
+    await session.sendMessage('acked mid-load')
+    emit(deltaIn('th-b', 'msg-b', 'partial'))
+    rejectHistory(new AgentApiError('backend down', 500, undefined))
+    await load
+
+    expect(session.threadId.value).toBeNull()
+    expect(session.entries.value).toEqual([])
+    expect(session.notices.value).toHaveLength(1)
+
+    await session.loadThread('th-b')
+    const conversation = useAgentConversationStore()
+    expect(conversation.activeTurnId).toBe('msg-b')
+    const users = session.entries.value.flatMap((e) =>
+      e.role === 'user' ? [e.text] : []
+    )
+    expect(users).toEqual(['acked mid-load'])
+  })
+
+  it('(r3c) a throwing workflow.tabs() surfaces sendFailed and never latches sending', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        tabs: () => {
+          throw new Error('tabs exploded')
+        }
+      }
+    })
+    session.start()
+
+    expect(await session.sendMessage('doomed')).toBe(false)
+    expect(session.isSending.value).toBe(false)
+    expect(await session.sendMessage('doomed again')).toBe(false)
+    expect(rest.postMessage).not.toHaveBeenCalled()
+    const failures =
+      JSON.stringify(session.entries.value).match(/Message failed to send/g) ??
+      []
+    expect(failures).toHaveLength(2)
+  })
+
+  it('(r3d) a synchronously-throwing prepare surfaces sendFailed and never latches sending', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        prepare: () => {
+          throw new Error('prepare exploded synchronously')
+        }
+      }
+    })
+    session.start()
+
+    expect(await session.sendMessage('doomed')).toBe(false)
+    expect(session.isSending.value).toBe(false)
+    expect(await session.sendMessage('doomed again')).toBe(false)
+    expect(rest.postMessage).not.toHaveBeenCalled()
+    const failures =
+      JSON.stringify(session.entries.value).match(/Message failed to send/g) ??
+      []
+    expect(failures).toHaveLength(2)
   })
 })
