@@ -8,7 +8,9 @@ import { toNodeId } from '@/types/nodeId'
 
 const WidgetStub = markRaw(
   defineComponent({
-    template: '<div data-testid="widget-control" />'
+    props: { invalid: Boolean },
+    template:
+      '<div data-testid="widget-wrapper"><input data-testid="widget-control" :aria-invalid="invalid || undefined" /></div>'
   })
 )
 
@@ -79,5 +81,25 @@ describe('WidgetGrid', () => {
         .map((element) => element.dataset.widgetName)
     ).toEqual(['replacement', 'converted-widget-picker'])
     expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
+  })
+
+  it('passes execution errors to the widget control API', () => {
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [{ ...widget('seed', 'string', 0), hasError: true }]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+      }
+    })
+
+    expect(screen.getByTestId('widget-control')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+    expect(screen.getByTestId('app-input')).not.toHaveAttribute('aria-invalid')
   })
 })

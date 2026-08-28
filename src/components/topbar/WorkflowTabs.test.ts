@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive } from 'vue'
@@ -15,6 +15,9 @@ const distribution = vi.hoisted(() => ({
 }))
 
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
+const overflowObservers = vi.hoisted(
+  () => [] as Array<{ dispose: ReturnType<typeof vi.fn> }>
+)
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -27,6 +30,31 @@ vi.mock('@/platform/distribution/types', () => ({
     return distribution.isNightly
   }
 }))
+
+vi.mock('primevue/scrollpanel', async () => {
+  const { defineComponent, h, ref } = await import('vue')
+  return {
+    default: defineComponent({
+      name: 'ScrollPanelStub',
+      setup(_, { slots }) {
+        const contentKey = ref(0)
+        return () =>
+          h('div', [
+            h(
+              'button',
+              { onClick: () => contentKey.value++ },
+              'Replace scroll content'
+            ),
+            h(
+              'div',
+              { key: contentKey.value, class: 'p-scrollpanel-content' },
+              slots.default?.()
+            )
+          ])
+      }
+    })
+  }
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -51,14 +79,21 @@ vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
 
-vi.mock('@/composables/element/useOverflowObserver', () => ({
-  useOverflowObserver: () => ({
-    isOverflowing: { value: false },
-    disposed: { value: false },
-    checkOverflow: vi.fn(),
-    dispose: vi.fn()
-  })
-}))
+vi.mock('@/composables/element/useOverflowObserver', async () => {
+  const { ref } = await import('vue')
+  return {
+    useOverflowObserver: () => {
+      const observer = {
+        isOverflowing: ref(false),
+        disposed: ref(false),
+        checkOverflow: vi.fn(),
+        dispose: vi.fn()
+      }
+      overflowObservers.push(observer)
+      return observer
+    }
+  }
+})
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
@@ -257,5 +292,23 @@ describe('WorkflowTabs agent entry button', () => {
     await nextTick()
 
     expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
+  })
+})
+
+describe('WorkflowTabs scrolling', () => {
+  beforeEach(() => {
+    overflowObservers.length = 0
+  })
+
+  it('rebinds overflow observation when scroll content is replaced', async () => {
+    const { user } = renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+
+    await user.click(
+      screen.getByRole('button', { name: 'Replace scroll content' })
+    )
+
+    await waitFor(() => expect(overflowObservers).toHaveLength(2))
+    expect(overflowObservers[0].dispose).toHaveBeenCalledOnce()
   })
 })

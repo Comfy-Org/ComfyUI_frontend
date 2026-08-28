@@ -142,6 +142,27 @@ describe('BrushCursor', () => {
       const style = styleOf(getBrushEl())
       expect(style).toContain('top: 220px')
     })
+
+    it('should re-read the container offset when the cursor moves', async () => {
+      const container = document.createElement('div')
+      const getBoundingClientRect = vi
+        .spyOn(container, 'getBoundingClientRect')
+        .mockReturnValueOnce({ left: 30, top: 60 } as DOMRect)
+        .mockReturnValue({ left: 80, top: 110 } as DOMRect)
+
+      renderCursor(container)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 50px')
+      })
+
+      mockStore.cursorPoint = { x: 101, y: 51 }
+
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 1px')
+      })
+      expect(styleOf(getBrushEl())).toContain('top: -79px')
+      expect(getBoundingClientRect).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe('gradient preview', () => {
