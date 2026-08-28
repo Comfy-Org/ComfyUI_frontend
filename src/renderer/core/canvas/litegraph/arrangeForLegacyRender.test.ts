@@ -114,10 +114,14 @@ describe('arrangeForLegacyRender', () => {
       timestamp: Date.now(),
       source: LayoutSource.Canvas
     })
+    const layoutVersion = layoutStore.layoutVersion
+    const graphVersion = graph._version
     expect(nodesInRenderOrder(graph)).toEqual([first])
 
     const second = addedNode(graph, 2)
 
+    expect(layoutStore.layoutVersion).toBe(layoutVersion)
+    expect(graph._version).toBeGreaterThan(graphVersion)
     expect(nodesInRenderOrder(graph)).toEqual([first, second])
   })
 })
