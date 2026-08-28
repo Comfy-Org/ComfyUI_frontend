@@ -9,6 +9,8 @@ import { defineComponent, h, nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { assetService } from '@/platform/assets/services/assetService'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -236,7 +238,10 @@ vi.mock('@/stores/executionErrorStore', () => ({
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => ({
+    isLoggedIn: { value: true },
+    userDisplayName: { value: 'Jo Rivera' }
+  })
 }))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
@@ -1490,6 +1495,7 @@ describe('AgentPanelRoot auto fit after generation', () => {
     ws.clear()
     vi.mocked(app.loadGraphData).mockClear()
     vi.stubGlobal('devicePixelRatio', 1)
+    useSettingStore().settingValues[AGENT_CONSENT_SETTING_ID] = true
     const panel = useAgentPanelStore()
     panel.enabled = true
     panel.isOpen = true
