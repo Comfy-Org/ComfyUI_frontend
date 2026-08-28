@@ -1,7 +1,16 @@
 import { useAsyncState, whenever } from '@vueuse/core'
 import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive, toValue } from 'vue'
+import {
+  computed,
+  effectScope,
+  reactive,
+  ref,
+  shallowReactive,
+  toValue,
+  watch
+} from 'vue'
+import type { EffectScope } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -273,18 +282,29 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
-  const inputAssets = computed(() =>
-    flags.assetsEnabled
-      ? useAssetsQuery({ include_tags: ['input'] })
-      : historyInputs
-  )
-  const outputDirs = ref(['output', 'temp'])
-  const outputAssets = computed(() => {
-    if (!flags.assetsEnabled) return useHistoryAssets()
+  const inputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  let assetsScope: EffectScope | undefined
+  watch(
+    () => flags.assetsEnabled,
+    (isAssets) => {
+      if (assetsScope) assetsScope.stop()
+      assetsScope = undefined
 
-    const flatAssets = useAssetsQuery({ tags_any: outputDirs.value })
-    return wrapPagedList(flatAssets, unflattenOutputAssets)
-  })
+      if (isAssets) {
+        assetsScope = effectScope()
+        assetsScope.run(() => {
+          inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
+          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
+          outputAssets.value = wrapPagedList(flatAssets, unflattenOutputAssets)
+        })
+      } else {
+        inputAssets.value = historyInputs
+        outputAssets.value = useHistoryAssets()
+      }
+    },
+    { immediate: true }
+  )
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
