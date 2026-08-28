@@ -17,7 +17,7 @@ const EXPECTED_WIDGET_ORDER = [
   'pre_attach_third',
   'pre_attach_first',
   'pre_attach_second'
-]
+] as const
 
 test.use({
   initialSettings: {

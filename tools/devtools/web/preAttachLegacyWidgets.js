@@ -7,7 +7,7 @@ const WIDGET_NAMES = [
   'pre_attach_first',
   'pre_attach_second',
   'pre_attach_third'
-]
+] as const
 
 class ForeignLegacyWidget {
   constructor(name, value) {
