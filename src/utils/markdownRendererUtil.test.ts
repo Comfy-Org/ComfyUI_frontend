@@ -15,6 +15,12 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('href="http://host/api/view?filename=gen.png"')
     })
 
+    it('resolves a relative href against a bare root base', () => {
+      const html = renderMarkdownToHtml('[a](view)', '/')
+
+      expect(html).toContain('href="/view"')
+    })
+
     it('leaves fragment and query hrefs alone', () => {
       const html = renderMarkdownToHtml('[jump](#section)', 'http://host/api')
       expect(html).toContain('href="#section"')
