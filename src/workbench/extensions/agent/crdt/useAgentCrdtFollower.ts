@@ -6,7 +6,9 @@ import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { recordDevEvent } from './devPanelLog'
+import { docLog, ecsLog, opsLog, wireLog } from './crdtLog'
+import type { CrdtDebugSnapshot } from './crdtDebugReport'
+import { readCrdtSnapshot } from './crdtDebugReport'
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
@@ -117,7 +119,15 @@ export function useAgentCrdtFollower(
       } catch {
         // Leave the raw string.
       }
-      recordDevEvent('ws_out', { delivered, frame: parsed })
+      const frameType =
+        typeof parsed === 'object' && parsed !== null && 'type' in parsed
+          ? String((parsed as { type: unknown }).type)
+          : 'unknown'
+      wireLog.trace(
+        'ws_out',
+        `${frameType} ${delivered ? 'sent' : 'DROPPED (socket not open)'}`,
+        { delivered, frame: parsed }
+      )
       return delivered
     },
     addEventListener(type, listener) {
@@ -175,9 +185,11 @@ export function useAgentCrdtFollower(
     clearStaleProbe()
     staleProbeTimer = setTimeout(() => {
       staleProbeTimer = null
-      recordDevEvent('stale_probe', {
-        workflowId: subscribedWorkflowId.value
-      })
+      docLog.warn(
+        'stale_probe',
+        `no doc frame for ${STALE_AFTER_MS}ms on a bound channel — probing with a resubscribe`,
+        { workflowId: subscribedWorkflowId.value, afterMs: STALE_AFTER_MS }
+      )
       bridge.resubscribe()
       armStaleProbe()
     }, STALE_AFTER_MS)
@@ -202,10 +214,11 @@ export function useAgentCrdtFollower(
       subscribeRetryTimer = null
       // The desired doc changed while we waited — the watch owns that path.
       if (subscribedWorkflowId.value !== target) return
-      recordDevEvent('subscribe_retry', {
-        attempt: subscribeRetryAttempt,
-        workflowId: target
-      })
+      docLog.info(
+        'subscribe_retry',
+        `retrying subscribe (attempt ${subscribeRetryAttempt}/${SUBSCRIBE_RETRY_MAX_ATTEMPTS})`,
+        { attempt: subscribeRetryAttempt, workflowId: target }
+      )
       bridge.resubscribe()
     }, delay)
   }
@@ -215,7 +228,13 @@ export function useAgentCrdtFollower(
     const ok = event.detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
-    recordDevEvent('doc_subscribed', event.detail ?? null)
+    docLog.info(
+      'doc_subscribed',
+      ok
+        ? `bound to ${subscribedWorkflowId.value ?? 'unknown doc'}`
+        : `server refused the subscribe (${String(event.detail?.code ?? 'no code')})`,
+      event.detail ?? null
+    )
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
@@ -241,27 +260,46 @@ export function useAgentCrdtFollower(
         seq?: number
         update?: Uint8Array
         actor?: string
+        opIds?: string[]
       } | null
-      recordDevEvent('doc_update', {
-        workflowId: detail?.workflowId,
-        seq: detail?.seq,
-        actor: detail?.actor,
-        bytes:
-          detail?.update instanceof Uint8Array ? detail.update.length : null
-      })
+      docLog.debug(
+        'doc_update',
+        `seq ${detail?.seq ?? '?'} from ${detail?.actor ?? 'unknown actor'}`,
+        {
+          workflowId: detail?.workflowId,
+          seq: detail?.seq,
+          actor: detail?.actor,
+          opIds: detail?.opIds ?? [],
+          bytes:
+            detail?.update instanceof Uint8Array ? detail.update.length : null
+        }
+      )
     }
     const ids = currentDocNodeIds()
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
+      ecsLog.info(
+        'doc_nodes_changed',
+        `doc nodes ${added.length > 0 ? `+${added.join(',')}` : ''}${added.length > 0 && removed.length > 0 ? ' ' : ''}${removed.length > 0 ? `-${removed.join(',')}` : ''}`,
+        { added, removed }
+      )
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
     if (staleProbeTimer !== null) armStaleProbe()
     lastFrameType.value = event.type
     if (event instanceof CustomEvent) {
-      recordDevEvent('doc_ops_result', event.detail ?? null)
+      const detail = event.detail as {
+        ok?: boolean
+        applied?: string[]
+        skipped?: string[]
+      } | null
+      opsLog.info(
+        'doc_ops_result',
+        `host ${detail?.ok ? 'accepted' : 'refused'} a batch: ${detail?.applied?.length ?? 0} applied, ${detail?.skipped?.length ?? 0} skipped`,
+        event.detail ?? null
+      )
     }
   }
   const onDocReset: EventListener = (event) => {
@@ -285,8 +323,9 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
-    recordDevEvent(
+    docLog.warn(
       'doc_reset',
+      'lineage break — the host re-minted the document, so prior updates no longer compose',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
@@ -307,15 +346,20 @@ export function useAgentCrdtFollower(
         : null
     if (detail?.workflowId !== undefined)
       adapter.discardPending(detail.workflowId)
-    recordDevEvent(
+    docLog.warn(
       'schema_error',
+      'refusing to project the doc: its schema version is not the one this build reads (KA-11 fail-closed)',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
   const onReconnected: EventListener = () => {
     connected.value = false
     clearStaleProbe()
-    recordDevEvent('reconnected', null)
+    docLog.info(
+      'reconnected',
+      'socket reconnected — re-driving the subscribe',
+      null
+    )
     bridge.resubscribe()
   }
   /**
@@ -360,7 +404,11 @@ export function useAgentCrdtFollower(
         const persisted = initialBind ? readPersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
-          recordDevEvent('rebind', { workflowId: persisted })
+          docLog.info(
+            'rebind',
+            `remount rebound to the persisted doc ${persisted}`,
+            { workflowId: persisted }
+          )
           if (boundWorkflowId !== persisted) {
             if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
             adapter.bind(persisted, bridge.follower)
@@ -420,8 +468,22 @@ export function useAgentCrdtFollower(
     lastFrameType: lastFrameType.value
   }))
 
+  /**
+   * A getter, not a computed: the doc's ledgers change on every frame, and
+   * mirroring them into reactive state would make the instrument the most
+   * expensive consumer of the thing it observes.
+   */
+  const debugSnapshot = (): CrdtDebugSnapshot =>
+    readCrdtSnapshot(bridge.follower.doc, {
+      status: status.value,
+      tabId,
+      lastSeq: bridge.lastAppliedSeq,
+      schemaError: bridge.lastSchemaError?.message ?? null
+    })
+
   return {
     status: readonly(status),
+    debugSnapshot,
     // The semantic canvas-command adapter will call this after it moves to
     // @comfyorg/comfy-multi-player. Raw Yjs client updates are never sent.
     sendHumanOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops)

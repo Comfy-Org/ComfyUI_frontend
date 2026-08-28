@@ -1,3 +1,4 @@
+import { docLog, wireLog } from './crdtLog'
 import type {
   DocFrameClient,
   DocOp,
@@ -15,11 +16,21 @@ import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
  * any future transport might regress to) is contained here rather than being
  * allowed to abort a Vue watcher or an unmount hook.
  */
-function trySend(send: () => boolean): boolean {
+function trySend(what: string, send: () => boolean): boolean {
   try {
-    return send()
+    const delivered = send()
+    if (!delivered) {
+      wireLog.info('send_dropped', `${what} could not leave the transport`, {
+        what,
+        reason: 'socket-not-open'
+      })
+    }
+    return delivered
   } catch (error) {
-    console.warn('[agent-crdt] outbound doc frame dropped', error)
+    wireLog.warn('send_dropped', `${what} threw on the transport`, {
+      what,
+      error: String(error)
+    })
     return false
   }
 }
@@ -92,6 +103,11 @@ export class LayoutFollowerBridge extends EventTarget {
     return this.schemaError
   }
 
+  /** Highest doc seq integrated since the last subscribe, for diagnostics. */
+  get lastAppliedSeq(): number | null {
+    return this.lastSeq
+  }
+
   /** True while intent and reality disagree — i.e. a retry is still owed. */
   get hasPendingSubscribe(): boolean {
     return (
@@ -119,11 +135,13 @@ export class LayoutFollowerBridge extends EventTarget {
       // record is cleared either way.
       const sent = this.sentWorkflowId
       this.sentWorkflowId = null
-      trySend(() => this.client.unsubscribe(sent))
+      trySend('doc_unsubscribe', () => this.client.unsubscribe(sent))
     }
     if (desired === null || this.sentWorkflowId === desired) return
     if (
-      trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
+      trySend('doc_subscribe', () =>
+        this.client.subscribe(desired, this.follower.stateVector())
+      )
     ) {
       this.sentWorkflowId = desired
       this.lastSeq = null
@@ -143,7 +161,7 @@ export class LayoutFollowerBridge extends EventTarget {
   sendHumanOps(tab: string, ops: DocOp[]): void {
     const workflowId = this.sentWorkflowId
     if (workflowId === null || ops.length === 0) return
-    trySend(() => this.client.sendOps(workflowId, tab, ops))
+    trySend('doc_ops', () => this.client.sendOps(workflowId, tab, ops))
   }
 
   /**
@@ -173,12 +191,24 @@ export class LayoutFollowerBridge extends EventTarget {
 
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
-    if (this.lastSeq !== null && update.seq <= this.lastSeq) return
+    if (this.lastSeq !== null && update.seq <= this.lastSeq) {
+      docLog.debug(
+        'doc_gap',
+        `dropped a stale frame at seq ${update.seq} (already at ${this.lastSeq})`,
+        { seq: update.seq, lastSeq: this.lastSeq, reason: 'stale' }
+      )
+      return
+    }
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
     // follower doc. Only an explicit doc_reset may replace it (ADR-0024).
     if (this.lastSeq !== null && update.seq > this.lastSeq + 1) {
+      docLog.warn(
+        'doc_gap',
+        `sequence gap: expected ${this.lastSeq + 1}, got ${update.seq} — resubscribing for a state-vector delta`,
+        { seq: update.seq, lastSeq: this.lastSeq, reason: 'gap' }
+      )
       this.resubscribe()
       return
     }
