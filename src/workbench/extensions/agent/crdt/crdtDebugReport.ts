@@ -18,22 +18,14 @@
  * is exactly when a report matters most, and a failed `getLogs()` must
  * degrade to a note in the log section rather than abort the whole bundle.
  */
-import {
-  appliedOpIds,
-  readGraph,
-  readMeta,
-  readStamps
-} from '@comfyorg/comfy-multi-player'
-import type * as Y from 'yjs'
-
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
 
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { devEventReplacer } from './devPanelLog'
 import type { MergeTraceEntry } from './mergeTrace'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 /** Server logs beyond this are tail-trimmed; a paste has to stay pasteable. */
 const MAX_LOG_CHARS = 40_000
@@ -78,19 +70,6 @@ function redactSecrets(value: unknown, depth = 0): unknown {
   )
 }
 
-/** Live CRDT internals, read from the follower at the moment Copy is pressed. */
-export interface CrdtDebugSnapshot {
-  status: AgentCrdtStatus
-  tabId: string | null
-  lastSeq: number | null
-  schemaError: string | null
-  meta: Readonly<Record<string, unknown>>
-  nodeIds: readonly string[]
-  linkIds: readonly string[]
-  appliedOpIds: readonly string[]
-  stamps: Readonly<Record<string, unknown>>
-}
-
 /**
  * The sources a tester must opt into.
  *
@@ -122,56 +101,6 @@ export interface CrdtDebugReportInput {
   mergeTrace?: readonly MergeTraceEntry[]
   /** Serialized active workflow, when the caller can supply one. */
   workflow?: unknown
-}
-
-/**
- * Read every CRDT-observable fact out of a follower doc.
- *
- * Uses the package's read-only snapshot surface rather than the live Y types:
- * those accessors never materialize a root on an empty document and never hand
- * back a writable handle, so building a report can never perturb the thing it
- * is reporting on.
- */
-export function readCrdtSnapshot(
-  doc: Y.Doc | null,
-  base: Omit<
-    CrdtDebugSnapshot,
-    'meta' | 'nodeIds' | 'linkIds' | 'appliedOpIds' | 'stamps'
-  >
-): CrdtDebugSnapshot {
-  if (doc === null) {
-    return {
-      ...base,
-      meta: {},
-      nodeIds: [],
-      linkIds: [],
-      appliedOpIds: [],
-      stamps: {}
-    }
-  }
-  try {
-    const graph = readGraph(doc)
-    return {
-      ...base,
-      meta: readMeta(doc),
-      nodeIds: Object.keys(graph.nodes),
-      linkIds: Object.keys(graph.links),
-      appliedOpIds: appliedOpIds(doc),
-      stamps: readStamps(doc)
-    }
-  } catch (error) {
-    // A doc this build cannot read (KA-11) still has to produce a report —
-    // that failure IS the bug being reported.
-    return {
-      ...base,
-      schemaError: base.schemaError ?? String(error),
-      meta: {},
-      nodeIds: [],
-      linkIds: [],
-      appliedOpIds: [],
-      stamps: {}
-    }
-  }
 }
 
 async function attempt<T>(label: string, load: () => Promise<T>) {
@@ -239,7 +168,7 @@ function systemSection(stats: SystemStats): string {
     )
   for (const device of stats.devices) {
     lines.push(
-      `- **Device ${device.index}:** ${device.name} (${device.type}) — VRAM ${device.vram_free} free / ${device.vram_total} total, torch ${device.torch_vram_free} / ${device.torch_vram_total}`
+      `- **Device ${device.index ?? '?'}:** ${device.name} (${device.type}) — VRAM ${device.vram_free} free / ${device.vram_total} total, torch ${device.torch_vram_free} / ${device.torch_vram_total}`
     )
   }
   return lines.join('\n')
@@ -351,11 +280,13 @@ export async function collectCrdtDebugReport(
 
   sections.push(
     '## CRDT event log',
+    `${SHARING_WARNING} Frames are recorded as envelopes, but op ids and workflow ids appear verbatim.`,
     fence('json', truncate(json(input.events), MAX_SECTION_CHARS))
   )
 
   sections.push(
     '## Document stamps (LWW ledger)',
+    `${SHARING_WARNING} Stamp keys name every actor that wrote to the document.`,
     fence('json', truncate(json(input.crdt.stamps), MAX_SECTION_CHARS))
   )
 

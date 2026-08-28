@@ -115,6 +115,29 @@ describe('CrdtDevPanel', () => {
     expect(log).not.toContain('ws_out')
   })
 
+  it('shows the sensitive-source opt-ins as off, and lets them be turned on', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+
+    // These three are the only consent gate on logs, settings and the workflow
+    // reaching the clipboard, so their state has to be readable. A bare
+    // <input type="checkbox"> renders at 0x0 here: agentPanel.css strips
+    // `appearance` from every input under #agent-panel-root.
+    for (const key of ['serverLogs', 'settings', 'workflow']) {
+      const toggle = screen.getByTestId(`crdt-dev-panel-include-${key}`)
+      expect(toggle.getAttribute('role')).toBe('switch')
+      expect(toggle.getAttribute('aria-checked')).toBe('false')
+
+      await user.click(toggle)
+      expect(
+        screen
+          .getByTestId(`crdt-dev-panel-include-${key}`)
+          .getAttribute('aria-checked')
+      ).toBe('true')
+    }
+  })
+
   it('explains a merge sequence without needing a backend', async () => {
     const user = userEvent.setup()
     renderPanel()

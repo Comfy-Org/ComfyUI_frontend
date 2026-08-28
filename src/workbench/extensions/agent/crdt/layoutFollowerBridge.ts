@@ -227,12 +227,18 @@ export class LayoutFollowerBridge extends EventTarget {
       assertReadableSchema(this.follower.doc)
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
+      // Every subsequent frame fails the same gate, so re-announcing it once
+      // per frame would repeat a gate-bypassing `warn` for the rest of the
+      // session. The state is already readable via `lastSchemaError`.
+      const firstFailure = this.schemaError === null
       this.schemaError = error
-      this.dispatchEvent(
-        new CustomEvent('schema_error', {
-          detail: { workflowId: update.workflowId, found: error.found }
-        })
-      )
+      if (firstFailure) {
+        this.dispatchEvent(
+          new CustomEvent('schema_error', {
+            detail: { workflowId: update.workflowId, found: error.found }
+          })
+        )
+      }
       return
     }
 
