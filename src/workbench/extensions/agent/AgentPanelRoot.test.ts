@@ -250,7 +250,10 @@ vi.mock('@/stores/executionErrorStore', () => ({
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => ({
+    isLoggedIn: { value: true },
+    userDisplayName: { value: 'Jo Rivera' }
+  })
 }))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
