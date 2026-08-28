@@ -2486,13 +2486,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
-    // Select-only picking: node clicks select, empty canvas marquee-selects;
-    // clone, reroute, link, and group interactions stay off.
+    // Select-only picking: node clicks select; empty canvas keeps the user's
+    // configured left-drag behavior (pan or marquee-select, mirrored from the
+    // tail this return bypasses). Clone, reroute, link, and group
+    // interactions stay off - deliberately including the group double-click
+    // and the empty-canvas double-click search box, and leaving
+    // selected_group inert.
     if (this.selectOnly) {
       if (node && (this.allow_interaction || node.flags.allow_interaction)) {
         this._processNodeClick(e, ctrlOrMeta, node)
       } else if (this.allow_dragcanvas) {
-        this._setupNodeSelectionDrag(e, pointer)
+        if (LiteGraph.leftMouseClickBehavior === 'panning') {
+          pointer.onClick = () => this.processSelect(null, e)
+          pointer.finally = () => (this.dragging_canvas = false)
+          this.dragging_canvas = true
+        } else {
+          this._setupNodeSelectionDrag(e, pointer)
+        }
       }
       return
     }
@@ -4516,6 +4526,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (e.altKey && !e.shiftKey) {
       for (const item of initialSelection)
         if (!itemsInRect.has(item)) desired.add(item)
+    } else if (this.selectOnly) {
+      // Picking is additive (see _handleMultiSelect): never replace.
+      for (const item of initialSelection) desired.add(item)
+      for (const item of itemsInRect) desired.add(item)
     } else {
       for (const item of itemsInRect) desired.add(item)
     }
@@ -4572,6 +4586,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (e.altKey) {
       // Remove from selection
       for (const item of itemsInRect) this.deselect(item)
+    } else if (this.selectOnly) {
+      // Picking is additive: a marquee that misses an already-picked node
+      // must not unpick it, so the replace branch is never taken in-mode.
+      for (const item of itemsInRect) this.select(item)
     } else {
       // Replace selection
       for (const item of selectedItems.values()) {

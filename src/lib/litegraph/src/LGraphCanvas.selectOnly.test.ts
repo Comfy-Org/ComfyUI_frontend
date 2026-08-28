@@ -53,6 +53,7 @@ describe('LGraphCanvas selectOnly', () => {
     LiteGraph.vueNodesMode = false
     LiteGraph.middle_click_slot_add_default_node = false
     LiteGraph.alt_drag_do_clone_nodes = false
+    LiteGraph.leftMouseClickBehavior = 'panning'
   })
 
   it('accumulates ordinary node clicks and toggles a clicked node off', () => {
@@ -157,9 +158,89 @@ describe('LGraphCanvas selectOnly', () => {
       canvasY: 450
     } as CanvasPointerEvent)
 
-    // The group's resize handle arms nothing; the marquee select drag arms.
-    expect(canvas.pointer.onDragStart).toBeDefined()
+    // The group's resize handle arms nothing - onDrag stays undefined, which
+    // discriminates the resize path from a marquee; the default empty-canvas
+    // behavior (panning here) takes over instead.
+    expect(canvas.pointer.onDrag).toBeUndefined()
+    expect(canvas.dragging_canvas).toBe(true)
     expect(resizeSpy).not.toHaveBeenCalled()
+  })
+
+  it('keeps left-drag panning on empty canvas under the panning setting', () => {
+    const { canvas, firstNode } = createHarness()
+    canvas.select(firstNode)
+    canvas.selectOnly = true
+    const event = { canvasX: 700, canvasY: 500 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](event, undefined)
+
+    expect(canvas.dragging_canvas).toBe(true)
+    expect(canvas.pointer.onDragStart).toBeUndefined()
+
+    // The pan-click selects nothing and picking preserves the selection.
+    canvas.pointer.onClick?.(event)
+    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+  })
+
+  it('marquee-selects additively under the select setting while picking', () => {
+    const { canvas, firstNode, secondNode } = createHarness()
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.select(firstNode)
+    canvas.selectOnly = true
+
+    // A marquee over ONLY the second node must not unpick the first.
+    canvas['_handleMultiSelect'](
+      { shiftKey: false, altKey: false } as CanvasPointerEvent,
+      [380, 80, 200, 120]
+    )
+
+    expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
+  })
+
+  it('live-selects additively while picking', () => {
+    const { canvas, firstNode, secondNode } = createHarness()
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.select(firstNode)
+    canvas.selectOnly = true
+
+    canvas['handleLiveSelect'](
+      {
+        canvasX: 580,
+        canvasY: 200,
+        shiftKey: false,
+        altKey: false
+      } as CanvasPointerEvent,
+      [380, 80, 0, 0],
+      new Set([firstNode])
+    )
+
+    expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
+  })
+
+  it('retains the replacing marquee when disabled', () => {
+    const { canvas, firstNode, secondNode } = createHarness()
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.select(firstNode)
+
+    canvas['_handleMultiSelect'](
+      { shiftKey: false, altKey: false } as CanvasPointerEvent,
+      [380, 80, 200, 120]
+    )
+
+    expect(canvas.selectedItems).toEqual(new Set([secondNode]))
+  })
+
+  it('selects the pressed node through the short-circuit click path', () => {
+    const { canvas, firstNode } = createHarness()
+    canvas.selectOnly = true
+    const event = { canvasX: 150, canvasY: 140 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](event, firstNode)
+    canvas.pointer.onClick?.(event)
+
+    // The counterfactual for the whole short-circuit: a bare `return` in its
+    // body would leave the click unarmed and the node unselected.
+    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
   })
 
   it('does not clone nodes on alt-click', () => {
@@ -316,7 +397,7 @@ describe('LGraphCanvas selectOnly', () => {
     expect(bringToFrontSpy).toHaveBeenCalledOnce()
   })
 
-  it('does not emit graph change events when picking starts on an item', () => {
+  it('defence in depth: does not emit graph change events when picking starts on an item', () => {
     const { canvas, firstNode } = createHarness()
     const beforeChangeSpy = vi.spyOn(canvas, 'emitBeforeChange')
     canvas.selectOnly = true
@@ -353,7 +434,10 @@ describe('LGraphCanvas selectOnly', () => {
     expect(canvas.pointer.onClick).toBeUndefined()
   })
 
-  it('selects nodes without starting a drag', () => {
+  // The _startDraggingItems guard is defence in depth: the primary-button
+  // short-circuit makes it unreachable from pointer input in-mode, but any
+  // future direct caller still lands on a pick, not a drag.
+  it('defence in depth: selects nodes without starting a drag', () => {
     const { canvas, firstNode } = createHarness()
     canvas.allow_dragnodes = true
     canvas.selectOnly = true
@@ -364,7 +448,7 @@ describe('LGraphCanvas selectOnly', () => {
     expect(canvas.isDragging).toBe(false)
   })
 
-  it('does not start dragging groups', () => {
+  it('defence in depth: does not start dragging groups', () => {
     const { canvas } = createHarness()
     const group = new LGraphGroup('Group')
     canvas.selectOnly = true

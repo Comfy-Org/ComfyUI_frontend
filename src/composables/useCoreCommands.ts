@@ -1117,7 +1117,10 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--arrow-left-right]',
       label: 'Toggle promotion of hovered widget',
       versionAdded: '1.30.1',
-      function: tryToggleWidgetPromotion
+      function: () => {
+        if (isSelectOnly(app.canvas)) return
+        tryToggleWidgetPromotion()
+      }
     },
     {
       id: 'Comfy.OpenManagerDialog',
@@ -1181,6 +1184,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Set Subgraph Description',
       versionAdded: '1.39.7',
       function: async (metadata?: Record<string, unknown>) => {
+        if (isSelectOnly(app.canvas)) return
         const canvas = canvasStore.getCanvas()
         const subgraph = canvas.subgraph
         if (!subgraph) return
@@ -1213,6 +1217,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Set Subgraph Search Aliases',
       versionAdded: '1.39.7',
       function: async (metadata?: Record<string, unknown>) => {
+        if (isSelectOnly(app.canvas)) return
         const canvas = canvasStore.getCanvas()
         const subgraph = canvas.subgraph
         if (!subgraph) return
