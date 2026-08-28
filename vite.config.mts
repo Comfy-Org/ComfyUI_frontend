@@ -670,12 +670,12 @@ export default defineConfig({
             // Heavy optional features
             {
               name: 'vendor-three',
-              test: /[\\/]node_modules[\\/](three|@sparkjsdev)[\\/]/,
+              test: /[\\/]node_modules[\\/](three|@sparkjsdev|@comfyorg[\\/]fbx-exporter-three|wwobjloader2)[\\/]/,
               priority: 15
             },
             {
               name: 'vendor-tiptap',
-              test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+              test: /[\\/]node_modules[\\/](@tiptap|tiptap-markdown)[\\/]/,
               priority: 15
             },
             {

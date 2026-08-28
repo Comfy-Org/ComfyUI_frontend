@@ -16,8 +16,9 @@ import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import { hideSplashScreen } from '@/services/splashScreenService'
 
 onMounted(() => {
-  document.getElementById('splash-loader')?.remove()
+  hideSplashScreen()
 })
 </script>

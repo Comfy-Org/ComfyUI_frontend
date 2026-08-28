@@ -45,6 +45,9 @@ vi.mock('@/composables/useBrowserTabTitle', () => ({
   useBrowserTabTitle: vi.fn()
 }))
 vi.mock('@/composables/useCoreCommands', () => ({ useCoreCommands: () => [] }))
+vi.mock('@/composables/useEditorStartup', () => ({
+  useEditorStartup: () => ({ isLoading: ref(false) })
+}))
 vi.mock('@/platform/remote/comfyui/useQueuePolling', () => ({
   useQueuePolling: vi.fn()
 }))
@@ -190,6 +193,7 @@ vi.mock('@/components/toast/RerouteMigrationToast.vue', () => stubModule)
 vi.mock('@/components/MenuHamburger.vue', () => stubModule)
 vi.mock('@/components/dialog/UnloadWindowConfirmDialog.vue', () => stubModule)
 vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
+vi.mock('primevue/blockui', () => stubModule)
 
 // Imported at module scope, not inside the test. `vi.mock` is hoisted above
 // every import, so the stubs above still apply — but compiling GraphView.vue

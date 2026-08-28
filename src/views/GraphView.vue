@@ -31,11 +31,13 @@
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
   <FirstRunTour />
+  <BlockUI full-screen :blocked="isLoading" />
 </template>
 
 <script setup lang="ts">
 import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import BlockUI from 'primevue/blockui'
 
 import {
   computed,
@@ -58,6 +60,7 @@ import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAc
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import { useEditorStartup } from '@/composables/useEditorStartup'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
@@ -103,6 +106,8 @@ import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
+
+const { isLoading } = useEditorStartup()
 
 setupAutoQueueHandler()
 useProgressFavicon()
