@@ -2,6 +2,11 @@ import * as fc from 'fast-check'
 import { afterAll, describe, expect, it } from 'vitest'
 
 import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+
+import {
   MINT_ID_CEILING,
   MINT_ID_MIN,
   createLGraphState,
@@ -201,15 +206,16 @@ describe('coordination-free ids across a serialize/configure round-trip', () => 
     const link = source.connect(0, target, 0)
     if (!link) throw new Error('connect failed')
 
-    const mintedNode = Number(source.id)
+    const mintedNode = String(source.id)
     const mintedLink = Number(link.id)
-    expect(mintedNode).toBeGreaterThanOrEqual(MINT_ID_MIN)
+    expect(Number(mintedNode)).toBeGreaterThanOrEqual(MINT_ID_MIN)
     expect(mintedLink).toBeGreaterThanOrEqual(MINT_ID_MIN)
 
     const reloaded = new LGraph()
     reloaded.configure(graph.serialize())
 
-    expect(reloaded._nodes.map((candidate) => Number(candidate.id))).toContain(
+    // NodeId is a string brand: pin the serialized form.
+    expect(reloaded._nodes.map((candidate) => String(candidate.id))).toContain(
       mintedNode
     )
     // LinkId is a raw number brand on its own serialize path.
@@ -218,5 +224,79 @@ describe('coordination-free ids across a serialize/configure round-trip', () => 
     // pristine instead of being dragged into the mint range.
     expect(reloaded.state.lastNodeId).toBe(0)
     expect(Number(reloaded.state.lastLinkId)).toBe(0)
+  })
+})
+
+describe('counter restores clamp below the mint floor', () => {
+  const POISONED = MINT_ID_MIN + 5
+
+  it('a poisoned root state restore cannot seed the counters', () => {
+    const graph = new LGraph()
+
+    // asSerialisable is the new-schema payload; the legacy 0.4 branch
+    // ignores `state` entirely, so only this shape reaches the restore.
+    graph.configure({
+      ...new LGraph().asSerialisable(),
+      state: {
+        lastGroupId: 0,
+        lastLinkId: toLinkId(POISONED),
+        lastNodeId: POISONED,
+        lastRerouteId: toRerouteId(0)
+      }
+    })
+
+    // A pre-guard client whose counter absorbed a minted id saved that
+    // counter; restoring it verbatim would re-poison a fixed build.
+    expect(graph.state.lastNodeId).toBeLessThan(MINT_ID_MIN)
+    expect(Number(graph.state.lastLinkId)).toBeLessThan(MINT_ID_MIN)
+  })
+
+  it('a poisoned subgraph definition cannot seed any counter', () => {
+    const graph = new LGraph()
+
+    graph.configure({
+      ...new LGraph().asSerialisable(),
+      definitions: {
+        subgraphs: [
+          {
+            id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            name: 'poisoned',
+            version: 1,
+            revision: 0,
+            state: {
+              lastGroupId: 0,
+              lastLinkId: toLinkId(POISONED),
+              lastNodeId: POISONED,
+              lastRerouteId: toRerouteId(0)
+            },
+            nodes: [],
+            links: [],
+            groups: [],
+            inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 100, 100] },
+            outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 100, 100] },
+            inputs: [],
+            outputs: [],
+            widgets: []
+          }
+        ]
+      }
+    })
+
+    expect(graph.state.lastNodeId).toBeLessThan(MINT_ID_MIN)
+    expect(Number(graph.state.lastLinkId)).toBeLessThan(MINT_ID_MIN)
+    for (const subgraph of graph.subgraphs.values()) {
+      expect(subgraph.state.lastNodeId).toBeLessThan(MINT_ID_MIN)
+      expect(Number(subgraph.state.lastLinkId)).toBeLessThan(MINT_ID_MIN)
+    }
+  })
+
+  it('the deprecated counter setters clamp below the mint floor', () => {
+    const graph = new LGraph()
+
+    graph.last_node_id = POISONED
+    graph.last_link_id = toLinkId(POISONED)
+
+    expect(graph.state.lastNodeId).toBeLessThan(MINT_ID_MIN)
+    expect(Number(graph.state.lastLinkId)).toBeLessThan(MINT_ID_MIN)
   })
 })
