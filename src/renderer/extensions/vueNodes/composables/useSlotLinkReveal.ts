@@ -1,11 +1,10 @@
 import { onScopeDispose } from 'vue'
 
 import {
-  addRevealedLinks,
-  removeRevealedLinks
+  clearRevealedLinks,
+  setRevealedLinks
 } from '@/renderer/core/canvas/links/linkRevealState'
 import { app } from '@/scripts/app'
-import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 
 interface SlotLinkRevealOptions {
@@ -15,7 +14,7 @@ interface SlotLinkRevealOptions {
 }
 
 export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
-  let ownedLinkIds: ReadonlySet<LinkId> = new Set()
+  const owner = {}
 
   function hiddenLinkIds() {
     const graph = app.canvas?.graph
@@ -34,13 +33,15 @@ export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
   }
 
   function revealLinks(): void {
-    ownedLinkIds = new Set(hiddenLinkIds())
-    if (addRevealedLinks(ownedLinkIds)) app.canvas?.setDirty(false, true)
+    const rootGraphId = app.canvas?.graph?.rootGraph.id
+    if (rootGraphId === undefined) return
+    if (setRevealedLinks(rootGraphId, hiddenLinkIds(), owner)) {
+      app.canvas?.setDirty(false, true)
+    }
   }
 
   function unrevealLinks(): void {
-    if (removeRevealedLinks(ownedLinkIds)) app.canvas?.setDirty(false, true)
-    ownedLinkIds = new Set()
+    if (clearRevealedLinks(owner)) app.canvas?.setDirty(false, true)
   }
 
   onScopeDispose(unrevealLinks)

@@ -100,6 +100,19 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     return roots.get(rootGraphId)?.get(linkId)
   }
 
+  /** Ids of a graph's hidden links — the render index; empty cost when nothing is hidden. */
+  function graphHiddenLinkIds(scope: GraphScope): LinkId[] {
+    const bucket = roots.get(scope.rootGraphId)
+    if (!bucket) return []
+    const ids: LinkId[] = []
+    for (const [linkId, entry] of bucket) {
+      if (entry.graphId === scope.owningGraphId && entry.hidden) {
+        ids.push(linkId)
+      }
+    }
+    return ids
+  }
+
   function clearGraph(rootGraphId: RootGraphId): void {
     roots.delete(rootGraphId)
   }
@@ -117,6 +130,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     patch,
     take,
     getPresentation,
+    graphHiddenLinkIds,
     clearGraph,
     clearOwner
   }

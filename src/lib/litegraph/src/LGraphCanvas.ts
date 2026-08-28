@@ -14,12 +14,14 @@ import {
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
+  clearRevealedLinks,
   isLinkRevealed,
   setRevealedLinks
 } from '@/renderer/core/canvas/links/linkRevealState'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -39,7 +41,7 @@ import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { LLink, slotFloatingLinks } from './LLink'
+import { LLink, slotFloatingLinks, transferLinkPresentation } from './LLink'
 import {
   inputHasLink,
   inputLinkId,
@@ -54,9 +56,9 @@ import { findRerouteAtPoint } from './canvas/findRerouteAtPoint'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
   clearLinkBadgeFrameState,
-  createLinkBadgeFrameState,
   drawPendingLinkBadges,
-  enqueueHiddenLinkBadgesInView,
+  enqueueHiddenLinkBadges,
+  getLinkBadgeFrameState,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
 import type { LinkBadgeFrameState, LinkBadgeTips } from './canvas/linkBadges'
@@ -738,7 +740,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   visible_area: Rectangle
   /** Contains all links and reroutes that were rendered.  Repopulated every render cycle. */
   renderedPaths: Set<LinkSegment> = new Set()
-  readonly linkBadgeFrameState: LinkBadgeFrameState
+  /** @deprecated Badge frame state is owned by the linkBadges module; kept as a compatibility accessor. */
+  get linkBadgeFrameState(): LinkBadgeFrameState {
+    return getLinkBadgeFrameState(this)
+  }
   /** @deprecated Replaced by {@link renderedPaths}, but length is set to 0 by some extensions. */
   visible_links: LLink[] = []
   /** @deprecated This array is populated and cleared to support legacy extensions. The contents are ignored by Litegraph. */
@@ -920,8 +925,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.ds = new DragAndScale(canvas)
     this.pointer = new CanvasPointer(canvas)
-    this.linkBadgeFrameState = createLinkBadgeFrameState()
-
     // Set up zoom change handler for efficient LOD updates
     this.ds.onChanged = (scale: number, _offset: Point) => {
       // Only check LOD threshold if it's enabled
@@ -1973,8 +1976,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   setGraph(newGraph: LGraph | Subgraph): void {
     const { graph } = this
     if (newGraph === graph) return
-    setRevealedLinks([])
-    clearLinkBadgeFrameState(this.linkBadgeFrameState)
+    clearRevealedLinks(this)
+    clearLinkBadgeFrameState(getLinkBadgeFrameState(this))
 
     // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
@@ -2571,7 +2574,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (node && (this.allow_interaction || node.flags.allow_interaction)) {
       this._processNodeClick(e, ctrlOrMeta, node)
     } else {
-      const badgeLinkId = queryLinkBadgeAtPoint(this.linkBadgeFrameState, x, y)
+      const badgeLinkId = queryLinkBadgeAtPoint(
+        getLinkBadgeFrameState(this),
+        x,
+        y
+      )
       const badgeLink =
         badgeLinkId === undefined ? undefined : graph.getLink(badgeLinkId)
       if (badgeLink?.hidden) {
@@ -3376,14 +3383,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.graph_mouse[0] = x
     this.graph_mouse[1] = y
 
-    const hasBadgeHitAreas = this.linkBadgeFrameState.hitAreas.length > 0
+    const badgeFrameState = getLinkBadgeFrameState(this)
+    const hasBadgeHitAreas = badgeFrameState.hitAreas.length > 0
     let nodeAtPoint: LGraphNode | null = null
     if (hasBadgeHitAreas) {
       nodeAtPoint = graph.getNodeOnPos(x, y, this.visible_nodes)
       const hoveredBadge = nodeAtPoint
         ? undefined
-        : queryLinkBadgeAtPoint(this.linkBadgeFrameState, x, y)
-      if (setRevealedLinks(hoveredBadge === undefined ? [] : [hoveredBadge])) {
+        : queryLinkBadgeAtPoint(badgeFrameState, x, y)
+      const revealed = hoveredBadge === undefined ? [] : [hoveredBadge]
+      if (setRevealedLinks(graph.rootGraph.id, revealed, this)) {
         this.dirty_bgcanvas = true
       }
     }
@@ -4010,7 +4019,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // TODO: Check if document.contains(e.relatedTarget) - handle mouseover node textarea etc.
     this.adjustMouseEvent(e)
     this.updateMouseOverNodes(null, e)
-    if (setRevealedLinks([])) this.dirty_bgcanvas = true
+    if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
   }
 
   processMouseCancel(): void {
@@ -4414,7 +4423,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           targetSlotByLink.get(toLinkId(info.id)) ?? info.target_slot,
           afterRerouteId
         )
-        if (link) links.set(toLinkId(info.id), link)
+        if (link) {
+          transferLinkPresentation(info, link)
+          links.set(toLinkId(info.id), link)
+        }
       }
     }
 
@@ -6126,7 +6138,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   drawConnections(ctx: CanvasRenderingContext2D): void {
     this.renderedPaths.clear()
-    clearLinkBadgeFrameState(this.linkBadgeFrameState)
+    const badgeFrameState = getLinkBadgeFrameState(this)
+    clearLinkBadgeFrameState(badgeFrameState)
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
 
     const { graph, subgraph } = this
@@ -6165,8 +6178,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const hiddenLinks: LLink[] = []
-    for (const link of graph.links.values()) {
-      if (link.hidden) hiddenLinks.push(link)
+    for (const linkId of useLinkPresentationStore().graphHiddenLinkIds(
+      graphScopeOf(graph)
+    )) {
+      const link = graph.getLink(linkId)
+      if (link) hiddenLinks.push(link)
     }
 
     const hiddenLinkTips = new Map<LinkId, LinkBadgeTips>()
@@ -6193,15 +6209,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           (typeof link.color === 'string' && link.color) ||
           LGraphCanvas.link_type_colors[link.type] ||
           this.default_link_color
-        const tips = enqueueHiddenLinkBadgesInView(
-          this.linkBadgeFrameState,
+        const tips = enqueueHiddenLinkBadges(
+          badgeFrameState,
           ctx,
           link,
           connectionPoints,
           badgeColor,
           margin_area
         )
-        if (tips) hiddenLinkTips.set(link.id, tips)
+        hiddenLinkTips.set(link.id, tips)
       }
     }
 
@@ -6216,7 +6232,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       let renderedEnd = endPos
       if (link.hidden) {
         const tips = hiddenLinkTips.get(link.id)
-        if (!tips || !isLinkRevealed(link.id)) return
+        if (!tips || !isLinkRevealed(graph.rootGraph.id, link.id)) return
         renderedStart = tips.outputTip
         renderedEnd = tips.inputTip
       }
@@ -6351,7 +6367,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       link.disconnectOnDrop = distSquared < radius ** 2
     })
 
-    drawPendingLinkBadges(this.linkBadgeFrameState, ctx)
+    drawPendingLinkBadges(getLinkBadgeFrameState(this), ctx)
 
     ctx.globalAlpha = 1
   }

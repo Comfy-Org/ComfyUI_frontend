@@ -47,6 +47,20 @@ export function createLinkBadgeFrameState(): LinkBadgeFrameState {
   return { hitAreas: [], pendingBadges: [] }
 }
 
+const frameStates = new WeakMap<object, LinkBadgeFrameState>()
+
+/**
+ * Per-canvas badge frame state, owned by this module rather than the canvas
+ * (ADR 0008: no new state on the god object). Keyed weakly by the canvas.
+ */
+export function getLinkBadgeFrameState(host: object): LinkBadgeFrameState {
+  const existing = frameStates.get(host)
+  if (existing) return existing
+  const created = createLinkBadgeFrameState()
+  frameStates.set(host, created)
+  return created
+}
+
 export function clearLinkBadgeFrameState(state: LinkBadgeFrameState): void {
   state.hitAreas.length = 0
   state.pendingBadges.length = 0
@@ -272,14 +286,14 @@ function drawBadgeLayout(
   )
 }
 
-export function enqueueHiddenLinkBadgesInView(
+export function enqueueHiddenLinkBadges(
   state: LinkBadgeFrameState,
   ctx: CanvasRenderingContext2D,
   link: LLink,
   connectionPoints: readonly Point[],
   color: string,
   visibleArea: ReadOnlyRect
-): LinkBadgeTips | undefined {
+): LinkBadgeTips {
   const layout = layoutHiddenLinkBadges(
     state,
     ctx,
@@ -288,18 +302,24 @@ export function enqueueHiddenLinkBadgesInView(
     connectionPoints[connectionPoints.length - 1],
     color
   )
-  if (!overlapBounding(getBadgeBounds(layout, connectionPoints), visibleArea)) {
-    return
-  }
-  return enqueueBadgeLayout(state, layout)
+  const paint = overlapBounding(
+    getBadgeBounds(layout, connectionPoints),
+    visibleArea
+  )
+  return enqueueBadgeLayout(state, layout, paint)
 }
 
+/**
+ * Hit areas are always recorded so stacking is viewport-independent (badges
+ * keep their rows while panning); only painting is culled.
+ */
 function enqueueBadgeLayout(
   state: LinkBadgeFrameState,
-  layout: BadgeLayout
+  layout: BadgeLayout,
+  paint: boolean
 ): LinkBadgeTips {
   state.hitAreas.push(...getBadgeHitAreas(layout))
-  state.pendingBadges.push(layout)
+  if (paint) state.pendingBadges.push(layout)
   return {
     outputTip: [layout.outputBadgeX + layout.width, layout.outputBadgeY],
     inputTip: [layout.inputBadgeX, layout.inputBadgeY]

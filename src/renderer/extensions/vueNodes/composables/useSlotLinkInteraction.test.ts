@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import { setRevealedLinks } from '@/renderer/core/canvas/links/linkRevealState'
+import {
+  resetLinkReveals,
+  setRevealedLinks
+} from '@/renderer/core/canvas/links/linkRevealState'
 import {
   isRerouteVisibleForLinkDrag,
   resolvePointerTarget
@@ -13,7 +16,7 @@ import { toLinkId } from '@/types/linkId'
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  setRevealedLinks([])
+  resetLinkReveals()
 })
 
 describe('isRerouteVisibleForLinkDrag', () => {
@@ -28,10 +31,11 @@ describe('isRerouteVisibleForLinkDrag', () => {
 
     expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(false)
 
-    setRevealedLinks([link.id])
+    const owner = {}
+    setRevealedLinks(graph.rootGraph.id, [link.id], owner)
     expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(true)
 
-    setRevealedLinks([])
+    setRevealedLinks(graph.rootGraph.id, [], owner)
     link.hidden = false
     expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(true)
   })

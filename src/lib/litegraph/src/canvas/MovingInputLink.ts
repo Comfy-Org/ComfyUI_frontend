@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { transferLinkPresentation } from '@/lib/litegraph/src/LLink'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -75,6 +76,7 @@ export class MovingInputLink extends MovingLinkBase {
       input,
       this.fromReroute?.id
     )
+    transferLinkPresentation(this.link, link)
     if (link) events.dispatch('input-moved', this)
     return link
   }
@@ -96,6 +98,7 @@ export class MovingInputLink extends MovingLinkBase {
       this.node,
       this.fromReroute?.id
     )
+    transferLinkPresentation(this.link, newLink)
     events?.dispatch('link-created', newLink)
   }
 
@@ -126,6 +129,7 @@ export class MovingInputLink extends MovingLinkBase {
       input,
       existingLink.parentId
     )
+    transferLinkPresentation(this.link, newLink)
     if (newLink) events.dispatch('input-moved', this)
   }
 

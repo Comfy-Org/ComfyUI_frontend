@@ -9,7 +9,7 @@ import {
   clearLinkBadgeFrameState,
   createLinkBadgeFrameState,
   drawPendingLinkBadges,
-  enqueueHiddenLinkBadgesInView,
+  enqueueHiddenLinkBadges,
   linkBadgeText,
   queryLinkBadgeAtPoint
 } from './linkBadges'
@@ -35,7 +35,7 @@ function enqueueBadgesInView(
   endPos: Point,
   visibleArea: ReadOnlyRect = VISIBLE_AREA
 ) {
-  return enqueueHiddenLinkBadgesInView(
+  return enqueueHiddenLinkBadges(
     state,
     ctx,
     link,
@@ -199,6 +199,24 @@ describe('link badge frame layout', () => {
 
     expect(tips).toBeDefined()
     expect(state.hitAreas).toHaveLength(4)
+  })
+
+  it('keeps hit areas and rows for culled badges while skipping their paint', () => {
+    const state = createLinkBadgeFrameState()
+    const ctx = createContext()
+
+    const tips = enqueueBadgesInView(
+      state,
+      ctx,
+      createLink(1),
+      [100, 100],
+      [400, 200],
+      [5000, 5000, 10, 10]
+    )
+
+    expect(tips).toBeDefined()
+    expect(state.hitAreas).toHaveLength(2)
+    expect(state.pendingBadges).toHaveLength(0)
   })
 
   it('defers badge painting until the frame flush', () => {

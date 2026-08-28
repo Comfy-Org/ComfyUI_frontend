@@ -117,14 +117,16 @@ export function resolvePointerTarget(
 }
 
 export function isRerouteVisibleForLinkDrag(
-  graph: Pick<LGraph, 'getLink'>,
+  graph: Pick<LGraph, 'getLink' | 'rootGraph'>,
   reroute: Pick<Reroute, 'linkIds'>
 ): boolean {
   if (reroute.linkIds.size === 0) return true
 
   for (const linkId of reroute.linkIds) {
     const link = graph.getLink(linkId)
-    if (!link?.hidden || isLinkRevealed(linkId)) return true
+    if (!link?.hidden || isLinkRevealed(graph.rootGraph.id, linkId)) {
+      return true
+    }
   }
   return false
 }

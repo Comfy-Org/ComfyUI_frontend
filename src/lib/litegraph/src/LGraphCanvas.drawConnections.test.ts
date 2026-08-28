@@ -12,6 +12,7 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   isLinkRevealed,
+  resetLinkReveals,
   setRevealedLinks
 } from '@/renderer/core/canvas/links/linkRevealState'
 import { useLinkStore } from '@/stores/linkStore'
@@ -399,7 +400,7 @@ describe('drawConnections hidden links', () => {
     canvas = createTestCanvas(graph, createMockCtx())
     canvas.visible_area.set([0, 0, 800, 600])
     LiteGraph.vueNodesMode = false
-    setRevealedLinks([])
+    resetLinkReveals()
   })
 
   afterEach(() => {
@@ -433,7 +434,7 @@ describe('drawConnections hidden links', () => {
     expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
   })
 
-  it('does not enqueue badges for an offscreen link', () => {
+  it('keeps offscreen badge rows for stable stacking but skips their paint', () => {
     const link = createHiddenLink()
     const source = graph.getNodeById(link.origin_id)
     const target = graph.getNodeById(link.target_id)
@@ -443,7 +444,8 @@ describe('drawConnections hidden links', () => {
 
     canvas.drawConnections(createMockCtx())
 
-    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(0)
+    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
+    expect(canvas.linkBadgeFrameState.pendingBadges).toHaveLength(0)
   })
 
   it('reveals on badge hover and clears the reveal on canvas leave', () => {
@@ -459,11 +461,11 @@ describe('drawConnections hidden links', () => {
       })
     )
 
-    expect(isLinkRevealed(link.id)).toBe(true)
+    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(true)
 
     canvas.processMouseOut(new PointerEvent('pointerout'))
 
-    expect(isLinkRevealed(link.id)).toBe(false)
+    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
   })
 
   it('does not reveal an occluded badge', () => {
@@ -482,7 +484,7 @@ describe('drawConnections hidden links', () => {
       })
     )
 
-    expect(isLinkRevealed(link.id)).toBe(false)
+    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
   })
 
   it('skips node occlusion lookup in Vue mode when there are no badges', () => {
@@ -549,12 +551,12 @@ describe('drawConnections hidden links', () => {
   it('clears revealed links and badge hit areas when the graph changes', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    setRevealedLinks([link.id])
+    setRevealedLinks(graph.rootGraph.id, [link.id], canvas)
     expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
 
     canvas.setGraph(new LGraph())
 
-    expect(isLinkRevealed(link.id)).toBe(false)
+    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
     expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(0)
   })
 
@@ -649,7 +651,8 @@ describe('drawConnections hidden links', () => {
     expect(renderLink).not.toHaveBeenCalled()
 
     vi.stubGlobal('Path2D', StubPath2D)
-    setRevealedLinks([link.id])
+    const revealOwner = {}
+    setRevealedLinks(graph.rootGraph.id, [link.id], revealOwner)
     canvas.drawConnections(createMockCtx())
 
     expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)

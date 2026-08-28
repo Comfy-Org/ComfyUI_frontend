@@ -765,6 +765,21 @@ function adoptLinkTopology(
  * so a first-wins collision loser cannot remove the winner's entry.
  * @param link The link to unregister
  */
+/**
+ * Copies presentation from a source (a serialized link, a disconnected link
+ * holding its stashed presentation, or a plain record) onto a newly created
+ * link. Used by every flow that recreates links instead of transferring them:
+ * paste, endpoint reconnect, subgraph pack/unpack boundaries.
+ */
+export function transferLinkPresentation(
+  source: LinkPresentation,
+  target: LLink | null | undefined
+): void {
+  if (!target) return
+  if (source.hidden) target.hidden = true
+  if (source.label !== undefined) target.label = source.label
+}
+
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
   const stashed = useLinkPresentationStore().take(link._graphScope, link.id)
