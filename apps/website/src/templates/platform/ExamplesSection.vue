@@ -2,6 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import Badge from '../../components/ui/badge/Badge.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
@@ -108,32 +109,34 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow bg-transparency-white-t4 group flex flex-col gap-4 rounded-4xl p-2 transition-colors duration-200 hover:bg-transparency-white-t8 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+        class="focus-visible:ring-primary-comfy-yellow bg-transparency-white-t4 group flex flex-col gap-4 overflow-hidden rounded-4xl px-2 pt-2 pb-6 transition-colors duration-200 hover:bg-transparency-white-t8 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
       >
         <div
           :class="
             cn(
-              'relative aspect-4/3 overflow-hidden rounded-[1.75rem] transition-opacity group-hover:opacity-90',
+              'relative aspect-4/3 overflow-hidden rounded-[1.75rem]',
               example.bg
             )
           "
         >
           <div
-            class="pointer-events-none absolute inset-0 bg-linear-to-t from-primary-comfy-ink/80 via-primary-comfy-ink/20 to-transparent"
+            class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/70 via-black/30 to-transparent"
             aria-hidden="true"
           />
           <div class="absolute inset-x-0 bottom-0 p-5">
-            <h3 class="text-lg/snug font-medium text-primary-warm-white">
+            <h3
+              class="text-base leading-[1.3] font-medium text-primary-warm-white drop-shadow-md sm:text-lg lg:text-xl"
+            >
               {{ example.title }}
             </h3>
             <p
-              class="mt-2 max-w-xl text-xs/relaxed font-light text-primary-comfy-canvas"
+              class="mt-2 line-clamp-2 max-w-xl text-xs/relaxed font-light text-primary-comfy-canvas"
             >
               {{ example.description }}
             </p>
           </div>
         </div>
-        <div class="flex flex-1 flex-col gap-4 px-4 pb-4">
+        <div class="flex flex-col gap-4 px-4">
           <div class="flex items-center justify-between gap-2">
             <span
               class="text-primary-comfy-yellow text-xs font-bold tracking-wider uppercase"
@@ -141,20 +144,28 @@ const more: Omit<Example, 'bg'>[] = [
               {{ t('platform.examples.cookbook', locale) }}
             </span>
             <span
-              class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-full"
+              class="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/10"
               aria-hidden="true"
             >
-              <img src="/icons/arrow-right.svg" alt="" class="size-2.5" />
+              <img
+                src="/icons/arrow-right.svg"
+                alt=""
+                class="size-2.5 brightness-0 invert"
+              />
             </span>
           </div>
-          <div class="flex min-w-0 flex-wrap items-center gap-2">
-            <span
+          <div
+            class="relative flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
+          >
+            <Badge
               v-for="tag in example.tags"
               :key="tag"
-              class="shrink-0 rounded-full bg-white/5 px-3 py-1 text-xs text-primary-comfy-canvas"
+              variant="subtle"
+              size="md"
+              class="shrink-0 px-3 py-1"
             >
               {{ tag }}
-            </span>
+            </Badge>
           </div>
         </div>
       </a>

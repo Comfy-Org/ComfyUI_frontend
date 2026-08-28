@@ -7414,8 +7414,8 @@ const translations = {
     'zh-CN': '每个示例都是一个真实运行的端点，并附有可验证的代码。'
   },
   'platform.examples.cookbook': {
-    en: 'View the cookbook',
-    'zh-CN': '查看示例教程'
+    en: 'View the docs',
+    'zh-CN': '查看文档'
   },
   'platform.examples.viewAll': {
     en: 'View all examples',
