@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { app } from '@/scripts/app'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -42,19 +43,20 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-// Mock the dialog store
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: vi.fn(() => ({
-    closeDialog: vi.fn()
-  }))
-}))
-
-// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
-const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
+const { mockCloseDialog, mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
+  mockCloseDialog: vi.fn(),
   mockIsCloud: { value: true },
   mockTrackTemplate: vi.fn()
 }))
 
+// Mock the dialog store
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: vi.fn(() => ({
+    closeDialog: mockCloseDialog
+  }))
+}))
+
+// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
@@ -65,8 +67,22 @@ global.fetch = vi.fn()
 
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
+const mockWorkflow = {
+  version: 0.4,
+  last_node_id: 0,
+  last_link_id: 0,
+  nodes: [],
+  links: []
+}
+
 describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
+
+  function expectNoOpeningSideEffects() {
+    expect(mockTrackTemplate).not.toHaveBeenCalled()
+    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  }
 
   beforeEach(() => {
     mockIsCloud.value = true
@@ -126,7 +142,8 @@ describe('useTemplateWorkflows', () => {
 
     // Mock fetch response
     vi.mocked(fetch).mockResolvedValue({
-      json: vi.fn().mockResolvedValue({ workflow: 'data' })
+      ok: true,
+      json: vi.fn().mockResolvedValue(mockWorkflow)
     } as Partial<Response> as Response)
   })
 
@@ -296,6 +313,126 @@ describe('useTemplateWorkflows', () => {
 
     expect(result).toBe(true)
     expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
+  })
+
+  describe('prepared template workflow', () => {
+    async function prepareTemplate() {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const workflows = useTemplateWorkflows()
+      const prepared = await workflows.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+      if (!prepared) throw new Error('Expected a prepared workflow')
+      return { prepared, workflows }
+    }
+
+    it('prepares workflow data without opening it', async () => {
+      const { prepared } = await prepareTemplate()
+
+      expect(prepared).toEqual({
+        id: 'template1',
+        sourceModule: 'default',
+        workflowName: 'template1',
+        workflow: mockWorkflow
+      })
+      expectNoOpeningSideEffects()
+    })
+
+    it('opens prepared workflow data exactly once', async () => {
+      const { prepared, workflows } = await prepareTemplate()
+
+      const result = await workflows.openPreparedWorkflowTemplate(prepared)
+
+      expect(result).toBe(true)
+      expect(mockTrackTemplate).toHaveBeenCalledOnce()
+      expect(mockTrackTemplate).toHaveBeenCalledWith({
+        workflow_name: 'template1',
+        template_source: 'default'
+      })
+      expect(mockCloseDialog).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        mockWorkflow,
+        true,
+        true,
+        'template1',
+        { openSource: 'template' }
+      )
+    })
+
+    it('can leave dialog closing to its caller', async () => {
+      const { prepared, workflows } = await prepareTemplate()
+
+      const result = await workflows.openPreparedWorkflowTemplate(prepared, {
+        closeDialog: false
+      })
+
+      expect(result).toBe(true)
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    })
+
+    it('keeps loadWorkflowTemplate as the compatible prepare-and-open path', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+      const result = await loadWorkflowTemplate('template1', 'default')
+
+      expect(result).toBe(true)
+      expect(fetch).toHaveBeenCalledOnce()
+      expect(mockTrackTemplate).toHaveBeenCalledOnce()
+      expect(mockCloseDialog).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    })
+
+    it('rejects a non-OK response without opening', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const { prepareWorkflowTemplate } = useTemplateWorkflows()
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(null, { status: 404, statusText: 'Not Found' })
+      )
+
+      await expect(
+        prepareWorkflowTemplate('missing-template', 'default')
+      ).rejects.toThrow()
+      expectNoOpeningSideEffects()
+    })
+
+    it('opens parseable legacy workflow data when strict validation fails', async () => {
+      const legacyWorkflow = {
+        version: 0.4,
+        last_node_id: 1,
+        last_link_id: 0,
+        nodes: [{ id: 1, type: 'LegacyCustomNode' }],
+        links: []
+      }
+      mockWorkflowTemplatesStore.isLoaded = true
+      const validationWarning = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(JSON.stringify(legacyWorkflow))
+      )
+      const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+      const result = await loadWorkflowTemplate('legacy-template', 'default')
+
+      expect(result).toBe(true)
+      expect(validationWarning).toHaveBeenCalledOnce()
+      expect(fetch).toHaveBeenCalledOnce()
+      expect(mockTrackTemplate).toHaveBeenCalledOnce()
+      expect(mockCloseDialog).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        legacyWorkflow,
+        true,
+        true,
+        'legacy-template',
+        { openSource: 'template' }
+      )
+    })
   })
 
   it('tracks template telemetry on load in cloud builds', async () => {
