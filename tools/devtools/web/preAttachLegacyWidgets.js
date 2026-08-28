@@ -3,22 +3,23 @@ import { app } from '../../scripts/app.js'
 
 const NODE_TYPE = 'DevToolsNodeWithPreAttachLegacyWidgets'
 
-const WIDGET_NAMES = [
-  'pre_attach_first',
-  'pre_attach_second',
-  'pre_attach_third'
-] as const
+// Distinct fills let the spec read render order back out of the DOM.
+const WIDGET_FILLS = [
+  ['pre_attach_first', '#ff0000'],
+  ['pre_attach_second', '#00ff00'],
+  ['pre_attach_third', '#0000ff']
+]
 
-class ForeignLegacyWidget {
-  constructor(name, value) {
-    this.name = name
-    this.type = 'custom'
-    this.value = value
-    this.options = {}
-    this.y = 0
-    this.draw = function (ctx, node, widgetWidth, y, height) {
+function foreignLegacyWidget(name, value, fillStyle) {
+  return {
+    name,
+    type: 'custom',
+    value,
+    options: {},
+    y: 0,
+    draw: function (ctx, node, widgetWidth, y, height) {
       ctx.save()
-      ctx.fillStyle = '#7F7'
+      ctx.fillStyle = fillStyle
       ctx.fillRect(15, y, widgetWidth - 15 * 2, height)
       ctx.restore()
     }
@@ -34,8 +35,8 @@ app.registerExtension({
     nodeType.prototype.onNodeCreated = function (...args) {
       onNodeCreated?.apply(this, args)
 
-      const created = WIDGET_NAMES.map((name, index) =>
-        this.addCustomWidget(new ForeignLegacyWidget(name, index))
+      const created = WIDGET_FILLS.map(([name, fillStyle], index) =>
+        this.addCustomWidget(foreignLegacyWidget(name, index, fillStyle))
       )
 
       const moved = created.at(-1)

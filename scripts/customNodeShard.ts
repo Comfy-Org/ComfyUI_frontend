@@ -21,6 +21,11 @@ import {
   loadManifest
 } from '../browser_tests/fixtures/customNode/manifest'
 
+// Tests every run registers whatever the slice holds: allNodes's
+// manifest-coverage test, connectivity (three), coreSmoke (two), the regression
+// spec's extension-import test plus its three self-checks, and
+// legacyWidgetRegistration. The all-nodes TIERS are counted separately because
+// they only register when the slice contains a pack that asks for them.
 const SLICE_INDEPENDENT_TESTS = 11
 // S1/S2/S3 need a 'load' pack; S9 needs a 'run' pack. A slice with neither
 // registers neither.
