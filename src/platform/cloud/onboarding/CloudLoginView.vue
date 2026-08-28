@@ -88,11 +88,13 @@ import { CLOUD_AUTH_LINK_BUTTON_CLASS } from '@/platform/cloud/onboarding/consta
 import { apiKeySchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
 const apiKeyStore = useApiKeyAuthStore()
+const authStore = useAuthStore()
 const showApiKeyForm = ref(false)
 const localApiKeyAuthEnabled =
   import.meta.env.DEV && import.meta.env.VITE_LOCAL_CLOUD_AUTH === 'true'
@@ -117,6 +119,7 @@ const signInWithEmail = async (values: SignInData) => {
   if (localApiKeyAuthEnabled) {
     const apiKey = apiKeySchema.safeParse({ apiKey: values.password })
     if (apiKey.success) {
+      if (authStore.currentUser) await authStore.logout()
       if (await apiKeyStore.storeApiKey(apiKey.data.apiKey)) {
         await onAuthSuccess()
       }
