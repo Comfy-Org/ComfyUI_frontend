@@ -239,6 +239,7 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
+  subscriptionTier: null as string | null,
   showSubscriptionDialog: vi.fn()
 }))
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -246,6 +247,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     canAccessSubscriptionFeatures: {
       get value() {
         return mockBillingState.canAccessSubscriptionFeatures
+      }
+    },
+    subscription: {
+      get value() {
+        return mockBillingState.subscriptionTier
+          ? { tier: mockBillingState.subscriptionTier }
+          : null
       }
     },
     showSubscriptionDialog: mockBillingState.showSubscriptionDialog
@@ -347,6 +355,7 @@ describe('useCoreCommands', () => {
   beforeEach(() => {
     mockDistributionState.isCloud = false
     mockBillingState.canAccessSubscriptionFeatures = true
+    mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
@@ -1028,6 +1037,23 @@ describe('useCoreCommands', () => {
         expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
           reason: 'subscribe_to_run'
         })
+      }
+    )
+
+    it.for(['ENTERPRISE', 'GALACTIC'] as const)(
+      'explains the block instead of a subscribe dialog on a sales-managed %s plan',
+      async (tier) => {
+        mockDistributionState.isCloud = true
+        mockBillingState.canAccessSubscriptionFeatures = false
+        mockBillingState.subscriptionTier = tier
+
+        await findCmd('Comfy.QueuePrompt').function()
+
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'warn' })
+        )
       }
     )
 

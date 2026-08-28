@@ -29,6 +29,10 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0017](0017-id-based-slot-records-are-the-slot-destination.md)              | ID-Based Slot Records Own Slot State                            | Accepted | 2026-08-24 |
 | [0018](0018-node-id-reminting-at-the-merge-boundary.md)                     | Node-ID Reminting at the Merge Boundary                         | Proposed | 2026-08-25 |
 | [0019](0019-unified-recoverable-diagnostics.md)                             | Unified Recoverable Diagnostics                                 | Proposed | 2026-08-25 |
+| [0020](0020-bound-renderer-reactivity.md)                                   | Bound Renderer Reactivity                                       | Proposed | 2026-08-26 |
+| [0021](0021-classify-and-coalesce-canvas-invalidation.md)                   | Classify and Coalesce Canvas Invalidation                       | Proposed | 2026-08-26 |
+| [0022](0022-performance-measurement-and-ci-policy.md)                       | Performance Measurement and CI Policy                           | Proposed | 2026-08-26 |
+| [0023](0023-widget-entities-and-legacy-behavior-boundary.md)                | Widget Entities and Legacy Behavior Boundary                    | Proposed | 2026-08-26 |
 | [0024](0024-in-app-agent-crdt-follower-and-distribution.md)                 | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |
 
 ## Creating a New ADR

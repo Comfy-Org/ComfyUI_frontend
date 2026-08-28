@@ -24,10 +24,6 @@ const config: KnipConfig = {
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
-    'apps/desktop-ui': {
-      entry: ['src/i18n.ts'],
-      project: ['src/**/*.{js,ts,vue}']
-    },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
     },
