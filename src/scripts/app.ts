@@ -250,16 +250,18 @@ function createNodeOutputsMutationView(
   outputs: Record<string, NodeExecutionOutput>,
   commit: (id: string, output: NodeExecutionOutput | undefined) => void
 ): Record<string, NodeExecutionOutput> {
-  const views = new WeakMap<object, object>()
+  const views = new WeakMap<object, Map<string, object>>()
   const wrapNestedValue = (id: string, value: unknown): unknown => {
     if (value === null || typeof value !== 'object') return value
-    const existing = views.get(value)
+    const existing = views.get(value)?.get(id)
     if (existing) return existing
     const view = createMutationView(value, {
       commit: () => commit(id, outputs[id]),
       mapValue: (_property, nestedValue) => wrapNestedValue(id, nestedValue)
     })
-    views.set(value, view)
+    const viewsById = views.get(value) ?? new Map<string, object>()
+    viewsById.set(id, view)
+    views.set(value, viewsById)
     return view
   }
   return new Proxy(outputs, {

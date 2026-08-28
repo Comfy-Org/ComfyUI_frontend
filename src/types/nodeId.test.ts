@@ -40,6 +40,16 @@ describe('nodeId', () => {
 
     expect(ids.sort(compareNodeIds)).toEqual(['-1', '0', '', ' '].map(toNodeId))
   })
+
+  it('provides a transitive order across integer and named ID syntax', () => {
+    const first = toNodeId('9007199254740992')
+    const second = toNodeId('09007199254740993')
+    const third = toNodeId('9.007199254740992e15')
+
+    expect(compareNodeIds(first, second)).toBeLessThan(0)
+    expect(compareNodeIds(second, third)).toBeLessThan(0)
+    expect(compareNodeIds(first, third)).toBeLessThan(0)
+  })
 })
 
 describe('parseNodeId', () => {

@@ -376,6 +376,24 @@ describe('ComfyApp', () => {
       expect(images?.[0]).toBe(image)
     })
 
+    it('commits shared output mutations to the accessed entry', () => {
+      app.vueAppReady = true
+      const shared = { images: [{ filename: 'first.png' }] }
+      app.nodeOutputs['1'] = shared
+      app.nodeOutputs['2'] = shared
+      void app.nodeOutputs['1']
+      const second = app.nodeOutputs['2']
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
+
+      second.images = [{ filename: 'second.png' }]
+
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledOnce()
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '2',
+        shared
+      )
+    })
+
     it('commits only the changed entry after whole-record assignment', () => {
       app.vueAppReady = true
       app.nodeOutputs = { '1': { images: [{ filename: 'first.png' }] } }
