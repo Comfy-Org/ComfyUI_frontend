@@ -23,10 +23,7 @@ function plain(value: unknown): unknown {
   return structuredClone(value)
 }
 
-export function readSemanticNode(
-  doc: Y.Doc,
-  id: string
-): SemanticNodePayload | null {
+function readSemanticNode(doc: Y.Doc, id: string): SemanticNodePayload | null {
   const source = nodesMap(doc).get(id)
   if (!(source instanceof Y.Map)) return null
   const type = source.get('type')
@@ -49,10 +46,7 @@ export function readSemanticNode(
   return payload as SemanticNodePayload
 }
 
-export function readSemanticLink(
-  doc: Y.Doc,
-  id: string
-): SemanticLinkPayload | null {
+function readSemanticLink(doc: Y.Doc, id: string): SemanticLinkPayload | null {
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null

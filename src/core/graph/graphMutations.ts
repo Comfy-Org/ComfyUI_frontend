@@ -34,7 +34,7 @@ export interface SemanticLinkPayload {
   targetInputs?: readonly ISerialisableNodeInput[]
 }
 
-export interface SemanticNodeLayout {
+interface SemanticNodeLayout {
   position: { x: number; y: number }
   size: { width: number; height: number }
 }
@@ -43,7 +43,7 @@ export interface SemanticNodeLayout {
  * Renderer-owned layout mutation port. Semantic state never imports the
  * renderer or writes position into the shared follower Y.Doc.
  */
-export interface SemanticLayoutMutationPort {
+interface SemanticLayoutMutationPort {
   createNode(
     scope: GraphScope,
     nodeId: NodeId,
@@ -57,7 +57,7 @@ export interface SemanticLayoutMutationPort {
   ): void
 }
 
-export interface GraphMutationBatch {
+interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
   reconcileNode(payload: SemanticNodePayload): void
   setWidget(nodeId: NodeId, name: string, value: unknown): void
