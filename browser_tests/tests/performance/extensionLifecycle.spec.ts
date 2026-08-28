@@ -188,7 +188,11 @@ test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
         listenerCalls: 0
       }
       const listener = () => counters.listenerCalls++
-      const wrapper: typeof prototype.drawNode = function (node, context) {
+      const wrapper: typeof prototype.drawNode = function (
+        this: typeof canvas,
+        node,
+        context
+      ) {
         originalDrawNode.call(this, node, context)
         counters.wrapperCalls++
 
