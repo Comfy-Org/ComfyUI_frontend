@@ -370,3 +370,63 @@ describe('AgentMessage fallback content', () => {
     expect(emitted().feedback).toEqual([['up']])
   })
 })
+
+describe('AgentMessage run approval', () => {
+  const approvalMessage = (): AssistantMessage => ({
+    id: 'msg-approval' as TurnId,
+    role: 'assistant',
+    parts: [
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow'
+      }
+    ],
+    streaming: true,
+    thinking: false
+  })
+
+  it('renders the Figma copy and emits workflow, cancel, and run actions', async () => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: approvalMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('This tool wants to run the workflow:')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Do you approve?')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Portrait workflow' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }))
+
+    expect(emitted().openWorkflow).toEqual([
+      ['workflow-1', 'Portrait workflow']
+    ])
+    expect(emitted().answerAsk).toEqual([
+      ['turn-1:call-1', 'cancel'],
+      ['turn-1:call-1', 'run']
+    ])
+  })
+
+  it('keeps both labels in place while disabling an in-flight answer', () => {
+    render(AgentMessage, {
+      props: {
+        message: approvalMessage(),
+        answeringAskIds: new Set(['turn-1:call-1'])
+      },
+      global: { plugins: [i18n] }
+    })
+
+    for (const name of ['Cancel', 'Run']) {
+      const button = screen.getByRole('button', { name })
+      expect(button).toBeDisabled()
+      expect(button).toHaveAttribute('aria-busy', 'true')
+    }
+    expect(document.querySelector('.pi-spinner')).not.toBeInTheDocument()
+  })
+})
