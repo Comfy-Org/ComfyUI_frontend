@@ -97,12 +97,15 @@ test.describe('MiniMax license page @smoke', () => {
   test('quotes no Enterprise price anywhere in the rate card', async ({
     page
   }) => {
-    const enterpriseCells = await page.evaluate(() => {
-      const rows = document.querySelectorAll('table tbody tr')
-      return [...rows].map(
+    const enterpriseCells = await page.evaluate((heading) => {
+      const table = [...document.querySelectorAll('table')].find(
+        (candidate) =>
+          candidate.querySelector('caption')?.textContent?.trim() === heading
+      )
+      return [...(table?.querySelectorAll('tbody tr') ?? [])].map(
         (row) => row.querySelectorAll('td')[1]?.textContent?.trim() ?? ''
       )
-    })
+    }, COMPARISON_HEADING)
 
     expect(enterpriseCells.length).toBeGreaterThan(0)
     expect(enterpriseCells.filter((cell) => cell.includes('$'))).toEqual([])

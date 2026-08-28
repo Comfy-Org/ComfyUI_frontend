@@ -6834,9 +6834,9 @@ const translations = {
     'zh-CN': '两种级别均按视频秒数计价，并包含你生成的一切内容的完整商业权利。'
   },
   'minimaxLicense.comparison.footnote': {
-    en: 'Prices in USD and exclude tax. This license is for running MiniMax models locally on your own hardware — Comfy Cloud plans already include commercial rights. Enterprise volume pricing and terms are quoted per agreement.',
+    en: 'Prices in USD and exclude tax. This license is for running MiniMax models locally on your own hardware — Comfy Cloud plans already include commercial rights. Enterprise pricing and terms are quoted per agreement.',
     'zh-CN':
-      '价格以美元计，不含税。此许可面向在自有硬件上本地运行 MiniMax 模型的场景 — Comfy Cloud 订阅已包含商业权利。企业版批量定价与条款按协议报价。'
+      '价格以美元计，不含税。此许可面向在自有硬件上本地运行 MiniMax 模型的场景 — Comfy Cloud 订阅已包含商业权利。企业版定价与条款按协议报价。'
   },
   'minimaxLicense.comparison.primaryCta': {
     en: 'REQUEST LICENSE',
