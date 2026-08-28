@@ -36,7 +36,7 @@
     "format:check": "oxfmt --check",
     "format": "oxfmt --write",
     "json-schema": "tsx scripts/generate-json-schema.ts",
-    "typegen:docframe": "openapi-typescript src/schemas/docframe/openapi.yaml --output src/schemas/docframe/generated/docframe.d.ts",
+    "typegen:docframe": "openapi-typescript src/schemas/docframe/openapi.yaml --output src/schemas/docframe/generated/docframe.d.ts && oxfmt --write src/schemas/docframe/generated/docframe.d.ts",
     "knip:no-cache": "knip",
     "knip": "knip --cache",
     "lint:fix:no-cache": "pnpm oxlint:main --fix && pnpm oxlint:audit && eslint src --fix",
