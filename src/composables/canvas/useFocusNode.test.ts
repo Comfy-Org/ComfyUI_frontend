@@ -110,6 +110,8 @@ describe('useFocusNode', () => {
     canvasHolder.current = null
     await pending
 
+    // The switch itself ran (the path is not vacuous) - only framing stops.
+    expect(canvas.setGraph).toHaveBeenCalled()
     expect(canvas.animateToBounds).not.toHaveBeenCalled()
   })
 })

@@ -138,16 +138,28 @@ export function addToComboValues(widget: IComboWidget, value: string) {
  * (the `selectOnly` interaction mode).
  *
  * Guard every editing operation with this. A new way to edit the canvas has
- * to opt in: add the guard, or the operation will run during picking. Pointer
- * gestures are gated by a second layer inside the library itself
- * (LGraphCanvas's own `selectOnly` checks in its pointer paths) - both layers
- * exist on purpose; command/composable call sites use this helper.
+ * to opt in: add the guard, or the operation will run during picking.
+ *
+ * The guarded surface has four layers, each at its own choke point:
+ * - command/composable call sites use this helper first-statement;
+ * - classic pointer gestures are gated inside the library itself
+ *   (LGraphCanvas's own `selectOnly` checks in its pointer paths);
+ * - undo/redo is gated at the TRACKER level (ChangeTracker.undo()/redo() -
+ *   not the command registry, which keyboard shortcuts bypass);
+ * - node creation is gated at useLitegraphService's addNodeOnGraph, which
+ *   every creation surface traverses.
  *
  * Deliberately unguarded: workflow-lifecycle commands (new/open/load-default)
  * SWAP the workflow rather than edit the picked canvas - switching workflows
  * exits the picking mode, and the mode's owner handles that exit. Clear is
  * guarded despite the resemblance: it destroys the current canvas in place,
  * which is an edit, not a swap.
+ *
+ * KNOWN UNGUARDED (deferred to the mode-owner slice, which arms the mode
+ * only where these cannot fire): the Vue-nodes pointer paths - the click
+ * replace in useNodeEventHandlers and the drag path in
+ * useNodePointerInteractions. Classic-canvas picking never reaches them;
+ * arming picking under Vue nodes requires guarding them first.
  */
 export const isSelectOnly = (
   canvas: LGraphCanvas | null | undefined
