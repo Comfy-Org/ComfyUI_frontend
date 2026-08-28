@@ -94,4 +94,30 @@ describe('arrangeForLegacyRender', () => {
 
     expect(getNodeLayout.mock.calls.length).toBeLessThanOrEqual(nodes.length)
   })
+
+  it('refreshes cached order when adopting a pre-existing layout', () => {
+    const graph = new LGraph()
+    const first = addedNode(graph, 1)
+    const secondId = toNodeId(2)
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: graph.id,
+      nodeId: secondId,
+      layout: {
+        id: secondId,
+        position: { x: 0, y: 0 },
+        size: { width: 140, height: 80 },
+        bounds: { x: 0, y: 0, width: 140, height: 80 },
+        zIndex: 2,
+        visible: true
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+    expect(nodesInRenderOrder(graph)).toEqual([first])
+
+    const second = addedNode(graph, 2)
+
+    expect(nodesInRenderOrder(graph)).toEqual([first, second])
+  })
 })
