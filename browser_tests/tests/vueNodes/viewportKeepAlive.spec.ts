@@ -24,7 +24,7 @@ async function setCanvasScale(comfyPage: ComfyPage, scale: number) {
 
 async function getGraphNodeSize(page: Page, nodeId: string) {
   return await page.evaluate((id) => {
-    const node = window.app!.graph!.nodes.find(
+    const node = window.app!.graph.nodes.find(
       (candidate) => String(candidate.id) === id
     )
     if (!node) throw new Error(`Node ${id} is missing`)
