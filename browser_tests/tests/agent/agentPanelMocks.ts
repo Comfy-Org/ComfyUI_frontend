@@ -143,7 +143,6 @@ async function mockAgentBoot(
   let consentAccepted = initialConsentAccepted
 
   await page.addInitScript((initiallyOpen) => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
     if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
       localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
     }
