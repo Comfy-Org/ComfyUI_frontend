@@ -31,7 +31,7 @@ import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
 import { toSlug } from '../cli/slug'
 import { TAG_REGISTRY } from '../tags'
 import { USE_CASES, useCaseById } from '../useCases'
-import { addWorkflow } from '../workflows/add'
+import { addWorkflow, WORKFLOW_ASSET_EXPLANATION } from '../workflows/add'
 import {
   customDistribution,
   DISTRIBUTIONS,
@@ -538,6 +538,7 @@ export async function runRecord(
 
   let seedWorkflow = selectedWorkflow
   if (selectedWorkflow === ADD_WORKFLOW_SENTINEL) {
+    info([WORKFLOW_ASSET_EXPLANATION])
     const workflowPath = await path({
       message: 'Select a ComfyUI workflow JSON file:',
       root: process.cwd(),

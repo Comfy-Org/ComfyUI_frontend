@@ -6,7 +6,7 @@ import type {
   IWidget,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
-import { toClass } from '@/lib/litegraph/src/utils/type'
+import { toClass as instantiateClass } from '@/lib/litegraph/src/utils/type'
 
 import { AssetWidget } from './AssetWidget'
 import { BaseWidget } from './BaseWidget'
@@ -73,6 +73,86 @@ export type WidgetTypeMap = {
   [key: string]: BaseWidget
 }
 
+const toWidgetClass = instantiateClass
+
+function collectDescriptors(value: object) {
+  const descriptors = new Map<PropertyKey, PropertyDescriptor>()
+  let current: object | null = value
+  while (current && current !== Object.prototype) {
+    for (const key of Reflect.ownKeys(current)) {
+      if (key === 'constructor' || descriptors.has(key)) continue
+      const descriptor = Object.getOwnPropertyDescriptor(current, key)
+      if (descriptor) descriptors.set(key, descriptor)
+    }
+    current = Object.getPrototypeOf(current) as object | null
+  }
+  return descriptors
+}
+
+function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
+  if (concrete === widget || !Object.isExtensible(widget)) return concrete
+
+  const descriptors = collectDescriptors(concrete)
+  const foreignDescriptors = collectDescriptors(widget)
+  for (const [key, foreignDescriptor] of foreignDescriptors) {
+    const concreteDescriptor = descriptors.get(key)
+    if (!concreteDescriptor) {
+      descriptors.set(key, foreignDescriptor)
+      continue
+    }
+    const concreteIsGetterOnly =
+      concreteDescriptor.get !== undefined &&
+      concreteDescriptor.set === undefined
+    if (concreteIsGetterOnly && foreignDescriptor.set !== undefined) {
+      descriptors.set(key, {
+        ...foreignDescriptor,
+        get: foreignDescriptor.get ?? concreteDescriptor.get
+      })
+      continue
+    }
+    if (
+      concreteIsGetterOnly &&
+      Object.getOwnPropertyDescriptor(widget, key)?.writable === true
+    ) {
+      descriptors.set(key, foreignDescriptor)
+      continue
+    }
+    if (
+      foreignDescriptor.get === undefined &&
+      foreignDescriptor.set === undefined
+    )
+      continue
+
+    if (concreteDescriptor?.get && concreteDescriptor.set) {
+      descriptors.set(key, {
+        configurable: foreignDescriptor.configurable,
+        enumerable: foreignDescriptor.enumerable,
+        get() {
+          foreignDescriptor.get?.call(this)
+          return concreteDescriptor.get?.call(this)
+        },
+        set(value: unknown) {
+          concreteDescriptor.set?.call(this, value)
+          foreignDescriptor.set?.call(this, value)
+        }
+      })
+    }
+  }
+
+  if (
+    Reflect.ownKeys(widget).some(
+      (key) =>
+        descriptors.has(key) &&
+        Object.getOwnPropertyDescriptor(widget, key)?.configurable === false
+    ) ||
+    !Reflect.setPrototypeOf(widget, Object.getPrototypeOf(concrete))
+  )
+    return concrete
+
+  Object.defineProperties(widget, Object.fromEntries(descriptors))
+  return widget as unknown as C
+}
+
 /**
  * Convert a widget POJO to a proper widget instance.
  * @param widget The POJO to convert.
@@ -95,6 +175,18 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
   node: LGraphNode,
   wrapLegacyWidgets = true
 ): WidgetTypeMap[TWidget['type']] | undefined {
+  const concrete = instantiateConcreteWidget(widget, node, wrapLegacyWidgets)
+  return concrete && wrapLegacyWidgets
+    ? adoptConcreteWidget(widget, concrete)
+    : concrete
+}
+
+function instantiateConcreteWidget<TWidget extends IWidget | IBaseWidget>(
+  widget: TWidget,
+  node: LGraphNode,
+  wrapLegacyWidgets: boolean
+): WidgetTypeMap[TWidget['type']] | undefined {
+  if (widget instanceof LegacyWidget && !wrapLegacyWidgets) return undefined
   if (widget instanceof BaseWidget) return widget
 
   // Assertion: TypeScript has no concept of "all strings except X"
@@ -103,65 +195,65 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
 
   switch (narrowedWidget.type) {
     case 'button':
-      return toClass(ButtonWidget, narrowedWidget, node)
+      return toWidgetClass(ButtonWidget, narrowedWidget, node)
     case 'toggle':
-      return toClass(BooleanWidget, narrowedWidget, node)
+      return toWidgetClass(BooleanWidget, narrowedWidget, node)
     case 'slider':
-      return toClass(SliderWidget, narrowedWidget, node)
+      return toWidgetClass(SliderWidget, narrowedWidget, node)
     case 'gradientslider':
-      return toClass(GradientSliderWidget, narrowedWidget, node)
+      return toWidgetClass(GradientSliderWidget, narrowedWidget, node)
     case 'knob':
-      return toClass(KnobWidget, narrowedWidget, node)
+      return toWidgetClass(KnobWidget, narrowedWidget, node)
     case 'combo':
-      return toClass(ComboWidget, narrowedWidget, node)
+      return toWidgetClass(ComboWidget, narrowedWidget, node)
     case 'number':
-      return toClass(NumberWidget, narrowedWidget, node)
+      return toWidgetClass(NumberWidget, narrowedWidget, node)
     case 'string':
-      return toClass(TextWidget, narrowedWidget, node)
+      return toWidgetClass(TextWidget, narrowedWidget, node)
     case 'text':
-      return toClass(TextWidget, narrowedWidget, node)
+      return toWidgetClass(TextWidget, narrowedWidget, node)
     case 'fileupload':
-      return toClass(FileUploadWidget, narrowedWidget, node)
+      return toWidgetClass(FileUploadWidget, narrowedWidget, node)
     case 'color':
-      return toClass(ColorWidget, narrowedWidget, node)
+      return toWidgetClass(ColorWidget, narrowedWidget, node)
     case 'markdown':
-      return toClass(MarkdownWidget, narrowedWidget, node)
+      return toWidgetClass(MarkdownWidget, narrowedWidget, node)
     case 'treeselect':
-      return toClass(TreeSelectWidget, narrowedWidget, node)
+      return toWidgetClass(TreeSelectWidget, narrowedWidget, node)
     case 'multiselect':
-      return toClass(MultiSelectWidget, narrowedWidget, node)
+      return toWidgetClass(MultiSelectWidget, narrowedWidget, node)
     case 'chart':
-      return toClass(ChartWidget, narrowedWidget, node)
+      return toWidgetClass(ChartWidget, narrowedWidget, node)
     case 'galleria':
-      return toClass(GalleriaWidget, narrowedWidget, node)
+      return toWidgetClass(GalleriaWidget, narrowedWidget, node)
     case 'imagecompare':
-      return toClass(ImageCompareWidget, narrowedWidget, node)
+      return toWidgetClass(ImageCompareWidget, narrowedWidget, node)
     case 'selectbutton':
-      return toClass(SelectButtonWidget, narrowedWidget, node)
+      return toWidgetClass(SelectButtonWidget, narrowedWidget, node)
     case 'textarea':
-      return toClass(TextareaWidget, narrowedWidget, node)
+      return toWidgetClass(TextareaWidget, narrowedWidget, node)
     case 'asset':
-      return toClass(AssetWidget, narrowedWidget, node)
+      return toWidgetClass(AssetWidget, narrowedWidget, node)
     case 'imagecrop':
-      return toClass(ImageCropWidget, narrowedWidget, node)
+      return toWidgetClass(ImageCropWidget, narrowedWidget, node)
     case 'boundingbox':
-      return toClass(BoundingBoxWidget, narrowedWidget, node)
+      return toWidgetClass(BoundingBoxWidget, narrowedWidget, node)
     case 'curve':
-      return toClass(CurveWidget, narrowedWidget, node)
+      return toWidgetClass(CurveWidget, narrowedWidget, node)
     case 'painter':
-      return toClass(PainterWidget, narrowedWidget, node)
+      return toWidgetClass(PainterWidget, narrowedWidget, node)
     case 'compositor':
-      return toClass(CompositorWidget, narrowedWidget, node)
+      return toWidgetClass(CompositorWidget, narrowedWidget, node)
     case 'range':
-      return toClass(RangeWidget, narrowedWidget, node)
+      return toWidgetClass(RangeWidget, narrowedWidget, node)
     case 'videoedit':
-      return toClass(VideoEditWidget, narrowedWidget, node)
+      return toWidgetClass(VideoEditWidget, narrowedWidget, node)
     case 'boundingboxes':
-      return toClass(BoundingBoxesWidget, narrowedWidget, node)
+      return toWidgetClass(BoundingBoxesWidget, narrowedWidget, node)
     case 'colors':
-      return toClass(ColorsWidget, narrowedWidget, node)
+      return toWidgetClass(ColorsWidget, narrowedWidget, node)
     default: {
-      if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
+      if (wrapLegacyWidgets) return toWidgetClass(LegacyWidget, widget, node)
     }
   }
 }

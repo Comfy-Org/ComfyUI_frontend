@@ -28,6 +28,16 @@ describe('getRoutes models', () => {
   })
 })
 
+describe('getRoutes modelsShowcase', () => {
+  it('serves the models showcase page at its canonical path for en', () => {
+    expect(getRoutes('en').modelsShowcase).toBe('/models')
+  })
+
+  it('serves a localized models showcase path for zh-CN', () => {
+    expect(getRoutes('zh-CN').modelsShowcase).toBe('/zh-CN/models')
+  })
+})
+
 describe('getRoutes seedance', () => {
   it('serves the seedance page at its canonical path for en', () => {
     expect(getRoutes('en').seedance).toBe('/seedance-2.5')
@@ -45,6 +55,16 @@ describe('getRoutes ltx', () => {
 
   it('serves a localized ltx path for zh-CN', () => {
     expect(getRoutes('zh-CN').ltx).toBe('/zh-CN/ltx-2.5')
+  })
+})
+
+describe('getRoutes geminiOmni', () => {
+  it('serves the gemini omni page at its canonical path for en', () => {
+    expect(getRoutes('en').geminiOmni).toBe('/gemini-omni')
+  })
+
+  it('serves a localized gemini omni path for zh-CN', () => {
+    expect(getRoutes('zh-CN').geminiOmni).toBe('/zh-CN/gemini-omni')
   })
 })
 
@@ -85,5 +105,15 @@ describe('getRoutes fdct', () => {
 
   it('serves a localized fdct path for zh-CN', () => {
     expect(getRoutes('zh-CN').fdct).toBe('/zh-CN/forward-deployed-creatives')
+  })
+})
+
+describe('getRoutes minimaxLicense', () => {
+  it('serves the MiniMax license page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxLicense).toBe('/minimax/license')
+  })
+
+  it('serves a localized MiniMax license path for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxLicense).toBe('/zh-CN/minimax/license')
   })
 })

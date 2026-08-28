@@ -183,10 +183,6 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import {
-  requestSlotLayoutSyncForAllNodes,
-  setExpectedRenderedNodeIds
-} from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useViewportKeepAlive } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlive'
 import { useViewportKeepAlivePins } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins'
 import { UnauthorizedError } from '@/scripts/api'
@@ -341,27 +337,6 @@ const { activeNodeIds } = useViewportKeepAlive({
   }),
   getGeometryVersion: () => layoutStore.geometryVersion
 })
-watch(activeNodeIds, () => setExpectedRenderedNodeIds(activeNodeIds.value), {
-  immediate: true,
-  flush: 'post'
-})
-watch(
-  () => linearMode.value,
-  (isLinearMode) => {
-    if (!shouldRenderVueNodes.value) return
-
-    if (isLinearMode) {
-      layoutStore.clearAllSlotLayouts()
-    } else {
-      // App mode hides the graph canvas with `display: none`, so slot connectors
-      // need a fresh DOM measurement pass before links can render correctly.
-      requestSlotLayoutSyncForAllNodes()
-    }
-
-    layoutStore.setPendingSlotSync(true)
-  }
-)
-
 function onLinkOverlayReady(el: HTMLCanvasElement) {
   if (!canvasStore.canvas) return
   canvasStore.canvas.overlayCanvas = el
@@ -651,7 +626,6 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  setExpectedRenderedNodeIds(undefined)
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })

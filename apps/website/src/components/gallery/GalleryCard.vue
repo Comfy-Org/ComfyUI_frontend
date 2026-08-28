@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue'
+
 import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
 import GalleryItemAttribution from './GalleryItemAttribution.vue'
@@ -15,8 +17,8 @@ const {
   locale?: Locale
   aspect?: string
   mobile?: boolean
-  objectPosition?: string
-  objectFit?: string
+  objectPosition?: CSSProperties['objectPosition']
+  objectFit?: CSSProperties['objectFit']
 }>()
 
 defineEmits<{ click: [] }>()
@@ -42,6 +44,8 @@ defineEmits<{ click: [] }>()
         v-else
         :src="item.image"
         :alt="item.title"
+        loading="lazy"
+        decoding="async"
         class="size-full transition-transform duration-300 group-hover:scale-105"
         :style="{ objectPosition, objectFit }"
       />
