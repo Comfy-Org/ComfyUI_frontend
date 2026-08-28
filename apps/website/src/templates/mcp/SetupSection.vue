@@ -79,7 +79,7 @@ const cloudClients: Partial<Record<McpClientId, McpClient>> = {
   openclaw: {
     name: 'OpenClaw',
     step: t('mcp.setup.clients.openclaw.step', locale),
-    command: `openclaw skills install @comfy-org/comfy\nopenclaw mcp set comfy '{"url":"${externalLinks.mcpEndpoint}","transport":"streamable-http","auth":"oauth"}'`,
+    command: `openclaw skills install @comfy-org/comfy\nopenclaw mcp set comfy '{"url":"${externalLinks.mcpEndpoint}","transport":"streamable-http","auth":"oauth"}'\nopenclaw mcp login comfy`,
     showAgentCard: true
   },
   other: {

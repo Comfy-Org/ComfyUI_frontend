@@ -63,7 +63,8 @@ describe('capturePageview', () => {
     initPostHog()
     capturePageview()
 
-    expect(hoisted.mockCapture).toHaveBeenCalledWith('$pageview', undefined)
+    expect(hoisted.mockCapture).toHaveBeenCalledOnce()
+    expect(hoisted.mockCapture.mock.calls[0][0]).toBe('$pageview')
   })
 })
 

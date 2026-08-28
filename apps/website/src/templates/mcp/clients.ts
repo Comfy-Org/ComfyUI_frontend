@@ -18,8 +18,8 @@ const LOCAL_CLIENT_IDS = [
   'local-other'
 ] as const
 
-export type CloudClientId = (typeof CLOUD_CLIENT_IDS)[number]
-export type LocalClientId = (typeof LOCAL_CLIENT_IDS)[number]
+type CloudClientId = (typeof CLOUD_CLIENT_IDS)[number]
+type LocalClientId = (typeof LOCAL_CLIENT_IDS)[number]
 export type McpClientId = CloudClientId | LocalClientId
 
 const CONNECTION_ID_SET: ReadonlySet<string> = new Set(MCP_CONNECTION_IDS)
