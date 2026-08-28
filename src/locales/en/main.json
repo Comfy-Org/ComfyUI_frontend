@@ -5076,5 +5076,10 @@
         "explore": "Explore templates"
       }
     }
+  },
+  "agent": {
+    "askComfyAgent": "Ask Comfy Agent",
+    "title": "Comfy Agent",
+    "loadFailed": "The agent panel failed to load."
   }
 }
