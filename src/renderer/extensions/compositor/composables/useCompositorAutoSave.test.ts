@@ -52,9 +52,7 @@ const storedValue = () =>
   useWidgetValueStore().getWidget(widgetId(GRAPH_ID, NODE_ID, 'compositor'))
     ?.value
 
-const setValueSpy = () => vi.mocked(useWidgetValueStore().setValue)
-
-const cacheNode = { id: NODE_ID } as unknown as LGraphNode
+const cacheNode = createMockLGraphNode({ id: NODE_ID })
 
 beforeEach(() => {
   setCompositorLayers(
@@ -78,7 +76,7 @@ describe('useCompositorAutoSave', () => {
     session.emitHistoryChange()
     vi.advanceTimersByTime(2000)
 
-    expect(setValueSpy()).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
     expect(storedValue()).toEqual({})
   })
 
@@ -90,10 +88,10 @@ describe('useCompositorAutoSave', () => {
     session.emitHistoryChange()
     session.emitHistoryChange()
     session.emitHistoryChange()
-    expect(setValueSpy()).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(300)
-    expect(setValueSpy()).toHaveBeenCalledTimes(1)
+    expect(useWidgetValueStore().setValue).toHaveBeenCalledTimes(1)
     expect(storedValue()).toMatchObject({ canvas: { w: 8, h: 8 } })
   })
 
@@ -107,7 +105,7 @@ describe('useCompositorAutoSave', () => {
     session.emitHistoryChange()
     vi.advanceTimersByTime(300)
 
-    expect(setValueSpy()).toHaveBeenCalledTimes(2)
+    expect(useWidgetValueStore().setValue).toHaveBeenCalledTimes(2)
   })
 
   it('ignores selection-only history changes', () => {
@@ -118,7 +116,7 @@ describe('useCompositorAutoSave', () => {
     session.emitHistoryChange(Dirty.SELECTION)
     vi.advanceTimersByTime(300)
 
-    expect(setValueSpy()).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
   })
 
   it('stop() cancels pending saves and unsubscribes', () => {
@@ -133,6 +131,6 @@ describe('useCompositorAutoSave', () => {
     session.emitHistoryChange()
     vi.advanceTimersByTime(300)
 
-    expect(setValueSpy()).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
   })
 })

@@ -1,6 +1,8 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ICompositorWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -47,10 +49,14 @@ describe('setCompositorWidgetValue', () => {
     expect(storedValue(node)).toEqual(next)
   })
 
-  it('falls back to the widget object when the store has no entry (detached node)', () => {
+  it('falls back to the widget object when the store has no entry', () => {
     const node = makeNode({ registered: false })
-    const widget = { name: 'compositor', value: { layers: [] } }
-    node.widgets = [widget as never]
+    const widget = fromPartial<ICompositorWidget>({
+      name: 'compositor',
+      type: 'compositor',
+      value: { layers: [] }
+    })
+    node.widgets = [widget]
     const next = { canvas: { w: 4, h: 4 }, layers: [] }
 
     setCompositorWidgetValue(node, next)

@@ -8,7 +8,6 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-import type { CompositorLayerState } from './compositorLayerState'
 import {
   saveCompositorLayerState,
   saveCompositorPreview
@@ -65,15 +64,13 @@ function makeNode(): { node: LGraphNode } {
   return { node }
 }
 
-function storedValue(): CompositorLayerState {
+function storedValue(): unknown {
   return useWidgetValueStore().getWidget(
     widgetId(GRAPH_ID, NODE_ID, 'compositor')
-  )?.value as CompositorLayerState
+  )?.value
 }
 
-const setValueSpy = () => vi.mocked(useWidgetValueStore().setValue)
-
-const cacheNode = { id: toNodeId(7) } as unknown as LGraphNode
+const cacheNode = createMockLGraphNode({ id: NODE_ID })
 
 beforeEach(() => {
   clearCompositorLayers(cacheNode)
@@ -95,15 +92,17 @@ describe('saveCompositorLayerState', () => {
 
     expect(saveCompositorLayerState(session, node)).toBe(true)
 
-    const savedState = storedValue()
-    expect(savedState.canvas).toEqual({ w: 64, h: 48 })
-    expect(savedState.layers).toHaveLength(1)
-    expect(savedState.layers[0]).toMatchObject({
-      name: 'Background',
-      opacity: 0.5,
-      blend: 'multiply',
-      flipH: true,
-      flipV: false
+    expect(storedValue()).toMatchObject({
+      canvas: { w: 64, h: 48 },
+      layers: [
+        {
+          name: 'Background',
+          opacity: 0.5,
+          blend: 'multiply',
+          flipH: true,
+          flipV: false
+        }
+      ]
     })
   })
 
@@ -117,7 +116,7 @@ describe('saveCompositorLayerState', () => {
 
     saveCompositorLayerState(makeSession(), node)
 
-    expect(storedValue().inputs).toEqual(['hash-a', 'hash-b'])
+    expect(storedValue()).toMatchObject({ inputs: ['hash-a', 'hash-b'] })
   })
 
   it('refuses to save when no fingerprint is cached', () => {
@@ -125,7 +124,7 @@ describe('saveCompositorLayerState', () => {
 
     expect(saveCompositorLayerState(makeSession(), node)).toBe(false)
 
-    expect(setValueSpy()).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
     expect(storedValue()).toEqual({})
   })
 
@@ -139,7 +138,7 @@ describe('saveCompositorLayerState', () => {
 
     expect(saveCompositorLayerState(session, node)).toBe(false)
 
-    expect(setValueSpy()).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
     expect(storedValue()).toEqual({})
   })
 })
