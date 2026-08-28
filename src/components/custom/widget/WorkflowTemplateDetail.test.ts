@@ -38,12 +38,22 @@ function renderDetail({
   renderedGroups = groups,
   cloudUrl,
   isPartnerNode = false,
-  openPending = false
+  openPending = false,
+  modelSetupEnabled = false,
+  setupPending = false,
+  requirementsMet = false,
+  starterPackAvailable = false,
+  remainingDownload
 }: {
   renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
+  modelSetupEnabled?: boolean
+  setupPending?: boolean
+  requirementsMet?: boolean
+  starterPackAvailable?: boolean
+  remainingDownload?: string
 } = {}) {
   return render(WorkflowTemplateDetail, {
     props: {
@@ -52,7 +62,12 @@ function renderDetail({
       groups: renderedGroups,
       cloudUrl,
       isPartnerNode,
-      openPending
+      openPending,
+      modelSetupEnabled,
+      setupPending,
+      requirementsMet,
+      starterPackAvailable,
+      remainingDownload
     },
     slots: {
       preview: '<img src="/thumbnail.webp" alt="Wan 2.2 workflow preview" />'
@@ -111,6 +126,53 @@ describe('WorkflowTemplateDetail', () => {
 
     await result.rerender({ openPending: true })
     expect(screen.getByRole('button', { name: 'Open template' })).toBeDisabled()
+  })
+
+  it('offers Desktop model setup actions with the remaining download on the left', async () => {
+    const user = userEvent.setup()
+    const result = renderDetail({
+      modelSetupEnabled: true,
+      starterPackAvailable: true,
+      remainingDownload: '9.57 GB'
+    })
+
+    expect(screen.getByText('9.57 GB left')).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: 'Open without downloading' })
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Download starter pack' })
+    )
+
+    expect(result.emitted('open-template')).toEqual([[]])
+    expect(result.emitted('download-starter-pack')).toEqual([[]])
+    expect(
+      screen.queryByRole('button', { name: 'Open template' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('waits for setup before enabling Starter Pack and simplifies ready models to Open template', async () => {
+    const pending = renderDetail({
+      modelSetupEnabled: true,
+      setupPending: true
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Download starter pack' })
+    ).toBeDisabled()
+    pending.unmount()
+
+    renderDetail({ modelSetupEnabled: true, requirementsMet: true })
+    expect(
+      screen.queryByRole('button', { name: 'Open without downloading' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Download starter pack' })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/left$/i)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Open template' })
+    ).toBeInTheDocument()
   })
 
   it('omits the requirements region when nothing is declared', () => {

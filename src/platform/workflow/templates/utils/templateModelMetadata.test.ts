@@ -129,6 +129,29 @@ describe('resolveTemplateModelMetadata', () => {
     expect(mocks.fetchModelMetadataWithStatus).not.toHaveBeenCalled()
   })
 
+  it('forwards its cancellation signal to each unique metadata request', async () => {
+    const controller = new AbortController()
+    const first = model('first.safetensors')
+    const second = model('second.safetensors')
+    mocks.fetchModelMetadataWithStatus.mockResolvedValue(metadataOutcome(1024))
+
+    await resolveTemplateModelMetadata([first, second, first], {
+      signal: controller.signal
+    })
+
+    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledTimes(2)
+    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenNthCalledWith(
+      1,
+      first.url,
+      { signal: controller.signal }
+    )
+    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenNthCalledWith(
+      2,
+      second.url,
+      { signal: controller.signal }
+    )
+  })
+
   it('discards a completed batch when it is aborted while metadata is pending', async () => {
     const controller = new AbortController()
     const pending = deferred<ModelMetadataFetchOutcome>()
