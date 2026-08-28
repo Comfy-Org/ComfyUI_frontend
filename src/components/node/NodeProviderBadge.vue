@@ -4,6 +4,8 @@
     :text="providerName"
     :icon="getProviderIcon(providerName)"
     :border-style="getProviderBorderStyle(providerName)"
+    :solid="isComfyCloud"
+    :icon-class="isComfyCloud ? 'text-primary-comfy-ink' : undefined"
   />
 </template>
 
@@ -15,7 +17,8 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import {
   getProviderBorderStyle,
   getProviderIcon,
-  getProviderName
+  getProviderName,
+  isComfyCloudProvider
 } from '@/utils/categoryUtil'
 
 const { nodeDef } = defineProps<{
@@ -23,4 +26,5 @@ const { nodeDef } = defineProps<{
 }>()
 
 const providerName = computed(() => getProviderName(nodeDef.category))
+const isComfyCloud = computed(() => isComfyCloudProvider(providerName.value))
 </script>

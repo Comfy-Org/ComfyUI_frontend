@@ -106,6 +106,15 @@ export function getProviderName(category: string): string {
 }
 
 /**
+ * Whether a provider is Comfy Cloud, which runs curated workflows on Comfy
+ * Cloud GPUs rather than proxying a third-party API. It is branded as Comfy
+ * rather than as an outside partner.
+ */
+export function isComfyCloudProvider(providerName: string): boolean {
+  return providerName.toLowerCase().replaceAll(/\s+/g, '-') === 'comfy-cloud'
+}
+
+/**
  * Returns the icon class for an API node provider (e.g., BFL, OpenAI, Stability AI)
  * @param providerName - The provider name from the node category
  * @returns The icon class string (e.g., 'icon-[comfy--bfl]')

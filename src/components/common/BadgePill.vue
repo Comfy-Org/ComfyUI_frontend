@@ -23,17 +23,20 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { borderStyle, filled } = defineProps<{
+const { borderStyle, filled, solid } = defineProps<{
   text?: string
   icon?: string
   iconClass?: string
   borderStyle?: string
   filled?: boolean
+  /** Paint the pill in the border colour rather than tinting it. */
+  solid?: boolean
 }>()
 
-const textColorClass = computed(() =>
-  borderStyle && filled ? '' : 'text-foreground'
-)
+const textColorClass = computed(() => {
+  if (borderStyle && solid) return 'text-primary-comfy-ink'
+  return borderStyle && filled ? '' : 'text-foreground'
+})
 
 const customStyle = computed(() => {
   if (!borderStyle) {
@@ -48,6 +51,10 @@ const customStyle = computed(() => {
       backgroundOrigin: 'border-box',
       backgroundClip: 'padding-box, border-box'
     }
+  }
+
+  if (solid) {
+    return { borderColor: borderStyle, backgroundColor: borderStyle }
   }
 
   if (filled) {
