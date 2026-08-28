@@ -6,6 +6,8 @@ import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/minimax/license'
 const ZH_PATH = '/zh-CN/minimax/license'
+const PRICING_PATH = '/cloud/pricing'
+const ZH_PRICING_PATH = '/zh-CN/cloud/pricing'
 const CONTACT_HREF = 'https://comfy.org/contact'
 const META_TITLE = t('minimaxLicense.meta.title')
 const HERO_TITLE = t('minimaxLicense.hero.title')
@@ -75,17 +77,20 @@ test.describe('MiniMax license page @smoke', () => {
     await expect(heading).toBeVisible()
 
     const table = page.getByRole('table', { name: COMPARISON_HEADING })
+    await expect(table.getByRole('columnheader')).toHaveCount(2)
     for (const tier of ['Professional', 'Enterprise']) {
       await expect(
         table.getByRole('columnheader', { name: tier })
       ).toBeVisible()
     }
     await expect(
-      table.getByRole('rowheader', { name: 'Monthly price' })
+      table.getByRole('rowheader', { name: 'Price', exact: true })
     ).toBeVisible()
-    await expect(table.getByRole('cell', { name: '$5,000' })).toBeVisible()
     await expect(
-      table.getByRole('cell', { name: 'Custom, from $20,000' })
+      table.getByRole('cell', { name: '$5,000 / month' })
+    ).toBeVisible()
+    await expect(
+      table.getByRole('cell', { name: 'From $240,000 / year' })
     ).toBeVisible()
   })
 
@@ -112,20 +117,72 @@ test.describe('MiniMax license rate card @mobile', () => {
     ).toBeHidden()
 
     const row = table.getByRole('row').filter({
-      has: page.getByRole('rowheader', { name: 'Monthly price' })
+      has: page.getByRole('rowheader', { name: 'Price', exact: true })
     })
     for (const tier of ['Professional', 'Enterprise']) {
       await expect(row.getByText(tier, { exact: true })).toBeVisible()
     }
-    await expect(row.getByText('$5,000', { exact: true })).toBeVisible()
+    await expect(row.getByText('$5,000 / month', { exact: true })).toBeVisible()
     await expect(
-      row.getByText('Custom, from $20,000', { exact: true })
+      row.getByText('From $240,000 / year', { exact: true })
     ).toBeVisible()
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth
     )
     expect(overflow).toBe(false)
+  })
+})
+
+test.describe('MiniMax license rate card on the pricing page @smoke', () => {
+  test('publishes the rate card below the Comfy Cloud plans', async ({
+    page
+  }) => {
+    await page.goto(PRICING_PATH)
+
+    const cloudPlans = page.getByRole('heading', {
+      level: 1,
+      name: t('pricing.title')
+    })
+    const table = page.getByRole('table', { name: COMPARISON_HEADING })
+    await table.scrollIntoViewIfNeeded()
+
+    await expect(cloudPlans).toBeAttached()
+    await expect(table.getByRole('columnheader')).toHaveCount(2)
+    await expect(
+      table.getByRole('cell', { name: '$5,000 / month' })
+    ).toBeVisible()
+    await expect(
+      table.getByRole('cell', { name: 'From $240,000 / year' })
+    ).toBeVisible()
+
+    const cta = page
+      .locator('section')
+      .filter({
+        has: page.getByRole('heading', { level: 2, name: COMPARISON_HEADING })
+      })
+      .getByRole('link', { name: t('minimaxLicense.comparison.primaryCta') })
+    await expect(cta).toHaveAttribute('href', getRoutes('en').contact)
+  })
+
+  test('keeps the zh-CN rate card CTA inside the locale', async ({ page }) => {
+    await page.goto(ZH_PRICING_PATH)
+
+    const heading = t('minimaxLicense.comparison.heading', 'zh-CN')
+    const table = page.getByRole('table', { name: heading })
+    await table.scrollIntoViewIfNeeded()
+
+    await expect(
+      table.getByRole('cell', { name: '5,000 美元 / 月' })
+    ).toBeVisible()
+
+    const cta = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { level: 2, name: heading }) })
+      .getByRole('link', {
+        name: t('minimaxLicense.comparison.primaryCta', 'zh-CN')
+      })
+    await expect(cta).toHaveAttribute('href', getRoutes('zh-CN').contact)
   })
 })
 

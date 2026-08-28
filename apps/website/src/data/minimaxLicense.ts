@@ -19,9 +19,11 @@ const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
 
 // Published on /minimax/license and /cloud/pricing both — a number changed
-// here changes two live pages. No "model upgrades" row: Professional is still
-// TBD, and the Enterprise side of it is the successor-model line held back
-// below.
+// here changes two live pages. Withheld on purpose, do not restore from the
+// source rate card: the Enterprise per-video-second floor and overage minimum
+// (the ceiling is still open to negotiation), and the "model upgrades" row
+// (Professional is TBD, Enterprise restates the successor-model line held back
+// below). Enterprise is quoted annually, never as a monthly figure.
 export const minimaxLicenseComparison: ModelLaunchComparison<
   'professional' | 'enterprise'
 > = {
@@ -42,13 +44,13 @@ export const minimaxLicenseComparison: ModelLaunchComparison<
   ],
   rows: [
     {
-      id: 'monthly-price',
-      label: { en: 'Monthly price', 'zh-CN': '月费' },
+      id: 'price',
+      label: { en: 'Price', 'zh-CN': '价格' },
       values: {
-        professional: { en: '$5,000', 'zh-CN': '5,000 美元' },
+        professional: { en: '$5,000 / month', 'zh-CN': '5,000 美元 / 月' },
         enterprise: {
-          en: 'Custom, from $20,000',
-          'zh-CN': '定制，20,000 美元起'
+          en: 'From $240,000 / year',
+          'zh-CN': '240,000 美元 / 年起'
         }
       }
     },
@@ -69,8 +71,8 @@ export const minimaxLicenseComparison: ModelLaunchComparison<
       values: {
         professional: { en: '$0.108', 'zh-CN': '0.108 美元' },
         enterprise: {
-          en: '$0.108, down to a $0.06 floor',
-          'zh-CN': '0.108 美元，最低降至 0.06 美元'
+          en: 'Custom, by committed volume',
+          'zh-CN': '定制，按承诺用量'
         }
       }
     },
@@ -80,8 +82,8 @@ export const minimaxLicenseComparison: ModelLaunchComparison<
       values: {
         professional: { en: '$0.036', 'zh-CN': '0.036 美元' },
         enterprise: {
-          en: '1/3 of the bundle rate, min $0.02',
-          'zh-CN': '套餐单价的 1/3，最低 0.02 美元'
+          en: '1/3 of the bundle rate',
+          'zh-CN': '套餐单价的 1/3'
         }
       }
     },
