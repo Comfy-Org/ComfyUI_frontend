@@ -4,7 +4,13 @@ import type { CalendarEvent } from '../utils/calendar'
 import type { JsonLdNode } from '../utils/jsonLd'
 import { absoluteUrl, eventNode, jsonLdId } from '../utils/jsonLd'
 
-type EventCategory = 'livestream' | 'hackathon' | 'community'
+type EventCategory =
+  | 'livestream'
+  | 'hackathon'
+  | 'workshop'
+  | 'meetup'
+  | 'buildathon'
+  | 'conference'
 
 type EventMedia =
   | { type: 'image'; src: string; alt: LocalizedText }
@@ -13,6 +19,11 @@ type EventMedia =
 export type ComfyEvent = {
   id: string
   category: EventCategory
+  /** Comfy program track; drives the directory's programs filter. */
+  program?: 'student' | 'communityHosts' | 'official' | 'partner'
+  /** Drives the directory map pin; virtual events omit it and appear only in
+   * the list, cards, and calendar views. */
+  coords?: { lat: number; lng: number }
   title: LocalizedText
   description: LocalizedText
   location?: LocalizedText
@@ -184,6 +195,16 @@ export function derivePastEvents(
     .sort((a, b) => Date.parse(b.startDateTime) - Date.parse(a.startDateTime))
 }
 
+export function deriveDirectoryEvents(
+  events: readonly ComfyEvent[],
+  now: Date
+): readonly ComfyEvent[] {
+  return [
+    ...deriveUpcomingEvents(events, now),
+    ...derivePastEvents(events, now)
+  ]
+}
+
 export function deriveFeaturedEvents(
   events: readonly ComfyEvent[],
   now: Date
@@ -213,7 +234,9 @@ export function deriveFeaturedEvents(
 const events: readonly ComfyEvent[] = [
   {
     id: 'la-august-meetup',
-    category: 'community',
+    category: 'meetup',
+    program: 'official',
+    coords: { lat: 34.0211, lng: -118.3965 },
     title: {
       en: 'ComfyUI Official LA August Meet-Up',
       'zh-CN': 'ComfyUI 官方洛杉矶八月见面会'
@@ -245,7 +268,9 @@ const events: readonly ComfyEvent[] = [
   },
   {
     id: 'mutek-3d-projection-mapping',
-    category: 'community',
+    category: 'workshop',
+    program: 'partner',
+    coords: { lat: 45.5075, lng: -73.5668 },
     title: {
       en: 'MUTEK: Generative AI for 3D Projection Mapping ft. Purz & Moment Factory',
       'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI，特邀 Purz 与 Moment Factory'
@@ -289,6 +314,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'h3-sync-sound-challenge',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Comfy H3 Sync Sound Challenge: Guest Judge Livestream',
       'zh-CN': 'Comfy H3 同步声音挑战赛：特邀评委直播'
@@ -320,7 +346,9 @@ const events: readonly ComfyEvent[] = [
   },
   {
     id: 'ucan-agentic-commerce',
-    category: 'community',
+    category: 'meetup',
+    program: 'partner',
+    coords: { lat: 37.3688, lng: -122.0363 },
     title: {
       en: 'UCAN: Agentic Commerce — Designing the Next Business Infrastructure ft. Jo Zhang',
       'zh-CN': 'UCAN：智能体商务——设计下一代商业基础设施（特邀 Jo Zhang）'
@@ -356,6 +384,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'local-mcp',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Local MCP: Run ComfyUI with Your Agent & Hardware',
       'zh-CN': '本地 MCP：用你的智能体与硬件运行 ComfyUI'
@@ -380,6 +409,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'beyond-the-models',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Using Comfy to Go Beyond the Models: Custom Workflows for Commercial and Film Production',
       'zh-CN': '善用 Comfy，超越模型本身：面向商业与影视制作的自定义工作流'
@@ -420,6 +450,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'future-ai-post-production',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'The Future of AI Post Production',
       'zh-CN': 'AI 后期制作的未来'
@@ -453,6 +484,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'video-model-showdown',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Video Model Showdown: Open-Source vs. Paid AI Video Models',
       'zh-CN': '视频模型对决：开源与付费 AI 视频模型'
@@ -472,6 +504,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'comfy-creatives-model-jam',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Comfy Creatives Model Jam: MiniMax H3, Seedance 2.5, Wan Animate 2 & More',
       'zh-CN':
@@ -493,6 +526,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'july-launches',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Using ComfyUI MCP with Claude Code',
       'zh-CN': '在 Claude Code 中使用 ComfyUI MCP'
@@ -511,6 +545,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'black-math-hackathon',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Experience Design: How Black Math Built a Hackathon in 3 Weeks with ComfyUI',
       'zh-CN': '体验设计：Black Math 如何用 ComfyUI 在 3 周内打造一场黑客松'
@@ -530,6 +565,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'comfy-mcp-claude-cursor',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Run ComfyUI From Claude/Cursor with Comfy MCP',
       'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI'
@@ -549,6 +585,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'production-pipeline',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Reinventing the Production Pipeline',
       'zh-CN': '重塑生产流水线'
@@ -568,6 +605,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'june-launches',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'June Launches | Desktop, MCP & Core Engine Improvements',
       'zh-CN': '六月发布 | 桌面版、MCP 与核心引擎改进'
@@ -587,6 +625,7 @@ const events: readonly ComfyEvent[] = [
   {
     id: 'krea-founders-live',
     category: 'livestream',
+    program: 'official',
     title: {
       en: 'Krea X Comfy: Founders Live',
       'zh-CN': 'Krea X Comfy：创始人直播'
@@ -627,6 +666,8 @@ export const upcomingEvents = deriveUpcomingEvents(events, NOW)
 export const pastEvents = derivePastEvents(events, NOW)
 
 export const featuredEvents = deriveFeaturedEvents(events, NOW)
+
+export const directoryEvents = deriveDirectoryEvents(events, NOW)
 
 export const watchablePastEvents: readonly ComfyEvent[] = pastEvents.filter(
   (event) => eventVideoId(event)

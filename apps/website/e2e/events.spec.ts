@@ -25,20 +25,14 @@ const pastCardEvents = pastEvents.filter(
   (event) => event.media ?? event.featured?.media
 )
 
+// Mirrors PAGE_SIZE in PastEventsSection.vue.
+const PAST_PAGE_SIZE = 4
+
 function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
       level: 1,
       name: t('events.hero.title', locale)
-    })
-  })
-}
-
-function upcomingSection(page: Page, locale: Locale) {
-  return page.locator('section').filter({
-    has: page.getByRole('heading', {
-      level: 2,
-      name: t('events.upcoming.title', locale)
     })
   })
 }
@@ -81,6 +75,16 @@ test.describe('Events page — desktop @smoke', () => {
       await expect(
         hero.getByText(t('events.hero.subtitle', locale), { exact: true })
       ).toBeVisible()
+      await expect(
+        hero.getByRole('link', {
+          name: t('events.hero.browseEvents', locale)
+        })
+      ).toHaveAttribute('href', '#events-directory')
+      await expect(
+        hero.getByRole('link', {
+          name: t('events.hero.applyToHost', locale)
+        })
+      ).toBeVisible()
     }
   })
 
@@ -96,8 +100,11 @@ test.describe('Events page — desktop @smoke', () => {
       await page.goto(path)
       const hero = heroSection(page, locale)
       // Inactive slides are aria-hidden, so only the active slide's overlay
-      // link is exposed; its accessible name is that slide's title.
-      const activeSlide = hero.getByRole('link')
+      // link is exposed; its accessible name is that slide's title. The hero
+      // CTAs are links too, so scope to the carousel's active slide.
+      const activeSlide = hero
+        .locator('[aria-hidden="false"]')
+        .getByRole('link')
       const nextSlide = hero.getByRole('button', {
         name: t('events.hero.nextSlide', locale)
       })
@@ -191,56 +198,27 @@ test.describe('Events page — desktop @smoke', () => {
     )
   })
 
-  test('upcoming section lists one row per event with localized content and links', async ({
+  test('directory and host placeholder sections render their headings', async ({
     page
   }) => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
-      const section = upcomingSection(page, locale)
-      // Every configured event ages out eventually, so the row assertions
-      // scale to zero — the list itself has to render either way.
-      await expect(section.getByRole('list')).toBeAttached()
-      const rows = section.locator('li')
-      await expect(rows).toHaveCount(upcomingEvents.length)
-
-      for (const [i, event] of upcomingEvents.entries()) {
-        const row = rows.nth(i)
-        await expect(row).toContainText(event.title[locale] || event.title.en)
-        await expect(row).toContainText(
-          event.location![locale] || event.location!.en
-        )
-        await expect(row).toContainText(
-          event.dateLabel![locale] || event.dateLabel!.en
-        )
-
-        // In-person events override the CTA label (e.g. "Register"); the rest
-        // fall back to the default "Livestream" label.
-        const ctaLabel =
-          event.ctaLabel?.[locale] ||
-          event.ctaLabel?.en ||
-          t('events.upcoming.livestream', locale)
-        const ctaLink = row.getByRole('link', {
-          name: `${event.title[locale] || event.title.en} — ${ctaLabel}`,
-          exact: true
+      await expect(
+        page.getByRole('heading', {
+          level: 2,
+          name: t('events.directory.title', locale)
         })
-        // Events with a stream open their own detail page (dialog over the
-        // directory); the rest link to the event's page.
-        const eventLink = event.link
-        const expectedHref = eventVideoId(event)
-          ? localizeHref(eventPath(event), locale)
-          : eventLink?.href[locale] || eventLink?.href.en
-        if (expectedHref) {
-          await expect(ctaLink).toHaveAttribute('href', expectedHref)
-        }
-        // External registration links open in a new tab.
-        if (!eventVideoId(event) && eventLink?.newTab) {
-          await expect(ctaLink).toHaveAttribute('target', '_blank')
-        }
-      }
+      ).toBeVisible()
+      await expect(
+        page.getByRole('heading', {
+          level: 2,
+          name: t('events.host.title', locale)
+        })
+      ).toBeVisible()
     }
   })
 
-  test('upcoming Livestream link opens the event page with the video dialog', async ({
+  test('an upcoming streamed event page opens with the video dialog', async ({
     page
   }) => {
     const event = upcomingEvents.find((entry) => eventVideoId(entry))
@@ -249,19 +227,8 @@ test.describe('Events page — desktop @smoke', () => {
     if (!event || !videoId) return
 
     for (const [path, locale] of LOCALES) {
-      await page.goto(path)
-      const section = upcomingSection(page, locale)
-      await section.scrollIntoViewIfNeeded()
+      await page.goto(localizeHref(eventPath(event), locale))
 
-      await section
-        .getByRole('link', {
-          name: `${event.title[locale] || event.title.en} — ${t('events.upcoming.livestream', locale)}`
-        })
-        .click()
-
-      await expect(page).toHaveURL(
-        new RegExp(`${localizeHref(eventPath(event), locale)}/?$`)
-      )
       const dialog = page.getByRole('dialog', {
         name: event.title[locale] || event.title.en
       })
@@ -313,7 +280,7 @@ test.describe('Events page — desktop @smoke', () => {
     }
   })
 
-  test('past events gallery renders one card per renderable event with WATCH NOW links', async ({
+  test('past events gallery paginates and renders one card per renderable event with WATCH NOW links', async ({
     page
   }) => {
     for (const [path, locale] of LOCALES) {
@@ -322,7 +289,27 @@ test.describe('Events page — desktop @smoke', () => {
       await section.scrollIntoViewIfNeeded()
 
       const cards = section.locator('[data-slot="card"]')
-      await expect(cards).toHaveCount(pastCardEvents.length)
+      await expect(cards).toHaveCount(
+        Math.min(PAST_PAGE_SIZE, pastCardEvents.length)
+      )
+
+      // LOAD MORE reveals another page per click and disappears once every
+      // card is shown.
+      const loadMore = section.getByRole('button', {
+        name: t('events.past.loadMore', locale)
+      })
+      while (pastCardEvents.length > (await cards.count())) {
+        const shown = await cards.count()
+        // Retry until the island hydrates and the click lands.
+        await expect(async () => {
+          await loadMore.click()
+          await expect(cards).toHaveCount(
+            Math.min(shown + PAST_PAGE_SIZE, pastCardEvents.length),
+            { timeout: 1000 }
+          )
+        }).toPass()
+      }
+      await expect(loadMore).toBeHidden()
 
       for (const [i, event] of pastCardEvents.entries()) {
         const card = cards.nth(i)
@@ -339,6 +326,49 @@ test.describe('Events page — desktop @smoke', () => {
       }
     }
   })
+
+  test('past events category tabs filter the gallery', async ({ page }) => {
+    const categoryWithEvents = pastCardEvents
+      .map((event) => event.category)
+      .find((category) => category !== pastCardEvents[0]?.category)
+    test.skip(
+      !categoryWithEvents,
+      'needs past events in at least two categories'
+    )
+    if (!categoryWithEvents) return
+
+    const expected = pastCardEvents.filter(
+      (event) => event.category === categoryWithEvents
+    )
+    const label = t(`events.category.${categoryWithEvents}`, 'en')
+
+    await page.goto(PATH_EN)
+    const section = pastSection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    // Retry until the island hydrates and the click lands.
+    const cards = section.locator('[data-slot="card"]')
+    await expect(async () => {
+      await section
+        .getByRole('button', { name: label.toLocaleUpperCase('en') })
+        .click()
+      await expect(cards).toHaveCount(
+        Math.min(PAST_PAGE_SIZE, expected.length),
+        { timeout: 1000 }
+      )
+    }).toPass()
+    for (const [i, event] of expected.slice(0, PAST_PAGE_SIZE).entries()) {
+      await expect(cards.nth(i)).toContainText(event.title.en)
+    }
+
+    // ALL restores the unfiltered first page.
+    await section
+      .getByRole('button', { name: t('events.past.filterAll', 'en') })
+      .click()
+    await expect(cards).toHaveCount(
+      Math.min(PAST_PAGE_SIZE, pastCardEvents.length)
+    )
+  })
 })
 
 test.describe('Events page — mobile @mobile', () => {
@@ -349,7 +379,9 @@ test.describe('Events page — mobile @mobile', () => {
     const section = pastSection(page, 'en')
     await section.scrollIntoViewIfNeeded()
     const cards = section.locator('[data-slot="card"]')
-    await expect(cards).toHaveCount(pastCardEvents.length)
+    await expect(cards).toHaveCount(
+      Math.min(PAST_PAGE_SIZE, pastCardEvents.length)
+    )
 
     const viewport = page.viewportSize()
     expect(viewport, 'viewport size').not.toBeNull()
@@ -366,20 +398,5 @@ test.describe('Events page — mobile @mobile', () => {
         return secondBox.y >= firstBox.y + firstBox.height
       })
       .toBe(true)
-  })
-
-  test('upcoming event rows stay within viewport width', async ({ page }) => {
-    test.skip(upcomingEvents.length === 0, 'needs an upcoming event')
-    await page.goto(PATH_EN)
-    const section = upcomingSection(page, 'en')
-    const firstRow = section.locator('li').first()
-    await firstRow.scrollIntoViewIfNeeded()
-    await expect(firstRow).toBeVisible()
-
-    const box = await firstRow.boundingBox()
-    expect(box, 'row bounding box').not.toBeNull()
-    const viewport = page.viewportSize()
-    expect(viewport, 'viewport size').not.toBeNull()
-    expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1)
   })
 })

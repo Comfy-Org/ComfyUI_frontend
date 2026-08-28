@@ -11,6 +11,17 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+const CATEGORY_ORDER = [
+  'livestream',
+  'workshop',
+  'hackathon',
+  'meetup',
+  'buildathon',
+  'conference'
+] as const
+
+const PAGE_SIZE = 4
+
 const items = computed<CardArticleGalleryItem[]>(() =>
   pastEvents.flatMap((event) => {
     // Card art falls back to the carousel art for events that became past
@@ -24,6 +35,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
     return [
       {
         id: event.id,
+        filterKey: event.category,
         category: t(`events.category.${event.category}`, locale),
         title: event.title[locale] || event.title.en,
         media: {
@@ -43,6 +55,17 @@ const items = computed<CardArticleGalleryItem[]>(() =>
     ]
   })
 )
+
+// Only categories with at least one past event get a tab; an empty filter
+// would render a blank gallery.
+const tabs = computed(() =>
+  CATEGORY_ORDER.filter((category) =>
+    pastEvents.some((event) => event.category === category)
+  ).map((category) => ({
+    key: category,
+    label: t(`events.category.${category}`, locale).toLocaleUpperCase(locale)
+  }))
+)
 </script>
 
 <template>
@@ -52,5 +75,9 @@ const items = computed<CardArticleGalleryItem[]>(() =>
     :items
     layout="two-column"
     title-clamp
+    :tabs
+    :all-label="t('events.past.filterAll', locale)"
+    :page-size="PAGE_SIZE"
+    :load-more-label="t('events.past.loadMore', locale)"
   />
 </template>

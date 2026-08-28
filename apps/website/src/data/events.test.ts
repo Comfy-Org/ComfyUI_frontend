@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { ComfyEvent } from './events'
 import {
+  deriveDirectoryEvents,
   deriveFeaturedEvents,
   derivePastEvents,
   deriveUpcomingEvents,
+  directoryEvents,
   eventJsonLdNode,
   eventStatus,
   pastEvents,
@@ -160,6 +162,15 @@ describe('event list derivation', () => {
       'older'
     ])
   })
+
+  it('lists the whole directory upcoming-first, then past newest-first', () => {
+    expect(deriveDirectoryEvents(list, now).map((event) => event.id)).toEqual([
+      'sooner',
+      'later',
+      'done',
+      'older'
+    ])
+  })
 })
 
 describe('deriveFeaturedEvents', () => {
@@ -274,5 +285,19 @@ describe('site event data', () => {
     const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)
 
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  // The map view pins every event that has coords, so a virtual event with
+  // coords would render a bogus pin.
+  it('gives coords only to in-person events, within valid ranges', () => {
+    for (const event of directoryEvents) {
+      if (event.location?.en === 'Online') {
+        expect(event.coords, event.id).toBeUndefined()
+      }
+      if (event.coords) {
+        expect(Math.abs(event.coords.lat), event.id).toBeLessThanOrEqual(90)
+        expect(Math.abs(event.coords.lng), event.id).toBeLessThanOrEqual(180)
+      }
+    }
   })
 })

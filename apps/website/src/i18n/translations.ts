@@ -6253,6 +6253,27 @@ Enterprise`
     en: 'Next featured event',
     'zh-CN': '下一个精选活动'
   },
+  'events.hero.browseEvents': { en: 'Browse events', 'zh-CN': '浏览活动' },
+  'events.hero.applyToHost': { en: 'Apply to host', 'zh-CN': '申请主办' },
+  'events.directory.title': {
+    en: 'Events around the world',
+    'zh-CN': '世界各地的活动'
+  },
+  'events.directory.lead': {
+    en: "Every event looks different, but they share the same energy: a room full of people building with ComfyUI. If you've got an audience and a vision, we want to hear from you.",
+    'zh-CN':
+      '每场活动都各不相同，但都洋溢着同样的能量：一屋子用 ComfyUI 创作的人。如果你有观众、有想法，我们期待听到你的声音。'
+  },
+  'events.host.title': {
+    en: 'How to host your event',
+    'zh-CN': '如何主办你的活动'
+  },
+  'events.host.lead': {
+    en: 'Got an event coming up, or an idea in the works? Submit it for review to get support from Comfy.',
+    'zh-CN':
+      '有即将举办的活动，或正在酝酿的想法？提交审核，即可获得 Comfy 的支持。'
+  },
+  'events.host.applyToHost': { en: 'Apply to host', 'zh-CN': '申请主办' },
   'events.upcoming.title': {
     en: 'Upcoming events',
     'zh-CN': '即将举行的活动'
@@ -6284,7 +6305,10 @@ Enterprise`
   'events.videoDialog.close': { en: 'Close', 'zh-CN': '关闭' },
   'events.category.livestream': { en: 'Livestream', 'zh-CN': '直播' },
   'events.category.hackathon': { en: 'Hackathon', 'zh-CN': '黑客松' },
-  'events.category.community': { en: 'Community', 'zh-CN': '社区' },
+  'events.category.workshop': { en: 'Workshop', 'zh-CN': '工作坊' },
+  'events.category.meetup': { en: 'Meetup', 'zh-CN': '见面会' },
+  'events.category.buildathon': { en: 'Buildathon', 'zh-CN': '共创马拉松' },
+  'events.category.conference': { en: 'Conference', 'zh-CN': '大会' },
 
   // Brand Portal page (/brand)
   'brand.page.title': {
