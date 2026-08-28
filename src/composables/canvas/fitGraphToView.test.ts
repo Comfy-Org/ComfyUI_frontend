@@ -19,7 +19,7 @@ function fakeCanvas(items: { boundingRect: readonly number[] }[]) {
 }
 
 describe('fitGraphToView', () => {
-  it('frames every item inside the visible viewport even while a selection exists', () => {
+  it('T-05 / PM-665 / FE-1650 frames every generated item inside the visible viewport', () => {
     const canvas = fakeCanvas([
       { boundingRect: [0, 0, 100, 100] },
       { boundingRect: [300, 200, 100, 100] }

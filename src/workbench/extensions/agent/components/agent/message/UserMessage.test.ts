@@ -113,7 +113,7 @@ describe('UserMessage', () => {
     expect(screen.getByText('notes.md')).toBeInTheDocument()
   })
 
-  it('reveals the copy action on hover and copies the exact prompt', async () => {
+  it('T-23 / PM-657 / FE-1297 reveals copy on hover and copies the exact prior prompt', async () => {
     const user = userEvent.setup()
     renderMessage({ text: 'make it cinematic' })
 

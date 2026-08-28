@@ -80,7 +80,7 @@ describe('OnboardingCoach', () => {
     ).toBeInTheDocument()
   })
 
-  it('offers a single Got it action and no Skip', async () => {
+  it('T-24 / PM-662 / FE-1316 keeps onboarding visible with one Got it action and no Skip', async () => {
     mountWithTarget({ left: 700, top: 100 })
 
     expect(
