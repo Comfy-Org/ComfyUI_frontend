@@ -1,9 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ComfyApi } from '@/scripts/api'
+
 import { AGENT_WS_EVENT_TYPES } from '../../schemas/agentApiSchema'
 
 import type { AgentEventHost } from './agentEventSource'
 import { createAgentEventSource } from './agentEventSource'
+
+it('the live ComfyApi shape satisfies AgentEventHost', () => {
+  // Compile-time pin: if ComfyApi drops a host member, vue-tsc fails here.
+  const host: AgentEventHost = null as unknown as ComfyApi
+  expect(host).toBeNull()
+})
 
 function fakeHost(readyState?: number) {
   const target = new EventTarget()

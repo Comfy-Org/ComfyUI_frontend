@@ -41,6 +41,10 @@ interface RestLine {
 
 describe('agentApiSchema fixture gate', () => {
   describe('ws frames: every line is a valid agent event or a recognized-foreign frame', () => {
+    it('the ws fixture glob finds at least one capture', () => {
+      expect(wsPaths.length).toBeGreaterThan(0)
+    })
+
     it.for(wsPaths)('%s', (path) => {
       const lines = jsonlLines(path) as WsLine[]
       lines.forEach((line, index) => {
@@ -139,7 +143,7 @@ describe('agentApiSchema contract subtleties', () => {
     }
   })
 
-  it('keeps the retired draft frames foreign to the union', () => {
+  it('keeps draft frames foreign to this union', () => {
     expect(isAgentEvent('draft_patch')).toBe(false)
     expect(isAgentEvent('draft_version')).toBe(false)
   })
