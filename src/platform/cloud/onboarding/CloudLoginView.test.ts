@@ -25,6 +25,14 @@ vi.mock('@/stores/apiKeyAuthStore', () => ({
   useApiKeyAuthStore: () => apiKeyAuth
 }))
 
+const authStore = vi.hoisted(() => ({
+  currentUser: { uid: 'existing-firebase-user' },
+  logout: vi.fn(async () => undefined)
+}))
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => authStore
+}))
+
 const isEmbeddedWebView = vi.hoisted(() => ({ value: false }))
 vi.mock('@/base/webviewDetection', () => ({
   isEmbeddedWebView: () => isEmbeddedWebView.value
@@ -153,6 +161,23 @@ describe('CloudLoginView', () => {
     expect(apiKeyAuth.storeApiKey).toHaveBeenCalledWith(LOCAL_API_KEY)
     expect(authActions.signInWithEmail).not.toHaveBeenCalled()
     expect(onAuthSuccess).toHaveBeenCalledOnce()
+  })
+
+  it('ends an existing Firebase session before local API-key login', async () => {
+    vi.stubEnv('VITE_LOCAL_CLOUD_AUTH', 'true')
+    apiKeyAuth.storeApiKey.mockResolvedValue(true)
+    const user = (await import('@testing-library/user-event')).default.setup()
+    await renderLoginView()
+
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+
+    expect(authStore.logout).toHaveBeenCalledOnce()
+    expect(authStore.logout.mock.invocationCallOrder[0]).toBeLessThan(
+      apiKeyAuth.storeApiKey.mock.invocationCallOrder[0]
+    )
   })
 
   it.for([true, false])(
