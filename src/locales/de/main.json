@@ -978,23 +978,6 @@
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
   },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "Schließen"
-      },
-      "message": "Es wurde eine ungültige Dialog-ID angegeben.",
-      "title": "Ungültiger Dialog"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "Mehr erfahren",
-        "Reinstall": "Neu installieren"
-      },
-      "message": "Leider können wir ComfyUI nicht starten, da einige installierte Pakete nicht kompatibel sind.\n\nKlicken Sie auf „Neu installieren“, um ComfyUI wiederherzustellen und erneut zu starten.\n\nBitte beachten Sie: Wenn Sie Custom Nodes hinzugefügt haben, müssen Sie diese nach diesem Vorgang erneut installieren.",
-      "title": "ComfyUI neu installieren (Neustart)?"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "Die ComfyUI-Desktop-App wartet darauf, sich mit Ihrem Konto anzumelden. Fahren Sie nur fort, wenn Sie die Anmeldung gerade über die ComfyUI-Desktop-App gestartet haben.",
     "confirmSummary": "Desktop-Anmeldung genehmigen?",

@@ -978,23 +978,6 @@
     "WAN_CAMERA_EMBEDDING": "INTÉGRATION_CAMÉRA_WAN",
     "WEBCAM": "WEBCAM"
   },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "Fermer"
-      },
-      "message": "Un ID de boîte de dialogue non valide a été fourni.",
-      "title": "Boîte de dialogue non valide"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "En savoir plus",
-        "Reinstall": "Réinstaller"
-      },
-      "message": "Désolé, nous ne pouvons pas lancer ComfyUI, car certains packages installés ne sont pas compatibles.\n\nCliquez sur Réinstaller pour restaurer ComfyUI et le remettre en marche.\n\nRemarque : si vous avez ajouté des nœuds personnalisés, vous devrez les réinstaller après ce processus.",
-      "title": "Réinstaller ComfyUI (nouveau départ) ?"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "L’application de bureau ComfyUI attend de se connecter avec votre compte. Continuez uniquement si vous venez de lancer la connexion depuis l’application de bureau ComfyUI.",
     "confirmSummary": "Approuver la connexion sur le bureau ?",
