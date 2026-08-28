@@ -25,37 +25,49 @@ export function createLGraphState(): LGraphState {
 }
 
 /**
- * The shared-doc contract's coordination-free id range: comfy-cli's
- * `mint_id()` draws integers in `[2^40, 2^53)` (see the `NodeId` note in
- * `@comfyorg/comfy-multi-player`'s types). The floor keeps minted ids
- * disjoint from every counter-allocated id, and the ceiling stays inside
+ * The shared-doc contract's coordination-free id range, quoted from the
+ * pinned `@comfyorg/comfy-multi-player` `NodeId` doc: "comfy-cli mints ints
+ * (`mint_id()`, `[2^40, 2^53)`)". The floor keeps minted ids disjoint from
+ * every counter-allocated id, and the ceiling stays inside
  * `Number.MAX_SAFE_INTEGER`.
  */
-const MINT_ID_MIN = 2 ** 40
-const MINT_ID_SPAN = 2 ** 53 - MINT_ID_MIN
+export const MINT_ID_MIN = 2 ** 40
+export const MINT_ID_CEILING = 2 ** 53
+const MINT_ID_SPAN = MINT_ID_CEILING - MINT_ID_MIN
 
-let coordinationFreeIds = false
+const coordinationFreeStates = new WeakSet<LGraphState>()
 
 /**
  * Arm the contract's coordination-free id scheme for node and link
- * allocation. Armed only while a semantic doc is bound to the active
- * workflow: two replicas seeded from one snapshot then cannot allocate the
- * same next id, so concurrent `add_node`/`add_link` operations never alias
- * one document entry. While armed, the sequential counters are not
- * advanced; unbound graphs keep counter allocation byte-identically.
- * Groups and reroutes are canvas-local (not shared-doc entities) and stay
- * on counters in both modes.
+ * allocation against ONE graph's state. Armed only while a semantic doc is
+ * bound to that graph: two replicas seeded from one snapshot then cannot
+ * allocate the same next id, so concurrent `add_node`/`add_link` operations
+ * never alias one document entry. Every allocation against an armed state
+ * mints - load, paste, and collision remints included by design, since any
+ * id born on a doc-bound graph must be alias-free. While armed, the
+ * sequential counters are not advanced; every other graph state keeps
+ * counter allocation byte-identically, and `LGraph.clear()` replaces the
+ * state object, so a swapped-in graph starts unarmed (fails closed) until
+ * its owner re-arms it. Groups and reroutes are canvas-local (not
+ * shared-doc entities) and stay on counters in both modes.
  */
-export function setCoordinationFreeIds(enabled: boolean): void {
-  coordinationFreeIds = enabled
+export function setCoordinationFreeIds(
+  state: LGraphState,
+  enabled: boolean
+): void {
+  if (enabled) coordinationFreeStates.add(state)
+  else coordinationFreeStates.delete(state)
 }
 
-function mintCoordinationFreeId(): number {
-  return MINT_ID_MIN + Math.floor(Math.random() * MINT_ID_SPAN)
+export function mintCoordinationFreeId(
+  random: () => number = Math.random
+): number {
+  return MINT_ID_MIN + Math.floor(random() * MINT_ID_SPAN)
 }
 
 export function mintNodeId(state: LGraphState): NodeId {
-  if (coordinationFreeIds) return toNodeId(mintCoordinationFreeId())
+  if (coordinationFreeStates.has(state))
+    return toNodeId(mintCoordinationFreeId())
   return toNodeId(++state.lastNodeId)
 }
 
@@ -64,7 +76,8 @@ export function mintGroupId(state: LGraphState): GroupId {
 }
 
 export function mintLinkId(state: LGraphState): LinkId {
-  if (coordinationFreeIds) return toLinkId(mintCoordinationFreeId())
+  if (coordinationFreeStates.has(state))
+    return toLinkId(mintCoordinationFreeId())
   state.lastLinkId = toLinkId(Number(state.lastLinkId) + 1)
   return state.lastLinkId
 }
@@ -74,9 +87,19 @@ export function mintRerouteId(state: LGraphState): RerouteId {
   return state.lastRerouteId
 }
 
+/**
+ * Ids at or above `MINT_ID_MIN` never seed a counter: absorbing a minted id
+ * would advance `lastNodeId`/`lastLinkId` into the mint range, and the next
+ * counter allocation on any replica could then alias a minted entry - the
+ * disjointness the range exists to guarantee, in the other direction.
+ */
 export function observeNodeId(state: LGraphState, id: NodeId): void {
   const numericId = Number(id)
-  if (Number.isInteger(numericId) && numericId > state.lastNodeId) {
+  if (
+    Number.isInteger(numericId) &&
+    numericId < MINT_ID_MIN &&
+    numericId > state.lastNodeId
+  ) {
     state.lastNodeId = numericId
   }
 }
@@ -86,7 +109,8 @@ export function observeGroupId(state: LGraphState, id: GroupId): void {
 }
 
 export function observeLinkId(state: LGraphState, id: LinkId): void {
-  if (id > state.lastLinkId) state.lastLinkId = id
+  if (Number.isInteger(Number(id)) && id < MINT_ID_MIN && id > state.lastLinkId)
+    state.lastLinkId = id
 }
 
 export function observeRerouteId(state: LGraphState, id: RerouteId): void {
