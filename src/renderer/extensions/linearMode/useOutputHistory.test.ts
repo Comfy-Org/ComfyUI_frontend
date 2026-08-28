@@ -100,23 +100,6 @@ vi.mock('@/services/jobOutputCache', () => ({
     Promise.resolve(jobDetailResults.get(jobId) ?? undefined)
 }))
 
-vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
-  flattenNodeOutput: ([nodeId, output]: [
-    string | number,
-    Record<string, unknown>
-  ]) => {
-    if (!output.images) return []
-    return (output.images as Array<Record<string, string>>).map(
-      (img) =>
-        new ResultItemImpl({
-          ...img,
-          nodeId: String(nodeId),
-          mediaType: 'images'
-        })
-    )
-  }
-}))
-
 function makeAsset(
   id: string,
   jobId: string,
