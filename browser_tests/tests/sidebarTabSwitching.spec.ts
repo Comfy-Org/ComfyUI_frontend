@@ -4,62 +4,33 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Sidebar tab switching', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setup()
+  test('Switching tabs replaces the active panel', async ({ comfyPage }) => {
+    const nodeLibrary = comfyPage.menu.nodeLibraryTabV2
+    const workflows = comfyPage.menu.workflowsTab
+
+    await test.step('Open the node library', async () => {
+      await nodeLibrary.open()
+      await expect(nodeLibrary.selectedTabButton).toBeVisible()
+      await expect(nodeLibrary.searchInput).toBeVisible()
+    })
+
+    await test.step('Switch to workflows', async () => {
+      await workflows.open()
+      await expect(workflows.selectedTabButton).toBeVisible()
+      await expect(workflows.root).toBeVisible()
+      await expect(nodeLibrary.selectedTabButton).toBeHidden()
+      await expect(nodeLibrary.searchInput).toBeHidden()
+    })
   })
 
-  test('Sidebar toolbar is visible', async ({ comfyPage }) => {
-    await expect(comfyPage.menu.sideToolbar).toBeVisible()
-  })
-
-  test('Sidebar has multiple tab buttons', async ({ comfyPage }) => {
-    await expect.poll(() => comfyPage.menu.buttons.count()).toBeGreaterThan(1)
-  })
-
-  test('Clicking node library tab opens it', async ({ comfyPage }) => {
+  test('Clicking the active tab closes its panel', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
     await tab.open()
     await expect(tab.selectedTabButton).toBeVisible()
-  })
-
-  test('Clicking workflows tab opens it', async ({ comfyPage }) => {
-    await comfyPage.menu.workflowsTab.open()
-    await expect(comfyPage.menu.workflowsTab.selectedTabButton).toBeVisible()
-  })
-
-  test('Switching from one tab to another deselects the first', async ({
-    comfyPage
-  }) => {
-    const nodeTab = comfyPage.menu.nodeLibraryTabV2
-    await nodeTab.open()
-    await expect(nodeTab.selectedTabButton).toBeVisible()
-
-    await comfyPage.menu.workflowsTab.open()
-    await expect(comfyPage.menu.workflowsTab.selectedTabButton).toBeVisible()
-    await expect(nodeTab.selectedTabButton).toBeHidden()
-  })
-
-  test('Clicking active tab closes the sidebar panel', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.nodeLibraryTabV2
-    await tab.open()
-    await expect(tab.selectedTabButton).toBeVisible()
+    await expect(tab.searchInput).toBeVisible()
 
     await tab.close()
     await expect(tab.selectedTabButton).toBeHidden()
-  })
-
-  test('Sidebar content area updates when switching tabs', async ({
-    comfyPage
-  }) => {
-    const nodeTab = comfyPage.menu.nodeLibraryTabV2
-    await nodeTab.open()
-    await expect(nodeTab.searchInput).toBeVisible()
-
-    await comfyPage.menu.workflowsTab.open()
-    await expect(comfyPage.menu.workflowsTab.root).toBeVisible()
-    await expect(nodeTab.searchInput).toBeHidden()
+    await expect(tab.searchInput).toBeHidden()
   })
 })
