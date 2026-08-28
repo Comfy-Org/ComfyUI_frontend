@@ -29,28 +29,30 @@ const EXPECTED_META = {
   basics: {
     heading: 'ComfyUI Basics',
     description:
-      'Beginner ComfyUI tutorials — learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
-    title: 'ComfyUI Basics - Comfy'
+      'Beginner ComfyUI tutorials: learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
+    title: 'ComfyUI Basics - Tutorials for Beginners'
   },
   vfx: {
     heading: 'VFX Tutorials',
     description:
-      'Hands-on ComfyUI VFX tutorials — cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
-    title: 'VFX Tutorials - Comfy'
+      'Hands-on ComfyUI VFX tutorials: cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
+    title: 'ComfyUI VFX Tutorials - Shot Work You Can Run'
   },
   animations: {
     heading: 'Animation Tutorials',
     description:
-      'Hands-on ComfyUI animation tutorials — character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
-    title: 'Animation Tutorials - Comfy'
+      'Hands-on ComfyUI animation tutorials: character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
+    title: 'ComfyUI Animation Tutorials - Character Sheets to Compositing'
   },
   ads: {
     heading: 'Ad Creative Tutorials',
     description:
-      'Hands-on ComfyUI ad creative tutorials — moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
-    title: 'Ad Creative Tutorials - Comfy'
+      'Hands-on ComfyUI ad creative tutorials: moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
+    title: 'ComfyUI Ad Creative Tutorials - Moodboards to B-Roll'
   }
 } as const
+
+const ROOT_TITLE = 'ComfyUI Tutorials - Learn ComfyUI by Discipline'
 
 test.describe('Learning page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -58,7 +60,7 @@ test.describe('Learning page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Learning - Comfy')
+    await expect(page).toHaveTitle(ROOT_TITLE)
   })
 
   test('sidebar shows the page heading and a link per category', async ({
@@ -204,7 +206,7 @@ test.describe('Learning category pages @smoke', () => {
 
     await page.goBack()
     await expect(page).toHaveURL('/learning')
-    await expect(page).toHaveTitle('Learning - Comfy')
+    await expect(page).toHaveTitle(ROOT_TITLE)
     await expect(
       categoryNav(page).locator('a[href="/learning"]')
     ).toHaveAttribute('aria-current', 'page')
@@ -419,7 +421,7 @@ test.describe('Learning page (zh-CN) @smoke', () => {
   test('renders localized title, sidebar, and tutorials', async ({ page }) => {
     await page.goto('/zh-CN/learning')
 
-    await expect(page).toHaveTitle('学习 - Comfy')
+    await expect(page).toHaveTitle('ComfyUI 教程 - 按创作领域学习')
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       /[一-鿿]/
     )
