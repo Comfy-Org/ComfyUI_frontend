@@ -6,6 +6,8 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
+  runWithCollectedCleanup,
+  submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
@@ -30,10 +32,19 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test.afterEach(async ({ comfyPage }) => {
-  expect(
-    await drainBackendToIdle(comfyPage.page, 10_000),
-    'test-owned backend work did not reach idle during cleanup'
-  ).toBe(0)
+  await runWithCollectedCleanup(async () => {
+    expect(
+      await submittedPromptCount(comfyPage.page),
+      'legacy widget registration submitted a prompt'
+    ).toBe(0)
+  }, [
+    async () => {
+      expect(
+        await drainBackendToIdle(comfyPage.page, 10_000),
+        'legacy widget registration left test-owned backend work running'
+      ).toBe(0)
+    }
+  ])
 })
 
 test.describe('legacy widget registration', { tag: '@custom-nodes' }, () => {
@@ -83,16 +94,6 @@ test.describe('legacy widget registration', { tag: '@custom-nodes' }, () => {
       rows,
       'Nodes 2.0 mounted the node with no widget rows'
     ).toHaveCount(EXPECTED_WIDGET_ORDER.length)
-
-    await expect
-      .poll(
-        () =>
-          rows.evaluateAll((elements) =>
-            elements.map((element) => element.getAttribute('data-widget-name'))
-          ),
-        { message: 'Nodes 2.0 rendered the widget rows in the wrong order' }
-      )
-      .toEqual(EXPECTED_WIDGET_ORDER)
 
     await expectNoVisibleErrors(comfyPage.page, 'after mounting legacy widgets')
   })

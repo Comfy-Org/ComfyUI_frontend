@@ -16,13 +16,12 @@ class ForeignLegacyWidget {
     this.value = value
     this.options = {}
     this.y = 0
-  }
-
-  draw(ctx, node, widgetWidth, y, height) {
-    ctx.save()
-    ctx.fillStyle = '#7F7'
-    ctx.fillRect(15, y, widgetWidth - 15 * 2, height)
-    ctx.restore()
+    this.draw = function (ctx, node, widgetWidth, y, height) {
+      ctx.save()
+      ctx.fillStyle = '#7F7'
+      ctx.fillRect(15, y, widgetWidth - 15 * 2, height)
+      ctx.restore()
+    }
   }
 }
 
