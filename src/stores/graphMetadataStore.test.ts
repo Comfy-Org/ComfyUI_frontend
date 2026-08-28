@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { computed } from 'vue'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
 
@@ -7,6 +9,8 @@ import { useGraphMetadataStore } from './graphMetadataStore'
 describe(useGraphMetadataStore, () => {
   const first = '00000000-0000-4000-8000-000000000001' as UUID
   const second = '00000000-0000-4000-8000-000000000002' as UUID
+
+  beforeEach(() => setActivePinia(createPinia()))
 
   it('rekeys one canonical metadata record', () => {
     const store = useGraphMetadataStore()
@@ -42,5 +46,16 @@ describe(useGraphMetadataStore, () => {
     const subgraphId = '00000000-0000-4000-8000-000000000003' as UUID
 
     expect(store.get(first, subgraphId)).not.toBe(store.get(second, subgraphId))
+  })
+
+  it('reacts to in-place map mutations', () => {
+    const store = useGraphMetadataStore()
+    const hasFirst = computed(() => store.has(first))
+
+    expect(hasFirst.value).toBe(false)
+    store.get(first)
+    expect(hasFirst.value).toBe(true)
+    store.clear(first)
+    expect(hasFirst.value).toBe(false)
   })
 })

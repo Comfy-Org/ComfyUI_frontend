@@ -20,6 +20,26 @@ describe('nodeId', () => {
       ['01', '1', '2', '10', 'node-a', 'node-z'].map(toNodeId)
     )
   })
+
+  it('orders unsafe negative integers by their exact values', () => {
+    const ids = [
+      '-9007199254740993',
+      '-9007199254740992',
+      '-9007199254740994'
+    ].map(toNodeId)
+
+    expect(ids.sort(compareNodeIds)).toEqual(
+      ['-9007199254740994', '-9007199254740993', '-9007199254740992'].map(
+        toNodeId
+      )
+    )
+  })
+
+  it('orders empty and whitespace-only ids as non-numeric ids', () => {
+    const ids = [' ', '', '0', '-1'].map(toNodeId)
+
+    expect(ids.sort(compareNodeIds)).toEqual(['-1', '0', '', ' '].map(toNodeId))
+  })
 })
 
 describe('parseNodeId', () => {

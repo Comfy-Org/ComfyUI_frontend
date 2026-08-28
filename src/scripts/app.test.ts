@@ -92,6 +92,8 @@ const {
   mockNodeOutputStore: {
     refreshNodeOutputs: vi.fn(),
     replaceOutputsFromLegacy: vi.fn(),
+    setOutputFromLegacy: vi.fn(),
+    removeOutputFromLegacy: vi.fn(),
     resetAllOutputsAndPreviews: vi.fn(),
     stashPreviewsForWorkflow: vi.fn(),
     restorePreviewsForWorkflow: vi.fn(),
@@ -320,54 +322,73 @@ describe('ComfyApp', () => {
       const output = { images: [{ filename: 'legacy.png' }] }
 
       app.nodeOutputs['1'] = output
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '1',
+        output
+      )
       expect(
         mockNodeOutputStore.replaceOutputsFromLegacy
-      ).toHaveBeenNthCalledWith(1, { '1': output })
+      ).not.toHaveBeenCalled()
 
       delete app.nodeOutputs['1']
+      expect(mockNodeOutputStore.removeOutputFromLegacy).toHaveBeenCalledWith(
+        '1'
+      )
       expect(
         mockNodeOutputStore.replaceOutputsFromLegacy
-      ).toHaveBeenNthCalledWith(2, {})
+      ).not.toHaveBeenCalled()
     })
 
     it('commits nested legacy output mutations to the output store', () => {
       app.vueAppReady = true
       app.nodeOutputs['1'] = { images: [{ filename: 'first.png' }] }
-      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
 
       const output = app.nodeOutputs['1']
       output.images = [{ filename: 'second.png' }]
-      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
-        {
-          '1': { images: [{ filename: 'second.png' }] }
-        }
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '1',
+        { images: [{ filename: 'second.png' }] }
       )
 
-      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
       const images = output.images
       images?.push({ filename: 'third.png' })
-      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '1',
         {
-          '1': {
-            images: [{ filename: 'second.png' }, { filename: 'third.png' }]
-          }
+          images: [{ filename: 'second.png' }, { filename: 'third.png' }]
         }
       )
       expect(app.nodeOutputs['1']).toBe(output)
       expect(output.images).toBe(images)
 
-      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
       const image = images?.[0]
       if (!image) throw new Error('Expected a legacy output image')
       image.filename = 'mutated.png'
-      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '1',
         {
-          '1': {
-            images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
-          }
+          images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
         }
       )
       expect(images?.[0]).toBe(image)
+    })
+
+    it('commits only the changed entry after whole-record assignment', () => {
+      app.vueAppReady = true
+      app.nodeOutputs = { '1': { images: [{ filename: 'first.png' }] } }
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
+
+      const second = { images: [{ filename: 'second.png' }] }
+      app.nodeOutputs['2'] = second
+
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledOnce()
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '2',
+        second
+      )
     })
   })
 

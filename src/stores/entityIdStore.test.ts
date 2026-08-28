@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { computed } from 'vue'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { createLGraphState, mintNodeId } from '@/lib/litegraph/src/idAllocation'
 import type { UUID } from '@/utils/uuid'
@@ -8,6 +10,8 @@ import { useEntityIdStore } from './entityIdStore'
 describe(useEntityIdStore, () => {
   const first = '00000000-0000-4000-8000-000000000001' as UUID
   const second = '00000000-0000-4000-8000-000000000002' as UUID
+
+  beforeEach(() => setActivePinia(createPinia()))
 
   it('keeps allocation state when a root graph is rekeyed', () => {
     const store = useEntityIdStore()
@@ -29,5 +33,16 @@ describe(useEntityIdStore, () => {
     state.lastNodeId = 99
 
     expect(store.get(first).lastNodeId).toBe(2)
+  })
+
+  it('reacts to in-place map mutations', () => {
+    const store = useEntityIdStore()
+    const hasFirst = computed(() => store.has(first))
+
+    expect(hasFirst.value).toBe(false)
+    store.get(first)
+    expect(hasFirst.value).toBe(true)
+    store.clear(first)
+    expect(hasFirst.value).toBe(false)
   })
 })
