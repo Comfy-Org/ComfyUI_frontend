@@ -7304,10 +7304,6 @@ const translations = {
     'zh-CN': '治理整个集群，保持全速前进。'
   },
   // ── Developer Platform landing page (/platform) ───────────────────
-  'nav.platform': {
-    en: 'Platform',
-    'zh-CN': '平台'
-  },
   'nav.developerPlatform': {
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
