@@ -3,10 +3,7 @@ import posthog from 'posthog-js'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import type { Platform } from '@/composables/useDownloadUrl'
-import type {
-  ConnectionId,
-  McpClientId
-} from '@/templates/mcp/clients'
+import type { ConnectionId, McpClientId } from '@/templates/mcp/clients'
 
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
