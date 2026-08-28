@@ -5,16 +5,24 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signInWithEmail: vi.fn()
-  })
+const authActions = vi.hoisted(() => ({
+  signInWithGoogle: vi.fn(),
+  signInWithGithub: vi.fn(),
+  signInWithEmail: vi.fn()
 }))
 
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => authActions
+}))
+
+const onAuthSuccess = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/cloud/onboarding/composables/usePostAuthRedirect', () => ({
-  usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
+  usePostAuthRedirect: () => ({ onAuthSuccess })
+}))
+
+const apiKeyAuth = vi.hoisted(() => ({ storeApiKey: vi.fn() }))
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: () => apiKeyAuth
 }))
 
 const isEmbeddedWebView = vi.hoisted(() => ({ value: false }))
@@ -31,6 +39,12 @@ const FREE_RUN_MESSAGES = {
       insecureContextWarning: 'This connection is insecure'
     }
   }
+}
+
+const LOCAL_API_KEY = `comfyui-${'a'.repeat(64)}`
+const CLOUD_SIGN_IN_FORM_STUB = {
+  emits: ['submit'],
+  template: `<form data-testid="signin-form"><button type="button" @click="$emit('submit', { email: 'local@example.com', password: '${LOCAL_API_KEY}' })">Submit</button></form>`
 }
 
 async function renderLoginView(
@@ -60,7 +74,7 @@ async function renderLoginView(
       ],
       stubs: {
         ApiKeyForm: { template: '<form data-testid="api-key-form" />' },
-        CloudSignInForm: { template: '<form data-testid="signin-form" />' }
+        CloudSignInForm: CLOUD_SIGN_IN_FORM_STUB
       }
     }
   })
@@ -123,6 +137,22 @@ describe('CloudLoginView', () => {
     expect(
       screen.queryByRole('button', { name: 'auth.login.loginWithGoogle' })
     ).not.toBeInTheDocument()
+  })
+
+  it('uses an API-key-shaped local Cloud password as the API key', async () => {
+    vi.stubEnv('VITE_LOCAL_CLOUD_AUTH', 'true')
+    apiKeyAuth.storeApiKey.mockResolvedValue(true)
+    const user = (await import('@testing-library/user-event')).default.setup()
+    await renderLoginView()
+
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+    await user.click(screen.getByRole('button', { name: 'Submit' }))
+
+    expect(apiKeyAuth.storeApiKey).toHaveBeenCalledWith(LOCAL_API_KEY)
+    expect(authActions.signInWithEmail).not.toHaveBeenCalled()
+    expect(onAuthSuccess).toHaveBeenCalledOnce()
   })
 
   it.for([true, false])(
