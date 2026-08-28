@@ -24,10 +24,19 @@ const ctas = platformCtas(locale)
       :badge-text="t('platform.hero.badge', locale)"
       :badge-show-logo="false"
       :title="t('platform.hero.heading', locale)"
+      title-class="sr-only"
       :subtitle="t('platform.hero.subtitle', locale)"
+      subtitle-class="mt-6 max-w-md text-sm leading-relaxed"
+      cta-wrapper-class="mt-6"
       :primary-cta="ctas.getStarted"
       :secondary-cta="ctas.docs"
     >
+      <template #belowCtas>
+        <p class="mt-5 max-w-md text-xs text-primary-warm-gray">
+          {{ t('platform.faq.betaBanner', locale) }}
+        </p>
+      </template>
+
       <template #media>
         <DeployTerminal />
       </template>

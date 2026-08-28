@@ -29,8 +29,10 @@ const {
   badgeLogoAlt,
   badgeShowLogo = true,
   title,
+  titleClass,
   titleHighlight,
   subtitle,
+  subtitleClass,
   features = [],
   primaryCta,
   secondaryCta,
@@ -49,6 +51,7 @@ const {
   videoPlayButtonVariant = 'solid',
   videoAriaLabel,
   compact = false,
+  ctaWrapperClass,
   class: className
 } = defineProps<{
   locale?: Locale
@@ -58,8 +61,10 @@ const {
   badgeLogoAlt?: string
   badgeShowLogo?: boolean
   title: string
+  titleClass?: HTMLAttributes['class']
   titleHighlight?: string
   subtitle?: string
+  subtitleClass?: HTMLAttributes['class']
   features?: string[]
   primaryCta: Cta
   secondaryCta?: Cta
@@ -78,6 +83,7 @@ const {
   videoPlayButtonVariant?: 'solid' | 'overlay'
   videoAriaLabel?: string
   compact?: boolean
+  ctaWrapperClass?: HTMLAttributes['class']
 }>()
 </script>
 
@@ -105,7 +111,8 @@ const {
             'mt-8 leading-[125%] font-light whitespace-pre-line text-primary-comfy-canvas',
             compact
               ? 'text-xl tracking-tight md:text-2xl lg:text-3xl'
-              : 'text-2xl tracking-[-1.44px] md:text-4xl lg:text-5xl'
+              : 'text-2xl tracking-[-1.44px] md:text-4xl lg:text-5xl',
+            titleClass
           )
         "
       >
@@ -121,7 +128,8 @@ const {
         :class="
           cn(
             'mt-6 max-w-xl text-primary-comfy-canvas/80',
-            compact ? 'text-sm' : 'text-base'
+            compact ? 'text-sm' : 'text-base',
+            subtitleClass
           )
         "
       >
@@ -139,7 +147,9 @@ const {
         </li>
       </ul>
 
-      <div class="mt-10 flex flex-col gap-4 sm:flex-row">
+      <div
+        :class="cn('mt-10 flex flex-col gap-4 sm:flex-row', ctaWrapperClass)"
+      >
         <BrandButton
           :href="primaryCta.href"
           :target="primaryCta.target"
@@ -159,6 +169,8 @@ const {
           {{ secondaryCta.label }}
         </BrandButton>
       </div>
+
+      <slot name="belowCtas" />
     </div>
 
     <div class="order-first w-full lg:order-last lg:flex-1">
