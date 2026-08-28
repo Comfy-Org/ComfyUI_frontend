@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AgentWsEvent, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent } from '../../schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
@@ -53,7 +53,7 @@ function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
   )
 }
 
-const T = 't1' as TurnId
+const T = toTurnId('t1')
 
 function drive(events: AgentChatEvent[]): AssistantMessage {
   const message = createAssistantMessage(T)
@@ -217,7 +217,9 @@ describe('agentEventTransport thinking narration', () => {
   })
 
   it('the first text delta clears the live narration but retains the step', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
     const message = drive([thinking('Writing a reply'), delta('Here')])
+    now.mockRestore()
     expect(message.thinkingText).toBeUndefined()
     expect(thinkingParts(message)).toEqual([
       { type: 'thinking', text: 'Writing a reply', state: 'done' }
@@ -228,8 +230,10 @@ describe('agentEventTransport thinking narration', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit)
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
     transport.ingest(thinking('Wrapping up'))
     transport.settle()
+    now.mockRestore()
     const final = emit.mock.calls.at(-1)?.[0] ?? message
     expect(final.thinkingText).toBeUndefined()
     expect(thinkingParts(final)).toEqual([
@@ -237,13 +241,31 @@ describe('agentEventTransport thinking narration', () => {
     ])
   })
 
+  it('each emit is a distinct snapshot whose parts array ignores later events', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(thinking('First'))
+    const first = emit.mock.calls.at(-1)![0]
+    const firstPartsLength = first.parts.length
+    transport.ingest(toolCall('add_node', 'ok'))
+    const second = emit.mock.calls.at(-1)![0]
+
+    expect(second).not.toBe(first)
+    expect(second.parts).not.toBe(first.parts)
+    expect(first.parts).toHaveLength(firstPartsLength)
+  })
+
   it('retains alternating reasoning and tool events in transcript order', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
     const message = drive([
       thinking('Inspecting the graph'),
       toolCall('list_slots', 'ok'),
       thinking('Applying the edit'),
       toolCall('set_widget', 'ok')
     ])
+    now.mockRestore()
 
     expect(message.parts).toEqual([
       {
