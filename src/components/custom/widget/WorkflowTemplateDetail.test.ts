@@ -81,11 +81,11 @@ function renderDetail({
 
 describe('WorkflowTemplateDetail', () => {
   it('shows the description control from rendered overflow and updates it after resize', async () => {
-    let resizeCallback: ResizeObserverCallback | null = null
+    const resizeCallbacks: ResizeObserverCallback[] = []
     const originalResizeObserver = globalThis.ResizeObserver
     class MockResizeObserver implements ResizeObserver {
       constructor(callback: ResizeObserverCallback) {
-        resizeCallback = callback
+        resizeCallbacks.push(callback)
       }
 
       observe() {}
@@ -113,7 +113,11 @@ describe('WorkflowTemplateDetail', () => {
       ).toBeInTheDocument()
 
       scrollHeight = 48
-      resizeCallback?.([], {} as ResizeObserver)
+      const [resizeCallback] = resizeCallbacks
+      if (!resizeCallback) {
+        throw new Error('Expected the description ResizeObserver to initialize')
+      }
+      resizeCallback([], {} as ResizeObserver)
 
       await waitFor(() => {
         expect(
