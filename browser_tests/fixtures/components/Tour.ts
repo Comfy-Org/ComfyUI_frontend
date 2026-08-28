@@ -15,7 +15,7 @@ export class OnboardingCoachmarks {
   public readonly landing: Locator
   public readonly landingStartButton: Locator
   public readonly landingSkipButton: Locator
-  /** The current spotlight step card (the dialog carrying a "Step N of M" label). */
+  /** The current spotlight card, including non-step result states. */
   public readonly spotlight: Locator
   public readonly card: Locator
   public readonly cardNextButton: Locator
@@ -31,7 +31,7 @@ export class OnboardingCoachmarks {
       exact: true
     })
     this.spotlight = page.getByTestId('coach-spotlight')
-    this.card = page.getByRole('dialog').filter({ hasText: /Step \d+ of \d+/ })
+    this.card = page.getByTestId('coach-card')
     this.cardNextButton = this.card.getByRole('button', { name: 'Next' })
     this.cardDoneButton = this.card.getByRole('button', { name: 'Done' })
   }
