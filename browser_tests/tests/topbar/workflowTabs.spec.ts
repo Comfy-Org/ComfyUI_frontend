@@ -190,6 +190,47 @@ test.describe('Workflow tabs', () => {
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
   })
 
+  test.describe('Touch overflow scrolling', { tag: ['@mobile'] }, () => {
+    test('tapping the right arrow scrolls the workflow tabs', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+
+      for (let i = 0; i < 5; i++) {
+        await topbar.newWorkflowButton.click()
+      }
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(6)
+
+      const scrollContent = comfyPage.page.locator(
+        '.workflow-tabs-container .p-scrollpanel-content'
+      )
+      const rightArrow = comfyPage.page.getByRole('button', {
+        name: /scroll right/i
+      })
+
+      await scrollContent.evaluate((element) => {
+        element.scrollLeft = 0
+        element.dispatchEvent(new Event('scroll'))
+      })
+      await expect(rightArrow).toBeEnabled()
+
+      const initialScrollLeft = await scrollContent.evaluate(
+        (element) => element.scrollLeft
+      )
+      await comfyPage.page.clock.install()
+      await rightArrow.tap()
+
+      await expect
+        .poll(() => scrollContent.evaluate((element) => element.scrollLeft))
+        .toBe(initialScrollLeft + 20)
+
+      await comfyPage.page.clock.fastForward(350)
+      await expect
+        .poll(() => scrollContent.evaluate((element) => element.scrollLeft))
+        .toBe(initialScrollLeft + 20)
+    })
+  })
+
   test.describe('Closing a modified workflow tab (FE-419)', () => {
     async function modifyActiveWorkflow(page: Page, activeTab: Locator) {
       await page.evaluate(() => {

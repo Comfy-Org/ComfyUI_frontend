@@ -51,14 +51,50 @@ vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
 
-vi.mock('@/composables/element/useOverflowObserver', () => ({
-  useOverflowObserver: () => ({
-    isOverflowing: { value: false },
-    disposed: { value: false },
-    checkOverflow: vi.fn(),
-    dispose: vi.fn()
-  })
-}))
+vi.mock('@/composables/element/useOverflowObserver', async () => {
+  const { ref } = await import('vue')
+
+  return {
+    useOverflowObserver: () => ({
+      isOverflowing: ref(true),
+      disposed: ref(false),
+      checkOverflow: vi.fn(),
+      dispose: vi.fn()
+    })
+  }
+})
+
+vi.mock('@vueuse/core', async () => {
+  const { reactive } = await import('vue')
+
+  return {
+    useScroll: () => ({
+      arrivedState: reactive({ left: true, right: false }),
+      measure: vi.fn()
+    })
+  }
+})
+
+vi.mock('primevue/scrollpanel', async () => {
+  const { defineComponent, h } = await import('vue')
+
+  return {
+    default: defineComponent({
+      name: 'ScrollPanelStub',
+      setup(_props, { slots }) {
+        return () =>
+          h(
+            'div',
+            {
+              class: 'p-scrollpanel-content',
+              'data-testid': 'workflow-tabs-scroll-content'
+            },
+            slots.default?.()
+          )
+      }
+    })
+  }
+})
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
@@ -83,9 +119,8 @@ vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
-vi.mock('@/utils/mouseDownUtil', () => ({
-  whileMouseDown: vi.fn()
-}))
+const whileMouseDown = vi.hoisted(() => vi.fn())
+vi.mock('@/utils/mouseDownUtil', () => ({ whileMouseDown }))
 
 vi.mock('./WorkflowOverflowMenu.vue', () => ({
   default: defineComponent({
@@ -173,5 +208,64 @@ describe('WorkflowTabs feedback button', () => {
     expect(
       screen.queryByRole('button', { name: 'Feedback' })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('WorkflowTabs overflow arrows', () => {
+  beforeEach(() => {
+    whileMouseDown.mockClear()
+  })
+
+  it('scrolls once immediately and delays hold-to-repeat scrolling', async () => {
+    const { user } = renderComponent()
+
+    const scrollContent = screen.getByTestId('workflow-tabs-scroll-content')
+
+    const scrollBy = vi.fn()
+    Object.defineProperty(scrollContent, 'scrollBy', {
+      configurable: true,
+      value: scrollBy
+    })
+
+    const rightArrow = await screen.findByRole('button', {
+      name: /scroll right/i
+    })
+    await user.click(rightArrow)
+
+    expect(scrollBy).toHaveBeenCalledOnce()
+    expect(scrollBy).toHaveBeenCalledWith({ left: 20 })
+    expect(whileMouseDown).toHaveBeenCalledOnce()
+    expect(whileMouseDown).toHaveBeenCalledWith(
+      expect.any(PointerEvent),
+      expect.any(Function),
+      30,
+      300
+    )
+
+    const repeatScroll = whileMouseDown.mock.calls[0][1]
+    repeatScroll()
+
+    expect(scrollBy).toHaveBeenCalledTimes(2)
+  })
+
+  it('scrolls once when activated from the keyboard', async () => {
+    const { user } = renderComponent()
+
+    const scrollContent = screen.getByTestId('workflow-tabs-scroll-content')
+    const scrollBy = vi.fn()
+    Object.defineProperty(scrollContent, 'scrollBy', {
+      configurable: true,
+      value: scrollBy
+    })
+
+    const rightArrow = await screen.findByRole('button', {
+      name: /scroll right/i
+    })
+    rightArrow.focus()
+    await user.keyboard('{Enter}')
+
+    expect(scrollBy).toHaveBeenCalledOnce()
+    expect(scrollBy).toHaveBeenCalledWith({ left: 20 })
+    expect(whileMouseDown).not.toHaveBeenCalled()
   })
 })

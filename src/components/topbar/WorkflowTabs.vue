@@ -11,7 +11,8 @@
       class="overflow-arrow overflow-arrow-left aspect-square h-full w-auto"
       :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
-      @mousedown="whileMouseDown($event, () => scroll(-1))"
+      @pointerdown="startScrolling($event, -1)"
+      @click="scrollOnKeyboardActivation($event, -1)"
     >
       <i class="icon-[lucide--chevron-left] size-full" />
     </Button>
@@ -57,7 +58,8 @@
       class="overflow-arrow overflow-arrow-right aspect-square h-full w-auto"
       :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
-      @mousedown="whileMouseDown($event, () => scroll(1))"
+      @pointerdown="startScrolling($event, 1)"
+      @click="scrollOnKeyboardActivation($event, 1)"
     >
       <i class="icon-[lucide--chevron-right] size-full" />
     </Button>
@@ -227,6 +229,23 @@ const scroll = (direction: number) => {
   const el = scrollContent.value
   if (!el) return
   el.scrollBy({ left: direction * 20 })
+}
+
+const SCROLL_REPEAT_INTERVAL = 30
+const SCROLL_HOLD_DELAY = 300
+
+const startScrolling = (event: PointerEvent, direction: number) => {
+  scroll(direction)
+  whileMouseDown(
+    event,
+    () => scroll(direction),
+    SCROLL_REPEAT_INTERVAL,
+    SCROLL_HOLD_DELAY
+  )
+}
+
+const scrollOnKeyboardActivation = (event: MouseEvent, direction: number) => {
+  if (event.detail === 0) scroll(direction)
 }
 
 const ensureActiveTabVisible = async (
