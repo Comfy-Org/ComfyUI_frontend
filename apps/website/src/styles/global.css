@@ -220,6 +220,57 @@
   animation: dash-flow 1.2s linear infinite;
 }
 
+@keyframes platform-builder-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes platform-builder-pulse {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+@utility animate-platform-builder-float {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-builder-float 9s ease-in-out infinite;
+  }
+}
+
+@utility animate-platform-builder-float-slow {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-builder-float 10s ease-in-out -3s infinite;
+  }
+}
+
+@utility animate-platform-builder-float-delayed {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-builder-float 11s ease-in-out -6s infinite;
+  }
+}
+
+@utility animate-platform-builder-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-builder-pulse 5s ease-in-out infinite;
+  }
+}
+
 @keyframes label-flash {
   0%,
   22% {
