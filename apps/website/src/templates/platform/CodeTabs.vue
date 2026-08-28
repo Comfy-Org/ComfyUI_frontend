@@ -93,7 +93,7 @@ function cycleValue(values: string[]): string {
       class="mt-4 block"
     >
       <pre
-        class="overflow-x-auto rounded-3xl border border-white/10 bg-black/40 p-5 font-mono text-xs/relaxed text-primary-comfy-canvas lg:p-6 lg:text-sm/relaxed"
+        class="overflow-x-auto rounded-3xl bg-black/40 p-5 font-mono text-xs/relaxed text-primary-comfy-canvas lg:p-6 lg:text-sm/relaxed"
       ><code><template
           v-for="(segment, index) in tab.segments"
           :key="index"

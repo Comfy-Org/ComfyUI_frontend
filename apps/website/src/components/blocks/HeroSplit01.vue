@@ -28,6 +28,8 @@ const {
   badgeLogoSrc,
   badgeLogoAlt,
   title,
+  titleClass,
+  ctaClass,
   titleHighlight,
   subtitle,
   features = [],
@@ -52,10 +54,12 @@ const {
 } = defineProps<{
   locale?: Locale
   class?: HTMLAttributes['class']
-  badgeText: string
+  badgeText?: string
   badgeLogoSrc?: string
   badgeLogoAlt?: string
   title: string
+  titleClass?: HTMLAttributes['class']
+  ctaClass?: HTMLAttributes['class']
   titleHighlight?: string
   subtitle?: string
   features?: string[]
@@ -91,6 +95,7 @@ const {
   >
     <div class="w-full lg:flex-1">
       <ProductHeroBadge
+        v-if="badgeText"
         :text="badgeText"
         :logo-src="badgeLogoSrc"
         :logo-alt="badgeLogoAlt"
@@ -99,10 +104,12 @@ const {
       <h1
         :class="
           cn(
-            'mt-8 leading-[125%] font-light whitespace-pre-line text-primary-comfy-canvas',
+            'leading-[125%] font-light whitespace-pre-line text-primary-comfy-canvas',
+            badgeText && 'mt-8',
             compact
               ? 'text-xl tracking-tight md:text-2xl lg:text-3xl'
-              : 'text-2xl tracking-[-1.44px] md:text-4xl lg:text-5xl'
+              : 'text-2xl tracking-[-1.44px] md:text-4xl lg:text-5xl',
+            titleClass
           )
         "
       >
@@ -141,7 +148,7 @@ const {
           :href="primaryCta.href"
           :target="primaryCta.target"
           :size="compact ? 'sm' : 'lg'"
-          :class="cn('uppercase', !compact && 'px-8 py-4 text-base')"
+          :class="cn('uppercase', !compact && 'px-8 py-4 text-base', ctaClass)"
         >
           {{ primaryCta.label }}
         </BrandButton>
@@ -151,7 +158,7 @@ const {
           :target="secondaryCta.target"
           variant="outline"
           :size="compact ? 'sm' : 'lg'"
-          :class="cn('uppercase', !compact && 'px-8 py-4 text-base')"
+          :class="cn('uppercase', !compact && 'px-8 py-4 text-base', ctaClass)"
         >
           {{ secondaryCta.label }}
         </BrandButton>

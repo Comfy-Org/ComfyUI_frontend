@@ -16,7 +16,7 @@ const lines: TerminalLine[] = [
 
 <template>
   <div
-    class="overflow-hidden rounded-3xl border border-white/10 bg-black/40 font-mono text-xs shadow-2xl lg:text-sm"
+    class="overflow-hidden rounded-3xl bg-black/40 font-mono text-xs shadow-2xl lg:text-sm"
   >
     <div class="flex items-center gap-1.5 border-b border-white/10 px-5 py-3.5">
       <span class="size-3 rounded-full bg-white/15" />

@@ -2,6 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import Badge from '../../components/ui/badge/Badge.vue'
+import CardArrow from '../../components/common/CardArrow.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
@@ -107,26 +109,16 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow/50 group flex flex-col overflow-hidden rounded-3xl border border-white/10 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:outline-none"
+        class="focus-visible:ring-primary-comfy-yellow/50 group flex flex-col overflow-hidden rounded-3xl focus-visible:ring-2 focus-visible:outline-none"
       >
         <div
           :class="
             cn(
-              'flex aspect-2/1 items-end p-4 transition-opacity group-hover:opacity-90',
+              'aspect-2/1 transition-opacity group-hover:opacity-90',
               example.bg
             )
           "
-        >
-          <div class="flex flex-wrap gap-1.5">
-            <span
-              v-for="tag in example.tags"
-              :key="tag"
-              class="rounded-full bg-primary-comfy-ink/70 px-2.5 py-1 font-mono text-[10px] text-primary-comfy-canvas"
-            >
-              {{ tag }}
-            </span>
-          </div>
-        </div>
+        />
         <div class="bg-transparency-white-t4 flex flex-1 flex-col p-6">
           <h3 class="text-base font-normal text-primary-warm-white">
             {{ example.title }}
@@ -134,11 +126,24 @@ const more: Omit<Example, 'bg'>[] = [
           <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
             {{ example.description }}
           </p>
-          <span
-            class="text-primary-comfy-yellow mt-auto pt-4 text-xs font-bold tracking-wider uppercase"
-          >
-            {{ t('platform.examples.cookbook', locale) }}
-          </span>
+          <div class="mt-auto flex items-center gap-3 pt-4">
+            <span
+              class="text-primary-comfy-yellow text-xs font-bold tracking-wider uppercase"
+            >
+              {{ t('platform.examples.cookbook', locale) }}
+            </span>
+            <div
+              class="ml-auto flex flex-wrap items-center justify-end gap-1.5"
+            >
+              <Badge v-for="tag in example.tags" :key="tag" variant="subtle">
+                {{ tag }}
+              </Badge>
+            </div>
+            <CardArrow
+              hover="group"
+              class="bg-primary-comfy-yellow text-primary-comfy-ink shrink-0"
+            />
+          </div>
         </div>
       </a>
     </div>
@@ -151,16 +156,12 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow/50 bg-transparency-white-t4 flex flex-col rounded-3xl border border-white/10 p-5 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:outline-none"
+        class="focus-visible:ring-primary-comfy-yellow/50 bg-transparency-white-t4 flex flex-col rounded-3xl p-5 focus-visible:ring-2 focus-visible:outline-none"
       >
         <div class="flex flex-wrap gap-1.5">
-          <span
-            v-for="tag in example.tags"
-            :key="tag"
-            class="rounded-full bg-primary-comfy-ink/70 px-2.5 py-1 font-mono text-[10px] text-primary-comfy-canvas"
-          >
+          <Badge v-for="tag in example.tags" :key="tag" variant="subtle">
             {{ tag }}
-          </span>
+          </Badge>
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
           {{ example.title }}

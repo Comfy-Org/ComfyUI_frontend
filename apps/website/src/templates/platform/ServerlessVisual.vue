@@ -1,92 +1,211 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useRafFn } from '@vueuse/core'
+import { shallowRef } from 'vue'
 
-// Abstract autoscaling visual: one endpoint on the left, a fleet of GPU
-// worker cells lighting up in a wave that radiates outward from it.
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
+
 const COLS = 12
 const ROWS = 6
+const CELL_COUNT = COLS * ROWS
 
-interface Cell {
-  id: number
-  delay: string
-  duration: string
+// Stage geometry as percentages of the card. The layout and the pulse maths
+// read the same numbers so a travelling pulse lands on the columns it wakes.
+const CLIENT_X = 6
+const TRACK_START = 11.5
+const TRACK_END = 95
+// The dashed rule stops just short of where the pulse travels to.
+const TRACK_RULE_END = 94
+const TRACK_Y = 47
+const GRID_LEFT = 22
+const GRID_RIGHT = 95
+const GRID_TOP = 9
+const GRID_BOTTOM = 20
+
+const FORWARD_MS = 3200
+const RETURN_MS = 2500
+const HOT_MS = 850
+const ON_MIN_MS = 2700
+const ON_JITTER_MS = 1200
+
+// One request wakes the path, three more show traffic scaling, then the fleet
+// drains to zero and rests before the cycle repeats.
+const REQUESTS = [
+  { start: 900, strength: 0.35 },
+  { start: 7600, strength: 0.6 },
+  { start: 8500, strength: 0.6 },
+  { start: 9400, strength: 0.6 }
+]
+const DRAIN_AT = 16600
+const CYCLE_MS = 19600
+
+type CellState = 'rest' | 'on' | 'hot'
+
+const cellStates = shallowRef<CellState[]>(
+  Array.from({ length: CELL_COUNT }, () => 'rest')
+)
+const pulses = shallowRef<{ id: number; x: number }[]>([])
+
+const onUntil = new Float64Array(CELL_COUNT)
+const hotUntil = new Float64Array(CELL_COUNT)
+const firedTo = REQUESTS.map(() => -1)
+let cycle = 0
+let clock = 0
+
+const trackSpan = TRACK_END - TRACK_START
+const columnWidth = (GRID_RIGHT - GRID_LEFT) / COLS
+
+// Fraction of the track travelled when the pulse reaches a column's centre.
+function columnArrival(col: number): number {
+  return (GRID_LEFT + columnWidth * (col + 0.5) - TRACK_START) / trackSpan
 }
 
-const cells: Cell[] = Array.from({ length: COLS * ROWS }, (_, i) => {
-  const col = i % COLS
-  const row = Math.floor(i / COLS)
-  const distance = col + Math.abs(row - (ROWS - 1) / 2)
-  return {
-    id: i,
-    delay: `${(distance * 0.16).toFixed(2)}s`,
-    duration: `${(2.4 + (i % 3) * 0.4).toFixed(1)}s`
+function wake(col: number, strength: number, now: number) {
+  const isGateway = col < 2
+  const isDatabase = col >= COLS - 2
+  if (!isGateway && !isDatabase && Math.random() >= strength) return
+
+  const row = Math.floor(Math.random() * ROWS)
+  const index = row * COLS + col
+  onUntil[index] = now + ON_MIN_MS + Math.random() * ON_JITTER_MS
+  if (col > 3 && col < 9) hotUntil[index] = now + HOT_MS
+}
+
+function resetCycle() {
+  onUntil.fill(0)
+  hotUntil.fill(0)
+  firedTo.fill(-1)
+}
+
+function advance(delta: number) {
+  clock += delta
+  const position = clock % CYCLE_MS
+  const currentCycle = Math.floor(clock / CYCLE_MS)
+  if (currentCycle !== cycle) {
+    cycle = currentCycle
+    resetCycle()
   }
+  if (position >= DRAIN_AT) {
+    onUntil.fill(0)
+    hotUntil.fill(0)
+  }
+
+  const active: { id: number; x: number }[] = []
+
+  REQUESTS.forEach((request, id) => {
+    const age = position - request.start
+    if (age < 0 || age > FORWARD_MS + RETURN_MS) return
+
+    const travelled =
+      age <= FORWARD_MS ? age / FORWARD_MS : 1 - (age - FORWARD_MS) / RETURN_MS
+    active.push({ id, x: TRACK_START + travelled * trackSpan })
+
+    if (age > FORWARD_MS || position >= DRAIN_AT) return
+    for (let col = firedTo[id] + 1; col < COLS; col++) {
+      if (travelled < columnArrival(col)) break
+      firedTo[id] = col
+      wake(col, request.strength, position)
+    }
+  })
+
+  pulses.value = active
+
+  const next = Array.from(
+    { length: CELL_COUNT },
+    (_, i): CellState =>
+      position < hotUntil[i] ? 'hot' : position < onUntil[i] ? 'on' : 'rest'
+  )
+  if (next.some((state, i) => state !== cellStates.value[i])) {
+    cellStates.value = next
+  }
+}
+
+useRafFn(({ delta }) => advance(Math.min(delta, 100)), {
+  immediate: !prefersReducedMotion()
 })
 
-// The hardware lineup flashes through on a shared CSS cycle: each label owns
-// a quarter of the 7.2s label-flash keyframe via its animation delay.
-const GPUS = ['RTX 6000 PRO', '5090s', 'B200s', 'H100s']
-const GPU_SLOT_SECONDS = 1.8
+// The resting fleet is mottled rather than flat, so idle GPUs read as hardware
+// rather than as an empty grid.
+function restTone(index: number): string {
+  const nth = index + 1
+  if (nth % 11 === 0) return 'bg-[#6b5b91]'
+  if (nth % 7 === 0) return 'bg-[#352c44]'
+  if (nth % 3 === 0) return 'bg-[#4d4163]'
+  return 'bg-[#403552]'
+}
 </script>
 
 <template>
   <div
     aria-hidden="true"
-    class="relative flex h-full min-h-72 items-center gap-6 overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-8 lg:gap-8 lg:p-10"
+    class="relative h-full min-h-72 overflow-hidden rounded-3xl bg-[#241d2f]"
   >
-    <!-- The endpoint: a single steady node with a ripple -->
-    <svg viewBox="0 0 48 48" class="size-12 shrink-0">
-      <circle
-        cx="24"
-        cy="24"
-        r="10"
-        class="animate-ripple fill-none stroke-primary-comfy-yellow/60"
-      />
-      <circle cx="24" cy="24" r="10" class="fill-primary-comfy-yellow" />
-    </svg>
-
-    <!-- Faint link from the endpoint into the fleet -->
-    <svg viewBox="0 0 40 8" class="w-10 shrink-0" preserveAspectRatio="none">
-      <line
-        x1="0"
-        y1="4"
-        x2="40"
-        y2="4"
-        class="animate-dash-flow stroke-primary-comfy-canvas/40"
-        stroke-width="1.5"
-        stroke-dasharray="4 6"
-      />
-    </svg>
-
-    <!-- The worker fleet, scaling out in a wave -->
     <div
-      class="grid flex-1 gap-2"
-      :style="{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }"
+      class="absolute -translate-y-1/2 text-center"
+      :style="{ left: `${CLIENT_X}%`, top: `${TRACK_Y}%` }"
+    >
+      <div class="mx-auto mb-3.5 size-[22px] rounded-full bg-[#f0ec72]" />
+      <div
+        class="font-mono text-[11px] leading-[1.7] tracking-[0.08em] whitespace-nowrap text-[#e8e46a]"
+      >
+        CLIENT<br />REQUEST
+      </div>
+    </div>
+
+    <div
+      class="absolute border-t-2 border-dashed border-[#4a4157]"
+      :style="{
+        left: `${TRACK_START}%`,
+        right: `${100 - TRACK_RULE_END}%`,
+        top: `${TRACK_Y}%`
+      }"
+    />
+
+    <div
+      class="absolute grid gap-1.5"
+      :style="{
+        left: `${GRID_LEFT}%`,
+        right: `${100 - GRID_RIGHT}%`,
+        top: `${GRID_TOP}%`,
+        bottom: `${GRID_BOTTOM}%`,
+        gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
+        gridTemplateRows: `repeat(${ROWS}, minmax(0, 1fr))`
+      }"
     >
       <div
-        v-for="cell in cells"
-        :key="cell.id"
-        class="animate-gpu-pulse aspect-square rounded-sm bg-primary-comfy-yellow"
-        :style="{
-          animationDelay: cell.delay,
-          animationDuration: cell.duration
-        }"
+        v-for="(state, index) in cellStates"
+        :key="index"
+        :class="
+          cn(
+            'rounded-md transition-[background-color,box-shadow,filter] duration-350 ease-out',
+            state === 'rest' && restTone(index),
+            state === 'on' &&
+              'bg-[#f0ec72] shadow-[0_0_14px_rgba(240,236,114,0.35)]',
+            state === 'hot' &&
+              'bg-[#fbf9b8] brightness-110 shadow-[0_0_26px_rgba(251,249,184,0.75)]'
+          )
+        "
       />
     </div>
 
-    <!-- The hardware the fleet is running on, flashing through the lineup -->
-    <span
-      v-for="(gpu, index) in GPUS"
-      :key="gpu"
-      :class="
-        cn(
-          'animate-label-flash text-primary-comfy-yellow/80 absolute right-5 bottom-4 font-mono text-[10px] tracking-widest uppercase',
-          index === 0 && 'motion-reduce:opacity-100'
-        )
-      "
-      :style="{ animationDelay: `${index * GPU_SLOT_SECONDS}s` }"
+    <div
+      v-for="pulse in pulses"
+      :key="pulse.id"
+      class="absolute size-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fbf9b8] shadow-[0_0_12px_rgba(251,249,184,0.9)]"
+      :style="{ left: `${pulse.x}%`, top: `${TRACK_Y}%` }"
+    />
+
+    <div
+      class="text-primary-comfy-canvas absolute flex justify-between font-mono text-[11px] tracking-[0.08em]"
+      :style="{
+        left: `${GRID_LEFT}%`,
+        right: `${100 - GRID_RIGHT}%`,
+        bottom: `${GRID_TOP}%`
+      }"
     >
-      {{ gpu }}
-    </span>
+      <span>API GATEWAY</span>
+      <span>SERVERLESS FUNCTIONS</span>
+      <span>DATABASE&nbsp;&nbsp;B200S</span>
+    </div>
   </div>
 </template>
