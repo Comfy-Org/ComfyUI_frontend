@@ -15,13 +15,16 @@ const CELL_COUNT = COLS * ROWS
 const CELL_STEP_DURATION = 150
 const TRAIL_LENGTH = 3
 const REST_DURATION = 1400
-const LINE_START = 11.5
-const LINE_END = 95
-const REQUEST_DURATION = 3200
-const RESPONSE_DURATION = 2500
 const CYCLE_DURATION =
   (CELL_COUNT + TRAIL_LENGTH) * CELL_STEP_DURATION + REST_DURATION
-const REQUEST_STARTS = [400, 6600]
+const CELL_OPACITIES = [
+  0.68, 0.98, 0.37, 1, 0.9, 0.13, 0.74, 0.44, 0.22, 0.21, 0.13, 0.61, 0.48,
+  0.91, 0.51, 0.96, 0.97, 0.17, 0.89, 0.61, 0.15, 0.35, 0.19, 0.46, 0.3, 0.8,
+  0.66, 0.85, 1, 0.25, 0.98, 0.77, 0.12, 0.54, 0.29, 0.33, 0.3, 0.8, 0.66, 0.85,
+  1, 0.25, 0.98, 0.77, 0.12, 0.54, 0.29, 0.33, 0.48, 0.91, 0.51, 0.96, 0.97,
+  0.17, 0.89, 0.61, 0.15, 0.35, 0.19, 0.46, 0.68, 0.98, 0.37, 1, 0.9, 0.13,
+  0.74, 0.44, 0.22, 0.21, 0.13, 0.61
+]
 
 type CellState = 'idle' | 'trail' | 'hot'
 
@@ -30,6 +33,7 @@ interface ActivityCell {
   column: number
   row: number
   sequence: number
+  opacity: number
 }
 
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
@@ -48,7 +52,8 @@ const activityCells: ActivityCell[] = Array.from(
       id,
       column,
       row,
-      sequence: (COLS - 1 - column) * ROWS + (ROWS - 1 - row)
+      sequence: (COLS - 1 - column) * ROWS + (ROWS - 1 - row),
+      opacity: CELL_OPACITIES[id]
     }
   }
 )
@@ -67,20 +72,6 @@ const visualCells = computed(() =>
     ...cell,
     state: cellState(cell, frameTime.value)
   }))
-)
-
-const pulses = computed(() =>
-  REQUEST_STARTS.flatMap((start, id) => {
-    const age = frameTime.value - start
-    if (age < 0 || age > REQUEST_DURATION + RESPONSE_DURATION) return []
-
-    const progress =
-      age <= REQUEST_DURATION
-        ? age / REQUEST_DURATION
-        : 1 - (age - REQUEST_DURATION) / RESPONSE_DURATION
-
-    return [{ id, position: LINE_START + progress * (LINE_END - LINE_START) }]
-  })
 )
 
 const { pause, resume } = useRafFn(
@@ -105,26 +96,24 @@ watch(
     ref="stageRef"
     role="img"
     :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
-    class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl border border-white/10 bg-primary-comfy-ink/60 font-mono"
+    class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl border border-white/10 bg-primary-comfy-ink font-mono"
   >
-    <div class="absolute top-[47%] left-[6%] z-10 -translate-y-1/2 text-center">
-      <span
-        class="bg-primary-comfy-yellow mx-auto mb-3 block size-5.5 rounded-full"
-      />
-      <span
-        class="text-primary-comfy-yellow block text-[8px]/relaxed tracking-widest uppercase sm:text-[9px] lg:text-[10px]"
-      >
-        {{ t('platform.serverlessVisual.client', locale) }}
-      </span>
-    </div>
+    <img
+      src="/assets/platform/serverless/local-node.svg"
+      alt=""
+      class="absolute top-1/2 left-[6%] z-10 size-24 -translate-1/2 sm:size-28"
+      aria-hidden="true"
+    />
 
-    <div
-      class="absolute top-[47%] right-[5%] left-[11.5%] border-t-2 border-dashed border-white/15"
+    <img
+      src="/assets/platform/serverless/input-line.svg"
+      alt=""
+      class="absolute top-1/2 left-1/8 h-px w-1/6 -translate-y-1/2"
       aria-hidden="true"
     />
 
     <div
-      class="absolute top-[9%] right-[5%] bottom-[20%] left-[22%] grid grid-cols-12 grid-rows-6 gap-1 sm:gap-1.5"
+      class="absolute top-[13%] right-[5%] bottom-[14%] left-3/10 grid grid-cols-12 grid-rows-6 gap-1.5 sm:gap-2"
       aria-hidden="true"
     >
       <span
@@ -132,31 +121,33 @@ watch(
         :key="cell.id"
         :class="
           cn(
-            'rounded-md transition-[background-color,box-shadow] duration-150',
-            cell.state === 'idle' && 'bg-primary-comfy-plum/35',
-            cell.state === 'trail' && 'bg-secondary-mauve/55',
+            'bg-primary-comfy-yellow rounded-sm transition-[opacity,box-shadow] duration-150',
+            cell.state === 'trail' &&
+              'shadow-primary-comfy-yellow/15 shadow-sm',
             cell.state === 'hot' &&
               'bg-primary-comfy-yellow shadow-primary-comfy-yellow/35 shadow-md'
           )
         "
+        :style="{
+          opacity:
+            cell.state === 'idle'
+              ? cell.opacity
+              : cell.state === 'trail'
+                ? 0.72
+                : 1
+        }"
       />
     </div>
 
-    <span
-      v-for="pulse in pulses"
-      :key="pulse.id"
-      class="shadow-primary-comfy-yellow/80 absolute top-[47%] z-20 size-2.5 -translate-1/2 rounded-full bg-primary-warm-white shadow-lg"
-      :style="{ left: `${pulse.position}%` }"
-      aria-hidden="true"
-    />
-
     <div
-      class="text-primary-comfy-yellow absolute right-[5%] bottom-[9%] left-[22%] flex justify-between gap-1 text-[7px] tracking-widest uppercase sm:gap-2 sm:text-[9px] lg:gap-4 lg:text-[10px]"
+      class="text-primary-comfy-yellow/80 absolute right-[5%] bottom-[6%] left-3/10 grid grid-cols-3 text-[7px] tracking-widest uppercase sm:text-[9px] lg:text-[10px]"
     >
-      <span>{{ t('platform.serverlessVisual.gateway', locale) }}</span>
-      <span>{{ t('platform.serverlessVisual.functions', locale) }}</span>
+      <span>{{ t('platform.serverlessVisual.worker', locale) }}</span>
+      <span class="text-center">
+        {{ t('platform.serverlessVisual.worker', locale) }}
+      </span>
       <span class="text-right">
-        {{ t('platform.serverlessVisual.database', locale) }}
+        {{ t('platform.serverlessVisual.worker', locale) }}
       </span>
     </div>
   </div>

@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g id="Local">
+    <rect width="800" height="800" fill="#211927" />
+    <rect y="-1.02874" width="298.332" height="298.333" rx="47.7792" transform="matrix(0.866025 -0.5 -0.866025 -0.5 398.928 315.421)" fill="#211927" stroke="#4D3762" stroke-width="2.05749" />
+    <rect y="-1.02874" width="238.254" height="238.255" rx="38.0176" transform="matrix(0.866025 -0.5 -0.866025 -0.5 398.928 369.578)" fill="#211927" stroke="#49378B" stroke-width="2.05749" />
+    <rect y="-1.02874" width="190.192" height="190.193" rx="30.2084" transform="matrix(0.866025 -0.5 -0.866025 -0.5 398.928 424.271)" fill="#211927" stroke="#F2FF59" stroke-width="2.05749" />
+    <rect y="1.02874" width="298.332" height="298.333" rx="47.7792" transform="matrix(0.866025 0.5 -0.866025 0.5 400.71 483.55)" fill="#211927" stroke="#4D3762" stroke-width="2.05749" />
+    <rect y="1.02874" width="238.254" height="238.255" rx="38.0176" transform="matrix(0.866025 0.5 -0.866025 0.5 400.71 429.394)" fill="#211927" stroke="#49378B" stroke-width="2.05749" />
+    <rect y="1.02874" width="190.192" height="190.193" rx="30.2084" transform="matrix(0.866025 0.5 -0.866025 0.5 400.71 374.7)" fill="#211927" stroke="#F2FF59" stroke-width="2.05749" />
+    <path d="M410.383 496.976L474.576 459.936C483.11 455.012 490.028 443.038 490.028 433.19V359.111C490.028 352.873 485.046 344.533 479.644 341.416L415.45 304.376C406.917 299.453 393.081 299.453 384.547 304.376L320.354 341.416C314.951 344.533 309.972 352.873 309.972 359.111V433.19C309.972 443.038 316.89 455.012 325.424 459.936L389.617 496.976C395.03 500.099 404.97 500.099 410.383 496.976Z" fill="#F2FF59" />
+  </g>
+</svg>
