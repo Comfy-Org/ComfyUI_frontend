@@ -63,6 +63,7 @@ interface NodeGeometryProjection {
   position: LegacyPoint
   positionView: LegacyPoint
   renderedSize: LegacySize
+  storedRect: Float64Array
   size: LegacySize
   sizeView: LegacySize
 }
@@ -71,8 +72,6 @@ const nodeGeometryProjections = new WeakMap<
   LGraphNode,
   NodeGeometryProjection
 >()
-const storedRectScratch = new Float64Array(4)
-
 function nodeGeometryProjection(node: LGraphNode): NodeGeometryProjection {
   const existing = nodeGeometryProjections.get(node)
   if (existing) return existing
@@ -89,6 +88,7 @@ function nodeGeometryProjection(node: LGraphNode): NodeGeometryProjection {
       synchronize: () => refreshNodeGeometry(node)
     }),
     renderedSize: [0, 0],
+    storedRect: new Float64Array(4),
     size,
     sizeView: createMutationView(size, {
       commit: () => commitNodeSize(node),
@@ -164,10 +164,10 @@ function commitNodePosition(node: LGraphNode): void {
     layoutStore.readNodeRect(
       attachment.graphId,
       attachment.id,
-      storedRectScratch
+      projection.storedRect
     ) &&
-    storedRectScratch[0] === position.x &&
-    storedRectScratch[1] === position.y
+    projection.storedRect[0] === position.x &&
+    projection.storedRect[1] === position.y
   )
     return
 
@@ -191,10 +191,10 @@ function commitNodeSize(node: LGraphNode): void {
     layoutStore.readNodeRect(
       attachment.graphId,
       attachment.id,
-      storedRectScratch
+      projection.storedRect
     ) &&
-    storedRectScratch[2] === projection.size[0] &&
-    storedRectScratch[3] === projection.size[1]
+    projection.storedRect[2] === projection.size[0] &&
+    projection.storedRect[3] === projection.size[1]
   )
     return
 

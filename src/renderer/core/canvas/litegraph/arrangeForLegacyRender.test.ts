@@ -68,13 +68,30 @@ describe('arrangeForLegacyRender', () => {
     expect(graph._nodes).toEqual([first, second, third])
   })
 
-  it('reads each node layout once while sorting', () => {
+  it('uses authoritative render order for default node hit testing', () => {
+    const graph = new LGraph()
+    const first = addedNode(graph)
+    const second = addedNode(graph)
+    const mutations = useLayoutMutations(LayoutSource.Canvas)
+    first.updateArea()
+    second.updateArea()
+
+    mutations.setNodeZIndex(graph.id, first.id, 2)
+    mutations.setNodeZIndex(graph.id, second.id, 1)
+    expect(graph.getNodeOnPos(20, 20)).toBe(first)
+
+    mutations.setNodeZIndex(graph.id, second.id, 3)
+    expect(graph.getNodeOnPos(20, 20)).toBe(second)
+  })
+
+  it('uses at most one layout read per node and caches the order', () => {
     const graph = new LGraph()
     const nodes = [addedNode(graph), addedNode(graph), addedNode(graph)]
     const getNodeLayout = vi.spyOn(layoutStore, 'getNodeLayout')
 
     nodesInRenderOrder(graph)
+    nodesInRenderOrder(graph)
 
-    expect(getNodeLayout).toHaveBeenCalledTimes(nodes.length)
+    expect(getNodeLayout.mock.calls.length).toBeLessThanOrEqual(nodes.length)
   })
 })
