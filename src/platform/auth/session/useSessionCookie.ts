@@ -56,14 +56,23 @@ export const useSessionCookie = () => {
     throw new Error('No credential available for session creation')
   }
 
+  /**
+   * The session's stable identity: the Firebase uid, or — for API-key
+   * sessions, which have no Firebase user — the key itself, so swapping
+   * keys is detected exactly like switching accounts.
+   */
+  const sessionIdentity = (): string | null =>
+    useAuthStore().currentUser?.uid ??
+    useApiKeyAuthStore().getAuthHeader()?.['X-API-KEY'] ??
+    null
+
   /** Creates or refreshes the session cookie after login or token refresh. */
   const performCreateSession = async (
     expectedOwnerUid: string
   ): Promise<void> => {
-    const authStore = useAuthStore()
     const authHeader = await getSessionHeaderOrThrow()
 
-    if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) {
+    if (sessionIdentity() !== expectedOwnerUid) {
       throw new Error('Session identity changed during creation')
     }
 
@@ -94,12 +103,12 @@ export const useSessionCookie = () => {
       ownerUid,
       promise: sessionMutationTail
         .then(async () => {
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if (sessionIdentity() !== ownerUid) {
             throw new Error('Session identity changed before creation')
           }
           await performCreateSession(ownerUid)
           confirmedSessionOwnerUid = ownerUid
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if (sessionIdentity() !== ownerUid) {
             throw new Error('Session identity changed during creation')
           }
         })
@@ -116,7 +125,7 @@ export const useSessionCookie = () => {
   }
 
   const currentOwnerUidOrThrow = (): string => {
-    const ownerUid = useAuthStore().currentUser?.uid
+    const ownerUid = sessionIdentity()
     if (!ownerUid) {
       throw new Error('No authenticated user available for session creation')
     }
