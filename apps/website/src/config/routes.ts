@@ -24,6 +24,7 @@ const baseRoutes = {
   models: '/p/supported-models',
   modelsShowcase: '/models',
   mcp: '/mcp',
+  cli: '/cli',
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',
   minimaxLicense: '/minimax/license',
@@ -99,7 +100,13 @@ export const externalLinks = {
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
+  comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
   comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',
+  docsCli: 'https://docs.comfy.org/agent-tools/cli',
+  // Markdown variant handed to agents in the "ask your agent" cards, same
+  // rationale as docsMcpMd below.
+  docsCliMd: 'https://docs.comfy.org/agent-tools/cli.md',
+  docsCliReference: 'https://docs.comfy.org/comfy-cli/reference',
   docsMcp: 'https://docs.comfy.org/agent-tools/mcp',
   docsMcpLocal:
     'https://docs.comfy.org/agent-tools/mcp#local-comfy-mcp-connection',
