@@ -155,10 +155,12 @@ vi.mock('@/stores/workspaceStore', () => ({
 const agentPanelHolder = vi.hoisted(() => ({
   store: null as unknown as {
     isOpen: { value: boolean }
+    isVisible: { value: boolean }
     enabled: { value: boolean }
     gateSettled: { value: boolean }
     toggle: ReturnType<typeof vi.fn>
     open: ReturnType<typeof vi.fn>
+    suppressRestoredOpen: ReturnType<typeof vi.fn>
   }
 }))
 vi.mock(
@@ -167,6 +169,7 @@ vi.mock(
     const { reactive, ref } = await import('vue')
     agentPanelHolder.store = {
       isOpen: ref(false),
+      isVisible: ref(false),
       enabled: ref(false),
       gateSettled: ref(false),
       toggle: vi.fn(() => {
@@ -175,6 +178,10 @@ vi.mock(
       }),
       open: vi.fn(() => {
         agentPanelHolder.store.isOpen.value = true
+        agentPanelHolder.store.isVisible.value = true
+      }),
+      suppressRestoredOpen: vi.fn(() => {
+        agentPanelHolder.store.isOpen.value = false
       })
     }
     // reactive() unwraps the holder refs on read, matching a real pinia
@@ -305,8 +312,10 @@ describe('WorkflowTabs agent entry button', () => {
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = true
     agentPanelHolder.store.isOpen.value = false
+    agentPanelHolder.store.isVisible.value = false
     agentPanelHolder.store.toggle.mockClear()
     agentPanelHolder.store.open.mockClear()
+    agentPanelHolder.store.suppressRestoredOpen.mockClear()
     withConsent.mockClear()
     withConsent.mockImplementation((onAccept: () => void) => onAccept())
     trackAgentEntryButtonClicked.mockClear()
@@ -316,6 +325,7 @@ describe('WorkflowTabs agent entry button', () => {
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = false
     agentPanelHolder.store.isOpen.value = false
+    agentPanelHolder.store.isVisible.value = false
   })
 
   it('does not render the entry button in the legacy tab bar even with the flag on', () => {
@@ -370,6 +380,20 @@ describe('WorkflowTabs agent entry button', () => {
     expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
       resulting_state: 'closed'
     })
+  })
+
+  it('gates a restored open intent that is not actually visible', async () => {
+    agentPanelHolder.store.isOpen.value = true
+    agentPanelHolder.store.isVisible.value = false
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+
+    expect(agentPanelHolder.store.toggle).not.toHaveBeenCalled()
+    expect(agentPanelHolder.store.suppressRestoredOpen).toHaveBeenCalledOnce()
+    expect(withConsent).toHaveBeenCalledOnce()
   })
 
   it('exposes the gate-settled signal on the actions container once the gate settles', async () => {

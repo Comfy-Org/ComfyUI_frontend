@@ -2,6 +2,20 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+const access = vi.hoisted(() => ({ accepted: true, loggedIn: true }))
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({
+    get: () => access.accepted
+  })
+}))
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    get isLoggedIn() {
+      return { value: access.loggedIn }
+    }
+  })
+}))
+
 const telemetry = vi.hoisted(() => ({
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn()
@@ -18,6 +32,8 @@ describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
+    access.accepted = true
+    access.loggedIn = true
     vi.useFakeTimers()
   })
 
@@ -67,6 +83,24 @@ describe('agentPanelStore engagement telemetry', () => {
 
     await nextTick()
     expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+  })
+
+  it('suppresses a restored open intent that has no consent', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    access.accepted = false
+    const store = useAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+
+    const gatedStore = store as typeof store & {
+      isVisible: boolean
+      suppressRestoredOpen: () => void
+    }
+    expect(gatedStore.isVisible).toBe(false)
+    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+
+    gatedStore.suppressRestoredOpen()
+    expect(store.isOpen).toBe(false)
   })
 
   it('emits opened on toggle-open and closed with the open duration', () => {
@@ -123,6 +157,8 @@ describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
+    access.accepted = true
+    access.loggedIn = true
   })
 
   afterEach(() => {
