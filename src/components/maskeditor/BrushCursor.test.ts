@@ -122,7 +122,7 @@ describe('BrushCursor', () => {
 
       const container = document.createElement('div')
       vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
-        new DOMRect(30, 60)
+        DOMRect.fromRect({ x: 30, y: 60 })
       )
 
       renderCursor(container)
@@ -139,8 +139,8 @@ describe('BrushCursor', () => {
       const container = document.createElement('div')
       const getBoundingClientRect = vi
         .spyOn(container, 'getBoundingClientRect')
-        .mockReturnValueOnce(new DOMRect(30, 60))
-        .mockReturnValue(new DOMRect(80, 110))
+        .mockReturnValueOnce(DOMRect.fromRect({ x: 30, y: 60 }))
+        .mockReturnValue(DOMRect.fromRect({ x: 80, y: 110 }))
 
       renderCursor(container)
       await waitFor(() => {
@@ -159,8 +159,8 @@ describe('BrushCursor', () => {
     it('updates when the container moves under a stationary cursor', async () => {
       const container = document.createElement('div')
       vi.spyOn(container, 'getBoundingClientRect')
-        .mockReturnValueOnce(new DOMRect(30, 60))
-        .mockReturnValue(new DOMRect(80, 110))
+        .mockReturnValueOnce(DOMRect.fromRect({ x: 30, y: 60 }))
+        .mockReturnValue(DOMRect.fromRect({ x: 80, y: 110 }))
 
       renderCursor(container)
       await waitFor(() => {

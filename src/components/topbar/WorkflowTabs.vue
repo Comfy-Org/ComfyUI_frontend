@@ -126,8 +126,16 @@
 import { useScroll } from '@vueuse/core'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import { computed, nextTick, onUpdated, ref, watch } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
+import {
+  computed,
+  effectScope,
+  nextTick,
+  onBeforeUnmount,
+  onUpdated,
+  ref,
+  watch
+} from 'vue'
+import type { ComponentPublicInstance, EffectScope } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -182,6 +190,9 @@ function openFeedback() {
 }
 
 const containerRef = ref<HTMLElement | null>(null)
+const showOverflowArrows = ref(false)
+const leftArrowEnabled = ref(false)
+const rightArrowEnabled = ref(false)
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -237,8 +248,50 @@ const handleWheel = (event: WheelEvent) => {
 }
 
 const scrollContent = ref<HTMLElement | null>(null)
+let scrollContentScope: EffectScope | null = null
+let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
+
+function disposeScrollContent() {
+  overflowObserver?.dispose()
+  overflowObserver = null
+  scrollContentScope?.stop()
+  scrollContentScope = null
+}
+
 function setScrollContent(element: Element | ComponentPublicInstance | null) {
-  scrollContent.value = element instanceof HTMLElement ? element : null
+  const nextScrollContent = element instanceof HTMLElement ? element : null
+  if (nextScrollContent === scrollContent.value) return
+
+  disposeScrollContent()
+  scrollContent.value = nextScrollContent
+  if (!nextScrollContent) return
+
+  scrollContentScope = effectScope()
+  scrollContentScope.run(() => {
+    const scrollState = useScroll(nextScrollContent)
+    watch(
+      [
+        () => scrollState.arrivedState.left,
+        () => scrollState.arrivedState.right
+      ],
+      ([atLeft, atRight]) => {
+        leftArrowEnabled.value = !atLeft
+        rightArrowEnabled.value = !atRight
+      },
+      { immediate: true }
+    )
+
+    overflowObserver = useOverflowObserver(nextScrollContent, {
+      onCheck: (isOverflowing) => {
+        showOverflowArrows.value = isOverflowing
+        if (!isOverflowing) return
+        void nextTick(() => {
+          scrollState.measure()
+          void ensureActiveTabVisible({ waitForDom: false })
+        })
+      }
+    })
+  })
 }
 
 const scroll = (direction: number) => {
@@ -276,24 +329,9 @@ watch(
   { immediate: true }
 )
 
-const scrollState = useScroll(scrollContent)
-const leftArrowEnabled = computed(() => !scrollState.arrivedState.left)
-const rightArrowEnabled = computed(() => !scrollState.arrivedState.right)
-const {
-  isOverflowing: showOverflowArrows,
-  checkOverflow: checkScrollOverflow
-} = useOverflowObserver(scrollContent, {
-  onCheck: (isOverflowing) => {
-    if (!isOverflowing) return
-    void nextTick(() => {
-      // Force a new check after arrows are updated
-      scrollState.measure()
-      void ensureActiveTabVisible({ waitForDom: false })
-    })
-  }
-})
+onBeforeUnmount(disposeScrollContent)
 
-onUpdated(checkScrollOverflow)
+onUpdated(() => overflowObserver?.checkOverflow())
 </script>
 
 <style scoped>
