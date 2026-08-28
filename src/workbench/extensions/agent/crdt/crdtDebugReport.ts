@@ -55,12 +55,23 @@ const REDACTED = '[redacted by the debug report]'
 const SHARING_WARNING =
   'Review before sharing: this section can contain values you did not choose to publish.'
 
-function redactSecrets(settings: unknown): unknown {
-  if (typeof settings !== 'object' || settings === null) return settings
+/**
+ * Redaction must RECURSE. A single top-level pass reads as sufficient and is
+ * not: `Comfy.Server.LaunchArgs` is a `Record<string, string>` of the flags
+ * the server was started with, and its own key matches nothing, so a
+ * one-level walk emits `{'--api-token': '…'}` whole. Settings values are
+ * arbitrary JSON from a public `addSetting` API, so every key at every depth
+ * has to be tested.
+ */
+function redactSecrets(value: unknown, depth = 0): unknown {
+  if (depth > 12 || value === null || typeof value !== 'object') return value
+  if (Array.isArray(value)) {
+    return value.map((item) => redactSecrets(item, depth + 1))
+  }
   return Object.fromEntries(
-    Object.entries(settings as Record<string, unknown>).map(([key, value]) => [
+    Object.entries(value as Record<string, unknown>).map(([key, nested]) => [
       key,
-      SECRET_KEY_PATTERN.test(key) ? REDACTED : value
+      SECRET_KEY_PATTERN.test(key) ? REDACTED : redactSecrets(nested, depth + 1)
     ])
   )
 }
@@ -78,9 +89,31 @@ export interface CrdtDebugSnapshot {
   stamps: Readonly<Record<string, unknown>>
 }
 
+/**
+ * The sources a tester must opt into.
+ *
+ * The panel this replaced shipped all three unconditionally. The dialog
+ * DELETED in #5259 did not: it listed them as unchecked opt-ins under "what
+ * can we include", and restoring the collection without restoring that choice
+ * would be a privacy regression dressed as a feature.
+ */
+export interface ReportSources {
+  serverLogs: boolean
+  settings: boolean
+  workflow: boolean
+}
+
+export const DEFAULT_REPORT_SOURCES: ReportSources = {
+  serverLogs: false,
+  settings: false,
+  workflow: false
+}
+
 export interface CrdtDebugReportInput {
   crdt: CrdtDebugSnapshot
   events: readonly DevEvent[]
+  /** Which sensitive sources the tester agreed to include. */
+  sources?: ReportSources
   /** Whatever the tester typed into "what did you expect instead?". */
   testerNote?: string
   /** Merge-lab results the tester was looking at, if any. */
@@ -166,6 +199,27 @@ function truncate(text: string, max: number): string {
 
 type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
 
+/** `--api-token <value>`: the flag names the secret, so blank the value after it. */
+function redactArgv(argv: readonly string[]): string {
+  const parts: string[] = []
+  let redactNext = false
+  for (const arg of argv) {
+    if (redactNext && !arg.startsWith('-')) {
+      parts.push(REDACTED)
+      redactNext = false
+      continue
+    }
+    redactNext = SECRET_KEY_PATTERN.test(arg)
+    const [flag, inlineValue] = arg.split('=', 2)
+    parts.push(
+      inlineValue !== undefined && SECRET_KEY_PATTERN.test(flag)
+        ? `${flag}=${REDACTED}`
+        : arg
+    )
+  }
+  return parts.join(' ')
+}
+
 function systemSection(stats: SystemStats): string {
   const lines = [
     `- **ComfyUI version:** ${stats.system.comfyui_version}`,
@@ -173,7 +227,7 @@ function systemSection(stats: SystemStats): string {
     `- **Python:** ${stats.system.python_version}`,
     `- **Embedded Python:** ${stats.system.embedded_python}`,
     `- **PyTorch:** ${stats.system.pytorch_version}`,
-    `- **Arguments:** ${stats.system.argv.join(' ')}`,
+    `- **Arguments:** ${redactArgv(stats.system.argv)}`,
     `- **RAM:** ${stats.system.ram_free} free / ${stats.system.ram_total} total`
   ]
   if (stats.system.cloud_version)
@@ -253,10 +307,11 @@ export async function collectCrdtDebugReport(
     }
   })()
 
+  const sources = input.sources ?? DEFAULT_REPORT_SOURCES
   const [stats, logs, settings] = await Promise.all([
     attempt('System stats', () => api.getSystemStats()),
-    attempt('Server logs', () => api.getLogs()),
-    attempt('Settings', () => api.getSettings())
+    sources.serverLogs ? attempt('Server logs', () => api.getLogs()) : null,
+    sources.settings ? attempt('Settings', () => api.getSettings()) : null
   ])
 
   const sections: string[] = [
@@ -300,7 +355,7 @@ export async function collectCrdtDebugReport(
     fence('json', json(input.crdt.stamps))
   )
 
-  if (input.workflow !== undefined) {
+  if (sources.workflow && input.workflow !== undefined) {
     const serialized = json(input.workflow)
     sections.push(
       '## Workflow',
@@ -316,18 +371,26 @@ export async function collectCrdtDebugReport(
 
   sections.push(
     '## Settings',
-    `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, but a custom node may name a secret anything.`,
-    settings.ok
-      ? fence('json', json(redactSecrets(settings.value)))
-      : `_${settings.label} unavailable: ${settings.error}_`
+    settings === null
+      ? `_Not included. The tester did not opt in to sharing settings._`
+      : [
+          `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, at every depth — but a custom node may name a secret anything.`,
+          settings.ok
+            ? fence('json', json(redactSecrets(settings.value)))
+            : `_${settings.label} unavailable: ${settings.error}_`
+        ].join('\n\n')
   )
 
   sections.push(
     '## Server logs',
-    `${SHARING_WARNING} Backend logs can echo prompts, file paths and tokens.`,
-    logs.ok
-      ? fence('text', truncate(String(logs.value), MAX_LOG_CHARS))
-      : `_${logs.label} unavailable: ${logs.error}_`
+    logs === null
+      ? `_Not included. The tester did not opt in to sharing server logs._`
+      : [
+          `${SHARING_WARNING} Backend logs can echo prompts, file paths and tokens.`,
+          logs.ok
+            ? fence('text', truncate(String(logs.value), MAX_LOG_CHARS))
+            : `_${logs.label} unavailable: ${logs.error}_`
+        ].join('\n\n')
   )
 
   return sections.join('\n\n')

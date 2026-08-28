@@ -963,15 +963,14 @@ function onPanelDrop(event: DragEvent): void {
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
-    />
+    >
+      <template v-if="isCrdtDevPanelEnabled" #instrument>
+        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+      </template>
+    </AgentPanel>
     <OnboardingCoach
       :step="coachStep"
       storage-key="Comfy.AgentPanel.onboarded"
-    />
-    <CrdtDevPanel
-      v-if="isCrdtDevPanelEnabled"
-      :status="crdtStatus"
-      :snapshot="crdtDebugSnapshot"
     />
   </div>
 </template>

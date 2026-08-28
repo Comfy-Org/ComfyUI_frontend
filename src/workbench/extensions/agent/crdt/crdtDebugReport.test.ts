@@ -17,8 +17,14 @@ vi.mock('@/stores/extensionStore', () => ({
   useExtensionStore: () => ({ extensions: [{ name: 'Comfy.TestExtension' }] })
 }))
 
-import type { CrdtDebugSnapshot } from './crdtDebugReport'
+import type { CrdtDebugSnapshot, ReportSources } from './crdtDebugReport'
 import { collectCrdtDebugReport } from './crdtDebugReport'
+
+const ALL_SOURCES: ReportSources = {
+  serverLogs: true,
+  settings: true,
+  workflow: true
+}
 
 const SNAPSHOT: CrdtDebugSnapshot = {
   status: {
@@ -60,6 +66,7 @@ describe('collectCrdtDebugReport', () => {
   it('gathers backend, frontend and CRDT context into one artifact', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
+      sources: ALL_SOURCES,
       events: [
         {
           seq: 1,
@@ -110,12 +117,72 @@ describe('collectCrdtDebugReport', () => {
       'Other.auth_token': 'do-not-leak-either'
     })
 
-    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES
+    })
 
     expect(report).not.toContain('sk-live-do-not-leak')
     expect(report).not.toContain('do-not-leak-either')
     expect(report).toContain('dark')
     expect(report).toContain('Review before sharing')
+  })
+
+  it('leaves logs, settings and the workflow out unless the tester opts in', async () => {
+    getSettings.mockResolvedValue({ 'Comfy.Theme': 'do-not-leak-settings' })
+    getLogs.mockResolvedValue('do-not-leak-logs')
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      workflow: { nodes: [{ id: 'do-not-leak-workflow' }] }
+    })
+
+    expect(report).not.toContain('do-not-leak-settings')
+    expect(report).not.toContain('do-not-leak-logs')
+    expect(report).not.toContain('do-not-leak-workflow')
+    expect(report).toContain('did not opt in')
+    // The parts that are the point of the feature still ship.
+    expect(report).toContain('## CRDT state')
+    expect(report).toContain('## System')
+  })
+
+  it('redacts a credential nested under an innocuous key', async () => {
+    getSettings.mockResolvedValue({
+      'Comfy.Server.LaunchArgs': { '--api-token': 'nested-do-not-leak' },
+      'Some.List': [{ password: 'listed-do-not-leak' }]
+    })
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES
+    })
+
+    expect(report).not.toContain('nested-do-not-leak')
+    expect(report).not.toContain('listed-do-not-leak')
+  })
+
+  it('blanks a secret passed on the server command line', async () => {
+    getSystemStats.mockResolvedValue({
+      system: {
+        os: 'linux',
+        python_version: '3.12',
+        embedded_python: false,
+        comfyui_version: 'v1',
+        pytorch_version: '2.4',
+        argv: ['main.py', '--api-token', 'argv-do-not-leak', '--cpu'],
+        ram_total: 2,
+        ram_free: 1
+      },
+      devices: []
+    })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).not.toContain('argv-do-not-leak')
+    expect(report).toContain('--cpu')
   })
 
   it('renders the report even when /system_stats answers with an unexpected shape', async () => {
@@ -131,6 +198,7 @@ describe('collectCrdtDebugReport', () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
       events: [],
+      sources: ALL_SOURCES,
       workflow: { nodes: Array.from({ length: 5000 }, (_, i) => ({ id: i })) }
     })
 

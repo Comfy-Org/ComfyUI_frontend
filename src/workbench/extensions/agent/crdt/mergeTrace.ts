@@ -234,14 +234,18 @@ export function nodeLifecycle(
   for (const entry of entries) {
     if (entry.nodeId === null) continue
     const current = incarnations.get(entry.nodeId) ?? 1
-    const applied = entry.verdict.kind === 'applied'
-    if (entry.kind === 'add_node' && applied) {
+    if (entry.kind === 'add_node' && entry.verdict.kind === 'applied') {
       const next = incarnations.has(entry.nodeId) ? current + 1 : 1
       incarnations.set(entry.nodeId, next)
       rows.push({ nodeId: entry.nodeId, incarnation: next, entry })
       continue
     }
-    incarnations.set(entry.nodeId, current)
+    // Only an op that took effect may seed the map. A write that no-op'd
+    // against a not-yet-existing node would otherwise register the id, and
+    // the add that follows it would be labelled the SECOND incarnation.
+    if (entry.verdict.kind === 'applied') {
+      incarnations.set(entry.nodeId, current)
+    }
     rows.push({ nodeId: entry.nodeId, incarnation: current, entry })
   }
   return rows

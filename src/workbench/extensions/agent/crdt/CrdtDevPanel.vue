@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -12,8 +20,11 @@ import {
   setCrdtDebugEnabled,
   setCrdtLogLevel
 } from './crdtDebugGate'
-import type { CrdtDebugSnapshot } from './crdtDebugReport'
-import { collectCrdtDebugReport } from './crdtDebugReport'
+import type { CrdtDebugSnapshot, ReportSources } from './crdtDebugReport'
+import {
+  DEFAULT_REPORT_SOURCES,
+  collectCrdtDebugReport
+} from './crdtDebugReport'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
@@ -25,12 +36,25 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 /**
  * The CRDT debug instrument.
  *
- * Anchored INSIDE `#agent-panel-root` rather than to the viewport: the
- * previous `fixed right-3 bottom-3` overlay sat on top of the composer's
- * submit button, and its status strip was a block element above the panel
- * that pushed the composer below the fold. A dev instrument that costs the
- * product its primary action is not a net win, so this one is contained by
- * the sidebar, sits below the panel header, and clears the composer entirely.
+ * Rendered into `AgentPanel`'s `#instrument` slot, as a real child of its flex
+ * column directly above the composer — NOT as an overlay. The predecessor was
+ * `fixed right-3 bottom-3` and sat on the composer's submit button, and its
+ * status strip was a block element that pushed the composer below the fold.
+ *
+ * Being a flex sibling is what makes that unrepeatable: the composer is
+ * `shrink-0`, so it claims its intrinsic height before this element is
+ * offered any, and the conversation area above absorbs the difference. An
+ * overlay bounded by a percentage of the panel cannot make that promise —
+ * the composer's height is fixed in pixels, so any percentage reservation
+ * fails below some viewport, silently, on exactly the laptops testers use.
+ *
+ * The OUTER wrapper carries `max-h-1/2` + `min-h-0` and must not be
+ * `shrink-0`. Both halves are load-bearing and were each wrong once: a
+ * percentage max-height resolves against the parent, so putting it on the
+ * inner sheet measured it against this auto-height wrapper and capped
+ * nothing; and a flex item defaults to `min-height: auto`, so without
+ * `min-h-0` the wrapper refuses to shrink below its content and pushes the
+ * composer out of the clipped column — the original bug, reintroduced.
  */
 
 const { status, snapshot } = defineProps<{
@@ -77,8 +101,23 @@ const S = {
     'e.g. "re-adding a node should restore the widget edit made while it was deleted"',
   survivingNodes: 'nodes left',
   survivingWidgets: 'widget values left',
-  verbosity: 'console'
+  verbosity: 'console',
+  sectionInclude: 'Also include in the report (off by default)',
+  includeLogs: 'Server logs',
+  includeSettings: 'Settings',
+  includeWorkflow: 'Workflow JSON',
+  includeHint:
+    'These can carry prompts, file paths and API keys. Read the report before pasting it anywhere.'
 } as const
+
+const REPORT_SOURCE_LABELS: readonly {
+  key: keyof ReportSources
+  label: string
+}[] = [
+  { key: 'serverLogs', label: S.includeLogs },
+  { key: 'settings', label: S.includeSettings },
+  { key: 'workflow', label: S.includeWorkflow }
+]
 
 const STATUS_ROWS = [
   ['doc id', () => status.workflowId ?? S.none],
@@ -135,7 +174,7 @@ function readOpen(): boolean {
 
 function setOpen(value: boolean) {
   open.value = value
-  if (value) poll()
+  if (value) void nextTick(poll)
   try {
     localStorage.setItem(OPEN_KEY, String(value))
   } catch {
@@ -148,7 +187,7 @@ const docState = shallowRef<CrdtDebugSnapshot | null>(null)
 let pollHandle: ReturnType<typeof setInterval> | undefined
 
 function poll() {
-  if (!open.value) return
+  if (!open.value || tab.value !== 'status') return
   docState.value = snapshot?.() ?? null
 }
 
@@ -160,6 +199,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (pollHandle !== undefined) clearInterval(pollHandle)
 })
+
+watch(tab, poll)
 
 const docRows = computed<readonly (readonly [string, string])[]>(() => {
   const state = docState.value
@@ -243,6 +284,7 @@ function verdictLabel(entry: MergeTraceEntry): string {
 
 // ── copy actions ──────────────────────────────────────────────────────────
 const copyState = ref<'idle' | 'busy' | 'done' | 'failed'>('idle')
+const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
 
 const copyReportLabel = computed(() => {
   if (copyState.value === 'busy') return S.copying
@@ -292,7 +334,10 @@ async function copyReport() {
       events: devEvents.value,
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
-      workflow: serializeActiveWorkflow()
+      sources: reportSources.value,
+      workflow: reportSources.value.workflow
+        ? serializeActiveWorkflow()
+        : undefined
     })
     flashCopyState(await writeClipboard(report))
   } catch {
@@ -334,15 +379,22 @@ const chipLabel = computed(
   () => `CRDT ${status.connected ? 'live' : 'off'} · ${status.updatesApplied}`
 )
 
-function fmtDetail(detail: unknown): string {
+function fmtDetail(detail: unknown, limit = 400): string {
   try {
     const raw = JSON.stringify(detail, (_key, value) =>
       value instanceof Uint8Array ? `Uint8Array(${value.length})` : value
     )
-    return raw ?? ''
+    if (raw === undefined) return ''
+    return raw.length > limit ? `${raw.slice(0, limit)}…` : raw
   } catch {
     return String(detail)
   }
+}
+
+function eventDetail(event: DevEvent): string {
+  return expanded.value === event.seq
+    ? fmtDetail(event.detail, 20_000)
+    : fmtDetail(event.detail)
 }
 
 function fmtTime(at: number): string {
@@ -353,13 +405,13 @@ function fmtTime(at: number): string {
 <template>
   <div
     v-if="!dismissed"
-    class="pointer-events-none absolute inset-0 z-50 font-mono text-xs"
+    class="relative flex max-h-[50%] min-h-0 flex-col font-mono text-xs"
   >
     <button
       v-if="!open"
       type="button"
       :title="S.open"
-      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover pointer-events-auto absolute top-12 right-2 flex h-6 cursor-pointer items-center gap-1 rounded-full border px-2 transition-colors"
+      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover absolute right-4 bottom-1 z-10 flex h-6 cursor-pointer items-center gap-1 rounded-full border px-2 transition-colors"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
     >
@@ -376,7 +428,7 @@ function fmtTime(at: number): string {
 
     <section
       v-else
-      class="bg-agent-surface border-agent-border text-agent-fg pointer-events-auto absolute inset-x-0 top-12 bottom-1/3 flex flex-col border-y"
+      class="bg-agent-surface border-agent-border text-agent-fg flex min-h-0 grow flex-col overflow-hidden border-y"
       data-testid="crdt-dev-panel"
     >
       <header
@@ -563,7 +615,7 @@ function fmtTime(at: number): string {
                   )
                 "
               >
-                {{ fmtDetail(event.detail) }}
+                {{ eventDetail(event) }}
               </div>
             </button>
           </div>
@@ -701,23 +753,41 @@ function fmtTime(at: number): string {
         </template>
       </div>
 
-      <footer class="border-agent-border flex shrink-0 gap-1 border-t p-2">
-        <button
-          type="button"
-          class="border-agent-border hover:bg-agent-surface-hover flex-1 cursor-pointer rounded-sm border px-2 py-1"
-          @click="copyLog"
-        >
-          {{ S.copyLog }}
-        </button>
-        <button
-          type="button"
-          :disabled="copyState === 'busy'"
-          class="border-agent-accent hover:bg-agent-surface-hover flex-2 cursor-pointer rounded-sm border px-2 py-1 disabled:cursor-default"
-          data-testid="crdt-dev-panel-copy-report"
-          @click="copyReport"
-        >
-          {{ copyReportLabel }}
-        </button>
+      <footer class="border-agent-border shrink-0 border-t p-2">
+        <div class="text-agent-fg-muted mb-1">{{ S.sectionInclude }}</div>
+        <div class="mb-1 flex flex-wrap gap-x-3 gap-y-1">
+          <label
+            v-for="source in REPORT_SOURCE_LABELS"
+            :key="source.key"
+            class="flex cursor-pointer items-center gap-1"
+          >
+            <input
+              v-model="reportSources[source.key]"
+              type="checkbox"
+              :data-testid="`crdt-dev-panel-include-${source.key}`"
+            />
+            {{ source.label }}
+          </label>
+        </div>
+        <p class="text-agent-fg-muted mt-0 mb-2">{{ S.includeHint }}</p>
+        <div class="flex gap-1">
+          <button
+            type="button"
+            class="border-agent-border hover:bg-agent-surface-hover flex-1 cursor-pointer rounded-sm border px-2 py-1"
+            @click="copyLog"
+          >
+            {{ S.copyLog }}
+          </button>
+          <button
+            type="button"
+            :disabled="copyState === 'busy'"
+            class="border-agent-accent hover:bg-agent-surface-hover flex-2 cursor-pointer rounded-sm border px-2 py-1 disabled:cursor-default"
+            data-testid="crdt-dev-panel-copy-report"
+            @click="copyReport"
+          >
+            {{ copyReportLabel }}
+          </button>
+        </div>
       </footer>
     </section>
   </div>
