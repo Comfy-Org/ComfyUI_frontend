@@ -17,6 +17,7 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphT
 function createTargetNode(graph: LGraph) {
   const node = new LGraphNode('target')
   node.addInput('image_1', 'IMAGE')
+  node.addInput('image_2', 'IMAGE')
   node.addInput('video_1', 'VIDEO')
   node.addInput('audio_1', 'AUDIO')
   node.pos = [200, 0]
@@ -58,17 +59,30 @@ describe('LinkConnector dropping onto a node', () => {
   })
 
   test('connects to the compatible slot when dropped directly on it', () => {
-    connector.dropOnNode(target, dropEventAt(target, 0))
+    connector.dropOnNode(target, dropEventAt(target, 1))
 
-    expect(target.inputs[0].link).not.toBeNull()
+    expect(target.inputs[0].link).toBeNull()
+    expect(target.inputs[1].link).not.toBeNull()
   })
 
   test('falls back to a free compatible slot when dropped on an incompatible slot', () => {
     // Aiming at the image group but landing one slot low, on VIDEO.
+    connector.dropOnNode(target, dropEventAt(target, 2))
+
+    expect(target.inputs[2].link).toBeNull()
+    expect(target.inputs[0].link).not.toBeNull()
+  })
+
+  test('preserves an occupied compatible slot when dropped on an incompatible slot', () => {
+    target.removeInput(1)
+    const existingSource = createSourceNode(graph)
+    existingSource.connect(0, target, 0)
+    const existingLink = target.inputs[0].link
+
     connector.dropOnNode(target, dropEventAt(target, 1))
 
+    expect(target.inputs[0].link).toBe(existingLink)
     expect(target.inputs[1].link).toBeNull()
-    expect(target.inputs[0].link).not.toBeNull()
   })
 
   test('discards the link when the node has no compatible slot at all', () => {

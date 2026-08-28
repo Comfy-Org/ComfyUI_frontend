@@ -776,8 +776,14 @@ export class LinkConnector {
       const input = node.getInputOnPos([canvasX, canvasY])
       const inputOrSocket = input ?? node.getSlotFromWidget(this.overWidget)
 
-      // Input slot; fall back to the node itself if the slot rejects the link
-      if (!inputOrSocket || !this._dropOnInput(node, inputOrSocket)) {
+      // Input slot; fall back to a free compatible input if the slot rejects it
+      const droppedOnSlot =
+        inputOrSocket != null && this._dropOnInput(node, inputOrSocket)
+      const hasFreeCompatibleInput = node.inputs.some(
+        (candidate) =>
+          candidate.link == null && this.isInputValidDrop(node, candidate)
+      )
+      if (!droppedOnSlot && (inputOrSocket == null || hasFreeCompatibleInput)) {
         // Node background / title
         this.connectToNode(node, event)
       }
@@ -942,7 +948,7 @@ export class LinkConnector {
     }
   }
 
-  /** @returns `true` if at least one link was connected to {@link input}. */
+  /** @returns `true` if at least one link accepted {@link input}. */
   private _dropOnInput(node: LGraphNode, input: INodeInputSlot): boolean {
     let connected = false
     for (const link of this.renderLinks) {
