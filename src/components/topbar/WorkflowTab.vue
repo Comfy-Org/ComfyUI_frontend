@@ -4,7 +4,7 @@
       <div
         ref="workflowTabRef"
         data-testid="workflow-tab"
-        class="workflow-tab group flex h-9 items-center justify-center gap-2 px-4 py-2"
+        class="workflow-tab group flex h-(--workflow-tabs-height) items-center justify-center gap-2 px-4 py-2"
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -17,11 +17,11 @@
           class="icon-[lucide--panels-top-left] bg-primary-background"
         />
         <span
-          class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
+          class="workflow-label inline-block max-w-[150px] truncate text-sm font-normal"
         >
           {{ workflowOption.workflow.filename }}
         </span>
-        <div class="relative size-4 shrink-0">
+        <div class="relative size-5 shrink-0">
           <i
             v-if="workflowStatus"
             role="img"
@@ -36,17 +36,22 @@
           <span
             v-else-if="shouldShowUnsavedIndicator"
             data-testid="workflow-dirty-indicator"
-            :class="
-              cn(
-                'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-hover:hidden',
-                isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
-              )
-            "
-          />
+            :data-active="isActiveTab"
+            class="absolute top-1/2 left-1/2 z-10 flex size-4 -translate-1/2 items-center justify-center bg-(--comfy-menu-bg) group-hover:hidden"
+          >
+            <span
+              :class="
+                cn(
+                  'size-2 rounded-full',
+                  isActiveTab ? 'bg-white' : 'bg-smoke-800'
+                )
+              "
+            />
+          </span>
           <Button
-            class="close-button invisible size-4 rounded-none p-0 text-smoke-800 group-hover:visible"
+            class="close-button invisible rounded-none p-0 text-smoke-800 group-hover:visible"
             variant="muted-textonly"
-            size="unset"
+            size="icon-sm"
             :aria-label="t('g.close')"
             data-testid="close-workflow-button"
             @click.stop="onCloseWorkflow(workflowOption)"
@@ -115,8 +120,6 @@ import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
-
-defineOptions({ inheritAttrs: false })
 
 interface WorkflowOption {
   value: string
