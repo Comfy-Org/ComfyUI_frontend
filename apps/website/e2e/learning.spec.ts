@@ -30,29 +30,29 @@ const EXPECTED_META = {
     heading: 'ComfyUI Basics',
     description:
       'Beginner ComfyUI tutorials: learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
-    title: 'ComfyUI Basics - Tutorials for Beginners'
+    title: 'ComfyUI Basics for Beginners: Node Graph, LoRAs, ControlNet'
   },
   vfx: {
     heading: 'VFX Tutorials',
     description:
       'Hands-on ComfyUI VFX tutorials: cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
-    title: 'ComfyUI VFX Tutorials - Shot Work You Can Run'
+    title: 'ComfyUI VFX Tutorials: Cleanplates, Sky Replacement, Deaging'
   },
   animations: {
     heading: 'Animation Tutorials',
     description:
       'Hands-on ComfyUI animation tutorials: character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
-    title: 'ComfyUI Animation Tutorials - Character Sheets to Compositing'
+    title: 'ComfyUI Animation Tutorials: Character Sheets and Keyframes'
   },
   ads: {
     heading: 'Ad Creative Tutorials',
     description:
       'Hands-on ComfyUI ad creative tutorials: moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
-    title: 'ComfyUI Ad Creative Tutorials - Moodboards to B-Roll'
+    title: 'ComfyUI Ad Creative Tutorials: Moodboards to Product Shots'
   }
 } as const
 
-const ROOT_TITLE = 'ComfyUI Tutorials - Learn ComfyUI by Discipline'
+const ROOT_TITLE = 'ComfyUI Tutorials: Free Video Series from Basics to VFX'
 
 test.describe('Learning page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -421,7 +421,7 @@ test.describe('Learning page (zh-CN) @smoke', () => {
   test('renders localized title, sidebar, and tutorials', async ({ page }) => {
     await page.goto('/zh-CN/learning')
 
-    await expect(page).toHaveTitle('ComfyUI 教程 - 按创作领域学习')
+    await expect(page).toHaveTitle('ComfyUI 教程：免费视频系列，从基础到 VFX')
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       /[一-鿿]/
     )

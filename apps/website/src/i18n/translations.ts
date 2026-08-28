@@ -1775,13 +1775,13 @@ const translations = {
   // LearningDirectorySection
   'learning.title': { en: 'Learning', 'zh-CN': '学习' },
   'learning.metaTitle': {
-    en: 'ComfyUI Tutorials - Learn ComfyUI by Discipline',
-    'zh-CN': 'ComfyUI 教程 - 按创作领域学习'
+    en: 'ComfyUI Tutorials: Free Video Series from Basics to VFX',
+    'zh-CN': 'ComfyUI 教程：免费视频系列，从基础到 VFX'
   },
   'learning.metaDescription': {
-    en: 'Free hands-on ComfyUI tutorials with workflows you can open and run. Start with node graph basics, then go deeper into VFX, animation, and ad creative.',
+    en: 'Learn ComfyUI with free video tutorials and the workflows behind them. Start with the node graph basics, then move into VFX, animation, and ad creative.',
     'zh-CN':
-      '免费的 ComfyUI 实战教程，工作流可直接打开运行。从节点图基础开始，深入 VFX、动画与广告创意。'
+      '通过免费视频教程和配套工作流学习 ComfyUI。从节点图基础开始，再进入 VFX、动画与广告创意。'
   },
   'learning.tagline': {
     en: 'Hands-on ComfyUI tutorials and workflows, by discipline.',
@@ -1821,52 +1821,52 @@ const translations = {
     'zh-CN': 'ComfyUI 基础教程'
   },
   'learning.categories.basics.metaTitle': {
-    en: 'ComfyUI Basics - Tutorials for Beginners',
-    'zh-CN': 'ComfyUI 基础教程 - 新手入门'
+    en: 'ComfyUI Basics for Beginners: Node Graph, LoRAs, ControlNet',
+    'zh-CN': 'ComfyUI 基础教程：节点图、LoRA 与 ControlNet 新手入门'
   },
   'learning.categories.basics.description': {
     en: 'Beginner ComfyUI tutorials: learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
     'zh-CN':
-      '面向初学者的 ComfyUI 教程——从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
+      '面向初学者的 ComfyUI 教程：从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
   },
   'learning.categories.vfx.heading': {
     en: 'VFX Tutorials',
     'zh-CN': 'VFX 教程'
   },
   'learning.categories.vfx.metaTitle': {
-    en: 'ComfyUI VFX Tutorials - Shot Work You Can Run',
-    'zh-CN': 'ComfyUI VFX 教程 - 可运行的镜头处理工作流'
+    en: 'ComfyUI VFX Tutorials: Cleanplates, Sky Replacement, Deaging',
+    'zh-CN': 'ComfyUI VFX 教程：净板、天空替换与减龄'
   },
   'learning.categories.vfx.description': {
     en: 'Hands-on ComfyUI VFX tutorials: cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
     'zh-CN':
-      '实战 ComfyUI VFX 教程——净板、天空替换、减龄、遮罩与镜头处理，均可亲自打开并运行。'
+      '实战 ComfyUI VFX 教程：净板、天空替换、减龄、遮罩与镜头处理，均可亲自打开并运行。'
   },
   'learning.categories.animations.heading': {
     en: 'Animation Tutorials',
     'zh-CN': '动画教程'
   },
   'learning.categories.animations.metaTitle': {
-    en: 'ComfyUI Animation Tutorials - Character Sheets to Compositing',
-    'zh-CN': 'ComfyUI 动画教程 - 从角色设定表到合成'
+    en: 'ComfyUI Animation Tutorials: Character Sheets and Keyframes',
+    'zh-CN': 'ComfyUI 动画教程：角色设定表与关键帧'
   },
   'learning.categories.animations.description': {
     en: 'Hands-on ComfyUI animation tutorials: character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
     'zh-CN':
-      '实战 ComfyUI 动画教程——角色设定表、关键帧、中间帧、背景与合成，均可亲自运行。'
+      '实战 ComfyUI 动画教程：角色设定表、关键帧、中间帧、背景与合成，均可亲自运行。'
   },
   'learning.categories.ads.heading': {
     en: 'Ad Creative Tutorials',
     'zh-CN': '广告创意教程'
   },
   'learning.categories.ads.metaTitle': {
-    en: 'ComfyUI Ad Creative Tutorials - Moodboards to B-Roll',
-    'zh-CN': 'ComfyUI 广告创意教程 - 从情绪板到 B-Roll'
+    en: 'ComfyUI Ad Creative Tutorials: Moodboards to Product Shots',
+    'zh-CN': 'ComfyUI 广告创意教程：从情绪板到产品摄影'
   },
   'learning.categories.ads.description': {
     en: 'Hands-on ComfyUI ad creative tutorials: moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
     'zh-CN':
-      '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
+      '实战 ComfyUI 广告创意教程：情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
   },
   // LearningWatchPage
   'learning.watch.nowWatching': { en: 'Now watching', 'zh-CN': '正在观看' },
