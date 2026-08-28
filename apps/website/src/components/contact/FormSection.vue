@@ -3,10 +3,13 @@ import { ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
+import { externalLinks } from '../../config/routes'
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import { t } from '../../i18n/translations'
 import SectionLabel from '../common/SectionLabel.vue'
 import HubspotFormEmbed from './HubspotFormEmbed.vue'
+
+const SUPPORT_EMAIL = 'support@comfy.org'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -59,13 +62,21 @@ useHeroAnimation({
           <p class="mt-4 text-sm text-primary-comfy-canvas">
             {{ t(tk('supportLink'), locale) }}
             <a
-              href="https://docs.comfy.org/"
+              :href="externalLinks.support"
               target="_blank"
               rel="noopener noreferrer"
               class="text-primary-comfy-yellow underline"
             >
               {{ t(tk('supportLinkCta'), locale) }}
             </a>
+            {{ t(tk('supportLinkMiddle'), locale) }}
+            <a
+              :href="`mailto:${SUPPORT_EMAIL}`"
+              class="text-primary-comfy-yellow underline"
+            >
+              {{ SUPPORT_EMAIL }}
+            </a>
+            {{ t(tk('supportLinkSuffix'), locale) }}
           </p>
         </div>
       </div>
