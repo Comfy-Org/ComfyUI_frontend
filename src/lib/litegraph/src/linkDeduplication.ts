@@ -164,7 +164,8 @@ export function realignInputLinkSlots(
     }
 
     const skipped = new Set<LLink>()
-    for (let pass = 0; pass < referencedNames.size; pass++) {
+    let successfulPasses = 0
+    while (successfulPasses < referencedNames.size) {
       const moved: { link: LLink; slot: number }[] = []
       for (const [link, names] of referencedNames) {
         if (skipped.has(link)) continue
@@ -220,6 +221,7 @@ export function realignInputLinkSlots(
         }
         continue
       }
+      successfulPasses++
 
       for (const { connection, link } of removedConnections) {
         link.disconnect(graph)
