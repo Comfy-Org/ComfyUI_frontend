@@ -131,8 +131,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           stored,
           () =>
             generation === loadGeneration &&
-            ownedGeneration === sessionGeneration,
-          true
+            ownedGeneration === sessionGeneration
         )
       }
     }
@@ -150,17 +149,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return true
     } catch (error) {
       if (!isCurrent()) return false
+      // Entry-path hydrates committed the identity before fetching; leaving
+      // it standing over the previous transcript renders thread A's rows
+      // under thread B's id. Rehost keeps its transcript (b7) instead, and
+      // a turn accepted while the fetch was in flight is never destroyed.
+      const resetSafe =
+        resetOnFailure &&
+        conversationStore.threadId === threadId &&
+        conversationStore.activeTurnId === null
       if (error instanceof AgentApiError && error.status === 404) {
-        if (conversationStore.threadId === threadId)
+        if (resetSafe) conversationStore.reset()
+        else if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
         localStorage.removeItem(THREAD_STORAGE_KEY)
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
-      // Entry-path hydrates committed the identity before fetching; leaving
-      // it standing over the previous transcript renders thread A's rows
-      // under thread B's id. Rehost keeps its transcript (b7) instead.
-      if (resetOnFailure && conversationStore.threadId === threadId) {
+      if (resetSafe) {
         conversationStore.reset()
         localStorage.removeItem(THREAD_STORAGE_KEY)
       }
@@ -197,13 +202,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending = false
-    if (workflow?.prepare)
-      await Promise.race([
-        workflow.prepare().catch(() => undefined),
-        new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
-      ])
-    const wfContext = workflow?.current()
-    const tabs = workflow?.tabs?.()
+    let wfContext: WorkflowTurnContext | undefined
+    let tabs: OpenTabsSnapshot | undefined
     async function postTurn(threadId: string) {
       const input = {
         content: text,
@@ -222,6 +222,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       let ack
       try {
+        if (workflow?.prepare)
+          await Promise.race([
+            workflow.prepare().catch(() => undefined),
+            new Promise<void>((resolve) =>
+              setTimeout(resolve, PREPARE_TIMEOUT_MS)
+            )
+          ])
+        wfContext = workflow?.current()
+        tabs = workflow?.tabs?.()
         ack = await postTurn(conversationStore.threadId ?? 'new')
       } catch (error) {
         const message =
@@ -256,15 +265,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (ack.workflow_id !== undefined) bindWorkflow(ack.workflow_id)
       try {
         localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
-      } catch {
-        // Thread persistence is best-effort, like agentRunModeStore's
-        // useLocalStorage; a quota failure must not fail an accepted turn.
+      } catch (error) {
+        // Thread persistence is best-effort; a quota failure must not fail
+        // an accepted turn.
+        console.warn('[agent] failed to persist the thread id', error)
       }
       try {
         if (ack.workflow_id !== undefined)
           workflow?.adopted(ack.workflow_id, wfContext)
-      } catch {
+      } catch (error) {
         // Consumer bookkeeping cannot retract an accepted turn.
+        console.warn('[agent] workflow.adopted consumer threw', error)
       }
       if (stopRequestedWhileSending) {
         stopRequestedWhileSending = false

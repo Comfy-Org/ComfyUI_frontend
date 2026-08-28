@@ -1545,6 +1545,7 @@ describe('08-fix1 receipts and pins', () => {
       removeItem: (key: string) => real.removeItem(key),
       clear: () => real.clear()
     })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     let ok: boolean
     try {
       ok = await session.sendMessage('accepted')
@@ -1553,6 +1554,11 @@ describe('08-fix1 receipts and pins', () => {
     }
 
     expect(setItem).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toBe(
+      '[agent] failed to persist the thread id'
+    )
+    warn.mockRestore()
     expect(ok).toBe(true)
     expect(rest.postMessage).toHaveBeenCalledTimes(1)
     expect(session.notices.value).toEqual([])
@@ -1579,7 +1585,13 @@ describe('08-fix1 receipts and pins', () => {
     })
     session.start()
 
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const ok = await session.sendMessage('accepted')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toBe(
+      '[agent] workflow.adopted consumer threw'
+    )
+    warn.mockRestore()
 
     expect(ok).toBe(true)
     expect(adopted).toHaveBeenCalledTimes(1)
@@ -1685,35 +1697,40 @@ describe('08-fix1 receipts and pins', () => {
   })
 
   it('(t2b) a resolving prepare gates the post; workflow context is read after the gate', async () => {
-    let release!: () => void
-    const gate = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    let context: { id: string; tabPath: string } | undefined = undefined
-    const rest = fakeRest()
-    const session = useAgentSession({
-      rest,
-      events: fakeEvents().source,
-      workflow: {
-        current: () => context,
-        adopted: vi.fn(),
-        prepare: () => gate
-      }
-    })
-    session.start()
+    vi.useFakeTimers()
+    try {
+      let release!: () => void
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      let context: { id: string; tabPath: string } | undefined = undefined
+      const rest = fakeRest()
+      const session = useAgentSession({
+        rest,
+        events: fakeEvents().source,
+        workflow: {
+          current: () => context,
+          adopted: vi.fn(),
+          prepare: () => gate
+        }
+      })
+      session.start()
 
-    const sendResult = session.sendMessage('gated')
-    await Promise.resolve()
-    await Promise.resolve()
-    expect(rest.postMessage).not.toHaveBeenCalled()
+      const sendResult = session.sendMessage('gated')
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(rest.postMessage).not.toHaveBeenCalled()
 
-    context = { id: 'wf-late', tabPath: 'late.json' }
-    release()
-    await expect(sendResult).resolves.toBe(true)
-    expect(rest.postMessage).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(rest.postMessage).mock.calls[0][1].workflowId).toBe(
-      'wf-late'
-    )
+      context = { id: 'wf-late', tabPath: 'late.json' }
+      release()
+      await expect(sendResult).resolves.toBe(true)
+      expect(rest.postMessage).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(rest.postMessage).mock.calls[0][1].workflowId).toBe(
+        'wf-late'
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('(t2c) a prepare that never settles still posts exactly once after the timeout', async () => {
@@ -1745,19 +1762,24 @@ describe('08-fix1 receipts and pins', () => {
   })
 
   it('(t2d) a rejecting prepare still posts exactly once', async () => {
-    const rest = fakeRest()
-    const session = useAgentSession({
-      rest,
-      events: fakeEvents().source,
-      workflow: {
-        current: () => undefined,
-        adopted: vi.fn(),
-        prepare: () => Promise.reject(new Error('prepare exploded'))
-      }
-    })
-    session.start()
-    await expect(session.sendMessage('after reject')).resolves.toBe(true)
-    expect(rest.postMessage).toHaveBeenCalledTimes(1)
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest()
+      const session = useAgentSession({
+        rest,
+        events: fakeEvents().source,
+        workflow: {
+          current: () => undefined,
+          adopted: vi.fn(),
+          prepare: () => Promise.reject(new Error('prepare exploded'))
+        }
+      })
+      session.start()
+      await expect(session.sendMessage('after reject')).resolves.toBe(true)
+      expect(rest.postMessage).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('(t3a) a stopped session ingests nothing further from its source', async () => {
@@ -1822,6 +1844,8 @@ describe('08-fix1 receipts and pins', () => {
     expect(second.boundWorkflowId.value).toBe('wf-1')
     second.start()
     expect(second.boundWorkflowId.value).toBe('wf-1')
+    await Promise.resolve()
+    await Promise.resolve()
   })
 
   it('(t5b) a remount with no surviving thread starts unbound', async () => {
@@ -1836,5 +1860,90 @@ describe('08-fix1 receipts and pins', () => {
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
     expect(second.boundWorkflowId.value).toBeNull()
+  })
+})
+
+describe('08-fix2 receipts and pins', () => {
+  beforeEach(resetHarness)
+
+  it('(r2a) a loadThread whose target 404s leaves identity and transcript coherent', async () => {
+    const getMessages = vi
+      .fn<(threadId: string) => Promise<AgentMessages>>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-a', 'thread A prompt'),
+        historyRow(2, 'assistant', 'turn-a', 'thread A reply')
+      ])
+      .mockRejectedValueOnce(new AgentApiError('gone', 404, undefined))
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.loadThread('th-a')
+    expect(session.entries.value.length).toBeGreaterThan(0)
+
+    await session.loadThread('th-b')
+
+    expect(session.threadId.value).toBeNull()
+    expect(session.entries.value).toEqual([])
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
+
+  it('(r2b) a transient boot-hydrate failure never destroys an in-flight turn or the resume pointer', async () => {
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-1')
+    let rejectHistory!: (error: unknown) => void
+    const getMessages = vi.fn(
+      () =>
+        new Promise<AgentMessages>((_resolve, reject) => {
+          rejectHistory = reject
+        })
+    )
+    const rest = fakeRest({ getMessages })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('mid-boot question')
+    emit(delta('msg-1', 'partial'))
+
+    rejectHistory(new AgentApiError('backend down', 500, undefined))
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-1')
+    const conversation = useAgentConversationStore()
+    expect(conversation.activeTurnId).toBe('msg-1')
+    expect(session.isStreaming.value).toBe(true)
+    expect(session.notices.value).toHaveLength(1)
+  })
+
+  it('(r2c) a throwing workflow.current() surfaces sendFailed and never latches sending', async () => {
+    let calls = 0
+    const rest = fakeRest()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => {
+          calls += 1
+          if (calls === 1) throw new Error('workflow context exploded')
+          return undefined
+        },
+        adopted: vi.fn()
+      }
+    })
+    session.start()
+
+    const first = await session.sendMessage('doomed')
+    expect(first).toBe(false)
+    expect(session.isSending.value).toBe(false)
+    expect(rest.postMessage).not.toHaveBeenCalled()
+    expect(JSON.stringify(session.entries.value)).toContain(
+      'Message failed to send'
+    )
+
+    const second = await session.sendMessage('fine now')
+    expect(second).toBe(true)
+    expect(rest.postMessage).toHaveBeenCalledTimes(1)
   })
 })
