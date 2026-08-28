@@ -20,10 +20,10 @@ const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
 
 // Published on /minimax/license and /cloud/pricing both — a number changed
 // here changes two live pages. Withheld on purpose, do not restore from the
-// source rate card: the Enterprise per-video-second floor and overage minimum
-// (the ceiling is still open to negotiation), and the "model upgrades" row
-// (Professional is TBD, Enterprise restates the successor-model line held back
-// below). Enterprise is quoted annually, never as a monthly figure.
+// source rate card: every Enterprise price (that tier is quote-only for now,
+// so no annual figure, no per-video-second rate, no overage rate), and the
+// "model upgrades" row (Professional is TBD, Enterprise restates the
+// successor-model line held back below). Professional pricing is published.
 export const minimaxLicenseComparison: ModelLaunchComparison<
   'professional' | 'enterprise'
 > = {
@@ -48,10 +48,7 @@ export const minimaxLicenseComparison: ModelLaunchComparison<
       label: { en: 'Price', 'zh-CN': '价格' },
       values: {
         professional: { en: '$5,000 / month', 'zh-CN': '5,000 美元 / 月' },
-        enterprise: {
-          en: 'From $240,000 / year',
-          'zh-CN': '240,000 美元 / 年起'
-        }
+        enterprise: { en: 'Contact sales', 'zh-CN': '联系销售' }
       }
     },
     {
@@ -70,10 +67,7 @@ export const minimaxLicenseComparison: ModelLaunchComparison<
       },
       values: {
         professional: { en: '$0.108', 'zh-CN': '0.108 美元' },
-        enterprise: {
-          en: 'Custom, by committed volume',
-          'zh-CN': '定制，按承诺用量'
-        }
+        enterprise: { en: 'Contact sales', 'zh-CN': '联系销售' }
       }
     },
     {
@@ -81,10 +75,7 @@ export const minimaxLicenseComparison: ModelLaunchComparison<
       label: { en: 'Overage per video-second', 'zh-CN': '超额每视频秒单价' },
       values: {
         professional: { en: '$0.036', 'zh-CN': '0.036 美元' },
-        enterprise: {
-          en: '1/3 of the bundle rate',
-          'zh-CN': '套餐单价的 1/3'
-        }
+        enterprise: { en: 'Contact sales', 'zh-CN': '联系销售' }
       }
     },
     {

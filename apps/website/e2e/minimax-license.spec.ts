@@ -90,8 +90,22 @@ test.describe('MiniMax license page @smoke', () => {
       table.getByRole('cell', { name: '$5,000 / month' })
     ).toBeVisible()
     await expect(
-      table.getByRole('cell', { name: 'From $240,000 / year' })
+      table.getByRole('cell', { name: 'Contact sales' }).first()
     ).toBeVisible()
+  })
+
+  test('quotes no Enterprise price anywhere in the rate card', async ({
+    page
+  }) => {
+    const enterpriseCells = await page.evaluate(() => {
+      const rows = document.querySelectorAll('table tbody tr')
+      return [...rows].map(
+        (row) => row.querySelectorAll('td')[1]?.textContent?.trim() ?? ''
+      )
+    })
+
+    expect(enterpriseCells.length).toBeGreaterThan(0)
+    expect(enterpriseCells.filter((cell) => cell.includes('$'))).toEqual([])
   })
 
   test('footer links back to this page', async ({ page }) => {
@@ -123,9 +137,7 @@ test.describe('MiniMax license rate card @mobile', () => {
       await expect(row.getByText(tier, { exact: true })).toBeVisible()
     }
     await expect(row.getByText('$5,000 / month', { exact: true })).toBeVisible()
-    await expect(
-      row.getByText('From $240,000 / year', { exact: true })
-    ).toBeVisible()
+    await expect(row.getByText('Contact sales', { exact: true })).toBeVisible()
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth
@@ -153,7 +165,7 @@ test.describe('MiniMax license rate card on the pricing page @smoke', () => {
       table.getByRole('cell', { name: '$5,000 / month' })
     ).toBeVisible()
     await expect(
-      table.getByRole('cell', { name: 'From $240,000 / year' })
+      table.getByRole('cell', { name: 'Contact sales' }).first()
     ).toBeVisible()
 
     const cta = page
