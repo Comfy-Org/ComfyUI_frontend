@@ -830,13 +830,16 @@
       "insufficientMessage": "Bu iş akışını çalıştırmak için yeterli krediniz yok.",
       "insufficientTitle": "Yetersiz Kredi",
       "insufficientWorkflowMessage": "Bu iş akışını çalıştırmak için yeterli krediniz yok.",
+      "manageBillingError": "Faturalandırma portalı açılamadı. Lütfen tekrar deneyin.",
       "maxAllowed": "En fazla {credits} kredi.",
       "maxAmount": "(Maks. 1.000 USD)",
       "maximumAmount": "En fazla ${amount}.",
       "minRequired": "En az {credits} kredi",
       "minimumPurchase": "En az ${amount} ({credits} kredi)",
       "needMore": "Daha fazlasına mı ihtiyacınız var?",
+      "noPaymentMethodError": "Bu çalışma alanı için kayıtlı bir ödeme yöntemi yok. Ayarlar → Plan ve Krediler → Faturalandırmayı yönet üzerinden bir tane ekleyin, ardından kredi yüklemeyi yeniden deneyin.",
       "payAmount": "{amount} öde",
+      "paymentDetailsRequiredNote": "Bu satın alma işlemini tamamlamak için bir ödeme yöntemi eklemeniz istenecek.",
       "purchaseError": "Satın Alma Başarısız",
       "purchaseErrorDetail": "Kredi satın alınamadı: {error}",
       "purchaseSuccess": "Krediler başarıyla eklendi!",
@@ -1705,6 +1708,7 @@
     "micPermissionDenied": "Mikrofon izni reddedildi",
     "migrate": "Taşı",
     "missing": "Eksik",
+    "missingNodeTypesInGroup": "eksik: {types}",
     "modifyKeybinding": "Kısayol tuşunu değiştir",
     "more": "Daha Fazla",
     "moreOptions": "Daha Fazla Seçenek",
@@ -3217,15 +3221,26 @@
     "done": "Bitti",
     "firstRun": {
       "nudge": {
-        "dismiss": "Şimdi değil",
-        "explore": "Şablonları keşfet",
-        "noTour": {
-          "body": "Şablonlara göz atın ve oluşturacak bir şey seçin.",
-          "title": "Daha yüzlercesi var"
+        "animate": {
+          "detail": "Görüntüden videoya · 5 sn.",
+          "title": "Canlandır"
         },
-        "ran": {
-          "body": "İlkini oluşturdunuz. Başka neler yapabileceğinizi keşfedin.",
-          "title": "Bu yüzlercesinden biriydi"
+        "body": "Her biri az önce oluşturduğunuz görüntüyle başlar.",
+        "explore": "Tüm şablonlara göz at",
+        "fallback": {
+          "body": "Şablonlara göz atın ve oluşturmak için bir şey seçin.",
+          "title": "Bunun gibi yüzlercesi daha var"
+        },
+        "loadFailed": "Bu şablon yüklenemedi. Lütfen tekrar deneyin.",
+        "restyle": {
+          "detail": "İş ortağı modeli · Herhangi bir ücretli plan",
+          "title": "Nano Banana ile yeniden biçimlendir"
+        },
+        "title": "İlk çıktınız. Sırada neler var.",
+        "upscale": {
+          "badge": "4x",
+          "detail": "Aynı görüntü, daha fazla ayrıntı",
+          "title": "Yükselt"
         }
       },
       "prompt": {
@@ -4363,6 +4378,8 @@
     "resubscribeFailed": "Abonelik yeniden etkinleştirilemedi",
     "resubscribeSuccess": "Abonelik başarıyla yeniden etkinleştirildi",
     "resubscribeTo": "{plan} planına yeniden abone ol",
+    "salesManagedRunBlockedDetail": "Bu çalışma alanının planı artık etkin değil. Erişimi geri yüklemek için Comfy hesap yöneticinizle iletişime geçin.",
+    "salesManagedRunBlockedTitle": "Plan etkin değil",
     "saveYearly": "%20 tasarruf",
     "saveYearlyUpTo": "%20'ye kadar tasarruf edin",
     "soloUseOnly": "Sadece bireysel kullanım",
@@ -4441,6 +4458,7 @@
     "title": "Abonelik",
     "titleUnsubscribed": "Comfy Cloud'a Abone Olun",
     "totalCredits": "Toplam kredi",
+    "unknownTierName": "Mevcut plan",
     "upgrade": "YÜKSELT",
     "upgradePlan": "Planı Yükselt",
     "upgradeTo": "{plan} planına yükselt",

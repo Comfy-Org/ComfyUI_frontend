@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "أنشئ فيديو مع صوت من مطالبة نصية باستخدام نماذج Gemini Omni Flash من Google. يمكنك اختياريًا توفير صور و/أو مقاطع فيديو مرجعية لتوجيه النتيجة أو تعديلها. صف المدة المطلوبة (3-10 ث) مباشرةً في المطالبة.",
+    "display_name": "Google Gemini Omni (فيديو)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج فيديو Gemini المستخدم لإنشاء الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "توليد المسارات",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "طول المسار",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "حلّل ملف نموذج ثلاثي الأبعاد (GLB، GLTF، OBJ، STL) إلى MESH قابل للتحرير لعُقد معالجة الشبكات (تقليل المضلعات، إعادة تشكيل الشبكة، فك UV، الخَبز، ...). تُدمج جميع عُقد/بدائيات المشهد في شبكة واحدة بعد تطبيق تحويلاتها؛ وتأتي الأنسجة وعوامل المواد من المادة الأولى. النظير المقابل لـ MeshToFile3D.",
+    "display_name": "الحصول على مكوّنات ثلاثية الأبعاد",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "ملف نموذج ثلاثي الأبعاد من Load 3D أو عُقدة ثلاثية الأبعاد أخرى. لا يدعم FBX/USDZ — حوّله إلى GLB أولًا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }

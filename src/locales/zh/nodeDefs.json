@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "使用 Google 的 Gemini Omni Flash 模型根据文本提示词生成带音频的视频。可选提供参考图像和/或视频，以引导或编辑结果。请直接在提示词中描述所需时长（3-10 秒）。",
+    "display_name": "Google Gemini Omni（视频）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成视频的 Gemini 视频模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "生成轨道",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "轨迹长度",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "将 3D 模型文件（GLB、GLTF、OBJ、STL）解析为可编辑的 MESH，供网格处理节点使用（减面、重构网格、UV 展开、烘焙等）。所有场景节点/图元将合并为一个网格并应用其变换；纹理和材质系数取自第一个材质。与 MeshToFile3D 对应。",
+    "display_name": "获取 3D 组件",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "来自 Load 3D 或其他 3D 节点的 3D 模型文件。不支持 FBX/USDZ，请先转换为 GLB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }

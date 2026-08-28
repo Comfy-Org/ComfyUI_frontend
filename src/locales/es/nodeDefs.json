@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Genera un vídeo con audio a partir de una indicación de texto mediante los modelos Gemini Omni Flash de Google. De forma opcional, proporciona imágenes y/o vídeos de referencia para guiar o editar el resultado. Describe la duración deseada (3-10 s) directamente en la indicación.",
+    "display_name": "Google Gemini Omni (Vídeo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control tras generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "El modelo de vídeo Gemini utilizado para generar el vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "indicación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "longitud_de_ruta",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Analiza un archivo de modelo 3D (GLB, GLTF, OBJ, STL) para convertirlo en una MESH editable para los nodos de procesamiento de mallas (decimar, regenerar malla, desplegar UV, hornear, ...). Todos los nodos/primitivas de la escena se combinan en una sola malla con sus transformaciones aplicadas; las texturas y los factores de material proceden del primer material. Equivalente de MeshToFile3D.",
+    "display_name": "Obtener componentes 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Archivo de modelo 3D de Load 3D u otro nodo 3D. FBX/USDZ no son compatibles; conviértelo primero a GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
