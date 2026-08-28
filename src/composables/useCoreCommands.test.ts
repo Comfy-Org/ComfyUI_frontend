@@ -51,6 +51,7 @@ vi.mock('@/scripts/app', () => {
     read_only: false,
     ds: mockDs,
     state: { selectionChanged: false },
+    graph: undefined,
     setDirty: vi.fn()
   }
 
@@ -452,7 +453,7 @@ describe('useCoreCommands', () => {
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
       app.canvas.selectOnly = false
-      ;(app.canvas as unknown as { graph?: unknown }).graph = undefined
+      Reflect.set(app.canvas, 'graph', undefined)
     })
 
     it('should copy selected items when selection exists', async () => {
@@ -601,9 +602,7 @@ describe('useCoreCommands', () => {
 
     it('does not convert to subgraph in selection-only mode', async () => {
       const convertToSubgraph = vi.fn(() => null)
-      ;(app.canvas as unknown as { graph: unknown }).graph = {
-        convertToSubgraph
-      }
+      Reflect.set(app.canvas, 'graph', { convertToSubgraph })
       app.canvas.selectOnly = true
 
       await findCommand('Comfy.Graph.ConvertToSubgraph').function()
@@ -613,9 +612,7 @@ describe('useCoreCommands', () => {
 
     it('converts to subgraph outside selection-only mode', async () => {
       const convertToSubgraph = vi.fn(() => null)
-      ;(app.canvas as unknown as { graph: unknown }).graph = {
-        convertToSubgraph
-      }
+      Reflect.set(app.canvas, 'graph', { convertToSubgraph })
 
       await findCommand('Comfy.Graph.ConvertToSubgraph').function()
 
