@@ -367,7 +367,11 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '2026年8月26日 · 上午10点（PT）'
     },
     startDateTime: '2026-08-26T10:00:00-07:00',
-    liveVideoId: '6yH_15XSd0w'
+    liveVideoId: '6yH_15XSd0w',
+    media: eventImage('august-26-2026-local-mcp.jpg', {
+      en: 'Local MCP: Run ComfyUI with Your Agent & Hardware livestream',
+      'zh-CN': '本地 MCP：用你的智能体与硬件运行 ComfyUI 直播'
+    })
   },
   {
     id: 'beyond-the-models',

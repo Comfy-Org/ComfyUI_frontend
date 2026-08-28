@@ -12,6 +12,7 @@ import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
+import { resolve } from 'path'
 import { defineConfig } from 'vitest/config'
 import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
@@ -31,6 +32,7 @@ const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
+const BROWSER_TESTS_DIR = resolve('browser_tests')
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -109,6 +111,18 @@ const VITE_OG_DESC =
   'Bring your creative ideas to life with Comfy Cloud. Build and run your workflows to generate stunning images and videos instantly using powerful GPUs — all from your browser, no installation required.'
 const VITE_OG_IMAGE = `${VITE_OG_URL}/assets/images/og-image.png`
 const VITE_OG_KEYWORDS = 'ComfyUI, Comfy Cloud, ComfyUI online'
+
+export function getCanonicalTags(distribution: string | undefined) {
+  return distribution === 'cloud'
+    ? [
+        {
+          tag: 'link',
+          attrs: { rel: 'canonical', href: `${VITE_OG_URL}/` },
+          injectTo: 'head' as const
+        }
+      ]
+    : []
+}
 
 // Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
@@ -409,11 +423,17 @@ export default defineConfig({
     {
       name: 'inject-twitter-meta',
       transformIndexHtml(html) {
-        if (DISTRIBUTION !== 'cloud') return html
+        if (DISTRIBUTION !== 'cloud') {
+          return {
+            html,
+            tags: [{ tag: 'title', children: 'ComfyUI', injectTo: 'head' }]
+          }
+        }
 
         return {
           html,
           tags: [
+            ...getCanonicalTags(DISTRIBUTION),
             // Basic SEO
             { tag: 'title', children: VITE_OG_TITLE, injectTo: 'head' },
             {
@@ -737,7 +757,8 @@ export default defineConfig({
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
-      '@': '/src'
+      '@': '/src',
+      '@e2e': BROWSER_TESTS_DIR
     }
   },
 
@@ -778,6 +799,7 @@ export default defineConfig({
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {

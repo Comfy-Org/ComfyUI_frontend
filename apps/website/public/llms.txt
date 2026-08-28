@@ -19,6 +19,7 @@ Studios building with Comfy include Series Entertainment, Moment Factory, Open S
 - [Comfy Cloud Pricing](https://comfy.org/cloud/pricing/): Plans and per-credit pricing for individuals and teams using Comfy Cloud.
 - [Comfy API](https://comfy.org/api/): REST API for triggering ComfyUI workflows programmatically from external apps.
 - [Comfy Enterprise](https://comfy.org/cloud/enterprise/): Single-tenant ComfyUI deployments with BYO keys, orchestration, and data-ownership guarantees.
+- [MiniMax Commercial License](https://comfy.org/minimax/license/): Commercial-use licenses for running MiniMax H3 and MiniMax Audio & Music locally; Comfy is the only official reseller, with Professional and Enterprise tiers.
 
 ## Workflows and Gallery
 

@@ -245,7 +245,6 @@ describe('workflowDraftStoreV2', () => {
       })
 
       const result = await store.loadPersistedWorkflow({
-        workflowName: 'test',
         preferredPath: 'workflows/test.json'
       })
 
@@ -261,7 +260,6 @@ describe('workflowDraftStoreV2', () => {
       })
 
       const result = await store.loadPersistedWorkflow({
-        workflowName: null,
         preferredPath: 'workflows/missing.json',
         fallbackToLatestDraft: true
       })
@@ -273,7 +271,6 @@ describe('workflowDraftStoreV2', () => {
       const store = useWorkflowDraftStoreV2()
 
       const result = await store.loadPersistedWorkflow({
-        workflowName: null,
         fallbackToLatestDraft: true
       })
 

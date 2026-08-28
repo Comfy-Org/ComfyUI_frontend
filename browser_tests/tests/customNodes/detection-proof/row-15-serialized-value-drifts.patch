@@ -2,12 +2,10 @@ diff --git a/src/utils/executionUtil.ts b/src/utils/executionUtil.ts
 index 0b6ad40610..fffd6e6991 100644
 --- a/src/utils/executionUtil.ts
 +++ b/src/utils/executionUtil.ts
-@@ -103,15 +103,23 @@ export const graphToPrompt = async (
+@@ -103,16 +103,22 @@ export const graphToPrompt = async (
          const widgetValue = widget.serializeValue
            ? await widget.serializeValue(node, i)
            : widget.value
-+        // DETECTION PROOF (row 15, serialization): drift ImpactInt's integer
-+        // widget value. The workflow dispatch isolates this to the S15 test.
 +        const drifted =
 +          node.type === 'ImpactInt' &&
 +          typeof widgetValue === 'number' &&
@@ -19,14 +17,17 @@ index 0b6ad40610..fffd6e6991 100644
          // of the array as a node connection.
          // The backend automatically unwraps the object to an array during
          // execution.
--        inputs[widget.name] = Array.isArray(widgetValue)
-+        inputs[widget.name] = Array.isArray(drifted)
-           ? widget.type === 'curve'
+-        inputs[widget.name] =
+-          widget.type === 'curve' && widgetValue != null
 -            ? { __type__: 'CURVE', __value__: widgetValue }
--            : { __value__: widgetValue }
--          : widgetValue
+-            : Array.isArray(widgetValue)
+-              ? { __value__: widgetValue }
+-              : widgetValue
++        inputs[widget.name] =
++          widget.type === 'curve' && drifted != null
 +            ? { __type__: 'CURVE', __value__: drifted }
-+            : { __value__: drifted }
-+          : drifted
++            : Array.isArray(drifted)
++              ? { __value__: drifted }
++              : drifted
        }
      }

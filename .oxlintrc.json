@@ -30,6 +30,7 @@
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-render-in-watch-effect": "error",
     "no-async-promise-executor": "off",
     "no-console": [
       "error",

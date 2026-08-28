@@ -98,8 +98,10 @@ export class CurveEditor {
     if (localpos[1] < 0) return
 
     // this.captureInput(true);
-    if (this.size == null)
-      throw new Error('CurveEditor.size was null or undefined.')
+    if (this.size == null) {
+      console.error('CurveEditor.size was null or undefined.')
+      return
+    }
     const w = this.size[0] - this.margin * 2
     const h = this.size[1] - this.margin * 2
     const x = localpos[0] - this.margin
@@ -128,8 +130,10 @@ export class CurveEditor {
     const s = this.selected
     if (s < 0) return
 
-    if (this.size == null)
-      throw new Error('CurveEditor.size was null or undefined.')
+    if (this.size == null) {
+      console.error('CurveEditor.size was null or undefined.')
+      return
+    }
     const x = (localpos[0] - this.margin) / (this.size[0] - this.margin * 2)
     const y = (localpos[1] - this.margin) / (this.size[1] - this.margin * 2)
     const curvepos: Point = [
@@ -175,8 +179,10 @@ export class CurveEditor {
     if (!points) return -1
 
     max_dist = max_dist || 30
-    if (this.size == null)
-      throw new Error('CurveEditor.size was null or undefined.')
+    if (this.size == null) {
+      console.error('CurveEditor.size was null or undefined.')
+      return -1
+    }
     const w = this.size[0] - this.margin * 2
     const h = this.size[1] - this.margin * 2
     const num = points.length

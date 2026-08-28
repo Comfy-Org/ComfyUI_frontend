@@ -259,15 +259,19 @@ test.describe('FDCT page @smoke', () => {
 })
 
 test.describe('FDCT hero @mobile', () => {
-  test('shows the enterprise eyebrow and the stacked collage', async ({
+  test('shows the eyebrow and the click-to-play hero video', async ({
     page
   }) => {
     await page.goto('/forward-deployed-creatives')
     await expect(page.getByText(t('fdct.hero.eyebrow', 'en'))).toBeVisible()
-    await expect(page.locator('img[src*="headphones"]:visible')).toHaveCount(1)
+    // The hero video rests on its poster and only plays on demand.
+    const video = page.getByLabel(t('fdct.hero.title', 'en'))
+    await expect(video).toBeVisible()
+    await expect(video).toHaveAttribute('poster', /FDCT_V4_thumb/)
+    await expect(video).not.toHaveAttribute('autoplay')
     await expect(
-      page.locator('img[src*="abeautifulland"]:visible')
-    ).toHaveCount(1)
+      page.getByRole('button', { name: t('player.play', 'en') })
+    ).toBeVisible()
     const hero = page.locator('section', {
       has: page.getByRole('heading', { level: 1 })
     })

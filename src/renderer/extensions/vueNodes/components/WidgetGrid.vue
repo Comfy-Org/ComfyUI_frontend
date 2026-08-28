@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="grid"
     data-testid="node-widgets"
     class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3"
     :style="{
@@ -9,9 +10,14 @@
   >
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
-        v-if="widget.visible"
-        data-testid="node-widget"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        v-if="shouldRenderRow(widget)"
+        :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
+        :class="
+          cn(
+            'group col-span-full grid grid-cols-subgrid items-stretch',
+            !isConvertedWidget(widget) && 'lg-node-widget'
+          )
+        "
       >
         <div
           :class="
@@ -37,6 +43,7 @@
           />
         </div>
         <AppInput
+          v-if="!isConvertedWidget(widget)"
           :widget-id="widget.widgetId"
           :name="widget.simplified.name"
           :enable="canSelectInputs && !widget.simplified.options?.disabled"
@@ -66,9 +73,12 @@
 
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
-import { computed } from 'vue'
+import { computed, useTemplateRef, watch } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
+import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@/types/nodeId'
@@ -77,27 +87,61 @@ import { cn } from '@comfyorg/tailwind-utils'
 import InputSlot from './InputSlot.vue'
 
 const EMPTY_TOOLTIP: TooltipOptions = {}
+const grid = useTemplateRef<HTMLElement>('grid')
+
+const isConvertedWidgetType = (type: string) =>
+  type === 'converted-widget' || type.startsWith('converted-widget:')
+
+const isConvertedWidget = (widget: WidgetGridItem) =>
+  isConvertedWidgetType(widget.simplified.type)
+
+const shouldRenderRow = (widget: WidgetGridItem) =>
+  widget.visible && (!isConvertedWidget(widget) || !!widget.slotMetadata)
 
 const {
   processedWidgets,
   nodeType,
   canSelectInputs = false,
-  nodeId
+  nodeId,
+  syncLayout = true
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
   nodeId?: NodeId
+  syncLayout?: boolean
 }>()
+
+useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
+const canvasStore = useCanvasStore()
 
 const gridTemplateRows = computed(() =>
   processedWidgets
-    .filter((widget) => widget.visible)
+    .filter(shouldRenderRow)
     .map((widget) =>
-      shouldExpand(widget.simplified.type) || widget.hasLayoutSize
+      !isConvertedWidget(widget) &&
+      (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
         ? 'auto'
         : 'min-content'
     )
     .join(' ')
+)
+
+const layoutKey = computed(() =>
+  processedWidgets
+    .filter((widget) => widget.visible)
+    .map((widget) => `${widget.renderKey}:${widget.slotMetadata?.index ?? ''}`)
+    .join('|')
+)
+
+watch(
+  layoutKey,
+  () => {
+    const rootGraphId = canvasStore.rootGraphId
+    if (syncLayout && grid.value && rootGraphId && nodeId) {
+      syncSlotOffsets(grid.value, rootGraphId, nodeId)
+    }
+  },
+  { flush: 'post' }
 )
 </script>

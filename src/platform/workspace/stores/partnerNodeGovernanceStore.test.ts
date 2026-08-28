@@ -224,7 +224,7 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.policy).toBeNull()
   })
 
-  it('rejects an overlapping save after a same-workspace reload', async () => {
+  it('ignores an overlapping save after a same-workspace reload', async () => {
     let resolveSave!: (policy: PartnerNodePolicy) => void
     mockUpdatePartnerNodePolicy
       .mockReturnValueOnce(
@@ -250,7 +250,9 @@ describe('partnerNodeGovernanceStore', () => {
     await store.loadPolicy()
 
     expect(store.isSaving).toBe(true)
-    await expect(store.setProviderEnabled('openai', false)).rejects.toThrow(
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await store.setProviderEnabled('openai', false)
+    expect(consoleError).toHaveBeenCalledWith(
       'Provider policy save already in progress'
     )
     const saveCallCount = mockUpdatePartnerNodePolicy.mock.calls.length
@@ -263,7 +265,7 @@ describe('partnerNodeGovernanceStore', () => {
     expect(store.isSaving).toBe(false)
   })
 
-  it('rejects an overlapping save after switching away and back', async () => {
+  it('ignores an overlapping save after switching away and back', async () => {
     let resolveSave!: (policy: PartnerNodePolicy) => void
     const acceptedPolicy: PartnerNodePolicy = {
       enforcementEnabled: true,
@@ -288,7 +290,9 @@ describe('partnerNodeGovernanceStore', () => {
     await vi.waitFor(() => expect(store?.status).toBe('unconfigured'))
 
     expect(store.isSaving).toBe(true)
-    await expect(store.setProviderEnabled('openai', false)).rejects.toThrow(
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await store.setProviderEnabled('openai', false)
+    expect(consoleError).toHaveBeenCalledWith(
       'Provider policy save already in progress'
     )
     expect(mockUpdatePartnerNodePolicy).toHaveBeenCalledOnce()

@@ -1,7 +1,5 @@
 {
   "clone_groups": [
-    "apps/desktop-ui/src/components/install/InstallLocationPicker.stories.ts:115-148|apps/desktop-ui/src/components/install/InstallLocationPicker.stories.ts:53-81|apps/desktop-ui/src/components/install/InstallLocationPicker.stories.ts:84-112",
-    "apps/desktop-ui/src/views/InstallView.stories.ts:112-135|apps/desktop-ui/src/views/InstallView.stories.ts:146-169|apps/desktop-ui/src/views/InstallView.stories.ts:191-214",
     "apps/website/src/pages/zh-CN/cloud/pricing.astro:25-32|apps/website/src/pages/zh-CN/cloud/supported-nodes.astro:37-44|apps/website/src/pages/zh-CN/cloud/supported-nodes/[pack].astro:65-73",
     "browser_tests/fixtures/utils/litegraphUtils.ts:113-117|browser_tests/fixtures/utils/litegraphUtils.ts:146-149|browser_tests/fixtures/utils/litegraphUtils.ts:159-162",
     "scripts/cicd/extract-playwright-counts.ts:168-177|scripts/cicd/extract-playwright-counts.ts:206-215|scripts/cicd/extract-playwright-counts.ts:233-242",

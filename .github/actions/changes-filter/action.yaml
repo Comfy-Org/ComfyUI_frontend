@@ -26,9 +26,6 @@ outputs:
   app-website-changes:
     description: 'Shared deps or `apps/website/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
-  app-desktop-changes:
-    description: 'Shared deps or `apps/desktop-ui/**` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_desktop == 'true' }}
   app-frontend-changes:
     description: 'Shared deps or `src/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_frontend == 'true' }}
@@ -56,8 +53,6 @@ runs:
         filters: |
           app_website:
             - 'apps/website/**'
-          app_desktop:
-            - 'apps/desktop-ui/**'
           app_frontend:
             - 'src/**'
           packages:

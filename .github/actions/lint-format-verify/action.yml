@@ -9,6 +9,10 @@ description: >
 runs:
   using: composite
   steps:
+    - name: Typecheck application
+      shell: bash
+      run: pnpm typecheck
+
     - name: Verify lint and format
       shell: bash
       run: |

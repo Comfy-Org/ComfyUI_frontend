@@ -10,9 +10,11 @@ vi.mock('@/scripts/app', () => ({
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useWidgetStore } from '@/stores/widgetStore'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
@@ -170,5 +172,67 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
     expect(node?.widgets?.[0]?.label).toBe('Live Seed Label')
     expect(seed?.localized_name).toBe('Live Seed Label')
     expect(node?.outputs[0]?.localized_name).toBe('Live Latent Name')
+  })
+})
+
+describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
+  const nodeName = 'TestFrozenCustomWidget'
+  const widgetType = 'FROZEN_CUSTOM_WIDGET'
+  let retainedWidget: IBaseWidget
+
+  beforeEach(async () => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    useWidgetStore().registerCustomWidgets({
+      [widgetType]: (node, inputName) => {
+        retainedWidget = Object.preventExtensions({
+          name: inputName,
+          type: 'legacy_test',
+          value: 0,
+          options: {},
+          y: 0
+        })
+        node.widgets ??= []
+        node.widgets.push(retainedWidget)
+        return { widget: retainedWidget }
+      }
+    })
+    await useLitegraphService().registerNodeDef(nodeName, {
+      name: nodeName,
+      display_name: 'Test Frozen Custom Widget',
+      category: 'testing',
+      python_module: 'nodes',
+      description: '',
+      input: {
+        required: {
+          custom: [
+            widgetType,
+            {
+              display_name: 'Live Custom Label',
+              default: 0,
+              advanced: true,
+              hidden: true
+            }
+          ]
+        }
+      },
+      output: [],
+      output_name: [],
+      output_node: false
+    })
+  })
+
+  afterEach(() => {
+    LiteGraph.unregisterNodeType(nodeName)
+  })
+
+  it('applies metadata to the concrete widget stored on the node', () => {
+    const node = LiteGraph.createNode(nodeName)
+    const widget = node?.widgets?.[0]
+
+    expect(widget).not.toBe(retainedWidget)
+    expect(widget?.label).toBe('Live Custom Label')
+    expect(widget?.options.advanced).toBe(true)
+    expect(widget?.options.hidden).toBe(true)
+    expect(widget?.hidden).toBe(true)
   })
 })

@@ -4,7 +4,7 @@
  * Tests for edge cases, error handling, and boundary conditions in the subgraph system.
  * This covers unusual scenarios, invalid states, and stress testing.
  */
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 
@@ -82,10 +82,12 @@ describe('SubgraphEdgeCases - Invalid States', () => {
       typeof subgraph.removeInput
     >[0]
 
-    // Should throw appropriate error for non-existent input
-    expect(() => {
-      subgraph.removeInput(fakeInput)
-    }).toThrow(/Input not found/) // Expected error
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    subgraph.removeInput(fakeInput)
+
+    expect(consoleError).toHaveBeenCalledWith('Input not found')
+    expect(subgraph.inputs).toHaveLength(0)
   })
 
   it('should handle removing non-existent outputs gracefully', () => {
@@ -98,9 +100,12 @@ describe('SubgraphEdgeCases - Invalid States', () => {
       typeof subgraph.removeOutput
     >[0]
 
-    expect(() => {
-      subgraph.removeOutput(fakeOutput)
-    }).toThrow(/Output not found/) // Expected error
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    subgraph.removeOutput(fakeOutput)
+
+    expect(consoleError).toHaveBeenCalledWith('Output not found')
+    expect(subgraph.outputs).toHaveLength(0)
   })
 
   it('should throw error for null/undefined input names', () => {

@@ -2,13 +2,30 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import FormSection from '../components/contact/FormSection.vue'
 import SocialProofBarSection from '../components/common/SocialProofBarSection.vue'
+import FAQSplit01 from '../components/blocks/FAQSplit01.vue'
+import { contactFaqs } from '../data/contactFaq'
 import { t } from '../i18n/translations'
-import { absoluteUrl, organizationId, pageContext } from '../utils/jsonLd'
+import { faqAnswerPlainText } from '../utils/faqAnswer'
+import {
+  absoluteUrl,
+  faqPageNode,
+  organizationId,
+  pageContext,
+} from '../utils/jsonLd'
 
-const { siteUrl, locale } = pageContext(
+const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,
+)
+
+const faqs = contactFaqs(locale)
+const faqPage = faqPageNode(
+  url,
+  faqs.map((faq) => ({
+    question: faq.question,
+    answer: faqAnswerPlainText(faq.answer),
+  })),
 )
 ---
 
@@ -20,7 +37,13 @@ const { siteUrl, locale } = pageContext(
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     { name: t('breadcrumb.contact', locale) },
   ]}
+  extraJsonLd={[faqPage]}
 >
   <FormSection client:load />
+  <FAQSplit01
+    client:visible
+    heading={t('contact.faq.heading', locale)}
+    faqs={faqs}
+  />
   <SocialProofBarSection />
 </BaseLayout>

@@ -12,14 +12,12 @@ import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   LayoutChange,
   LayoutOperation,
-  NodeLayout,
-  SlotLayout
+  NodeLayout
 } from '@/renderer/core/layout/types'
 
 const GRAPH = createUuidv4()
@@ -551,50 +549,6 @@ describe('layoutStore CRDT operations', () => {
       }
     }
   })
-
-  it.for([
-    { type: 'input' as const, isInput: true },
-    { type: 'output' as const, isInput: false }
-  ])(
-    'should preserve $type slot layouts when deleting a node',
-    ({ type, isInput }) => {
-      const nodeId = toNodeId('slot-persist-node')
-      const layout = createTestNode(nodeId)
-
-      layoutStore.applyOperation({
-        type: 'createNode',
-        graphId: GRAPH,
-        nodeId,
-        layout,
-        timestamp: Date.now(),
-        source: LayoutSource.Canvas,
-        actor: 'test'
-      })
-
-      const slotKey = getSlotKey(nodeId, 0, isInput)
-      const slotLayout: SlotLayout = {
-        nodeId,
-        index: 0,
-        type,
-        position: { x: 110, y: 120 },
-        bounds: { x: 105, y: 115, width: 10, height: 10 }
-      }
-      layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: slotLayout }])
-      expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
-
-      layoutStore.applyOperation({
-        type: 'deleteNode',
-        graphId: GRAPH,
-        nodeId,
-        timestamp: Date.now(),
-        source: LayoutSource.Canvas,
-        actor: 'test'
-      })
-
-      // Slot layout must survive so Vue-patched components can still drag links
-      expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
-    }
-  )
 })
 
 describe('reroute layouts outlive an active-graph reseed', () => {
@@ -825,6 +779,14 @@ describe('root-scoped node layouts', () => {
       width: 30,
       height: 30
     })
+    for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
+      layoutStore.updateNodeSlotOffsets(
+        graphId,
+        nodeId,
+        [{ index: 0, type: 'input', position: { x: 0, y: 10 } }],
+        'expanded'
+      )
+    }
 
     for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
       layoutStore.applyOperation({
@@ -855,6 +817,9 @@ describe('root-scoped node layouts', () => {
 
     expect(layoutStore.getNodeLayoutRef(FIRST_GRAPH, nodeId).value).toBeNull()
     expect(layoutStore.contentSizeOf(FIRST_GRAPH, nodeId)).toBeUndefined()
+    expect(
+      layoutStore.getSlotOffset(FIRST_GRAPH, nodeId, 0, 'input', 'expanded')
+    ).toBeNull()
     expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
     expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
 
@@ -862,6 +827,12 @@ describe('root-scoped node layouts', () => {
       layoutStore.getNodeLayoutRef(SECOND_GRAPH, nodeId).value
     ).not.toBeNull()
     expect(layoutStore.contentSizeOf(SECOND_GRAPH, nodeId)?.width).toBe(30)
+    expect(
+      layoutStore.getSlotOffset(SECOND_GRAPH, nodeId, 0, 'input', 'expanded')
+    ).toEqual({
+      x: 0,
+      y: 10
+    })
     expect(layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)).not.toBeNull()
     expect(
       layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)

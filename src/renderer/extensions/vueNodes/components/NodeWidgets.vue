@@ -31,7 +31,6 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 interface NodeWidgetsProps {
   nodeData?: NodeState
@@ -71,9 +70,4 @@ const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
   () => nodeData,
   () => widgetIds
 )
-
-// Tracks widget-row growth that the node-level RO can't see
-if (nodeData?.id != null) {
-  useVueElementTracking(nodeData.id, 'widgets-grid')
-}
 </script>

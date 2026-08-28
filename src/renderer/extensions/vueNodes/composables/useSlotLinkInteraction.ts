@@ -19,6 +19,7 @@ import {
 } from '@/renderer/core/canvas/interaction/canvasPointerEvent'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
+import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
@@ -151,8 +152,10 @@ export function useSlotLinkInteraction({
     const nodeId = link.node.id
     if (nodeId != null) {
       const isInputFrom = link.toType === 'output'
-      const key = getSlotKey(nodeId, link.fromSlotIndex, isInputFrom)
-      const layout = layoutStore.getSlotLayout(key)
+      const graph = app.canvas?.graph
+      const layout = graph
+        ? getGraphSlotLayout(graph, nodeId, link.fromSlotIndex, isInputFrom)
+        : null
       if (layout) return layout.position
     }
 
@@ -229,8 +232,10 @@ export function useSlotLinkInteraction({
     if (!link) return null
     if (link.origin_id === UNASSIGNED_NODE_ID) return null
 
-    const slotKey = getSlotKey(link.origin_id, link.origin_slot, false)
-    const layout = layoutStore.getSlotLayout(slotKey)
+    const graph = app.canvas?.graph
+    const layout = graph
+      ? getGraphSlotLayout(graph, link.origin_id, link.origin_slot, false)
+      : null
     if (!layout) return null
 
     return { position: { ...layout.position }, direction: LinkDirection.NONE }
@@ -624,9 +629,7 @@ export function useSlotLinkInteraction({
     raf.cancel()
     dragContext.reset()
 
-    const layout = layoutStore.getSlotLayout(
-      getSlotKey(nodeId, index, type === 'input')
-    )
+    const layout = getGraphSlotLayout(graph, nodeId, index, type === 'input')
     if (!layout) return
 
     const localNodeId: NodeId = nodeId
@@ -758,18 +761,22 @@ export function useSlotLinkInteraction({
       })
     )
     const targetType: 'input' | 'output' = type === 'input' ? 'output' : 'input'
-    const allKeys = layoutStore.getAllSlotKeys()
     clearCompatible()
-    for (const key of allKeys) {
-      const slotLayout = layoutStore.getSlotLayout(key)
-      if (!slotLayout) continue
-      if (slotLayout.type !== targetType) continue
-      const idx = slotLayout.index
-      const ok =
-        targetType === 'input'
-          ? activeAdapter.isInputValidDrop(slotLayout.nodeId, idx)
-          : activeAdapter.isOutputValidDrop(slotLayout.nodeId, idx)
-      setCompatibleForKey(key, ok)
+    for (const candidateNode of graph.nodes) {
+      const slots =
+        targetType === 'input' ? candidateNode.inputs : candidateNode.outputs
+      for (const [slotIndex] of slots.entries()) {
+        const key = getSlotKey(
+          candidateNode.id,
+          slotIndex,
+          targetType === 'input'
+        )
+        const compatible =
+          targetType === 'input'
+            ? activeAdapter.isInputValidDrop(candidateNode.id, slotIndex)
+            : activeAdapter.isOutputValidDrop(candidateNode.id, slotIndex)
+        setCompatibleForKey(key, compatible)
+      }
     }
     autoPan = new AutoPanController({
       canvas: canvas.canvas,

@@ -216,7 +216,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const { index, newName } = e.detail
         const input = this.inputs.at(index)
-        if (!input) throw new Error('Subgraph input not found')
+        if (!input) {
+          console.error('Subgraph input not found')
+          return
+        }
 
         input.label = newName
         // Do NOT change input.widget.name — it is the stable internal
@@ -242,7 +245,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const { index, newName } = e.detail
         const output = this.outputs.at(index)
-        if (!output) throw new Error('Subgraph output not found')
+        if (!output) {
+          console.error('Subgraph output not found')
+          return
+        }
 
         output.label = newName
         this.graph?.trigger('node:slot-label:changed', {
@@ -650,8 +656,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
     const store = useWidgetValueStore()
-    input.widgetId = id
-    store.registerWidget(
+    const registered = store.registerWidget(
       id,
       {
         type: interiorWidget.type,
@@ -663,6 +668,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       },
       deriveWidgetRenderState(interiorWidget)
     )
+    if (!registered) {
+      delete input.pos
+      delete input.widget
+      delete input.widgetId
+      input._widget = undefined
+      return
+    }
+
+    input.widgetId = id
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)

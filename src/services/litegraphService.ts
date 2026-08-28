@@ -39,6 +39,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -302,16 +303,25 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
-    const {
-      widget,
-      minWidth = 1,
-      minHeight = 1
-    } = widgetConstructor(
-      node,
-      inputName,
-      transformInputSpecV2ToV1(widgetInputSpec),
-      app
-    ) ?? {}
+    const widgetsBefore = new Set(node.widgets ?? [])
+    const result =
+      widgetConstructor(
+        node,
+        inputName,
+        transformInputSpecV2ToV1(widgetInputSpec),
+        app
+      ) ?? {}
+    const { minWidth = 1, minHeight = 1 } = result
+    const returnedWidget = result.widget
+    const widget =
+      returnedWidget &&
+      (node.widgets?.find(
+        (candidate) =>
+          candidate === returnedWidget ||
+          (!widgetsBefore.has(candidate) &&
+            candidate.name === returnedWidget.name)
+      ) ??
+        toConcreteWidget(returnedWidget, node))
 
     if (widget) {
       widget.label = resolveLabel(

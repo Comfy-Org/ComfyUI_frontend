@@ -82,6 +82,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.mcp,
               badge: 'new'
             },
+            {
+              label: t('nav.comfyCli', locale),
+              href: routes.cli,
+              badge: 'new'
+            },
             // TODO: no page yet — re-enable when landing pages ship
             // { label: t('nav.appMode', locale), href: '#' },
             // { label: t('nav.agentSkills', locale), href: '#' },

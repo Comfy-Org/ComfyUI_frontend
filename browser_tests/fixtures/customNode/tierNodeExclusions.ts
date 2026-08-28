@@ -1,3 +1,5 @@
+import { groupBy } from 'es-toolkit'
+
 export type CustomNodeNodeExclusionTier =
   | 'S1'
   | 'S2'
@@ -38,24 +40,26 @@ export const CUSTOM_NODE_TIER_NODE_EXCLUSIONS: readonly TierNodeExclusion[] = [
   }
 ]
 
-function exclusionsForPack(pack: string): readonly TierNodeExclusion[] {
-  const folded = pack.toLowerCase()
-  return CUSTOM_NODE_TIER_NODE_EXCLUSIONS.filter(
-    (exclusion) => exclusion.pack.toLowerCase() === folded
+function exclusionsForPack(
+  target: TierNodeExclusionTarget,
+  exclusions: readonly TierNodeExclusion[]
+): readonly TierNodeExclusion[] {
+  const folded = target.pack.toLowerCase()
+  return exclusions.filter(
+    (exclusion) =>
+      exclusion.pack.toLowerCase() === folded &&
+      exclusion.identity === target.identity
   )
 }
 
 export function eligibleNodeTypesForTier(
   target: TierNodeExclusionTarget,
   tier: CustomNodeNodeExclusionTier,
-  nodeTypes: readonly string[]
+  nodeTypes: readonly string[],
+  exclusions: readonly TierNodeExclusion[] = CUSTOM_NODE_TIER_NODE_EXCLUSIONS
 ): string[] {
-  const packExclusions = exclusionsForPack(target.pack)
+  const packExclusions = exclusionsForPack(target, exclusions)
   for (const exclusion of packExclusions) {
-    if (exclusion.identity !== target.identity)
-      throw new Error(
-        `${target.pack}/${exclusion.nodeType} ${exclusion.tiers.join('/')} exclusion is pinned to ${exclusion.identity}, but the manifest now uses ${target.identity}; remove or recalibrate the stale exclusion`
-      )
     if (!nodeTypes.includes(exclusion.nodeType))
       throw new Error(
         `${target.pack}/${exclusion.nodeType} ${exclusion.tiers.join('/')} exclusion names a node that no longer registers; remove the stale exclusion`
@@ -71,28 +75,27 @@ export function eligibleNodeTypesForTier(
 }
 
 export function tierNodeExclusionProblems(
-  targets: readonly TierNodeExclusionTarget[]
+  targets: readonly TierNodeExclusionTarget[],
+  exclusions: readonly TierNodeExclusion[] = CUSTOM_NODE_TIER_NODE_EXCLUSIONS
 ): string[] {
-  const targetsByPack = new Map(
-    targets.map((target) => [target.pack.toLowerCase(), target])
-  )
+  const targetsByPack = groupBy(targets, (target) => target.pack.toLowerCase())
   const seen = new Set<string>()
   const problems: string[] = []
 
-  for (const exclusion of CUSTOM_NODE_TIER_NODE_EXCLUSIONS) {
-    const target = targetsByPack.get(exclusion.pack.toLowerCase())
-    if (!target) {
+  for (const exclusion of exclusions) {
+    const packTargets = targetsByPack[exclusion.pack.toLowerCase()]
+    if (!packTargets) {
       problems.push(
         `${exclusion.pack}/${exclusion.nodeType} is not in the manifest`
       )
       continue
     }
-    if (target.identity !== exclusion.identity)
+    if (!packTargets.some(({ identity }) => identity === exclusion.identity))
       problems.push(
-        `${exclusion.pack}/${exclusion.nodeType} is pinned to ${exclusion.identity}, but the manifest now uses ${target.identity}`
+        `${exclusion.pack}/${exclusion.nodeType} is pinned to ${exclusion.identity}, but the manifest uses ${packTargets.map(({ identity }) => identity).join(', ')}`
       )
     for (const tier of exclusion.tiers) {
-      const key = `${exclusion.pack.toLowerCase()}/${exclusion.nodeType}/${tier}`
+      const key = `${exclusion.pack.toLowerCase()}/${exclusion.identity}/${exclusion.nodeType}/${tier}`
       if (seen.has(key)) problems.push(`${key} is duplicated`)
       seen.add(key)
     }

@@ -80,11 +80,6 @@ vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ fitView: vi.fn() })
 }))
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({ requestSlotLayoutSyncForAllNodes: vi.fn() })
-)
-
 const workflowServiceMocks = vi.hoisted(() => ({
   openWorkflow: vi.fn().mockResolvedValue(undefined)
 }))

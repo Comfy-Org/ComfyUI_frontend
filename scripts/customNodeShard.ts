@@ -18,10 +18,8 @@
 import {
   customNodesManifest,
   loadApplicableAutogrowCases,
-  loadManifest,
-  packIdentity
+  loadManifest
 } from '../browser_tests/fixtures/customNode/manifest'
-import { hasCommittedProfile } from '../browser_tests/fixtures/customNode/interactionProfiles'
 
 // Tests every run registers whatever the slice holds: allNodes's
 // manifest-coverage test, connectivity (three), coreSmoke (two), and the
@@ -42,11 +40,7 @@ function expectedTestCount(): number {
     SLICE_INDEPENDENT_TESTS +
     expectedTierTestCount(entries) +
     TESTS_PER_PACK * entries.length +
-    (customNodesManifest() === 'core'
-      ? entries.filter((entry) =>
-          hasCommittedProfile(entry.pack, packIdentity(entry))
-        ).length
-      : 0) +
+    (customNodesManifest() === 'core' ? entries.length : 0) +
     entries.filter((entry) => entry.tiers.includes('run')).length +
     loadApplicableAutogrowCases().length
   )

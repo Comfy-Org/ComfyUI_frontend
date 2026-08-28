@@ -367,8 +367,8 @@
     "tooltip": "Sostituisce il pannello coda lavori flottante con una coda lavori equivalente incorporata nel pannello laterale della cronologia lavori. Puoi disabilitarlo per tornare al layout flottante."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Mostra scheda errori nel pannello laterale",
-    "tooltip": "Se abilitato, una scheda errori viene visualizzata nel pannello laterale destro per mostrare a colpo d'occhio gli errori di esecuzione del workflow."
+    "name": "Mostra la scheda Problemi nel pannello laterale",
+    "tooltip": "Quando abilitata, la scheda Problemi viene visualizzata nel pannello laterale destro per mostrare errori bloccanti e risorse mancanti che richiedono configurazione."
   },
   "Comfy_Sidebar_Location": {
     "name": "Posizione della barra laterale",

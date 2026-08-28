@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as OutputAssetUtil from '@/platform/assets/utils/outputAssetUtil'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import { getOutputKey } from '@/platform/assets/utils/outputAssetUtil'
 
 const mocks = vi.hoisted(() => ({
   resolveOutputAssetItems: vi.fn()
@@ -74,7 +75,11 @@ describe('useOutputStacks', () => {
       expect.objectContaining({ jobId: 'job-1' }),
       {
         createdAt: parent.created_at,
-        excludeOutputKey: 'node-1-outputs-parent.png'
+        excludeOutputKey: getOutputKey({
+          nodeId: 'node-1',
+          subfolder: 'outputs',
+          filename: 'parent.png'
+        })
       }
     )
     expect(isStackExpanded(parent)).toBe(true)

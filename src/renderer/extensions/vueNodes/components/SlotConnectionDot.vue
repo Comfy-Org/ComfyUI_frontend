@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed } from 'vue'
 
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import type { SlotId } from '@/types/slotId'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
@@ -12,6 +13,7 @@ const props = defineProps<{
   class?: ClassValue
   hasError?: boolean
   multi?: boolean
+  slotKey?: SlotId
 }>()
 
 const clipPath = computed(() => {
@@ -25,8 +27,6 @@ const clipPath = computed(() => {
   }
 })
 
-const slotElRef = useTemplateRef('slot-el')
-
 const types = computed(() => {
   if (props.hasError) return ['var(--color-error)']
   //TODO Support connected/disconnected colors?
@@ -36,10 +36,6 @@ const types = computed(() => {
     .split(',')
     .map(getSlotColor)
     .slice(0, MAX_MULTITYPE_SLICES)
-})
-
-defineExpose({
-  slotElRef
 })
 
 const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
@@ -69,14 +65,14 @@ const slotClass = computed(() =>
   >
     <div
       v-if="types.length === 1 && (slotData?.shape == undefined || isListShape)"
-      ref="slot-el"
+      :data-slot-key="slotKey"
       :style="{ backgroundColor: types.length === 1 ? types[0] : undefined }"
       :class="slotClass"
       data-testid="slot-dot"
     />
     <svg
       v-else
-      ref="slot-el"
+      :data-slot-key="slotKey"
       :class="slotClass"
       data-testid="slot-dot"
       viewBox="0 0 100 100"

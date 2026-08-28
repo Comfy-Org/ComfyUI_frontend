@@ -120,7 +120,8 @@ export function usePanAndZoom() {
 
   const handlePanMove = async (event: PointerEvent): Promise<void> => {
     if (mouseDownPoint.value === null) {
-      throw new Error('mouseDownPoint is null')
+      console.error('mouseDownPoint is null')
+      return
     }
 
     pan_offset.value = calculateDragPan(

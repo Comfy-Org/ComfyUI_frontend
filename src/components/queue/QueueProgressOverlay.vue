@@ -250,7 +250,8 @@ const focusAssetInSidebar = async (item: JobListItem) => {
     (existingAsset) => existingAsset.id === assetId
   )
   if (!asset) {
-    throw new Error('Asset not found in media assets panel')
+    console.error('Asset not found in media assets panel')
+    return
   }
   assetSelectionStore.setSelection([assetId])
   assetSelectionStore.setLastSelectedAssetId(assetId)

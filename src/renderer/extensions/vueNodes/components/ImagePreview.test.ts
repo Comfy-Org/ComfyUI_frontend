@@ -19,6 +19,13 @@ vi.mock('@/services/hdrViewerService', () => ({
   openHdrViewer: vi.fn()
 }))
 
+const mockTrackImageLoadFailed = vi.fn()
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackImageLoadFailed: mockTrackImageLoadFailed
+  })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -168,6 +175,9 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Download image' })
     ).not.toBeInTheDocument()
+    expect(mockTrackImageLoadFailed).toHaveBeenCalledExactlyOnceWith({
+      source: 'node_image_preview'
+    })
   })
 
   it('handles download button click', async () => {

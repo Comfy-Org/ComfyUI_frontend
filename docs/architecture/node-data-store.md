@@ -248,13 +248,24 @@ its property descriptor. Read and mutate `node.widgets` through its array API,
 or prefer `addWidget` / `addCustomWidget` / `removeWidget` for lifecycle-aware
 changes.
 
+Plain widget objects added through `addCustomWidget`, widget constructors, or
+direct `node.widgets` mutation are normalized to store-backed widget instances.
+When the object permits it, normalization preserves that object's identity and
+upgrades it in place. A non-extensible object or one with conflicting
+non-configurable properties is replaced by an equivalent concrete widget in
+`node.widgets`. Extensions may keep using these entry points without code
+changes, but must read the resulting `node.widgets` entry instead of assuming a
+frozen or sealed input object remains the live widget.
+
 Extension migration map: read a field → `node.<field>` (reactive) or
 `node._state` (the reactive proxy the node already holds); snapshot all shell
 state → read that `NodeState`, not `{ ...node }`; set `title` / `mode` /
 colours / `flags` / `shape` / `showAdvanced` → assign the accessor (writes
 through to the store); set `type` → construct the intended node type;
 add or remove a widget → prefer `node.addWidget` / `node.removeWidget`; reorder
-existing widgets → mutate `node.widgets` in place.
+existing widgets → mutate `node.widgets` in place; add a plain custom widget →
+use `addCustomWidget` and retain its return value, or read the resulting
+`node.widgets` entry.
 
 ## Scope
 

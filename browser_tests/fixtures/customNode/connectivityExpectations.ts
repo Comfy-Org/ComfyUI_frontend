@@ -41,17 +41,13 @@ export const pairEndpointPacks: Readonly<Record<string, string>> = {
   ADE_AnimateDiffCombine: 'comfyui-animatediff-evolved',
   ADE_ValueScheduling: 'comfyui-animatediff-evolved',
   AddLabel: 'ComfyUI-KJNodes',
-  AddNoise: 'core',
   AddTextPrefix: 'core',
   AdjustBrightness: 'core',
-  AnimaLLLiteApply: 'core',
   'Basic data handling: Boolean And': 'basic_data_handling',
-  'Basic data handling: CastToInt': 'basic_data_handling',
   CompositorTools3: 'comfyui-enricos-nodes',
   FL_CodeNode: 'ComfyUI_Fill-Nodes',
   FL_NodeLoader: 'ComfyUI_Fill-Nodes',
   FL_NodePackLoader: 'ComfyUI_Fill-Nodes',
-  FL_TimeLine: 'ComfyUI_Fill-Nodes',
   FL_VideoBatchSplitter: 'ComfyUI_Fill-Nodes',
   'MathExpression|pysssss': 'ComfyUI-Custom-Scripts',
   MultiImageLoader: 'WhatDreamsCost-ComfyUI',
@@ -62,13 +58,14 @@ export const pairEndpointPacks: Readonly<Record<string, string>> = {
 export function pairEndpointOwnershipIssues(
   requiredNodeTypes: string[],
   nodes: Array<{ type: string; pack: string }>,
-  installedPacks: ReadonlySet<string>
+  installedPacks: ReadonlySet<string>,
+  endpointPacks: Readonly<Record<string, string>> = pairEndpointPacks
 ): string[] {
   const installed = new Set(
     [...installedPacks].map((pack) => pack.toLowerCase())
   )
   return requiredNodeTypes.flatMap((nodeType) => {
-    const expectedPack = pairEndpointPacks[nodeType]
+    const expectedPack = endpointPacks[nodeType]
     if (!expectedPack)
       return [`${nodeType}: no endpoint pack attribution exists`]
     if (expectedPack !== 'core' && !installed.has(expectedPack.toLowerCase()))
@@ -162,15 +159,6 @@ export const connectivityExpectations: ConnectivityExpectations = {
   ],
   roundtripLost: [
     {
-      id: 'timeline-node-loss',
-      pack: 'ComfyUI_Fill-Nodes',
-      pairs: ['FL_TimeLine.MODEL -> AddNoise.model'],
-      reason:
-        'FL_TimeLine replaces node.serialize and loses graph identity on reload',
-      restore:
-        'preserve LiteGraph serialization and remove this entry when the pair survives reload'
-    },
-    {
       id: 'vewd-dynamic-input-reload',
       pack: 'vewd',
       pairs: [
@@ -195,32 +183,6 @@ export const connectivityExpectations: ConnectivityExpectations = {
       reason: 'VHS_SelectLatest rebuilds its dynamic slots during configure',
       restore:
         'preserve these four links during configure and remove this entry'
-    },
-    {
-      id: 'fill-code-node-dynamic-reload',
-      pack: 'ComfyUI_Fill-Nodes',
-      pairs: [
-        'AddTextPrefix.texts -> FL_CodeNode.code_input',
-        'AddTextPrefix.texts -> FL_CodeNode.file'
-      ],
-      reason:
-        'FL_CodeNode treats code_input and file as removable during configure',
-      restore: 'preserve both links during configure and remove this entry'
-    },
-    {
-      id: 'fill-timeline-dynamic-reload',
-      pack: 'ComfyUI_Fill-Nodes',
-      pairs: [
-        'AnimaLLLiteApply.MODEL -> FL_TimeLine.model',
-        'AddTextPrefix.texts -> FL_TimeLine.timeline_data',
-        'Basic data handling: CastToInt.INT -> FL_TimeLine.video_width',
-        'Basic data handling: CastToInt.INT -> FL_TimeLine.video_height',
-        'Basic data handling: CastToInt.INT -> FL_TimeLine.number_animation_frames',
-        'Basic data handling: CastToInt.INT -> FL_TimeLine.frames_per_second'
-      ],
-      reason:
-        'FL_TimeLine replaces node.serialize and drops its declared inputs during configure',
-      restore: 'preserve these six links during configure and remove this entry'
     },
     {
       id: 'advanced-controlnet-motion-link-reload',

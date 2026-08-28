@@ -141,8 +141,11 @@ function buildSlotMetadata(
       promoted: input.widgetId !== undefined,
       type: String(input.type)
     }
-    if (input.name) metadata.set(input.name, slotInfo)
-    if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
+    const widgetName = input.widget?.name
+    if (widgetName) metadata.set(widgetName, slotInfo)
+    else if ((input.widgetId !== undefined || linked) && input.name) {
+      metadata.set(input.name, slotInfo)
+    }
   })
   return metadata
 }

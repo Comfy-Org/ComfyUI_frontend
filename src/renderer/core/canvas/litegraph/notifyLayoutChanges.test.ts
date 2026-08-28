@@ -190,6 +190,49 @@ describe('notifyLayoutChanges', () => {
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
   })
 
+  it('invalidates rendering only when slot offsets change', async () => {
+    using context = setup()
+    const { graph, node, setDirty } = context
+    const offsets = [
+      { index: 0, type: 'input' as const, position: { x: 0, y: 10 } }
+    ]
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      offsets,
+      'expanded'
+    )
+    await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
+    setDirty.mockClear()
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      offsets,
+      'expanded'
+    )
+    await Promise.resolve()
+    expect(setDirty).not.toHaveBeenCalled()
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      [],
+      'collapsed'
+    )
+    await Promise.resolve()
+    expect(setDirty).not.toHaveBeenCalled()
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      [{ ...offsets[0], position: { x: 0, y: 20 } }],
+      'expanded'
+    )
+    await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
+  })
+
   it('stops notifying once stopped', async () => {
     using context = setup()
     const { graph, node, setDirty } = context

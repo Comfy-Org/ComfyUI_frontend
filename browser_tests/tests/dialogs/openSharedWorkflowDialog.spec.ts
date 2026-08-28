@@ -43,7 +43,7 @@ async function mockLongNameSharedWorkflow(page: Page): Promise<void> {
 
 const test = comfyPageFixture
 
-test.describe('Open shared workflow dialog', { tag: '@cloud' }, () => {
+test.describe('Open shared workflow dialog', { tag: '@ui' }, () => {
   test('wraps a long workflow name instead of scrolling horizontally', async ({
     comfyPage
   }) => {

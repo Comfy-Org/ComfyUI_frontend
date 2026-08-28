@@ -3,6 +3,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import type { LGraph } from './LGraph'
 import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
@@ -141,22 +142,22 @@ export function detachSerialisedLinks(
  * because dynamic inputs may grow additional named slots in response.
  *
  * @param graph The graph whose links to realign
- * @param nodesData The serialized node data the graph's nodes were configured
- * from
+ * @param nodesData The final node id paired with the serialized data that
+ * configured it
  */
 export function realignInputLinkSlots(
   graph: LGraph,
-  nodesData: Iterable<ISerialisedNode>
+  nodesData: Iterable<readonly [NodeId, ISerialisedNode]>
 ): void {
-  for (const nodeData of nodesData) {
-    const node = graph.getNodeById(toNodeId(nodeData.id))
+  for (const [nodeId, nodeData] of nodesData) {
+    const node = graph.getNodeById(nodeId)
     if (!node) continue
 
     const referencedNames = new Map<LLink, string[]>()
     for (const input of nodeData.inputs ?? []) {
       if (input.link == null) continue
       const link = graph.links.get(toLinkId(input.link))
-      if (!link || link.target_id !== toNodeId(nodeData.id)) continue
+      if (!link || link.target_id !== nodeId) continue
       const names = referencedNames.get(link) ?? []
       names.push(input.name)
       referencedNames.set(link, names)

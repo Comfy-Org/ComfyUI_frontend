@@ -57,7 +57,9 @@ export function useTypeformEmbed(
       await ensureScriptLoaded()
       const tf = window.tf
       if (typeof tf?.load !== 'function') {
-        throw new Error('Typeform API unavailable after script load')
+        console.error('Typeform API unavailable after script load')
+        typeformError.value = true
+        return
       }
       tf.load()
     } catch (err) {

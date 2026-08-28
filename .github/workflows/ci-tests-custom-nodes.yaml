@@ -4,17 +4,14 @@
 # skipped, the job goes red - a suite that let a broken pack through as a
 # "skip" would be pointless.
 #
-# NOT a PR gate yet: nightly schedule and manual dispatch only. PRs neither
-# trigger this workflow nor wait on any of its checks, and none of its checks
-# may be marked required in branch protection. Before ever adding a
-# pull_request trigger, resolve the untrusted-source surface: the install loop
-# fetches and pip-installs whatever the manifest's deployRefs point at
-# (setup.py executes at install time), so a fork PR editing the manifest could
-# aim it at attacker-controlled source. To test a branch, dispatch with the
-# `branch` input.
+# Required gate: every relevant PR and every merge-queue candidate runs the
+# exact pack population; every pull request still receives the aggregate.
+# Jobs have read-only permissions, and neither checkout persists credentials
+# while third-party setup and runtime code executes.
 #
-# The matrix keeps the six-pack Core depth suite intact and adds the pinned
-# Cloud snapshot as five breadth shards. The Cloud snapshot produces 87
+# The matrix splits the six-pack Core depth suite into two balanced shards and
+# adds the pinned Cloud snapshot as five breadth shards. The Cloud snapshot
+# produces 87
 # manifest rows and one unjoined YAML pack; the unjoined pack and four reviewed
 # quarantine entries are reported as excluded coverage. Every entry owns an
 # isolated LOCAL ComfyUI backend and installs only its manifest slice.
@@ -27,6 +24,8 @@
 name: 'CI: Tests Custom Nodes'
 
 on:
+  pull_request:
+  merge_group:
   schedule:
     - cron: '15 9 * * *'
   workflow_dispatch:
@@ -52,6 +51,11 @@ on:
         required: false
         type: string
         default: ''
+      record_interactions:
+        description: 'Record Core S13 interaction profiles as an artifact'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   # Dispatches get a per-run group: two manual runs (e.g. comparing branches)
@@ -59,14 +63,36 @@ concurrency:
   group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-dispatch-{1}', github.workflow, github.run_id) || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   COMFYUI_PIN: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Detect relevant changes
+        id: changes
+        uses: ./.github/actions/changes-filter
+
   # Each job is intentionally one worker: the auto-run tier needs exclusive
   # access to its backend's queue. Parallelism comes from the shard matrix
   # instead, and every job owns a separate backend.
   custom_nodes_e2e:
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -75,11 +101,13 @@ jobs:
         # cannot drift out of step with a separate total. Slices are balanced
         # by expectedNodeCount (see shardOf), not by pack count: node counts
         # run 1..285 with a median of 6, and a matrix costs its slowest shard.
-        shard: ['core', '1/5', '2/5', '3/5', '4/5', '5/5']
+        shard: ${{ fromJSON(inputs.record_interactions && '["core:1/1"]' || '["core:1/2","core:2/2","1/5","2/5","3/5","4/5","5/5"]') }}
         proof_row: >-
-          ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","15"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
+          ${{ fromJSON(github.event_name == 'schedule' && '["0","1","2","3","9","15"]' || github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","15"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
         exclude:
-          - shard: 'core'
+          - shard: 'core:1/2'
+            proof_row: '1'
+          - shard: 'core:2/2'
             proof_row: '1'
           - shard: '1/5'
             proof_row: '1'
@@ -89,7 +117,9 @@ jobs:
             proof_row: '1'
           - shard: '5/5'
             proof_row: '1'
-          - shard: 'core'
+          - shard: 'core:1/2'
+            proof_row: '2'
+          - shard: 'core:2/2'
             proof_row: '2'
           - shard: '1/5'
             proof_row: '2'
@@ -99,7 +129,9 @@ jobs:
             proof_row: '2'
           - shard: '5/5'
             proof_row: '2'
-          - shard: 'core'
+          - shard: 'core:1/2'
+            proof_row: '3'
+          - shard: 'core:2/2'
             proof_row: '3'
           - shard: '1/5'
             proof_row: '3'
@@ -109,7 +141,9 @@ jobs:
             proof_row: '3'
           - shard: '5/5'
             proof_row: '3'
-          - shard: 'core'
+          - shard: 'core:1/2'
+            proof_row: '9'
+          - shard: 'core:2/2'
             proof_row: '9'
           - shard: '1/5'
             proof_row: '9'
@@ -119,6 +153,8 @@ jobs:
             proof_row: '9'
           - shard: '5/5'
             proof_row: '9'
+          - shard: 'core:1/2'
+            proof_row: '15'
           - shard: '1/5'
             proof_row: '15'
           - shard: '2/5'
@@ -130,27 +166,28 @@ jobs:
           - shard: '5/5'
             proof_row: '15'
     runs-on: ubuntu-latest
-    # Recent green runs complete in 10-19 minutes per shard. 35 leaves room for a
-    # slow dependency resolve without letting a wedged backend run indefinitely.
-    timeout-minutes: 35
+    timeout-minutes: 20
     permissions:
       contents: read
     # Job-level so every step that installs packs, runs the suite, or gates its
     # results reads the same slice. The specs and the install loop both derive
     # their pack list from these three (see scripts/customNodeShard.ts).
     env:
-      CUSTOM_NODES_MANIFEST: ${{ matrix.shard == 'core' && 'core' || 'cloud' }}
-      CUSTOM_NODES_SHARD: ${{ matrix.shard == 'core' && '1/1' || matrix.shard }}
+      CUSTOM_NODES_MANIFEST: ${{ startsWith(matrix.shard, 'core:') && 'core' || 'cloud' }}
     steps:
       # Artifact and cache names cannot contain `/`, which the shard id does.
       - name: Resolve shard identity
         shell: bash
+        env:
+          MATRIX_SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
-          if ! [[ "$CUSTOM_NODES_SHARD" =~ ^[0-9]+/[0-9]+$ ]]; then
-            echo "::error::matrix shard '$CUSTOM_NODES_SHARD' is not index/total"; exit 1
+          custom_nodes_shard="${MATRIX_SHARD#core:}"
+          if ! [[ "$custom_nodes_shard" =~ ^[0-9]+/[0-9]+$ ]]; then
+            echo "::error::matrix shard '$MATRIX_SHARD' is not [core:]index/total"; exit 1
           fi
-          echo "SHARD_SLUG=${CUSTOM_NODES_MANIFEST}-${CUSTOM_NODES_SHARD/\//-of-}" >> "$GITHUB_ENV"
+          echo "CUSTOM_NODES_SHARD=$custom_nodes_shard" >> "$GITHUB_ENV"
+          echo "SHARD_SLUG=${CUSTOM_NODES_MANIFEST}-${custom_nodes_shard/\//-of-}" >> "$GITHUB_ENV"
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -158,42 +195,30 @@ jobs:
           # workflow_dispatch may aim the suite at any frontend branch; every
           # other event tests its own ref exactly as before.
           ref: ${{ inputs.branch || github.ref }}
-
-      - name: Apply Detection Proof source break
-        id: source-mutation
-        if: >-
-          github.event_name == 'workflow_dispatch' &&
-          matrix.proof_row != '0' &&
-          matrix.proof_row != '9'
-        shell: bash
-        env:
-          ROW: ${{ matrix.proof_row }}
-        run: |
-          set -euo pipefail
-          d=browser_tests/tests/customNodes/detection-proof
-          p=$(printf '%s/row-%02d-'"*.patch" "$d" "$ROW")
-          # shellcheck disable=SC2086
-          p=$(ls $p 2>/dev/null | head -1 || true)
-          [ -n "$p" ] || { echo "::error::no patch file for S$ROW"; exit 1; }
-          git apply --check "$p"
-          git apply "$p"
-          if git diff --quiet -- src/; then
-            echo "::error::S$ROW patch did not change src/"
-            exit 1
-          fi
-          echo "path=$p" >> "$GITHUB_OUTPUT"
-          echo "digest=$(shasum -a 256 "$p" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          persist-credentials: false
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
-          include_build_step: true
+          include_build_step: false
           node_cache: 'false'
 
-      - name: Verify Detection Proof witness shard
+      - name: Apply Detection Proof source break
+        id: source-mutation
         if: >-
-          github.event_name == 'workflow_dispatch' &&
-          matrix.proof_row != '0'
+          matrix.proof_row != '0' &&
+          matrix.proof_row != '9'
+        env:
+          PROOF_ROW: ${{ matrix.proof_row }}
+        run: pnpm exec tsx scripts/cicd/custom-node-proof.ts mutate-source
+
+      - name: Build frontend
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+        run: pnpm build
+
+      - name: Verify Detection Proof witness shard
+        if: matrix.proof_row != '0'
         shell: bash
         env:
           PROOF_ROW: ${{ matrix.proof_row }}
@@ -256,220 +281,44 @@ jobs:
           key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.*.json') }}
           restore-keys: cn-packs-v3-${{ env.SHARD_SLUG }}-
 
-      # Install exactly the packs this shard owns (DRY: a new pack row installs
-      # itself here, no workflow change). The slice comes from the same loader
-      # the specs register tests from, never from a stripe re-implemented in
-      # jq - the two disagreeing would install packs nothing tests and register
-      # tests for packs the backend lacks. A fetch or dependency failure fails
-      # the job - if a pack can't be installed, its coverage can't run, and
-      # that is a gate failure, not something to paper over. A `| while` pipe
-      # hides failures in a subshell, so read into an array and loop with
-      # `set -e`.
-      # Quarantined packs are excluded from the population, which is lost
-      # coverage that looks like a green run.
-      # Runs before install so the excluded-pack block is at the TOP of the
-      # summary, and `always()` so a red suite still reports what it never
-      # measured - the case where that block matters most.
       - name: Report excluded packs
-        if: always() && env.CUSTOM_NODES_MANIFEST == 'cloud' && matrix.shard == '1/5'
+        if: always() && (matrix.shard == 'core:1/1' || matrix.shard == 'core:1/2' || (env.CUSTOM_NODES_MANIFEST == 'cloud' && matrix.shard == '1/5'))
         run: pnpm custom-node-quarantine
 
-      - name: Install manifest custom nodes
-        id: install
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Pin the CPU torch stack that setup-comfyui-server installed so no
-          # pack's requirements.txt can pull a GPU/incompatible torch onto this
-          # --cpu runner. A pack that genuinely needs a different torch fails
-          # the constrained install loudly rather than silently swapping it.
-          pip freeze | grep -iE '^(torch|torchvision|torchaudio)==' \
-            > /tmp/torch-constraints.txt || true
-          pnpm --silent custom-node-shard > /tmp/shard-packs.tsv
-          mapfile -t rows < /tmp/shard-packs.tsv
-          if [ "${#rows[@]}" -eq 0 ]; then
-            echo "::error::shard $CUSTOM_NODES_SHARD owns no packs"; exit 1
-          fi
-          fetch_commit() {
-            local target=$1 commit=$2
-            for attempt in 1 2 3; do
-              if git -C "$target" fetch --depth 1 origin "$commit"; then
-                return 0
-              fi
-              if [ "$attempt" -lt 3 ]; then sleep $((attempt * 2)); fi
-            done
-            return 1
-          }
-          echo "shard $CUSTOM_NODES_SHARD owns ${#rows[@]} pack(s)"
-          uninstallable=()
-          for row in "${rows[@]}"; do
-            # Install under the manifest `pack` key, not anything derived from
-            # the deployRef: node attribution keys on the install dirname via
-            # python_module, and the two only coincide by luck. Same charset
-            # the manifest loader enforces - belt for anything that bypasses it.
-            pack=${row%%$'\t'*}
-            ref=${row#*$'\t'}
-            if ! [[ "$pack" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
-              echo "::error::unsafe pack name: '$pack'"; exit 1
-            fi
-            dir="ComfyUI/custom_nodes/$pack"
-            cache_dir="$HOME/.cache/cn-packs/$pack"
-            # The ref marker is a SIBLING of the tree, never inside it - a
-            # pack legitimately shipping a top-level .ref must install
-            # identically on cached and fresh runs.
-            if [ -f "$cache_dir.ref" ] && [ "$(cat "$cache_dir.ref")" = "$ref" ]; then
-              echo "::group::restore $pack from cache ($ref)"
-              cp -R "$cache_dir" "$dir"
-            else
-              echo "::group::install $pack ($ref)"
-              case "$ref" in
-                http://*|https://*)
-                  url=${ref%@*}
-                  sha=${ref##*@}
-                  # git reads a leading `-` as an option, and options such as
-                  # --upload-pack= run a command on the runner.
-                  if ! [[ "$url" =~ ^https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]]; then
-                    echo "::error::$pack: deployRef repo must be an https://github.com/<owner>/<name> URL (got '$url')"; exit 1
-                  fi
-                  # The gate tests exactly what Cloud deploys: a full SHA is
-                  # mandatory here, before anything installs.
-                  if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
-                    echo "::error::$pack: deployRef must pin a full commit SHA (got '$sha')"; exit 1
-                  fi
-                  # `clone --depth 1` can only land on a branch tip, and a
-                  # deployRef commit frequently is not one.
-                  git init -q -b main "$dir"
-                  git -C "$dir" remote add origin "$url"
-                  fetch_commit "$dir" "$sha" || {
-                    echo "::error::$pack: deployRef '$ref' is unfetchable - the pinned commit does not exist upstream. Falling back to HEAD would test something the manifest does not declare, so fix the ref in cloud's supported_nodes.yaml"; exit 1
-                  }
-                  git -C "$dir" checkout -q FETCH_HEAD
-                  ;;
-                *)
-                  id=${ref%@*}
-                  version=${ref##*@}
-                  if ! [[ "$id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || ! [[ "$version" =~ ^[A-Za-z0-9][A-Za-z0-9.+_-]*$ ]]; then
-                    echo "::error::$pack: deployRef must be <registry-id>@<version> (got '$ref')"; exit 1
-                  fi
-                  # A registry version record carries no commit - it points at
-                  # the CDN zip, and that artifact is what Cloud deploys, so
-                  # installing from it is the faithful path.
-                  download=$(curl --retry 3 --retry-delay 2 --retry-connrefused -sfL "https://api.comfy.org/nodes/$id/versions/$version" | jq -er '.downloadUrl') || {
-                    echo "::error::$pack: deployRef '$ref' is unfetchable - the registry has no downloadUrl for that version"; exit 1
-                  }
-                  if ! [[ "$download" =~ ^https://cdn\.comfy\.org/ ]]; then
-                    echo "::error::$pack: registry downloadUrl is not on cdn.comfy.org (got '$download')"; exit 1
-                  fi
-                  curl --retry 6 --retry-delay 5 --retry-all-errors \
-                    --retry-max-time 60 --remove-on-error -sfL \
-                    "$download" -o /tmp/pack.zip || {
-                    echo "::error::$pack: deployRef '$ref' is unfetchable - the registry artifact $download did not download"; exit 1
-                  }
-                  # Registry zips are the pack root, with no wrapper directory
-                  # to strip (checked across all 47 cloud registry artifacts).
-                  unzip -q /tmp/pack.zip -d "$dir"
-                  rm -f /tmp/pack.zip
-                  ;;
-              esac
-              # Repopulate the cache entry: tree without .git (nothing after
-              # this point reads pack git state), ref written LAST so a
-              # truncated copy fails the integrity check above.
-              rm -rf "$cache_dir" "$cache_dir.ref"
-              mkdir -p "$(dirname "$cache_dir")"
-              cp -R "$dir" "$cache_dir"
-              rm -rf "$cache_dir/.git"
-              printf '%s' "$ref" > "$cache_dir.ref"
-            fi
-            if [ -f "$dir/requirements.txt" ]; then
-              # Collected, not aborted. An unsatisfiable requirement upstream
-              # (radiance pins Imath>=3.1.0; PyPI has 0.0.2) is one pack's
-              # problem, and failing here took the other 21 packs in the shard
-              # down with it - a real pack bug erasing unrelated coverage.
-              if ! pip install -r "$dir/requirements.txt" \
-                   -c /tmp/torch-constraints.txt; then
-                uninstallable+=("$pack")
-                rm -rf "$dir"
-              fi
-            fi
-            echo "::endgroup::"
-          done
-          # Still a gate failure - a pack that cannot install has no coverage -
-          # but reported once, naming every offender, after the rest installed.
-          if [ ${#uninstallable[@]} -gt 0 ]; then
-            echo "::error::${#uninstallable[@]} pack(s) failed to install: ${uninstallable[*]}"
-            exit 1
-          fi
-          # Prune entries for packs this shard no longer owns: the prefix
-          # fallback restores old entries and the save re-tars the whole
-          # directory, so without this the entry grows monotonically and
-          # eats the repo's shared cache budget.
-          if [ -d "$HOME/.cache/cn-packs" ]; then
-            current=$(cut -f1 /tmp/shard-packs.tsv)
-            for entry in "$HOME/.cache/cn-packs"/*; do
-              name=$(basename "$entry" .ref)
-              grep -qxF "$name" <<<"$current" || rm -rf "$entry"
-            done
-          fi
+      - name: Prepare manifest custom node sources
+        id: prepare
+        run: pnpm exec tsx scripts/cicd/custom-node-install.ts --prepare
 
-      # Save only when this run rebuilt entries. An exact-key restore means
-      # the stored tree is already current - actions/cache/save re-tars and
-      # uploads unconditionally and only then hits the duplicate-key
-      # rejection, so skipping here is what actually avoids the cost. Gating
-      # on the INSTALL step (not the job) still saves when the suite fails,
-      # while a failed or cancelled install can never freeze a partial tree
-      # under the immutable key.
+      # Persist pinned source before pack-controlled requirements execute.
       - name: Save manifest pack cache
-        if: always() && steps.install.outcome == 'success' && steps.pack-cache.outputs.cache-hit != 'true'
+        if: >-
+          always() &&
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+          steps.prepare.outcome == 'success' &&
+          steps.pack-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
           path: ~/.cache/cn-packs
           key: cn-packs-v3-${{ env.SHARD_SLUG }}-${{ hashFiles('browser_tests/fixtures/data/customNodeManifest.*.json') }}
 
+      - name: Install manifest custom node requirements
+        id: install
+        run: pnpm exec tsx scripts/cicd/custom-node-install.ts --requirements
+
       - name: Apply Detection Proof execution break
         id: execution-mutation
-        if: >-
-          github.event_name == 'workflow_dispatch' &&
-          matrix.proof_row == '9'
-        shell: bash
-        run: |
-          set -euo pipefail
-          f=ComfyUI/custom_nodes/comfyui-videohelpersuite/videohelpersuite/nodes.py
-          perl -0pi -e 's/(class LoadAudioUpload:.*?def load_audio\(self, start_time=0, duration=0, \*\*kwargs\):)/$1\n        raise ValueError("DETECTION PROOF (row 9): pack node runtime failure")/s' "$f"
-          [ "$(grep -c 'DETECTION PROOF (row 9)' "$f")" = 1 ]
-          grep -q '"VHS_LoadAudioUpload": LoadAudioUpload' "$f"
-          echo "path=$f" >> "$GITHUB_OUTPUT"
-          echo "digest=$(shasum -a 256 "$f" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+        if: matrix.proof_row == '9'
+        env:
+          PROOF_ROW: ${{ matrix.proof_row }}
+        run: pnpm exec tsx scripts/cicd/custom-node-proof.ts mutate-execution
 
       - name: Bind Detection Proof identity
-        if: >-
-          github.event_name == 'workflow_dispatch' &&
-          matrix.proof_row != '0'
-        shell: bash
+        if: matrix.proof_row != '0'
         env:
           MUTATION_DIGEST: ${{ steps.source-mutation.outputs.digest || steps.execution-mutation.outputs.digest }}
           MUTATION_PATH: ${{ steps.source-mutation.outputs.path || steps.execution-mutation.outputs.path }}
           PROOF_ROW: ${{ matrix.proof_row }}
-        run: |
-          set -euo pipefail
-          PROOF_SHA=$(git rev-parse HEAD)
-          [ -n "$MUTATION_PATH" ] && [ -n "$MUTATION_DIGEST" ] || { echo '::error::mutation identity is incomplete'; exit 1; }
-          case "$PROOF_ROW" in
-            1) title='S1: every registered node mounts on the canvas renderer'; pat='ImpactInt: instance is missing declared input \\"value\\" \\(litegraph\\)' ;;
-            2) title='S2: every registered node mounts on the DOM renderer'; pat='ImpactInt: Vue mounts 0 of 1 widgets' ;;
-            3) title='S3: registered-node save/reload outcomes match exact contracts'; pat='ImpactInt: widgets_values \[1\] -> \[0\] on set-values reload' ;;
-            9) title='S9: calibrated model-free node corpus executes'; pat='DETECTION PROOF \\(row 9\\): pack node runtime failure' ;;
-            15) title='Curated workflow execution: completes without error'; pat='ComfyUI-Impact-Pack/impact_primitives_run\\.json 2: output hash changed' ;;
-          esac
-          {
-            echo "proof_sha=$PROOF_SHA"
-            echo "tier=S$PROOF_ROW"
-            echo "test_identity=$title"
-            echo "mutation_path=$MUTATION_PATH"
-            echo "mutation_sha256=$MUTATION_DIGEST"
-            echo "expected_failure_regex=$pat"
-            echo 'workers=1'
-            echo 'retries=0'
-          } | tee tier-isolation-proof-identity.txt
+        run: pnpm exec tsx scripts/cicd/custom-node-proof.ts identity
 
       - name: Stage deterministic inputs
         shell: bash
@@ -477,6 +326,7 @@ jobs:
           set -euo pipefail
           mkdir -p ComfyUI/input
           cp browser_tests/assets/test_upload_image.png ComfyUI/input/000_custom_node_probe.png
+          cp browser_tests/assets/image32x32.webp ComfyUI/input/000_custom_node_probe.webp
           python - <<'PY'
           import wave
 
@@ -513,16 +363,17 @@ jobs:
 
       - name: Run custom-node suite
         id: suite
-        continue-on-error: >-
-          ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' }}
+        continue-on-error: ${{ matrix.proof_row != '0' }}
         env:
           CN_ENABLE_S15: ${{ env.CUSTOM_NODES_MANIFEST == 'core' && '1' || '0' }}
           CN_OUTPUT_HASHES_CORE: ${{ env.COMFYUI_PIN }}
+          CN_INTERACTION: ${{ inputs.record_interactions && 'record' || '' }}
+          CN_INTERACTION_CORE: ${{ env.COMFYUI_PIN }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
           PROOF_ROW: ${{ matrix.proof_row }}
           # Through env, not inline interpolation: dispatch input must never
           # be shell-parsed.
-          GREP_FILTER: ${{ inputs.grep }}
+          GREP_FILTER: ${{ inputs.record_interactions && 'interaction profiles' || inputs.grep }}
         run: |
           set -o pipefail
           # workers=1: the auto-run tier needs exclusive backend-queue access;
@@ -549,168 +400,19 @@ jobs:
       # A skip here means a pack or devtools did not load: on this backend every
       # tier is meant to run, so a skip is a gate failure, not an honest pass.
       - name: Forbid failed, skipped, or flaky tests
-        if: >-
-          always() &&
-          !(github.event_name == 'workflow_dispatch' && matrix.proof_row != '0')
-        shell: bash
+        if: always() && matrix.proof_row == '0'
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
           GREP_FILTER: ${{ inputs.grep }}
-        run: |
-          set -euo pipefail
-          # The JSON result is mandatory even when the suite step failed: the
-          # gate must independently prove the failed, skipped, and flaky totals.
-          if [ ! -f custom-nodes-results.json ]; then
-            echo "::error::suite wrote no results json (${SUITE_OUTCOME:-unknown}) - the result gate could not run"
-            exit 1
-          fi
-          collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
-          echo "collected tests: $collected"
-          # Derived from this shard's slice, not a literal: balanced slices
-          # differ in size and in how many rows carry the run tier, so one
-          # hardcoded number would be wrong on most shards. Same loader the
-          # specs register from, so a slice that silently shrank is caught
-          # here rather than passing as a smaller green run.
-          expected_tests=$(pnpm --silent custom-node-shard --expected-tests)
-          # A dispatch grep runs a deliberate subset; the exact-count gate
-          # applies only to full runs (every gating event runs unfiltered).
-          if [ -n "${GREP_FILTER:-}" ]; then
-            echo "grep filter active ('$GREP_FILTER') - exact-count gate skipped for this manual subset run"
-          elif [ "$collected" != "$expected_tests" ]; then
-            echo "::error::collected $collected tests; expected exactly $expected_tests for shard $CUSTOM_NODES_SHARD"
-            exit 1
-          fi
-          unexpected=$(jq -er '.stats.unexpected | numbers' custom-nodes-results.json)
-          echo "failed tests: $unexpected"
-          if [ "$unexpected" != "0" ]; then
-            echo "::error::$unexpected test(s) failed - failed results are not acceptable in the gating job"
-            jq -r '.. | objects
-                     | select(has("title") and has("tests"))
-                     | select(any(.tests[]?; .status == "unexpected"))
-                     | .title' custom-nodes-results.json | sort -u | head -40
-            exit 1
-          fi
-          skipped=$(jq -er '.stats.skipped | numbers' custom-nodes-results.json)
-          echo "skipped tests: $skipped"
-          if [ "$skipped" != "0" ]; then
-            echo "::error::$skipped test(s) skipped - a manifest pack or devtools failed to load; skips are not acceptable in the gating job"
-            jq -r '.. | objects
-                     | select(has("title") and has("tests"))
-                     | select(any(.tests[]?; .status == "skipped"))
-                     | .title' custom-nodes-results.json | sort -u | head -40
-            exit 1
-          fi
-          flaky=$(jq -er '.stats.flaky | numbers' custom-nodes-results.json)
-          echo "flaky tests: $flaky"
-          if [ "$flaky" != "0" ]; then
-            echo "::error::$flaky test(s) passed only after retry - flaky results are not acceptable in the gating job"
-            jq -r '.. | objects
-                     | select(has("title") and has("tests"))
-                     | select(any(.tests[]?; .status == "flaky"))
-                     | .title' custom-nodes-results.json | sort -u | head -40
-            exit 1
-          fi
+        run: pnpm exec tsx scripts/cicd/custom-node-results.ts ordinary
 
       - name: Assert deliberate failure independence
-        if: >-
-          always() &&
-          github.event_name == 'workflow_dispatch' &&
-          matrix.proof_row != '0'
-        shell: bash
+        if: always() && matrix.proof_row != '0'
         env:
           PROOF_ROW: ${{ matrix.proof_row }}
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-        run: |
-          set -euo pipefail
-          [ -f custom-nodes-results.json ] || { echo "::error::proof wrote no JSON"; exit 1; }
-          collected=$(jq -er '[.stats.expected, .stats.unexpected, .stats.flaky, .stats.skipped] | add' custom-nodes-results.json)
-          expected=$(jq -er '.stats.expected' custom-nodes-results.json)
-          unexpected=$(jq -er '.stats.unexpected' custom-nodes-results.json)
-          skipped=$(jq -er '.stats.skipped' custom-nodes-results.json)
-          flaky=$(jq -er '.stats.flaky' custom-nodes-results.json)
-          expected_collected=$(pnpm --silent custom-node-shard --expected-tier-tests)
-          if [ "$PROOF_ROW" = 15 ]; then
-            expected_collected=1
-          fi
-          expected_passed=$((expected_collected - 1))
-          expected_failed=1
-          [ "$collected" = "$expected_collected" ] || { echo "::error::S$PROOF_ROW collected $collected tests, expected $expected_collected"; exit 1; }
-          [ "$expected" = "$expected_passed" ] || { echo "::error::S$PROOF_ROW expected-pass count is $expected, expected $expected_passed"; exit 1; }
-          [ "$unexpected" = "$expected_failed" ] || { echo "::error::S$PROOF_ROW failure count is $unexpected, expected $expected_failed"; exit 1; }
-          [ "$skipped" = 0 ] && [ "$flaky" = 0 ] || { echo "::error::S$PROOF_ROW has skipped=$skipped flaky=$flaky"; exit 1; }
-          [ "$SUITE_OUTCOME" = failure ] || { echo "::error::S$PROOF_ROW did not break its witness"; exit 1; }
+        run: pnpm exec tsx scripts/cicd/custom-node-results.ts proof
 
-          {
-            jq -r '.. | objects | select(.status? == "unexpected") | .results[]? | .error?.message? // empty' custom-nodes-results.json
-            jq -r '.. | objects | select(.status? == "unexpected") | .results[]?.attachments[]? | select(.contentType? == "application/json" and has("body")) | (.body | @base64d | fromjson) | if type == "array" then .[] else . end' custom-nodes-results.json
-          } > tier-isolation-proof-evidence.txt
-          if [ "$PROOF_ROW" = 15 ]; then
-            grep -Eq -- 'ComfyUI-Impact-Pack/impact_primitives_run\.json 2: output hash changed' tier-isolation-proof-evidence.txt || {
-              echo '::error::S15 failure was not attributable to the serialized-value break'
-              exit 1
-            }
-            echo 'S15: serialized value drift changed a sink output hash while execution completed'
-            exit 0
-          fi
-          pack_failures=$(jq -er --arg name "s${PROOF_ROW}-failures.json" '
-            [.. | objects
-              | select(.status? == "unexpected")
-              | .results[]?.attachments[]?
-              | select(.name == $name and has("body"))
-              | (.body | @base64d | fromjson)]
-            | if length == 1 and (.[0] | type) == "array"
-              then .[0] | length
-              else -1
-              end
-          ' custom-nodes-results.json)
-          [ "$pack_failures" = 1 ] || { echo "::error::S$PROOF_ROW produced $pack_failures pack failures, expected exactly one witness"; exit 1; }
-          case "$PROOF_ROW" in
-            1) witness=comfyui-impact-pack; pat='ImpactInt: instance is missing declared input \\"value\\" \(litegraph\)' ;;
-            2) witness=comfyui-impact-pack; pat='ImpactInt: Vue mounts 0 of 1 widgets' ;;
-            3) witness=comfyui-impact-pack; pat='ImpactInt: widgets_values \[1\] -> \[0\] on set-values reload' ;;
-            9) witness=comfyui-videohelpersuite; pat='DETECTION PROOF \(row 9\): pack node runtime failure' ;;
-          esac
-          grep -Fq -- "[$witness]" tier-isolation-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure did not belong to $witness"; exit 1; }
-          grep -Eq -- "$pat" tier-isolation-proof-evidence.txt || { echo "::error::S$PROOF_ROW failure was not attributable to its Detection Proof break"; exit 1; }
-
-          case "$PROOF_ROW" in
-            1) target_tier=S1; target_title="S1: every registered node mounts on the canvas renderer"; next_tier=S2 ;;
-            2) target_tier=S2; target_title="S2: every registered node mounts on the DOM renderer"; next_tier=S3 ;;
-            3) target_tier=S3; target_title="S3: registered-node save/reload outcomes match exact contracts"; next_tier= ;;
-            9) target_tier=S9; target_title="S9: calibrated model-free node corpus executes"; next_tier= ;;
-          esac
-          jq -e --arg title "$target_title" '.. | objects | select(.title? == $title) | .tests[] | select(.status == "unexpected")' custom-nodes-results.json >/dev/null
-          jq -e --arg title "$target_title" '
-            [.. | objects
-              | select(.title? and .tests?)
-              | select(.title | test("^S(1|2|3|9): every "))
-              | . as $suite
-              | .tests[]
-              | select($suite.title != $title and .status != "expected")]
-            | length == 0
-          ' custom-nodes-results.json >/dev/null || {
-            echo "::error::a tier other than $target_tier did not pass independently"
-            exit 1
-          }
-          mapfile -t tier_sessions < <(grep -oE '\[tier-session\] pid=[0-9]+ tier=S(1|2|3|9) pageId=[^ ]+' custom-nodes.log)
-          [ "${#tier_sessions[@]}" -eq "$expected_collected" ] || { echo "::error::$target_tier proof recorded ${#tier_sessions[@]} tier sessions, expected $expected_collected"; exit 1; }
-          page_ids=$(printf '%s\n' "${tier_sessions[@]}" | sed -E 's/.* pageId=([^ ]+).*/\1/' | sort -u | wc -l | tr -d ' ')
-          [ "$page_ids" = "$expected_collected" ] || { echo "::error::$target_tier proof reused an application page between tiers"; exit 1; }
-          pids=$(printf '%s\n' "${tier_sessions[@]}" | sed -E 's/.* pid=([0-9]+).*/\1/' | sort -u | wc -l | tr -d ' ')
-          if [ -n "$next_tier" ]; then
-            [ "$pids" = 2 ] || { echo "::error::$target_tier proof used $pids Playwright workers, expected the failed worker plus one replacement"; exit 1; }
-            target_pid=$(printf '%s\n' "${tier_sessions[@]}" | sed -nE "s/.*pid=([0-9]+) tier=$target_tier .*/\\1/p")
-            next_pid=$(printf '%s\n' "${tier_sessions[@]}" | sed -nE "s/.*pid=([0-9]+) tier=$next_tier .*/\\1/p")
-            [ -n "$target_pid" ] && [ -n "$next_pid" ] && [ "$target_pid" != "$next_pid" ] || { echo "::error::$next_tier did not run in a replacement worker after $target_tier failed"; exit 1; }
-          else
-            [ "$pids" = 1 ] || { echo "::error::$target_tier is last but proof used $pids Playwright workers"; exit 1; }
-          fi
-          echo "$target_tier: real break failed; every other tier passed in its own fresh-page test"
-
-      # Renders what ran and what it found - to the job log as an aligned
-      # table and to the run's Summary panel as markdown - so a dispatch
-      # answers "which branch, against what, with what verdict" without
-      # opening the artifact.
       - name: Publish results table
         if: always()
         shell: bash
@@ -726,26 +428,43 @@ jobs:
         with:
           # Shard-scoped: artifact names are unique per run, so matrix jobs
           # sharing one name cannot overwrite each other's reports.
-          name: ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' && format('playwright-report-custom-nodes-{0}-row{1}', env.SHARD_SLUG, matrix.proof_row) || format('playwright-report-custom-nodes-{0}', env.SHARD_SLUG) }}
+          name: ${{ matrix.proof_row != '0' && format('playwright-report-custom-nodes-{0}-row{1}', env.SHARD_SLUG, matrix.proof_row) || format('playwright-report-custom-nodes-{0}', env.SHARD_SLUG) }}
           path: |
             playwright-report/
             custom-nodes-results.json
             custom-nodes.log
+            browser_tests/fixtures/customNode/interactionProfiles/
             tier-isolation-proof-evidence.txt
             tier-isolation-proof-identity.txt
           retention-days: 7
           if-no-files-found: error
 
   custom-nodes-e2e-status:
-    name: custom-nodes-e2e-status
+    name: E2E Custom Nodes Test
     if: always()
-    needs: custom_nodes_e2e
+    needs: [changes, custom_nodes_e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Enforce suite result
         shell: bash
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          EVENT_NAME: ${{ github.event_name }}
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           E2E_RESULT: ${{ needs.custom_nodes_e2e.result }}
         run: |
           set -euo pipefail
+          [ "$CHANGES_RESULT" = success ] || { echo "::error::change detection ended with $CHANGES_RESULT"; exit 1; }
+          case "$SHOULD_RUN" in
+            true) ;;
+            false)
+              [ "$EVENT_NAME" = pull_request ] || { echo "::error::change detection returned false for $EVENT_NAME"; exit 1; }
+              ;;
+            *) echo "::error::change detection returned invalid value '$SHOULD_RUN'"; exit 1 ;;
+          esac
+          if [ "$SHOULD_RUN" = false ]; then
+            [ "$E2E_RESULT" = skipped ] || { echo "::error::irrelevant-change matrix ended with $E2E_RESULT"; exit 1; }
+            echo 'custom-node matrix not applicable to this pull request'
+            exit 0
+          fi
           [ "$E2E_RESULT" = success ] || { echo "::error::custom-node matrix ended with $E2E_RESULT"; exit 1; }

@@ -38,6 +38,29 @@ describe('DatadogRumTelemetryProvider', () => {
     )
   })
 
+  it('records proactive unified refresh lifecycle outcomes', () => {
+    new DatadogRumTelemetryProvider().trackUnifiedAuthRefresh({
+      outcome: 'retries_exhausted',
+      retry_count: 3
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      { outcome: 'retries_exhausted', retry_count: 3 }
+    )
+  })
+
+  it('records image load failures by source', () => {
+    new DatadogRumTelemetryProvider().trackImageLoadFailed({
+      source: 'node_image_preview'
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.IMAGE_LOAD_FAILED,
+      { source: 'node_image_preview' }
+    )
+  })
+
   it('records the same canonical billing name and context as PostHog', () => {
     const event: BillingTelemetryEvent = {
       operation: 'operation',

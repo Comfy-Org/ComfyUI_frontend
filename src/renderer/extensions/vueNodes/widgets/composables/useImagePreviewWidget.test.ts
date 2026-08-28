@@ -250,6 +250,29 @@ describe('useImagePreviewWidget', () => {
       })
     })
 
+    it('does not draw an image that breaks before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const img = createMockImage(200, 100)
+      const node = createMockNode({
+        imgs: [img],
+        imageIndex: 0
+      })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      Object.defineProperties(img, {
+        naturalHeight: { value: 0 },
+        naturalWidth: { value: 0 }
+      })
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
+    })
+
     it('auto-sets imageIndex to 0 for single image with null index', () => {
       const constructor = useImagePreviewWidget()
       const img = createMockImage(200, 100)
@@ -388,6 +411,28 @@ describe('useImagePreviewWidget', () => {
 
       expect(calculateImageGrid).toHaveBeenCalledWith(imgs, 300, 220)
       expect(node.imageRects).toHaveLength(2)
+    })
+
+    it('does not draw thumbnails that break before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const imgs = [createMockImage(100, 100), createMockImage(100, 100)]
+      const node = createMockNode({ imgs, imageIndex: null })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      for (const img of imgs) {
+        Object.defineProperties(img, {
+          naturalHeight: { value: 0 },
+          naturalWidth: { value: 0 }
+        })
+      }
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
     })
 
     it('uses non-compact mode for mixed aspect ratios', () => {

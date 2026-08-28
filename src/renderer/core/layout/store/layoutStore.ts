@@ -36,9 +36,10 @@ import type {
   SetGroupBoundsOperation,
   SetNodeZIndexOperation,
   Size,
-  SlotId,
-  SlotLayout
+  SlotOffset,
+  SlotOffsetMode
 } from '@/renderer/core/layout/types'
+import type { SlotDirection, SlotIndex } from '@/types/slotId'
 import {
   isBoundsEqual,
   isPointEqual
@@ -137,6 +138,29 @@ interface BatchUpdateBoundsOptions {
   source: LayoutSource
 }
 
+interface SlotOffsetSnapshot {
+  mode: SlotOffsetMode
+  byDirection: Record<SlotDirection, Map<SlotIndex, Point>>
+}
+
+function isSlotOffsetSnapshotEqual(
+  current: SlotOffsetSnapshot,
+  next: SlotOffsetSnapshot
+): boolean {
+  if (current.mode !== next.mode) return false
+
+  for (const direction of ['input', 'output'] as const) {
+    const currentOffsets = current.byDirection[direction]
+    const nextOffsets = next.byDirection[direction]
+    if (currentOffsets.size !== nextOffsets.size) return false
+    for (const [index, point] of nextOffsets) {
+      const currentPoint = currentOffsets.get(index)
+      if (!currentPoint || !isPointEqual(currentPoint, point)) return false
+    }
+  }
+  return true
+}
+
 class LayoutStoreImpl {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
@@ -174,13 +198,12 @@ class LayoutStoreImpl {
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
-  private slotLayouts = new Map<SlotId, SlotLayout>()
+  private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
   private linkSegmentSpatialIndex: SpatialIndexManager<string> // For link segments (single index for all link geometry)
-  private slotSpatialIndex: SpatialIndexManager<SlotId> // For slots
   private rerouteSpatialIndex: SpatialIndexManager<ScopedLayoutKey> // For reroutes
 
   private highestZIndex = 0
@@ -189,20 +212,6 @@ class LayoutStoreImpl {
   public isDraggingVueNodes = ref(false)
   // Vue resizing state to prevent drag from activating during resize
   public isResizingVueNodes = ref(false)
-
-  /**
-   * Flag indicating slot positions are pending sync after graph reconfiguration.
-   * When true, link rendering should be skipped to avoid drawing with stale positions.
-   */
-  private _pendingSlotSync = false
-
-  get pendingSlotSync(): boolean {
-    return this._pendingSlotSync
-  }
-
-  get hasSlotLayouts(): boolean {
-    return this.slotLayouts.size > 0
-  }
 
   /**
    * Number of tracked nodes, without materialising their layouts.
@@ -217,9 +226,8 @@ class LayoutStoreImpl {
    * Counter bumped when the Yjs-backed node, link and reroute maps change, for
    * use as a cache key.
    *
-   * Scope is exactly those maps. Slot, link and reroute *geometry* live in
-   * plain Maps that are mutated without bumping this, so a cache over
-   * `updateSlotLayout`/`clearAllSlotLayouts` output cannot be keyed on it.
+   * Scope is exactly those maps. Link and reroute *geometry* live in plain
+   * Maps that are mutated without bumping this.
    * Anything deriving node geometry from this should also read that geometry
    * from this store, so key and data stay consistent.
    *
@@ -249,10 +257,6 @@ class LayoutStoreImpl {
     return this._nodeGeometryVersion
   }
 
-  setPendingSlotSync(value: boolean): void {
-    this._pendingSlotSync = value
-  }
-
   constructor() {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')
@@ -261,7 +265,6 @@ class LayoutStoreImpl {
 
     // Initialize spatial index managers
     this.linkSegmentSpatialIndex = new SpatialIndexManager<string>() // Single index for all link geometry
-    this.slotSpatialIndex = new SpatialIndexManager<SlotId>()
     this.rerouteSpatialIndex = new SpatialIndexManager<ScopedLayoutKey>()
 
     // Deep observers so nested field writes (ynode.set('rect', ...)) fire
@@ -429,78 +432,6 @@ class LayoutStoreImpl {
     }
   }
   /**
-   * Update slot layout data
-   */
-  updateSlotLayout(key: SlotId, layout: SlotLayout): void {
-    const existing = this.slotLayouts.get(key)
-
-    if (existing) {
-      // Short-circuit if geometry is unchanged
-      if (
-        isPointEqual(existing.position, layout.position) &&
-        isBoundsEqual(existing.bounds, layout.bounds)
-      ) {
-        return
-      }
-      // Update spatial index
-      this.slotSpatialIndex.update(key, layout.bounds)
-    } else {
-      // Insert into spatial index
-      this.slotSpatialIndex.insert(key, layout.bounds)
-    }
-
-    this.slotLayouts.set(key, layout)
-  }
-
-  /**
-   * Batch update slot layouts and spatial index in one pass
-   */
-  batchUpdateSlotLayouts(
-    updates: Array<{ key: SlotId; layout: SlotLayout }>
-  ): void {
-    if (!updates.length) return
-
-    // Update spatial index and map entries (skip unchanged)
-    for (const { key, layout } of updates) {
-      const existing = this.slotLayouts.get(key)
-
-      if (existing) {
-        // Short-circuit if geometry is unchanged
-        if (
-          isPointEqual(existing.position, layout.position) &&
-          isBoundsEqual(existing.bounds, layout.bounds)
-        ) {
-          continue
-        }
-        this.slotSpatialIndex.update(key, layout.bounds)
-      } else {
-        this.slotSpatialIndex.insert(key, layout.bounds)
-      }
-      this.slotLayouts.set(key, layout)
-    }
-  }
-
-  /**
-   * Delete slot layout data
-   */
-  deleteSlotLayout(key: SlotId): void {
-    const deleted = this.slotLayouts.delete(key)
-    if (deleted) {
-      // Remove from spatial index
-      this.slotSpatialIndex.remove(key)
-    }
-  }
-
-  /**
-   * Clear all slot layouts and their spatial index (O(1) operations)
-   * Used when switching rendering modes (Vue ↔ LiteGraph)
-   */
-  clearAllSlotLayouts(): void {
-    this.slotLayouts.clear()
-    this.slotSpatialIndex.clear()
-  }
-
-  /**
    * Update reroute layout data
    */
   updateRerouteLayout(
@@ -536,13 +467,43 @@ class LayoutStoreImpl {
   getLinkLayout(linkId: LinkId): LinkLayout | null {
     return this.linkLayouts.get(linkId) || null
   }
-  /**
-   * Get slot layout data
-   */
-  getSlotLayout(key: SlotId): SlotLayout | null {
-    return this.slotLayouts.get(key) || null
+
+  updateNodeSlotOffsets(
+    graphId: UUID,
+    nodeId: NodeId,
+    offsets: readonly SlotOffset[],
+    mode: SlotOffsetMode
+  ): void {
+    const key = makeScopedLayoutKey(graphId, nodeId)
+    const byDirection: Record<SlotDirection, Map<SlotIndex, Point>> = {
+      input: new Map(),
+      output: new Map()
+    }
+    for (const offset of offsets) {
+      byDirection[offset.type].set(offset.index, offset.position)
+    }
+    const next = { mode, byDirection }
+    const current = this.slotOffsets.get(key)
+    if (current && isSlotOffsetSnapshotEqual(current, next)) return
+
+    this.slotOffsets.set(key, next)
+    if (current?.mode === mode || offsets.length > 0) {
+      this.queueGeometryChange(new Set([graphId]))
+    }
   }
 
+  getSlotOffset(
+    graphId: UUID,
+    nodeId: NodeId,
+    index: SlotIndex,
+    type: SlotDirection,
+    mode: SlotOffsetMode
+  ): Point | null {
+    const offsets = this.slotOffsets.get(makeScopedLayoutKey(graphId, nodeId))
+    return offsets?.mode === mode
+      ? (offsets.byDirection[type].get(index) ?? null)
+      : null
+  }
   /**
    * Get reroute layout data
    */
@@ -554,14 +515,6 @@ class LayoutStoreImpl {
       this.rerouteLayouts.get(makeScopedLayoutKey(rootGraphId, rerouteId)) ??
       null
     )
-  }
-
-  /**
-   * Returns all slot layout keys currently tracked by the store.
-   * Useful for global passes without relying on spatial queries.
-   */
-  getAllSlotKeys(): SlotId[] {
-    return Array.from(this.slotLayouts.keys())
   }
 
   /**
@@ -698,29 +651,6 @@ class LayoutStoreImpl {
     // Invoke segment query and return just the linkId
     const segment = this.queryLinkSegmentAtPoint(point, ctx)
     return segment ? segment.linkId : null
-  }
-
-  /**
-   * Query slot at point
-   */
-  querySlotAtPoint(point: Point): SlotLayout | null {
-    // Use spatial index to get candidate slots
-    const searchArea = {
-      x: point.x - 10, // Tolerance for slot size
-      y: point.y - 10,
-      width: 20,
-      height: 20
-    }
-    const candidateSlotKeys = this.slotSpatialIndex.query(searchArea)
-
-    // Check precise bounds for candidates
-    for (const key of candidateSlotKeys) {
-      const slotLayout = this.slotLayouts.get(key)
-      if (slotLayout && pointInBounds(point, slotLayout.bounds)) {
-        return slotLayout
-      }
-    }
-    return null
   }
 
   /**
@@ -874,6 +804,9 @@ class LayoutStoreImpl {
     for (const key of this.contentSizes.keys()) {
       if (key.startsWith(prefix)) this.contentSizes.delete(key)
     }
+    for (const key of this.slotOffsets.keys()) {
+      if (key.startsWith(prefix)) this.slotOffsets.delete(key)
+    }
     for (const key of [...this.ygroups.keys()]) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
@@ -972,24 +905,21 @@ class LayoutStoreImpl {
       this.yreroutes.clear()
       this.rerouteLayouts.clear()
       this.rerouteSpatialIndex.clear()
+      this.slotOffsets.clear()
     }, 'initialization')
     this.clearViewGeometry()
   }
 
   /**
-   * Drops the geometry scoped to the graph being left: slot and link layouts,
-   * the spatial indexes over them, and the listeners and queues bound to them.
-   * Entity geometry lives with the entity, and leaves through
-   * `detachGraphLayouts`.
+   * Drops view-local link geometry and the listeners and queues bound to the
+   * graph being left. Entity geometry leaves through `detachGraphLayouts`.
    */
   clearViewGeometry(): void {
     this.ydoc.transact(() => {
       this.nodeChangeListeners.clear()
       this.linkSegmentSpatialIndex.clear()
-      this.slotSpatialIndex.clear()
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
-      this.slotLayouts.clear()
       this.contentSizes.clear()
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
@@ -1102,7 +1032,7 @@ class LayoutStoreImpl {
 
     this.ynodes.delete(nodeKey)
     this.contentSizes.delete(nodeKey)
-    // Slot layouts are cleaned up by onUnmounted in useSlotElementTracking.
+    this.slotOffsets.delete(nodeKey)
     // Link geometry is cleaned up per-link by LLink.disconnect as the node's
     // connections are severed, so nothing to do here.
 

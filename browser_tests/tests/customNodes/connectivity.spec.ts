@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -7,6 +8,8 @@ import {
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
+  runWithCollectedCleanup,
+  submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 import {
@@ -48,16 +51,13 @@ import {
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
-// Budget the sweep per pair instead of flat: the corpus grows with every pack
-// added, and a flat cap silently becomes a hang the day it stops fitting. Run
-// 30961895204 swept 16832 pairs and did not finish inside a flat 120s cap, so
-// the real rate is above 6.5ms/pair; the multiplier below carries margin over
-// that floor and the sweep logs its actual rate so it can be tightened.
 const PLAN_SETUP_MS = 120_000
-const SWEEP_MS_PER_PAIR = 40
+const SWEEP_MS_PER_PAIR = 70
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 const DYNAMIC_CLEANUP_SETTLE_MS = 50
-const PAIRS_PER_BATCH = 100
+const PAIRS_PER_BATCH = 25
+const BATCH_STALL_MS = 45_000
+const PAIRS_PER_PAGE = 1_000
 // Same discipline for the drag pass, whose edge list grows with every
 // connectivity pack: one drag per edge per renderer. This test carried a flat
 // 120s cap over today's 6 packs (16 drags) until the since-removed cloud
@@ -117,10 +117,19 @@ test.beforeEach(async ({ comfyPage }) => {
 // round-trip; it stays as the guard for pack JS that queues one behind our
 // back, which would otherwise run on into the next test.
 test.afterEach(async ({ comfyPage }) => {
-  expect(
-    await drainBackendToIdle(comfyPage.page, 10_000),
-    'connectivity probe left test-owned backend work running'
-  ).toBe(0)
+  await runWithCollectedCleanup(async () => {
+    expect(
+      await submittedPromptCount(comfyPage.page),
+      'connectivity probe submitted a prompt'
+    ).toBe(0)
+  }, [
+    async () => {
+      expect(
+        await drainBackendToIdle(comfyPage.page, 10_000),
+        'connectivity probe left test-owned backend work running'
+      ).toBe(0)
+    }
+  ])
 })
 
 function isEntryInstalled(
@@ -312,7 +321,6 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   // serialize/configure survival - all renderer-independent paths (widget
   // values and links flow through the same stores in both renderers). The
   // curated drag test below covers real pointer wiring under BOTH renderers.
-  const consoleErrors = collectConsoleErrors(comfyPage.page)
   test.setTimeout(
     PLAN_SETUP_MS +
       sharedPairs.length * SWEEP_MS_PER_PAIR +
@@ -320,14 +328,13 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   )
   const sweepStart = Date.now()
   const sharedStart = Date.now()
-  const sharedResults = await runPairsInPage(comfyPage.page, sharedPairs)
+  const shared = await runPairsAcrossPages(comfyPage, sharedPairs)
   console.log(
     `connectivity shared sweep: ${sharedPairs.length} pairs in ${Date.now() - sharedStart}ms`
   )
   const isolated = await runPairsInIsolatedPages(comfyPage.page, isolatedPairs)
-  const results = [...sharedResults, ...isolated.results]
+  const results = [...shared.results, ...isolated.results]
   const sweepMs = Date.now() - sweepStart
-  consoleErrors.stop()
   expect(
     results,
     'the executor must return one outcome for every planned pair'
@@ -372,7 +379,7 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   // wiring sweep queues no prompts, so a prompt-execution error here is a
   // prior tier's async stray, not this test's (isForeignExecutionNoise;
   // ARCHITECTURE section 9 principle).
-  const sweepErrors = [...consoleErrors.errors, ...isolated.errors].filter(
+  const sweepErrors = [...shared.errors, ...isolated.errors].filter(
     (error) => !isForeignExecutionNoise(error)
   )
   const unledgered = unallowlistedConnectivityErrorsForPacks(
@@ -463,17 +470,32 @@ function firstMaterializedPair(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<PlannedPair | null> {
-  return page.evaluate((pairsInPage) => {
+  return page.evaluate(async (pairsInPage) => {
+    const graph = window.app!.graph
+    const settle = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
     for (const pair of pairsInPage) {
-      const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
-      const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
-      const outFound = producer?.outputs.some(
-        (slot) => slot.name === pair.producer.slotName
-      )
-      const inFound = consumer?.inputs.some(
-        (slot) => slot.name === pair.consumer.slotName
-      )
-      if (outFound && inFound) return pair
+      graph.clear()
+      try {
+        const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
+        const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
+        if (!producer || !consumer) continue
+        graph.add(producer)
+        graph.add(consumer)
+        await settle()
+        const outFound = producer.outputs.some(
+          (slot) => slot.name === pair.producer.slotName
+        )
+        const inFound = consumer.inputs.some(
+          (slot) => slot.name === pair.consumer.slotName
+        )
+        if (outFound && inFound) return pair
+      } finally {
+        graph.clear()
+        await settle()
+      }
     }
     return null
   }, pairs)
@@ -497,7 +519,73 @@ async function runPairsInPage(
   return results
 }
 
-function evaluatePairs(
+async function runPairsAcrossPages(
+  comfyPage: ComfyPage,
+  pairs: PlannedPair[]
+): Promise<{ results: PairResult[]; errors: string[] }> {
+  const results: PairResult[] = []
+  const errors: string[] = []
+  for (let start = 0; start < pairs.length; start += PAIRS_PER_PAGE) {
+    if (start > 0) {
+      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+      await comfyPage.waitForAppReady()
+    }
+    const pagePairs = pairs.slice(start, start + PAIRS_PER_PAGE)
+    console.log(
+      `connectivity shared page: ${start + 1}-${start + pagePairs.length}/${pairs.length}`
+    )
+    const consoleErrors = collectConsoleErrors(comfyPage.page)
+    try {
+      results.push(...(await runPairsInPage(comfyPage.page, pagePairs)))
+    } finally {
+      consoleErrors.stop()
+      errors.push(...consoleErrors.errors)
+    }
+  }
+  return { results, errors }
+}
+
+async function evaluatePairs(
+  page: Page,
+  pairs: PlannedPair[],
+  options: { resetAfter?: boolean; stalledCleanupKeys?: string[] } = {}
+): Promise<PairResult[]> {
+  const stall = Symbol('stall')
+  let timerId: ReturnType<typeof setTimeout> | undefined
+  const timer = new Promise<typeof stall>((resolve) => {
+    timerId = setTimeout(() => resolve(stall), BATCH_STALL_MS)
+  })
+  const batch = evaluatePairsInPage(page, pairs, options)
+  let outcome: PairResult[] | typeof stall
+  try {
+    outcome = await Promise.race([batch, timer])
+  } finally {
+    if (timerId !== undefined) clearTimeout(timerId)
+  }
+  if (outcome !== stall) return outcome
+  const probe = async () =>
+    page
+      .evaluate(
+        () => (window as unknown as { __cnPairCursor?: string }).__cnPairCursor,
+        { timeout: 10_000 }
+      )
+      .catch(() => null)
+  const first = await probe()
+  await new Promise((resolve) => setTimeout(resolve, 2_000))
+  const second = await probe()
+  if (first === null || second === null)
+    throw new Error(
+      `connectivity batch wedged the renderer after ${BATCH_STALL_MS}ms; the page stopped answering, so a pack ran a synchronous loop. Batch started at ${pairs[0] ? `${pairs[0].producer.nodeType}.${pairs[0].producer.slotName}` : 'unknown'}`
+    )
+  const advanced = first !== second
+  throw new Error(
+    advanced
+      ? `connectivity batch is progressing but too slow for ${BATCH_STALL_MS}ms: the cursor moved '${first}' -> '${second}' during a 2s sample, so no single pair is stuck and the batch simply needs longer than the budget allows`
+      : `connectivity batch stalled after ${BATCH_STALL_MS}ms on pair '${second ?? 'none recorded'}' - the page answers and the cursor did not move across a 2s sample, so that one pair is awaiting something that never settles`
+  )
+}
+
+function evaluatePairsInPage(
   page: Page,
   pairs: PlannedPair[],
   {
@@ -528,6 +616,7 @@ function evaluatePairs(
     }> = []
     for (const pair of pairsInPage) {
       const key = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
+      Object.assign(window, { __cnPairCursor: key })
       try {
         resetGraph()
         const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
@@ -870,16 +959,21 @@ test('connectivity drags: one materialized in-pack link per applicable pack conn
         await producer.connectOutput(outIndex, consumer, inIndex)
       }
 
-      const linked = await comfyPage.page.evaluate(
-        ([consumerId, index]) => {
-          const node = window.app!.graph.nodes.find(
-            (candidate) => String(candidate.id) === consumerId
-          )
-          return node?.inputs?.[Number(index)]?.link != null
-        },
-        [String(consumer.id), String(inIndex)] as const
-      )
-      expect(linked, `${key} with VueNodes=${vueNodesEnabled}`).toBe(true)
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(
+              ([consumerId, index]) => {
+                const node = window.app!.graph.nodes.find(
+                  (candidate) => String(candidate.id) === consumerId
+                )
+                return node?.inputs?.[Number(index)]?.link != null
+              },
+              [String(consumer.id), String(inIndex)] as const
+            ),
+          { message: `${key} with VueNodes=${vueNodesEnabled}` }
+        )
+        .toBe(true)
     }
 
     consoleErrors.stop()
