@@ -1,9 +1,8 @@
 import type { AiModelCard } from '../../components/product/shared/aiModelCards'
 
-// Recent lineup for /cli. The Gemini Omni Flash 1.1 card art is a Gemini
-// generation made with the CLI, staged at website/cli/ until real
-// Omni Flash output ships; the model itself needs a claims check before
-// launch (not yet in the template or partner catalog).
+// Recent lineup for /cli. Clips come from each model page's own media
+// (gemini-omni, seedance-2.5, minimax-h3); wan-3-card.webm is a 7s cut of
+// the wan-3.0 page's mobile hero, staged under website/cli/.
 export const cliModelCards: AiModelCard[] = [
   {
     titleKey: 'cloud.aiModels.card.seedance25',
@@ -17,14 +16,13 @@ export const cliModelCards: AiModelCard[] = [
   },
   {
     titleKey: 'cloud.aiModels.card.geminiOmniFlash',
-    imageSrc: 'https://media.comfy.org/website/cli/omni-flash-card.webp',
+    imageSrc: 'https://media.comfy.org/website/gemini-omni/card-1.webm',
     badgeIcon: '/icons/ai-models/gemini.svg'
   },
   {
-    titleKey: 'cloud.aiModels.card.nanoBananaPro',
-    imageSrc:
-      'https://media.comfy.org/website/cloud/ai-models/nano-banana-pro.webp',
-    badgeIcon: '/icons/ai-models/gemini.svg'
+    titleKey: 'cloud.aiModels.card.wan3',
+    imageSrc: 'https://media.comfy.org/website/cli/wan-3-card.webm',
+    badgeIcon: '/icons/ai-models/wan.svg'
   },
   {
     titleKey: 'cloud.aiModels.card.wan22TextToVideo',

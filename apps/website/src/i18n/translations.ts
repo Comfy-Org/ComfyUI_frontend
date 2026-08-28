@@ -1214,8 +1214,12 @@ const translations = {
     'zh-CN': 'MiniMax H3'
   },
   'cloud.aiModels.card.geminiOmniFlash': {
-    en: 'Gemini\nOmni Flash 1.1',
-    'zh-CN': 'Gemini\nOmni Flash 1.1'
+    en: 'Gemini\nOmni 1.1 Flash',
+    'zh-CN': 'Gemini\nOmni 1.1 Flash'
+  },
+  'cloud.aiModels.card.wan3': {
+    en: 'Wan 3.0',
+    'zh-CN': 'Wan 3.0'
   },
   'cloud.aiModels.card.qwenImageEdit': {
     en: 'Qwen\nImage Edit',
