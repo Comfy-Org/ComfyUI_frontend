@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Google의 Gemini Omni Flash 모델을 사용하여 텍스트 프롬프트로 오디오가 포함된 동영상을 생성합니다. 선택적으로 참조 이미지 및/또는 동영상을 제공하여 결과를 안내하거나 편집할 수 있습니다. 원하는 길이(3~10초)를 프롬프트에 직접 설명하세요.",
+    "display_name": "Google Gemini Omni (동영상)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "동영상 생성에 사용되는 Gemini 동영상 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "3D 모델 파일(GLB, GLTF, OBJ, STL)을 메시 처리 노드(폴리곤 감소, 리메시, UV 언랩, 베이크, ...)에서 사용할 수 있는 편집 가능한 MESH로 파싱합니다. 모든 장면 노드/프리미티브는 변환이 적용된 하나의 메시로 병합되며, 텍스처와 재질 계수는 첫 번째 재질에서 가져옵니다. MeshToFile3D의 대응 기능입니다.",
+    "display_name": "3D 구성 요소 가져오기",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Load 3D 또는 다른 3D 노드의 3D 모델 파일입니다. FBX/USDZ는 지원되지 않으므로 먼저 GLB로 변환하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
