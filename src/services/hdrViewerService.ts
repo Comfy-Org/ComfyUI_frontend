@@ -1,4 +1,5 @@
 import { defineAsyncComponent } from 'vue'
+import { viewerDialogContentClass } from '@/components/ui/dialog/dialog.variants'
 
 import { t } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -21,7 +22,7 @@ export function openHdrViewer(url: string) {
     dialogComponentProps: {
       renderer: 'reka',
       size: 'full',
-      contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+      contentClass: viewerDialogContentClass,
       maximizable: true
     }
   })
