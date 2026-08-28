@@ -41,6 +41,12 @@ describe('getProviderIcon', () => {
   it('converts to lowercase', () => {
     expect(getProviderIcon('GEMINI')).toBe('icon-[comfy--gemini]')
   })
+
+  it('aliases Comfy Cloud to the Comfy C mark in brand yellow', () => {
+    expect(getProviderIcon('Comfy Cloud')).toBe(
+      'icon-[comfy--comfy-c] text-brand-yellow'
+    )
+  })
 })
 
 describe('getProviderBorderStyle', () => {
@@ -49,6 +55,7 @@ describe('getProviderBorderStyle', () => {
     expect(getProviderBorderStyle('OpenAI')).toBe('#B6B6B6')
     expect(getProviderBorderStyle('Bria')).toBe('#B6B6B6')
     expect(getProviderBorderStyle('Anthropic')).toBe('#D97757')
+    expect(getProviderBorderStyle('Comfy Cloud')).toBe('#F0FF41')
   })
 
   it('returns gradient for dual-color providers', () => {

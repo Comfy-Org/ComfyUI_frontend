@@ -59,6 +59,7 @@ const PROVIDER_COLORS: Record<string, string | [string, string]> = {
   anthropic: '#D97757',
   bfl: '#ffffff',
   bria: '#B6B6B6',
+  'comfy-cloud': '#F0FF41',
   elevenlabs: '#B6B6B6',
   bytedance: ['#00C8D2', '#325AB4'],
   gemini: ['#3186FF', '#FABC12'],
@@ -90,6 +91,12 @@ const PROVIDER_COLORS: Record<string, string | [string, string]> = {
   wavespeed: '#B6B6B6'
 }
 
+// Comfy Cloud ships as a partner provider but reuses the existing Comfy C mark
+// rather than a provider-specific icon of its own.
+const PROVIDER_ICON_ALIASES: Record<string, string> = {
+  'comfy-cloud': 'comfy-c'
+}
+
 /**
  * Extracts the provider name from a node category path.
  * e.g. "api/image/BFL" -> "BFL"
@@ -105,7 +112,10 @@ export function getProviderName(category: string): string {
  */
 export function getProviderIcon(providerName: string): string {
   const iconKey = providerName.toLowerCase().replaceAll(/\s+/g, '-')
-  return `icon-[comfy--${iconKey}]`
+  const iconClass = `icon-[comfy--${PROVIDER_ICON_ALIASES[iconKey] ?? iconKey}]`
+  return iconKey === 'comfy-cloud'
+    ? `${iconClass} text-brand-yellow`
+    : iconClass
 }
 
 /**
