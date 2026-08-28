@@ -1,4 +1,5 @@
 import { default as DOMPurify } from 'dompurify'
+import { escape } from 'es-toolkit'
 import { Renderer, marked } from 'marked'
 
 const ALLOWED_TAGS = ['video', 'source']
@@ -14,6 +15,9 @@ const ALLOWED_ATTRS = [
 // Matches relative src attributes in img, source, and video HTML tags
 // Captures: 1) opening tag with src=", 2) relative path, 3) closing quote
 // Excludes absolute paths (starting with /) and URLs (http:// or https://)
+// Scope: raw-HTML media gets RELATIVE rebasing only. Absolute URLs in raw
+// HTML (comfy.org api forms included) pass through verbatim to sanitizing -
+// the api rewrite applies to markdown-authored images and links alone.
 const MEDIA_SRC_REGEX =
   /(<(?:img|source|video)[^>]*\ssrc=['"])(?!(?:[/#?]|[a-z][a-z0-9+.-]*:))([^'"\s>]+)(['"])/gi
 
@@ -27,7 +31,9 @@ export function resolveMarkdownUrl(href: string, baseUrl: string): string {
   if (!NON_REBASEABLE_HREF.test(href)) return `${baseUrl}/${href}`
 
   try {
-    const url = new URL(href)
+    // Protocol-relative hrefs carry no scheme and fail to parse bare; read
+    // them as https so a comfy.org api form still gets the rewrite.
+    const url = new URL(href.startsWith('//') ? `https:${href}` : href)
     if (COMFY_ORG_HOST.test(url.hostname) && url.pathname.startsWith('/api/')) {
       return `${baseUrl}${url.pathname.slice(4)}${url.search}${url.hash}`
     }
@@ -42,10 +48,13 @@ export function resolveMarkdownUrl(href: string, baseUrl: string): string {
 function createMarkdownRenderer(baseUrl?: string): Renderer {
   const normalizedBase = baseUrl ? baseUrl.replace(/\/+$/, '') : ''
   const renderer = new Renderer()
+  // Resolved targets and author-supplied titles interpolate into attribute
+  // positions before sanitizing; escaping there keeps a quote in either from
+  // breaking out of the attribute at parse time.
   renderer.image = ({ href, title, text }) => {
     const src = resolveMarkdownUrl(href, normalizedBase)
-    const titleAttr = title ? ` title="${title}"` : ''
-    return `<img src="${src}" alt="${text}"${titleAttr} />`
+    const titleAttr = title ? ` title="${escape(title)}"` : ''
+    return `<img src="${escape(src)}" alt="${escape(text)}"${titleAttr} />`
   }
   renderer.link = ({ href, title, tokens, text }) => {
     // For autolinks (bare URLs), tokens may be undefined, so fall back to text
@@ -56,8 +65,8 @@ function createMarkdownRenderer(baseUrl?: string): Renderer {
         : tokens
           ? renderer.parser.parseInline(tokens)
           : text
-    const titleAttr = title ? ` title="${title}"` : ''
-    return `<a href="${target}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`
+    const titleAttr = title ? ` title="${escape(title)}"` : ''
+    return `<a href="${escape(target)}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`
   }
   return renderer
 }
