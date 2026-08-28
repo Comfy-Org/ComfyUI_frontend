@@ -16,6 +16,8 @@
         props.socketless && 'pointer-events-none invisible'
       )
     "
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
   >
     <!-- Connection Dot -->
     <SlotConnectionDot
@@ -64,6 +66,7 @@ import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDra
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
 
@@ -124,6 +127,12 @@ const shouldDim = computed(() => {
 })
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
+  nodeId: props.nodeId,
+  index: props.index,
+  type: 'input'
+})
+
+const { revealLinks, unrevealLinks } = useSlotLinkReveal({
   nodeId: props.nodeId,
   index: props.index,
   type: 'input'

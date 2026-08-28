@@ -644,6 +644,8 @@
     "Bypass": "Bypass",
     "Copy (Clipspace)": "Copy (Clipspace)",
     "Add Node": "Add Node",
+    "Hide Link": "Hide Link",
+    "Show Link": "Show Link",
     "Add Group": "Add Group",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",

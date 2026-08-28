@@ -16,7 +16,7 @@ const {
   mockShowNodeOptions: vi.fn(),
   mockUpdateSelectedItems: vi.fn(),
   mockGetCanvasContextMenuTarget: vi.fn<
-    () => { reroute?: unknown; group?: unknown }
+    () => { reroute?: unknown; link?: unknown; group?: unknown }
   >(() => ({}))
 }))
 
@@ -125,6 +125,19 @@ describe('useGroupContextMenu', () => {
   it('falls through to the legacy menu when the cursor is on a reroute', () => {
     mockGetCanvasContextMenuTarget.mockReturnValue({
       reroute: { id: 5 },
+      group
+    })
+
+    invoke(undefined)
+
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).not.toHaveBeenCalled()
+    expect(stubCanvas.selectedItems.size).toBe(0)
+  })
+
+  it('falls through to the legacy menu when the cursor is on a link', () => {
+    mockGetCanvasContextMenuTarget.mockReturnValue({
+      link: { id: 5 },
       group
     })
 

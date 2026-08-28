@@ -81,6 +81,13 @@ const zComfyLinkExtension = z
   })
   .passthrough()
 
+const zComfyLinkPresentation = z
+  .object({
+    hidden: z.boolean().optional(),
+    label: z.string().optional()
+  })
+  .passthrough()
+
 const zComfyLinkObject = z
   .object({
     id: z.number(),
@@ -89,7 +96,9 @@ const zComfyLinkObject = z
     target_id: zNodeId,
     target_slot: zSlotIndex,
     type: zDataType,
-    parentId: z.number().optional()
+    parentId: z.number().optional(),
+    hidden: z.boolean().optional(),
+    label: z.string().optional()
   })
   .passthrough()
 
@@ -286,6 +295,7 @@ const zExtra = z
     ds: zDS.optional(),
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
+    linkPresentation: z.record(z.string(), zComfyLinkPresentation).optional(),
     reroutes: z.array(zReroute).optional(),
     workflowRendererVersion: zRendererType.optional(),
     BlueprintDescription: z.string().optional(),
