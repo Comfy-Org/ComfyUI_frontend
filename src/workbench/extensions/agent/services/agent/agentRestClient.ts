@@ -83,7 +83,7 @@ export function createAgentRestClient() {
       : isIngestErrorBody(body)
         ? body.error.message
         : errorResponseFromBody(
-            body ?? text,
+            body === undefined ? text : body,
             response.statusText || `HTTP ${response.status}`
           ).message
     return new AgentApiError(message, response.status, body)
