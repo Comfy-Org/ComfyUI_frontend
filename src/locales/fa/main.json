@@ -830,13 +830,16 @@
       "insufficientMessage": "شما اعتبار کافی برای اجرای این workflow ندارید.",
       "insufficientTitle": "اعتبار کافی نیست",
       "insufficientWorkflowMessage": "شما اعتبار کافی برای اجرای این workflow ندارید.",
+      "manageBillingError": "باز کردن پورتال صورتحساب ناموفق بود. لطفاً دوباره تلاش کنید.",
       "maxAllowed": "حداکثر {credits} اعتبار.",
       "maxAmount": "(حداکثر ۱٬۰۰۰ دلار آمریکا)",
       "maximumAmount": "حداکثر {amount}",
       "minRequired": "حداقل {credits} اعتبار",
       "minimumPurchase": "حداقل {amount} ({credits} اعتبار)",
       "needMore": "بیشتر نیاز دارید؟",
+      "noPaymentMethodError": "هیچ روش پرداختی برای این فضای کاری ذخیره نشده است. از مسیر تنظیمات ← طرح و اعتبارها ← مدیریت صورتحساب، یک روش اضافه کنید و سپس شارژ را دوباره امتحان کنید.",
       "payAmount": "پرداخت {amount}",
+      "paymentDetailsRequiredNote": "برای تکمیل این خرید، از شما خواسته می‌شود یک روش پرداخت اضافه کنید.",
       "purchaseError": "خرید ناموفق بود",
       "purchaseErrorDetail": "خرید اعتبار ناموفق بود: {error}",
       "purchaseSuccess": "اعتبار با موفقیت افزوده شد!",
@@ -1705,6 +1708,7 @@
     "micPermissionDenied": "دسترسی میکروفون رد شد",
     "migrate": "مهاجرت",
     "missing": "ناقص",
+    "missingNodeTypesInGroup": "موجود نیست: {types}",
     "modifyKeybinding": "تغییر کلید میانبر",
     "more": "بیشتر",
     "moreOptions": "گزینه‌های بیشتر",
@@ -3217,15 +3221,26 @@
     "done": "پایان",
     "firstRun": {
       "nudge": {
-        "dismiss": "فعلاً نه",
-        "explore": "مشاهده قالب‌ها",
-        "noTour": {
-          "body": "قالب‌ها را مرور کنید و چیزی برای ساختن انتخاب کنید.",
-          "title": "صدها مورد دیگر نیز وجود دارد"
+        "animate": {
+          "detail": "تصویر به ویدیو · ۵ثانیه",
+          "title": "متحرک‌سازی"
         },
-        "ran": {
-          "body": "شما اولین مورد را ساختید. ببینید چه چیزهای دیگری می‌توانید بسازید.",
-          "title": "این یکی از صدها مورد بود"
+        "body": "هرکدام از تصویری که همین حالا ساختید شروع می‌شوند.",
+        "explore": "مرور همه قالب‌ها",
+        "fallback": {
+          "body": "قالب‌ها را مرور کنید و چیزی برای ساختن انتخاب کنید.",
+          "title": "صدها مورد دیگر از همین نوع"
+        },
+        "loadFailed": "آن قالب بارگیری نشد. لطفاً دوباره تلاش کنید.",
+        "restyle": {
+          "detail": "مدل شریک · هر طرح پولی",
+          "title": "بازسبک‌سازی با Nano Banana"
+        },
+        "title": "اولین خروجی شما. مرحله بعدی این است.",
+        "upscale": {
+          "badge": "۴×",
+          "detail": "همان تصویر، جزئیات بیشتر",
+          "title": "افزایش وضوح"
         }
       },
       "prompt": {
@@ -4363,6 +4378,8 @@
     "resubscribeFailed": "فعال‌سازی مجدد اشتراک ناموفق بود",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "تمدید اشتراک {plan}",
+    "salesManagedRunBlockedDetail": "طرح این فضای کاری دیگر فعال نیست. برای بازیابی دسترسی با مدیر حساب Comfy خود تماس بگیرید.",
+    "salesManagedRunBlockedTitle": "طرح غیرفعال است",
     "saveYearly": "٪۲۰ صرفه‌جویی",
     "saveYearlyUpTo": "تا ۲۰٪ صرفه‌جویی کنید",
     "soloUseOnly": "فقط برای استفاده فردی",
@@ -4441,6 +4458,7 @@
     "title": "اشتراک",
     "titleUnsubscribed": "اشتراک در Comfy Cloud",
     "totalCredits": "کل اعتبارها",
+    "unknownTierName": "طرح فعلی",
     "upgrade": "ارتقا",
     "upgradePlan": "ارتقا طرح",
     "upgradeTo": "ارتقا به {plan}",
