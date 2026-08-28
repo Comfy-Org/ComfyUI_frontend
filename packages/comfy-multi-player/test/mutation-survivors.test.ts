@@ -12,6 +12,8 @@ import {
   stampKey,
   type ConnectOp,
   type DeleteNodeOp,
+  type GrowConnectOp,
+  type InteriorSetWidgetOp,
   type Op,
   type SetWidgetOp,
   type WidgetCatalog,
@@ -77,11 +79,12 @@ function sgWorkflow(instances: number): WorkflowJSON {
   } as unknown as WorkflowJSON;
 }
 
-const interiorWrite = (over: Partial<SetWidgetOp> = {}): SetWidgetOp => ({
+const interiorWrite = (over: Partial<InteriorSetWidgetOp> = {}): InteriorSetWidgetOp => ({
   op: "set_widget",
   ...env(),
   node_id: 100,
-  path: [100, 27],
+  path: ["100", "27"],
+  widget: "text",
   inner_widget: "text",
   value: "new prompt",
   ...over,
@@ -92,15 +95,15 @@ describe("interior set_widget guards (schema §5.3, KA-1/KA-4)", () => {
     const doc = mint(sgWorkflow(2), sgCatalog);
     const before = bytes(doc);
     const res = applyOps(doc, [interiorWrite()], sgCatalog);
-    expect(res.failed?.code).toBe("shared_definition_unforked");
-    expect(res.applied).toEqual([]);
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("shared_definition_unforked");
+    expect(res.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
   it("applies the same interior write when the definition has exactly one instance", () => {
     const doc = mint(sgWorkflow(1), sgCatalog);
     const res = applyOps(doc, [interiorWrite()], sgCatalog);
-    expect(res.failed).toBeNull();
+    expect(res.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const sg = (project(doc, sgCatalog)["definitions"] as { subgraphs: { nodes: { id: unknown; widgets_values: unknown }[] }[] })
       .subgraphs[0]!;
     expect(sg.nodes.find((n) => n.id === 27)!.widgets_values).toEqual(["new prompt"]);
@@ -111,8 +114,8 @@ describe("interior set_widget guards (schema §5.3, KA-1/KA-4)", () => {
     const before = bytes(doc);
     // KSampler interior node 3 holds widgets_values [42] → projected length 1;
     // "steps" is widget_order index 2.
-    const res = applyOps(doc, [interiorWrite({ path: [100, 3], inner_widget: "steps", value: 30 })], sgCatalog);
-    expect(res.failed?.code).toBe("widget_out_of_range");
+    const res = applyOps(doc, [interiorWrite({ path: ["100", "3"], inner_widget: "steps", value: 30 })], sgCatalog);
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("widget_out_of_range");
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
@@ -122,10 +125,10 @@ describe("interior set_widget guards (schema §5.3, KA-1/KA-4)", () => {
     // widget_order index 1 against a projected length of 1: idx === len.
     const res = applyOps(
       doc,
-      [interiorWrite({ path: [100, 3], inner_widget: "control_after_generate", value: "fixed" })],
+      [interiorWrite({ path: ["100", "3"], inner_widget: "control_after_generate", value: "fixed" })],
       sgCatalog,
     );
-    expect(res.failed?.code).toBe("widget_out_of_range");
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("widget_out_of_range");
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
@@ -133,24 +136,24 @@ describe("interior set_widget guards (schema §5.3, KA-1/KA-4)", () => {
     const doc = mint(sgWorkflow(1), sgCatalog);
     const before = bytes(doc);
     const res = applyOps(doc, [interiorWrite({ inner_widget: "no_such_widget" })], sgCatalog);
-    expect(res.failed?.code).toBe("unknown_widget");
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("unknown_widget");
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
   it("interior write whose head instance is gone is a silent delete-wins no-op, not a throw", () => {
     const doc = mint(sgWorkflow(1), sgCatalog);
-    const del: DeleteNodeOp = { op: "delete_node", ...env(), node_id: 100 };
+    const del: DeleteNodeOp = { op: "delete_node", ...env(), node_id: 100, removed_links: [] };
     const res = applyOps(doc, [del, interiorWrite()], sgCatalog);
-    expect(res.failed).toBeNull();
-    expect(res.applied.length).toBe(2); // the no-op still consumes its op_id
+    expect(res.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
+    expect(res.outcomes.filter((o) => o.outcome !== "rejected")).toHaveLength(2); // the no-op still consumes its op_id
   });
 
   it("rejects an interior descent into a subgraph that has no such interior node", () => {
     const doc = mint(sgWorkflow(1), sgCatalog);
     const before = bytes(doc);
-    const res = applyOps(doc, [interiorWrite({ path: [100, 999] })], sgCatalog);
-    expect(res.failed?.code).toBe("interior_node_not_found");
-    expect(res.applied).toEqual([]);
+    const res = applyOps(doc, [interiorWrite({ path: ["100", "999"] })], sgCatalog);
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("interior_node_not_found");
+    expect(res.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
   });
 });
@@ -177,7 +180,7 @@ function growBase(sinkType = "Sink"): WorkflowJSON {
   } as unknown as WorkflowJSON;
 }
 
-const growConnect = (over: Partial<ConnectOp> = {}): ConnectOp => ({
+const growConnect = (over: Partial<GrowConnectOp> = {}): GrowConnectOp => ({
   op: "connect",
   ...env(),
   link_id: 900 + seq,
@@ -195,7 +198,7 @@ describe("connect grow path (KA-4 — a rejected op leaves the doc untouched)", 
     const doc = mint(growBase(), growCatalog);
     const before = bytes(doc);
     const res = applyOps(doc, [growConnect({ from_slot: 99 })], growCatalog);
-    expect(res.failed?.code).toBe("output_slot_missing");
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("output_slot_missing");
     // The grown slot must not survive the rejection: Y transactions do not roll
     // back, so validation has to precede the first mutation.
     expect(bytes(doc).equals(before)).toBe(true);
@@ -208,7 +211,7 @@ describe("connect grow path (KA-4 — a rejected op leaves the doc untouched)", 
     const before = bytes(doc);
     // Node 1 has exactly one output, so slot index 1 is the first invalid one.
     const res = applyOps(doc, [growConnect({ from_slot: 1 })], growCatalog);
-    expect(res.failed?.code).toBe("output_slot_missing");
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("output_slot_missing");
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
@@ -216,7 +219,7 @@ describe("connect grow path (KA-4 — a rejected op leaves the doc untouched)", 
     const doc = mint(growBase(), growCatalog);
     const before = bytes(doc);
     const res = applyOps(doc, [growConnect({ grow: { type: "X" } as never })], growCatalog);
-    expect(res.failed?.code).toBe("malformed_op");
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("malformed_op");
     expect(bytes(doc).equals(before)).toBe(true);
   });
 });
@@ -233,7 +236,7 @@ describe("autogrow collision naming (KA-3 — parity with comfy-cli)", () => {
     wf.nodes[1]!.inputs = [{ name: requested, type: "X", link: null }];
     const doc = mint(wf as unknown as WorkflowJSON, growCatalog);
     const ops = Array.from({ length: times }, () => growConnect({ grow: { name: requested, type: "X" } }));
-    expect(applyOps(doc, ops, growCatalog).failed).toBeNull();
+    expect(applyOps(doc, ops, growCatalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const sink = project(doc, growCatalog).nodes.find((n) => n.id === 2)!;
     return (sink.inputs as { name: string }[]).map((i) => i.name);
   }
@@ -257,7 +260,7 @@ describe("autogrow collision naming (KA-3 — parity with comfy-cli)", () => {
     wf.nodes[1]!.inputs = [{ name: "images", type: "X", link: null }];
     const doc = mint(wf as unknown as WorkflowJSON, growCatalog);
     const op = growConnect({ grow: { name: "images", type: "X", widget: "value" } });
-    expect(applyOps(doc, [op], growCatalog).failed).toBeNull();
+    expect(applyOps(doc, [op], growCatalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const sink = project(doc, growCatalog).nodes.find((n) => n.id === 2)!;
     const grown = (sink.inputs as { name: string; widget?: unknown }[])[1]!;
     // grow.widget forces template = null, so the stem arm names the slot.
@@ -291,7 +294,7 @@ describe("connect onto a never-wired output (schema §7 links:null)", () => {
       link_type: "X",
     };
     const res = applyOps(doc, [op], growCatalog);
-    expect(res.failed).toBeNull();
+    expect(res.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const src = project(doc, growCatalog).nodes.find((n) => n.id === 1)!;
     expect((src.outputs as { links: unknown }[])[0]!.links).toEqual([77]);
   });
@@ -307,8 +310,8 @@ describe("delete_node envelope (KA-4 — reject loudly, never silently no-op)", 
     const before = bytes(doc);
     const op = { op: "delete_node", ...env() } as unknown as Op;
     const res = applyOps(doc, [op], growCatalog);
-    expect(res.failed?.code).toBe("malformed_op");
-    expect(res.applied).toEqual([]);
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("malformed_op");
+    expect(res.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
   });
 });
@@ -356,7 +359,7 @@ describe("stampKey honours a two-element explicit stamp (KA-2, FC-2)", () => {
     const loser = mk("s1", 99, [1, "a"], "loser");
     const winner = mk("s2", 1, [50, "a"], "winner");
     const doc = mint(wf, sgCatalog);
-    expect(applyOps(doc, [winner, loser], sgCatalog).failed).toBeNull();
+    expect(applyOps(doc, [winner, loser], sgCatalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(project(doc, sgCatalog).nodes[0]!.widgets_values).toEqual(["winner"]);
   });
 });

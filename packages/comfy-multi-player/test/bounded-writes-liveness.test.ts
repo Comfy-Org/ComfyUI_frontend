@@ -135,7 +135,7 @@ function deleteHubCost(degree: number): number {
   };
   _resetMutationCount(doc);
   const res = applyOps(doc, [op], catalog);
-  expect(res.failed, `delete_node at degree ${degree} must succeed`).toBeNull();
+  expect(res.outcomes.some((o) => o.outcome === "rejected"), `delete_node at degree ${degree} must succeed`).toBe(false);
   return _getMutationCount(doc);
 }
 
@@ -178,7 +178,7 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     const doc = mint(hubWorkflow(1), catalog);
     const op = { op: "set_widget", ...env(), node_id: 1, widget: "text", value: "z" } as SetWidgetOp;
     _resetMutationCount(doc);
-    expect(applyOps(doc, [op], catalog).failed).toBeNull();
+    expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(_getMutationCount(doc)).toBe(3);
   });
 
@@ -190,7 +190,7 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     const running: number[] = [];
     for (let i = 0; i < 4; i++) {
       const op = { op: "set_widget", ...env(), node_id: 1, widget: "text", value: "v" + String(i) } as SetWidgetOp;
-      expect(applyOps(doc, [op], catalog).failed).toBeNull();
+      expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
       running.push(_getMutationCount(doc));
     }
     expect(running).toEqual([3, 6, 9, 12]);
@@ -217,7 +217,7 @@ describe("schema §11: the counter measures the applier's real writes", () => {
       grow: { name: "gin", type: "X" },
     } as unknown as ConnectOp;
     _resetMutationCount(doc);
-    expect(applyOps(doc, [op], catalog).failed).toBeNull();
+    expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(_getMutationCount(doc)).toBe(7);
     expect(stampsMap(doc).size, "autogrow records stamp + request for canonicalization (A7)").toBe(2);
   });
@@ -230,7 +230,7 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     const doc = mint(chainWorkflow(), catalog);
     const op: DeleteNodeOp = { op: "delete_node", ...env(), node_id: 2, removed_links: [1, 2] };
     _resetMutationCount(doc);
-    expect(applyOps(doc, [op], catalog).failed).toBeNull();
+    expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(_getMutationCount(doc)).toBe(7);
   });
 
@@ -241,16 +241,16 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     const doc = mint(hubWorkflow(1), catalog);
     const op = { op: "set_widget", ...env(), node_id: 1, widget: "text", value: "z" } as SetWidgetOp;
     const first = applyOps(doc, [op], catalog);
-    expect(first.failed).toBeNull();
-    expect(first.applied).toEqual([op.op_id]);
+    expect(first.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
+    expect(first.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([op.op_id]);
     _resetMutationCount(doc);
     const replay = applyOps(doc, [op], catalog);
-    expect(replay.failed).toBeNull();
+    expect(replay.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     // `failed === null` plus a zero count is ALSO satisfied by an applier that
     // does nothing for every op, so the reason must be asserted too: this op
     // was recognized as a duplicate and skipped, not quietly ignored.
-    expect(replay.skipped).toEqual([op.op_id]);
-    expect(replay.applied).toEqual([]);
+    expect(replay.outcomes.filter((o) => o.outcome === "no-op").map((o) => o.op_id)).toEqual([op.op_id]);
+    expect(replay.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(_getMutationCount(doc)).toBe(0);
   });
 });

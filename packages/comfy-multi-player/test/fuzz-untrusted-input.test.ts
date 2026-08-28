@@ -60,8 +60,8 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
         expect(() => {
           result = applyOps(doc, [input as Op], catalog);
         }).not.toThrow();
-        expect(result?.failed).not.toBeNull();
-        expect(result?.applied).toEqual([]);
+        expect(result?.outcomes.some((o) => o.outcome === "rejected")).toBe(true);
+        expect(result?.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
         expect(bytes(doc).equals(before)).toBe(true);
       }),
       FC_OPTIONS,
@@ -86,7 +86,7 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
         } as unknown as Op;
 
         const result = applyOps(doc, [op], catalog);
-        if (result.failed === null) expect(() => project(doc, catalog)).not.toThrow();
+        if (!result.outcomes.some((o) => o.outcome === "rejected")) expect(() => project(doc, catalog)).not.toThrow();
       }),
       FC_OPTIONS,
     );
@@ -110,7 +110,7 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
           widget: "steps",
           value,
         } as Op;
-        expect(applyOps(doc, [op], catalog).failed).toBeNull();
+        expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
         expect(() => project(doc, catalog)).not.toThrow();
       }),
       FC_OPTIONS,
@@ -133,7 +133,7 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
       widget: "steps",
       value: 20,
     } as Op;
-    expect(applyOps(doc, [first], catalog).failed).toBeNull();
+    expect(applyOps(doc, [first], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const before = bytes(doc);
     const retry = { ...first, actor: "攻撃者\u0000", value: new Array(10_000).fill(null) } as Op;
 
@@ -144,8 +144,8 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
     // A11's whole-envelope size gate now precedes A8's reuse comparison, so
     // this deliberately oversized retry is rejected as malformed first.
     const result = applyOps(doc, [retry], catalog);
-    expect(result.failed).toMatchObject({ index: 0, code: "malformed_op" });
-    expect(result.skipped).toEqual([]);
+    expect(result.outcomes[0]).toMatchObject({ outcome: "rejected", reason: { code: "malformed_op" } });
+    expect(result.outcomes.filter((o) => o.outcome === "no-op").map((o) => o.op_id)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
     expect(() => project(doc, catalog)).not.toThrow();
   });
@@ -166,7 +166,7 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
       widget: "steps",
       value: 20,
     } as Op;
-    expect(applyOps(doc, [op], catalog).failed).toBeNull();
+    expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const before = bytes(doc);
 
     // Key order is not part of op identity: the canonical form sorts keys at
@@ -175,8 +175,8 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
       Object.entries(op as unknown as Record<string, unknown>).reverse(),
     ) as unknown as Op;
     const result = applyOps(doc, [reordered], catalog);
-    expect(result.failed).toBeNull();
-    expect(result.skipped).toEqual([op.op_id]);
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
+    expect(result.outcomes.filter((o) => o.outcome === "no-op").map((o) => o.op_id)).toEqual([op.op_id]);
     expect(bytes(doc).equals(before)).toBe(true);
   });
 });
@@ -203,8 +203,8 @@ describe("saved untrusted-input regression corpus", () => {
     const before = bytes(doc);
     const result = applyOps(doc, [entry.op], catalog);
 
-    expect(result.failed).not.toBeNull();
-    expect(result.applied).toEqual([]);
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(true);
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
     expect(() => project(doc, catalog)).not.toThrow();
   }
@@ -244,8 +244,8 @@ describe("saved untrusted-input regression corpus", () => {
     } as unknown as Op;
 
     const result = applyOps(doc, [op], catalog);
-    expect(result.failed).not.toBeNull();
-    expect(result.applied).toEqual([]);
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(true);
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
@@ -274,8 +274,8 @@ describe("saved untrusted-input regression corpus", () => {
     } as unknown as Op;
 
     const result = applyOps(doc, [op], catalog);
-    expect(result.failed).not.toBeNull();
-    expect(result.applied).toEqual([]);
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(true);
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
   });
 });

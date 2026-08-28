@@ -26,14 +26,14 @@ describe("regression: op_id reuse with a changed payload (#12)", () => {
     const catalog = loadCatalog();
     const doc = mint(loadLwwVectors().base_workflow, catalog);
     const first = firstOp();
-    expect(applyOps(doc, [first], catalog).failed).toBeNull();
+    expect(applyOps(doc, [first], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const before = Buffer.from(Y.encodeStateAsUpdate(doc));
 
     const reused = { ...first, value: 30 };
     const result = applyOps(doc, [reused], catalog);
 
-    expect(result.failed).toMatchObject({ index: 0, code: "op_id_reuse" });
-    expect(result.skipped).toEqual([]);
+    expect(result.outcomes[0]).toMatchObject({ outcome: "rejected", reason: { code: "op_id_reuse" } });
+    expect(result.outcomes.filter((o) => o.outcome === "no-op").map((o) => o.op_id)).toEqual([]);
     expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
   });
 
@@ -41,15 +41,15 @@ describe("regression: op_id reuse with a changed payload (#12)", () => {
     const catalog = loadCatalog();
     const doc = mint(loadLwwVectors().base_workflow, catalog);
     const first = firstOp();
-    expect(applyOps(doc, [first], catalog).failed).toBeNull();
+    expect(applyOps(doc, [first], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const before = Buffer.from(Y.encodeStateAsUpdate(doc));
 
     const reused = { ...first, value: 30 };
     const trailing: SetWidgetOp = { ...first, op_id: "next0000000000000000000000000000", value: 40 };
     const result = applyOps(doc, [reused, trailing], catalog);
 
-    expect(result.failed).toMatchObject({ index: 0, code: "op_id_reuse" });
-    expect(result.applied).toEqual([]);
+    expect(result.outcomes[0]).toMatchObject({ outcome: "rejected", reason: { code: "op_id_reuse" } });
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
   });
 
@@ -62,7 +62,7 @@ describe("regression: op_id reuse with a changed payload (#12)", () => {
     // SHA-256 of its UTF-8 bytes, which is what the document stores.
     const catalog = loadCatalog();
     const doc = mint(loadLwwVectors().base_workflow, catalog);
-    expect(applyOps(doc, [firstOp()], catalog).failed).toBeNull();
+    expect(applyOps(doc, [firstOp()], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
 
     const canonical =
       '{"actor":"human:a","base_version":5,"node_id":3308598398221244,' +
@@ -82,7 +82,7 @@ describe("regression: op_id reuse with a changed payload (#12)", () => {
     const catalog = loadCatalog();
     const doc = mint(loadLwwVectors().base_workflow, catalog);
     const first = firstOp();
-    expect(applyOps(doc, [first], catalog).failed).toBeNull();
+    expect(applyOps(doc, [first], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const before = Buffer.from(Y.encodeStateAsUpdate(doc));
 
     let deep: Record<string, unknown> = {};
@@ -90,8 +90,8 @@ describe("regression: op_id reuse with a changed payload (#12)", () => {
     const hostile = { ...first, value: deep };
 
     const result = applyOps(doc, [hostile], catalog);
-    expect(result.failed).toMatchObject({ index: 0, code: "payload_too_deep" });
-    expect(result.skipped).toEqual([]);
+    expect(result.outcomes[0]).toMatchObject({ outcome: "rejected", reason: { code: "payload_too_deep" } });
+    expect(result.outcomes.filter((o) => o.outcome === "no-op").map((o) => o.op_id)).toEqual([]);
     expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
 
     // Same bound on a FRESH op_id, and still before any mutation.
@@ -100,7 +100,7 @@ describe("regression: op_id reuse with a changed payload (#12)", () => {
       [{ ...hostile, op_id: "deep00000000000000000000000000000".slice(0, 32) }],
       catalog,
     );
-    expect(fresh.failed).toMatchObject({ code: "payload_too_deep" });
+    expect(fresh.outcomes[0]).toMatchObject({ outcome: "rejected", reason: { code: "payload_too_deep" } });
     expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
   });
 
@@ -110,14 +110,14 @@ describe("regression: op_id reuse with a changed payload (#12)", () => {
     const catalog = loadCatalog();
     const doc = mint(loadLwwVectors().base_workflow, catalog);
     const first = firstOp();
-    expect(applyOps(doc, [first], catalog).failed).toBeNull();
+    expect(applyOps(doc, [first], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     doc.transact(() => appliedMap(doc).set(first.op_id, 1));
     const before = project(doc, catalog);
 
     const result = applyOps(doc, [{ ...first, value: 30 }], catalog);
 
-    expect(result.failed).toBeNull();
-    expect(result.skipped).toEqual([first.op_id]);
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
+    expect(result.outcomes.filter((o) => o.outcome === "no-op").map((o) => o.op_id)).toEqual([first.op_id]);
     expect(project(doc, catalog)).toEqual(before);
   });
 });

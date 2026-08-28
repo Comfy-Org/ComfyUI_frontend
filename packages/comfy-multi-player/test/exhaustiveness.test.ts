@@ -53,10 +53,10 @@ describe("runtime: an op kind this build does not know", () => {
     const doc = mint(emptyWorkflow, catalog, "sha");
     const before = bytes(doc);
     const result = applyOps(doc, [{ op: "future_op", ...env("a") } as unknown as Op], catalog);
-    expect(result.failed?.code).toBe("unknown_op");
-    expect(result.applied).toEqual([]);
-    expect(result.skipped).toEqual([]);
-    expect(result.version).toBe(0);
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("unknown_op");
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
+    expect(result.outcomes.filter((o) => o.outcome === "no-op").map((o) => o.op_id)).toEqual([]);
+    expect(result.ops_seen).toBe(0);
     expect(bytes(doc)).toBe(before);
   });
 
@@ -67,13 +67,13 @@ describe("runtime: an op kind this build does not know", () => {
       { op: "clear", ...env("b"), removed_nodes: [] },
     ] as unknown as Op[];
     const result = applyOps(doc, ops, catalog);
-    expect(result.failed?.index).toBe(0);
+    expect(result.outcomes.findIndex((o) => o.outcome === "rejected" && o.reason.code !== "batch_aborted")).toBe(0);
     // Pin the CODE, not just the index: without this, removing the
     // `unknown_op` reject from `validateEnvelope` leaves this test green
     // (the op then falls through to `dispatch`'s `assertNever`, which also
     // fails at index 0).
-    expect(result.failed?.code).toBe("unknown_op");
-    expect(result.applied).toEqual([]);
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("unknown_op");
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
   });
 
   it("keeps the VALID PREFIX applied — the doc is byte-identical only when the unknown op is first", () => {
@@ -93,12 +93,12 @@ describe("runtime: an op kind this build does not know", () => {
     const before = bytes(doc);
     const result = applyOps(doc, ops, catalog);
 
-    expect(result.failed?.index).toBe(1);
-    expect(result.failed?.code).toBe("unknown_op");
-    expect(result.applied).toEqual(["p"]); // the prefix DID apply
+    expect(result.outcomes.findIndex((o) => o.outcome === "rejected" && o.reason.code !== "batch_aborted")).toBe(1);
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("unknown_op");
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual(["p"]); // the prefix DID apply
     expect(bytes(doc)).not.toBe(before); // so the doc is NOT byte-identical
     expect([...doc.getMap("nodes").keys()]).toEqual(["1"]); // op 2 never ran
-    expect(result.version).toBe(1);
+    expect(result.ops_seen).toBe(1);
   });
 
   it("still degrades to [op.op] in writeTarget — the documented tolerant fallback", () => {
@@ -120,14 +120,14 @@ describe("runtime: the op-kind partition matches the applier's behaviour", () =>
   it.each(FROZEN_OPS)("%s is not rejected as an unknown kind", (kind) => {
     const doc = mint(emptyWorkflow, catalog, "sha");
     const result = applyOps(doc, [{ op: kind, ...env(`f_${kind}`) } as unknown as Op], catalog);
-    expect(result.failed?.code).not.toBe("unknown_op");
-    expect(result.failed?.code).not.toBe("op_deferred");
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.code).not.toBe("unknown_op");
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.code).not.toBe("op_deferred");
   });
 
   it.each(DEFERRED_OPS)("%s is rejected as deferred, not as unknown", (kind) => {
     const doc = mint(emptyWorkflow, catalog, "sha");
     const result = applyOps(doc, [{ op: kind, ...env(`d_${kind}`) } as unknown as Op], catalog);
-    expect(result.failed?.code).toBe("op_deferred");
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("op_deferred");
   });
 });
 

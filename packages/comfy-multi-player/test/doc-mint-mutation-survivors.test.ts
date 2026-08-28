@@ -127,8 +127,8 @@ describe("schema §5.3 shared-definition guard counts INTERIOR instances (KA-1)"
     const doc = mint(nestedDefsWorkflow(true), catalog);
     const before = bytes(doc);
     const res = applyOps(doc, [interiorWrite()], catalog);
-    expect(res.failed?.code).toBe("shared_definition_unforked");
-    expect(res.applied).toEqual([]);
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("shared_definition_unforked");
+    expect(res.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     // One op must not mutate N nodes: `def-A` backs both node 100 and def-B's
     // interior node 55, so writing through it would replicate one op into two
     // places (KA-1, ops are the replication unit).
@@ -141,7 +141,7 @@ describe("schema §5.3 shared-definition guard counts INTERIOR instances (KA-1)"
     // write in a document that happens to contain two definitions passes too.
     const doc = mint(nestedDefsWorkflow(false), catalog);
     expect(countDefinitionInstances(doc, "def-A")).toBe(1);
-    expect(applyOps(doc, [interiorWrite()], catalog).failed).toBeNull();
+    expect(applyOps(doc, [interiorWrite()], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(interiorTextOf(doc, "def-A")).toBe("new");
     expect(interiorTextOf(doc, "def-B")).toBe("unrelated");
   });
@@ -214,7 +214,7 @@ describe("schema §5.3: instances addressed by the definition's NAME count too (
     };
     const doc = mint(aliasedInstancesWorkflow("MySubgraph"), classCatalog);
     expect(countDefinitionInstances(doc, "D1", classCatalog)).toBe(1);
-    expect(applyOps(doc, [aliasWrite(100, "legal")], classCatalog).failed).toBeNull();
+    expect(applyOps(doc, [aliasWrite(100, "legal")], classCatalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(interiorTextOf(doc, "D1")).toBe("legal");
   });
 
@@ -231,8 +231,8 @@ describe("schema §5.3: instances addressed by the definition's NAME count too (
     const doc = mint(aliasedInstancesWorkflow("MySubgraph"), catalog);
     const before = bytes(doc);
     const res = applyOps(doc, [aliasWrite(100, "CORRUPTION")], catalog);
-    expect(res.failed?.code).toBe("shared_definition_unforked");
-    expect(res.applied).toEqual([]);
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("shared_definition_unforked");
+    expect(res.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
     expect(interiorTextOf(doc, "D1")).toBe("orig");
   });
@@ -241,7 +241,7 @@ describe("schema §5.3: instances addressed by the definition's NAME count too (
     const doc = mint(aliasedInstancesWorkflow("MySubgraph"), catalog);
     const before = bytes(doc);
     const res = applyOps(doc, [aliasWrite(101, "CORRUPTION")], catalog);
-    expect(res.failed?.code).toBe("shared_definition_unforked");
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("shared_definition_unforked");
     expect(bytes(doc).equals(before)).toBe(true);
     expect(interiorTextOf(doc, "D1")).toBe("orig");
   });
@@ -251,7 +251,7 @@ describe("schema §5.3: instances addressed by the definition's NAME count too (
     // from "there are two nodes".
     const doc = mint(aliasedInstancesWorkflow("SomethingElse"), catalog);
     expect(countDefinitionInstances(doc, "D1")).toBe(1);
-    expect(applyOps(doc, [aliasWrite(100, "fine")], catalog).failed).toBeNull();
+    expect(applyOps(doc, [aliasWrite(100, "fine")], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(interiorTextOf(doc, "D1")).toBe("fine");
   });
 
@@ -275,7 +275,7 @@ describe("schema §5.3: instances addressed by the definition's NAME count too (
     const doc = mint(wf, catalog);
     expect(countDefinitionInstances(doc, "gamma")).toBe(1);
     expect(countDefinitionInstances(doc, "alpha")).toBe(1);
-    expect(applyOps(doc, [aliasWrite(11, "written")], catalog).failed).toBeNull();
+    expect(applyOps(doc, [aliasWrite(11, "written")], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(interiorTextOf(doc, "gamma")).toBe("written");
     expect(interiorTextOf(doc, "alpha")).toBe("a");
   });
@@ -307,9 +307,9 @@ describe("schema §5.3: instances addressed by the definition's NAME count too (
     nodesMap(doc).set("999", 7 as unknown as Y.Map<unknown>);
     const before = bytes(doc);
     const res = applyOps(doc, [aliasWrite(100, "MUST_NOT_LAND")], catalog);
-    expect(res.failed?.code).toBe("apply_failed");
-    expect(res.applied).toEqual([]);
-    expect(res.applied_count).toBe(0);
+    expect(res.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("apply_failed");
+    expect(res.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
+    expect(res.outcomes.filter((o) => o.outcome !== "rejected").length).toBe(0);
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
@@ -339,7 +339,7 @@ describe("schema §5.3: instances addressed by the definition's NAME count too (
     } as unknown as WorkflowJSON;
     const doc = mint(wf, catalog);
     expect(countDefinitionInstances(doc, "D1")).toBe(1);
-    expect(applyOps(doc, [aliasWrite(1, "written")], catalog).failed).toBeNull();
+    expect(applyOps(doc, [aliasWrite(1, "written")], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(interiorTextOf(doc, "D1")).toBe("written");
   });
 
@@ -361,8 +361,8 @@ describe("schema §5.3: instances addressed by the definition's NAME count too (
     // Node 11 cannot be descended into at all (`not_a_subgraph`), so it is not
     // an instance the resolver can reach and must not inflate the count.
     expect(countDefinitionInstances(doc, "id-1")).toBe(1);
-    expect(applyOps(doc, [aliasWrite(10, "written")], catalog).failed).toBeNull();
-    expect(applyOps(doc, [aliasWrite(11, "nope")], catalog).failed?.code).toBe("not_a_subgraph");
+    expect(applyOps(doc, [aliasWrite(10, "written")], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
+    expect(applyOps(doc, [aliasWrite(11, "nope")], catalog).outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("not_a_subgraph");
   });
 });
 
@@ -439,7 +439,7 @@ describe("resolveDefinition: id wins, a UNIQUE name is the legacy fallback, an a
     nodesMap(doc).get("10")!.set("type", "shared");
     const before = bytes(doc);
     const op = { ...interiorWrite(), node_id: 10, path: ["10", "27"] } as SetWidgetOp;
-    expect(applyOps(doc, [op], catalog).failed?.code).toBe("not_a_subgraph");
+    expect(applyOps(doc, [op], catalog).outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("not_a_subgraph");
     expect(bytes(doc).equals(before)).toBe(true);
   });
 });
@@ -469,7 +469,7 @@ describe("schema §1 doc layout: root-map names and the reserved opaque key are 
     // The bookkeeping roots are named too — `__applied` is the idempotency
     // gate (§4) and `__stamps` the LWW register file (§3).
     const op = { op: "set_widget", ...env(), node_id: 1, widget: "text", value: "w" } as SetWidgetOp;
-    expect(applyOps(doc, [op], catalog).failed).toBeNull();
+    expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect(doc.getMap("__applied").has(op.op_id)).toBe(true);
     expect(doc.getMap("__stamps").size).toBe(1);
   });

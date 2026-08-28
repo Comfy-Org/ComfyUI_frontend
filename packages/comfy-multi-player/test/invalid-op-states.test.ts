@@ -130,9 +130,9 @@ describe("#17 group 1: invalid states the runtime already rejects", () => {
       ],
       catalog,
     );
-    expect(result.failed?.code).toBe("malformed_op");
-    expect(result.failed?.message).toMatch(/to_slot must be a number unless grow is present/);
-    expect(result.applied).toEqual([]);
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("malformed_op");
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.message).toMatch(/to_slot must be a number unless grow is present/);
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
     expect(bytes(doc)).toBe(before);
   });
 
@@ -153,8 +153,8 @@ describe("#17 group 1: invalid states the runtime already rejects", () => {
       ],
       catalog,
     );
-    expect(result.failed?.code).toBe("malformed_op");
-    expect(result.failed?.message).toMatch(/interior write without inner_widget/);
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("malformed_op");
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.message).toMatch(/interior write without inner_widget/);
     expect(bytes(doc)).toBe(before);
   });
 
@@ -168,9 +168,9 @@ describe("#17 group 1: invalid states the runtime already rejects", () => {
       [wireOp({ op: "reset_doc", ...env(), workflow: { nodes: [], links: [] } })],
       catalog,
     );
-    expect(result.failed?.code).toBe("op_deferred");
-    expect(result.applied).toEqual([]);
-    expect(result.version).toBe(0);
+    expect(result.outcomes.find((o) => o.outcome === "rejected")?.reason.code).toBe("op_deferred");
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
+    expect(result.ops_seen).toBe(0);
     expect(bytes(doc)).toBe(before);
   });
 });
@@ -233,8 +233,8 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(result.failed).toBeNull();
-    expect(result.applied).toHaveLength(2);
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toHaveLength(2);
 
     const wf = project(doc, catalog);
     const ids = wf.nodes.map((n) => n.id);
@@ -262,7 +262,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const added = project(doc, catalog).nodes.find((n) => n.type === "KSampler" && !("pos" in n))!;
     expect(added).toBeDefined();
     expect("id" in added).toBe(false);
@@ -284,7 +284,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const added = project(doc, catalog).nodes.find((n) => n.id === 9)!;
     expect(added.type).toBe("KSampler");
     expect(added.pos).toEqual([1, 1]);
@@ -309,7 +309,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const node1 = project(doc, catalog).nodes.find((n) => n.id === 1)!;
     // Slot 0 is untouched; a new slot 1 was grown and wired instead.
     expect(node1.inputs).toEqual([
@@ -355,7 +355,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect([...doc.getMap("__stamps").keys()]).toEqual([
       JSON.stringify(["grow", "1", "101", "images"]),
       JSON.stringify(["grow_request", "1", "101", "images"]),
@@ -379,7 +379,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const node1 = project(doc, catalog).nodes.find((n) => n.id === 1)!;
     // … and `steps` (index 1) is what changed; `seed` (index 0) did not.
     expect(node1.widgets_values).toEqual([1, 42, 3, "a", "b", 1]);
@@ -402,7 +402,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const node1 = project(doc, catalog).nodes.find((n) => n.id === 1)!;
     expect(node1.widgets_values).toEqual([1, 43, 3, "a", "b", 1]);
   });
@@ -427,7 +427,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     const node1 = project(doc, catalog).nodes.find((n) => n.id === 1)!;
     expect(node1.widgets_values).toEqual([1, 44, 3, "a", "b", 1]);
     expect([...doc.getMap("__stamps").keys()]).toEqual([
@@ -468,7 +468,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(high.failed).toBeNull();
+    expect(high.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
 
     const low = applyOps(
       doc,
@@ -486,10 +486,10 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       ],
       catalog,
     );
-    expect(low.failed).toBeNull();
+    expect(low.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
 
     const node1 = project(doc, catalog).nodes.find((n) => n.id === 1)!;
-    expect(node1.widgets_values?.[1]).toBe("low-base_version");
+    expect(Array.isArray(node1.widgets_values) ? node1.widgets_values[1] : undefined).toBe("low-base_version");
   });
 
   it("op_id is accepted whatever its shape — the uuid4-hex contract is unenforced", () => {
@@ -502,7 +502,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
       [wireOp({ op: "set_widget", op_id: "!", actor: "a", base_version: 1, stamp: [1, "a"], node_id: 1, widget: "steps", value: 7 })],
       catalog,
     );
-    expect(result.failed).toBeNull();
-    expect(result.applied).toEqual(["!"]);
+    expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
+    expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual(["!"]);
   });
 });

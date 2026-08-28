@@ -141,17 +141,17 @@ describe("property-based mint → apply → project round trips", () => {
         const doc = mint(scenario.base, catalog);
         const result = applyOps(doc, ops, catalog);
 
-        expect(result.failed).toBeNull();
-        expect(result.applied).toEqual(ops.map((op) => op.op_id));
+        expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
+        expect(result.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual(ops.map((op) => op.op_id));
         expect(scenario.base).toEqual(source);
 
         const firstProjection = project(doc, catalog);
         const firstUpdate = Y.encodeStateAsUpdate(doc);
         const retry = applyOps(doc, ops, catalog);
 
-        expect(retry.failed).toBeNull();
-        expect(retry.applied).toEqual([]);
-        expect(retry.skipped).toEqual(ops.map((op) => op.op_id));
+        expect(retry.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
+        expect(retry.outcomes.filter((o) => o.outcome === "applied").map((o) => o.op_id)).toEqual([]);
+        expect(retry.outcomes.filter((o) => o.outcome === "no-op").map((o) => o.op_id)).toEqual(ops.map((op) => op.op_id));
         expect(project(doc, catalog)).toEqual(firstProjection);
         expect(Y.encodeStateAsUpdate(doc)).toEqual(firstUpdate);
         expect(project(mint(firstProjection, catalog), catalog)).toEqual(firstProjection);
