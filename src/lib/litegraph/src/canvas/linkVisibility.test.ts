@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -61,7 +62,7 @@ describe('link visibility mutations', () => {
   it('seeds the rename prompt with the stored label', () => {
     const link = createLink()
     const host = createHost()
-    const event = {} as CanvasPointerEvent
+    const event = fromPartial<CanvasPointerEvent>({})
 
     promptRenameLinkBadge(host, link, event)
 
