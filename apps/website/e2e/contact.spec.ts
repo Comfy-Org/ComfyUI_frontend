@@ -56,5 +56,8 @@ test.describe('Contact page support routing @smoke', () => {
         name: t('contact.form.supportLinkCta', 'zh-CN')
       })
     ).toHaveAttribute('href', externalLinks.support)
+    await expect(
+      support.getByRole('link', { name: 'support@comfy.org' })
+    ).toHaveAttribute('href', SUPPORT_MAILTO)
   })
 })
