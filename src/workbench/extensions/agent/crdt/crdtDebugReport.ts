@@ -39,6 +39,32 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 const MAX_LOG_CHARS = 40_000
 const MAX_WORKFLOW_CHARS = 20_000
 
+/**
+ * Setting keys whose VALUE is replaced before the report leaves the browser.
+ *
+ * `addSetting` is public extension API, so the settings dictionary is an open
+ * set: any installed node pack can persist whatever it likes there, including
+ * service credentials. An allow-list is impossible for the same reason, so
+ * this redacts by key shape and the report says so out loud.
+ */
+const SECRET_KEY_PATTERN =
+  /(token|secret|password|passwd|credential|api[-_]?key|apikey|auth|bearer|session|cookie|private)/i
+
+const REDACTED = '[redacted by the debug report]'
+
+const SHARING_WARNING =
+  'Review before sharing: this section can contain values you did not choose to publish.'
+
+function redactSecrets(settings: unknown): unknown {
+  if (typeof settings !== 'object' || settings === null) return settings
+  return Object.fromEntries(
+    Object.entries(settings as Record<string, unknown>).map(([key, value]) => [
+      key,
+      SECRET_KEY_PATTERN.test(key) ? REDACTED : value
+    ])
+  )
+}
+
 /** Live CRDT internals, read from the follower at the moment Copy is pressed. */
 export interface CrdtDebugSnapshot {
   status: AgentCrdtStatus
@@ -190,6 +216,25 @@ function mergeSection(entries: readonly MergeTraceEntry[]): string {
 }
 
 /**
+ * `systemSection` reads fields off an unvalidated `/system_stats` payload, so
+ * a backend that answers 200 with a different shape would throw straight out
+ * of the collector — losing the entire report at exactly the moment the
+ * backend is the thing being reported on.
+ */
+function renderSystem(
+  stats:
+    | { label: string; ok: true; value: SystemStats }
+    | { label: string; ok: false; error: string }
+): string {
+  if (!stats.ok) return `_${stats.label} unavailable: ${stats.error}_`
+  try {
+    return systemSection(stats.value)
+  } catch (error) {
+    return `_${stats.label} could not be rendered (${String(error)}); raw payload:_\n${fence('json', json(stats.value))}`
+  }
+}
+
+/**
  * Build the full markdown report.
  *
  * Ordered for the reader, not for the collector: the tester's own words come
@@ -246,12 +291,7 @@ export async function collectCrdtDebugReport(
     ].join('\n')
   )
 
-  sections.push(
-    '## System',
-    stats.ok
-      ? systemSection(stats.value)
-      : `_${stats.label} unavailable: ${stats.error}_`
-  )
+  sections.push('## System', renderSystem(stats))
 
   sections.push('## CRDT event log', fence('json', json(input.events)))
 
@@ -264,7 +304,7 @@ export async function collectCrdtDebugReport(
     const serialized = json(input.workflow)
     sections.push(
       '## Workflow',
-      'Check for sensitive values (API keys, prompts) before sharing.',
+      `${SHARING_WARNING} Prompts and API keys embedded in nodes appear verbatim.`,
       fence(
         'json',
         serialized.length > MAX_WORKFLOW_CHARS
@@ -276,13 +316,15 @@ export async function collectCrdtDebugReport(
 
   sections.push(
     '## Settings',
+    `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, but a custom node may name a secret anything.`,
     settings.ok
-      ? fence('json', json(settings.value))
+      ? fence('json', json(redactSecrets(settings.value)))
       : `_${settings.label} unavailable: ${settings.error}_`
   )
 
   sections.push(
     '## Server logs',
+    `${SHARING_WARNING} Backend logs can echo prompts, file paths and tokens.`,
     logs.ok
       ? fence('text', truncate(String(logs.value), MAX_LOG_CHARS))
       : `_${logs.label} unavailable: ${logs.error}_`

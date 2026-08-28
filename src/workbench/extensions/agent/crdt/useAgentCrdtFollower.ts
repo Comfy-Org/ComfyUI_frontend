@@ -185,7 +185,10 @@ export function useAgentCrdtFollower(
     clearStaleProbe()
     staleProbeTimer = setTimeout(() => {
       staleProbeTimer = null
-      docLog.warn(
+      // NOT a warning: this timer re-arms itself, and `warn` bypasses the debug
+      // gate by design, so warning here would emit forever on any idle workflow
+      // in every build — including for users who explicitly opted out.
+      docLog.info(
         'stale_probe',
         `no doc frame for ${STALE_AFTER_MS}ms on a bound channel — probing with a resubscribe`,
         { workflowId: subscribedWorkflowId.value, afterMs: STALE_AFTER_MS }

@@ -163,7 +163,7 @@ function explainVerdict(
     case 'rejected':
       return `Rejected (${verdict.code}): ${verdict.message}. Everything after it in the same batch was abandoned; everything before it was kept.`
     case 'not-reached':
-      return `Never attempted: an earlier op in this batch was rejected (${verdict.code}), and a batch aborts its remainder.`
+      return 'Never attempted: an earlier op in the same batch was rejected, and a batch abandons everything after the failure. The ops before it are kept, so resending the batch without the bad op converges.'
   }
 }
 

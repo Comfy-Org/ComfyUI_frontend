@@ -28,8 +28,10 @@ agent panel, so the panel's product flag is the only gate.
 
 ## Verify
 
-- The status strip at the top of the agent panel (`data-testid="agent-crdt-status"`)
-  shows connected + the subscribed workflow id.
+- The CRDT chip in the agent panel's title row (`data-testid="crdt-dev-panel-chip"`)
+  shows a green dot + the applied-update count. Click it and read the Status tab
+  for the subscribed doc id, last seq and schema state. On a build where
+  `import.meta.env.DEV` is false, append `?crdtDebug=1` to the URL first.
 - Send a message in the agent chat; as the agent edits, `updatesApplied` increments and
   nodes move on the canvas.
 - Reload the tab mid-session: it resubscribes and reconverges from the seeded snapshot.

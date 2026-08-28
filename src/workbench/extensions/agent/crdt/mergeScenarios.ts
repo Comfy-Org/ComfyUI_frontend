@@ -40,8 +40,15 @@ export interface MergeScenario {
   question: string
   workflow: WorkflowJSON
   catalog: WidgetCatalog
-  /** Ops in the order the host would receive them. */
-  ops: Op[]
+  /**
+   * Ops grouped into the batches the host would receive, in arrival order.
+   *
+   * Batching is explicit because it is load-bearing, not incidental: the
+   * applier aborts the remainder of a BATCH on a rejection, so a scenario
+   * about abort-remainder is only honest if its ops actually share one.
+   * `opSender` chunks real traffic the same way.
+   */
+  batches: Op[][]
 }
 
 export interface MergeSimulation {
@@ -76,7 +83,7 @@ function stampKeyOf(value: unknown): StampKey | null {
 function verdictFor(
   outcome: ApplyOutcome,
   wasDuplicate: boolean,
-  nodeWasPresent: boolean | null,
+  nodePresentAfter: boolean | null,
   incumbentStamp: StampKey | null
 ): MergeVerdict {
   switch (outcome.outcome) {
@@ -94,7 +101,7 @@ function verdictFor(
           }
     case 'no-op':
       if (wasDuplicate) return { kind: 'no-op', because: 'duplicate-op-id' }
-      if (nodeWasPresent === false)
+      if (nodePresentAfter === false)
         return { kind: 'no-op', because: 'delete-wins' }
       return { kind: 'no-op', because: 'unknown' }
   }
@@ -111,36 +118,45 @@ function asPlainJson(workflow: WorkflowJSON): WorkflowJSON {
 }
 
 /**
- * Replay `ops` against a fresh document minted from `workflow`.
+ * Replay `batches` against a fresh document minted from `workflow`.
  *
- * Ops are applied ONE AT A TIME rather than as one batch. The verdict for an
- * op depends on the document as it stood immediately before that op — whether
- * the target node still existed, which stamp owned the register — and a batch
- * call collapses those intermediate states. One-at-a-time is also what the
- * real system does across frames, which is the case a tester is asking about.
+ * Duplicate detection reads the doc BEFORE the batch (an op_id already spent
+ * is what makes a resend idempotent), while node presence and register
+ * ownership are read AFTER it. Reading those two afterwards is what lets a
+ * delete and the write it defeats sit in the SAME batch and still be
+ * explained: the question "was there anything left to write to?" is only
+ * answerable once the batch has settled.
  */
 function simulateOpStream(
   workflow: WorkflowJSON,
   catalog: WidgetCatalog,
-  ops: readonly Op[]
+  batches: readonly Op[][]
 ): MergeSimulation {
   const doc = mint(asPlainJson(workflow), catalog)
   const entries: MergeTraceEntry[] = []
+  let index = 0
 
-  ops.forEach((op, index) => {
-    const nodeId = opNodeId(op)
-    const wasDuplicate = hasAppliedOp(doc, op.op_id)
-    const nodeWasPresent = nodeId === null ? null : hasNode(doc, nodeId)
-    const incumbentStamp = stampKeyOf(readStamps(doc)[stampTargetKey(op)])
+  for (const batch of batches) {
+    const alreadyApplied = batch.map((op) => hasAppliedOp(doc, op.op_id))
+    const result = applyOps(doc, batch, catalog)
+    const stampsAfter = readStamps(doc)
 
-    const result = applyOps(doc, [op], catalog)
-    const outcome = result.outcomes[0]
-    const verdict: MergeVerdict = outcome
-      ? verdictFor(outcome, wasDuplicate, nodeWasPresent, incumbentStamp)
-      : { kind: 'no-op', because: 'unknown' }
+    batch.forEach((op, position) => {
+      const outcome = result.outcomes[position]
+      const nodeId = opNodeId(op)
+      const verdict: MergeVerdict = outcome
+        ? verdictFor(
+            outcome,
+            alreadyApplied[position],
+            nodeId === null ? null : hasNode(doc, nodeId),
+            stampKeyOf(stampsAfter[stampTargetKey(op)])
+          )
+        : { kind: 'no-op', because: 'unknown' }
 
-    entries.push(traceEntry(op, index, verdict))
-  })
+      entries.push(traceEntry(op, index, verdict))
+      index++
+    })
+  }
 
   const graph = readGraph(doc)
   const survivingWidgets: Record<string, unknown> = {}
@@ -160,7 +176,12 @@ function simulateOpStream(
 }
 
 export function runScenario(scenario: MergeScenario): MergeSimulation {
-  return simulateOpStream(scenario.workflow, scenario.catalog, scenario.ops)
+  return simulateOpStream(scenario.workflow, scenario.catalog, scenario.batches)
+}
+
+/** Each op arrives in its own batch — the ordinary frame-by-frame case. */
+function separately(...ops: Op[]): Op[][] {
+  return ops.map((op) => [op])
 }
 
 // ── canned scenarios ──────────────────────────────────────────────────────
@@ -239,7 +260,7 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
       'Does an edit made while a node is deleted survive if the node comes back?',
     workflow: SEED_WORKFLOW,
     catalog: CATALOG,
-    ops: [
+    batches: separately(
       op({ op: 'delete_node', node_id: 'A', removed_links: [] }, ALICE, 1),
       op(
         { op: 'set_widget', node_id: 'A', widget: 'text', value: 'a bird' },
@@ -247,7 +268,7 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
         1
       ),
       addNodeA(BOB, 2)
-    ]
+    )
   },
   {
     id: 'write-then-delete-then-write',
@@ -256,7 +277,7 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
       'Where exactly does the delete cut the timeline for a node\u2019s values?',
     workflow: SEED_WORKFLOW,
     catalog: CATALOG,
-    ops: [
+    batches: separately(
       op(
         { op: 'set_widget', node_id: 'A', widget: 'text', value: 'first' },
         ALICE,
@@ -268,7 +289,7 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
         ALICE,
         3
       )
-    ]
+    )
   },
   {
     id: 'concurrent-widget-writes',
@@ -277,7 +298,7 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
       'Both were minted against the same document version, and the one that arrives SECOND loses. What decided it?',
     workflow: SEED_WORKFLOW,
     catalog: CATALOG,
-    ops: [
+    batches: separately(
       op(
         { op: 'set_widget', node_id: 'B', widget: 'seed', value: 222 },
         BOB,
@@ -288,7 +309,7 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
         ALICE,
         4
       )
-    ]
+    )
   },
   {
     id: 'stale-write-loses',
@@ -297,14 +318,14 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
       'Does arrival order or stamp order decide a widget register contest?',
     workflow: SEED_WORKFLOW,
     catalog: CATALOG,
-    ops: [
+    batches: separately(
       op(
         { op: 'set_widget', node_id: 'B', widget: 'steps', value: 50 },
         ALICE,
         9
       ),
       op({ op: 'set_widget', node_id: 'B', widget: 'steps', value: 4 }, BOB, 2)
-    ]
+    )
   },
   {
     id: 'idempotent-resend',
@@ -312,37 +333,40 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
     question: 'Is a retry safe, and how is it distinguishable from a conflict?',
     workflow: SEED_WORKFLOW,
     catalog: CATALOG,
-    ops: (() => {
+    batches: (() => {
       const once = op(
         { op: 'set_widget', node_id: 'B', widget: 'seed', value: 7 },
         ALICE,
         1
       )
-      return [once, once]
+      return separately(once, once)
     })()
   },
   {
     id: 'batch-abort',
-    title: 'a rejected op in the middle of a batch',
-    question: 'What happens to the ops queued behind a rejection?',
+    title: 'a rejected op in the middle of ONE batch',
+    question:
+      'All three ship together. What happens to the ops queued behind the rejection?',
     workflow: SEED_WORKFLOW,
     catalog: CATALOG,
-    ops: [
-      op(
-        { op: 'set_widget', node_id: 'B', widget: 'seed', value: 1 },
-        ALICE,
-        1
-      ),
-      op(
-        { op: 'set_widget', node_id: 'B', widget: 'not_a_widget', value: 1 },
-        ALICE,
-        2
-      ),
-      op(
-        { op: 'set_widget', node_id: 'B', widget: 'steps', value: 3 },
-        ALICE,
-        3
-      )
+    batches: [
+      [
+        op(
+          { op: 'set_widget', node_id: 'B', widget: 'seed', value: 1 },
+          ALICE,
+          1
+        ),
+        op(
+          { op: 'set_widget', node_id: 'B', widget: 'not_a_widget', value: 1 },
+          ALICE,
+          2
+        ),
+        op(
+          { op: 'set_widget', node_id: 'B', widget: 'steps', value: 3 },
+          ALICE,
+          3
+        )
+      ]
     ]
   }
 ]

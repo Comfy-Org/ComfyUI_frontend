@@ -5,6 +5,7 @@ import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   provide,
@@ -79,7 +80,6 @@ import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
-import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { isCrdtDebugEnabled } from './crdt/crdtDebugGate'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
@@ -364,6 +364,11 @@ const { status: crdtStatus, debugSnapshot: crdtDebugSnapshot } =
 // ?crdtDebug=1 opt-in, because the people who need it are testers on a
 // staging build, where DEV is false.
 const isCrdtDevPanelEnabled = isCrdtDebugEnabled()
+// Async so the panel — and the CRDT applier it pulls in to simulate merges —
+// never reaches the bundle of the users who cannot open it.
+const CrdtDevPanel = defineAsyncComponent(
+  () => import('./crdt/CrdtDevPanel.vue')
+)
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
