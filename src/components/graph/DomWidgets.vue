@@ -15,11 +15,16 @@ import { whenever } from '@vueuse/core'
 import { computed } from 'vue'
 
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
-import { getDomWidgetZIndex } from '@/components/graph/widgets/domWidgetZIndex'
+import {
+  createDomWidgetNodeOrder,
+  getDomWidgetZIndex
+} from '@/components/graph/widgets/domWidgetZIndex'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+
+const SPARSE_WIDGET_LOOKUP_LIMIT = 3
 
 const domWidgetStore = useDomWidgetStore()
 
@@ -75,6 +80,8 @@ const updateWidgets = () => {
   lastSelected.width = selectedArea?.[2] ?? 0
   lastSelected.height = selectedArea?.[3] ?? 0
 
+  let nodeOrder: ReturnType<typeof createDomWidgetNodeOrder> | undefined
+  let visibleWidgetCount = 0
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
 
@@ -115,7 +122,11 @@ const updateWidgets = () => {
         widgetState.size = [newWidth, newHeight]
       }
 
-      widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph)
+      visibleWidgetCount++
+      if (currentGraph && visibleWidgetCount > SPARSE_WIDGET_LOOKUP_LIMIT) {
+        nodeOrder ??= createDomWidgetNodeOrder(currentGraph.nodes)
+      }
+      widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph, nodeOrder)
       widgetState.readonly = lgCanvas.read_only
     }
   }
