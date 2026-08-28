@@ -243,6 +243,9 @@ test.describe(
       test('should show widget-specific options when right-clicking a named widget', async ({
         comfyPage
       }) => {
+        const nodeRef = await getNodeRef(comfyPage, 'KSampler')
+        await comfyPage.nodeOps.panToNode(nodeRef)
+
         const widgetLocator = comfyPage.vueNodes.getWidgetByName(
           'KSampler',
           'seed'
@@ -252,12 +255,7 @@ test.describe(
           'KSampler must expose a "seed" widget'
         ).toBeVisible()
 
-        await widgetLocator.hover()
-        await widgetLocator.dispatchEvent('contextmenu', {
-          bubbles: true,
-          cancelable: true,
-          button: 2
-        })
+        await widgetLocator.click({ button: 'right' })
 
         const menu = comfyPage.contextMenu.primeVueMenu
         await menu.waitFor({ state: 'visible' })
