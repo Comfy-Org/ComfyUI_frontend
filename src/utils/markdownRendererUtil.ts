@@ -1,5 +1,4 @@
 import { default as DOMPurify } from 'dompurify'
-import { escape } from 'es-toolkit'
 import { Renderer, marked } from 'marked'
 
 const ALLOWED_TAGS = ['video', 'source']
@@ -58,16 +57,15 @@ export function resolveMarkdownUrl(href: string, baseUrl: string): string {
 function createMarkdownRenderer(baseUrl?: string): Renderer {
   const normalizedBase = baseUrl ? baseUrl.replace(/\/+$/, '') : ''
   const renderer = new Renderer()
-  // Resolved targets and author-supplied titles interpolate into attribute
-  // positions before sanitizing; escaping there keeps a quote in either from
-  // breaking out of the attribute at parse time. URLs get QUOTE-ONLY
-  // escaping: full entity encoding double-encodes a URL that already carries
-  // entities, and this renderer is public extension API - only the quote can
-  // break out of the double-quoted attribute.
+  // Every interpolated attribute gets QUOTE-ONLY escaping: only the quote
+  // can break out of a double-quoted attribute, and full entity encoding
+  // double-encodes values that already carry character references (URLs
+  // with &amp;, titles like "Tips &amp; tricks") on this public extension
+  // renderer.
   renderer.image = ({ href, title, text }) => {
     const src = resolveMarkdownUrl(href, normalizedBase)
-    const titleAttr = title ? ` title="${escape(title)}"` : ''
-    return `<img src="${escapeAttributeUrl(src)}" alt="${escape(text)}"${titleAttr} />`
+    const titleAttr = title ? ` title="${escapeAttributeUrl(title)}"` : ''
+    return `<img src="${escapeAttributeUrl(src)}" alt="${escapeAttributeUrl(text)}"${titleAttr} />`
   }
   renderer.link = ({ href, title, tokens, text }) => {
     // For autolinks (bare URLs), tokens may be undefined, so fall back to text
@@ -78,7 +76,7 @@ function createMarkdownRenderer(baseUrl?: string): Renderer {
         : tokens
           ? renderer.parser.parseInline(tokens)
           : text
-    const titleAttr = title ? ` title="${escape(title)}"` : ''
+    const titleAttr = title ? ` title="${escapeAttributeUrl(title)}"` : ''
     return `<a href="${escapeAttributeUrl(target)}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`
   }
   return renderer
