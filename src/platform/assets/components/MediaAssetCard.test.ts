@@ -7,6 +7,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
 const { downloadAssets } = vi.hoisted(() => ({
   downloadAssets: vi.fn()
@@ -20,23 +21,10 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
 
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: () => ({
-    allOutputs: [
-      {
-        filename: 'a.png',
-        subfolder: '',
-        type: 'output',
-        display_name: 'Display A'
-      }
-    ]
-  })
-}))
-
 const asset: AssetItem = fromPartial({
   id: 'a',
   name: 'a.png',
-  tags: [],
+  tags: ['input'],
   preview_url: '/preview.png'
 })
 
@@ -77,7 +65,7 @@ function dispatchDragStart(
     metaKey: { value: init.metaKey ?? false, configurable: true }
   })
   // eslint-disable-next-line testing-library/no-node-access -- the draggable card intentionally has no interactive role
-  container.querySelector('[data-asset-id="a"]')!.dispatchEvent(event)
+  container.querySelector('[data-asset-id]')!.dispatchEvent(event)
   return { event, add }
 }
 
@@ -100,20 +88,113 @@ describe('MediaAssetCard', () => {
       expect(event.defaultPrevented).toBe(true)
     })
 
-    it('includes the asset metadata with display_name in the drag payload', () => {
-      const { container } = renderCard()
+    it.for([
+      { name: 'photo.png', display_name: 'Photo', mime: 'image' },
+      { name: 'clip.mp4', display_name: 'Clip', mime: 'video' }
+    ])(
+      'includes trusted metadata for an imported $mime card',
+      ({ name, display_name }) => {
+        const attachmentRef = `stored-${name}`
+        const previewUrl = new URL(
+          `/api/view?filename=${name}`,
+          location.href
+        ).toString()
+        const { container } = renderCard({
+          asset: fromPartial({
+            id: name,
+            name,
+            hash: attachmentRef,
+            display_name,
+            tags: ['input'],
+            preview_url: `/api/view?filename=${name}`
+          })
+        })
 
-      const { event, add } = dispatchDragStart(container)
+        const { event, add } = dispatchDragStart(container)
 
-      expect(event.defaultPrevented).toBe(false)
+        expect(event.defaultPrevented).toBe(false)
+        expect(add).toHaveBeenCalledWith(
+          JSON.stringify({
+            filename: name,
+            type: 'input',
+            display_name,
+            attachment_ref: attachmentRef,
+            media_kind: name.endsWith('.png') ? 'image' : 'video',
+            preview_url: name.endsWith('.png') ? previewUrl : undefined
+          }),
+          MIME_ASSET_INFO
+        )
+        expect(add).toHaveBeenCalledWith(
+          expect.stringContaining(`/api/view?filename=${name}`),
+          'text/uri-list'
+        )
+      }
+    )
+
+    it('preserves generated-output metadata instead of replacing it with card fallbacks', () => {
+      const { container } = renderCard({
+        asset: fromPartial({
+          id: 'job-1',
+          name: 'card-name.png',
+          display_name: 'Card name',
+          tags: ['output'],
+          preview_url: '/preview.png',
+          user_metadata: {
+            jobId: 'job-1',
+            nodeId: '9',
+            subfolder: '',
+            allOutputs: [
+              {
+                filename: 'generated.png',
+                subfolder: 'outputs',
+                type: 'output',
+                display_name: 'Generated image'
+              }
+            ]
+          }
+        })
+      })
+
+      const { add } = dispatchDragStart(container)
+
       expect(add).toHaveBeenCalledWith(
         JSON.stringify({
-          filename: 'a.png',
-          subfolder: '',
+          filename: 'generated.png',
+          subfolder: 'outputs',
           type: 'output',
-          display_name: 'Display A'
+          display_name: 'Generated image',
+          attachment_ref: 'card-name.png',
+          media_kind: 'image',
+          preview_url: new URL('/api/preview.png', location.href).toString()
         }),
-        expect.any(String)
+        MIME_ASSET_INFO
+      )
+    })
+
+    it('uses the asset content URL when an imported card has no preview URL', () => {
+      const { container } = renderCard({
+        asset: fromPartial({
+          id: 'plain-video',
+          name: 'plain_video.mp4',
+          tags: ['input']
+        })
+      })
+
+      const { add } = dispatchDragStart(container)
+
+      expect(add).toHaveBeenCalledWith(
+        JSON.stringify({
+          filename: 'plain_video.mp4',
+          type: 'input',
+          display_name: undefined,
+          attachment_ref: 'plain_video.mp4',
+          media_kind: 'video'
+        }),
+        MIME_ASSET_INFO
+      )
+      expect(add).toHaveBeenCalledWith(
+        expect.stringContaining('/assets/plain-video/content'),
+        'text/uri-list'
       )
     })
   })
