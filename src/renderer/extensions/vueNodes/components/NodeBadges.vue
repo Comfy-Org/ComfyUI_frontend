@@ -35,13 +35,20 @@ defineProps<{
     <div
       v-if="hasComfyBadge"
       data-testid="comfy-badge"
-      class="flex size-6 items-center justify-center rounded-full bg-component-node-widget-background"
+      :class="
+        cn(
+          'flex size-6 items-center justify-center rounded-full',
+          hasComfyCloudBadge
+            ? 'bg-brand-yellow'
+            : 'bg-component-node-widget-background'
+        )
+      "
     >
       <i
         :class="
           cn(
             'icon-[comfy--comfy-c] size-3',
-            hasComfyCloudBadge && 'text-brand-yellow'
+            hasComfyCloudBadge && 'text-primary-comfy-ink'
           )
         "
       />
