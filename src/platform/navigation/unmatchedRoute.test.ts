@@ -5,8 +5,8 @@ import type { RouteLocation } from 'vue-router'
 import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ reportError: mockReportError })
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 const Blank = { template: '<div />' }
@@ -33,7 +33,7 @@ describe('unmatchedRouteRedirect', () => {
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ message: 'Unmatched route' }),
       {
-        error_type: 'unmatched_route',
+        errorType: 'unmatched_route',
         level: 'warning',
         context: { path: '/woiadawd' }
       }

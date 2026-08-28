@@ -1,6 +1,6 @@
 import type { RouteLocation, RouteLocationRaw } from 'vue-router'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /**
  * An unmatched path is attacker-supplied and unbounded, so it is truncated
@@ -21,8 +21,8 @@ const MAX_REPORTED_PATH_LENGTH = 128
  * cheap and a spike is still attributable.
  */
 export function unmatchedRouteRedirect(to: RouteLocation): RouteLocationRaw {
-  useTelemetry()?.reportError(new Error('Unmatched route'), {
-    error_type: 'unmatched_route',
+  reportError(new Error('Unmatched route'), {
+    errorType: 'unmatched_route',
     level: 'warning',
     context: { path: to.path.slice(0, MAX_REPORTED_PATH_LENGTH) }
   })

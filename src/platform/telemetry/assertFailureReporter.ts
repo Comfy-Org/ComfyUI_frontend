@@ -1,4 +1,4 @@
-import { useTelemetry } from './index'
+import { reportError } from './reportError'
 
 const MAX_REPORTS_PER_SESSION = 20
 
@@ -15,7 +15,7 @@ export function reportAssertFailure(message: string): void {
   if (reportedMessages.size >= MAX_REPORTS_PER_SESSION) return
   reportedMessages.add(message)
 
-  useTelemetry()?.reportError(new Error(message), {
-    error_type: 'invariant_assert'
+  reportError(new Error(message), {
+    errorType: 'invariant_assert'
   })
 }
