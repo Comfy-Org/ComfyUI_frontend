@@ -89,6 +89,33 @@ const normalizeReloadGraph = (
   }))
 })
 
+const reloadGraph = (
+  serialized: ISerialisedGraph,
+  mangled: Set<string>,
+  pinia: ReturnType<typeof createTestingPinia>
+): string => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  try {
+    const graph = new LGraph()
+    graph.configure(structuredClone(serialized))
+    const reloadedSerialized = S(graph.serialize())
+    if (
+      !isEqual(
+        normalizeReloadGraph(serialized, mangled),
+        normalizeReloadGraph(
+          JSON.parse(reloadedSerialized) as ISerialisedGraph,
+          mangled
+        )
+      )
+    ) {
+      throw new Error('serialized graph changed after reload')
+    }
+    return reloadedSerialized
+  } finally {
+    setActivePinia(pinia)
+  }
+}
+
 const COMBO = (o: string[]) => [o, {}]
 const DEFS: Record<string, unknown> = {
   CheckpointLoaderSimple: {
@@ -678,28 +705,10 @@ export async function runPack(
     row.serialized = S(graph.serialize())
   })
   await op('reload', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    try {
-      const g2 = new LGraph()
-      const serialized = JSON.parse(
-        String(row.serialized ?? '{}')
-      ) as ISerialisedGraph
-      g2.configure(structuredClone(serialized))
-      row.reloadedSerialized = S(g2.serialize())
-      if (
-        !isEqual(
-          normalizeReloadGraph(serialized, mangled),
-          normalizeReloadGraph(
-            JSON.parse(String(row.reloadedSerialized)) as ISerialisedGraph,
-            mangled
-          )
-        )
-      ) {
-        throw new Error('serialized graph changed after reload')
-      }
-    } finally {
-      setActivePinia(pinia)
-    }
+    const serialized = JSON.parse(
+      String(row.serialized ?? '{}')
+    ) as ISerialisedGraph
+    row.reloadedSerialized = reloadGraph(serialized, mangled, pinia)
   })
   await op('graphToPrompt', async () => {
     const p = await app.graphToPrompt(graph)
