@@ -186,6 +186,7 @@ import {
   useTimeoutFn
 } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
+import { viewerDialogContentClass } from '@/components/ui/dialog/dialog.variants'
 import {
   computed,
   defineAsyncComponent,
@@ -584,7 +585,7 @@ const handleZoomClick = (asset: AssetItem) => {
       dialogComponentProps: {
         renderer: 'reka',
         size: 'full',
-        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+        contentClass: viewerDialogContentClass,
         maximizable: true
       }
     })
