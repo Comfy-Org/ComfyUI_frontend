@@ -1,10 +1,20 @@
-import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import { useLinkStore } from '@/stores/linkStore'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type {
   ISerialisedGraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 import { fixBadLinks } from './linkFixer'
 
@@ -257,6 +267,41 @@ describe('fixBadLinks', () => {
     expect(graph.links).toEqual([])
   })
 
+  it('deletes stale links from live graph link maps', () => {
+    const linkId = toLinkId(1)
+    const originNode = fromAny<LGraphNode, unknown>({
+      id: toNodeId(1),
+      outputs: [{ links: [linkId] }]
+    })
+    const link = fromPartial<LLink>({
+      id: linkId,
+      origin_id: originNode.id,
+      origin_slot: 0,
+      target_id: toNodeId(2),
+      target_slot: 0,
+      type: '*'
+    })
+    const links = new Map([[linkId, link]])
+    const graph = fromAny<LGraph, unknown>({
+      links,
+      _removeLink: vi.fn((id) => links.delete(id)),
+      getNodeById: vi.fn((nodeId) =>
+        nodeId === originNode.id ? originNode : null
+      )
+    })
+
+    const result = fixBadLinks(graph, { fix: true, silent: true })
+
+    expect(result).toMatchObject({
+      hasBadLinks: false,
+      fixed: true,
+      patched: 1,
+      deleted: 1
+    })
+    expect(links.has(linkId)).toBe(false)
+    expect(originNode.outputs?.[0]?.links).toEqual([])
+  })
+
   it('suppresses logger calls in silent mode while still applying fixes', () => {
     const graph = createGraph({
       nodes: [
@@ -277,5 +322,51 @@ describe('fixBadLinks', () => {
     })
     expect(graph.nodes[0]?.outputs?.[0]?.links).toEqual([1])
     expect(logger.log).not.toHaveBeenCalled()
+  })
+})
+
+describe('fixBadLinks ↔ linkStore integration', () => {
+  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
+  it('treats a store-registered link as consistent without repairs', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', '*')
+    b.addInput('in', '*')
+    graph.add(a)
+    graph.add(b)
+
+    // Registered via the chokepoint; slot views derive from the store.
+    const link = new LLink(toLinkId(9), '*', a.id, 0, b.id, 0)
+    graph._addLink(link)
+
+    const store = useLinkStore()
+    const graphId = graphScopeOf(graph)
+    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
+    expect(b.inputs[0].link).toBe(link.id)
+
+    const result = fixBadLinks(graph, { fix: true, silent: true })
+
+    expect(result).toMatchObject({ hasBadLinks: false, deleted: 0 })
+    expect(graph.links.has(link.id)).toBe(true)
+    expect(store.isInputSlotConnected(graphId, b.id, 0)).toBe(true)
+  })
+
+  it('inspects live output slots without touching the deprecated links getter', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', '*')
+    b.addInput('in', '*')
+    graph.add(a)
+    graph.add(b)
+    graph._addLink(new LLink(toLinkId(9), '*', a.id, 0, b.id, 0))
+
+    const linksGetter = vi.spyOn(NodeOutputSlot.prototype, 'links', 'get')
+
+    fixBadLinks(graph, { fix: true, silent: true })
+
+    expect(linksGetter).not.toHaveBeenCalled()
   })
 })

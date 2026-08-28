@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
@@ -19,6 +19,7 @@ describe('DEFAULT_MODEL_CAPABILITIES', () => {
     expect(DEFAULT_MODEL_CAPABILITIES.exportable).toBe(true)
     expect([...DEFAULT_MODEL_CAPABILITIES.materialModes]).toEqual([
       'original',
+      'clay',
       'normal',
       'wireframe'
     ])
@@ -27,14 +28,6 @@ describe('DEFAULT_MODEL_CAPABILITIES', () => {
 
 describe('fetchModelData', () => {
   const mockFetchApi = vi.mocked(api.fetchApi)
-
-  beforeEach(() => {
-    mockFetchApi.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
 
   it('returns the arrayBuffer on a successful response', async () => {
     const buf = new ArrayBuffer(8)

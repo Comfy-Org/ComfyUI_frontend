@@ -1,47 +1,77 @@
 import path from 'node:path'
 
-export default {
-  'tests-ui/**': () =>
-    'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1',
+export default function lintStaged(stagedFiles: string[]) {
+  const relativePaths = stagedFiles.map(toRelativePath)
 
-  './**/*.{css,vue}': (stagedFiles: string[]) => {
-    const joinedPaths = toJoinedRelativePaths(stagedFiles)
-    return [`pnpm exec stylelint --allow-empty-input ${joinedPaths}`]
-  },
-
-  './**/*.js': (stagedFiles: string[]) => formatAndEslint(stagedFiles),
-
-  './**/*.{ts,tsx,vue,mts,json,yaml,md}': (stagedFiles: string[]) => {
-    const commands = [...formatAndEslint(stagedFiles), 'pnpm typecheck']
-
-    const relativePaths = stagedFiles.map((f) =>
-      path.relative(process.cwd(), f).replace(/\\/g, '/')
-    )
-
-    if (relativePaths.some((f) => f.startsWith('browser_tests/'))) {
-      commands.push('pnpm typecheck:browser')
-    }
-
-    if (relativePaths.some((f) => f.startsWith('apps/website/'))) {
-      commands.push('pnpm typecheck:website')
-    }
-
-    return commands
+  if (relativePaths.some((fileName) => fileName.startsWith('tests-ui/'))) {
+    return 'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1'
   }
-}
 
-function formatAndEslint(fileNames: string[]) {
-  const joinedPaths = toJoinedRelativePaths(fileNames)
+  const formattableFiles = relativePaths.filter(
+    (fileName) =>
+      /\.(js|ts|tsx|vue|mts|json|yaml|md)$/.test(fileName) &&
+      !fileName.endsWith('pnpm-lock.yaml')
+  )
+  const codeFiles = relativePaths.filter((fileName) =>
+    /\.(js|ts|tsx|vue|mts)$/.test(fileName)
+  )
+  const styleFiles = relativePaths.filter((fileName) =>
+    /\.(css|vue)$/.test(fileName)
+  )
+  const typecheckFiles = formattableFiles.filter((fileName) =>
+    /\.(ts|tsx|vue|mts)$/.test(fileName)
+  )
+
   return [
-    `pnpm exec oxfmt --write ${joinedPaths}`,
-    `pnpm exec oxlint --type-aware --fix ${joinedPaths}`,
-    `pnpm exec eslint --cache --fix --no-warn-ignored ${joinedPaths}`
+    ...commandsWithFiles(
+      formattableFiles,
+      'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
+    ),
+    ...lintCommands(codeFiles, styleFiles),
+    ...typecheckCommands(typecheckFiles)
   ]
 }
 
-function toJoinedRelativePaths(fileNames: string[]) {
-  const relativePaths = fileNames.map((f) =>
-    path.relative(process.cwd(), f).replace(/\\/g, '/')
-  )
-  return relativePaths.map((p) => `"${p}"`).join(' ')
+function lintCommands(codeFiles: string[], styleFiles: string[]) {
+  if (new Set([...codeFiles, ...styleFiles]).size > 10) {
+    return ['pnpm lint']
+  }
+
+  return [
+    ...commandsWithFiles(styleFiles, 'pnpm exec stylelint --allow-empty-input'),
+    ...commandsWithFiles(
+      codeFiles,
+      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix',
+      'pnpm exec eslint --cache --fix --no-warn-ignored'
+    )
+  ]
+}
+
+function typecheckCommands(fileNames: string[]) {
+  if (fileNames.length === 0) {
+    return []
+  }
+
+  return [
+    'pnpm typecheck',
+    ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
+      ? ['pnpm typecheck:browser']
+      : []),
+    ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
+      ? ['pnpm typecheck:website']
+      : [])
+  ]
+}
+
+function commandsWithFiles(fileNames: string[], ...commands: string[]) {
+  if (fileNames.length === 0) {
+    return []
+  }
+
+  const joinedPaths = fileNames.map((fileName) => `"${fileName}"`).join(' ')
+  return commands.map((command) => `${command} ${joinedPaths}`)
+}
+
+function toRelativePath(fileName: string) {
+  return path.relative(process.cwd(), fileName).replace(/\\/g, '/')
 }

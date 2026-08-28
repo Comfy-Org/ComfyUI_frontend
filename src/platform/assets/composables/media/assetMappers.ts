@@ -36,14 +36,17 @@ export function mapTaskOutputToAssetItem(
     create_time: taskItem.createTime
   }
 
+  const executionTime = taskItem.executionStartTimestamp
+    ? new Date(taskItem.executionStartTimestamp).toISOString()
+    : new Date().toISOString()
+
   return {
     id: taskItem.jobId,
     name: output.filename,
     display_name: output.display_name,
     size: 0,
-    created_at: taskItem.executionStartTimestamp
-      ? new Date(taskItem.executionStartTimestamp).toISOString()
-      : new Date().toISOString(),
+    created_at: executionTime,
+    updated_at: executionTime,
     tags: ['output'],
     thumbnail_url: output.previewUrl,
     preview_url: output.url,
@@ -79,11 +82,14 @@ export function mapInputFileToAssetItem(
   const preview_url = api.apiURL(`/view?${params}`)
   appendCloudResParam(params, cleanName)
 
+  const created_at = new Date().toISOString()
+
   return {
     id: `${directory}-${index}-${cleanName}`,
     name: cleanName,
     size: 0,
-    created_at: new Date().toISOString(),
+    created_at,
+    updated_at: created_at,
     tags: [directory],
     thumbnail_url: api.apiURL(`/view?${params}`),
     preview_url

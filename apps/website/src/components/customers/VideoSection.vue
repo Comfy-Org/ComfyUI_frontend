@@ -7,7 +7,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="px-6 py-16 lg:px-20 lg:py-40">
+  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-40">
     <VideoPlayer
       src="https://media.comfy.org/website/customers/silverside/video.webm"
       poster="https://media.comfy.org/website/customers/silverside/poster.webp"

@@ -68,7 +68,6 @@ import { getExecutionContext } from './getExecutionContext'
 
 describe('getExecutionContext', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.mockNodes.length = 0
     for (const key of Object.keys(hoisted.mockNodeDefsByName)) {
       delete hoisted.mockNodeDefsByName[key]
@@ -100,7 +99,7 @@ describe('getExecutionContext', () => {
     hoisted.mockNodes.push(mockNode('Canny'), mockNode('KSampler'))
     hoisted.mockNodeDefsByName['Canny'] = {
       name: 'Canny',
-      python_module: 'comfy_extras.nodes_canny'
+      display_name: 'Canny'
     }
     hoisted.mockNodeDefsByName['KSampler'] = {
       name: 'KSampler',
@@ -114,13 +113,10 @@ describe('getExecutionContext', () => {
     expect(context.toolkit_node_count).toBe(1)
   })
 
-  it('detects blueprint toolkit nodes via python_module', () => {
-    const blueprintType = 'SubgraphBlueprint.text_to_image'
+  it('detects blueprint toolkit nodes via path', () => {
+    const blueprintType = 'SubgraphBlueprint.Sharpen'
     hoisted.mockNodes.push(mockNode(blueprintType, true))
-    hoisted.mockNodeDefsByName[blueprintType] = {
-      name: blueprintType,
-      python_module: 'comfy_essentials'
-    }
+    hoisted.mockNodeDefsByName[blueprintType] = { name: blueprintType }
 
     const context = getExecutionContext()
 
@@ -159,12 +155,12 @@ describe('getExecutionContext', () => {
   })
 
   it('uses node.type as tracking name when nodeDef is missing', () => {
-    hoisted.mockNodes.push(mockNode('ImageCrop'))
+    hoisted.mockNodes.push(mockNode('ImageCropV2'))
 
     const context = getExecutionContext()
 
     expect(context.has_toolkit_nodes).toBe(true)
-    expect(context.toolkit_node_names).toEqual(['ImageCrop'])
+    expect(context.toolkit_node_names).toEqual(['ImageCropV2'])
   })
 
   describe('template detection', () => {

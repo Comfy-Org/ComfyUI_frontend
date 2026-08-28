@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import {
@@ -31,11 +31,7 @@ const EXPECTED_DEFAULT_TYPES = [
   'latent_upscale_models',
   'sam2',
   'sams',
-  'depthanything',
   'ipadapter',
-  'segformer_b2_clothes',
-  'segformer_b3_clothes',
-  'segformer_b3_fashion',
   'nlf',
   'FlashVSR',
   'FlashVSR-v1.1'
@@ -83,11 +79,10 @@ const MOCK_NODE_NAMES = [
   'LatentUpscaleModelLoader',
   'DownloadAndLoadSAM2Model',
   'SAMLoader',
-  'DownloadAndLoadDepthAnythingV2Model',
   'IPAdapterModelLoader',
-  'LS_LoadSegformerModel',
   'LoadNLFModel',
-  'FlashVSRNode'
+  'FlashVSRNode',
+  'LTXICLoRALoaderModelOnly'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -106,11 +101,6 @@ vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
 })
 
 describe('useModelToNodeStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   describe('modelToNodeMap', () => {
     it('should initialize as empty', () => {
       const modelToNodeStore = useModelToNodeStore()
@@ -257,11 +247,8 @@ describe('useModelToNodeStore', () => {
       ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
-      ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
       ['FlashVSR', 'FlashVSRNode', ''],
-      ['FlashVSR-v1.1', 'FlashVSRNode', ''],
-      ['segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name'],
-      ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name']
+      ['FlashVSR-v1.1', 'FlashVSRNode', '']
     ])(
       'should return correct provider for %s',
       ([modelType, expectedNodeName, expectedKey]) => {
@@ -307,7 +294,22 @@ describe('useModelToNodeStore', () => {
       )
 
       const loraProviders = modelToNodeStore.getAllNodeProviders('loras')
-      expect(loraProviders).toHaveLength(2)
+      expect(loraProviders).toHaveLength(3)
+      expect(loraProviders).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({ name: 'LoraLoader' })
+          }),
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({ name: 'LoraLoaderModelOnly' })
+          }),
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({
+              name: 'LTXICLoRALoaderModelOnly'
+            })
+          })
+        ])
+      )
     })
 
     it('should return single provider for model type with one node', () => {
@@ -559,6 +561,18 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.getCategoryForNodeType('NonExistentNode')
       ).toBeUndefined()
       expect(modelToNodeStore.getCategoryForNodeType('')).toBeUndefined()
+    })
+
+    it('maps the IC-LoRA Loader Model Only node to loras so its lora_name dropdown uses the cloud asset browser (FE-838)', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(
+        modelToNodeStore.getCategoryForNodeType('LTXICLoRALoaderModelOnly')
+      ).toBe('loras')
+      expect(
+        modelToNodeStore.getRegisteredNodeTypes()['LTXICLoRALoaderModelOnly']
+      ).toBe('lora_name')
     })
 
     it('should return first category when node type exists in multiple categories', () => {

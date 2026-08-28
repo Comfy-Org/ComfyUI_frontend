@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { app } from '@/scripts/app'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -49,6 +50,17 @@ vi.mock('@/stores/dialogStore', () => ({
   }))
 }))
 
+// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
+const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockTrackTemplate: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () =>
+    mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
+}))
+
 // Mock fetch
 global.fetch = vi.fn()
 
@@ -58,9 +70,32 @@ describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {
+    mockIsCloud.value = true
+
     mockWorkflowTemplatesStore = {
       isLoaded: false,
       loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
+      getTemplateByName: vi.fn((name: string) =>
+        name === 'template1'
+          ? {
+              name,
+              mediaType: 'image',
+              mediaSubtype: 'jpg',
+              sourceModule: 'default',
+              description: 'Template 1 description',
+              io: {
+                inputs: [
+                  {
+                    nodeId: 2,
+                    nodeType: 'LoadImage',
+                    file: 'starter.png',
+                    mediaType: 'image'
+                  }
+                ]
+              }
+            }
+          : undefined
+      ),
       groupedTemplates: [
         {
           label: 'ComfyUI Examples',
@@ -113,6 +148,7 @@ describe('useTemplateWorkflows', () => {
 
     // Mock fetch response
     vi.mocked(fetch).mockResolvedValue({
+      ok: true,
       json: vi.fn().mockResolvedValue({ workflow: 'data' })
     } as Partial<Response> as Response)
   })
@@ -283,6 +319,72 @@ describe('useTemplateWorkflows', () => {
 
     expect(result).toBe(true)
     expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
+  })
+
+  it('seeds a result into the template before loading the workflow', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        nodes: [
+          {
+            id: 2,
+            type: 'LoadImage',
+            widgets_values: ['starter.png', 'image']
+          }
+        ]
+      })
+    } as Partial<Response> as Response)
+
+    const result = await loadWorkflowTemplate('template1', 'default', {
+      input: {
+        filename: 'first-output.png',
+        subfolder: 'tour',
+        type: 'output'
+      }
+    })
+
+    expect(result).toBe(true)
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      {
+        nodes: [
+          {
+            id: 2,
+            type: 'LoadImage',
+            widgets_values: ['tour/first-output.png [output]', 'image']
+          }
+        ]
+      },
+      true,
+      true,
+      'template1',
+      { openSource: 'template' }
+    )
+  })
+
+  it('tracks template telemetry on load in cloud builds', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+    mockWorkflowTemplatesStore.isLoaded = true
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(mockTrackTemplate).toHaveBeenCalledWith({
+      workflow_name: 'template1',
+      template_source: 'default'
+    })
+  })
+
+  it('does not fire template telemetry in OSS builds', async () => {
+    mockIsCloud.value = false
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+    mockWorkflowTemplatesStore.isLoaded = true
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(mockTrackTemplate).not.toHaveBeenCalled()
   })
 
   it('should handle errors when loading templates', async () => {

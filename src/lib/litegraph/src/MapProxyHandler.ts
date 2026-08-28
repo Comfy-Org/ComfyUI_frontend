@@ -2,11 +2,19 @@
  * Temporary workaround until downstream consumers migrate to Map.
  * A brittle wrapper with many flaws, but should be fine for simple maps using int indexes.
  */
-export class MapProxyHandler<V> implements ProxyHandler<
-  Map<number | string, V>
-> {
+export class MapProxyHandler<
+  K extends number | string,
+  V
+> implements ProxyHandler<Map<K, V>> {
+  constructor(private readonly toKey: (value: number | string) => K) {}
+
+  private getKey(p: string): K {
+    const int = parseInt(p, 10)
+    return this.toKey(Number.isNaN(int) ? p : int)
+  }
+
   getOwnPropertyDescriptor(
-    target: Map<number | string, V>,
+    target: Map<K, V>,
     p: string | symbol
   ): PropertyDescriptor | undefined {
     const value = this.get(target, p)
@@ -19,40 +27,34 @@ export class MapProxyHandler<V> implements ProxyHandler<
     }
   }
 
-  has(target: Map<number | string, V>, p: string | symbol): boolean {
+  has(target: Map<K, V>, p: string | symbol): boolean {
     if (typeof p === 'symbol') return false
 
-    const int = parseInt(p, 10)
-    return target.has(!isNaN(int) ? int : p)
+    return target.has(this.getKey(p))
   }
 
-  ownKeys(target: Map<number | string, V>): ArrayLike<string | symbol> {
+  ownKeys(target: Map<K, V>): ArrayLike<string | symbol> {
     return [...target.keys()].map(String)
   }
 
-  get(target: Map<number | string, V>, p: string | symbol): V | undefined {
+  get(target: Map<K, V>, p: string | symbol): V | undefined {
     // Workaround does not support link IDs of "values", "entries", "constructor", etc.
     if (p in target) return Reflect.get(target, p, target)
     if (typeof p === 'symbol') return
 
-    const int = parseInt(p, 10)
-    return target.get(!isNaN(int) ? int : p)
+    return target.get(this.getKey(p))
   }
 
-  set(
-    target: Map<number | string, V>,
-    p: string | symbol,
-    newValue: V
-  ): boolean {
+  set(target: Map<K, V>, p: string | symbol, newValue: V): boolean {
     if (typeof p === 'symbol') return false
 
-    const int = parseInt(p, 10)
-    target.set(!isNaN(int) ? int : p, newValue)
+    target.set(this.getKey(p), newValue)
     return true
   }
 
-  deleteProperty(target: Map<number | string, V>, p: string | symbol): boolean {
-    return target.delete(p as number | string)
+  deleteProperty(target: Map<K, V>, p: string | symbol): boolean {
+    if (typeof p === 'symbol') return false
+    return target.delete(this.getKey(p))
   }
 
   static bindAllMethods(map: Map<unknown, unknown>): void {

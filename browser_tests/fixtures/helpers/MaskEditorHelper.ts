@@ -7,9 +7,9 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 const MASK_CANVAS_INDEX = 2
 const RGB_CANVAS_INDEX = 1
 
-export type BrushSliderLabel = 'thickness'
+type BrushSliderLabel = 'thickness'
 
-export class MaskEditorHelper {
+class MaskEditorHelper {
   constructor(private comfyPage: ComfyPage) {}
 
   private get page() {
@@ -54,6 +54,17 @@ export class MaskEditorHelper {
     const canvasContainer = dialog.locator('#maskEditorCanvasContainer')
     await expect(canvasContainer).toBeVisible()
     await expect(canvasContainer.locator('canvas')).toHaveCount(4)
+
+    return dialog
+  }
+
+  async reopenDialog(): Promise<Locator> {
+    const imagePreview = this.page.locator('.image-preview').first()
+    await imagePreview.getByRole('region').hover()
+    await this.page.getByLabel('Edit or mask image').click()
+
+    const dialog = this.page.locator('.mask-editor-dialog')
+    await expect(dialog).toBeVisible()
 
     return dialog
   }

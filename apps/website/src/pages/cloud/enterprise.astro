@@ -8,7 +8,9 @@ import TeamSection from '../../components/product/enterprise/TeamSection.vue'
 import DataOwnershipSection from '../../components/product/enterprise/DataOwnershipSection.vue'
 import BYOKeySection from '../../components/product/enterprise/BYOKeySection.vue'
 import OrchestrationSection from '../../components/product/enterprise/OrchestrationSection.vue'
+import MinimaxLicenseBandSection from '../../components/product/enterprise/MinimaxLicenseBandSection.vue'
 import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import PricingFaq from '../../components/pricing/PricingFaq.astro'
 ---
 
 <BaseLayout title="Comfy Enterprise">
@@ -20,5 +22,7 @@ import ProductCardsSection from '../../components/common/ProductCardsSection.vue
   <DataOwnershipSection client:visible />
   <BYOKeySection />
   <OrchestrationSection client:visible />
+  <MinimaxLicenseBandSection />
+  <PricingFaq category="enterprise" />
   <ProductCardsSection exclude-product="enterprise" label-key="products.labelProducts" />
 </BaseLayout>

@@ -29,6 +29,8 @@
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
+  <TourOverlay v-if="graphReady" />
+  <FirstRunTour />
 </template>
 
 <script setup lang="ts">
@@ -49,6 +51,8 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
+import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
+import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAcceptedToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
@@ -68,6 +72,7 @@ import DesktopCloudNotificationController from '@/platform/cloud/notification/co
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -110,7 +115,8 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-const { isBuilderMode } = useAppMode()
+const graphReady = ref(false)
+const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 
 watch(linearMode, (isLinear) => {
@@ -128,9 +134,9 @@ watch(
   (newTheme) => {
     const DARK_THEME_CLASS = 'dark-theme'
     if (newTheme.light_theme) {
-      document.body.classList.remove(DARK_THEME_CLASS)
+      document.documentElement.classList.remove(DARK_THEME_CLASS)
     } else {
-      document.body.classList.add(DARK_THEME_CLASS)
+      document.documentElement.classList.add(DARK_THEME_CLASS)
     }
     if (isDesktop) {
       electronAPI().changeTheme({
@@ -293,6 +299,7 @@ void nextTick(() => {
 })
 
 const onGraphReady = () => {
+  graphReady.value = true
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
     if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
@@ -349,6 +356,16 @@ const onGraphReady = () => {
 
       // Send initial heartbeat
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
+    }
+
+    // Shell layout snapshot, once per session (cloud only)
+    if (isCloud && telemetry) {
+      telemetry.trackShellLayout(
+        getShellLayoutSnapshot({
+          view_mode: mode.value,
+          is_app_mode: isAppMode.value
+        })
+      )
     }
 
     // Setting values now available after comfyApp.setup.

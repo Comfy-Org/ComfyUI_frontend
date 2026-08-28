@@ -133,7 +133,8 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   let minHeight = DEFAULT_VIDEO_SIZE
   let minWidth = DEFAULT_VIDEO_SIZE
 
-  const { handleWheel, handlePointer } = useCanvasInteractions()
+  const { handleWheel, handlePointerDown, handlePointerMove } =
+    useCanvasInteractions()
 
   const setMinDimensions = (video: HTMLVideoElement) => {
     const { minHeight: calculatedHeight, minWidth: calculatedWidth } =
@@ -176,8 +177,8 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       const controller = new AbortController()
       const { signal } = controller
       container.addEventListener('wheel', handleWheel, { signal })
-      container.addEventListener('pointermove', handlePointer, { signal })
-      container.addEventListener('pointerdown', handlePointer, { signal })
+      container.addEventListener('pointermove', handlePointerMove, { signal })
+      container.addEventListener('pointerdown', handlePointerDown, { signal })
 
       widget.onRemove = useChainCallback(widget.onRemove, () => {
         controller.abort()

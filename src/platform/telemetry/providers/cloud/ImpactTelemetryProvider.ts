@@ -1,4 +1,5 @@
 import { captureCheckoutAttributionFromSearch } from '@/platform/telemetry/utils/checkoutAttribution'
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -85,7 +86,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     if (typeof window === 'undefined') return
 
     const { customerId, customerEmail } = this.resolveCustomerIdentity()
-    const normalizedEmail = customerEmail.trim().toLowerCase()
+    const normalizedEmail = normalizeEmail(customerEmail)
     // Impact's Identify spec requires customerEmail to be sent as a SHA1 hash.
     const hashedEmail = normalizedEmail
       ? await this.hashSha1(normalizedEmail)

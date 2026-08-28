@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ContentSection from '../../components/common/ContentSection.vue'
+import HeroSection from '../../components/legal/HeroSection.vue'
+---
+
+<BaseLayout
+  title="Desktop Privacy Policy - Comfy"
+  description="Privacy policy for Comfy Desktop. Named processors, lawful basis under GDPR/UK GDPR, retention periods, and your rights."
+>
+  <HeroSection title="Desktop Privacy Policy" />
+  <ContentSection prefix="desktop_privacy" client:load />
+</BaseLayout>

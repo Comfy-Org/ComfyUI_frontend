@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import time
 
+from comfy_api.v0_0_2 import IO
+
 
 class LongComboDropdown:
     @classmethod
@@ -317,6 +319,75 @@ class NodeWithLegacyWidget:
     def node_with_legacy_widget(self):
         return ()
 
+class NodeWithPriceBadge(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithPriceBadge",
+            display_name="Node With Price Badge",
+            description="An API node with a price badge",
+            inputs=[IO.Combo.Input("price", options=["1x", "2x", "3x"])],
+            is_api_node=True,
+            price_badge=IO.PriceBadge(
+                depends_on=IO.PriceBadgeDepends(widgets=["price"]),
+                expr="""
+                (
+                  $p := widgets.price;
+                  {"type":"usd","usd": $contains($p, "2x") ? 2 : $contains($p, "3x") ? 3 : 1}
+                )
+                """,
+            ),
+        )
+
+    @classmethod
+    async def execute(cls, price):
+        return IO.NodeOutput()
+
+
+class NodeWithNumericCombo(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithNumericCombo",
+            display_name="Node With Numeric Combo",
+            description="An API node whose combo options are numbers",
+            inputs=[IO.Combo.Input("duration", options=[5, 10], default=5)],
+            is_api_node=True,
+            price_badge=IO.PriceBadge(
+                depends_on=IO.PriceBadgeDepends(widgets=["duration"]),
+                expr='{"type":"usd","usd": widgets.duration / 5}',
+            ),
+        )
+
+    @classmethod
+    async def execute(cls, duration):
+        return IO.NodeOutput()
+
+
+class NodeWithDynamicCombo(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithDynamicCombo",
+            display_name="Node With Dynamic Combo",
+            description="A node with a Dynamic combo",
+            inputs=[IO.DynamicCombo.Input("combo", options=[
+                IO.DynamicCombo.Option("option1", [IO.Combo.Input("suboption", options=["1x"])]),
+                IO.DynamicCombo.Option("option2", [IO.Combo.Input("suboption", options=["2x"])]),
+                IO.DynamicCombo.Option("option3", [IO.Image.Input("image")]),
+                IO.DynamicCombo.Option("option4", [
+                    IO.DynamicCombo.Input("subcombo", options=[
+                        IO.DynamicCombo.Option("opt1", [IO.Float.Input("float_x"), IO.Float.Input("float_y")]),
+                        IO.DynamicCombo.Option("opt2", [IO.Mask.Input("mask1", optional=True)]),
+                    ])
+                ])]
+            )],
+        )
+
+    @classmethod
+    async def execute(cls):
+        return IO.NodeOutput()
+
 
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
@@ -334,6 +405,9 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
     "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
+    "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
+    "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
+    "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -352,6 +426,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
     "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
+    "DevToolsNodeWithPriceBadge": "Node With Price Badge",
+    "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
+    "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
 }
 
 __all__ = [
@@ -369,6 +446,7 @@ __all__ = [
     "NodeWithSeedInput",
     "NodeWithValidation",
     "NodeWithV2ComboInput",
+    "NodeWithNumericCombo",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
 ]

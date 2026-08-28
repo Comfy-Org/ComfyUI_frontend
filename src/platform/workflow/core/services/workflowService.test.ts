@@ -14,13 +14,16 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
 import { useAppMode } from '@/composables/useAppMode'
-import type { AppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import type { AppMode } from '@/utils/appMode'
+import { isValidUuid } from '@/utils/formatUtil'
+import { t } from '@/i18n'
 
 function createModeTestWorkflow(
   options: {
@@ -60,9 +63,20 @@ function makeWorkflowData(
   }
 }
 
+function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
+  return { ...makeWorkflowData(), id }
+}
+
 const { mockConfirm, mockTrackWorkflowSaved } = vi.hoisted(() => ({
   mockConfirm: vi.fn(),
   mockTrackWorkflowSaved: vi.fn()
+}))
+
+const draftStoreMocks = vi.hoisted(() => ({
+  saveDraft: vi.fn(() => true),
+  getDraft: vi.fn(),
+  removeDraft: vi.fn(),
+  markDraftUsed: vi.fn()
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -76,7 +90,9 @@ vi.mock('@/scripts/app', () => ({
   app: {
     canvas: { ds: { offset: [0, 0], scale: 1 } },
     rootGraph: { serialize: vi.fn(() => ({})), extra: {} },
-    loadGraphData: vi.fn()
+    loadGraphData: vi.fn(),
+    nodeOutputs: {},
+    nodePreviewImages: {}
   }
 }))
 
@@ -104,13 +120,8 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStore', () => ({
-  useWorkflowDraftStore: () => ({
-    saveDraft: vi.fn(),
-    getDraft: vi.fn(),
-    removeDraft: vi.fn(),
-    markDraftUsed: vi.fn()
-  })
+vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
+  useWorkflowDraftStoreV2: () => draftStoreMocks
 }))
 
 vi.mock('@/stores/domWidgetStore', () => ({
@@ -160,8 +171,7 @@ function enableWarningSettings() {
 
 describe('useWorkflowService', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
+    draftStoreMocks.saveDraft.mockReturnValue(true)
   })
 
   describe('showPendingWarnings', () => {
@@ -310,6 +320,100 @@ describe('useWorkflowService', () => {
           missingMediaCandidates: mediaCandidates
         })
       )
+    })
+
+    it('should stash node previews before app.clean() can revoke them', () => {
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+      const stashPreviews = vi.spyOn(
+        useNodeOutputStore(),
+        'stashPreviewsForWorkflow'
+      )
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(stashPreviews).toHaveBeenCalledWith(activeWorkflow.path)
+    })
+
+    it('should save active workflow state through the V2 draft store', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(draftStoreMocks.saveDraft).toHaveBeenCalledWith(
+        activeWorkflow.path,
+        JSON.stringify(activeWorkflow.activeState),
+        {
+          name: activeWorkflow.key,
+          isTemporary: activeWorkflow.isTemporary
+        }
+      )
+    })
+
+    it('should show an error toast when the V2 draft store cannot save', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      draftStoreMocks.saveDraft.mockReturnValue(false)
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(addToastSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('toastMessages.failedToSaveDraft')
+        })
+      )
+    })
+
+    it('should log and show an error toast when the V2 draft store throws', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const error = new Error('storage unavailable')
+      draftStoreMocks.saveDraft.mockImplementation(() => {
+        throw error
+      })
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      try {
+        useWorkflowService().beforeLoadNewGraph()
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to persist active workflow draft',
+          error
+        )
+        expect(addToastSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('toastMessages.failedToSaveDraft')
+          })
+        )
+      } finally {
+        consoleErrorSpy.mockRestore()
+      }
     })
   })
 
@@ -461,6 +565,20 @@ describe('useWorkflowService', () => {
       expect(closed).toBe(false)
       expect(workflowStore.closeWorkflow).not.toHaveBeenCalled()
     })
+
+    it('should release the closed workflow node previews', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/closing.json'
+      })
+      const discardPreviews = vi.spyOn(
+        useNodeOutputStore(),
+        'discardPreviewsForWorkflow'
+      )
+
+      await service.closeWorkflow(workflow, { warnIfUnsaved: false })
+
+      expect(discardPreviews).toHaveBeenCalledWith(workflow.path)
+    })
   })
 
   describe('afterLoadNewGraph', () => {
@@ -478,16 +596,29 @@ describe('useWorkflowService', () => {
       )
       vi.mocked(workflowStore.isActive).mockReturnValue(true)
       vi.mocked(workflowStore.openWorkflow).mockResolvedValue(existingWorkflow)
+      vi.mocked(workflowStore.createNewTemporary).mockReturnValue(
+        createModeTestWorkflow({ path: 'workflows/repeat (2).json' })
+      )
     })
 
-    it('should reuse the active workflow when loading the same path repeatedly', async () => {
-      const workflowId = 'repeat-workflow-id'
+    it('should restore the stashed previews of the newly active workflow', async () => {
+      workflowStore.activeWorkflow = existingWorkflow
+
+      await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
+
+      expect(
+        useNodeOutputStore().restorePreviewsForWorkflow
+      ).toHaveBeenCalledWith(existingWorkflow.path)
+    })
+
+    it('should reuse equivalent UUIDs regardless of casing', async () => {
+      const workflowId = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
       existingWorkflow.changeTracker.activeState.id = workflowId
 
-      await useWorkflowService().afterLoadNewGraph('repeat', {
-        id: workflowId,
-        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
-      } as never)
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowDataWithId(workflowId.toUpperCase())
+      )
 
       expect(workflowStore.getWorkflowByPath).toHaveBeenCalledWith(
         'workflows/repeat.json'
@@ -499,9 +630,7 @@ describe('useWorkflowService', () => {
     })
 
     it('should reuse active workflow for repeated same-path loads without ids', async () => {
-      await useWorkflowService().afterLoadNewGraph('repeat', {
-        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
-      } as never)
+      await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
 
       expect(workflowStore.getWorkflowByPath).toHaveBeenCalledWith(
         'workflows/repeat.json'
@@ -513,11 +642,10 @@ describe('useWorkflowService', () => {
     })
 
     it('should reuse active workflow when only one side has an id', async () => {
-      existingWorkflow.changeTracker.activeState.id = 'existing-id'
+      existingWorkflow.changeTracker.activeState.id =
+        '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
 
-      await useWorkflowService().afterLoadNewGraph('repeat', {
-        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
-      } as never)
+      await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
 
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
       expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
@@ -526,10 +654,10 @@ describe('useWorkflowService', () => {
     })
 
     it('should reuse active workflow when only workflowData has an id', async () => {
-      await useWorkflowService().afterLoadNewGraph('repeat', {
-        id: 'incoming-id',
-        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
-      } as never)
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowDataWithId('9cea40bb-b0cf-4b40-a758-8935cfe8d52f')
+      )
 
       expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
       expect(existingWorkflow.changeTracker.reset).toHaveBeenCalled()
@@ -538,20 +666,153 @@ describe('useWorkflowService', () => {
     })
 
     it('should create new temporary when ids differ', async () => {
-      existingWorkflow.changeTracker.activeState.id = 'existing-id'
+      existingWorkflow.changeTracker.activeState.id =
+        '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
 
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowDataWithId('11111111-2222-3333-4444-555555555555')
+      )
+
+      expect(workflowStore.createNewTemporary).toHaveBeenCalled()
+    })
+
+    it('stores share attribution on shared temporary workflows', async () => {
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
       const tempWorkflow = createModeTestWorkflow({
-        path: 'workflows/repeat (2).json'
+        path: 'workflows/shared.json'
       })
       vi.mocked(workflowStore.createNewTemporary).mockReturnValue(tempWorkflow)
       vi.mocked(workflowStore.openWorkflow).mockResolvedValue(tempWorkflow)
 
-      await useWorkflowService().afterLoadNewGraph('repeat', {
-        id: 'different-id',
-        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
-      } as never)
+      await useWorkflowService().afterLoadNewGraph(
+        'shared',
+        makeWorkflowData(),
+        'share-1'
+      )
 
-      expect(workflowStore.createNewTemporary).toHaveBeenCalled()
+      expect(tempWorkflow.shareId).toBe('share-1')
+    })
+
+    it('preserves share attribution on repeated same-path loads', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
+
+      expect(existingWorkflow.shareId).toBe('share-1')
+    })
+
+    it('preserves share attribution on workflow object reloads', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph(
+        existingWorkflow,
+        makeWorkflowData()
+      )
+
+      expect(existingWorkflow.shareId).toBe('share-1')
+    })
+
+    it('overwrites share attribution on repeated same-path loads with a new share id', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowData(),
+        'share-2'
+      )
+
+      expect(existingWorkflow.shareId).toBe('share-2')
+    })
+
+    it('overwrites share attribution on workflow object reloads with a new share id', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph(
+        existingWorkflow,
+        makeWorkflowData(),
+        'share-2'
+      )
+
+      expect(existingWorkflow.shareId).toBe('share-2')
+    })
+
+    it('reuses a migrated workflow only for its original legacy id', async () => {
+      const existingUuid = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
+      existingWorkflow.changeTracker.activeState.id = existingUuid
+      existingWorkflow.legacyId = 'video-point-prompt-example'
+
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        makeWorkflowDataWithId('video-point-prompt-example')
+      )
+
+      expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+        expect.objectContaining({ id: existingUuid })
+      )
+      expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      {
+        label: 'a different legacy id',
+        existingId: 'legacy-workflow-name',
+        incomingId: 'different-legacy-name'
+      },
+      {
+        label: 'an unrelated legacy id after migration',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: 'different-legacy-name',
+        legacyId: 'legacy-workflow-name'
+      }
+    ])(
+      'opens a new tab for $label',
+      async ({ existingId, incomingId, legacyId }) => {
+        existingWorkflow.changeTracker.activeState.id = existingId
+        existingWorkflow.legacyId = legacyId
+
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowDataWithId(incomingId)
+        )
+
+        expect(workflowStore.createNewTemporary).toHaveBeenCalled()
+        expect(existingWorkflow.changeTracker.reset).not.toHaveBeenCalled()
+      }
+    )
+
+    it('migrates a workflow-object reload and records its legacy id', async () => {
+      const existingUuid = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
+      existingWorkflow.changeTracker.activeState.id = existingUuid
+
+      await useWorkflowService().afterLoadNewGraph(
+        existingWorkflow,
+        makeWorkflowDataWithId('video-point-prompt-example')
+      )
+
+      expect(workflowStore.openWorkflow).toHaveBeenCalledWith(existingWorkflow)
+      expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledWith(
+        expect.objectContaining({ id: existingUuid })
+      )
+      expect(existingWorkflow.legacyId).toBe('video-point-prompt-example')
+      expect(existingWorkflow.changeTracker.restore).toHaveBeenCalled()
+    })
+
+    it('generates a fresh UUID when a workflow-object reload has no valid id', async () => {
+      existingWorkflow.changeTracker.activeState.id = 'legacy-workflow-name'
+
+      await useWorkflowService().afterLoadNewGraph(
+        existingWorkflow,
+        makeWorkflowDataWithId('different-legacy-name')
+      )
+
+      const resetArg = vi.mocked(existingWorkflow.changeTracker.reset).mock
+        .calls[0]?.[0]
+      expect(isValidUuid(resetArg?.id)).toBe(true)
+      expect(resetArg?.id).not.toBe('different-legacy-name')
+      expect(resetArg?.id).not.toBe('legacy-workflow-name')
     })
   })
 
@@ -793,7 +1054,6 @@ describe('useWorkflowService', () => {
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
-      mockTrackWorkflowSaved.mockClear()
       app.rootGraph.extra = {}
     })
 

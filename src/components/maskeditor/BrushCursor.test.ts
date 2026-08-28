@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -41,8 +41,6 @@ const getGradientEl = (): HTMLElement =>
 
 describe('BrushCursor', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    document.body.innerHTML = ''
     mockStore = initialMock()
   })
 
@@ -115,7 +113,7 @@ describe('BrushCursor', () => {
       expect(style).toContain('top: 305px')
     })
 
-    it('should subtract container offset when containerRef is provided', () => {
+    it('should subtract container offset when containerRef is provided', async () => {
       mockStore.cursorPoint = { x: 200, y: 300 }
       mockStore.panOffset = { x: 0, y: 0 }
       mockStore.brushSettings.size = 20
@@ -138,8 +136,10 @@ describe('BrushCursor', () => {
       renderCursor(container)
 
       // left = 200 + 0 - 20 - 30 = 150; top = 300 + 0 - 20 - 60 = 220
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 150px')
+      })
       const style = styleOf(getBrushEl())
-      expect(style).toContain('left: 150px')
       expect(style).toContain('top: 220px')
     })
   })

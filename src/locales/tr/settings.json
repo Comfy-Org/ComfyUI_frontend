@@ -199,7 +199,6 @@
     "name": "PLY Motoru",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "PLY dosyalarını yüklemek için motoru seçin. \"threejs\" yerel Three.js PLYLoader'ı kullanır (ağ PLY dosyaları için en iyisi). \"fastply\" ASCII nokta bulutu PLY dosyaları için optimize edilmiş bir yükleyici kullanır. \"sparkjs\" ise 3D Gaussian Splatting PLY dosyaları için Spark.js kullanır."
@@ -368,8 +367,8 @@
     "tooltip": "Kayan iş kuyruğu panelini, Varlıklar yan paneline gömülü eşdeğer bir iş kuyruğu ile değiştirir. Kayan panel düzenine dönmek için bunu devre dışı bırakabilirsiniz."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Hatalar sekmesini yan panelde göster",
-    "tooltip": "Etkinleştirildiğinde, iş akışı yürütme hatalarını hızlıca görmek için sağ yan panelde bir hatalar sekmesi görüntülenir."
+    "name": "Yan panelde sorunlar sekmesini göster",
+    "tooltip": "Etkinleştirildiğinde, ayarlanması gereken engelleyici hataları ve eksik kaynakları göstermek için Sorunlar sekmesi sağ yan panelde görüntülenir."
   },
   "Comfy_Sidebar_Location": {
     "name": "Kenar çubuğu konumu",
@@ -427,10 +426,6 @@
   "Comfy_Validation_Workflows": {
     "name": "İş akışlarını doğrula"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Otomatik ölçeklendirme düzeni (Vue düğümleri)",
-    "tooltip": "Vue işlemeye geçerken düğüm konumlarını örtüşmeyi önlemek için otomatik olarak ölçeklendir"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "Modern Düğüm Tasarımı (Vue Düğümleri)",
     "tooltip": "Modern: Gelişmiş etkileşim, yerel tarayıcı özellikleri ve güncellenmiş görsel tasarıma sahip DOM tabanlı işleme. Klasik: Geleneksel tuval işleme."
@@ -459,6 +454,9 @@
   },
   "Comfy_Workflow_ConfirmDelete": {
     "name": "İş akışlarını silerken onay göster"
+  },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "Widget değerlerini ada göre geri yükle"
   },
   "Comfy_Workflow_Persist": {
     "name": "İş akışı durumunu koru ve sayfayı (yeniden) yüklediğinde geri yükle"

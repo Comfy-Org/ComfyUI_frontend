@@ -15,21 +15,21 @@ import { QuadTree } from './QuadTree'
 /**
  * Cache entry for spatial queries
  */
-interface CacheEntry {
-  result: NodeId[]
+interface CacheEntry<TId> {
+  result: TId[]
   timestamp: number
 }
 
 /**
  * Spatial index manager using QuadTree
  */
-export class SpatialIndexManager {
-  private quadTree: QuadTree<NodeId>
-  private queryCache: Map<string, CacheEntry>
+export class SpatialIndexManager<TId extends string | number = NodeId> {
+  private quadTree: QuadTree<TId>
+  private queryCache: Map<string, CacheEntry<TId>>
   private cacheSize = 0
 
   constructor(bounds?: Bounds) {
-    this.quadTree = new QuadTree<NodeId>(
+    this.quadTree = new QuadTree<TId>(
       bounds ?? QUADTREE_CONFIG.DEFAULT_BOUNDS,
       {
         maxDepth: QUADTREE_CONFIG.MAX_DEPTH,
@@ -42,16 +42,16 @@ export class SpatialIndexManager {
   /**
    * Insert a node into the spatial index
    */
-  insert(nodeId: NodeId, bounds: Bounds): void {
-    this.quadTree.insert(nodeId, bounds, nodeId)
+  insert(nodeId: TId, bounds: Bounds): void {
+    this.quadTree.insert(String(nodeId), bounds, nodeId)
     this.invalidateCache()
   }
 
   /**
    * Update a node's bounds in the spatial index
    */
-  update(nodeId: NodeId, bounds: Bounds): void {
-    this.quadTree.update(nodeId, bounds)
+  update(nodeId: TId, bounds: Bounds): void {
+    this.quadTree.update(String(nodeId), bounds)
     this.invalidateCache()
   }
 
@@ -59,9 +59,9 @@ export class SpatialIndexManager {
    * Batch update multiple nodes' bounds in the spatial index
    * More efficient than calling update() multiple times as it only invalidates cache once
    */
-  batchUpdate(updates: Array<{ nodeId: NodeId; bounds: Bounds }>): void {
+  batchUpdate(updates: Array<{ nodeId: TId; bounds: Bounds }>): void {
     for (const { nodeId, bounds } of updates) {
-      this.quadTree.update(nodeId, bounds)
+      this.quadTree.update(String(nodeId), bounds)
     }
     this.invalidateCache()
   }
@@ -69,15 +69,15 @@ export class SpatialIndexManager {
   /**
    * Remove a node from the spatial index
    */
-  remove(nodeId: NodeId): void {
-    this.quadTree.remove(nodeId)
+  remove(nodeId: TId): void {
+    this.quadTree.remove(String(nodeId))
     this.invalidateCache()
   }
 
   /**
    * Query nodes within the given bounds
    */
-  query(bounds: Bounds): NodeId[] {
+  query(bounds: Bounds): TId[] {
     const cacheKey = this.getCacheKey(bounds)
     const cached = this.queryCache.get(cacheKey)
 
@@ -137,7 +137,7 @@ export class SpatialIndexManager {
   /**
    * Add result to cache with LRU eviction
    */
-  private addToCache(key: string, result: NodeId[]): void {
+  private addToCache(key: string, result: TId[]): void {
     // Evict oldest entries if cache is full
     if (this.cacheSize >= PERFORMANCE_CONFIG.SPATIAL_CACHE_MAX_SIZE) {
       const oldestKey = this.findOldestCacheEntry()

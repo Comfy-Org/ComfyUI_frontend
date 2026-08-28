@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -59,6 +59,7 @@ function buildViewerStub() {
     canUseGizmo: ref(true),
     canUseLighting: ref(true),
     canExport: ref(true),
+    sourceFormat: ref<string | null>(null),
     materialModes: ref(['original', 'normal', 'wireframe']),
     animations: ref<Array<{ name: string; index: number }>>([]),
     playing: ref(false),
@@ -200,16 +201,11 @@ async function renderViewerContent(options: RenderOptions = {}) {
 
 describe('Load3dViewerContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.stubGlobal('MutationObserver', NoopMutationObserver)
     viewerState.current = null
     dragState.current = null
     capturedDragOptions.current = null
     serviceSourceLoad3d.current = null
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('initialization', () => {

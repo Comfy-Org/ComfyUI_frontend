@@ -19,7 +19,6 @@ Applies to all `.vue` files anywhere in the codebase.
 
 - Prefer `emit/@event-name` for state changes (promotes loose coupling)
 - Use `defineExpose` only for imperative operations (`form.validate()`, `modal.open()`)
-- Proper props and emits definitions
 
 ## VueUse Composables
 
@@ -43,6 +42,16 @@ Prefer Vue native options when available:
   (for example xterm internals inside PrimeVue terminal wrappers), scoped
   `:deep()` selectors are allowed. Add a brief inline comment explaining why the
   exception is required.
+
+## Props, Slots & Reactivity
+
+The props/slots/state rules live in the root `AGENTS.md` ("Vue 3 Composition
+API"), which is always loaded. In addition:
+
+- Use `watch`/`watchEffect` for side effects; avoid a `ref` + `watch` when a `computed` would work instead
+- Prefer reactive props destructuring to `const props = defineProps<...>`; do not import Vue macros unnecessarily
+- Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
+- Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
 
 ## Best Practices
 

@@ -2,7 +2,6 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -10,7 +9,13 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
-import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { workflowToClipboardItems } from '@/platform/workflow/core/utils/workflowToClipboardItems'
+import {
+  areWorkflowIdsEquivalent,
+  ensureWorkflowId,
+  getLegacyWorkflowId
+} from '@/platform/workflow/core/utils/workflowId'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -23,10 +28,10 @@ import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
-import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -37,6 +42,7 @@ import {
   appendWorkflowJsonExt,
   generateUUID
 } from '@/utils/formatUtil'
+import type { AppMode } from '@/utils/appMode'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -51,7 +57,42 @@ export const useWorkflowService = () => {
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const missingNodesErrorStore = useMissingNodesErrorStore()
-  const workflowDraftStore = useWorkflowDraftStore()
+  const workflowDraftStore = useWorkflowDraftStoreV2()
+
+  const showFailedToSaveDraftToast = () => {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('toastMessages.failedToSaveDraft')
+    })
+  }
+
+  const persistActiveWorkflowDraft = (activeWorkflow: ComfyWorkflow) => {
+    if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path) {
+      return
+    }
+
+    const activeState = activeWorkflow.activeState
+    if (!activeState) return
+
+    try {
+      const saved = workflowDraftStore.saveDraft(
+        activeWorkflow.path,
+        JSON.stringify(activeState),
+        {
+          name: activeWorkflow.key,
+          isTemporary: activeWorkflow.isTemporary
+        }
+      )
+
+      if (!saved) {
+        showFailedToSaveDraftToast()
+      }
+    } catch (err) {
+      console.error('Failed to persist active workflow draft', err)
+      showFailedToSaveDraftToast()
+    }
+  }
 
   function confirmOverwrite(targetPath: string) {
     return dialogService.confirm({
@@ -313,6 +354,7 @@ export const useWorkflowService = () => {
     }
 
     await workflowStore.closeWorkflow(workflow)
+    useNodeOutputStore().discardPreviewsForWorkflow(workflow.path)
     return true
   }
 
@@ -375,26 +417,7 @@ export const useWorkflowService = () => {
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
       activeWorkflow.changeTracker?.deactivate()
-      if (settingStore.get('Comfy.Workflow.Persist') && activeWorkflow.path) {
-        const activeState = activeWorkflow.activeState
-        if (activeState) {
-          try {
-            const workflowJson = JSON.stringify(activeState)
-            workflowDraftStore.saveDraft(activeWorkflow.path, {
-              data: workflowJson,
-              updatedAt: Date.now(),
-              name: activeWorkflow.key,
-              isTemporary: activeWorkflow.isTemporary
-            })
-          } catch {
-            toastStore.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('toastMessages.failedToSaveDraft')
-            })
-          }
-        }
-      }
+      persistActiveWorkflowDraft(activeWorkflow)
       // Cache missing model/media/node state for restore on tab switch.
       // Always overwrite to reflect the current store state (e.g. after
       // muting a node cleared its errors).
@@ -406,6 +429,9 @@ export const useWorkflowService = () => {
         missingModelCandidates: modelCandidates ?? undefined,
         missingMediaCandidates: mediaCandidates ?? undefined
       })
+
+      // Hand the previews to the store before `app.clean()` revokes them
+      useNodeOutputStore().stashPreviewsForWorkflow(activeWorkflow.path)
 
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
@@ -429,7 +455,19 @@ export const useWorkflowService = () => {
    */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
-    workflowData: ComfyWorkflowJSON
+    workflowData: ComfyWorkflowJSON,
+    shareId?: string
+  ) => {
+    await activateLoadedWorkflow(value, workflowData, shareId)
+    useNodeOutputStore().restorePreviewsForWorkflow(
+      useWorkspaceStore().workflow.activeWorkflow?.path
+    )
+  }
+
+  const activateLoadedWorkflow = async (
+    value: string | ComfyWorkflow | null,
+    workflowData: ComfyWorkflowJSON,
+    shareId?: string
   ) => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
@@ -460,12 +498,15 @@ export const useWorkflowService = () => {
         //
         // This prevents accidental duplicate tabs when startup/load flows
         // invoke loadGraphData more than once for the same workflow name.
+        const existingId = existingWorkflow?.activeState?.id
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
           workflowStore.isActive(existingWorkflow) &&
-          (existingWorkflow.activeState?.id === undefined ||
-            workflowData.id === undefined ||
-            existingWorkflow.activeState.id === workflowData.id)
+          areWorkflowIdsEquivalent(
+            existingId,
+            workflowData.id,
+            existingWorkflow.legacyId
+          )
 
         if (
           existingWorkflow &&
@@ -483,7 +524,13 @@ export const useWorkflowService = () => {
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
-          loadedWorkflow.changeTracker.reset(workflowData)
+          if (shareId) {
+            loadedWorkflow.shareId = shareId
+          }
+          loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
+          loadedWorkflow.changeTracker.reset(
+            ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+          )
           loadedWorkflow.changeTracker.restore()
           return
         }
@@ -494,17 +541,26 @@ export const useWorkflowService = () => {
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode
+      if (shareId) {
+        tempWorkflow.shareId = shareId
+      }
       trackIfEnteringApp(tempWorkflow)
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (shareId) {
+      loadedWorkflow.shareId = shareId
+    }
     if (loadedWorkflow.initialMode === undefined) {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)
     }
-    loadedWorkflow.changeTracker.reset(workflowData)
+    loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
+    loadedWorkflow.changeTracker.reset(
+      ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+    )
     loadedWorkflow.changeTracker.restore()
   }
 
@@ -517,21 +573,12 @@ export const useWorkflowService = () => {
   ) => {
     const loadedWorkflow = await workflow.load()
     const workflowJSON = toRaw(loadedWorkflow.initialState)
-    const old = localStorage.getItem('litegrapheditor_clipboard')
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.
-    const graph = new LGraph(workflowJSON as unknown as SerialisableGraph)
-    const canvasElement = document.createElement('canvas')
-    const canvas = new LGraphCanvas(canvasElement, graph, {
-      skip_events: true,
-      skip_render: true
-    })
-    canvas.selectItems()
-    canvas.copyToClipboard()
-    app.canvas.pasteFromClipboard(options)
-    if (old !== null) {
-      localStorage.setItem('litegrapheditor_clipboard', old)
-    }
+    const items = workflowToClipboardItems(
+      workflowJSON as unknown as SerialisableGraph
+    )
+    app.canvas._deserializeItems(items, options)
   }
 
   const loadNextOpenedWorkflow = async () => {
