@@ -195,12 +195,62 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('doc-1')
   })
 
+  it('keeps redacting argv when the rest of the payload is malformed', async () => {
+    // A fallback that dumped the raw payload on any render error put the
+    // secret back on the clipboard, and `## System` has no opt-in to catch it.
+    getSystemStats.mockResolvedValue({
+      system: { argv: ['main.py', '--api-token', 'argv-do-not-leak'] },
+      devices: undefined
+    })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).not.toContain('argv-do-not-leak')
+    expect(report).toContain('## System')
+  })
+
+  it('redacts private paths without eating the argument after them', async () => {
+    getSystemStats.mockResolvedValue({
+      system: {
+        argv: [
+          'main.py',
+          '--extra-model-paths-config',
+          '/home/jsmith/private-do-not-leak.yaml',
+          '--port',
+          '8188',
+          '--cpu'
+        ]
+      },
+      devices: []
+    })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).not.toContain('private-do-not-leak')
+    expect(report).toContain('--port 8188')
+    expect(report).toContain('--cpu')
+  })
+
+  it('does not let a log line close the code fence around it', async () => {
+    getLogs.mockResolvedValue('traceback ``` still inside the fence')
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES
+    })
+
+    const afterHeading = report.slice(report.indexOf('## Server logs'))
+    const opener = afterHeading.slice(afterHeading.indexOf('`'))
+    expect(opener.startsWith('````')).toBe(true)
+  })
+
   it('omits an oversized workflow rather than producing an unpasteable report', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
       events: [],
       sources: ALL_SOURCES,
-      workflow: { nodes: Array.from({ length: 5000 }, (_, i) => ({ id: i })) }
+      workflow: { nodes: Array.from({ length: 40_000 }, (_, i) => ({ id: i })) }
     })
 
     expect(report).toContain('workflow omitted')

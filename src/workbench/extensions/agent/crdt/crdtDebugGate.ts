@@ -129,6 +129,16 @@ export function setCrdtDebugEnabled(enabled: boolean): void {
   writeStorage(ENABLED_KEY, String(enabled))
 }
 
+/**
+ * Whether the user turned the instrument OFF, as opposed to never having said.
+ * The ring buffer records for the never-said case — a tester who opens the
+ * panel after something breaks needs the run-up — but an explicit "off" should
+ * buy silence, not just a quiet console.
+ */
+export function isCrdtDebugOptedOut(): boolean {
+  return !isCrdtDebugEnabled() && readStorage(ENABLED_KEY) === 'false'
+}
+
 export function crdtLogLevel(): CrdtLogLevel {
   if (cachedLevel === null) {
     const stored = readStorage(LEVEL_KEY)

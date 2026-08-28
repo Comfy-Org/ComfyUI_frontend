@@ -343,7 +343,7 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
-    docLog.warn(
+    docLog.info(
       'doc_reset',
       'lineage break — the host re-minted the document, so prior updates no longer compose',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -360,10 +360,16 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     clearStaleProbe()
     adapter.discardPending()
-    docLog.warn(
+    const detail =
+      event instanceof CustomEvent
+        ? (event.detail as { firstFailure?: boolean } | null)
+        : null
+    // Every later frame fails the same gate; `warn` bypasses the debug gate,
+    // so only the first failure earns a console line in a shipping build.
+    docLog[detail?.firstFailure === false ? 'debug' : 'warn'](
       'schema_error',
       'refusing to project the doc: its schema version is not the one this build reads (KA-11 fail-closed)',
-      event instanceof CustomEvent ? (event.detail ?? null) : null
+      detail
     )
   }
   const onReconnected: EventListener = () => {
