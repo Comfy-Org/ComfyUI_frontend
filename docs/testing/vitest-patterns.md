@@ -97,14 +97,14 @@ const fetchMock = vi.fn(async () => ({ ok: true }))
 ### Module mocks with vi.mock()
 
 ```typescript
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
     fetchData: vi.fn()
   }
 }))
 
-vi.mock('@/services/myService', () => ({
+vi.mock(import('@/services/myService'), () => ({
   myService: {
     doThing: vi.fn()
   }

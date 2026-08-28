@@ -161,7 +161,7 @@ Mocking API and other dependencies:
 ```typescript
 // Example from a colocated store unit test
 // Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
@@ -172,7 +172,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock(import('@/scripts/app'), () => ({
   app: {
     canvas: null // Start with canvas potentially undefined or null
   }

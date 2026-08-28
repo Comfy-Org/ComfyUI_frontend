@@ -19,6 +19,16 @@ which is always loaded. In addition:
 ## Mocking
 
 - Use Vitest's mocking utilities (`vi.mock`, `vi.spyOn`)
+- Pass the module as a dynamic import - `vi.mock(import('@/scripts/api'), …)`,
+  not `vi.mock('@/scripts/api', …)`. Enforced by
+  `vitest/prefer-import-in-mock`. Vitest rewrites it back to the string form
+  while hoisting, so this is a typing change only: the factory is now checked
+  against the real module.
+- `vi.mock<unknown>(import('…'), …)` opts a call back out of that check. It
+  marks mocks that predate the rule and could not satisfy it - most often a
+  composable mocked by returning a subset of its return value, which
+  `Partial<Module>` cannot express. Do not copy it into new mocks; type the
+  factory instead.
 - Keep module mocks contained - no global mutable state
 - Use `vi.hoisted()` for per-test mock manipulation
 - Vitest automatically resets mocks, restores spies, and unstubs globals and
