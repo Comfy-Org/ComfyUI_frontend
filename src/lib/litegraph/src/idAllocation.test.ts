@@ -90,9 +90,10 @@ describe('idAllocation', () => {
 describe('coordination-free (doc-bound) allocation', () => {
   // Branded-id construction makes the 100-run sweep slow under a loaded
   // parallel suite; the work is constant per run, so only the budget moves.
+  // The printed seed replays the counts, not the draws (real entropy).
   it(
     'two replicas seeded from one snapshot allocate disjoint node and link ids',
-    { timeout: 20_000 },
+    { timeout: 5_000 },
     () => {
       fc.assert(
         fc.property(fc.integer({ min: 1, max: 200 }), (count) => {
@@ -246,9 +247,12 @@ describe('counter restores clamp below the mint floor', () => {
     })
 
     // A pre-guard client whose counter absorbed a minted id saved that
-    // counter; restoring it verbatim would re-poison a fixed build.
-    expect(graph.state.lastNodeId).toBeLessThan(MINT_ID_MIN)
-    expect(Number(graph.state.lastLinkId)).toBeLessThan(MINT_ID_MIN)
+    // counter; the restore IGNORES it, so the next ALLOCATION stays out of
+    // the mint range (a clamp to the floor would not - 2^40 - 1 + 1 = 2^40).
+    expect(graph.state.lastNodeId).toBe(0)
+    expect(Number(graph.state.lastLinkId)).toBe(0)
+    expect(Number(mintNodeId(graph.state))).toBeLessThan(MINT_ID_MIN)
+    expect(Number(mintLinkId(graph.state))).toBeLessThan(MINT_ID_MIN)
   })
 
   it('a poisoned subgraph definition cannot seed any counter', () => {
@@ -282,21 +286,34 @@ describe('counter restores clamp below the mint floor', () => {
       }
     })
 
-    expect(graph.state.lastNodeId).toBeLessThan(MINT_ID_MIN)
-    expect(Number(graph.state.lastLinkId)).toBeLessThan(MINT_ID_MIN)
+    expect(Number(mintNodeId(graph.state))).toBeLessThan(MINT_ID_MIN)
+    expect(Number(mintLinkId(graph.state))).toBeLessThan(MINT_ID_MIN)
+    // Subgraph.state aliases the root state (the getter returns
+    // _rootGraph.state), so these run the same guard through the
+    // subgraph-definition restore path.
     for (const subgraph of graph.subgraphs.values()) {
-      expect(subgraph.state.lastNodeId).toBeLessThan(MINT_ID_MIN)
-      expect(Number(subgraph.state.lastLinkId)).toBeLessThan(MINT_ID_MIN)
+      expect(Number(mintNodeId(subgraph.state))).toBeLessThan(MINT_ID_MIN)
+      expect(Number(mintLinkId(subgraph.state))).toBeLessThan(MINT_ID_MIN)
     }
   })
 
-  it('the deprecated counter setters clamp below the mint floor', () => {
+  it('the deprecated counter setters ignore mint-range writes but still lower', () => {
     const graph = new LGraph()
+    graph.last_node_id = 10
+    graph.last_link_id = toLinkId(10)
 
     graph.last_node_id = POISONED
     graph.last_link_id = toLinkId(POISONED)
 
-    expect(graph.state.lastNodeId).toBeLessThan(MINT_ID_MIN)
-    expect(Number(graph.state.lastLinkId)).toBeLessThan(MINT_ID_MIN)
+    // The poisoned write is dropped outright; the next allocation stays
+    // out of the mint range.
+    expect(Number(mintNodeId(graph.state))).toBeLessThan(MINT_ID_MIN)
+    expect(Number(mintLinkId(graph.state))).toBeLessThan(MINT_ID_MIN)
+
+    // Lowering is an assignment, not an observation - it must still work.
+    graph.last_node_id = 5
+    graph.last_link_id = toLinkId(5)
+    expect(graph.state.lastNodeId).toBe(5)
+    expect(Number(graph.state.lastLinkId)).toBe(5)
   })
 })

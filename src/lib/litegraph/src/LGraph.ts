@@ -644,7 +644,13 @@ export class LGraph
   }
 
   set last_node_id(value) {
-    this.state.lastNodeId = Math.min(value, MINT_ID_MIN - 1)
+    if (value < MINT_ID_MIN) {
+      this.state.lastNodeId = value
+    } else if (import.meta.env.DEV) {
+      console.warn(
+        `last_node_id write ${value} is in the coordination-free mint range; ignored`
+      )
+    }
   }
 
   /** @deprecated See {@link state}.{@link LGraphState.lastLinkId lastLinkId} */
@@ -653,7 +659,13 @@ export class LGraph
   }
 
   set last_link_id(value) {
-    this.state.lastLinkId = toLinkId(Math.min(value, MINT_ID_MIN - 1))
+    if (value < MINT_ID_MIN) {
+      this.state.lastLinkId = toLinkId(value)
+    } else if (import.meta.env.DEV) {
+      console.warn(
+        `last_link_id write ${value} is in the coordination-free mint range; ignored`
+      )
+    }
   }
 
   onNodeAdded?(node: LGraphNode): void
@@ -2830,25 +2842,19 @@ export class LGraph
         // New schema - one version so far, no check required.
 
         // State - use max to prevent ID collisions across root and subgraphs.
-        // Node/link restores also clamp below the mint floor: a pre-guard
-        // save could have absorbed a minted id into its serialized counters
-        // (subgraph definitions serialize the root state), and restoring it
-        // verbatim would re-poison a fixed build.
+        // Node/link restores route through the observers, which IGNORE
+        // mint-range values outright: a pre-guard save could have absorbed a
+        // minted id into its serialized counters (subgraph definitions
+        // serialize the root state), and any restored floor-or-above value
+        // would put the next ++counter allocation inside the mint range.
         if (data.state) {
           const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
             data.state
           const { state } = this
           if (lastGroupId != null)
             state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
-          if (lastLinkId != null)
-            state.lastLinkId = toLinkId(
-              Math.min(Math.max(state.lastLinkId, lastLinkId), MINT_ID_MIN - 1)
-            )
-          if (lastNodeId != null)
-            state.lastNodeId = Math.min(
-              Math.max(state.lastNodeId, lastNodeId),
-              MINT_ID_MIN - 1
-            )
+          if (lastLinkId != null) observeLinkId(state, toLinkId(lastLinkId))
+          if (lastNodeId != null) observeNodeId(state, toNodeId(lastNodeId))
           if (lastRerouteId != null)
             state.lastRerouteId = toRerouteId(
               Math.max(state.lastRerouteId, lastRerouteId)

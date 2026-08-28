@@ -379,6 +379,56 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a stale confirm does not arm the stale probe on a detached panel', () => {
+    vi.useFakeTimers()
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    workflowId.value = null
+    return Promise.resolve().then(async () => {
+      await Promise.resolve()
+      dispatchFrame('doc_subscribed', { ok: true })
+      vi.advanceTimersByTime(STALE_AFTER_MS + 1)
+
+      // An armed probe would fire resubscribe on the self-re-arming timer.
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      unmount()
+    })
+  })
+
+  it('warns in dev when a second follower mounts concurrently', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const first = mountFollower('wf-1')
+    const second = mountFollower('wf-2')
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('second concurrent instance')
+    )
+    second.unmount()
+    first.unmount()
+    warn.mockRestore()
+  })
+
+  it('a doc_update cancels the silent-server failsafe', () => {
+    vi.useFakeTimers()
+    const boundState = appState.app.graph!.state
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    // Updates flow without a confirm; one proves the binding is live.
+    dispatchFrame('doc_update', { seq: 1 })
+    idAllocationState.setCoordinationFreeIds.mockClear()
+    vi.advanceTimersByTime(500 * 2 ** 6)
+
+    expect(idAllocationState.setCoordinationFreeIds).not.toHaveBeenCalledWith(
+      boundState,
+      false
+    )
+    unmount()
+  })
+
   it('disarms when the subscribe retry budget is exhausted', () => {
     vi.useFakeTimers()
     const boundState = appState.app.graph!.state
