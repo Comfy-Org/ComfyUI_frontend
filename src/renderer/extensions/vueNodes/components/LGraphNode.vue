@@ -78,7 +78,7 @@
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
-          isSecureNode && 'border-l-4 border-success-background',
+          isSecureNode && 'ring-2 ring-secure-outline',
           hasAnyError && 'ring-4 ring-destructive-background',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
