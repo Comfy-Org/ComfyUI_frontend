@@ -1,19 +1,28 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 import { createNodeProgressCanvasSync } from './nodeProgressCanvasSync'
+import type { NodeProgressCanvasSync } from './nodeProgressCanvasSync'
 
 const SUBGRAPH_ID = '00000000-0000-0000-0000-000000000001'
 
-function runningState(id: string, value: number): NodeProgressState {
+type ProgressState = Parameters<
+  NodeProgressCanvasSync['sync']
+>[0][NodeLocatorId]
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+})
+
+function runningState(id: string, value: number): ProgressState {
   return {
     display_node_id: id,
     node_id: id,
@@ -28,18 +37,18 @@ function createNode(id: number) {
   let progress: number | undefined
   const reads = vi.fn()
   const writes = vi.fn()
-  const node = {
-    id,
-    graph: null,
-    get progress() {
+  const node = new LGraphNode(`Test node ${id}`)
+  node.id = toNodeId(id)
+  Object.defineProperty(node, 'progress', {
+    get() {
       reads()
       return progress
     },
-    set progress(value: number | undefined) {
+    set(value: number | undefined) {
       writes(value)
       progress = value
     }
-  } as unknown as LGraphNode
+  })
   return {
     node,
     reads,
@@ -51,33 +60,22 @@ function createNode(id: number) {
 }
 
 function createGraph(nodes: LGraphNode[], subgraphId?: string) {
-  const events = new EventTarget()
-  const graph = {
-    id: subgraphId,
-    nodes,
-    events
-  } as unknown as LGraph
-  for (const node of nodes) node.graph = graph
+  const graph = new LGraph()
+  if (subgraphId) graph.id = subgraphId
+  for (const node of nodes) graph.add(node, { skipComputeOrder: true })
   return {
     graph,
     add(node: LGraphNode) {
-      node.graph = graph
-      nodes.push(node)
-      events.dispatchEvent(new CustomEvent('node:added', { detail: { node } }))
+      graph.add(node, { skipComputeOrder: true })
     },
     remove(node: LGraphNode) {
-      events.dispatchEvent(
-        new CustomEvent('node:before-removed', { detail: { node } })
-      )
-      const index = nodes.indexOf(node)
-      if (index !== -1) nodes.splice(index, 1)
-      node.graph = null
+      graph.remove(node)
     }
   }
 }
 
 function createCanvas() {
-  return { setDirty: vi.fn() } as unknown as LGraphCanvas
+  return fromPartial<LGraphCanvas>({ setDirty: vi.fn() })
 }
 
 function locatorForNode(node: LGraphNode): NodeLocatorId {
@@ -148,12 +146,12 @@ it('does one graph build, then only looks up changed and removed keys', () => {
 
 it('keeps duplicate locator entries and node add/remove lifecycle in sync', () => {
   const first = createNode(1)
-  const duplicate = createNode(1)
+  const duplicate = createNode(2)
   const graphFixture = createGraph([first.node])
   const canvas = createCanvas()
-  const conversions = vi.fn(locatorForNode)
-  const sync = createNodeProgressCanvasSync(conversions)
   const locator = createNodeLocatorId(null, toNodeId(1))
+  const conversions = vi.fn(() => locator)
+  const sync = createNodeProgressCanvasSync(conversions)
 
   sync.sync({ [locator]: runningState('1', 25) }, canvas, graphFixture.graph)
   conversions.mockClear()
@@ -176,7 +174,6 @@ it('keeps duplicate locator entries and node add/remove lifecycle in sync', () =
 })
 
 it('evicts detached nodes when a real graph is cleared and reused', () => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   const graph = new LGraph()
   const staleNode = new LGraphNode('stale')
   staleNode.id = toNodeId(1)

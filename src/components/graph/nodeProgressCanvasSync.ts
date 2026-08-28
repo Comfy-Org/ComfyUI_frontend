@@ -3,21 +3,24 @@ import type {
   LGraphCanvas,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { NodeProgressState } from '@/schemas/apiSchema'
+import type { useExecutionStore } from '@/stores/executionStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+
+type ProgressStates = Readonly<
+  ReturnType<typeof useExecutionStore>['nodeLocationProgressStates']
+>
+type ProgressState = ProgressStates[NodeLocatorId]
 
 export interface NodeProgressCanvasSync {
   dispose: () => void
   sync: (
-    states: Readonly<Record<NodeLocatorId, NodeProgressState>>,
+    states: ProgressStates,
     canvas: LGraphCanvas | null,
     graph: LGraph | null
   ) => void
 }
 
-type ProgressStates = Parameters<NodeProgressCanvasSync['sync']>[0]
-
-function progressValue(state: NodeProgressState | undefined) {
+function progressValue(state: ProgressState | undefined) {
   return state?.state === 'running' ? state.value / state.max : undefined
 }
 
