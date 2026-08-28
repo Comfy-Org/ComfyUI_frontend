@@ -370,9 +370,9 @@ const {
 // session's bound workflow and projects doc updates onto the canvas.
 const { status: crdtStatus, debugSnapshot: crdtDebugSnapshot } =
   useAgentCrdtFollower(boundWorkflowId, graphMutations)
-// Dev instrument (slice-02 classification). Gated on DEV plus an explicit
+// Dev instrument (slice-02 classification). Gated on DEV *or* an explicit
 // ?crdtDebug=1 opt-in, because the people who need it are testers on a
-// staging build, where DEV is false.
+// staging build, where DEV is false. An explicit opt-out beats both.
 const isCrdtDevPanelEnabled = isCrdtDebugEnabled()
 
 // The resumed turn's own workflow outlives a panel remount (the session

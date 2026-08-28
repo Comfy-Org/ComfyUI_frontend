@@ -7,8 +7,8 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { docLog, ecsLog, opsLog, wireLog } from './crdtLog'
-import type { CrdtDebugSnapshot } from './crdtDebugReport'
-import { readCrdtSnapshot } from './crdtDebugReport'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
+import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
@@ -98,6 +98,44 @@ export function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   if (firstError !== null) throw firstError
 }
 
+/**
+ * Envelope only, never the payload. A `doc_ops` frame carries whole serialized
+ * nodes and every widget value a human just typed; the ring buffer holds 500
+ * entries and feeds a clipboard report, so retaining frames verbatim would put
+ * prompts into an artifact the tester never opted into sharing. `opSender`
+ * logs its mints the same way.
+ */
+function describeOutboundFrame(parsed: unknown): {
+  type: string
+  workflowId?: string
+  opIds?: string[]
+  opCount?: number
+} {
+  if (typeof parsed !== 'object' || parsed === null) return { type: 'unknown' }
+  const frame = parsed as { type?: unknown; data?: unknown }
+  const data =
+    typeof frame.data === 'object' && frame.data !== null
+      ? (frame.data as { workflow_id?: unknown; ops?: unknown })
+      : null
+  const ops = Array.isArray(data?.ops) ? data.ops : null
+  return {
+    type: typeof frame.type === 'string' ? frame.type : 'unknown',
+    ...(typeof data?.workflow_id === 'string' && {
+      workflowId: data.workflow_id
+    }),
+    ...(ops && {
+      opCount: ops.length,
+      opIds: ops.flatMap((op) =>
+        typeof op === 'object' &&
+        op !== null &&
+        typeof (op as { op_id?: unknown }).op_id === 'string'
+          ? [(op as { op_id: string }).op_id]
+          : []
+      )
+    })
+  }
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: GraphMutations
@@ -119,14 +157,11 @@ export function useAgentCrdtFollower(
       } catch {
         // Leave the raw string.
       }
-      const frameType =
-        typeof parsed === 'object' && parsed !== null && 'type' in parsed
-          ? String((parsed as { type: unknown }).type)
-          : 'unknown'
+      const envelope = describeOutboundFrame(parsed)
       wireLog.trace(
         'ws_out',
-        `${frameType} ${delivered ? 'sent' : 'DROPPED (socket not open)'}`,
-        { delivered, frame: parsed }
+        `${envelope.type} ${delivered ? 'sent' : 'DROPPED (socket not open)'}`,
+        { delivered, ...envelope, bytes: frame.length }
       )
       return delivered
     },

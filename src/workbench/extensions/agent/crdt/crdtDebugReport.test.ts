@@ -17,7 +17,8 @@ vi.mock('@/stores/extensionStore', () => ({
   useExtensionStore: () => ({ extensions: [{ name: 'Comfy.TestExtension' }] })
 }))
 
-import type { CrdtDebugSnapshot, ReportSources } from './crdtDebugReport'
+import type { ReportSources } from './crdtDebugReport'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { collectCrdtDebugReport } from './crdtDebugReport'
 
 const ALL_SOURCES: ReportSources = {

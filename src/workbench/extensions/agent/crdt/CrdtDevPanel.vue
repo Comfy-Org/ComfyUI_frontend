@@ -21,7 +21,8 @@ import {
   setCrdtDebugEnabled,
   setCrdtLogLevel
 } from './crdtDebugGate'
-import type { CrdtDebugSnapshot, ReportSources } from './crdtDebugReport'
+import type { ReportSources } from './crdtDebugReport'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport
@@ -249,7 +250,25 @@ function onLevelChange(next: CrdtLogLevel) {
 // ── merge lab ─────────────────────────────────────────────────────────────
 const scenario = shallowRef<MergeScenario>(MERGE_SCENARIOS[0])
 const simulation = shallowRef<MergeSimulation | null>(null)
-const testerNote = ref('')
+const NOTE_KEY = 'Comfy.Agent.CrdtDevPanel.note'
+
+function readNote(): string {
+  try {
+    return localStorage.getItem(NOTE_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+const testerNote = ref(readNote())
+
+watch(testerNote, (next) => {
+  try {
+    localStorage.setItem(NOTE_KEY, next)
+  } catch {
+    // Storage unavailable — the note simply does not survive a remount.
+  }
+})
 
 function selectScenario(id: string) {
   const next = MERGE_SCENARIOS.find((candidate) => candidate.id === id)
@@ -326,7 +345,13 @@ function flashCopyState(ok: boolean) {
 }
 
 async function copyLog() {
-  flashCopyState(await writeClipboard(stringifyDevEvents(matchingEvents.value)))
+  try {
+    flashCopyState(
+      await writeClipboard(stringifyDevEvents(matchingEvents.value))
+    )
+  } catch {
+    flashCopyState(false)
+  }
 }
 
 async function copyReport() {
@@ -414,7 +439,7 @@ function fmtTime(at: number): string {
       v-if="!open"
       type="button"
       :title="S.open"
-      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover absolute right-4 bottom-1 z-10 flex h-6 cursor-pointer items-center gap-1 rounded-full border px-2 transition-colors"
+      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border px-2 transition-colors"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
     >
@@ -654,7 +679,10 @@ function fmtTime(at: number): string {
           </button>
 
           <template v-if="simulation">
-            <ol class="space-y-2" data-testid="crdt-dev-panel-trace">
+            <ol
+              class="list-none space-y-2 pl-0"
+              data-testid="crdt-dev-panel-trace"
+            >
               <li
                 v-for="entry in simulation.entries"
                 :key="entry.index"
@@ -758,19 +786,36 @@ function fmtTime(at: number): string {
 
       <footer class="border-agent-border shrink-0 border-t p-2">
         <div class="text-agent-fg-muted mb-1">{{ S.sectionInclude }}</div>
-        <div class="mb-1 flex flex-wrap gap-x-3 gap-y-1">
-          <label
+        <div class="mb-1 flex flex-wrap gap-1">
+          <button
             v-for="source in REPORT_SOURCE_LABELS"
             :key="source.key"
-            class="flex cursor-pointer items-center gap-1"
+            type="button"
+            role="switch"
+            :aria-checked="reportSources[source.key]"
+            :class="
+              cn(
+                'flex cursor-pointer items-center gap-1 rounded-full border px-2 py-0.5 transition-colors',
+                reportSources[source.key]
+                  ? 'border-agent-accent text-agent-fg'
+                  : 'border-agent-border text-agent-fg-muted'
+              )
+            "
+            :data-testid="`crdt-dev-panel-include-${String(source.key)}`"
+            @click="reportSources[source.key] = !reportSources[source.key]"
           >
-            <input
-              v-model="reportSources[source.key]"
-              type="checkbox"
-              :data-testid="`crdt-dev-panel-include-${source.key}`"
+            <span
+              :class="
+                cn(
+                  'size-3 shrink-0',
+                  reportSources[source.key]
+                    ? 'icon-[lucide--check]'
+                    : 'icon-[lucide--minus] opacity-50'
+                )
+              "
             />
             {{ source.label }}
-          </label>
+          </button>
         </div>
         <p class="text-agent-fg-muted mt-0 mb-2">{{ S.includeHint }}</p>
         <div class="flex gap-1">
