@@ -22,11 +22,11 @@ const comparison: ModelLaunchComparison<'professional' | 'enterprise'> = {
   ],
   rows: [
     {
-      id: 'monthly-price',
-      label: { en: 'Monthly price', 'zh-CN': '月费' },
+      id: 'example-row',
+      label: { en: 'Example row', 'zh-CN': '示例行' },
       values: {
-        professional: { en: '$5,000', 'zh-CN': '5,000 美元' },
-        enterprise: { en: 'Custom', 'zh-CN': '定制' }
+        professional: { en: 'First value', 'zh-CN': '第一个值' },
+        enterprise: { en: 'Second value', 'zh-CN': '第二个值' }
       }
     }
   ]
@@ -38,16 +38,17 @@ describe('ModelLaunchComparisonSection', () => {
   it('orders every cell to match the column headers', () => {
     render(ModelLaunchComparisonSection, { props: { comparison } })
 
-    const squashed = (el: Element) => el.textContent?.replace(/\s+/g, '') ?? ''
-    const row = screen.getByRole('row', { name: /Monthly price/ })
+    const text = (el: Element) =>
+      el.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+    const row = screen.getByRole('row', { name: /Example row/ })
 
-    expect(screen.getAllByRole('columnheader').map(squashed)).toEqual([
+    expect(screen.getAllByRole('columnheader').map(text)).toEqual([
       'Professional',
       'Enterprise'
     ])
-    expect(within(row).getAllByRole('cell').map(squashed)).toEqual([
-      'Professional$5,000',
-      'EnterpriseCustom'
+    expect(within(row).getAllByRole('cell').map(text)).toEqual([
+      'ProfessionalFirst value',
+      'EnterpriseSecond value'
     ])
   })
 
