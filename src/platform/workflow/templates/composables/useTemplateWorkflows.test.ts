@@ -386,32 +386,53 @@ describe('useTemplateWorkflows', () => {
       expect(app.loadGraphData).toHaveBeenCalledOnce()
     })
 
-    it.for([
-      {
-        id: 'missing-template',
-        response: () =>
-          new Response(null, { status: 404, statusText: 'Not Found' })
-      },
-      {
-        id: 'invalid-template',
-        response: () => new Response(JSON.stringify({ workflow: 'invalid' })),
-        warns: true
-      }
-    ])(
-      'rejects invalid preparation for $id without opening',
-      async (testCase) => {
-        mockWorkflowTemplatesStore.isLoaded = true
-        const { prepareWorkflowTemplate } = useTemplateWorkflows()
-        if (testCase.warns)
-          vi.spyOn(console, 'warn').mockImplementation(() => {})
-        vi.mocked(fetch).mockResolvedValueOnce(testCase.response())
+    it('rejects a non-OK response without opening', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const { prepareWorkflowTemplate } = useTemplateWorkflows()
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(null, { status: 404, statusText: 'Not Found' })
+      )
 
-        await expect(
-          prepareWorkflowTemplate(testCase.id, 'default')
-        ).rejects.toThrow()
-        expectNoOpeningSideEffects()
+      await expect(
+        prepareWorkflowTemplate('missing-template', 'default')
+      ).rejects.toThrow()
+      expectNoOpeningSideEffects()
+    })
+
+    it('opens parseable legacy workflow data when strict validation fails', async () => {
+      const legacyWorkflow = {
+        version: 0.4,
+        last_node_id: 1,
+        last_link_id: 0,
+        nodes: [{ id: 1, type: 'LegacyCustomNode' }],
+        links: []
       }
-    )
+      mockWorkflowTemplatesStore.isLoaded = true
+      const validationWarning = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(JSON.stringify(legacyWorkflow))
+      )
+      const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+      const result = await loadWorkflowTemplate('legacy-template', 'default')
+
+      expect(result).toBe(true)
+      expect(validationWarning).toHaveBeenCalledOnce()
+      expect(fetch).toHaveBeenCalledOnce()
+      expect(mockTrackTemplate).toHaveBeenCalledOnce()
+      expect(mockCloseDialog).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        legacyWorkflow,
+        true,
+        true,
+        'legacy-template',
+        { openSource: 'template' }
+      )
+    })
   })
 
   it('tracks template telemetry on load in cloud builds', async () => {
