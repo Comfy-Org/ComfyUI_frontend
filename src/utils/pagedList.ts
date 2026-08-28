@@ -12,9 +12,9 @@ export interface PagedList<T> {
 
 export function wrapPagedList<T>(
   list: PagedList<T>,
-  filter: (items: MaybeRef<readonly T[]>) => T[]
+  transform: (items: readonly T[]) => T[]
 ): PagedList<T> {
-  return { ...list, items: computed(() => filter(list.items)) }
+  return { ...list, items: computed(() => transform(toValue(list.items))) }
 }
 
 interface CacheEntry<T> {

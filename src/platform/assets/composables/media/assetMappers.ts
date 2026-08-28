@@ -1,6 +1,3 @@
-import { toValue } from 'vue'
-import type { MaybeRef } from 'vue'
-
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -110,12 +107,12 @@ function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
  * metadata pass through ungrouped.
  */
 export function unflattenOutputAssets(
-  flatAssets: MaybeRef<readonly AssetItem[]>
+  flatAssets: readonly AssetItem[]
 ): AssetItem[] {
   const assetsByJob = new Map<string, AssetItem[]>()
   const ungrouped: AssetItem[] = []
 
-  for (const asset of toValue(flatAssets)) {
+  for (const asset of flatAssets) {
     const { job_id } = asset
     if (!job_id) {
       ungrouped.push(asset)
