@@ -10,10 +10,7 @@ import { createI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 
-// Mock downloadFile to avoid DOM errors
-vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: vi.fn()
-}))
+vi.mock('@/base/common/downloadUtil')
 
 vi.mock('@/services/hdrViewerService', () => ({
   openHdrViewer: vi.fn()

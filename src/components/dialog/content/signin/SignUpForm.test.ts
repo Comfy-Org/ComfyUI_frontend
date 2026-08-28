@@ -13,19 +13,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import SignUpForm from './SignUpForm.vue'
 
-vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn()
-}))
+vi.mock('firebase/app')
+vi.mock('firebase/auth')
 
 const mockLoadingRef = ref(false)
 vi.mock('@/stores/authStore', () => ({

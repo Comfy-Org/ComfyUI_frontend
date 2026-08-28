@@ -8,9 +8,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 
-vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: vi.fn()
-}))
+vi.mock('@/base/common/downloadUtil')
 
 const i18n = createI18n({
   legacy: false,

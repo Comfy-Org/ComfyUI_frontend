@@ -5,6 +5,7 @@ import { ref } from 'vue'
 
 import { mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import { useBootstrapStore } from './bootstrapStore'
@@ -66,10 +67,7 @@ const mockDistributionTypes = vi.hoisted(() => ({
 }))
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
-const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: mockReportError
-}))
+vi.mock('@/platform/telemetry/reportError')
 
 function requestFailure(status: number) {
   const error = new AxiosError(`Request failed with status code ${status}`)
@@ -136,7 +134,6 @@ describe('bootstrapStore', () => {
   describe('cloud mode', () => {
     beforeEach(() => {
       mockDistributionTypes.isCloud = true
-      mockReportError.mockReset()
     })
 
     it('waits for Firebase init before loading stores, then proceeds regardless of auth state', async () => {
@@ -176,7 +173,7 @@ describe('bootstrapStore', () => {
         await bootstrapPromise
 
         expect(settingStore.isReady).toBe(true)
-        expect(mockReportError).not.toHaveBeenCalled()
+        expect(reportError).not.toHaveBeenCalled()
       } finally {
         vi.useRealTimers()
       }
@@ -193,8 +190,8 @@ describe('bootstrapStore', () => {
         await vi.advanceTimersByTimeAsync(16_000 + 3_000 + 16_001)
         await bootstrapPromise
 
-        expect(mockReportError).toHaveBeenCalledOnce()
-        expect(mockReportError).toHaveBeenCalledWith(expect.anything(), {
+        expect(reportError).toHaveBeenCalledOnce()
+        expect(reportError).toHaveBeenCalledWith(expect.anything(), {
           errorType: 'bootstrap_auth_wait_timeout'
         })
         // Bootstrap must not stay stuck: stores load even when Firebase never fires.

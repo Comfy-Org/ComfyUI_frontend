@@ -16,20 +16,8 @@ const mockTeamWorkspaceStore = vi.hoisted(() => ({
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
-// Mock all firebase modules
-vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn()
-}))
+vi.mock('firebase/app')
+vi.mock('firebase/auth')
 
 // Mock pinia
 vi.mock('pinia', () => ({

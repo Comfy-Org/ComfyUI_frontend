@@ -1,16 +1,12 @@
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
+
 import type { EventManagerInterface } from './interfaces'
 import { RecordingManager } from './RecordingManager'
 
-const { downloadBlobMock } = vi.hoisted(() => ({
-  downloadBlobMock: vi.fn()
-}))
-
-vi.mock('@/base/common/downloadUtil', () => ({
-  downloadBlob: downloadBlobMock
-}))
+vi.mock('@/base/common/downloadUtil')
 
 vi.mock('three', async (importOriginal) => {
   const actual = await importOriginal<typeof THREE>()
@@ -240,7 +236,7 @@ describe('RecordingManager', () => {
         'recordingError',
         expect.any(Error)
       )
-      expect(downloadBlobMock).not.toHaveBeenCalled()
+      expect(downloadBlob).not.toHaveBeenCalled()
     })
 
     it('downloads the blob with the requested filename and emits exportingRecording then recordingExported', async () => {
@@ -249,10 +245,7 @@ describe('RecordingManager', () => {
 
       manager.exportRecording('clip.webm')
 
-      expect(downloadBlobMock).toHaveBeenCalledWith(
-        'clip.webm',
-        expect.any(Blob)
-      )
+      expect(downloadBlob).toHaveBeenCalledWith('clip.webm', expect.any(Blob))
       expect(events.emitEvent).toHaveBeenCalledWith('exportingRecording', null)
       expect(events.emitEvent).toHaveBeenCalledWith('recordingExported', null)
     })
@@ -263,7 +256,7 @@ describe('RecordingManager', () => {
 
       manager.exportRecording()
 
-      expect(downloadBlobMock).toHaveBeenCalledWith(
+      expect(downloadBlob).toHaveBeenCalledWith(
         'scene-recording.mp4',
         expect.any(Blob)
       )

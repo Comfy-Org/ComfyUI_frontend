@@ -12,14 +12,7 @@ vi.mock('@/components/templates/thumbnails/BaseThumbnail.vue', () => ({
   }
 }))
 
-vi.mock('@/components/common/LazyImage.vue', () => ({
-  default: {
-    name: 'LazyImage',
-    template:
-      '<img :src="src" :alt="alt" :class="imageClass" :style="imageStyle" draggable="false" />',
-    props: ['src', 'alt', 'imageClass', 'imageStyle']
-  }
-}))
+vi.mock('@/components/common/LazyImage.vue')
 
 const mockRect = (el: HTMLElement, width: number) => {
   vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({

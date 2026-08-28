@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { reportError } from '@/platform/telemetry/reportError'
 
 const mockBillingFetchBalance = vi.fn()
 const mockAuthFetchBalance = vi.fn()
@@ -9,13 +10,7 @@ const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
 const mockToastAdd = vi.fn()
 
-const { mockReportError } = vi.hoisted(() => ({
-  mockReportError: vi.fn()
-}))
-
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: mockReportError
-}))
+vi.mock('@/platform/telemetry/reportError')
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: mockToastAdd })
@@ -77,7 +72,6 @@ Object.defineProperty(window, 'open', {
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
     mockIsCloud.value = true
-    mockReportError.mockReset()
   })
 
   describe('handleAddApiCredits', () => {
@@ -150,7 +144,7 @@ describe('useSubscriptionActions', () => {
 
       await handleMessageSupport()
 
-      expect(mockReportError).toHaveBeenCalledWith(failure, {
+      expect(reportError).toHaveBeenCalledWith(failure, {
         errorType: 'contact_support_failed'
       })
     })
@@ -165,7 +159,7 @@ describe('useSubscriptionActions', () => {
 
       await handleMessageSupport()
 
-      expect(mockReportError).toHaveBeenCalledWith('Command failed', {
+      expect(reportError).toHaveBeenCalledWith('Command failed', {
         errorType: 'contact_support_failed'
       })
     })

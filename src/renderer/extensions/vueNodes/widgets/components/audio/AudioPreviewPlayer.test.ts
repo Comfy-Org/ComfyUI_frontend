@@ -12,9 +12,7 @@ vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: vi.fn()
-}))
+vi.mock('@/base/common/downloadUtil')
 
 const i18n = createI18n({
   legacy: false,
