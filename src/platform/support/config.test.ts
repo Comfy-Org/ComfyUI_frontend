@@ -112,6 +112,19 @@ describe('buildSupportUrl', () => {
     distribution.isCloud = true
     expect(await optionFor()).toBe('comfy_cloud')
   })
+
+  it('detects Comfy Desktop from its injected bridge, not just the build flag', async () => {
+    window.__comfyDesktop2 = {} as NonNullable<typeof window.__comfyDesktop2>
+    try {
+      expect(distribution.isDesktop).toBe(false)
+      const url = new URL(await build())
+      expect(url.searchParams.get('comfy_environment')).toBe(
+        'comfy_desktop_install'
+      )
+    } finally {
+      delete window.__comfyDesktop2
+    }
+  })
 })
 
 describe('buildFeedbackHiddenFields', () => {

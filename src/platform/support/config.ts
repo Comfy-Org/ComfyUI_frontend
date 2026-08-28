@@ -12,10 +12,17 @@ function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
 
 const SUPPORT_BASE_URL = 'https://comfy-org.portal.usepylon.com/forms/question'
 
-/** Not `getDistribution()`: those tags feed feedback segmentation and lack Desktop. */
-function getPylonComfyEnvironment(): string {
+/**
+ * Separate from `getDistribution()`, whose tags feed feedback segmentation.
+ * The bridge check is load-bearing, not redundant: the shipping Desktop app
+ * loads the ordinary `dist.zip`, so `isDesktop` is false there.
+ */
+function getPylonComfyEnvironment():
+  | 'comfy_cloud'
+  | 'comfy_desktop_install'
+  | 'local_comfyui_oss' {
   if (isCloud) return 'comfy_cloud'
-  if (isDesktop) return 'comfy_desktop_install'
+  if (isDesktop || !!window.__comfyDesktop2) return 'comfy_desktop_install'
   return 'local_comfyui_oss'
 }
 
@@ -55,7 +62,7 @@ export function buildFeedbackHiddenFields(
 /**
  * Builds the Pylon support form URL. Pylon prefills a field from a query
  * parameter keyed by that field's slug, so signed-in users get their name and
- * email filled in and every ticket carries the build's Comfy environment.
+ * email filled in and every ticket carries the running Comfy environment.
  */
 export function buildSupportUrl(params?: {
   userEmail?: string | null
