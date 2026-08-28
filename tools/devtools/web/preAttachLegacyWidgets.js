@@ -4,10 +4,8 @@ import { app } from '../../scripts/app.js'
 const NODE_TYPE = 'DevToolsNodeWithPreAttachLegacyWidgets'
 
 // Distinct names: widgets sharing a name collapse to one store entry, which
-// would hide a missing row behind a legitimate de-duplication. Each widget's
-// value is its creation index, which the rendered row surfaces as
-// `model-value` - the only per-widget marker in a legacy row's DOM, and so
-// the only way the spec can observe Vue's own ordering.
+// would hide a missing row behind a legitimate de-duplication, and the spec
+// reads these names back off the rendered rows to check their order.
 const WIDGET_NAMES = [
   'pre_attach_first',
   'pre_attach_second',

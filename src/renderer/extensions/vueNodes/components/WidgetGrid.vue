@@ -12,6 +12,7 @@
       <div
         v-if="shouldRenderRow(widget)"
         :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
+        :data-widget-name="widget.simplified.name"
         :class="
           cn(
             'group col-span-full grid grid-cols-subgrid items-stretch',
