@@ -72,7 +72,14 @@ describe('WidgetGrid', () => {
     expect(
       screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
     ).toEqual(['seed', 'replacement', 'converted-widget-picker'])
-    expect(screen.getAllByTestId('node-widget')).toHaveLength(2)
+    // browser_tests/tests/customNodes/legacyWidgetRegistration.spec.ts reads
+    // the rendered widget order back off this attribute, so a required CI gate
+    // depends on it staying put.
+    expect(
+      screen
+        .getAllByTestId('node-widget')
+        .map((element) => element.dataset.widgetName)
+    ).toEqual(['replacement', 'converted-widget-picker'])
     expect(
       screen
         .getAllByTestId('app-input')

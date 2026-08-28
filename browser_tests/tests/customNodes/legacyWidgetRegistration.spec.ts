@@ -107,13 +107,15 @@ test.describe('legacy widget registration', { tag: '@custom-nodes' }, () => {
 
     // Vue renders from the widget value store, not from node.widgets, so the
     // rendered sequence is a separate observation from the live-array one.
-    const renderedOrder = await rows.evaluateAll((elements) =>
-      elements.map((element) => element.getAttribute('data-widget-name'))
-    )
-    expect(
-      renderedOrder,
-      'Nodes 2.0 rendered the widget rows in the wrong order'
-    ).toEqual(EXPECTED_WIDGET_ORDER)
+    await expect
+      .poll(
+        () =>
+          rows.evaluateAll((elements) =>
+            elements.map((element) => element.getAttribute('data-widget-name'))
+          ),
+        { message: 'Nodes 2.0 rendered the widget rows in the wrong order' }
+      )
+      .toEqual(EXPECTED_WIDGET_ORDER)
 
     await expectNoVisibleErrors(comfyPage.page, 'after mounting legacy widgets')
   })
