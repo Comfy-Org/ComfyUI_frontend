@@ -14,6 +14,7 @@ const HERO_VIDEO_PATTERN = /minimax-license\/hero\.mp4/
 const STEPS_HEADING = t('minimaxLicense.steps.heading')
 const FAQ_HEADING = t('minimaxLicense.faq.heading')
 const CLOSING_HEADING = t('minimaxLicense.cta.heading')
+const COMPARISON_HEADING = t('minimaxLicense.comparison.heading')
 
 test.describe('MiniMax license page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -63,6 +64,29 @@ test.describe('MiniMax license page @smoke', () => {
       })
       .getByRole('link', { name: t('minimaxLicense.cta.primaryCta') })
     await expect(closing).toHaveAttribute('href', CONTACT_HREF)
+  })
+
+  test('publishes both tiers of the license rate card', async ({ page }) => {
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: COMPARISON_HEADING
+    })
+    await heading.scrollIntoViewIfNeeded()
+    await expect(heading).toBeVisible()
+
+    const table = page.getByRole('table', { name: COMPARISON_HEADING })
+    for (const tier of ['Professional', 'Enterprise']) {
+      await expect(
+        table.getByRole('columnheader', { name: tier })
+      ).toBeVisible()
+    }
+    await expect(
+      table.getByRole('rowheader', { name: 'Monthly price' })
+    ).toBeVisible()
+    await expect(table.getByRole('cell', { name: '$5,000' })).toBeVisible()
+    await expect(
+      table.getByRole('cell', { name: 'Custom, from $20,000' })
+    ).toBeVisible()
   })
 
   test('footer links back to this page', async ({ page }) => {
