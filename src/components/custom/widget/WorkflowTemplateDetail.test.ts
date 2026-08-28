@@ -165,4 +165,271 @@ describe('WorkflowTemplateDetail', () => {
       within(partnerAlternative).getByRole('link', { name: 'Open in Cloud' })
     ).toBeInTheDocument()
   })
+
+  it('presents installed, manual, unavailable, and unknown model states', () => {
+    const renderedGroups = [
+      {
+        id: 'model-statuses',
+        label: 'Model statuses',
+        rows: [
+          {
+            id: 'installed-model',
+            name: 'installed.safetensors',
+            description: 'Checkpoint · 1 GB',
+            status: { kind: 'installed', label: 'Installed' }
+          },
+          {
+            id: 'manual-model',
+            name: 'manual.safetensors',
+            description: 'Checkpoint · 2 GB',
+            status: {
+              kind: 'manual',
+              label: 'Get it manually',
+              href: 'https://huggingface.co/org/gated-model'
+            }
+          },
+          {
+            id: 'unavailable-model',
+            name: 'unavailable.safetensors',
+            description: 'Checkpoint',
+            status: {
+              kind: 'unavailable',
+              label: 'Unavailable'
+            }
+          },
+          {
+            id: 'unknown-model',
+            name: 'unknown.safetensors',
+            description: 'Checkpoint',
+            status: { kind: 'unknown', label: 'Unknown' }
+          }
+        ]
+      }
+    ] as const
+
+    renderDetail({ renderedGroups })
+
+    expect(screen.getByRole('img', { name: 'Installed' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /Get it manually/ })
+    ).toHaveAttribute('href', 'https://huggingface.co/org/gated-model')
+    expect(screen.getByText('Unavailable')).toBeInTheDocument()
+    expect(screen.getByText('Unknown')).toBeInTheDocument()
+  })
+
+  it('emits the exact row id for a model download and failed retry', async () => {
+    const user = userEvent.setup()
+    const renderedGroups = [
+      {
+        id: 'model-actions',
+        label: 'Model actions',
+        rows: [
+          {
+            id: 'download-this-model',
+            name: 'downloadable.safetensors',
+            description: 'Checkpoint',
+            status: { kind: 'downloadable', label: 'Download model' }
+          },
+          {
+            id: 'retry-this-model',
+            name: 'failed.safetensors',
+            description: 'Diffusion model',
+            status: {
+              kind: 'downloadable',
+              label: 'Download model',
+              downloadState: {
+                status: 'failed',
+                attempt: 1,
+                reason: 'error'
+              }
+            }
+          }
+        ]
+      }
+    ] as const
+    const { emitted } = renderDetail({ renderedGroups })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Download downloadable.safetensors' })
+    )
+    const retry = screen.getByRole('button', {
+      name: 'Retry download for failed.safetensors'
+    })
+    expect(retry).toHaveTextContent('Retry')
+    await user.click(retry)
+
+    expect(emitted()['download-model']).toEqual([
+      ['download-this-model'],
+      ['retry-this-model']
+    ])
+  })
+
+  it('keeps queued and starting handoff states non-interactive', () => {
+    const renderedGroups = [
+      {
+        id: 'passive-states',
+        label: 'Passive states',
+        rows: [
+          {
+            id: 'queued-model',
+            name: 'queued.safetensors',
+            description: 'Checkpoint',
+            status: {
+              kind: 'downloadable',
+              label: 'Download queued model',
+              downloadState: { status: 'queued', attempt: 1 }
+            }
+          },
+          {
+            id: 'starting-model',
+            name: 'starting.safetensors',
+            description: 'Checkpoint',
+            status: {
+              kind: 'downloadable',
+              label: 'Download starting model',
+              downloadState: { status: 'starting', attempt: 1 }
+            }
+          }
+        ]
+      }
+    ] as const
+    renderDetail({ renderedGroups })
+
+    for (const label of ['Queued', 'Starting']) {
+      expect(screen.getByText(label)).toHaveAttribute('role', 'status')
+    }
+    expect(
+      screen.queryByRole('button', { name: /^(Download|Retry)/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders known and unknown download progress without inventing a percentage', () => {
+    const renderedGroups = [
+      {
+        id: 'download-progress',
+        label: 'Download progress',
+        rows: [
+          {
+            id: 'known-progress',
+            name: 'known.safetensors',
+            description: 'Checkpoint',
+            status: {
+              kind: 'downloadable',
+              label: 'Download known model',
+              downloadState: {
+                status: 'downloading',
+                attempt: 1,
+                activity: 'active',
+                receivedBytes: 1024,
+                totalBytes: 4096,
+                fraction: 0.25
+              }
+            }
+          },
+          {
+            id: 'unknown-progress',
+            name: 'unknown.safetensors',
+            description: 'Checkpoint',
+            status: {
+              kind: 'downloadable',
+              label: 'Download unknown model',
+              downloadState: {
+                status: 'downloading',
+                attempt: 1,
+                activity: 'active',
+                receivedBytes: null,
+                totalBytes: null,
+                fraction: null
+              }
+            }
+          }
+        ]
+      }
+    ] as const
+    renderDetail({ renderedGroups })
+
+    const knownProgress = screen.getByRole('progressbar', {
+      name: 'Downloading known.safetensors'
+    })
+    expect(knownProgress).toHaveAttribute('aria-valuenow', '25')
+    expect(knownProgress).toHaveAttribute('aria-valuetext', '1 KB / 4 KB')
+    expect(screen.getByText('1 KB / 4 KB')).toBeInTheDocument()
+
+    const unknownProgress = screen.getByRole('progressbar', {
+      name: 'Downloading unknown.safetensors'
+    })
+    expect(unknownProgress).not.toHaveAttribute('aria-valuenow')
+    expect(unknownProgress).toHaveAttribute('aria-valuetext', 'Downloading')
+  })
+
+  it('keeps paused progress truthful and presents completion as final', () => {
+    const renderedGroups = [
+      {
+        id: 'terminal-states',
+        label: 'Terminal states',
+        rows: [
+          {
+            id: 'paused-model',
+            name: 'paused.safetensors',
+            description: 'Checkpoint',
+            status: {
+              kind: 'downloadable',
+              label: 'Download paused model',
+              downloadState: {
+                status: 'downloading',
+                attempt: 1,
+                activity: 'paused',
+                receivedBytes: 512,
+                totalBytes: 1024,
+                fraction: 0.5
+              }
+            }
+          },
+          {
+            id: 'paused-unknown-model',
+            name: 'paused-unknown.safetensors',
+            description: 'Checkpoint',
+            status: {
+              kind: 'downloadable',
+              label: 'Download paused unknown model',
+              downloadState: {
+                status: 'downloading',
+                attempt: 1,
+                activity: 'paused',
+                receivedBytes: null,
+                totalBytes: null,
+                fraction: null
+              }
+            }
+          },
+          {
+            id: 'done-model',
+            name: 'done.safetensors',
+            description: 'Checkpoint',
+            status: {
+              kind: 'downloadable',
+              label: 'Download done model',
+              downloadState: { status: 'done', attempt: 1 }
+            }
+          }
+        ]
+      }
+    ] as const
+    renderDetail({ renderedGroups })
+
+    const paused = screen.getByRole('progressbar', {
+      name: 'Paused download for paused.safetensors'
+    })
+    expect(paused).toHaveAttribute('aria-valuenow', '50')
+    expect(paused).toHaveAttribute('aria-valuetext', 'Paused · 512 B / 1 KB')
+    expect(screen.getByText('Paused · 512 B / 1 KB')).toBeInTheDocument()
+    const pausedUnknown = screen.getByRole('progressbar', {
+      name: 'Paused download for paused-unknown.safetensors'
+    })
+    expect(pausedUnknown).not.toHaveAttribute('aria-valuenow')
+    expect(pausedUnknown).toHaveAttribute('aria-valuetext', 'Paused')
+    expect(
+      screen.getByRole('status', { name: 'Downloaded' })
+    ).toHaveTextContent('Downloaded')
+  })
 })
