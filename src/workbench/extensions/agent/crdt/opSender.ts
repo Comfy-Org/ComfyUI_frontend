@@ -25,11 +25,59 @@ const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
 
 export interface OpsResultView {
+  /** The workflow the frame names; results for other workflows are ignored. */
+  workflowId?: string
   ok: boolean
   applied: string[]
   skipped: string[]
   /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
   failure?: { op_id?: string }
+}
+
+/**
+ * Boundary adapter: normalize a raw `doc_ops_result` frame into the sender's
+ * view. The wire's `failed` detail has shipped in two shapes (a single
+ * `{op_id, code, message}` object, and the newer `{index, op, code, message}`
+ * where `op` carries the op_id) and may arrive as an array; all of them
+ * resolve to the `failure.op_id` the sender correlates on, so a host
+ * rejection with empty applied/skipped lists keeps its batch identity.
+ */
+export function toOpsResultView(frame: {
+  workflowId?: string
+  ok: boolean
+  applied?: unknown
+  skipped?: unknown
+  failed?: unknown
+}): OpsResultView {
+  const ids = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : []
+  const failure = normalizeFailure(frame.failed)
+  return {
+    ...(frame.workflowId !== undefined && { workflowId: frame.workflowId }),
+    ok: frame.ok,
+    applied: ids(frame.applied),
+    skipped: ids(frame.skipped),
+    ...(failure !== undefined && { failure })
+  }
+}
+
+function normalizeFailure(failed: unknown): { op_id?: string } | undefined {
+  if (failed == null) return undefined
+  const single: unknown = Array.isArray(failed) ? failed[0] : failed
+  if (typeof single !== 'object' || single === null) return {}
+  const detail = single as { op_id?: unknown; op?: unknown }
+  if (typeof detail.op_id === 'string') return { op_id: detail.op_id }
+  const op = detail.op
+  if (
+    typeof op === 'object' &&
+    op !== null &&
+    typeof (op as { op_id?: unknown }).op_id === 'string'
+  ) {
+    return { op_id: (op as { op_id: string }).op_id }
+  }
+  return {}
 }
 
 export interface OpSenderDeps {
@@ -65,15 +113,25 @@ export interface OpSender {
   detach(): void
 }
 
-interface InFlight {
+interface QueuedBatch {
   ops: Op[]
+  /**
+   * The workflow the batch was minted for. Captured at mint time so a rebind
+   * can never route already-minted ops (carrying the old doc's base_version)
+   * to a different workflow: retries and queued delivery stay
+   * document-scoped, and a rebind invalidates them as undeliverable.
+   */
+  workflowId: string | null
+}
+
+interface InFlight extends QueuedBatch {
   opIds: Set<string>
   resent: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
-  const queue: Op[][] = []
+  const queue: QueuedBatch[] = []
   let inFlight: InFlight | null = null
   let detached = false
   // Late-result credits: a batch that settled 'unacknowledged' was
@@ -92,14 +150,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     pump()
   }
 
-  function transmit(batch: Op[], attempt: number): void {
+  function transmit(batch: QueuedBatch, attempt: number): void {
     if (detached) return
-    const workflowId = deps.workflowId()
-    if (workflowId === null) {
+    // Delivery is document-scoped: the batch carries the workflow it was
+    // minted for, and a rebind since then invalidates it rather than routing
+    // the old doc's ops (and base_version) to the new workflow.
+    if (batch.workflowId === null || deps.workflowId() !== batch.workflowId) {
       settleUndeliverable(batch)
       return
     }
-    if (!deps.sendOps(workflowId, deps.tab, batch)) {
+    if (!deps.sendOps(batch.workflowId, deps.tab, batch.ops)) {
       if (attempt < SEND_RETRY_LIMIT) {
         setTimeout(() => transmit(batch, attempt + 1), SEND_RETRY_INTERVAL_MS)
       } else {
@@ -110,19 +170,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     armResultTimeout(batch)
   }
 
-  function settleUndeliverable(batch: Op[]): void {
-    if (inFlight?.ops === batch) {
-      settle({ state: 'undeliverable', ops: batch })
+  function settleUndeliverable(batch: QueuedBatch): void {
+    if (inFlight?.ops === batch.ops) {
+      settle({ state: 'undeliverable', ops: batch.ops })
     }
   }
 
-  function armResultTimeout(batch: Op[]): void {
-    if (inFlight?.ops !== batch) return
+  function armResultTimeout(batch: QueuedBatch): void {
+    if (inFlight?.ops !== batch.ops) return
     inFlight.timer = setTimeout(() => {
-      if (inFlight?.ops !== batch) return
+      if (inFlight?.ops !== batch.ops) return
       if (inFlight.resent) {
         staleAnonymousBudget += 2
-        settle({ state: 'unacknowledged', ops: batch })
+        settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
       // One silent-result resend of the SAME minted ops: idempotent at the
@@ -137,15 +197,24 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const batch = queue.shift()
     if (!batch) return
     inFlight = {
-      ops: batch,
-      opIds: new Set(batch.map((op) => op.op_id)),
+      ops: batch.ops,
+      workflowId: batch.workflowId,
+      opIds: new Set(batch.ops.map((op) => op.op_id)),
       resent: false,
       timer: null
     }
-    transmit(batch, 0)
+    transmit(inFlight, 0)
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
+    // A result naming a different workflow can never be this sender's: it
+    // neither settles the in-flight batch nor drains a stale credit.
+    if (
+      result.workflowId !== undefined &&
+      result.workflowId !== (inFlight?.workflowId ?? deps.workflowId())
+    ) {
+      return
+    }
     if (!inFlight) {
       // A late result with no batch waiting: drain a credit if one is
       // outstanding so it cannot swallow a future batch's own result.
@@ -171,11 +240,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   return {
     enqueue(operations) {
       if (detached || operations.length === 0) return
+      const workflowId = deps.workflowId()
       const minted = mintWireOps(operations, {
         actor: deps.actor(),
         baseVersion: deps.baseVersion()
       })
-      queue.push(...chunkWireOps(minted))
+      queue.push(...chunkWireOps(minted).map((ops) => ({ ops, workflowId })))
       pump()
     },
     pending() {
