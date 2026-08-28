@@ -83,10 +83,16 @@ const hubspotFormStyles: Record<`--${string}`, string> = {
 }
 
 // HubSpot signals a successful submission differently per form version: v3
-// embeds postMessage from their iframe, v4 dispatches a window event. Which
-// one this portal serves can change without a code change here, so listen for
-// both and let captureSubmission collapse them into a single event.
+// embeds postMessage from their iframe, v4 dispatches a window event. Line 20
+// pins this portal to the v4 loader, so v3 is only a hedge for a form that was
+// never migrated; both are observed and collapsed into a single event.
 const HUBSPOT_V4_SUBMISSION_EVENT = 'hs-form-event:on-submission:success'
+
+// The form guid is public (it ships in the markup below), so payload shape
+// alone does not establish that a message came from HubSpot. Without this an
+// embedding page could forge a submission, which would both count a phantom
+// conversion and consume the latch that the real submission needs.
+const HUBSPOT_ORIGIN_PATTERN = /^https:\/\/([\w-]+\.)?hsforms\.(com|net)$/
 
 function isHubspotSubmittedMessage(data: unknown): boolean {
   return (
@@ -99,12 +105,15 @@ function isHubspotSubmittedMessage(data: unknown): boolean {
   )
 }
 
-function readStringField(source: unknown, field: string): string | undefined {
+function readField(source: unknown, field: string): unknown {
   if (typeof source !== 'object' || source === null || !(field in source)) {
     return undefined
   }
-  const value = (source as Record<string, unknown>)[field]
-  return typeof value === 'string' ? value : undefined
+  return (source as Record<string, unknown>)[field]
+}
+
+function readStringField(source: unknown, field: string): string | undefined {
+  return asNonEmptyString(readField(source, field))
 }
 
 interface HubspotFormInstance {
@@ -158,6 +167,12 @@ function captureSubmission(
   submittedFormId: string | undefined,
   conversionId?: string
 ) {
+  if (submittedFormId === undefined) {
+    console.warn(
+      'HubSpot reported a submission with no form id; not recording it'
+    )
+    return
+  }
   if (submittedFormId !== hubspotContactFormId.value) return
   if (hasCapturedSubmission) return
   hasCapturedSubmission = true
@@ -165,8 +180,12 @@ function captureSubmission(
 }
 
 useEventListener('message', (event: MessageEvent) => {
+  if (!HUBSPOT_ORIGIN_PATTERN.test(event.origin)) return
   if (!isHubspotSubmittedMessage(event.data)) return
-  captureSubmission(readStringField(event.data, 'id'))
+  captureSubmission(
+    readStringField(event.data, 'id'),
+    readStringField(readField(event.data, 'data'), 'conversionId')
+  )
 })
 
 useEventListener(defaultWindow, HUBSPOT_V4_SUBMISSION_EVENT, (event: Event) => {

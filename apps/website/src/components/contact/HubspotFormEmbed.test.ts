@@ -17,10 +17,22 @@ vi.mock('../../scripts/posthog', () => ({
 const EN_FORM_ID = '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
 const ZH_FORM_ID = '6885750c-02ef-4aa2-ba0d-213be9cccf93'
 
-function dispatchV3Submission(id?: string) {
+const HUBSPOT_ORIGIN = 'https://forms-na2.hsforms.com'
+
+function dispatchV3Submission(
+  id?: string,
+  options: { origin?: string; conversionId?: string } = {}
+) {
+  const { origin = HUBSPOT_ORIGIN, conversionId } = options
   window.dispatchEvent(
     new MessageEvent('message', {
-      data: { type: 'hsFormCallback', eventName: 'onFormSubmitted', id }
+      origin,
+      data: {
+        type: 'hsFormCallback',
+        eventName: 'onFormSubmitted',
+        id,
+        data: { conversionId }
+      }
     })
   )
 }
@@ -113,17 +125,6 @@ describe('HubspotFormEmbed', () => {
     expect(hoisted.mockSubmitted).toHaveBeenCalledOnce()
   })
 
-  it('captures a submission reported with this form id', () => {
-    render(HubspotFormEmbed)
-    dispatchV4Submission(EN_FORM_ID)
-
-    expect(hoisted.mockSubmitted).toHaveBeenCalledWith(
-      'en',
-      EN_FORM_ID,
-      undefined
-    )
-  })
-
   it('reports the HubSpot conversion id when the v4 API exposes one', () => {
     stubHubspotFormsV4({ formId: EN_FORM_ID, conversionId: 'conversion-xyz' })
     render(HubspotFormEmbed)
@@ -167,12 +168,45 @@ describe('HubspotFormEmbed', () => {
     expect(hoisted.mockSubmitted).not.toHaveBeenCalled()
   })
 
-  it('ignores a submission that names no form at all', () => {
+  it('reports the conversion id carried by a v3 payload', () => {
+    render(HubspotFormEmbed)
+    dispatchV3Submission(EN_FORM_ID, { conversionId: 'conversion-v3' })
+
+    expect(hoisted.mockSubmitted).toHaveBeenCalledWith(
+      'en',
+      EN_FORM_ID,
+      'conversion-v3'
+    )
+  })
+
+  it('ignores a forged submission from a non-HubSpot origin', () => {
+    render(HubspotFormEmbed)
+    dispatchV3Submission(EN_FORM_ID, { origin: 'https://evil.example' })
+
+    expect(hoisted.mockSubmitted).not.toHaveBeenCalled()
+  })
+
+  it('does not let a forged message consume the real submission', () => {
+    render(HubspotFormEmbed)
+    dispatchV3Submission(EN_FORM_ID, { origin: 'https://evil.example' })
+    dispatchV4Submission(EN_FORM_ID)
+
+    expect(hoisted.mockSubmitted).toHaveBeenCalledOnce()
+    expect(hoisted.mockSubmitted).toHaveBeenCalledWith(
+      'en',
+      EN_FORM_ID,
+      undefined
+    )
+  })
+
+  it('ignores a submission that names no form at all, and says so', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     render(HubspotFormEmbed)
     dispatchV3Submission()
     dispatchV4Submission()
 
     expect(hoisted.mockSubmitted).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalled()
   })
 
   it('still captures this form after an unattributable submission', () => {
@@ -203,9 +237,12 @@ describe('HubspotFormEmbed', () => {
 
   it('ignores unrelated window messages', () => {
     render(HubspotFormEmbed)
-    window.dispatchEvent(new MessageEvent('message', { data: 'ping' }))
+    window.dispatchEvent(
+      new MessageEvent('message', { origin: HUBSPOT_ORIGIN, data: 'ping' })
+    )
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: HUBSPOT_ORIGIN,
         data: { type: 'hsFormCallback', eventName: 'onFormReady' }
       })
     )
