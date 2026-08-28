@@ -11,18 +11,24 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const COLS = 12
 const ROWS = 6
-const STREAM_COLS = COLS + 1
-const STREAM_STEP_DURATION = 1100
+const WAVE_START = 700
+const WAVE_STEP_DURATION = 240
+const WAVE_HOT_DURATION = 420
+const WAVE_ACTIVE_DURATION = 1400
 const LINE_START = 11.5
 const LINE_END = 95
 const REQUEST_DURATION = 3200
 const RESPONSE_DURATION = 2500
-const CYCLE_DURATION = 17_000
-const REQUEST_STARTS = [900, 6200, 7100, 8000]
+const CYCLE_DURATION = 7200
+const REQUEST_STARTS = [500]
+
+type CellState = 'idle' | 'on' | 'hot'
 
 interface ActivityCell {
   id: number
-  level: number
+  column: number
+  row: number
+  tone: string
 }
 
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
@@ -30,42 +36,43 @@ const onScreen = useElementVisibility(stageRef)
 const elapsed = ref(0)
 
 const frameTime = computed(() => elapsed.value % CYCLE_DURATION)
-const streamStep = computed(() =>
-  Math.floor(elapsed.value / STREAM_STEP_DURATION)
-)
-const streamProgress = computed(
-  () => (elapsed.value % STREAM_STEP_DURATION) / STREAM_STEP_DURATION
-)
 
-function activityLevel(column: number, row: number): number {
-  const wave = Math.sin(column * 12.9898 + row * 78.233) * 43758.5453
-  const sample = wave - Math.floor(wave)
+const tones = [
+  'bg-white/8',
+  'bg-primary-comfy-plum/30',
+  'bg-secondary-mauve/35',
+  'bg-white/12'
+]
 
-  if (sample < 0.38) return 0
-  if (sample < 0.62) return 1
-  if (sample < 0.82) return 2
-  if (sample < 0.95) return 3
-  return 4
-}
-
-const activityCells = computed<ActivityCell[]>(() =>
-  Array.from({ length: STREAM_COLS * ROWS }, (_, id) => {
-    const displayColumn = id % STREAM_COLS
-    const row = Math.floor(id / STREAM_COLS)
-    const historyColumn = streamStep.value - COLS + displayColumn
+const activityCells: ActivityCell[] = Array.from(
+  { length: COLS * ROWS },
+  (_, id) => {
+    const row = Math.floor(id / COLS)
 
     return {
       id,
-      level: activityLevel(historyColumn, row)
+      column: id % COLS,
+      row,
+      tone: tones[(id * 7 + row * 3) % tones.length]
     }
-  })
+  }
 )
 
-const activityTrackStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${STREAM_COLS}, minmax(0, 1fr))`,
-  transform: `translate3d(-${(streamProgress.value * 100) / STREAM_COLS}%, 0, 0)`,
-  width: `${(STREAM_COLS / COLS) * 100}%`
-}))
+function cellState(cell: ActivityCell, now: number): CellState {
+  const diagonal = COLS - 1 - cell.column + (ROWS - 1 - cell.row)
+  const age = now - WAVE_START - diagonal * WAVE_STEP_DURATION
+
+  if (age < 0 || age >= WAVE_ACTIVE_DURATION) return 'idle'
+  if (age < WAVE_HOT_DURATION) return 'hot'
+  return 'on'
+}
+
+const visualCells = computed(() =>
+  activityCells.map((cell) => ({
+    ...cell,
+    state: cellState(cell, frameTime.value)
+  }))
+)
 
 const pulses = computed(() =>
   REQUEST_STARTS.flatMap((start, id) => {
@@ -122,29 +129,22 @@ watch(
     />
 
     <div
-      class="absolute top-[9%] right-[5%] bottom-[20%] left-[22%] overflow-hidden"
+      class="absolute top-[9%] right-[5%] bottom-[20%] left-[22%] grid grid-cols-12 grid-rows-6 gap-1 sm:gap-1.5"
       aria-hidden="true"
     >
-      <div
-        class="grid h-full grid-rows-6 gap-1 will-change-transform sm:gap-1.5"
-        :style="activityTrackStyle"
-      >
-        <span
-          v-for="cell in activityCells"
-          :key="cell.id"
-          :class="
-            cn(
-              'rounded-md transition-[background-color,box-shadow,filter] duration-500',
-              cell.level === 0 && 'bg-white/8',
-              cell.level === 1 && 'bg-primary-comfy-plum/30',
-              cell.level === 2 && 'bg-secondary-mauve/40',
-              cell.level === 3 && 'bg-primary-comfy-yellow/55',
-              cell.level === 4 &&
-                'bg-primary-comfy-yellow shadow-primary-comfy-yellow/30 shadow-md'
-            )
-          "
-        />
-      </div>
+      <span
+        v-for="cell in visualCells"
+        :key="cell.id"
+        :class="
+          cn(
+            'rounded-md transition-[background-color,box-shadow,filter] duration-300',
+            cell.state === 'idle' && cell.tone,
+            cell.state === 'on' && 'bg-primary-comfy-yellow/45',
+            cell.state === 'hot' &&
+              'bg-primary-comfy-yellow shadow-primary-comfy-yellow/35 shadow-md'
+          )
+        "
+      />
     </div>
 
     <span
