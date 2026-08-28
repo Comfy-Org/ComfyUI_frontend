@@ -34,7 +34,8 @@ import {
   isAncestorPathActive,
   isCandidateScopeActive,
   isExecutionPathActive,
-  isMissingCandidateActive
+  isMissingCandidateActive,
+  findSubgraphNodePathById
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { toNodeId } from '@/types/nodeId'
@@ -106,6 +107,44 @@ describe('graphTraversalUtil', () => {
           graphId: ROOT_GRAPH_ID
         })
       ).toBeNull()
+    })
+  })
+
+  describe('findSubgraphNodePathById', () => {
+    it('returns the subgraph-NODE id chain, not the subgraph uuids', () => {
+      const inner = createMockSubgraph('inner-uuid', [])
+      const innerNode = createMockNode('27', {
+        isSubgraph: true,
+        subgraph: inner
+      })
+      const outer = createMockSubgraph('outer-uuid', [innerNode])
+      const outerNode = createMockNode('57', {
+        isSubgraph: true,
+        subgraph: outer
+      })
+      const root = createMockGraph([outerNode])
+
+      expect(findSubgraphNodePathById(root, 'inner-uuid')).toEqual(['57', '27'])
+      expect(findSubgraphNodePathById(root, 'outer-uuid')).toEqual(['57'])
+    })
+
+    it('returns null for a definition not reachable from the root', () => {
+      const root = createMockGraph([createMockNode('1')])
+
+      expect(findSubgraphNodePathById(root, 'nowhere-uuid')).toBeNull()
+    })
+
+    it('skips a subgraph without a node array instead of throwing', () => {
+      const malformed = {
+        id: 'broken-uuid'
+      } satisfies Partial<Subgraph> as Subgraph
+      const brokenNode = createMockNode('9', {
+        isSubgraph: true,
+        subgraph: malformed
+      })
+      const root = createMockGraph([brokenNode])
+
+      expect(findSubgraphNodePathById(root, 'unreachable-uuid')).toBeNull()
     })
   })
 

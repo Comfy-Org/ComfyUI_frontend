@@ -33,6 +33,7 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
+  MINT_ID_MIN,
   createLGraphState,
   mintGroupId,
   mintLinkId,
@@ -642,7 +643,14 @@ export class LGraph
   }
 
   set last_node_id(value) {
-    this.state.lastNodeId = value
+    const numeric = Number(value)
+    if (Number.isInteger(numeric) && numeric < MINT_ID_MIN - 1) {
+      this.state.lastNodeId = numeric
+    } else if (import.meta.env.DEV) {
+      console.warn(
+        `last_node_id write ${value} is not a counter-range integer; ignored`
+      )
+    }
   }
 
   /** @deprecated See {@link state}.{@link LGraphState.lastLinkId lastLinkId} */
@@ -651,7 +659,14 @@ export class LGraph
   }
 
   set last_link_id(value) {
-    this.state.lastLinkId = toLinkId(value)
+    const numeric = Number(value)
+    if (Number.isInteger(numeric) && numeric < MINT_ID_MIN - 1) {
+      this.state.lastLinkId = toLinkId(numeric)
+    } else if (import.meta.env.DEV) {
+      console.warn(
+        `last_link_id write ${value} is not a counter-range integer; ignored`
+      )
+    }
   }
 
   onNodeAdded?(node: LGraphNode): void
@@ -2827,17 +2842,20 @@ export class LGraph
       } else {
         // New schema - one version so far, no check required.
 
-        // State - use max to prevent ID collisions across root and subgraphs
+        // State - use max to prevent ID collisions across root and subgraphs.
+        // Node/link restores route through the observers, which IGNORE
+        // mint-range values outright: a pre-guard save could have absorbed a
+        // minted id into its serialized counters (subgraph definitions
+        // serialize the root state), and any restored floor-or-above value
+        // would put the next ++counter allocation inside the mint range.
         if (data.state) {
           const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
             data.state
           const { state } = this
           if (lastGroupId != null)
             state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
-          if (lastLinkId != null)
-            state.lastLinkId = toLinkId(Math.max(state.lastLinkId, lastLinkId))
-          if (lastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
+          if (lastLinkId != null) observeLinkId(state, toLinkId(lastLinkId))
+          if (lastNodeId != null) observeNodeId(state, toNodeId(lastNodeId))
           if (lastRerouteId != null)
             state.lastRerouteId = toRerouteId(
               Math.max(state.lastRerouteId, lastRerouteId)

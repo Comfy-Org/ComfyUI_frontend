@@ -182,6 +182,9 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
+const mockAppCanvas = vi.hoisted(() => ({
+  value: undefined as { selectOnly: boolean } | undefined
+}))
 vi.mock('@/scripts/app', () => ({
   app: {
     get graph() {
@@ -189,6 +192,9 @@ vi.mock('@/scripts/app', () => ({
     },
     get rootGraph() {
       return mockAppGraph.value
+    },
+    get canvas() {
+      return mockAppCanvas.value
     }
   }
 }))
@@ -298,6 +304,7 @@ function mountMediaActions(asset?: AssetMeta) {
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    mockAppCanvas.value = undefined
     litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
     mockGetOutputAssetMetadata.mockReturnValue(null)
@@ -322,6 +329,25 @@ describe('useMediaAssetActions', () => {
         await actions.addWorkflow(asset)
 
         expect(getAddedImageWidgetValues()).toEqual(['my-image.jpeg'])
+      })
+
+      it('adds nothing and toasts nothing while the canvas is picking-only', async () => {
+        mockAppCanvas.value = { selectOnly: true }
+        const actions = useMediaAssetActions()
+
+        await actions.addWorkflow(createMockAsset({ name: 'my-image.jpeg' }))
+
+        expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
+        expect(useToast().add).not.toHaveBeenCalled()
+      })
+
+      it('adds normally when the canvas is editable', async () => {
+        mockAppCanvas.value = { selectOnly: false }
+        const actions = useMediaAssetActions()
+
+        await actions.addWorkflow(createMockAsset({ name: 'my-image.jpeg' }))
+
+        expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalledOnce()
       })
     })
 
@@ -420,6 +446,19 @@ describe('useMediaAssetActions', () => {
           'hash2.jpeg [temp]',
           'hash3.jpeg [output]'
         ])
+      })
+
+      it('adds nothing and toasts nothing while the canvas is picking-only', async () => {
+        mockAppCanvas.value = { selectOnly: true }
+        const { actions, unmount } = mountMediaActions()
+
+        await actions.addMultipleToWorkflow([
+          createMockAsset({ id: '1', name: 'file1.jpeg', hash: 'hash1.jpeg' })
+        ])
+        unmount()
+
+        expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
+        expect(useToast().add).not.toHaveBeenCalled()
       })
     })
   })

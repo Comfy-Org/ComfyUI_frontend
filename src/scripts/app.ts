@@ -138,6 +138,7 @@ import {
   executeWidgetsCallback,
   createNode,
   isImageNode,
+  isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
 import {
@@ -685,6 +686,11 @@ export class ComfyApp {
 
         event.preventDefault()
         event.stopPropagation()
+
+        if (isSelectOnly(this.canvas)) {
+          this.dragOverNode = null
+          return
+        }
 
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it
@@ -1261,6 +1267,7 @@ export class ComfyApp {
       workflowNavigationId
     } = options
     useWorkflowService().beforeLoadNewGraph(clean !== false)
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     if (skipAssetScans) {
       // Only reset candidates; preserve UI state (fileSizes, etc.)
@@ -1545,6 +1552,7 @@ export class ComfyApp {
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
         effectiveShareId
       )
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
       // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
@@ -2140,6 +2148,9 @@ export class ComfyApp {
    * @param {File} file
    */
   private async handleMeshFile(file: File): Promise<LGraphNode | null> {
+    // Refuse before uploading: the refusal otherwise lands after the file
+    // is already on the server.
+    if (isSelectOnly(this.canvas)) return null
     const uploadedPath = await Load3dUtils.uploadFile(file, '3d')
     if (!uploadedPath) return null
 

@@ -9,7 +9,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -170,5 +170,51 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
     expect(node?.widgets?.[0]?.label).toBe('Live Seed Label')
     expect(seed?.localized_name).toBe('Live Seed Label')
     expect(node?.outputs[0]?.localized_name).toBe('Live Latent Name')
+  })
+})
+
+describe('useLitegraphService().addNodeOnGraph', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ createSpy: vi.fn }))
+  })
+
+  afterEach(() => {
+    Reflect.set(app, 'canvas', undefined)
+    Reflect.set(app, 'graph', undefined)
+  })
+
+  const nodeDef = {
+    name: 'TestNode',
+    display_name: 'Test Node'
+  } as unknown as ComfyNodeDefV1
+
+  it('does not create nodes in selection-only mode', () => {
+    Reflect.set(app, 'canvas', { selectOnly: true })
+    const createSpy = vi.spyOn(LiteGraph, 'createNode')
+
+    const node = useLitegraphService().addNodeOnGraph(nodeDef, {
+      pos: [0, 0]
+    })
+
+    // The choke point every creation surface traverses (search popover,
+    // libraries, bookmarks, ghost-drops, job menu) refuses while picking.
+    expect(node).toBeNull()
+    expect(createSpy).not.toHaveBeenCalled()
+  })
+
+  it('creates and adds the node when the canvas is editable', () => {
+    Reflect.set(app, 'canvas', { selectOnly: false })
+    const added = new LGraphNode('Test Node')
+    const graphAdd = vi.fn()
+    Reflect.set(app, 'graph', { add: graphAdd })
+    const createSpy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(added)
+
+    const node = useLitegraphService().addNodeOnGraph(nodeDef, {
+      pos: [0, 0]
+    })
+
+    expect(node).toBe(added)
+    expect(createSpy).toHaveBeenCalledOnce()
+    expect(graphAdd).toHaveBeenCalledWith(added, undefined)
   })
 })

@@ -10,6 +10,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 
 import { api } from './api'
 import { ComfyApp, app } from './app'
@@ -687,6 +688,7 @@ export class ComfyUI {
           id: 'comfy-clear-button',
           textContent: 'Clear',
           onclick: () => {
+            if (isSelectOnly(app.canvas)) return
             if (
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')

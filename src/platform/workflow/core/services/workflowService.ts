@@ -25,6 +25,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
@@ -741,6 +742,8 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { position?: Point } = {}
   ) => {
+    // Inserting a workflow's nodes is an edit of the picked canvas.
+    if (isSelectOnly(app.canvas)) return
     const loadedWorkflow = await workflow.load()
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's

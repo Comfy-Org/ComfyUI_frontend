@@ -122,7 +122,8 @@ const {
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utils/litegraphUtil')>()),
   createNode: vi.fn(),
   isImageNode: vi.fn(),
   isVideoNode: vi.fn(),
@@ -384,6 +385,52 @@ describe('ComfyApp', () => {
       await app.loadApiJson({}, 'empty.json').catch(() => undefined)
 
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
+    })
+
+    it('notifies extensions once on each side of a graph load, in order', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false)
+
+      const loadHookCalls =
+        mockExtensionService.invokeExtensionsAsync.mock.calls
+          .map(([hook]) => hook)
+          .filter((hook) =>
+            [
+              'beforeLoadGraph',
+              'beforeConfigureGraph',
+              'afterConfigureGraph',
+              'afterLoadGraph'
+            ].includes(hook)
+          )
+      expect(loadHookCalls).toEqual([
+        'beforeLoadGraph',
+        'beforeConfigureGraph',
+        'afterConfigureGraph',
+        'afterLoadGraph'
+      ])
+    })
+
+    it('skips both after-hooks when graph configure fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(graph, 'configure').mockImplementation(() => {
+        throw new Error('bad workflow json')
+      })
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false)
+      ).resolves.toBe(false)
+
+      const invokedHooks =
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      expect(invokedHooks).toContain('beforeLoadGraph')
+      expect(invokedHooks).not.toContain('afterConfigureGraph')
+      expect(invokedHooks).not.toContain('afterLoadGraph')
     })
   })
 
@@ -2313,6 +2360,25 @@ describe('ComfyApp', () => {
   })
 
   describe('drop handler', () => {
+    it('ignores dropped files while the canvas is picking-only', async () => {
+      const adjustMouseEvent = vi.fn()
+      app.canvas = {
+        ...mockCanvas,
+        selectOnly: true,
+        adjustMouseEvent
+      } as unknown as LGraphCanvas
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      const event = new DragEvent('drop', { cancelable: true })
+      document.dispatchEvent(event)
+      await Promise.resolve()
+
+      // The guard returns after preventDefault: nothing reads the payload.
+      expect(event.defaultPrevented).toBe(true)
+      expect(adjustMouseEvent).not.toHaveBeenCalled()
+      expect(vi.mocked(extractFilesFromDragEvent)).not.toHaveBeenCalled()
+    })
+
     it('syncs the drop position and waits for the replacement workflow before restoring warnings', async () => {
       const graphMouse: [number, number] = [-999, -999]
       const adjustMouseEvent = vi.fn((e: DragEvent) => {

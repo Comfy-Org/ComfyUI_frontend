@@ -7,6 +7,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import type * as LitegraphUtilModule from '@/utils/litegraphUtil'
 import {
   createNode,
   isAudioNode,
@@ -61,6 +62,7 @@ function createDataTransfer(files: File[] = []): DataTransfer {
 
 const mockCanvas = {
   current_node: null as LGraphNode | null,
+  selectOnly: false,
   graph: {
     add: vi.fn(),
     change: vi.fn()
@@ -107,7 +109,8 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => ({
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof LitegraphUtilModule>()),
   createNode: vi.fn(),
   isAudioNode: vi.fn(),
   isImageNode: vi.fn(),
@@ -392,6 +395,7 @@ describe('pasteVideoNodes', () => {
 describe('usePaste', () => {
   beforeEach(() => {
     mockCanvas.current_node = null
+    mockCanvas.selectOnly = false
     mockWorkspaceStore.shiftDown = false
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
@@ -520,6 +524,35 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     expect(createNode).not.toHaveBeenCalled()
+  })
+
+  it('should ignore image paste while the canvas is picking-only', () => {
+    mockCanvas.selectOnly = true
+
+    usePaste()
+
+    const file = createImageFile()
+    const dataTransfer = createDataTransfer([file])
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    expect(createNode).not.toHaveBeenCalled()
+  })
+
+  it('should ignore workflow JSON paste while the canvas is picking-only', () => {
+    mockCanvas.selectOnly = true
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData(
+      'text/plain',
+      JSON.stringify({ version: 1, nodes: [{}], extra: {} })
+    )
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('should use existing image node when selected', () => {

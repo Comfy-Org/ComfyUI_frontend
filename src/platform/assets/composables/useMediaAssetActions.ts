@@ -12,6 +12,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
@@ -335,6 +336,8 @@ export function useMediaAssetActions() {
    * Uses shared utility to detect appropriate node type based on file extension
    */
   const addWorkflow = async (asset?: AssetItem) => {
+    // A picking refusal is silent-nothing, not a failure.
+    if (isSelectOnly(app.canvas)) return
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
@@ -469,6 +472,8 @@ export function useMediaAssetActions() {
    */
   const addMultipleToWorkflow = async (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
+    // A picking refusal is silent-nothing: no failed count, no summary toast.
+    if (isSelectOnly(app.canvas)) return
 
     const NODE_OFFSET = 50
     let nodeIndex = 0
