@@ -128,6 +128,13 @@ test.describe('Error dialog', () => {
     const errorDialog = await triggerConfigureError(comfyPage)
     await expect(errorDialog).toBeVisible()
 
+    // Prevent loading the external page
+    await comfyPage.page
+      .context()
+      .route('https://comfy-org.portal.usepylon.com/**', (route) =>
+        route.fulfill({ body: '<html></html>', contentType: 'text/html' })
+      )
+
     const popup = await waitForPopupNavigation(comfyPage.page, () =>
       errorDialog.getByTestId(TestIds.dialogs.errorDialogContactSupport).click()
     )

@@ -1,4 +1,4 @@
-import { isCloud, isNightly } from '@/platform/distribution/types'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 
 /**
  * Gets the distribution identifier for tracking.
@@ -12,13 +12,11 @@ function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
 
 const SUPPORT_BASE_URL = 'https://comfy-org.portal.usepylon.com/forms/question'
 
-const PYLON_COMFY_ENVIRONMENT_OPTION: Record<
-  ReturnType<typeof getDistribution>,
-  string
-> = {
-  ccloud: 'comfy_cloud',
-  'oss-nightly': 'local_comfyui_oss',
-  oss: 'local_comfyui_oss'
+/** Not `getDistribution()`: those tags feed feedback segmentation and lack Desktop. */
+function getPylonComfyEnvironment(): string {
+  if (isCloud) return 'comfy_cloud'
+  if (isDesktop) return 'comfy_desktop_install'
+  return 'local_comfyui_oss'
 }
 
 export type FeedbackSource = 'topbar' | 'action-bar' | 'help-center'
@@ -64,7 +62,7 @@ export function buildSupportUrl(params?: {
   userDisplayName?: string | null
 }): string {
   const searchParams = new URLSearchParams({
-    comfy_environment: PYLON_COMFY_ENVIRONMENT_OPTION[getDistribution()]
+    comfy_environment: getPylonComfyEnvironment()
   })
 
   if (params?.userDisplayName)

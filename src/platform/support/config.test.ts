@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const distribution = vi.hoisted(() => ({ isCloud: false, isNightly: false }))
+const distribution = vi.hoisted(() => ({
+  isCloud: false,
+  isNightly: false,
+  isDesktop: false
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -8,12 +12,16 @@ vi.mock('@/platform/distribution/types', () => ({
   },
   get isNightly() {
     return distribution.isNightly
+  },
+  get isDesktop() {
+    return distribution.isDesktop
   }
 }))
 
 describe('buildFeedbackTypeformUrl', () => {
   beforeEach(() => {
     distribution.isCloud = false
+    distribution.isDesktop = false
     distribution.isNightly = false
   })
 
@@ -54,6 +62,7 @@ describe('buildFeedbackTypeformUrl', () => {
 describe('buildSupportUrl', () => {
   beforeEach(() => {
     distribution.isCloud = false
+    distribution.isDesktop = false
     distribution.isNightly = false
   })
 
@@ -96,6 +105,10 @@ describe('buildSupportUrl', () => {
     expect(await optionFor()).toBe('local_comfyui_oss')
 
     distribution.isNightly = false
+    distribution.isDesktop = true
+    expect(await optionFor()).toBe('comfy_desktop_install')
+
+    distribution.isDesktop = false
     distribution.isCloud = true
     expect(await optionFor()).toBe('comfy_cloud')
   })
@@ -104,6 +117,7 @@ describe('buildSupportUrl', () => {
 describe('buildFeedbackHiddenFields', () => {
   beforeEach(() => {
     distribution.isCloud = false
+    distribution.isDesktop = false
     distribution.isNightly = false
   })
 
