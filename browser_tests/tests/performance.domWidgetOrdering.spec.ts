@@ -71,14 +71,7 @@ test.describe('DOM widget ordering baseline', { tag: ['@perf'] }, () => {
             )
           }
 
-          const nodes = graph.nodes
-          const originalIndexOf = nodes.indexOf
           const counter = { enabled: false, indexOfCalls: 0 }
-          nodes.indexOf = function (...args) {
-            if (counter.enabled) counter.indexOfCalls++
-            return originalIndexOf.apply(this, args)
-          }
-
           const state = {
             counter,
             interactions,
@@ -113,6 +106,29 @@ test.describe('DOM widget ordering baseline', { tag: ['@perf'] }, () => {
       await expect(
         comfyPage.page.locator('[data-perf-dom-widget="true"]')
       ).toHaveCount(cell.widgetCount)
+
+      // Instrument the settled graph array. Installing this during setup can
+      // race with post-load graph replacement on the first test in a worker.
+      await comfyPage.page.evaluate(() => {
+        const app = window.app
+        const state = (
+          window as typeof window & {
+            __domWidgetOrderPerfState?: {
+              counter: { enabled: boolean; indexOfCalls: number }
+            }
+          }
+        ).__domWidgetOrderPerfState
+        if (!app?.graph || !state) {
+          throw new Error('DOM widget performance state is unavailable')
+        }
+
+        const nodes = app.graph.nodes
+        const originalIndexOf = nodes.indexOf
+        nodes.indexOf = function (...args) {
+          if (state.counter.enabled) state.counter.indexOfCalls++
+          return originalIndexOf.apply(this, args)
+        }
+      })
 
       await comfyPage.perf.startMeasuring()
       await comfyPage.page.evaluate(() => {
