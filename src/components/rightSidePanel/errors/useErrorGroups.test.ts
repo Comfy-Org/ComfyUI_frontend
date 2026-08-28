@@ -1,4 +1,3 @@
-import { resolvePromptErrorMessage } from '@/platform/errorCatalog/promptErrorResolver'
 import { fromAny } from '@total-typescript/shoehorn'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -37,6 +36,9 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/i18n', () => {
   const messages: Record<string, string> = {
+    'errorCatalog.promptErrors.op_rejected.title': 'seeded op_rejected title',
+    'errorCatalog.promptErrors.prefix_abort.title': 'seeded prefix_abort title',
+    'errorCatalog.promptErrors.guard_trip.title': 'seeded guard_trip title',
     'errorCatalog.validationErrors.required_input_missing.title':
       'Missing connection',
     'errorCatalog.validationErrors.required_input_missing.message':
@@ -128,6 +130,7 @@ vi.mock(
   })
 )
 
+import { resolvePromptErrorMessage } from '@/platform/errorCatalog/promptErrorResolver'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -1367,6 +1370,13 @@ describe('useErrorGroups', () => {
   })
 
   it('keeps every agent prompt error type resolvable in the prompt catalog', () => {
+    const catalogTitles: Record<string, string> = {
+      op_rejected: 'seeded op_rejected title',
+      prefix_abort: 'seeded prefix_abort title',
+      guard_trip: 'seeded guard_trip title',
+      apply_failed: 'Agent edit failed'
+    }
+
     for (const type of AGENT_PROMPT_ERROR_TYPES) {
       const resolved = resolvePromptErrorMessage(
         fromAny({ type, message: 'x', details: 'd' }),
@@ -1375,8 +1385,9 @@ describe('useErrorGroups', () => {
 
       expect(
         resolved.displayTitle,
-        `${type} is not in KNOWN_PROMPT_ERROR_TYPES`
-      ).toBeDefined()
+        `${type} did not resolve through the prompt catalog - if it was ` +
+          'removed from KNOWN_PROMPT_ERROR_TYPES, remove it here too'
+      ).toBe(catalogTitles[type])
     }
   })
 })

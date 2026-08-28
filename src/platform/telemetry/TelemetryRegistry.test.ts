@@ -1,7 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
-import type { BillingTelemetryEvent, TelemetryProvider } from './types'
+import type {
+  AgentEntryButtonClickedMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentMessageSentMetadata,
+  AgentNodeTaggedMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentWorkflowAppliedMetadata,
+  BillingTelemetryEvent,
+  TelemetryProvider
+} from './types'
 
 describe('TelemetryRegistry', () => {
   it('dispatches trackSearchQuery to every registered provider', () => {
@@ -224,42 +234,114 @@ describe('TelemetryRegistry', () => {
   })
 
   describe('agent telemetry dispatch', () => {
-    const cases = [
-      [
-        'trackAgentMessageFeedback',
-        { message_id: 'm1', vote: 'up', workflow_id: null }
-      ],
-      ['trackAgentPanelOpened', { source: 'topbar_button' }],
-      [
-        'trackAgentPanelClosed',
-        { source: 'close_button', open_duration_ms: 1200 }
-      ],
-      ['trackAgentEntryButtonClicked', { resulting_state: 'opened' }],
-      ['trackAgentCloseButtonClicked', undefined],
-      ['trackAgentMessageSent', { attachment_count: 1, node_tag_count: 2 }],
-      ['trackAgentNodeTagged', { source: 'mention_picker' }],
-      ['trackAgentAttachButtonClicked', undefined],
-      ['trackAgentWorkflowApplied', { workflow_id: 'w1', target: 'new_tab' }]
-    ] as const
+    const cases: Array<{
+      method: keyof TelemetryProvider
+      expected: unknown
+      invoke: (registry: TelemetryRegistry) => void
+    }> = [
+      {
+        method: 'trackAgentMessageFeedback',
+        expected: {
+          message_id: 'm1',
+          vote: 'up',
+          workflow_id: null
+        } satisfies AgentMessageFeedbackMetadata,
+        invoke: (registry) =>
+          registry.trackAgentMessageFeedback({
+            message_id: 'm1',
+            vote: 'up',
+            workflow_id: null
+          })
+      },
+      {
+        method: 'trackAgentPanelOpened',
+        expected: {
+          source: 'topbar_button'
+        } satisfies AgentPanelOpenedMetadata,
+        invoke: (registry) =>
+          registry.trackAgentPanelOpened({ source: 'topbar_button' })
+      },
+      {
+        method: 'trackAgentPanelClosed',
+        expected: {
+          source: 'close_button',
+          open_duration_ms: 1200
+        } satisfies AgentPanelClosedMetadata,
+        invoke: (registry) =>
+          registry.trackAgentPanelClosed({
+            source: 'close_button',
+            open_duration_ms: 1200
+          })
+      },
+      {
+        method: 'trackAgentEntryButtonClicked',
+        expected: {
+          resulting_state: 'opened'
+        } satisfies AgentEntryButtonClickedMetadata,
+        invoke: (registry) =>
+          registry.trackAgentEntryButtonClicked({ resulting_state: 'opened' })
+      },
+      {
+        method: 'trackAgentCloseButtonClicked',
+        expected: undefined,
+        invoke: (registry) => registry.trackAgentCloseButtonClicked()
+      },
+      {
+        method: 'trackAgentMessageSent',
+        expected: {
+          attachment_count: 1,
+          node_tag_count: 2
+        } satisfies AgentMessageSentMetadata,
+        invoke: (registry) =>
+          registry.trackAgentMessageSent({
+            attachment_count: 1,
+            node_tag_count: 2
+          })
+      },
+      {
+        method: 'trackAgentNodeTagged',
+        expected: {
+          source: 'mention_picker'
+        } satisfies AgentNodeTaggedMetadata,
+        invoke: (registry) =>
+          registry.trackAgentNodeTagged({ source: 'mention_picker' })
+      },
+      {
+        method: 'trackAgentAttachButtonClicked',
+        expected: undefined,
+        invoke: (registry) => registry.trackAgentAttachButtonClicked()
+      },
+      {
+        method: 'trackAgentWorkflowApplied',
+        expected: {
+          workflow_id: 'w1',
+          target: 'new_tab'
+        } satisfies AgentWorkflowAppliedMetadata,
+        invoke: (registry) =>
+          registry.trackAgentWorkflowApplied({
+            workflow_id: 'w1',
+            target: 'new_tab'
+          })
+      }
+    ]
 
     it.for(cases)(
-      'dispatches %s to every registered provider',
-      ([method, metadata]) => {
+      'dispatches $method to every registered provider',
+      ({ method, expected, invoke }) => {
         const a: TelemetryProvider = { [method]: vi.fn() }
         const b: TelemetryProvider = { [method]: vi.fn() }
         const registry = new TelemetryRegistry()
         registry.registerProvider(a)
         registry.registerProvider(b)
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(registry as any)[method](metadata)
+        invoke(registry)
 
         for (const provider of [a, b]) {
-          const spy = provider[method as keyof TelemetryProvider]
-          if (metadata === undefined) {
+          const spy = provider[method]
+          if (expected === undefined) {
             expect(spy).toHaveBeenCalledExactlyOnceWith()
           } else {
-            expect(spy).toHaveBeenCalledExactlyOnceWith(metadata)
+            expect(spy).toHaveBeenCalledExactlyOnceWith(expected)
           }
         }
       }

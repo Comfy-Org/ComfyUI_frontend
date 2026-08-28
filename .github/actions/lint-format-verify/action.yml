@@ -32,3 +32,7 @@ runs:
     - name: Typecheck tools
       shell: bash
       run: pnpm typecheck:tools
+
+    - name: Typecheck build plugins
+      shell: bash
+      run: pnpm typecheck:build

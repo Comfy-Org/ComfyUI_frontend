@@ -87,6 +87,15 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
 })
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
+import type {
+  AgentEntryButtonClickedMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentMessageSentMetadata,
+  AgentNodeTaggedMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentWorkflowAppliedMetadata
+} from '@/platform/telemetry/types'
 
 function createProvider(
   config: Partial<typeof window.__CONFIG__> = {}
@@ -1304,67 +1313,110 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('agent event names', () => {
-    const cases = [
-      [
-        'trackAgentMessageFeedback',
-        { message_id: 'm1', vote: 'up', workflow_id: null },
-        'app:agent_message_feedback'
-      ],
-      [
-        'trackAgentPanelOpened',
-        { source: 'topbar_button' },
-        'app:agent_panel_opened'
-      ],
-      [
-        'trackAgentPanelClosed',
-        { source: 'close_button', open_duration_ms: 1200 },
-        'app:agent_panel_closed'
-      ],
-      [
-        'trackAgentEntryButtonClicked',
-        { resulting_state: 'opened' },
-        'app:agent_entry_button_clicked'
-      ],
-      [
-        'trackAgentCloseButtonClicked',
-        undefined,
-        'app:agent_close_button_clicked'
-      ],
-      [
-        'trackAgentMessageSent',
-        { attachment_count: 1, node_tag_count: 2 },
-        'app:agent_message_sent'
-      ],
-      [
-        'trackAgentNodeTagged',
-        { source: 'mention_picker' },
-        'app:agent_node_tagged'
-      ],
-      [
-        'trackAgentAttachButtonClicked',
-        undefined,
-        'app:agent_attach_button_clicked'
-      ],
-      [
-        'trackAgentWorkflowApplied',
-        { workflow_id: 'w1', target: 'new_tab' },
-        'app:agent_workflow_applied'
-      ]
-    ] as const
+    const cases: Array<{
+      eventName: string
+      expected: Record<string, unknown>
+      invoke: (provider: PostHogTelemetryProvider) => void
+    }> = [
+      {
+        eventName: 'app:agent_message_feedback',
+        expected: {
+          message_id: 'm1',
+          vote: 'up',
+          workflow_id: null
+        } satisfies AgentMessageFeedbackMetadata,
+        invoke: (provider) =>
+          provider.trackAgentMessageFeedback({
+            message_id: 'm1',
+            vote: 'up',
+            workflow_id: null
+          })
+      },
+      {
+        eventName: 'app:agent_panel_opened',
+        expected: {
+          source: 'topbar_button'
+        } satisfies AgentPanelOpenedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentPanelOpened({ source: 'topbar_button' })
+      },
+      {
+        eventName: 'app:agent_panel_closed',
+        expected: {
+          source: 'close_button',
+          open_duration_ms: 1200
+        } satisfies AgentPanelClosedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentPanelClosed({
+            source: 'close_button',
+            open_duration_ms: 1200
+          })
+      },
+      {
+        eventName: 'app:agent_entry_button_clicked',
+        expected: {
+          resulting_state: 'opened'
+        } satisfies AgentEntryButtonClickedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentEntryButtonClicked({ resulting_state: 'opened' })
+      },
+      {
+        eventName: 'app:agent_close_button_clicked',
+        expected: {},
+        invoke: (provider) => provider.trackAgentCloseButtonClicked()
+      },
+      {
+        eventName: 'app:agent_message_sent',
+        expected: {
+          attachment_count: 1,
+          node_tag_count: 2
+        } satisfies AgentMessageSentMetadata,
+        invoke: (provider) =>
+          provider.trackAgentMessageSent({
+            attachment_count: 1,
+            node_tag_count: 2
+          })
+      },
+      {
+        eventName: 'app:agent_node_tagged',
+        expected: {
+          source: 'mention_picker'
+        } satisfies AgentNodeTaggedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentNodeTagged({ source: 'mention_picker' })
+      },
+      {
+        eventName: 'app:agent_attach_button_clicked',
+        expected: {},
+        invoke: (provider) => provider.trackAgentAttachButtonClicked()
+      },
+      {
+        eventName: 'app:agent_workflow_applied',
+        expected: {
+          workflow_id: 'w1',
+          target: 'new_tab'
+        } satisfies AgentWorkflowAppliedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentWorkflowApplied({
+            workflow_id: 'w1',
+            target: 'new_tab'
+          })
+      }
+    ]
 
     it.for(cases)(
-      '%s captures its exact event string',
-      async ([method, metadata, eventName]) => {
+      '$eventName is captured exactly once with its payload',
+      async ({ eventName, expected, invoke }) => {
         const provider = createProvider()
         await vi.dynamicImportSettled()
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(provider as any)[method](metadata)
+        invoke(provider)
 
-        expect(hoisted.mockCapture).toHaveBeenCalledWith(
-          eventName,
-          metadata ?? {}
+        const calls = hoisted.mockCapture.mock.calls.filter(
+          ([capturedName]) => capturedName === eventName
         )
+        expect(calls).toHaveLength(1)
+        expect(calls[0][1]).toEqual(expected)
       }
     )
   })

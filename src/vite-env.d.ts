@@ -19,7 +19,9 @@ declare global {
 
   interface ImportMetaEnv {
     VITE_APP_VERSION?: string
+    VITE_POSTHOG_DEBUG?: string
     VITE_POSTHOG_PROJECT_TOKEN?: string
+    VITE_USE_LEGACY_DEFAULT_GRAPH?: string
     VITE_STAGING_API_BASE_URL?: string
     VITE_STAGING_CLOUD_BASE_URL?: string
     VITE_STAGING_PLATFORM_BASE_URL?: string

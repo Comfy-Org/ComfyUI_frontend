@@ -110,14 +110,13 @@ describe('handleGcsRedirect', () => {
     vi.stubGlobal('fetch', fetchMock)
     const res = createRes()
 
-    handleGcsRedirect(
-      createProxyRes(
-        { location: 'https://elsewhere.example.com/obj', via: '1.1 google' },
-        302
-      ),
-      createReq(),
-      res as unknown as ServerResponse
+    const proxyRes = createProxyRes(
+      { location: 'https://elsewhere.example.com/obj', via: '1.1 google' },
+      302
     )
+    const pipe = vi.spyOn(proxyRes, 'pipe')
+
+    handleGcsRedirect(proxyRes, createReq(), res as unknown as ServerResponse)
 
     expect(fetchMock).not.toHaveBeenCalled()
     expect(res.setHeader).toHaveBeenCalledWith(
@@ -125,6 +124,21 @@ describe('handleGcsRedirect', () => {
       'https://elsewhere.example.com/obj'
     )
     expect(res.writeHead).toHaveBeenCalledWith(302)
+    expect(pipe).toHaveBeenCalledExactlyOnceWith(res)
+  })
+
+  it('treats a 302 with no location at all as a plain pass-through', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const res = createRes()
+    const proxyRes = createProxyRes({ via: '1.1 google' }, 302)
+    const pipe = vi.spyOn(proxyRes, 'pipe')
+
+    handleGcsRedirect(proxyRes, createReq(), res as unknown as ServerResponse)
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(res.writeHead).toHaveBeenCalledWith(302)
+    expect(pipe).toHaveBeenCalledExactlyOnceWith(res)
   })
 
   it('relays a partial-content status with its content-range', async () => {

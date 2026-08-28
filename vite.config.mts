@@ -4,8 +4,6 @@ import vue from '@vitejs/plugin-vue'
 import { execSync } from 'child_process'
 import { config as dotenvConfig } from 'dotenv'
 import { resolve } from 'path'
-
-import { handleGcsRedirect } from './build/plugins/gcsRedirect.ts'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
@@ -17,6 +15,7 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+import { handleGcsRedirect } from './build/plugins/gcsRedirect.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 
 dotenvConfig()
@@ -31,6 +30,7 @@ const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
+const BROWSER_TESTS_DIR = resolve('browser_tests')
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -158,8 +158,6 @@ const DEV_SEVER_FALLBACK_URL =
 
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
-
-const BROWSER_TESTS_DIR = resolve('browser_tests')
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
@@ -713,12 +711,12 @@ export default defineConfig({
     setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     include: [
-      'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       provider: 'v8',
