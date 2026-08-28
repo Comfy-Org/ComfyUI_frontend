@@ -75,12 +75,33 @@ export type UnifiedAuthRetryFailureReason =
   | 'remint_failed'
   | 'retry_rejected'
   | 'retry_request_failed'
+  | 'token_unavailable'
 
 export interface UnifiedAuthRetryMetadata {
-  transport: 'axios' | 'fetch'
+  transport: 'axios' | 'fetch' | 'ws'
   outcome: 'succeeded' | 'failed'
   final_status?: number
   failure_reason?: UnifiedAuthRetryFailureReason
+}
+
+export type UnifiedAuthRefreshOutcome =
+  | 'succeeded'
+  | 'retry_scheduled'
+  | 'retries_exhausted'
+  | 'permanent_failure'
+
+/**
+ * Outcome of one proactive unified Cloud-JWT refresh attempt. This lifecycle
+ * drives session-cookie rotation, so a dead refresh chain breaks every
+ * cookie-authenticated <img>/media load (FE-1595).
+ */
+export interface UnifiedAuthRefreshMetadata {
+  outcome: UnifiedAuthRefreshOutcome
+  retry_count?: number
+}
+
+export interface ImageLoadFailureMetadata {
+  source: 'node_image_preview'
 }
 
 /**
@@ -120,9 +141,13 @@ export type OnboardingTourNudgeStage =
   | 'nudge_shown'
   | 'explore_templates_clicked'
 
+/** A continuation action on the nudge, which reports its own outcome. */
+export type OnboardingTourSuggestionStage = 'nudge_suggestion_clicked'
+
 export type OnboardingTourStage =
   | OnboardingTourStepStage
   | OnboardingTourNudgeStage
+  | OnboardingTourSuggestionStage
 
 export type OnboardingTourSkipReason =
   | 'user'
@@ -152,21 +177,32 @@ export interface OnboardingTourStepMetadata {
   not_started_reason?: OnboardingTourNotStartedReason
 }
 
-/** The nudge is post-tour, so it reports no step and no count. */
+/** The nudge is post-tour, so it reports no step and no step count. */
 export interface OnboardingTourNudgeMetadata {
   tour: string
   /**
-   * Whether the tour was walked to the end. Without it `nudge_shown` and
-   * `explore_templates_clicked` cannot be split by how the tour ended, so a
-   * conversion from a completed tour and one from a tour that never started
-   * land in the same bucket.
+   * How many continuations the card could offer. Zero is the card falling back
+   * to the template browser — either the run produced no image, or the
+   * install's pinned template package serves none of them. Without it that
+   * case is indistinguishable from a nudge that never appeared.
    */
-  tour_completed?: boolean
+  suggestion_count: number
+}
+
+/**
+ * Which continuation the card converted on. `loaded` separates a chosen action
+ * from one that reached a template the install could not open, which otherwise
+ * reads as a successful conversion.
+ */
+export interface OnboardingTourSuggestionMetadata extends OnboardingTourNudgeMetadata {
+  suggestion: string
+  loaded: boolean
 }
 
 export type OnboardingTourMetadata =
   | OnboardingTourStepMetadata
   | OnboardingTourNudgeMetadata
+  | OnboardingTourSuggestionMetadata
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
   industry_normalized?: string
@@ -905,6 +941,8 @@ export interface TelemetryProvider {
   trackAuth?(metadata: AuthMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
+  trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
+  trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
 
   // Subscription flow events
@@ -942,6 +980,10 @@ export interface TelemetryProvider {
   trackOnboardingTour?(
     stage: OnboardingTourNudgeStage,
     metadata: OnboardingTourNudgeMetadata
+  ): void
+  trackOnboardingTour?(
+    stage: OnboardingTourSuggestionStage,
+    metadata: OnboardingTourSuggestionMetadata
   ): void
 
   // Email verification events
@@ -1041,6 +1083,9 @@ export const TelemetryEvents = {
   USER_LOGGED_IN: 'app:user_logged_in',
   UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
+  UNIFIED_AUTH_REFRESH_SUCCEEDED: 'auth.unified.refresh.succeeded',
+  UNIFIED_AUTH_REFRESH_FAILED: 'auth.unified.refresh.failed',
+  IMAGE_LOAD_FAILED: 'app:image_load_failed',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -1094,6 +1139,8 @@ export const TelemetryEvents = {
   ONBOARDING_TOUR_COMPLETED: 'app:onboarding_tour_completed',
   ONBOARDING_TOUR_SKIPPED: 'app:onboarding_tour_skipped',
   ONBOARDING_TOUR_NUDGE_SHOWN: 'app:onboarding_tour_nudge_shown',
+  ONBOARDING_TOUR_NUDGE_SUGGESTION_CLICKED:
+    'app:onboarding_tour_nudge_suggestion_clicked',
   ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED:
     'app:onboarding_tour_explore_templates_clicked',
 
@@ -1177,6 +1224,8 @@ export const OnboardingTourEvents: Record<
   completed: TelemetryEvents.ONBOARDING_TOUR_COMPLETED,
   skipped: TelemetryEvents.ONBOARDING_TOUR_SKIPPED,
   nudge_shown: TelemetryEvents.ONBOARDING_TOUR_NUDGE_SHOWN,
+  nudge_suggestion_clicked:
+    TelemetryEvents.ONBOARDING_TOUR_NUDGE_SUGGESTION_CLICKED,
   explore_templates_clicked:
     TelemetryEvents.ONBOARDING_TOUR_EXPLORE_TEMPLATES_CLICKED
 }
@@ -1216,6 +1265,8 @@ export type TelemetryEventProperties =
   | OnboardingTourMetadata
   | AuthErrorMetadata
   | UnifiedAuthRetryMetadata
+  | UnifiedAuthRefreshMetadata
+  | ImageLoadFailureMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext

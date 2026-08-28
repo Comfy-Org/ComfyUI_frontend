@@ -22,6 +22,7 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -73,8 +74,26 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
-  const { canAccessSubscriptionFeatures, showSubscriptionDialog } =
-    useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    showSubscriptionDialog,
+    subscription
+  } = useBillingContext()
+
+  function blockRunWithoutSubscription(): boolean {
+    if (!isCloud || canAccessSubscriptionFeatures.value) return false
+    if (isSalesManagedTier(subscription.value?.tier)) {
+      toastStore.add({
+        severity: 'warn',
+        summary: t('subscription.salesManagedRunBlockedTitle'),
+        detail: t('subscription.salesManagedRunBlockedDetail'),
+        life: 5000
+      })
+    } else {
+      showSubscriptionDialog({ reason: 'subscribe_to_run' })
+    }
+    return true
+  }
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
@@ -506,10 +525,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (isCloud && !canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog({ reason: 'subscribe_to_run' })
-          return
-        }
+        if (blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -529,10 +545,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (isCloud && !canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog({ reason: 'subscribe_to_run' })
-          return
-        }
+        if (blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -551,10 +564,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (isCloud && !canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog({ reason: 'subscribe_to_run' })
-          return
-        }
+        if (blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
         const selectedNodes = getSelectedNodes()

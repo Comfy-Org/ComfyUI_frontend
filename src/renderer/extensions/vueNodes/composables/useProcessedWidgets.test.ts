@@ -145,6 +145,30 @@ function processWidgets({
   })
 }
 
+describe('widget slot ownership', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('does not assign a non-widget input socket to a same-named custom widget', () => {
+    const { graph, node } = createGraphWithNode([])
+    node.addInput('model', 'MODEL')
+    node.addWidget('custom', 'model', null, () => {})
+
+    const [processedWidget] = computeProcessedWidgets({
+      nodeData: node._state,
+      widgetIds: undefined,
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: true,
+      rootGraph: graph,
+      ui: noopUi
+    })
+
+    expect(processedWidget.slotMetadata).toBeUndefined()
+  })
+})
+
 describe('widget visibility', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
