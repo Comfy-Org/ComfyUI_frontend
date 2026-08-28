@@ -121,9 +121,12 @@ test.describe('Workflow tabs', () => {
       if (graph && node) graph.add(node)
     })
 
-    // WorkflowTab renders "•" when the workflow has unsaved changes
+    // WorkflowTab renders the dirty-indicator dot when the workflow has
+    // unsaved changes
     const activeTab = topbar.getActiveTab()
-    await expect(activeTab.locator('text=•')).toBeVisible()
+    await expect(
+      activeTab.getByTestId('workflow-dirty-indicator')
+    ).toBeVisible()
   })
 
   test('Can drag tab to end', async ({ comfyPage }) => {
