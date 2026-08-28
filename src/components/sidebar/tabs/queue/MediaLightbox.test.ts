@@ -325,6 +325,23 @@ describe('MediaLightbox', () => {
       expect(video()).not.toBe(first)
     })
 
+    it('pauses a retained video when navigating away from it', async () => {
+      const { show, video } = renderTeleported([
+        videoItem(1),
+        mockGalleryItems[0]
+      ])
+      await nextTick()
+      const first = video()
+      expect(first).not.toBeNull()
+      const pause = vi.spyOn(first!, 'pause')
+
+      await show(1)
+
+      expect(pause).toHaveBeenCalled()
+    })
+
+    /* Regression pin: a closed lightbox must not keep retained videos alive
+       (they resumed - audio included - on the next open). */
     it('drops retained videos when the lightbox closes', async () => {
       const { show, video } = renderTeleported([
         videoItem(1),
