@@ -14,6 +14,12 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => undefined
 }))
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({ get: () => true })
+}))
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({ isLoggedIn: { value: true } })
+}))
 
 const rootLiveness = vi.hoisted(() => ({ live: 0, maxLive: 0 }))
 

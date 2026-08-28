@@ -12,7 +12,7 @@ useExtensionService().registerExtension({
   name: 'Comfy.AgentPanel',
   beforeLoadGraph() {
     const agentPanelStore = useAgentPanelStore()
-    if (!agentPanelStore.isOpen) return
+    if (!agentPanelStore.isVisible) return
 
     const nodeSelectionStore = useAgentNodeSelectionStore()
     nodeSelectionStore.beginWorkflowLoad()
@@ -21,7 +21,7 @@ useExtensionService().registerExtension({
     const agentPanelStore = useAgentPanelStore()
     const nodeSelectionStore = useAgentNodeSelectionStore()
     if (!nodeSelectionStore.isLoadingWorkflow) return
-    if (!agentPanelStore.isOpen) {
+    if (!agentPanelStore.isVisible) {
       nodeSelectionStore.finishWorkflowLoad()
       return
     }
