@@ -78,6 +78,7 @@
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
+          isSecureNode && 'border-l-4 border-success-background',
           hasAnyError && 'ring-4 ring-destructive-background',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
@@ -262,7 +263,9 @@ import {
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -331,6 +334,7 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
+const nodeDefStore = useNodeDefStore()
 const colorPaletteStore = useColorPaletteStore()
 const isLightTheme = computed(
   () => !!colorPaletteStore.completedActivePalette.light_theme
@@ -366,6 +370,15 @@ const showErrorsTabEnabled = computed(() =>
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
+
+// On Cloud every node that is not part of the core app runs in a sandboxed
+// guest — the curated custom-node packs. Mark them so the boundary is visible
+// on the graph, not just inferable from the node's origin.
+const isSecureNode = computed(() => {
+  if (!isCloud) return false
+  const nodeDef = nodeDefStore.nodeDefsByName[nodeData.type]
+  return !!nodeDef && !nodeDef.isCoreNode
+})
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
