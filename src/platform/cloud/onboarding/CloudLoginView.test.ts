@@ -59,6 +59,7 @@ async function renderLoginView(
         createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
       ],
       stubs: {
+        ApiKeyForm: { template: '<form data-testid="api-key-form" />' },
         CloudSignInForm: { template: '<form data-testid="signin-form" />' }
       }
     }
@@ -104,6 +105,21 @@ describe('CloudLoginView', () => {
     )
 
     expect(screen.getByTestId('signin-form')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'auth.login.loginWithGoogle' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers API-key login when local Cloud auth is enabled', async () => {
+    vi.stubEnv('VITE_LOCAL_CLOUD_AUTH', 'true')
+    const user = (await import('@testing-library/user-event')).default.setup()
+    await renderLoginView()
+
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useApiKey' })
+    )
+
+    expect(screen.getByTestId('api-key-form')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'auth.login.loginWithGoogle' })
     ).not.toBeInTheDocument()
