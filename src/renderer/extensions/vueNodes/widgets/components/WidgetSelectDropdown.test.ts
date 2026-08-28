@@ -33,15 +33,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   }
 })
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: vi.fn(),
-    apiURL: vi.fn((url: string) => url),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn()
-  }
-}))
+vi.mock('@/scripts/api')
 
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
@@ -55,9 +47,7 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  resolveOutputAssetItems: vi.fn().mockResolvedValue([])
-}))
+vi.mock('@/platform/assets/utils/outputAssetUtil')
 
 const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
 const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
