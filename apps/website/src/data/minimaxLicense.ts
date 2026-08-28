@@ -22,7 +22,9 @@ const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
 // here changes two live pages. No "model upgrades" row: Professional is still
 // TBD, and the Enterprise side of it is the successor-model line held back
 // below.
-export const minimaxLicenseComparison: ModelLaunchComparison = {
+export const minimaxLicenseComparison: ModelLaunchComparison<
+  'professional' | 'enterprise'
+> = {
   headingKey: 'minimaxLicense.comparison.heading',
   subtitleKey: 'minimaxLicense.comparison.subtitle',
   footnoteKey: 'minimaxLicense.comparison.footnote',

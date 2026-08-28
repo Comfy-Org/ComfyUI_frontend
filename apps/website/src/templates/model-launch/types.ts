@@ -119,8 +119,9 @@ interface ModelLaunchPricingBanner {
 }
 
 // A tier-by-tier comparison table, e.g. the MiniMax commercial-license tiers.
-// Rows key their cells by column id, not by position, so a row missing a
-// column is a type error rather than a silently blank cell.
+// Rows key their cells by column id rather than by position. Annotate the
+// config with its column union — ModelLaunchComparison<'a' | 'b'> — so a row
+// that misses or misspells a column is a type error and not a blank cell.
 interface ModelLaunchComparisonColumn {
   id: string
   label: LocalizedText

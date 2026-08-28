@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchComparison } from './types'
@@ -7,12 +8,19 @@ import type { ModelLaunchComparison } from './types'
 import BrandButton from '../../components/common/BrandButton.vue'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en', comparison } = defineProps<{
+// ctaHref overrides the config's absolute href, so the localized pages that
+// mount this outside a model-launch page can keep their own locale prefix.
+const {
+  locale = 'en',
+  comparison,
+  ctaHref
+} = defineProps<{
   comparison: ModelLaunchComparison
   locale?: Locale
+  ctaHref?: string
 }>()
 
-const heading = t(comparison.headingKey, locale)
+const heading = computed(() => t(comparison.headingKey, locale))
 
 const isLastRow = (index: number) => index === comparison.rows.length - 1
 
@@ -37,7 +45,7 @@ const cellRule = (index: number) =>
       </h2>
       <p
         v-if="comparison.subtitleKey"
-        class="mt-4 text-[17px]/relaxed font-light text-pretty text-primary-comfy-canvas/55"
+        class="mt-4 text-[17px]/relaxed font-light text-pretty text-primary-comfy-canvas/70"
       >
         {{ t(comparison.subtitleKey, locale) }}
       </p>
@@ -82,7 +90,7 @@ const cellRule = (index: number) =>
                 scope="row"
                 :class="
                   cn(
-                    'block px-3 text-left text-sm/snug font-normal text-primary-comfy-canvas/55 max-md:pb-2 sm:px-5 md:table-cell md:py-5',
+                    'block px-3 text-left text-sm/snug font-normal text-primary-comfy-canvas/70 max-md:pb-2 sm:px-5 md:table-cell md:py-5',
                     cellRule(index)
                   )
                 "
@@ -107,7 +115,7 @@ const cellRule = (index: number) =>
                       'shrink-0 md:hidden',
                       column.featured
                         ? 'text-primary-comfy-yellow'
-                        : 'text-primary-comfy-canvas/55'
+                        : 'text-primary-comfy-canvas/70'
                     )
                   "
                 >
@@ -125,14 +133,14 @@ const cellRule = (index: number) =>
 
     <p
       v-if="comparison.footnoteKey"
-      class="mt-8 text-xs text-primary-comfy-canvas/55"
+      class="mt-8 text-xs text-primary-comfy-canvas/70"
     >
       {{ t(comparison.footnoteKey, locale) }}
     </p>
 
     <div v-if="comparison.primaryCta" class="mt-10 flex justify-center">
       <BrandButton
-        :href="comparison.primaryCta.href"
+        :href="ctaHref ?? comparison.primaryCta.href"
         :target="comparison.primaryCta.target"
         variant="solid"
         size="lg"

@@ -6826,16 +6826,17 @@ const translations = {
     'zh-CN': '了解 MiniMax H3'
   },
   'minimaxLicense.comparison.heading': {
-    en: 'License pricing',
-    'zh-CN': '许可定价'
+    en: 'MiniMax license pricing',
+    'zh-CN': 'MiniMax 许可定价'
   },
   'minimaxLicense.comparison.subtitle': {
     en: 'Both tiers are priced on video-seconds and carry full commercial rights to everything you generate.',
     'zh-CN': '两种级别均按视频秒数计价，并对你生成的一切内容享有完整商业权利。'
   },
   'minimaxLicense.comparison.footnote': {
-    en: 'Prices in USD and exclude tax. Enterprise volume pricing and terms are quoted per agreement.',
-    'zh-CN': '价格以美元计，不含税。企业版批量定价与条款按协议报价。'
+    en: 'Prices in USD and exclude tax. This license is for running MiniMax models locally on your own hardware — Comfy Cloud plans already include commercial rights. Enterprise volume pricing and terms are quoted per agreement.',
+    'zh-CN':
+      '价格以美元计，不含税。此许可面向在自有硬件上本地运行 MiniMax 模型的场景 — Comfy Cloud 订阅已包含商业权利。企业版批量定价与条款按协议报价。'
   },
   'minimaxLicense.comparison.primaryCta': {
     en: 'REQUEST LICENSE',

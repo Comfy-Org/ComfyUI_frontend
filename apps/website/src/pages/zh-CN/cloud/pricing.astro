@@ -6,6 +6,7 @@ import PricingFaq from '../../../components/pricing/PricingFaq.astro'
 import MinimaxLicenseHeroSection from '../../../components/common/MinimaxLicenseHeroSection.vue'
 import ModelLaunchComparisonSection from '../../../templates/model-launch/ModelLaunchComparisonSection.vue'
 import { minimaxLicenseComparison } from '../../../data/minimaxLicense'
+import { localizeHref } from '../../../config/routes'
 import { pricingOffers } from '../../../config/pricing'
 import { t } from '../../../i18n/translations'
 import {
@@ -48,6 +49,7 @@ const productId = jsonLdId(url, 'product')
   <ModelLaunchComparisonSection
     comparison={minimaxLicenseComparison}
     locale="zh-CN"
+    ctaHref={localizeHref('/contact', 'zh-CN')}
   />
   <CloudPricingSection locale="zh-CN" client:load />
   <WhatsIncludedSection locale="zh-CN" />
