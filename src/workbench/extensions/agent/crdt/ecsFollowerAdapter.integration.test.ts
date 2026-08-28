@@ -28,6 +28,10 @@ const scope = {
   rootGraphId: toRootGraphId('root'),
   owningGraphId: toOwningGraphId('root')
 }
+const otherScope = {
+  rootGraphId: toRootGraphId('other-root'),
+  owningGraphId: toOwningGraphId('other-root')
+}
 
 function op(id: string, baseVersion: number, payload: object) {
   return {
@@ -42,6 +46,188 @@ function op(id: string, baseVersion: number, payload: object) {
 describe('EcsFollowerAdapter integration', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('uses the bound workflow scope after the active canvas switches', () => {
+    let activeScope = scope
+    const mutations = createGraphMutations({
+      getScope: () => activeScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    mutations.bindScope(scope)
+    activeScope = otherScope
+
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            inputs: [],
+            outputs: []
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind(follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'workflow-a',
+        seq: 1,
+        update,
+        opIds: ['workflow-a-op']
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore().getGraphNodesFor('other-root', 'other-root')
+    ).toEqual([])
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual(['1'])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('removes a local-only node during the first authoritative catch-up', () => {
+    const createLayout = vi.fn()
+    const deleteLayouts = vi.fn()
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    })
+    mutations.addNode(
+      {
+        id: 3,
+        type: 'Source',
+        inputs: [],
+        outputs: [],
+        widgets_values: {}
+      },
+      { source: 'agent-remote', actor: 'seed', opId: 'local-only' }
+    )
+
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', inputs: [], outputs: [] },
+          { id: 2, type: 'Sink', inputs: [], outputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind(follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        opIds: ['bootstrap']
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual(['1', '2'])
+    expect(deleteLayouts).toHaveBeenCalledWith(
+      scope,
+      ['3'],
+      expect.objectContaining({ opId: 'bootstrap' })
+    )
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('retains effects after a missing-scope rejection and retries them', () => {
+    let currentScope = null as typeof scope | null
+    const mutations = createGraphMutations({
+      getScope: () => currentScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const host = mint(
+      {
+        nodes: [{ id: 1, type: 'Source', inputs: [], outputs: [] }],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind(follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    const frame = { workflowId: 'wf', seq: 1, update, opIds: ['retry-me'] }
+
+    expect(adapter.applyFrame(frame)).toBe(false)
+    expect(adapter.hasPendingEffects).toBe(true)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+
+    currentScope = scope
+    mutations.bindScope(scope)
+    expect(adapter.retryPending()).toBe(true)
+    expect(adapter.hasPendingEffects).toBe(false)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toHaveLength(1)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('retains effects after a validation rejection following Yjs integration', () => {
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const host = mint(
+      {
+        nodes: [{ id: 1, type: 'Source', inputs: [], outputs: [] }],
+        links: []
+      },
+      catalog
+    )
+    // Deliberately malformed host topology: the ECS plan must reject the
+    // missing target instead of partially materializing node 1.
+    const links = host.getMap('links')
+    links.set('9', [9, 1, 0, 404, 0, 'IMAGE'])
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind(follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        opIds: ['reject-me']
+      })
+    ).toBe(false)
+    expect(adapter.hasPendingEffects).toBe(true)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
   })
 
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
@@ -430,8 +616,9 @@ describe('EcsFollowerAdapter integration', () => {
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(10))
     ).toMatchObject({ id: 10, targetSlot: 1 })
 
-    // A higher-stamped same-id add is a new incarnation. The adapter replaces
-    // the shell, drops stale widget state, and restores authoritative links.
+    // A higher-stamped same-id add replaces the shell, drops stale widget
+    // state, and restores authoritative links. DQ-11c remains shared-schema
+    // work; this test only covers FE derived-state cleanup.
     deliver({
       op: 'add_node',
       node_id: 1,

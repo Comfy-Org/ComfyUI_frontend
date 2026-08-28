@@ -90,7 +90,8 @@ function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID, seq = 1) {
     v: 1,
     workflow_id: workflowId,
     seq,
-    update_b64: encodeBase64(update)
+    update_b64: encodeBase64(update),
+    op_ids: [`op-${seq}`]
   }
 }
 
@@ -165,6 +166,27 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
     bridge.reconcile()
     expect(bridge.subscribedWorkflowId).toBe('wf-b')
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+  })
+
+  it('replaces the follower document when switching workflow identity', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe('wf-a')
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-a', 1))
+    const workflowADoc = bridge.follower
+    expect(workflowADoc.updatesApplied).toBe(1)
+
+    bridge.subscribe('wf-b')
+
+    expect(bridge.follower).not.toBe(workflowADoc)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { workflow_id: string; state_vector_b64: string }
+    }[]
+    expect(subscribes.at(-1)?.data.workflow_id).toBe('wf-b')
+    expect(subscribes.at(-1)?.data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
   })
 })
 

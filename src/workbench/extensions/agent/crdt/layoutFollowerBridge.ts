@@ -101,6 +101,21 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   subscribe(workflowId: string): void {
+    if (
+      this.desiredWorkflowId !== null &&
+      this.desiredWorkflowId !== workflowId
+    ) {
+      // A workflow switch is a new lineage, even when no doc_reset arrived on
+      // the old subscription. Never send workflow B an A state vector or fold
+      // B's catch-up into A's follower document.
+      this.dropDocForNewLineage()
+      this.lastSeq = null
+      this.dispatchEvent(
+        new CustomEvent('follower_replaced', {
+          detail: { workflowId }
+        })
+      )
+    }
     this.desiredWorkflowId = workflowId
     this.reconcile()
   }

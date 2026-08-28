@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { GraphScope } from '@/types/graphScopeId'
 
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
@@ -84,7 +85,8 @@ export const apiTransport: DocFrameTransport = {
 
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
-  graphMutations: GraphMutations
+  graphMutations: GraphMutations,
+  scopeForWorkflow?: (workflowId: string) => GraphScope | null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -220,7 +222,15 @@ export function useAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     if (event instanceof CustomEvent) {
-      adapter.applyFrame(event.detail as DocUpdate)
+      const applied = adapter.applyFrame(event.detail as DocUpdate)
+      if (applied === false) {
+        connected.value = false
+        lastFrameType.value = 'doc_update_rejected'
+        recordDevEvent('doc_update_rejected', {
+          workflowId: (event.detail as DocUpdate).workflowId,
+          seq: (event.detail as DocUpdate).seq
+        })
+      }
     }
     if (event instanceof CustomEvent) {
       const detail = event.detail as {
@@ -332,10 +342,12 @@ export function useAgentCrdtFollower(
       connected.value = false
       knownDocNodeIds = new Set()
       if (next === null) {
+        graphMutations.bindScope?.(null)
         const persisted = initialBind ? readPersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
+          graphMutations.bindScope?.(scopeForWorkflow?.(persisted) ?? null)
           subscribedWorkflowId.value = persisted
           bridge.subscribe(persisted)
           return
@@ -346,6 +358,7 @@ export function useAgentCrdtFollower(
         return
       }
       initialBind = false
+      graphMutations.bindScope?.(scopeForWorkflow?.(next) ?? null)
       subscribedWorkflowId.value = next
       bridge.subscribe(next)
     },

@@ -143,6 +143,58 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  it('emits one post-commit invalidation after all stores are coherent', () => {
+    const frames: unknown[] = []
+    const graph = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      onCommit: (committedScope, committedContext) => {
+        frames.push({
+          scope: committedScope,
+          context: committedContext,
+          nodes: useNodeDataStore()
+            .getGraphNodesFor('root', 'root')
+            .map(({ id }) => id),
+          widgets: useWidgetValueStore()
+            .getNodeWidgets('root', toNodeId(1))
+            .map(({ name }) => name)
+        })
+      }
+    })
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode(node(1, { seed: 42 }))
+        batch.addNode(node(2, { seed: 7 }))
+      })
+    ).toBe(true)
+
+    expect(frames).toEqual([
+      {
+        scope,
+        context,
+        nodes: ['1', '2'],
+        widgets: ['seed']
+      }
+    ])
+  })
+
+  it('contains a layout commit error before semantic stores are written', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    createLayout.mockImplementation(() => {
+      throw new Error('layout unavailable')
+    })
+
+    expect(mutations().addNode(node(1), context)).toBe(false)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+    expect(useWidgetValueStore().getNodeWidgets('root', toNodeId(1))).toEqual(
+      []
+    )
+
+    createLayout.mockReset()
+    error.mockRestore()
+  })
+
   it('rejects a sibling-owned node collision before committing earlier writes', () => {
     const siblingScope = {
       rootGraphId: scope.rootGraphId,
@@ -296,7 +348,7 @@ describe('graphMutations', () => {
     })
   })
 
-  it('re-adds a normalized node id as a fresh widget incarnation', () => {
+  it('re-adds a normalized node id without retaining stale widget presentation', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)
 
@@ -368,5 +420,34 @@ describe('graphMutations', () => {
 
     expect(nodeContexts).toEqual([context])
     expect(widgetContexts).toEqual([context])
+  })
+
+  it('uses aggregate provenance without assigning every effect to one op', () => {
+    const aggregate = {
+      source: 'agent-remote' as const,
+      actor: 'agent:test',
+      opIds: ['op-1', 'op-2']
+    }
+    const nodeContexts: unknown[] = []
+    const widgetContexts: unknown[] = []
+    useNodeDataStore().$onAction(({ name, args }) => {
+      if (name === 'registerNode') nodeContexts.push(args[2])
+    })
+    useWidgetValueStore().$onAction(({ name, args }) => {
+      if (name === 'registerWidget') widgetContexts.push(args[3])
+    })
+
+    expect(
+      mutations().batch(aggregate, (batch) => {
+        batch.addNode(node(1, { seed: 1 }))
+        batch.addNode(node(2, { seed: 2 }))
+      })
+    ).toBe(true)
+
+    expect(nodeContexts).toEqual([aggregate, aggregate])
+    expect(widgetContexts).toEqual([aggregate, aggregate])
+    expect(
+      nodeContexts.every((value) => !(value as { opId?: string }).opId)
+    ).toBe(true)
   })
 })

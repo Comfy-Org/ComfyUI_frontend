@@ -113,6 +113,8 @@ interface OperationMeta {
   actor?: string
   /** Originating semantic op identity when applied by a remote follower. */
   opId?: string
+  /** Ordered semantic op identities when one layout effect represents a batch. */
+  opIds?: readonly string[]
   /** Source system that initiated the operation */
   source: LayoutSource
   graphId: UUID

@@ -93,12 +93,18 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
 }
 
 function frameContext(update: DocUpdate): RemoteMutationContext {
-  const opIds = update.opIds?.filter((id) => id.length > 0)
+  const opIds = update.opIds
+  if (
+    !Array.isArray(opIds) ||
+    opIds.length === 0 ||
+    opIds.some((id) => typeof id !== 'string' || id.length === 0)
+  ) {
+    throw new Error('doc_update requires non-empty op_ids provenance')
+  }
   return {
     source: 'agent-remote',
-    actor: update.actor ?? 'agent-replay',
-    opId: opIds?.at(-1) ?? 'replay',
-    ...(opIds && opIds.length > 0 && { opIds })
+    actor: update.actor ?? 'agent-remote',
+    ...(opIds.length === 1 ? { opId: opIds[0] } : { opIds })
   }
 }
 
@@ -115,11 +121,13 @@ export class EcsFollowerAdapter {
   private readonly changedWidgets = new Map<string, Set<string>>()
   private readonly changedLinks = new Set<string>()
   private reconcileNextFrame = true
+  private pendingUpdate: DocUpdate | null = null
 
   constructor(private readonly mutations: GraphMutations) {}
 
   bind(follower: FollowerDoc): void {
     this.unbind()
+    this.discardPending()
     this.follower = follower
     this.nodes = nodesMap(follower.doc)
     this.links = linksMap(follower.doc)
@@ -138,12 +146,10 @@ export class EcsFollowerAdapter {
     )
     const changedLinkIds = new Set(this.changedLinks)
     const reconcile = this.reconcileNextFrame
-    this.reconcileNextFrame = false
-    this.discardPending()
 
-    // Re-adding a node under one normalized id is a new incarnation. Its
-    // current links may be unchanged at the root map, so explicitly reconcile
-    // every incident authoritative link after replacing the old shell.
+    // A same-ID replacement rebuilds the FE shell and its derived widgets.
+    // TODO(DQ-11c): consume the creator-carried incarnation in this identity
+    // boundary once the shared schema/applier exposes it.
     const replacedNodeIds = new Set(
       [...nodeActions]
         .filter(([, action]) => action === 'update')
@@ -165,12 +171,44 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       linksMap(follower.doc).has(id) ? [] : [Number(id)]
     )
-    return this.mutations.batch(frameContext(update), (batch) => {
+    let context: RemoteMutationContext
+    try {
+      context = frameContext(update)
+    } catch (error) {
+      console.error(`[agent-crdt] frame rejected: ${String(error)}`)
+      this.pendingUpdate = update
+      return false
+    }
+
+    const applied = this.mutations.batch(context, (batch) => {
+      if (reconcile) {
+        const hostNodeIds = new Set(nodesMap(follower.doc).keys())
+        for (const nodeId of this.mutations.currentNodeIds()) {
+          if (!hostNodeIds.has(String(nodeId))) batch.deleteNode(nodeId)
+        }
+        const hostLinkIds = new Set(linksMap(follower.doc).keys())
+        batch.removeLinks(
+          this.mutations
+            .currentLinkIds()
+            .filter((linkId) => !hostLinkIds.has(String(linkId)))
+        )
+        for (const id of hostNodeIds) {
+          const payload = readSemanticNode(follower.doc, id)
+          if (payload) batch.reconcileNode(payload)
+        }
+        for (const id of hostLinkIds) {
+          const link = readSemanticLink(follower.doc, id)
+          if (link) batch.connect(link)
+        }
+        return
+      }
+
       // Input replacement can retire an incumbent even when delete-wins leaves
       // no new link to install, so removals are an independent derived effect.
       batch.removeLinks(removedLinkIds)
-      // Delete/update roots first so a same-id update starts a fresh widget
-      // incarnation and cannot retain stale values (DQ-11).
+      // Delete/update roots first so a same-ID replacement cannot retain stale
+      // widget presentation. Conflict-stamp incarnation remains a shared
+      // schema concern. TODO(DQ-11c): carry it through these effects.
       for (const [id, action] of nodeActions) {
         if (action === 'delete' || action === 'update') {
           batch.deleteNode(toNodeId(id))
@@ -199,6 +237,25 @@ export class EcsFollowerAdapter {
         if (link) batch.connect(link)
       }
     })
+    if (!applied) {
+      // Yjs has already advanced, so dropping these observations would make a
+      // later state-vector replay unable to reconstruct the ECS effects.
+      this.pendingUpdate = update
+      return false
+    }
+    this.pendingUpdate = null
+    this.reconcileNextFrame = false
+    this.discardPending()
+    return true
+  }
+
+  /** Retry effects retained after a missing scope or validation rejection. */
+  retryPending(): boolean {
+    return this.pendingUpdate ? this.applyFrame(this.pendingUpdate) : true
+  }
+
+  get hasPendingEffects(): boolean {
+    return this.pendingUpdate !== null
   }
 
   /** Explicit lineage reset only; ordinary reconnect/gap recovery never calls it. */
@@ -211,6 +268,7 @@ export class EcsFollowerAdapter {
     this.nodeActions.clear()
     this.changedWidgets.clear()
     this.changedLinks.clear()
+    this.pendingUpdate = null
   }
 
   destroy(): void {

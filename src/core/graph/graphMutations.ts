@@ -69,6 +69,10 @@ interface GraphMutationBatch {
 }
 
 export interface GraphMutations {
+  /** Freeze the graph scope used by subsequent batches until changed. */
+  bindScope(scope: GraphScope | null): void
+  currentNodeIds(): NodeId[]
+  currentLinkIds(): LinkId[]
   batch(
     context: RemoteMutationContext,
     define: (batch: GraphMutationBatch) => void
@@ -92,6 +96,8 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  /** One derived notification after a successful composite commit. */
+  onCommit?: (scope: GraphScope, context: RemoteMutationContext) => void
 }
 
 type QueuedMutation =
@@ -292,6 +298,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const nodeStore = useNodeDataStore()
   const linkStore = useLinkStore()
   const widgetStore = useWidgetValueStore()
+  let boundScope: GraphScope | null | undefined
 
   function fail(message: string): false {
     console.error(`[agent-crdt] graph mutation rejected: ${message}`)
@@ -575,7 +582,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
     widgetStore.clearNode(scope.rootGraphId, nodeId, context)
     if (node) nodeStore.deleteNode(scope, node, context)
-    deps.layout.deleteNodes(scope, [nodeId], context)
   }
 
   function commit(
@@ -583,6 +589,38 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     prepared: readonly PreparedMutation[],
     context: RemoteMutationContext
   ): void {
+    // Layout is prepared first. A layout failure must happen before any
+    // semantic store is changed, so a node can never become observable without
+    // its layout attachment. The remaining stores then commit in one fixed
+    // order; outward invalidation is emitted only after the whole plan exits.
+    for (const mutation of prepared) {
+      switch (mutation.kind) {
+        case 'addNode':
+          deps.layout.createNode(
+            scope,
+            mutation.node.state.id,
+            mutation.node.layout,
+            context
+          )
+          break
+        case 'reconcileNode':
+          deps.layout.deleteNodes(scope, [mutation.node.state.id], context)
+          deps.layout.createNode(
+            scope,
+            mutation.node.state.id,
+            mutation.node.layout,
+            context
+          )
+          break
+        case 'deleteNode':
+          deps.layout.deleteNodes(scope, [mutation.nodeId], context)
+          break
+        case 'clearSemanticGraph':
+          deps.layout.deleteNodes(scope, mutation.nodeIds, context)
+          break
+      }
+    }
+
     for (const mutation of prepared) {
       switch (mutation.kind) {
         case 'addNode':
@@ -603,7 +641,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.node.state.id,
               context
             )
-            deps.layout.deleteNodes(scope, [mutation.node.state.id], context)
           } else {
             nodeStore.registerNode(scope, mutation.node.state, context)
           }
@@ -621,12 +658,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               context
             )
           }
-          deps.layout.createNode(
-            scope,
-            mutation.node.state.id,
-            mutation.node.layout,
-            context
-          )
           break
         }
         case 'setWidget': {
@@ -711,7 +742,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           for (const nodeId of mutation.nodeIds) {
             widgetStore.clearNode(scope.rootGraphId, nodeId, context)
           }
-          deps.layout.deleteNodes(scope, mutation.nodeIds, context)
           linkStore.clearOwner(scope, context)
           nodeStore.clearOwner(scope, context)
           break
@@ -720,8 +750,25 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   const graphMutations: GraphMutations = {
+    bindScope(scope) {
+      boundScope = scope
+    },
+    currentNodeIds() {
+      const scope = boundScope === undefined ? deps.getScope() : boundScope
+      return scope
+        ? nodeStore
+            .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+            .map(({ id }) => id)
+        : []
+    },
+    currentLinkIds() {
+      const scope = boundScope === undefined ? deps.getScope() : boundScope
+      return scope
+        ? [...linkStore.graphTopologies(scope)].map(({ id }) => id)
+        : []
+    },
     batch(context, define) {
-      const scope = deps.getScope()
+      const scope = boundScope === undefined ? deps.getScope() : boundScope
       if (!scope) return false
       const queued: QueuedMutation[] = []
       define({
@@ -749,7 +796,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       })
       const prepared = prepare(scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
-      commit(scope, prepared, context)
+      try {
+        commit(scope, prepared, context)
+      } catch (error) {
+        return fail(
+          `commit failed: ${error instanceof Error ? error.message : String(error)}`
+        )
+      }
+      if (prepared.length > 0) deps.onCommit?.(scope, context)
       return true
     },
     addNode(payload, context) {

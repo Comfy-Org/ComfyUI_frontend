@@ -116,6 +116,9 @@ const graphMutations = createGraphMutations({
         }
       : null
   },
+  onCommit() {
+    app.canvas?.setDirty(true, true)
+  },
   layout: {
     createNode(scope, nodeId, layout, context) {
       const { position, size } = layout
@@ -134,6 +137,7 @@ const graphMutations = createGraphMutations({
         source: LayoutSource.AgentRemote,
         actor: context.actor,
         opId: context.opId,
+        opIds: context.opIds,
         timestamp: Date.now()
       })
     },
@@ -147,6 +151,7 @@ const graphMutations = createGraphMutations({
           source: LayoutSource.AgentRemote,
           actor: context.actor,
           opId: context.opId,
+          opIds: context.opIds,
           timestamp
         }))
       )
@@ -359,7 +364,14 @@ const {
 // session's bound workflow and projects doc updates onto the canvas.
 const { status: crdtStatus } = useAgentCrdtFollower(
   boundWorkflowId,
-  graphMutations
+  graphMutations,
+  (workflowId) => ({
+    // Agent semantic stores use the durable workflow identity as their root
+    // partition. Capture this when the follower subscribes; graph mutations
+    // must not sample the currently active canvas at commit time.
+    rootGraphId: toRootGraphId(workflowId),
+    owningGraphId: toOwningGraphId(workflowId)
+  })
 )
 // Dev instrument only (slice-02 classification): never ships to users.
 const isCrdtDevPanelEnabled = import.meta.env.DEV

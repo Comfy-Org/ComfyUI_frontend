@@ -43,7 +43,7 @@ describe('doc frame client', () => {
         seq: 1,
         update_b64: encodeBase64(encoded),
         actor: 'agent:turn-1',
-        op_ids: ['op-1', 42, 'op-2']
+        op_ids: ['op-1', 'op-2']
       }
     })
     expect(frame?.type).toBe('doc_update')
@@ -71,6 +71,26 @@ describe('doc frame client', () => {
 
     expect(Y.encodeStateAsUpdate(follower.doc)).toEqual(once)
     expect(follower.doc.getArray('items').toJSON()).toEqual(['a'])
+  })
+
+  it('rejects a doc_update with missing or malformed op_ids', () => {
+    const source = new Y.Doc()
+    const update = encodeBase64(Y.encodeStateAsUpdate(source))
+    const base = { v: 1, workflow_id: 'wf-1', seq: 1, update_b64: update }
+
+    expect(parseServerDocFrame({ type: 'doc_update', data: base })).toBeNull()
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: { ...base, op_ids: ['valid', 42] }
+      })
+    ).toBeNull()
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: { ...base, op_ids: [''] }
+      })
+    ).toBeNull()
   })
 
   it('converges with out-of-order and duplicate updates', () => {
@@ -139,7 +159,8 @@ describe('doc frame client', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
-      update_b64: encodeBase64(update)
+      update_b64: encodeBase64(update),
+      op_ids: ['op-1']
     })
     bridge.resubscribe()
     bridge.unsubscribe()
@@ -148,7 +169,8 @@ describe('doc frame client', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
-      update_b64: encodeBase64(update)
+      update_b64: encodeBase64(update),
+      op_ids: ['op-1']
     })
 
     const frames = transport.sent.map((frame) => JSON.parse(frame))

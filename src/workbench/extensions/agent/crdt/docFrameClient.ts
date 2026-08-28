@@ -12,7 +12,7 @@ export interface DocUpdate {
   update: Uint8Array
   actor?: string
   /** Accepted semantic op identities folded into this effect frame (DQ-9). */
-  opIds?: string[]
+  opIds: string[]
 }
 
 export interface DocSubscribed {
@@ -134,7 +134,12 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   if (
     frame.type === 'doc_update' &&
     typeof data.seq === 'number' &&
-    typeof data.update_b64 === 'string'
+    typeof data.update_b64 === 'string' &&
+    Array.isArray(data.op_ids) &&
+    data.op_ids.length > 0 &&
+    data.op_ids.every(
+      (item): item is string => typeof item === 'string' && item.length > 0
+    )
   ) {
     return {
       type: frame.type,
@@ -142,12 +147,8 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         workflowId: data.workflow_id,
         seq: data.seq,
         update: decodeBase64(data.update_b64),
-        ...(typeof data.actor === 'string' && { actor: data.actor }),
-        ...(Array.isArray(data.op_ids) && {
-          opIds: data.op_ids.filter(
-            (item): item is string => typeof item === 'string'
-          )
-        })
+        opIds: data.op_ids,
+        ...(typeof data.actor === 'string' && { actor: data.actor })
       }
     }
   }
