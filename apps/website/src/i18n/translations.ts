@@ -7608,6 +7608,14 @@ const translations = {
     'zh-CN':
       '有限测试阶段：构建最长可能需要 3 小时，并且可能失败。在我们加固管线期间，你将获得直达的支持渠道。'
   },
+  'platform.faq.betaBannerLead': {
+    en: 'Limited beta: builds can take up to 3 hours and may fail.',
+    'zh-CN': '有限测试阶段：构建最长可能需要 3 小时，并且可能失败。'
+  },
+  'platform.faq.betaBannerSupport': {
+    en: 'You get a direct support line while we harden the pipeline.',
+    'zh-CN': '在我们加固管线期间，你将获得直达的支持渠道。'
+  },
   'platform.faq.heading': {
     en: 'Frequently asked questions',
     'zh-CN': '常见问题'
