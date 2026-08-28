@@ -3,10 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapInputFileToAssetItem: vi.fn(),
-  mapTaskOutputToAssetItem: vi.fn()
-}))
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 const mocks = vi.hoisted(() => ({
   addEventListener:
