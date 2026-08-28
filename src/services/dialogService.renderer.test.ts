@@ -40,6 +40,7 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   })
 }))
 
+import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useDialogService } from '@/services/dialogService'
 
 describe('dialogService Reka renderer opt-in', () => {
@@ -105,8 +106,9 @@ describe('dialogService Reka renderer opt-in', () => {
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.headless).toBe(true)
     expect(args.dialogComponentProps.pt).toBeUndefined()
-    expect(args.dialogComponentProps.contentClass).toContain('w-fit')
-    expect(args.dialogComponentProps.contentClass).toContain('bg-transparent')
+    expect(args.dialogComponentProps.contentClass).toBe(
+      SELF_STYLED_PANEL_CONTENT_CLASS
+    )
   })
 
   it("showLayoutDialog() defaults to renderer 'reka' headless without pt", () => {

@@ -2,6 +2,8 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { describe, expect, it } from 'vitest'
 
+import { GRAPH_CANVAS_ANCHOR } from '@/constants/splitterConstants'
+
 /**
  * Regression test: the graph-canvas-panel SplitterPanel must not clip
  * absolutely-positioned children (like GraphCanvasMenu).
@@ -26,15 +28,17 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
     )
   })
 
-  it('declares the --graph-canvas-panel anchor the global toast consumes', () => {
+  it('declares the anchor name the global toast consumes', () => {
     const filePath = resolve(__dirname, 'LiteGraphCanvasSplitterOverlay.vue')
     const source = readFileSync(filePath, 'utf-8')
 
-    // GlobalToast positions itself with anchor(--graph-canvas-panel_*, ...);
+    // GlobalToast positions itself with anchor(GRAPH_CANVAS_ANCHOR_*, ...);
     // without this declaration every anchor() silently resolves its fallback
     // and the toast never tracks the canvas panel.
     expect(source).toMatch(
-      /class="[^"]*graph-canvas-panel[^"]*\[anchor-name:--graph-canvas-panel\]/s
+      new RegExp(
+        `class="[^"]*graph-canvas-panel[^"]*\\[anchor-name:${GRAPH_CANVAS_ANCHOR}\\]`
+      )
     )
   })
 })

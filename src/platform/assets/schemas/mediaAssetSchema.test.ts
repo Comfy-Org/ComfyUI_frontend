@@ -46,9 +46,17 @@ describe('parseAssetInfo', () => {
       // fields survive.
       expect(parsed).toBeDefined()
       expect(parsed).toMatchObject(BASE_ITEM)
-      expect((parsed as Record<string, unknown>)[name]).toBeUndefined()
+      expect(parsed?.[name]).toBeUndefined()
     }
   )
+
+  it('still rejects a payload whose base fields are malformed', () => {
+    const parsed = parseAssetInfo(transferWith({ ...BASE_ITEM, type: 'bogus' }))
+
+    // The catch fallbacks are scoped per optional extra; base-field
+    // validation still rejects the whole payload.
+    expect(parsed).toBeUndefined()
+  })
 
   it('returns undefined for an unparsable payload', () => {
     const dataTransfer = new DataTransfer()

@@ -16,7 +16,6 @@ type UploadModelContextResolver = () => UploadModelDialogContext | undefined
 
 // Contents bring their own width and padding — shrink-wrap the chrome and
 // zero the section padding (the PrimeVue `pt` overrides this replaces).
-// The shared hug class carries the workspace-inset width cap.
 const uploadDialogComponentProps = {
   renderer: 'reka',
   size: 'lg',

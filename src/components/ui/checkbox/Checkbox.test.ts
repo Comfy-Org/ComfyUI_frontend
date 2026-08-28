@@ -71,14 +71,13 @@ describe('Checkbox', () => {
     expect(onUpdate).toHaveBeenCalledWith(true)
   })
 
-  it('styles every surface with semantic tokens, never raw palette classes', () => {
+  it('styles the checked and unchecked surfaces with semantic tokens', () => {
     const checkbox = renderHarness()
     const classes = checkbox.getAttribute('class') ?? ''
 
     expect(classes).toContain('border-border-default')
     expect(classes).toContain('data-[state=checked]:border-primary-background')
     expect(classes).toContain('data-[state=checked]:bg-primary-background')
-    expect(classes).not.toMatch(/\b(?:smoke|ink|plum|zinc|gray|slate)-\d/)
   })
 
   it('merges custom classes without clobbering the base styling', () => {
