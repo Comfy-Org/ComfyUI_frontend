@@ -72,9 +72,6 @@ describe('WidgetGrid', () => {
     expect(
       screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
     ).toEqual(['seed', 'replacement', 'converted-widget-picker'])
-    // browser_tests/tests/customNodes/legacyWidgetRegistration.spec.ts reads
-    // the rendered widget order back off this attribute, so a required CI gate
-    // depends on it staying put.
     expect(
       screen
         .getAllByTestId('node-widget')

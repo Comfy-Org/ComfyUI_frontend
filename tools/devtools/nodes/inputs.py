@@ -320,10 +320,6 @@ class NodeWithLegacyWidget:
         return ()
 
 class NodeWithPreAttachLegacyWidgets:
-    """Declares no widget inputs: every widget this node shows is built in
-    `onNodeCreated` by web/preAttachLegacyWidgets.js, the way rgthree's Power
-    Lora Loader builds its rows."""
-
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {}}
