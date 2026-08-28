@@ -85,11 +85,14 @@ import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInF
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
 import { CLOUD_AUTH_LINK_BUTTON_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
+import { apiKeySchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 
 const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
+const apiKeyStore = useApiKeyAuthStore()
 const showApiKeyForm = ref(false)
 const localApiKeyAuthEnabled =
   import.meta.env.DEV && import.meta.env.VITE_LOCAL_CLOUD_AUTH === 'true'
@@ -111,6 +114,15 @@ const {
 
 const signInWithEmail = async (values: SignInData) => {
   authError.value = ''
+  if (localApiKeyAuthEnabled) {
+    const apiKey = apiKeySchema.safeParse({ apiKey: values.password })
+    if (apiKey.success) {
+      if (await apiKeyStore.storeApiKey(apiKey.data.apiKey)) {
+        await onAuthSuccess()
+      }
+      return
+    }
+  }
   if (await authActions.signInWithEmail(values.email, values.password)) {
     await onAuthSuccess()
   }
