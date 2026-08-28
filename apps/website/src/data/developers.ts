@@ -157,19 +157,19 @@ export type ShowcaseSlide = {
  * carousel hides its dots below two slides, so the design's four dots appear
  * only once the content does.
  *
- * MISSING ASSET: both URLs 404 today. The clip has to be encoded to the site's
- * web video profile, faststart (moov atom at the front), and uploaded to
- * media.comfy.org before this section renders anything but an empty media box
- * (developers-page issue 10).
+ * PLACEHOLDER MEDIA: the store demo does not exist yet, so this borrows the
+ * /flux-3 hero clip to keep the section from rendering a black box. It is
+ * faststart (moov ahead of mdat), which the carousel needs to advance on
+ * `ended` — but it does not show the store the slide copy describes, so the
+ * section reads as finished while showing the wrong thing. Swap in the real
+ * clip and its poster in the content pass (developers-page issues 10 and 12).
  */
 export const showcaseSlides: ShowcaseSlide[] = [
   {
     id: 'store',
     media: {
       type: 'video',
-      src: 'https://media.comfy.org/website/developers/store-demo.mp4',
-      poster:
-        'https://media.comfy.org/website/developers/store-demo-poster.webp'
+      src: 'https://media.comfy.org/website/flux-3/hero.mp4'
     },
     autoplayMs: 30000
   }
@@ -177,14 +177,15 @@ export const showcaseSlides: ShowcaseSlide[] = [
 
 /**
  * "Observe and manage" dashboard shot, cropped to the design's framing
- * (956×469, Figma 12335:54591).
+ * (Figma 12335:54591).
  *
- * MISSING ASSET: this URL 404s today. The cropped file is ready to upload at
- * `.scratch/developers-page/assets/observe-dashboard.webp`; until it lands the
- * section renders its tinted placeholder box (developers-page issue 10).
+ * PLACEHOLDER: served from the repo so the section renders, not from
+ * media.comfy.org like the site's other media. It is the design's own FPO
+ * screenshot, so it shows stale numbers and a stale UI — replace it with a
+ * current dashboard shot in the content pass (developers-page issue 10) rather
+ * than treating it as final.
  */
-export const observeImage =
-  'https://media.comfy.org/website/developers/observe-dashboard.webp'
+export const observeImage = '/images/developers/observe-dashboard.webp'
 
 const FAQ_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 
