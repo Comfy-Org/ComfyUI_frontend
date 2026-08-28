@@ -485,12 +485,14 @@ async function run(argv: readonly string[]): Promise<void> {
     )
   }
   const usage = {
+    completions: 0,
     completionTokens: 0,
     promptTokens: 0,
     reasoningTokens: 0,
     requests: 0,
     totalTokens: 0
   }
+  const requestBudget = initialBatchCount * config.requestBudgetMultiplier
   const countedFetch: typeof fetch = async (input, init) => {
     usage.requests++
     return fetch(input, init)
@@ -502,7 +504,15 @@ async function run(argv: readonly string[]): Promise<void> {
         model: config.model,
         reasoningEffort: config.reasoningEffort,
         glossary: config.glossary,
+        maxTruncationSplitDepth: config.maxTruncationSplitDepth,
+        onRequest: () => {
+          if (usage.requests < requestBudget) return
+          throw new Error(
+            `Stopped after ${usage.requests} HTTP requests, the budget for ${initialBatchCount} initial batches (requestBudgetMultiplier ${config.requestBudgetMultiplier}). Raise it, or lower maxItemsPerRequest so batches translate without splitting.`
+          )
+        },
         onCompletion: (completion) => {
+          usage.completions++
           if (!completion.usage) return
           usage.completionTokens += completion.usage.completion_tokens
           usage.promptTokens += completion.usage.prompt_tokens
@@ -517,7 +527,7 @@ async function run(argv: readonly string[]): Promise<void> {
 
   const outcomes = await mapWithConcurrency(
     states,
-    config.stateConcurrency,
+    config.localeFileConcurrency,
     async (
       state
     ): Promise<
@@ -556,6 +566,12 @@ async function run(argv: readonly string[]): Promise<void> {
       }
     }
   )
+
+  if (usage.requests > 0) {
+    print(
+      `OpenAI usage: ${usage.requests} HTTP requests for ${usage.completions} completions; ${usage.promptTokens} input, ${usage.completionTokens} output (${usage.reasoningTokens} reasoning), ${usage.totalTokens} total tokens.`
+    )
+  }
 
   const failuresByFile = new Map<string, string[]>()
   function addFailure(filename: string, message: string): void {
@@ -630,12 +646,6 @@ async function run(argv: readonly string[]): Promise<void> {
       })
     )
   )
-
-  if (usage.requests > 0) {
-    print(
-      `OpenAI usage: ${usage.requests} HTTP requests; ${usage.promptTokens} input, ${usage.completionTokens} output (${usage.reasoningTokens} reasoning), ${usage.totalTokens} total tokens.`
-    )
-  }
 
   if (failuresByFile.size > 0) {
     const details = [...failuresByFile.values()].flat()

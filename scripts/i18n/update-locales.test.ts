@@ -530,7 +530,12 @@ describe('createOpenAiTranslator', () => {
 
   function translatorFor(
     responses: Response[],
-    onCompletion?: (completion: OpenAI.ChatCompletion) => void
+    overrides: Partial<
+      Pick<
+        Parameters<typeof createOpenAiTranslator>[0],
+        'maxTruncationSplitDepth' | 'onCompletion' | 'onRequest'
+      >
+    > = {}
   ) {
     let calls = 0
     const requestBodies: string[] = []
@@ -547,8 +552,9 @@ describe('createOpenAiTranslator', () => {
       model: 'test-model',
       reasoningEffort: 'low',
       glossary: '',
+      maxTruncationSplitDepth: 3,
       fetchFn,
-      onCompletion
+      ...overrides
     })
     return { translate, callCount: () => calls, requestBodies }
   }
@@ -564,22 +570,58 @@ describe('createOpenAiTranslator', () => {
       '2': 'Au revoir {name}'
     })
     expect(callCount()).toBe(3)
-    expect(requestBodies[1].length).toBeLessThan(requestBodies[0].length)
-    expect(requestBodies[2].length).toBeLessThan(requestBodies[0].length)
     expect(requestBodies[1]).toContain('main.json: greeting')
     expect(requestBodies[1]).not.toContain('main.json: farewell')
     expect(requestBodies[2]).not.toContain('main.json: greeting')
     expect(requestBodies[2]).toContain('main.json: farewell')
   })
 
-  it('does not retry a truncated single-item batch', async () => {
+  it('names the string that a truncated single-item batch could not fit', async () => {
     const { translate, callCount } = translatorFor([
       completion('{"1": "Bonj', 'length')
     ])
     await expect(translate(locale, items.slice(0, 1))).rejects.toThrow(
-      'OpenAI response was truncated'
+      'main.json: greeting'
     )
     expect(callCount()).toBe(1)
+  })
+
+  it('stops splitting a batch that keeps truncating at the split depth', async () => {
+    const wide = ['a', 'b', 'c', 'd'].map((name, index) => ({
+      id: String(index),
+      context: `main.json: ${name}`,
+      source: name,
+      preserve: []
+    }))
+    const { translate, callCount } = translatorFor(
+      Array.from({ length: 8 }, () => completion('{"0": "Bonj', 'length')),
+      { maxTruncationSplitDepth: 1 }
+    )
+    await expect(translate(locale, wide)).rejects.toThrow(
+      '2 strings still do not fit at maxTruncationSplitDepth 1'
+    )
+    expect(callCount()).toBe(2)
+  })
+
+  it('translates an empty batch without calling the API', async () => {
+    const { translate, callCount } = translatorFor([])
+    await expect(translate(locale, [])).resolves.toEqual({})
+    expect(callCount()).toBe(0)
+  })
+
+  it('does not send a request once onRequest rejects the spend', async () => {
+    const { translate, callCount } = translatorFor(
+      [completion('{"1": "Bonjour {name}"}')],
+      {
+        onRequest: () => {
+          throw new Error('request budget exhausted')
+        }
+      }
+    )
+    await expect(translate(locale, items)).rejects.toThrow(
+      'request budget exhausted'
+    )
+    expect(callCount()).toBe(0)
   })
 
   it('drops non-string values instead of failing the whole batch', async () => {
@@ -624,7 +666,7 @@ describe('createOpenAiTranslator', () => {
           total_tokens: 14
         })
       ],
-      onCompletion
+      { onCompletion }
     )
     await translate(locale, items)
     expect(onCompletion).toHaveBeenCalledTimes(3)

@@ -10,14 +10,14 @@ export interface TranslationPipelineConfig {
   entry: string
   output: string
   model: string
-  reasoningEffort: NonNullable<
-    OpenAI.ChatCompletionCreateParams['reasoning_effort']
-  >
+  reasoningEffort: NonNullable<OpenAI.ChatCompletionReasoningEffort>
   maxItemsPerRequest: number
   maxSourceCharsPerRequest: number
-  stateConcurrency: number
+  maxTruncationSplitDepth: number
+  localeFileConcurrency: number
   requestConcurrency: number
   maxTranslationRounds: number
+  requestBudgetMultiplier: number
   glossary: string
   outputLocales: OutputLocale[]
 }
@@ -51,9 +51,11 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
   reasoningEffort: 'high',
   maxItemsPerRequest: 40,
   maxSourceCharsPerRequest: 6000,
-  stateConcurrency: 3,
+  maxTruncationSplitDepth: 3,
+  localeFileConcurrency: 3,
   requestConcurrency: 2,
   maxTranslationRounds: 3,
+  requestBudgetMultiplier: 12,
   glossary,
   outputLocales: [
     {

@@ -110,7 +110,11 @@ interface OpenAiTranslatorOptions {
   model: string
   reasoningEffort: TranslationPipelineConfig['reasoningEffort']
   glossary: string
+  maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
+  // Throwing here aborts before the request is sent; a fetchFn that throws is
+  // wrapped as a connection error and retried by the SDK
+  onRequest?: () => void
   onCompletion?: (completion: OpenAI.ChatCompletion) => void
   requestTimeoutMs?: number
 }
@@ -127,10 +131,13 @@ export function createOpenAiTranslator(
 
   async function translateBatch(
     locale: OutputLocale,
-    items: TranslationItem[]
+    items: TranslationItem[],
+    splitDepth: number
   ): Promise<Record<string, string>> {
+    if (items.length === 0) return {}
     let lastError = new Error('translation request was not attempted')
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
+      options.onRequest?.()
       const completion = await client.chat.completions.create({
         model: options.model,
         reasoning_effort: options.reasoningEffort,
@@ -148,12 +155,26 @@ export function createOpenAiTranslator(
       if (choice?.finish_reason === 'length') {
         if (items.length === 1) {
           throw new Error(
-            'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
+            `OpenAI response was truncated (finish_reason "length") for a single string (${items[0].context}), which cannot be split further`
+          )
+        }
+        if (splitDepth >= options.maxTruncationSplitDepth) {
+          throw new Error(
+            `OpenAI response was truncated (finish_reason "length") and ${items.length} strings still do not fit at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}; lower maxItemsPerRequest or maxSourceCharsPerRequest`
           )
         }
         const splitIndex = Math.ceil(items.length / 2)
-        const first = await translateBatch(locale, items.slice(0, splitIndex))
-        const second = await translateBatch(locale, items.slice(splitIndex))
+        const nextDepth = splitDepth + 1
+        const first = await translateBatch(
+          locale,
+          items.slice(0, splitIndex),
+          nextDepth
+        )
+        const second = await translateBatch(
+          locale,
+          items.slice(splitIndex),
+          nextDepth
+        )
         return { ...first, ...second }
       }
       const content = choice?.message.content
@@ -170,7 +191,7 @@ export function createOpenAiTranslator(
     throw lastError
   }
 
-  return translateBatch
+  return (locale, items) => translateBatch(locale, items, 0)
 }
 
 export async function translateLocaleItems(
