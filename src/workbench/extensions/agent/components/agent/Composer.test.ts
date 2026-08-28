@@ -27,7 +27,7 @@ describe('Composer', () => {
     setActivePinia(createPinia())
   })
 
-  it('shows the interactive empty-composer hint', () => {
+  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
     mount()
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
@@ -51,6 +51,16 @@ describe('Composer', () => {
     expect(
       screen.queryByRole('button', { name: 'add nodes from graph,' })
     ).toBeNull()
+  })
+
+  it('T-20 / PM-673 / FE-1329 caps long prompts and scrolls inside the composer', () => {
+    mount()
+
+    expect(screen.getByRole('textbox')).toHaveClass(
+      'max-h-100',
+      'overflow-y-auto',
+      'resize-none'
+    )
   })
 
   it('enters graph selection mode from the empty-composer hint', async () => {

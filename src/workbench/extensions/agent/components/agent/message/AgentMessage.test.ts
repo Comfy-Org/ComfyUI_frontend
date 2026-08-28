@@ -32,6 +32,46 @@ function thinkingMessage(thinkingText?: string): AssistantMessage {
 }
 
 describe('AgentMessage thinking narration', () => {
+  it('T-10 / PM-656 / FE-1328 renders complete asset URLs as hyperlinks', () => {
+    const message = createAssistantMessage('msg-link' as TurnId)
+    message.streaming = false
+    message.parts = [
+      {
+        type: 'text',
+        text: '[Download result](https://assets.example/result.png)',
+        state: 'done'
+      }
+    ]
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('link', { name: 'Download result' })
+    ).toHaveAttribute('href', 'https://assets.example/result.png')
+  })
+
+  it('T-32 / PM-663 / FE-1292 keeps response actions aligned and Markdown inside the copy menu', async () => {
+    const message = createAssistantMessage('msg-actions' as TurnId)
+    message.streaming = false
+    message.parts = [{ type: 'text', text: '**Ready**', state: 'done' }]
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('button', { name: 'Helpful' })).toHaveClass(
+      'text-agent-fg-muted'
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: /copy as markdown/i })
+    )
+    expect(
+      await screen.findByRole('menuitem', { name: /copy as markdown/i })
+    ).toBeVisible()
+  })
+
   it('shows the live narration text while thinking', () => {
     render(AgentMessage, {
       props: { message: thinkingMessage('Reading the graph') },

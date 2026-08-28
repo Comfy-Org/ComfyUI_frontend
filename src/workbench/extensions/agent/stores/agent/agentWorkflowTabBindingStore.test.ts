@@ -35,7 +35,7 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(store.tabPathFor('wf-2')).toBe('workflows/a.json')
   })
 
-  it('bindings survive a reload', async () => {
+  it('T-18 / PM-664 / FE-1290 keeps sidebar context bound to the active workflow across reload', async () => {
     useAgentWorkflowTabBindingStore().bind('wf-1', 'workflows/a.json')
     await nextTick()
 
