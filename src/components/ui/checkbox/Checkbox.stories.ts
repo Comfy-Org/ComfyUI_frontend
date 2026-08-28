@@ -10,7 +10,7 @@ const meta = {
   render: (args) => ({
     components: { Checkbox },
     setup() {
-      return { args, checked: ref(false) }
+      return { args, checked: ref(args.defaultValue ?? false) }
     },
     template: '<Checkbox v-model="checked" v-bind="args" />'
   })
