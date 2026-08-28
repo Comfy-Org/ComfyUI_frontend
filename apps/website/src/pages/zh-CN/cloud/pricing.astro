@@ -44,6 +44,7 @@ const productId = jsonLdId(url, 'product')
     }),
   ]}
 >
+  <CloudPricingSection locale="zh-CN" client:load />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
   {
     minimaxLicensePage.rateCard && (
@@ -53,7 +54,6 @@ const productId = jsonLdId(url, 'product')
       />
     )
   }
-  <CloudPricingSection locale="zh-CN" client:load />
   <WhatsIncludedSection locale="zh-CN" />
   <PricingFaq locale="zh-CN" />
 </BaseLayout>
