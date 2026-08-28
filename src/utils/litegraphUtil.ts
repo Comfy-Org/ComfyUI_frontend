@@ -49,6 +49,9 @@ export async function createNode(
   if (!name) {
     return null
   }
+  if (isSelectOnly(canvas)) {
+    return null
+  }
 
   const {
     graph,
@@ -132,6 +135,47 @@ export function addToComboValues(widget: IComboWidget, value: string) {
     widget.options.values.push(value)
   }
 }
+
+/**
+ * True while the canvas is a picking surface rather than an editable one
+ * (the `selectOnly` interaction mode).
+ *
+ * Guard every editing operation with this. A new way to edit the canvas has
+ * to opt in: add the guard, or the operation will run during picking.
+ *
+ * The guarded surface has four layers, each at its own choke point:
+ * - command/composable call sites use this helper first-statement;
+ * - classic pointer gestures are gated inside the library itself
+ *   (LGraphCanvas's own `selectOnly` checks in its pointer paths);
+ * - undo/redo is gated at the TRACKER level (ChangeTracker.undo()/redo() -
+ *   not the command registry, which keyboard shortcuts bypass);
+ * - node creation from NODE DEFINITIONS is gated at useLitegraphService's
+ *   addNodeOnGraph (search popover, libraries, bookmarks, ghost-drops, job
+ *   menu), with four surface guards closing the non-definition mutation
+ *   paths: the document file-drop handler (app.ts), the sidebar drop
+ *   handler (useCanvasDrop), workflow insertion
+ *   (workflowService.insertWorkflow), and in-place node replacement
+ *   (useNodeReplacement's replaceNodesInPlace, reached from the missing
+ *   nodes Errors panel).
+ *
+ * Deliberately unguarded: workflow-lifecycle commands (new/open/load-default)
+ * SWAP the workflow rather than edit the picked canvas - switching workflows
+ * exits the picking mode, and the mode's owner handles that exit. Clear is
+ * guarded despite the resemblance: it destroys the current canvas in place,
+ * which is an edit, not a swap.
+ *
+ * KNOWN UNGUARDED (deferred to the mode-owner slice, which arms the mode
+ * only where these cannot fire): the Vue-nodes pointer paths - BOTH
+ * click-replace paths (handleNodeSelect and
+ * toggleNodeSelectionAfterPointerUp in useNodeEventHandlers), the drag path
+ * in useNodePointerInteractions, useSlotLinkInteraction,
+ * useVueNodeResizeTracking - plus widgetInputs' programmatic widget
+ * conversion. Arming picking under Vue nodes requires guarding them
+ * first.
+ */
+export const isSelectOnly = (
+  canvas: LGraphCanvas | null | undefined
+): boolean => canvas?.selectOnly === true
 
 export const isLGraphNode = (item: unknown): item is LGraphNode => {
   return item instanceof LGraphNode

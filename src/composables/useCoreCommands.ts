@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -60,6 +61,7 @@ import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
 } from '@/utils/graphTraversalUtil'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   ManagerUIState,
@@ -130,6 +132,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
   ) => {
+    if (isSelectOnly(app.canvas)) return
     const selectedNodes = getSelectedNodes()
     if (selectedNodes.length === 0) return
 
@@ -290,6 +293,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Clear Workflow',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         const settingStore = useSettingStore()
         if (
           !settingStore.get('Comfy.ConfirmClear') ||
@@ -428,7 +432,9 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        app.canvas.fitViewToSelectionAnimated()
+        app.canvas.fitViewToSelectionAnimated({
+          viewport: visibleCanvasViewport(app.canvas)
+        })
       }
     },
     {
@@ -615,6 +621,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.7',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         const { canvas } = app
         if (!canvas.selectedItems?.size) {
           toastStore.add({
@@ -661,6 +668,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         toggleSelectedNodesMode(LGraphEventMode.NEVER)
         app.canvas.setDirty(true, true)
       }
@@ -672,6 +680,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
         app.canvas.setDirty(true, true)
       }
@@ -683,6 +692,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         getSelectedNodes().forEach((node) => {
           node.pin(!node.pinned)
         })
@@ -695,6 +705,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Pin/Unpin Selected Items',
       versionAdded: '1.3.33',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         for (const item of app.canvas.selectedItems) {
           if (item instanceof LGraphNode || item instanceof LGraphGroup) {
             item.pin(!item.pinned)
@@ -709,6 +720,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Resize Selected Nodes',
       versionAdded: '',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         getSelectedNodes().forEach((node) => {
           const optimalSize = node.computeSize()
           node.setSize([optimalSize[0], optimalSize[1]])
@@ -722,6 +734,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Collapse/Expand Selected Nodes',
       versionAdded: '1.3.11',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         getSelectedNodes().forEach((node) => {
           node.collapse()
         })
@@ -780,6 +793,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Fit Group To Contents',
       versionAdded: '1.4.9',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         for (const group of app.canvas.selectedItems) {
           if (group instanceof LGraphGroup) {
             group.recomputeInsideNodes()
@@ -843,6 +857,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Toggle Search Box',
       versionAdded: '1.5.7',
       function: () => {
+        // Node creation is gated during picking; opening the search box
+        // would dead-end.
+        if (isSelectOnly(app.canvas)) return
         useSearchBoxStore().toggleVisible()
       }
     },
@@ -919,6 +936,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--clipboard-paste]',
       label: 'Paste',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         app.canvas.pasteFromClipboard()
       }
     },
@@ -927,6 +945,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--clipboard-paste]',
       label: () => t('Paste with Connect'),
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         app.canvas.pasteFromClipboard({ connectInputs: true })
       }
     },
@@ -944,6 +963,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Delete Selected Items',
       versionAdded: '1.10.5',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         if (app.canvas.selectedItems.size === 0) {
           app.canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })
@@ -1055,6 +1075,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.20.1',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         const canvas = canvasStore.getCanvas()
         const graph = canvas.subgraph ?? canvas.graph
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
@@ -1080,6 +1101,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Unpack the selected Subgraph',
       versionAdded: '1.26.3',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         const { unpackSubgraph } = useSubgraphOperations()
         unpackSubgraph()
       }
@@ -1098,7 +1120,10 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--arrow-left-right]',
       label: 'Toggle promotion of hovered widget',
       versionAdded: '1.30.1',
-      function: tryToggleWidgetPromotion
+      function: () => {
+        if (isSelectOnly(app.canvas)) return
+        tryToggleWidgetPromotion()
+      }
     },
     {
       id: 'Comfy.OpenManagerDialog',
@@ -1162,6 +1187,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Set Subgraph Description',
       versionAdded: '1.39.7',
       function: async (metadata?: Record<string, unknown>) => {
+        if (isSelectOnly(app.canvas)) return
         const canvas = canvasStore.getCanvas()
         const subgraph = canvas.subgraph
         if (!subgraph) return
@@ -1194,6 +1220,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Set Subgraph Search Aliases',
       versionAdded: '1.39.7',
       function: async (metadata?: Record<string, unknown>) => {
+        if (isSelectOnly(app.canvas)) return
         const canvas = canvasStore.getCanvas()
         const subgraph = canvas.subgraph
         if (!subgraph) return

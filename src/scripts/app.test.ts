@@ -63,6 +63,7 @@ const {
   mockToastStore,
   mockExtensionService,
   mockNodeOutputStore,
+  mockSubgraphNavigationStore,
   mockTeamWorkspaceStore,
   mockWorkspaceWorkflow,
   mockRefreshMissingModelPipeline,
@@ -97,6 +98,10 @@ const {
     restorePreviewsForWorkflow: vi.fn(),
     discardPreviewsForWorkflow: vi.fn()
   },
+  mockSubgraphNavigationStore: {
+    saveCurrentViewport: vi.fn(),
+    updateHash: vi.fn()
+  },
   mockTeamWorkspaceStore: {
     activeWorkspaceId: 'workspace-a' as string | null,
     workspaceTransitionGeneration: 0,
@@ -117,7 +122,8 @@ const {
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utils/litegraphUtil')>()),
   createNode: vi.fn(),
   isImageNode: vi.fn(),
   isVideoNode: vi.fn(),
@@ -189,10 +195,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 }))
 
 vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: vi.fn(() => ({
-    saveCurrentViewport: vi.fn(),
-    updateHash: vi.fn()
-  }))
+  useSubgraphNavigationStore: vi.fn(() => mockSubgraphNavigationStore)
 }))
 
 vi.mock('@/stores/workspaceStore', () => ({
@@ -312,6 +315,123 @@ describe('ComfyApp', () => {
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
+  })
+
+  describe('loadGraphData', () => {
+    it('forwards clean and navigation intent to workflow navigation', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+        workflowNavigationId: 42
+      })
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
+      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        42
+      )
+    })
+
+    it('suppresses the workflow reset for a default clean load', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData())
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(true)
+      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        undefined
+      )
+    })
+
+    it('reports the load outcome explicitly: true on success', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await expect(app.loadGraphData(createWorkflowGraphData())).resolves.toBe(
+        true
+      )
+    })
+
+    it('resolves false, not rejects, when graph configure fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(graph, 'configure').mockImplementation(() => {
+        throw new Error('bad workflow json')
+      })
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          workflowNavigationId: 7
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      // The finally still repairs the URL even on the handled-failure path.
+      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        7
+      )
+    })
+
+    it('never suppresses the workflow reset for an API JSON import', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadApiJson({}, 'empty.json').catch(() => undefined)
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
+    })
+
+    it('notifies extensions once on each side of a graph load, in order', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false)
+
+      const loadHookCalls =
+        mockExtensionService.invokeExtensionsAsync.mock.calls
+          .map(([hook]) => hook)
+          .filter((hook) =>
+            [
+              'beforeLoadGraph',
+              'beforeConfigureGraph',
+              'afterConfigureGraph',
+              'afterLoadGraph'
+            ].includes(hook)
+          )
+      expect(loadHookCalls).toEqual([
+        'beforeLoadGraph',
+        'beforeConfigureGraph',
+        'afterConfigureGraph',
+        'afterLoadGraph'
+      ])
+    })
+
+    it('skips both after-hooks when graph configure fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(graph, 'configure').mockImplementation(() => {
+        throw new Error('bad workflow json')
+      })
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false)
+      ).resolves.toBe(false)
+
+      const invokedHooks =
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      expect(invokedHooks).toContain('beforeLoadGraph')
+      expect(invokedHooks).not.toContain('afterConfigureGraph')
+      expect(invokedHooks).not.toContain('afterLoadGraph')
+    })
   })
 
   describe('nodeOutputs', () => {
@@ -2023,7 +2143,7 @@ describe('ComfyApp', () => {
       })
       const loadGraphData = vi
         .spyOn(app, 'loadGraphData')
-        .mockResolvedValue(undefined)
+        .mockResolvedValue(true)
 
       const meshFile = createTestFile('model.glb', 'model/gltf-binary')
 
@@ -2227,6 +2347,7 @@ describe('ComfyApp', () => {
 
       expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
       expect(
         mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
       ).toBeLessThan(vi.mocked(mockCanvas.setGraph).mock.invocationCallOrder[0])
@@ -2239,6 +2360,25 @@ describe('ComfyApp', () => {
   })
 
   describe('drop handler', () => {
+    it('ignores dropped files while the canvas is picking-only', async () => {
+      const adjustMouseEvent = vi.fn()
+      app.canvas = {
+        ...mockCanvas,
+        selectOnly: true,
+        adjustMouseEvent
+      } as unknown as LGraphCanvas
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      const event = new DragEvent('drop', { cancelable: true })
+      document.dispatchEvent(event)
+      await Promise.resolve()
+
+      // The guard returns after preventDefault: nothing reads the payload.
+      expect(event.defaultPrevented).toBe(true)
+      expect(adjustMouseEvent).not.toHaveBeenCalled()
+      expect(vi.mocked(extractFilesFromDragEvent)).not.toHaveBeenCalled()
+    })
+
     it('syncs the drop position and waits for the replacement workflow before restoring warnings', async () => {
       const graphMouse: [number, number] = [-999, -999]
       const adjustMouseEvent = vi.fn((e: DragEvent) => {
