@@ -187,6 +187,54 @@ describe('LitegraphMutator', () => {
     expect(node.widgets.some((w) => w.name === 'nope')).toBe(false)
   })
 
+  it('clears a widget back to its node-type default without touching the graph', () => {
+    const { mutator, graph, created } = makeMutator()
+    mutator.applyBatch(
+      batch({
+        kind: 'add_node',
+        node: {
+          id: toNodeId('3'),
+          type: 'KSampler',
+          pos: [0, 0],
+          widgets: { seed: 42 }
+        }
+      })
+    )
+    const node = graph.getNodeById(toNodeId('3'))!
+    expect(node.widgets.find((w) => w.name === 'seed')?.value).toBe(42)
+    const nodesBefore = graph.nodes.size
+
+    mutator.applyBatch(
+      batch({ kind: 'clear_widget', id: toNodeId('3'), name: 'seed' })
+    )
+
+    // The default is read off a transient node of the same type; the
+    // transient is never added to the graph.
+    expect(node.widgets.find((w) => w.name === 'seed')?.value).toBeUndefined()
+    expect(graph.nodes.size).toBe(nodesBefore)
+    expect(created).toHaveLength(2)
+  })
+
+  it('ignores a clear for an unknown widget or node', () => {
+    const { mutator, graph, created } = makeMutator()
+    mutator.applyBatch(
+      batch({
+        kind: 'add_node',
+        node: { id: toNodeId('3'), type: 'KSampler', pos: [0, 0], widgets: {} }
+      })
+    )
+
+    mutator.applyBatch(
+      batch(
+        { kind: 'clear_widget', id: toNodeId('3'), name: 'nope' },
+        { kind: 'clear_widget', id: toNodeId('9'), name: 'seed' }
+      )
+    )
+
+    expect(graph.nodes.size).toBe(1)
+    expect(created).toHaveLength(1)
+  })
+
   it('connects and disconnects between resolved nodes', () => {
     const { mutator, graph } = makeMutator()
     const origin = new FakeNode('LoadVideo')
