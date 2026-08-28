@@ -92,8 +92,9 @@ async function uploadFile(
     if (error instanceof DOMException && error.name === 'TimeoutError') {
       useToastStore().addAlert(t('g.uploadTimedOut'))
     } else {
-      // @ts-expect-error fixme ts strict error
-      useToastStore().addAlert(error)
+      useToastStore().addAlert(
+        error instanceof Error ? error.message : String(error)
+      )
     }
     return false
   }
