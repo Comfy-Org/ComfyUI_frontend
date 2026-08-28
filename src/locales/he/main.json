@@ -978,23 +978,6 @@
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
   },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "סגירה"
-      },
-      "message": "סופק מזהה תיבת דו־שיח לא תקין.",
-      "title": "תיבת דו-שיח לא חוקית"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "למידע נוסף",
-        "Reinstall": "התקן מחדש"
-      },
-      "message": "מצטערים, אין אפשרות להפעיל את ComfyUI משום שחלק מהחבילות המותקנות אינן תואמות.\n\nלחץ על \"התקן מחדש\" כדי לשחזר את ComfyUI ולחזור לפעילות.\n\nשים לב: אם הוספת צמתים מותאמים אישית, יהיה עליך להתקין אותם מחדש לאחר תהליך זה.",
-      "title": "להתקין מחדש את ComfyUI (התחלה חדשה)?"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "אפליקציית ComfyUI במחשב ממתינה לכניסה עם החשבון שלך. המשך רק אם התחלת כעת את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
     "confirmSummary": "לאשר כניסה משולחן העבודה?",
