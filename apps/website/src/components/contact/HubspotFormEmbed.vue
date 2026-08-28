@@ -85,7 +85,9 @@ const hubspotFormStyles: Record<`--${string}`, string> = {
 // HubSpot signals a successful submission differently per form version: v3
 // embeds postMessage from their iframe, v4 dispatches a window event. Line 20
 // pins this portal to the v4 loader, so v3 is only a hedge for a form that was
-// never migrated; both are observed and collapsed into a single event.
+// never migrated, and only for the iframed flavour of it — the origin check
+// below cannot accept a legacy form rendered inline, because a same-origin
+// message is indistinguishable from a forged one.
 const HUBSPOT_V4_SUBMISSION_EVENT = 'hs-form-event:on-submission:success'
 
 // The form guid is public (it ships in the markup below), so payload shape
@@ -169,7 +171,8 @@ function captureSubmission(
 ) {
   if (submittedFormId === undefined) {
     console.warn(
-      'HubSpot reported a submission with no form id; not recording it'
+      'Ignoring a contact form submission that named no form. A real HubSpot ' +
+        'submission always identifies its form, so this came from something else.'
     )
     return
   }
