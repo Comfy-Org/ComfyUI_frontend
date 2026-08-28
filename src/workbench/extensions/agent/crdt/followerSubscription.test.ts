@@ -223,8 +223,12 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
   it('replaces the follower doc and resubscribes with an empty state vector', () => {
     const { transport, bridge, projected } = wire()
     const resets: unknown[] = []
+    let followerSeenDuringReset: unknown = null
     bridge.addEventListener('doc_reset', (event) => {
-      if (event instanceof CustomEvent) resets.push(event.detail)
+      if (event instanceof CustomEvent) {
+        resets.push(event.detail)
+        followerSeenDuringReset = bridge.follower
+      }
     })
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -239,6 +243,7 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
     expect(resets).toEqual([{ workflowId: WORKFLOW_ID, seq: 43 }])
+    expect(followerSeenDuringReset).toBe(oldDoc)
 
     // The resubscribe carries the FRESH doc's state vector — the empty one —
     // so the server's ordinary catch-up path returns the full folded state.
@@ -328,7 +333,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
-  it('does not apply the gapped frame — the dropped one may have been a doc_reset — and resubscribes', () => {
+  it('withholds the gapped frame, retains the exact doc, and replays from its state vector', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -341,34 +346,40 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
 
     transport.deliver(
       'doc_update',
-      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+    const retained = bridge.follower
+    const retainedVector = encodeBase64(retained.stateVector())
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 4)
     )
 
-    expect(projected).toHaveLength(0)
-    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(projected).toHaveLength(1)
+    expect(bridge.follower).toBe(retained)
+    expect(bridge.follower.updatesApplied).toBe(1)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
 
-    // The dropped frame may have BEEN a doc_reset, so the doc is discarded
-    // and the resubscribe carries the EMPTY vector - a state-vector catch-up
-    // against a re-minted doc would fold the new lineage into the old one.
+    // ADR-0024: an ordinary gap is same-lineage state-vector replay. Only a
+    // separately delivered doc_reset may replace the document.
     const gapSubscribes = transport.framesOfType('doc_subscribe') as {
       data: { state_vector_b64: string }
     }[]
-    expect(gapSubscribes[1].data.state_vector_b64).toBe(
-      encodeBase64(Y.encodeStateVector(new Y.Doc()))
-    )
+    expect(gapSubscribes[1].data.state_vector_b64).toBe(retainedVector)
 
     // The resubscribe re-baselined: the catch-up frame lands whatever its seq.
     transport.deliver(
       'doc_update',
-      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 4)
     )
-    expect(projected).toHaveLength(1)
+    expect(projected).toHaveLength(2)
+    expect(bridge.follower).toBe(retained)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
   })
 
-  it('a duplicate or stale seq is still applied and provokes no resubscribe', () => {
+  it('ignores a duplicate or stale seq and provokes no resubscribe', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -382,7 +393,8 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
     )
 
-    expect(projected).toHaveLength(2)
+    expect(projected).toHaveLength(1)
+    expect(bridge.follower.updatesApplied).toBe(1)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 

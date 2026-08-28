@@ -15,6 +15,7 @@ import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { isFloatingTopology } from '@/types/linkTopology'
+import { isRemoteMutationContext } from '@/types/graphMutationContext'
 import { parseWidgetId } from '@/types/widgetId'
 import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
 
@@ -53,7 +54,7 @@ export interface MintPortWiringDeps {
 
 export interface MintPortWiring {
   session: MintSession
-  /** Hand to {@link LitegraphMutator}'s `runRemoteScope` dep verbatim. */
+  /** Legacy compatibility scope; new remote store calls carry their context. */
   runRemoteScope(apply: () => void): void
   /** The layout port's intentional-clear window (human clear paths only). */
   runIntentionalClear<T>(fn: () => T): T
@@ -172,6 +173,9 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const widgetStore = useWidgetValueStore()
 
   const detachLinkActions = linkStore.$onAction(({ name, args, after }) => {
+    // The remote origin travels on the store call itself. Do not rely on the
+    // old ambient MintSession scope: nested legacy setters can overwrite it.
+    if (isRemoteMutationContext(args.at(-1))) return
     if (name === 'registerLink' || name === 'replaceLink') {
       const scope = args[0]
       after((placed) => {
@@ -191,6 +195,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   const detachWidgetActions = widgetStore.$onAction(({ name, args, after }) => {
     if (name !== 'setValue') return
+    if (isRemoteMutationContext(args[2])) return
     const widgetId = args[0] as WidgetId
     const old = widgetStore.getWidget(widgetId)?.value
     after((applied) => {

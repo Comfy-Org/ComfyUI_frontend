@@ -27,10 +27,9 @@ function trySend(send: () => boolean): boolean {
 /**
  * Bridges server doc frames to the follower's semantic {@link FollowerDoc} and
  * re-dispatches them. It does NOT touch the layout store: the semantic doc is
- * projected into the canvas by `SemanticProjector` (ADR-009). Applying the raw
- * semantic update into `layoutStore` was the original render bug — both docs
- * expose a root map named `nodes`, so semantic entries corrupted the layout doc
- * and no node ever rendered.
+ * applied to the domain stores by the ECS follower adapter. It never merges the
+ * semantic update into layoutStore: semantic and layout state remain separate
+ * Y.Docs.
  *
  * Subscription is modelled as INTENT reconciled against transport REALITY, and
  * teardown is failure-tolerant; see the two id fields and {@link destroy}.
@@ -151,7 +150,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * Release everything this bridge owns. Teardown is failure-tolerant: the
    * unsubscribe is best-effort and can never prevent the listener detach or the
    * Y.Doc destroy, because a bridge that survives its composable keeps applying
-   * remote updates into a projector still wired to the live canvas.
+   * remote updates through an adapter still wired to the live stores.
    */
   destroy(): void {
     try {
@@ -172,15 +171,14 @@ export class LayoutFollowerBridge extends EventTarget {
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
 
-    // Seq is the contract's gap detector (crdt.go): the pub/sub relay is
-    // best-effort, so a jump means a frame was dropped — possibly a
-    // `doc_reset`, in which case these bytes belong to a NEW lineage. The
-    // frame is NOT applied, and because lineage certainty is gone the doc is
-    // dropped wholesale before resubscribing (missed-reset recovery = discard
-    // and resubscribe empty): a state-vector catch-up against a re-minted doc
-    // would FOLD the new lineage into the old one and duplicate the canvas.
+    // A stale/duplicate frame cannot advance the replica. Ignoring it also
+    // prevents a replayed Yjs frame from spuriously re-running ECS effects.
+    if (this.lastSeq !== null && update.seq <= this.lastSeq) return
+
+    // Seq is only a gap detector. A jump withholds the uncertain frame and
+    // asks the host for a same-lineage state-vector delta using this EXACT
+    // follower doc. Only an explicit doc_reset may replace it (ADR-0024).
     if (this.lastSeq !== null && update.seq > this.lastSeq + 1) {
-      this.dropDocForNewLineage()
       this.resubscribe()
       return
     }
@@ -210,27 +208,23 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   /**
-   * Lineage break (`doc_reset`): the host re-minted the document, so nothing
-   * already held composes with what comes next. Resync is a FOLD — folding a
-   * re-minted lineage into the old doc duplicates the canvas — so the doc is
-   * dropped wholesale and the fresh state is pulled through the ordinary
-   * subscribe catch-up path: the recreated doc's state vector is empty, so the
-   * resubscribe asks for the full folded state. The follower still never
-   * writes (KA-6); a reset emits nothing but the resubscribe.
+   * Lineage break (`doc_reset`): dispatch while the old doc is still readable,
+   * then replace it exactly once and pull the new lineage from an empty vector.
+   * `follower_replaced` lets consumers rebind Yjs observers after replacement.
    */
   private readonly onDocReset: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
     this.resubscribe()
-    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+    this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 
   /**
-   * Drop the doc wholesale so the next subscribe carries an EMPTY state
-   * vector and pulls the full folded state. Shared by the explicit
-   * `doc_reset` and the seq-gap path, whose dropped frame may have BEEN one.
+   * Replace the doc after an explicit lineage reset so the next subscribe
+   * carries an empty state vector and pulls the new folded state.
    */
   private dropDocForNewLineage(): void {
     this.followerDoc.destroy()
