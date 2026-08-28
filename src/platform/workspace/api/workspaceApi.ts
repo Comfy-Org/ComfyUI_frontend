@@ -108,8 +108,13 @@ export interface PreviewSubscribeOptions {
 
 /**
  * `checkout_attempt_id` is the client-minted key that joins an abandoned
- * attempt's frontend events to its billing op. It is not yet in the generated
- * request schemas; drop these once `@comfyorg/ingest-types` ships it.
+ * attempt's frontend events to its billing op. It is a wire field, not an
+ * FE-only extension, so this shim is a stopgap and not the intersection
+ * exemption in `docs/guidance/typescript.md`.
+ *
+ * Comfy-Org/cloud#7644 adds it to `services/ingest/openapi.yaml`. This PR stays
+ * in draft until that merges and `@comfyorg/ingest-types` regenerates; drop
+ * this type then and let the generated requests carry the field.
  */
 type WithCheckoutAttemptId<T> = T & { checkout_attempt_id?: string }
 

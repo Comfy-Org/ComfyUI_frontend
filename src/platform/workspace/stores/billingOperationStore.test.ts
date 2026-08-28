@@ -1673,12 +1673,15 @@ describe('billingOperationStore', () => {
       })
 
       // A `needs_payment_method` response hands its collection page to
-      // startOperation as the action url. That is not a 3DS challenge, and
-      // counting it as one would also latch out the real presentation below.
+      // startOperation as the action url AND keeps echoing it on every poll for
+      // as long as the customer is on the Stripe page. Neither is a 3DS
+      // challenge, and counting either would also latch out the real
+      // presentation that follows.
       it('does not open the funnel for a payment-method collection page', async () => {
         vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
           id: 'op-pm',
           status: 'pending',
+          action_url: 'https://billing.stripe.com/collect-payment-method',
           started_at: new Date().toISOString()
         })
         const store = useBillingOperationStore()
@@ -1689,6 +1692,7 @@ describe('billingOperationStore', () => {
           'https://billing.stripe.com/collect-payment-method'
         )
         await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(31_000)
 
         expect(challengeEvents('challenge_presented')).toEqual([])
 
@@ -1701,7 +1705,44 @@ describe('billingOperationStore', () => {
         })
         await vi.advanceTimersByTimeAsync(31_000)
 
-        expect(challengeEvents('challenge_presented')).toHaveLength(1)
+        expect(challengeEvents('challenge_presented')).toEqual([
+          expect.objectContaining({
+            billing_op_id: 'op-pm',
+            checkout_attempt_id: 'attempt-1'
+          })
+        ])
+        expect(store.getOperation('op-pm')?.authenticationState).toBe(
+          'requires_action'
+        )
+      })
+
+      // `updateAuthenticationState` is skipped entirely in the ungated arm, so
+      // an `action_url` call site would give that arm a looser definition of
+      // `challenge_presented` than the gated one — in exactly the dimension the
+      // rollout dashboard splits on. Reporting nothing there is the intent.
+      it('emits no presentation in the ungated arm for a hosted action url', async () => {
+        mockFeatureFlags.embeddedCheckoutEnabled = false
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-ungated',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'pi_secret_ungated',
+          action_url: 'https://invoice.stripe.com/i/auth',
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-ungated', 'subscription', {
+          suppressProcessingToast: true,
+          checkoutAttemptId: 'attempt-1'
+        })
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(31_000)
+
+        expect(store.getOperation('op-ungated')?.actionUrl).toBe(
+          'https://invoice.stripe.com/i/auth'
+        )
+        expect(challengeEvents('challenge_presented')).toEqual([])
       })
 
       it('reports a completed challenge as succeeded', async () => {
@@ -1776,6 +1817,39 @@ describe('billingOperationStore', () => {
             reason: 'intent_status_unavailable'
           })
         ])
+      })
+
+      // `canRetryAuthentication` is also true for a plain `failed_retryable`
+      // decline, so the retry button reaches the same Stripe call without any
+      // challenge ever having been presented. Reporting its return would put
+      // the operation in the funnel's numerator and not its denominator.
+      it('reports no return for a decline retry that presented no challenge', async () => {
+        mockHandleNextAction.mockResolvedValue({
+          paymentIntent: { status: 'succeeded' }
+        })
+        vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+          id: 'op-declined',
+          status: 'pending',
+          authentication_state: 'failed_retryable',
+          decline_reason: 'card_declined',
+          payment_intent_client_secret: 'pi_secret_declined',
+          started_at: new Date().toISOString()
+        })
+
+        const store = useBillingOperationStore()
+        void store.startOperation('op-declined', 'subscription', {
+          suppressProcessingToast: true,
+          checkoutAttemptId: 'attempt-1'
+        })
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(challengeEvents('challenge_presented')).toEqual([])
+        await expect(
+          store.retryPaymentAuthentication('op-declined')
+        ).resolves.toBe(true)
+
+        expect(mockHandleNextAction).toHaveBeenCalledOnce()
+        expect(challengeEvents('challenge_returned')).toEqual([])
       })
 
       it('reports the ungated arm as unknown when no flag map has arrived', async () => {
