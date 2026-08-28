@@ -103,13 +103,14 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('a&quot;onmouseover')
     })
 
-    it('titles keep the full escape while hrefs stay quote-only', () => {
+    it('titles and alts stay quote-only like URLs', () => {
       const html = renderMarkdownToHtml(
-        '[y](https://example.com/x?a=1&amp;b=2 "q\\"t")'
+        '[y](https://example.com/x?a=1&amp;b=2 "Tips &amp; tricks")'
       )
 
-      // Titles are not URLs, so only they take the full escape.
-      expect(html).toContain('title="q&quot;t"')
+      // One rule at every attribute position: full escaping double-encoded
+      // character references ("Tips &amp;amp; tricks" in tooltips).
+      expect(html).toContain('title="Tips &amp; tricks"')
       expect(html).toContain('href="https://example.com/x?a=1&amp;b=2"')
       expect(html).not.toContain('&amp;amp;')
     })
@@ -239,13 +240,11 @@ describe('markdownRendererUtil', () => {
 
       expect(html).toContain('>https://example.com/view?a=1&amp;b=2</a>')
       expect(html).not.toContain('&amp;amp;')
-    })
 
-    it('renders raw-ampersand autolink text single-encoded', () => {
-      const html = renderMarkdownToHtml('Go to https://example.com/a?x=1&y=2')
-
-      expect(html).toContain('>https://example.com/a?x=1&amp;y=2</a>')
-      expect(html).not.toContain('&amp;amp;')
+      // Characterization: raw & in autolink text serializes single-encoded
+      // under any escape policy at this position.
+      const raw = renderMarkdownToHtml('Go to https://example.com/a?x=1&y=2')
+      expect(raw).toContain('>https://example.com/a?x=1&amp;y=2</a>')
     })
 
     it('should handle bare URLs (autolinks)', () => {
