@@ -50,37 +50,33 @@ describe('AgentMessage paywall reply', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Usage limit reached')).toBeInTheDocument()
+    expect(screen.getByText('Out of credits')).toBeInTheDocument()
     expect(
       screen.getByText(
-        'You are out of monthly free usage and Comfy Credit balance now. Please top up or subscribe to get additional credits.'
+        'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
       )
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Add credits' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Upgrade subscription' })
+      screen.getByRole('button', { name: 'Upgrade plan' })
     ).toBeInTheDocument()
   })
 
   it('exposes distinct actions for adding credits and upgrading', async () => {
     const user = userEvent.setup()
-    const onAddCredits = vi.fn()
-    const onUpgradeSubscription = vi.fn()
+    const onPaywallAction = vi.fn()
     render(AgentMessage, {
       props: { message: paywallMessage() },
-      attrs: { onAddCredits, onUpgradeSubscription },
+      attrs: { onPaywallAction },
       global: { plugins: [i18n] }
     })
 
     await user.click(screen.getByRole('button', { name: 'Add credits' }))
-    await user.click(
-      screen.getByRole('button', { name: 'Upgrade subscription' })
-    )
+    await user.click(screen.getByRole('button', { name: 'Upgrade plan' }))
 
-    expect(onAddCredits).toHaveBeenCalledOnce()
-    expect(onUpgradeSubscription).toHaveBeenCalledOnce()
+    expect(onPaywallAction.mock.calls).toEqual([['addCredits'], ['upgrade']])
   })
 })
 
