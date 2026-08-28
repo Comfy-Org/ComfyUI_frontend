@@ -136,7 +136,18 @@ export function summarizeOutboundDocFrame(
   return summary
 }
 
+// One follower instance per tab: id arming is graph-scoped, not
+// refcounted, so a second concurrent instance would disarm the first's
+// graph state on its own teardown.
+let followerInstanceMounted = false
+
 export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
+  if (import.meta.env.DEV && followerInstanceMounted) {
+    console.warn(
+      'useAgentCrdtFollower: second concurrent instance; id arming assumes one per tab'
+    )
+  }
+  followerInstanceMounted = true
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -228,6 +239,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
   let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeRetryAttempt = 0
+  // Failsafe for a silent server: the last retry's resubscribe may get NO
+  // answer at all, leaving no refusal to trigger the exhaustion disarm.
+  let subscribeFailsafeTimer: ReturnType<typeof setTimeout> | null = null
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
@@ -260,6 +274,10 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       clearTimeout(subscribeRetryTimer)
       subscribeRetryTimer = null
     }
+    if (subscribeFailsafeTimer !== null) {
+      clearTimeout(subscribeFailsafeTimer)
+      subscribeFailsafeTimer = null
+    }
     subscribeRetryAttempt = 0
   }
 
@@ -284,6 +302,15 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
         workflowId: target
       })
       bridge.resubscribe()
+      if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+        subscribeFailsafeTimer = setTimeout(
+          () => {
+            subscribeFailsafeTimer = null
+            disarmCoordinationFreeIds()
+          },
+          SUBSCRIBE_RETRY_BASE_MS * 2 ** SUBSCRIBE_RETRY_MAX_ATTEMPTS
+        )
+      }
     }, delay)
   }
 
@@ -297,11 +324,14 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
-      armCoordinationFreeIds()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
-      // a remount — persist on ok, not on intent.
-      if (subscribedWorkflowId.value !== null)
+      // a remount — persist on ok, not on intent. The arm applies the same
+      // rule: the bridge re-dispatches a confirm even when the workflow was
+      // just dropped, and a stale confirm must not arm an unbound graph.
+      if (subscribedWorkflowId.value !== null) {
+        armCoordinationFreeIds()
         persistDocId(subscribedWorkflowId.value)
+      }
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
@@ -480,6 +510,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // failure-tolerant by construction now, but the try/finally makes the
     // "client.destroy() always runs" guarantee local and readable.
     try {
+      followerInstanceMounted = false
       disarmCoordinationFreeIds()
       clearSubscribeRetry()
       clearStaleProbe()

@@ -34,6 +34,7 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
+  MINT_ID_MIN,
   createLGraphState,
   mintGroupId,
   mintLinkId,
@@ -643,7 +644,7 @@ export class LGraph
   }
 
   set last_node_id(value) {
-    this.state.lastNodeId = value
+    this.state.lastNodeId = Math.min(value, MINT_ID_MIN - 1)
   }
 
   /** @deprecated See {@link state}.{@link LGraphState.lastLinkId lastLinkId} */
@@ -652,7 +653,7 @@ export class LGraph
   }
 
   set last_link_id(value) {
-    this.state.lastLinkId = toLinkId(value)
+    this.state.lastLinkId = toLinkId(Math.min(value, MINT_ID_MIN - 1))
   }
 
   onNodeAdded?(node: LGraphNode): void
@@ -2828,7 +2829,11 @@ export class LGraph
       } else {
         // New schema - one version so far, no check required.
 
-        // State - use max to prevent ID collisions across root and subgraphs
+        // State - use max to prevent ID collisions across root and subgraphs.
+        // Node/link restores also clamp below the mint floor: a pre-guard
+        // save could have absorbed a minted id into its serialized counters
+        // (subgraph definitions serialize the root state), and restoring it
+        // verbatim would re-poison a fixed build.
         if (data.state) {
           const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
             data.state
@@ -2836,9 +2841,14 @@ export class LGraph
           if (lastGroupId != null)
             state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
           if (lastLinkId != null)
-            state.lastLinkId = toLinkId(Math.max(state.lastLinkId, lastLinkId))
+            state.lastLinkId = toLinkId(
+              Math.min(Math.max(state.lastLinkId, lastLinkId), MINT_ID_MIN - 1)
+            )
           if (lastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
+            state.lastNodeId = Math.min(
+              Math.max(state.lastNodeId, lastNodeId),
+              MINT_ID_MIN - 1
+            )
           if (lastRerouteId != null)
             state.lastRerouteId = toRerouteId(
               Math.max(state.lastRerouteId, lastRerouteId)

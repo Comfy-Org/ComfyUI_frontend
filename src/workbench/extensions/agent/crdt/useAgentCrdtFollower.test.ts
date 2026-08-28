@@ -338,6 +338,47 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a stale confirm for a just-dropped workflow does not arm', async () => {
+    const boundState = appState.app.graph!.state
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    workflowId.value = null
+    await nextTick()
+    // The bridge re-dispatches confirms unconditionally; one in flight for
+    // the dropped workflow must not arm the unbound graph.
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(
+      idAllocationState.setCoordinationFreeIds
+    ).not.toHaveBeenLastCalledWith(boundState, true)
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      false
+    )
+    unmount()
+  })
+
+  it('disarms when the server stays silent after the last retry', () => {
+    vi.useFakeTimers()
+    const boundState = appState.app.graph!.state
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    // The sixth retry has fired its resubscribe; the server never answers,
+    // so no refusal arrives to trigger the exhaustion disarm.
+    idAllocationState.setCoordinationFreeIds.mockClear()
+    vi.advanceTimersByTime(500 * 2 ** 6)
+
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      false
+    )
+    unmount()
+  })
+
   it('disarms when the subscribe retry budget is exhausted', () => {
     vi.useFakeTimers()
     const boundState = appState.app.graph!.state
