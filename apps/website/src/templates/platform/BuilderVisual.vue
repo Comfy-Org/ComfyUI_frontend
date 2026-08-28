@@ -1,10 +1,10 @@
 <template>
   <div
     aria-hidden="true"
-    class="h-full min-h-72 overflow-hidden rounded-3xl bg-primary-comfy-ink"
+    class="aspect-2/1 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink"
   >
     <svg
-      viewBox="0 0 1200 700"
+      viewBox="0 48 1200 604"
       class="size-full"
       preserveAspectRatio="xMidYMid meet"
       xmlns="http://www.w3.org/2000/svg"
@@ -48,109 +48,70 @@
       >
         <path
           class="animate-dash-flow"
-          d="M 168 158 C 300 190, 370 240, 470 292"
+          d="M 168 158 C 300 190, 420 230, 520 276"
         />
         <path
           class="animate-dash-flow"
-          d="M 145 320 C 280 325, 380 330, 470 336"
+          d="M 145 320 C 290 325, 420 320, 520 318"
         />
         <path
           class="animate-dash-flow"
-          d="M 190 500 C 320 505, 430 460, 483 375"
+          d="M 190 500 C 340 505, 455 430, 530 352"
         />
         <path
           class="animate-dash-flow"
-          d="M 722 292 C 830 275, 905 235, 1012 212"
+          d="M 680 276 C 820 255, 905 225, 1012 212"
         />
         <path
           class="animate-dash-flow"
-          d="M 722 350 C 840 375, 910 415, 1012 445"
+          d="M 680 338 C 820 375, 910 415, 1012 445"
         />
       </g>
 
-      <g fill="none" stroke="#5946B7" stroke-width="2">
-        <rect
-          x="-106"
-          y="-106"
-          width="212"
-          height="212"
-          rx="28"
-          transform="translate(600,424) scale(1,0.46) rotate(45)"
-        />
-        <rect
-          x="-132"
-          y="-132"
-          width="264"
-          height="264"
-          rx="34"
-          transform="translate(600,454) scale(1,0.46) rotate(45)"
-        />
-        <rect
-          x="-158"
-          y="-158"
-          width="316"
-          height="316"
-          rx="40"
-          transform="translate(600,488) scale(1,0.46) rotate(45)"
-        />
-      </g>
+      <image
+        href="/assets/platform/builder/base-large.svg"
+        x="419"
+        y="343"
+        width="362"
+        height="192"
+      />
       <image
         href="/assets/platform/builder/cube-large.png"
-        x="470"
-        y="178"
-        width="260"
-        height="308"
+        x="520"
+        y="190"
+        width="160"
+        height="190"
         class="animate-platform-builder-float"
       />
 
-      <g fill="none" stroke="#5946B7" stroke-width="2">
-        <rect
-          x="-39"
-          y="-39"
-          width="78"
-          height="78"
-          rx="14"
-          transform="translate(1050,300) scale(1,0.5) rotate(45)"
-        />
-        <rect
-          x="-50"
-          y="-50"
-          width="100"
-          height="100"
-          rx="18"
-          transform="translate(1050,315) scale(1,0.5) rotate(45)"
-        />
-        <rect
-          x="-39"
-          y="-39"
-          width="78"
-          height="78"
-          rx="14"
-          transform="translate(1050,535) scale(1,0.5) rotate(45)"
-        />
-        <rect
-          x="-50"
-          y="-50"
-          width="100"
-          height="100"
-          rx="18"
-          transform="translate(1050,550) scale(1,0.5) rotate(45)"
-        />
-      </g>
+      <image
+        href="/assets/platform/builder/base-small.svg"
+        x="979"
+        y="273"
+        width="142"
+        height="77"
+      />
+      <image
+        href="/assets/platform/builder/base-small.svg"
+        x="979"
+        y="508"
+        width="142"
+        height="77"
+      />
       <image
         href="/assets/platform/builder/cube-small.png"
-        x="1008"
-        y="191"
-        width="84"
-        height="91"
+        x="1018"
+        y="202"
+        width="64"
+        height="69"
         class="animate-platform-builder-float-slow"
       />
       <image
         href="/assets/platform/builder/cube-small.png"
-        x="1008"
-        y="426"
-        width="84"
-        height="91"
+        x="1018"
+        y="437"
+        width="64"
+        height="69"
         class="animate-platform-builder-float-delayed"
       />
 
