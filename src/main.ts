@@ -1,9 +1,6 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
-import {
-  browserApiErrorsIntegration,
-  init as sentryInit
-} from '@sentry/vue'
+import { browserApiErrorsIntegration, init as sentryInit } from '@sentry/vue'
 import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
