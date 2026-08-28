@@ -11,86 +11,61 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const COLS = 12
 const ROWS = 6
+const STREAM_COLS = COLS + 1
+const STREAM_STEP_DURATION = 1100
 const LINE_START = 11.5
 const LINE_END = 95
-const GRID_START = 22
 const REQUEST_DURATION = 3200
 const RESPONSE_DURATION = 2500
-const ACTIVE_DURATION = 3600
-const HOT_DURATION = 850
 const CYCLE_DURATION = 17_000
 const REQUEST_STARTS = [900, 6200, 7100, 8000]
 
-type CellState = 'idle' | 'on' | 'hot'
-
-interface Cell {
+interface ActivityCell {
   id: number
-  col: number
-  row: number
-  tone: string
+  level: number
 }
-
-const tones = [
-  'bg-white/10',
-  'bg-secondary-mauve/35',
-  'bg-white/15',
-  'bg-primary-comfy-plum/30'
-]
-
-const cells: Cell[] = Array.from({ length: COLS * ROWS }, (_, id) => ({
-  id,
-  col: id % COLS,
-  row: Math.floor(id / COLS),
-  tone: tones[(id * 7 + Math.floor(id / COLS) * 3) % tones.length]
-}))
 
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
 const onScreen = useElementVisibility(stageRef)
 const elapsed = ref(0)
 
 const frameTime = computed(() => elapsed.value % CYCLE_DURATION)
-
-function columnArrival(col: number): number {
-  const gridWidth = LINE_END - GRID_START
-  const center = GRID_START + (gridWidth / COLS) * (col + 0.5)
-  return ((center - LINE_START) / (LINE_END - LINE_START)) * REQUEST_DURATION
-}
-
-function wakesCell(cell: Cell, requestIndex: number): boolean {
-  const primaryRow = (cell.col * 2 + requestIndex * 3) % ROWS
-  const secondaryRow = (primaryRow + 3) % ROWS
-  return (
-    cell.row === primaryRow ||
-    (requestIndex >= 2 &&
-      cell.col >= 2 &&
-      cell.col < 10 &&
-      (cell.col + requestIndex) % 2 === 0 &&
-      cell.row === secondaryRow)
-  )
-}
-
-function stateForCell(cell: Cell, now: number): CellState {
-  let state: CellState = 'idle'
-
-  for (const [requestIndex, start] of REQUEST_STARTS.entries()) {
-    const age = now - start - columnArrival(cell.col)
-    if (age < 0 || age >= ACTIVE_DURATION || !wakesCell(cell, requestIndex)) {
-      continue
-    }
-
-    if (age < HOT_DURATION && cell.col > 3 && cell.col < 9) return 'hot'
-    state = 'on'
-  }
-
-  return state
-}
-
-const visualCells = computed(() =>
-  cells.map((cell) => ({
-    ...cell,
-    state: stateForCell(cell, frameTime.value)
-  }))
+const streamStep = computed(() =>
+  Math.floor(elapsed.value / STREAM_STEP_DURATION)
 )
+const streamProgress = computed(
+  () => (elapsed.value % STREAM_STEP_DURATION) / STREAM_STEP_DURATION
+)
+
+function activityLevel(column: number, row: number): number {
+  const wave = Math.sin(column * 12.9898 + row * 78.233) * 43758.5453
+  const sample = wave - Math.floor(wave)
+
+  if (sample < 0.38) return 0
+  if (sample < 0.62) return 1
+  if (sample < 0.82) return 2
+  if (sample < 0.95) return 3
+  return 4
+}
+
+const activityCells = computed<ActivityCell[]>(() =>
+  Array.from({ length: STREAM_COLS * ROWS }, (_, id) => {
+    const displayColumn = id % STREAM_COLS
+    const row = Math.floor(id / STREAM_COLS)
+    const historyColumn = streamStep.value - COLS + displayColumn
+
+    return {
+      id,
+      level: activityLevel(historyColumn, row)
+    }
+  })
+)
+
+const activityTrackStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${STREAM_COLS}, minmax(0, 1fr))`,
+  transform: `translate3d(-${(streamProgress.value * 100) / STREAM_COLS}%, 0, 0)`,
+  width: `${(STREAM_COLS / COLS) * 100}%`
+}))
 
 const pulses = computed(() =>
   REQUEST_STARTS.flatMap((start, id) => {
@@ -128,7 +103,7 @@ watch(
     ref="stageRef"
     role="img"
     :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
-    class="bg-primary-comfy-ink/60 relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl border border-white/10 font-mono"
+    class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl border border-white/10 bg-primary-comfy-ink/60 font-mono"
   >
     <div class="absolute top-[47%] left-[6%] z-10 -translate-y-1/2 text-center">
       <span
@@ -147,29 +122,35 @@ watch(
     />
 
     <div
-      class="absolute top-[9%] right-[5%] bottom-[20%] left-[22%] grid grid-cols-12 grid-rows-6 gap-1 sm:gap-1.5"
+      class="absolute top-[9%] right-[5%] bottom-[20%] left-[22%] overflow-hidden"
       aria-hidden="true"
     >
-      <span
-        v-for="cell in visualCells"
-        :key="cell.id"
-        :class="
-          cn(
-            'rounded-md transition-[background-color,box-shadow,filter] duration-300',
-            cell.state === 'idle' && cell.tone,
-            cell.state === 'on' &&
-              'bg-primary-comfy-yellow shadow-md shadow-primary-comfy-yellow/30',
-            cell.state === 'hot' &&
-              'bg-primary-warm-white shadow-lg shadow-primary-comfy-yellow/60 brightness-110'
-          )
-        "
-      />
+      <div
+        class="grid h-full grid-rows-6 gap-1 will-change-transform sm:gap-1.5"
+        :style="activityTrackStyle"
+      >
+        <span
+          v-for="cell in activityCells"
+          :key="cell.id"
+          :class="
+            cn(
+              'rounded-md transition-[background-color,box-shadow,filter] duration-500',
+              cell.level === 0 && 'bg-white/8',
+              cell.level === 1 && 'bg-primary-comfy-plum/30',
+              cell.level === 2 && 'bg-secondary-mauve/40',
+              cell.level === 3 && 'bg-primary-comfy-yellow/55',
+              cell.level === 4 &&
+                'bg-primary-comfy-yellow shadow-primary-comfy-yellow/30 shadow-md'
+            )
+          "
+        />
+      </div>
     </div>
 
     <span
       v-for="pulse in pulses"
       :key="pulse.id"
-      class="bg-primary-warm-white absolute top-[47%] z-20 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-lg shadow-primary-comfy-yellow/80"
+      class="shadow-primary-comfy-yellow/80 absolute top-[47%] z-20 size-2.5 -translate-1/2 rounded-full bg-primary-warm-white shadow-lg"
       :style="{ left: `${pulse.position}%` }"
       aria-hidden="true"
     />
