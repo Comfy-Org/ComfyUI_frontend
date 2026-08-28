@@ -7356,6 +7356,11 @@ const translations = {
     'zh-CN':
       '从 ComfyUI 工作流到生产端点的最快路径。由 ComfyUI 团队打造，为生产而生。'
   },
+  'platform.hero.betaNote': {
+    en: 'Limited beta: builds can take up to 3 hours and may fail. You get a direct support line while we harden the pipeline.',
+    'zh-CN':
+      '有限测试阶段：构建最长可能需要 3 小时，并且可能失败。在我们加固管线期间，你将获得直达的支持渠道。'
+  },
   'platform.hero.getStarted': {
     en: 'Get Started',
     'zh-CN': '立即开始'
