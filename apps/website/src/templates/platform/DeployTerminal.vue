@@ -16,14 +16,16 @@ const lines: TerminalLine[] = [
 
 <template>
   <div
-    class="overflow-hidden rounded-3xl border border-white/10 bg-black/40 font-mono text-xs shadow-2xl lg:text-sm"
+    class="overflow-hidden rounded-3xl border border-white/10 bg-black/60 font-mono text-xs shadow-2xl"
   >
     <div class="flex items-center gap-1.5 border-b border-white/10 px-5 py-3.5">
       <span class="size-3 rounded-full bg-white/15" />
       <span class="size-3 rounded-full bg-white/15" />
       <span class="size-3 rounded-full bg-white/15" />
     </div>
-    <div class="space-y-3 px-5 py-6 lg:px-6 lg:py-8">
+    <div
+      class="space-y-3 scrollbar-none overflow-x-auto px-5 py-6 lg:px-6 lg:py-8"
+    >
       <p
         v-for="line in lines"
         :key="line.text"
@@ -34,7 +36,7 @@ const lines: TerminalLine[] = [
           aria-hidden="true"
           v-text="line.kind === 'command' ? '$' : '✔'"
         />
-        <span class="break-all">{{ line.text }}</span>
+        <span class="whitespace-nowrap">{{ line.text }}</span>
       </p>
     </div>
   </div>

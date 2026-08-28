@@ -7358,9 +7358,30 @@ const translations = {
     'zh-CN': 'Serverless API'
   },
   'platform.products.serverless.description': {
-    en: "Scale from zero to millions of workflow runs on Comfy's serverless engine. No GPUs to configure, no cold starts — only pay for what you use.",
+    en: "Scale from zero to millions of workflow runs on Comfy's serverless engine. No GPUs to configure and no cold starts. Pay only for what you use.",
     'zh-CN':
       '在 Comfy 无服务器引擎上从零扩展到数百万次工作流运行。无需配置 GPU，没有冷启动——只为实际用量付费。'
+  },
+  'platform.serverlessVisual.ariaLabel': {
+    en: 'Animated diagram showing a client request traveling through an API gateway, waking serverless functions, reaching the database, and returning a response.',
+    'zh-CN':
+      '动画图示：客户端请求经过 API 网关，唤醒无服务器函数，到达数据库后返回响应。'
+  },
+  'platform.serverlessVisual.client': {
+    en: 'Client request',
+    'zh-CN': '客户端请求'
+  },
+  'platform.serverlessVisual.gateway': {
+    en: 'API gateway',
+    'zh-CN': 'API 网关'
+  },
+  'platform.serverlessVisual.functions': {
+    en: 'Serverless functions',
+    'zh-CN': '无服务器函数'
+  },
+  'platform.serverlessVisual.database': {
+    en: 'Database  B200s',
+    'zh-CN': '数据库  B200s'
   },
   'platform.products.builder.title': {
     en: 'Builder',
@@ -7380,7 +7401,7 @@ const translations = {
     'zh-CN': 'Models API'
   },
   'platform.products.models.description': {
-    en: 'Call partner models — Seedance, Minimax H3, Nano Banana, GPT-Image-2 — and access the latest models with a single API key.',
+    en: 'Call partner models including Seedance, Minimax H3, Nano Banana, and GPT-Image-2. Access the latest models with a single API key.',
     'zh-CN':
       '调用合作伙伴模型——Seedance、Minimax H3、Nano Banana、GPT-Image-2——用一个 API 密钥即可访问最新模型。'
   },
@@ -7405,7 +7426,7 @@ const translations = {
     'zh-CN': '打造你自己的 Higgsfield'
   },
   'platform.examples.higgsfield.description': {
-    en: 'A cinematic AI video app — camera-controlled generation with partner video models and your own workflows behind one endpoint.',
+    en: 'A cinematic AI video app with camera-controlled generation, partner video models, and your own workflows behind one endpoint.',
     'zh-CN':
       '一个电影感 AI 视频应用——镜头运动可控的生成体验，合作伙伴视频模型与你自己的工作流都在同一个端点之后。'
   },
@@ -7438,7 +7459,7 @@ const translations = {
     'zh-CN': '虚拟试穿'
   },
   'platform.examples.tryOn.description': {
-    en: 'A real e-commerce clothing-swap flow behind one endpoint — a business, not a demo.',
+    en: 'A real e-commerce clothing-swap flow behind one endpoint. Built for a business, not a demo.',
     'zh-CN': '一个真实的电商换装流程，藏在一个端点之后——这是业务，不是演示。'
   },
   'platform.examples.emoji.title': {
@@ -7549,15 +7570,15 @@ const translations = {
     'zh-CN': '存储'
   },
   'platform.pricing.storage.standardUnder1tb': {
-    en: 'Network storage — standard, under 1 TB',
+    en: 'Standard network storage, under 1 TB',
     'zh-CN': '网络存储——标准，1 TB 以下'
   },
   'platform.pricing.storage.standardOver1tb': {
-    en: 'Network storage — standard, 1 TB and above',
+    en: 'Standard network storage, 1 TB and above',
     'zh-CN': '网络存储——标准，1 TB 及以上'
   },
   'platform.pricing.storage.highPerformance': {
-    en: 'Network storage — high performance',
+    en: 'High-performance network storage',
     'zh-CN': '网络存储——高性能'
   },
   'platform.pricing.storage.containerDisk': {
@@ -7565,7 +7586,7 @@ const translations = {
     'zh-CN': '容器磁盘'
   },
   'platform.pricing.storageNote': {
-    en: "Models live on network storage — persistent and shared across a deployment's workers. Container disk is each worker's own local filesystem, billed separately.",
+    en: "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
     'zh-CN':
       '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
   },
@@ -7621,7 +7642,7 @@ const translations = {
     'zh-CN': 'ComfyUI 还是开源的吗？'
   },
   'platform.faq.4.a': {
-    en: 'Yes. The engine is unchanged and builds stay portable — run them on your own GPU, your own server, or our serverless.',
+    en: 'Yes. The engine is unchanged, and builds stay portable. Run them on your own GPU, your own server, or our serverless platform.',
     'zh-CN':
       '是的。引擎没有变化，构建保持可移植——可以在你自己的 GPU、你自己的服务器或我们的无服务器平台上运行。'
   },
@@ -7639,7 +7660,7 @@ const translations = {
     'zh-CN': '生成结果会保留多久？'
   },
   'platform.faq.6.a': {
-    en: 'Outputs are retained for 24 hours — move them to your own storage.',
+    en: 'Outputs are retained for 24 hours. Move them to your own storage.',
     'zh-CN': '生成结果保留 24 小时——请及时转存到你自己的存储。'
   },
   'platform.faq.7.q': {
@@ -7655,7 +7676,7 @@ const translations = {
     'zh-CN': '它能自动扩缩吗？冷启动怎么办？'
   },
   'platform.faq.8.a': {
-    en: 'Yes — endpoints scale with your request volume. Set minWorkers above zero to keep warm workers and eliminate cold starts on the endpoints that need it.',
+    en: 'Yes. Endpoints scale with your request volume. Set minWorkers above zero to keep warm workers and eliminate cold starts on the endpoints that need it.',
     'zh-CN':
       '能——端点会随请求量自动扩缩。把 minWorkers 设为大于零即可保留常驻工作节点，为需要的端点消除冷启动。'
   },
@@ -7673,7 +7694,7 @@ const translations = {
     'zh-CN': '测试期间有哪些限制？'
   },
   'platform.faq.10.a': {
-    en: 'During beta: 10 concurrent workers, 10 builds, 3 deployments, and 500 GB of models per deployment — all raisable on request.',
+    en: 'During beta, the default limits are 10 concurrent workers, 10 builds, 3 deployments, and 500 GB of models per deployment. All limits can be raised on request.',
     'zh-CN':
       '测试期间：10 个并发工作节点、10 个构建、3 个部署，每个部署最多 500 GB 模型——均可申请提高。'
   },

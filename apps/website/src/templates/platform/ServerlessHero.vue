@@ -21,7 +21,7 @@ const ctas = platformCtas(locale)
     :secondary-cta="ctas.docs"
   >
     <template #media>
-      <ServerlessVisual />
+      <ServerlessVisual :locale />
     </template>
   </HeroSplit01>
 </template>

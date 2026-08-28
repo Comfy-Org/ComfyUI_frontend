@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import Button from '../../components/ui/button/Button.vue'
-import { externalLinks, getRoutes } from '../../config/routes'
+import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BuilderVisual from './BuilderVisual.vue'
@@ -53,7 +53,7 @@ const modelsTabs = modelsApiCodeTabs
           </Button>
         </div>
       </div>
-      <ServerlessVisual />
+      <ServerlessVisual :locale />
     </article>
 
     <!-- Models API and Builder, side by side -->
@@ -110,19 +110,8 @@ const modelsTabs = modelsApiCodeTabs
         <div class="mt-6 flex-1">
           <BuilderVisual />
         </div>
-        <div
-          class="relative z-10 mt-auto flex w-fit flex-wrap items-center gap-3 pt-8"
-        >
-          <Button
-            as="a"
-            :href="externalLinks.platformBuilds"
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="outline"
-          >
-            {{ ctas.getStarted.label }}
-          </Button>
-          <Button as="a" :href="routes.enterprise" variant="link">
+        <div class="relative z-10 mt-auto w-fit pt-8">
+          <Button as="a" :href="routes.enterprise" variant="outline">
             {{ t('platform.products.builder.enterpriseCta', locale) }}
           </Button>
         </div>

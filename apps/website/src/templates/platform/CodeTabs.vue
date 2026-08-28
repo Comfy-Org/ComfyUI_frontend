@@ -41,6 +41,27 @@ const hasCycle = computed(() =>
   )
 )
 
+function lineBreakCount(segment: CodeSegment): number {
+  const values = typeof segment === 'string' ? [segment] : segment.values
+  return Math.max(0, ...values.map((value) => value.split('\n').length - 1))
+}
+
+const codePanelHeight = computed(() => {
+  const maxLineCount = Math.max(
+    1,
+    ...Object.values(tabs).map(
+      (tab) =>
+        1 +
+        tab.segments.reduce(
+          (total, segment) => total + lineBreakCount(segment),
+          0
+        )
+    )
+  )
+
+  return `${maxLineCount * 1.5 + 3}rem`
+})
+
 const { pause, resume } = useIntervalFn(
   () => {
     cycleIndex.value += 1
@@ -74,7 +95,7 @@ function cycleValue(values: string[]): string {
   >
     <TabsList
       :aria-label="ariaLabel"
-      class="inline-flex rounded-2xl border border-white/15 bg-primary-comfy-ink p-1"
+      class="inline-flex max-w-full scrollbar-none overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1"
     >
       <TabsTrigger
         v-for="(tab, tabId) in tabs"
@@ -93,7 +114,8 @@ function cycleValue(values: string[]): string {
       class="mt-4 block"
     >
       <pre
-        class="overflow-x-auto rounded-3xl border border-white/10 bg-black/40 p-5 font-mono text-xs/relaxed text-primary-comfy-canvas lg:p-6 lg:text-sm/relaxed"
+        class="scrollbar-none overflow-auto rounded-3xl border border-white/10 bg-black/40 p-5 font-mono text-xs/relaxed text-primary-comfy-canvas lg:p-6 lg:text-sm/relaxed"
+        :style="{ height: codePanelHeight }"
       ><code><template
           v-for="(segment, index) in tab.segments"
           :key="index"

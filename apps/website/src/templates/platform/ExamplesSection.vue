@@ -93,7 +93,8 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        variant="underlineLink"
+        size="sm"
+        variant="outline"
       >
         {{ t('platform.examples.viewAll', locale) }}
       </Button>
@@ -107,38 +108,54 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow/50 group flex flex-col overflow-hidden rounded-3xl border border-white/10 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:outline-none"
+        class="focus-visible:ring-primary-comfy-yellow bg-transparency-white-t4 group flex flex-col gap-4 rounded-4xl p-2 transition-colors duration-200 hover:bg-transparency-white-t8 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
       >
         <div
           :class="
             cn(
-              'flex aspect-2/1 items-end p-4 transition-opacity group-hover:opacity-90',
+              'relative aspect-4/3 overflow-hidden rounded-[1.75rem] transition-opacity group-hover:opacity-90',
               example.bg
             )
           "
         >
-          <div class="flex flex-wrap gap-1.5">
+          <div
+            class="pointer-events-none absolute inset-0 bg-linear-to-t from-primary-comfy-ink/80 via-primary-comfy-ink/20 to-transparent"
+            aria-hidden="true"
+          />
+          <div class="absolute inset-x-0 bottom-0 p-5">
+            <h3 class="text-lg/snug font-medium text-primary-warm-white">
+              {{ example.title }}
+            </h3>
+            <p
+              class="mt-2 max-w-xl text-xs/relaxed font-light text-primary-comfy-canvas"
+            >
+              {{ example.description }}
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-1 flex-col gap-4 px-4 pb-4">
+          <div class="flex items-center justify-between gap-2">
+            <span
+              class="text-primary-comfy-yellow text-xs font-bold tracking-wider uppercase"
+            >
+              {{ t('platform.examples.cookbook', locale) }}
+            </span>
+            <span
+              class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-full"
+              aria-hidden="true"
+            >
+              <img src="/icons/arrow-right.svg" alt="" class="size-2.5" />
+            </span>
+          </div>
+          <div class="flex min-w-0 flex-wrap items-center gap-2">
             <span
               v-for="tag in example.tags"
               :key="tag"
-              class="rounded-full bg-primary-comfy-ink/70 px-2.5 py-1 font-mono text-[10px] text-primary-comfy-canvas"
+              class="shrink-0 rounded-full bg-white/5 px-3 py-1 text-xs text-primary-comfy-canvas"
             >
               {{ tag }}
             </span>
           </div>
-        </div>
-        <div class="bg-transparency-white-t4 flex flex-1 flex-col p-6">
-          <h3 class="text-base font-normal text-primary-warm-white">
-            {{ example.title }}
-          </h3>
-          <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
-            {{ example.description }}
-          </p>
-          <span
-            class="text-primary-comfy-yellow mt-auto pt-4 text-xs font-bold tracking-wider uppercase"
-          >
-            {{ t('platform.examples.cookbook', locale) }}
-          </span>
         </div>
       </a>
     </div>
@@ -153,21 +170,21 @@ const more: Omit<Example, 'bg'>[] = [
         rel="noopener noreferrer"
         class="focus-visible:ring-primary-comfy-yellow/50 bg-transparency-white-t4 flex flex-col rounded-3xl border border-white/10 p-5 transition-colors hover:border-white/25 focus-visible:ring-2 focus-visible:outline-none"
       >
-        <div class="flex flex-wrap gap-1.5">
-          <span
-            v-for="tag in example.tags"
-            :key="tag"
-            class="rounded-full bg-primary-comfy-ink/70 px-2.5 py-1 font-mono text-[10px] text-primary-comfy-canvas"
-          >
-            {{ tag }}
-          </span>
-        </div>
-        <h3 class="mt-4 text-base font-normal text-primary-warm-white">
+        <h3 class="text-base font-normal text-primary-warm-white">
           {{ example.title }}
         </h3>
         <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
           {{ example.description }}
         </p>
+        <div class="mt-auto flex flex-wrap gap-2 pt-4">
+          <span
+            v-for="tag in example.tags"
+            :key="tag"
+            class="rounded-full bg-white/5 px-3 py-1 text-xs text-primary-comfy-canvas"
+          >
+            {{ tag }}
+          </span>
+        </div>
       </a>
     </div>
   </section>

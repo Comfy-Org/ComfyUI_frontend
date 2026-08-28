@@ -27,6 +27,7 @@ const {
   badgeText,
   badgeLogoSrc,
   badgeLogoAlt,
+  badgeShowLogo = true,
   title,
   titleHighlight,
   subtitle,
@@ -55,6 +56,7 @@ const {
   badgeText: string
   badgeLogoSrc?: string
   badgeLogoAlt?: string
+  badgeShowLogo?: boolean
   title: string
   titleHighlight?: string
   subtitle?: string
@@ -94,6 +96,7 @@ const {
         :text="badgeText"
         :logo-src="badgeLogoSrc"
         :logo-alt="badgeLogoAlt"
+        :show-logo="badgeShowLogo"
       />
 
       <h1
