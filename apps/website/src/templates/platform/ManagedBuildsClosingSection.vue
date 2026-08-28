@@ -17,9 +17,5 @@ const routes = getRoutes(locale)
       label: t('enterprise.managedBuilds.talkToUs', locale),
       href: routes.contact
     }"
-    :secondary-cta="{
-      label: t('enterprise.managedBuilds.aboutBuilder', locale),
-      href: routes.platformBuilder
-    }"
   />
 </template>

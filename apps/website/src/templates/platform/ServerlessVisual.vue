@@ -25,7 +25,7 @@ const cells: Cell[] = Array.from({ length: COLS * ROWS }, (_, i) => {
 
 // The hardware lineup flashes through on a shared CSS cycle: each label owns
 // a quarter of the 7.2s label-flash keyframe via its animation delay.
-const GPUS = ['RTX 6000 PRO', '5090s', 'B200s', 'H100s']
+const GPUS = ['RTX 6000 PRO', '5090', 'B200', 'H100']
 const GPU_SLOT_SECONDS = 1.8
 </script>
 
