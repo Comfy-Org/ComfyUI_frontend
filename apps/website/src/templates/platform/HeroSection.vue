@@ -33,7 +33,9 @@ const ctas = platformCtas(locale)
     >
       <template #belowCtas>
         <p class="mt-5 max-w-md text-xs text-primary-warm-gray">
-          {{ t('platform.faq.betaBanner', locale) }}
+          {{ t('platform.faq.betaBannerLead', locale) }}
+          <br />
+          {{ t('platform.faq.betaBannerSupport', locale) }}
         </p>
       </template>
 
