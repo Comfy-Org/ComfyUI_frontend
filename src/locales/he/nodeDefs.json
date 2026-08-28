@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "צרו וידאו עם שמע מפרומפט טקסט באמצעות מודלי Gemini Omni Flash של Google. ניתן לספק תמונות ייחוס ו/או סרטונים כדי להנחות או לערוך את התוצאה. תארו את האורך הרצוי (3-10 שניות) ישירות בפרומפט.",
+    "display_name": "Google Gemini Omni (וידאו)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "מודל הווידאו Gemini המשמש ליצירת הווידאו."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "יצירת מסלולי וידאו",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "פענחו קובץ מודל 3D ‏(GLB, GLTF, OBJ, STL) ל-MESH הניתן לעריכה עבור צמתי עיבוד רשת (decimate, remesh, פריסת UV, bake, ...). כל צמתי הסצנה/הפרימיטיבים ממוזגים לרשת אחת לאחר החלת ההתמרות שלהם; המרקמים ומקדמי החומר נלקחים מהחומר הראשון. המקביל של MeshToFile3D.",
+    "display_name": "קבלת רכיבי 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "קובץ מודל 3D מ-Load 3D או מצומת 3D אחר. FBX/USDZ אינם נתמכים — יש להמיר תחילה ל-GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }

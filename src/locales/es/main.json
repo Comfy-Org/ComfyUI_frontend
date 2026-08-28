@@ -830,13 +830,16 @@
       "insufficientMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
       "insufficientTitle": "Créditos insuficientes",
       "insufficientWorkflowMessage": "No tienes suficientes créditos para ejecutar este flujo de trabajo.",
+      "manageBillingError": "No se pudo abrir el portal de facturación. Vuelve a intentarlo.",
       "maxAllowed": "Máximo {credits} créditos.",
       "maxAmount": "(Máx. $1,000 USD)",
       "maximumAmount": "Máximo ${amount}.",
       "minRequired": "Mínimo {credits} créditos",
       "minimumPurchase": "Mínimo ${amount} ({credits} créditos)",
       "needMore": "¿Necesitas más?",
+      "noPaymentMethodError": "No hay ningún método de pago guardado para este espacio de trabajo. Añade uno en Configuración → Plan y créditos → Gestionar facturación y vuelve a intentar la recarga.",
       "payAmount": "Pagar {amount}",
+      "paymentDetailsRequiredNote": "Se te pedirá que añadas un método de pago para completar esta compra.",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "purchaseSuccess": "¡Créditos añadidos correctamente!",
@@ -1705,6 +1708,7 @@
     "micPermissionDenied": "Permiso de micrófono denegado",
     "migrate": "Migrar",
     "missing": "Faltante",
+    "missingNodeTypesInGroup": "faltan: {types}",
     "modifyKeybinding": "Modificar atajo de teclado",
     "more": "Más",
     "moreOptions": "Más Opciones",
@@ -3217,15 +3221,26 @@
     "done": "Listo",
     "firstRun": {
       "nudge": {
-        "dismiss": "Ahora no",
-        "explore": "Explorar plantillas",
-        "noTour": {
-          "body": "Explora las plantillas y elige algo para crear.",
-          "title": "Hay cientos más como esa"
+        "animate": {
+          "detail": "Imagen a vídeo · 5 s",
+          "title": "Anímala"
         },
-        "ran": {
-          "body": "Acabas de crear la primera. Explora qué más puedes construir.",
-          "title": "Esa fue una de cientos"
+        "body": "Cada uno comienza con la imagen que acabas de crear.",
+        "explore": "Explorar todas las plantillas",
+        "fallback": {
+          "body": "Explora las plantillas y elige algo para crear.",
+          "title": "Hay cientos más de donde salió eso"
+        },
+        "loadFailed": "No se pudo cargar esa plantilla. Vuelve a intentarlo.",
+        "restyle": {
+          "detail": "Modelo asociado · Cualquier plan de pago",
+          "title": "Reestiliza con Nano Banana"
+        },
+        "title": "Tu primer resultado. Esto es lo que sigue.",
+        "upscale": {
+          "badge": "4x",
+          "detail": "La misma imagen, más detalle",
+          "title": "Mejora su resolución"
         }
       },
       "prompt": {
@@ -4363,6 +4378,8 @@
     "resubscribeFailed": "No se pudo reactivar la suscripción",
     "resubscribeSuccess": "¡Suscripción reactivada correctamente!",
     "resubscribeTo": "Volver a suscribirse a {plan}",
+    "salesManagedRunBlockedDetail": "El plan de este espacio de trabajo ya no está activo. Ponte en contacto con tu gestor de cuenta de Comfy para restaurar el acceso.",
+    "salesManagedRunBlockedTitle": "Plan inactivo",
     "saveYearly": "Ahorra 20%",
     "saveYearlyUpTo": "Ahorra hasta un 20%",
     "soloUseOnly": "Solo para uso individual",
@@ -4441,6 +4458,7 @@
     "title": "Suscripción",
     "titleUnsubscribed": "Suscríbete a Comfy Cloud",
     "totalCredits": "Créditos totales",
+    "unknownTierName": "Plan actual",
     "upgrade": "MEJORAR",
     "upgradePlan": "Mejorar plan",
     "upgradeTo": "Mejorar a {plan}",
