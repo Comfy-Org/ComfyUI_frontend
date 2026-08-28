@@ -225,6 +225,17 @@ describe('auth token priority chain', () => {
       expect(header).toEqual({ 'X-API-KEY': 'test-key' })
     })
 
+    it('returns the API key when a key-only Cloud session has an active workspace', async () => {
+      authStateCallback(null)
+      mockActiveWorkspaceId = 'workspace-123'
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-key' })
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toEqual({ 'X-API-KEY': 'test-key' })
+      expect(mockEnsureWorkspaceAuthHeader).not.toHaveBeenCalled()
+    })
+
     it('returns null when no auth method is available', async () => {
       authStateCallback(null)
 
