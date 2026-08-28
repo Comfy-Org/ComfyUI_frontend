@@ -23,6 +23,7 @@ import { useElementBounding, useEventListener, whenever } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
+import { getSelectedNode } from '@/components/graph/widgets/getSelectedNode'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -69,7 +70,7 @@ const updateDomClipping = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas || !widgetElement.value) return
 
-  const selectedNode = Object.values(lgCanvas.selected_nodes ?? {})[0]
+  const selectedNode = getSelectedNode(lgCanvas)
   if (!selectedNode) {
     // Clear clipping when no node is selected
     updateClipPath(widgetElement.value, lgCanvas.canvas, false, undefined)
