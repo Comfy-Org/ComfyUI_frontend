@@ -61,18 +61,34 @@ function readQueryParam(): string | null {
  * survives the reloads a debugging session is made of.
  *
  * Accepts `0`/`false`/`off` to disable, a level name to enable at that level,
- * and anything else truthy to enable at the default level.
+ * and any other non-empty value to enable at the current level.
+ *
+ * Two things it deliberately does NOT do. It never writes the level unless
+ * the parameter names one — otherwise reloading a bookmarked `?crdtDebug=1`
+ * would silently reset a verbosity the tester chose in the panel, on the
+ * reload that reproducing a subscribe bug requires. And it strips itself from
+ * the URL afterwards, so a later "hide" is not undone by the next reload of
+ * the same link: the parameter is an instruction, not a standing order.
  */
 function applyQueryOverride(): void {
   const raw = readQueryParam()
   if (raw === null) return
   const value = raw.trim().toLowerCase()
-  if (value === '0' || value === 'false' || value === 'off') {
-    writeStorage(ENABLED_KEY, 'false')
-    return
+  if (value === '') return
+  const disabling = value === '0' || value === 'false' || value === 'off'
+  writeStorage(ENABLED_KEY, disabling ? 'false' : 'true')
+  if (!disabling && isLogLevel(value)) writeStorage(LEVEL_KEY, value)
+  consumeQueryParam()
+}
+
+function consumeQueryParam(): void {
+  try {
+    const url = new URL(window.location.href)
+    url.searchParams.delete(QUERY_PARAM)
+    window.history.replaceState(window.history.state, '', url)
+  } catch {
+    // No History API (or an opaque origin): the flag simply stays in the URL.
   }
-  writeStorage(ENABLED_KEY, 'true')
-  writeStorage(LEVEL_KEY, isLogLevel(value) ? value : DEFAULT_LEVEL)
 }
 
 applyQueryOverride()

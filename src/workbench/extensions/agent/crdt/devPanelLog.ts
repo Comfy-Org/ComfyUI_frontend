@@ -19,7 +19,7 @@ import type { CrdtLogLevel } from './crdtDebugGate'
  * document lineage, `ecs` is the projection onto canvas state, `ops` is the
  * human write leg's semantic intent.
  */
-export type CrdtLogScope = 'wire' | 'doc' | 'ecs' | 'ops' | 'panel'
+export type CrdtLogScope = 'wire' | 'doc' | 'ecs' | 'ops'
 
 export type DevEventKind =
   | 'ws_out'

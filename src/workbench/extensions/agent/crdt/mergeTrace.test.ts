@@ -33,6 +33,37 @@ describe('nodeLifecycle', () => {
     ])
   })
 
+  it('does not let a no-op write inflate the first real incarnation', () => {
+    const rows = nodeLifecycle([
+      {
+        index: 0,
+        opId: 'a',
+        kind: 'set_widget',
+        actor: 'human:u:t',
+        register: '["widget","A","text"]',
+        registerLabel: 'widget "text" on node A',
+        stamp: [1, 'human:u:t', 'a'],
+        nodeId: 'A',
+        verdict: { kind: 'no-op', because: 'delete-wins' },
+        explanation: ''
+      },
+      {
+        index: 1,
+        opId: 'b',
+        kind: 'add_node',
+        actor: 'human:u:t',
+        register: '["node","A"]',
+        registerLabel: 'node A',
+        stamp: [2, 'human:u:t', 'b'],
+        nodeId: 'A',
+        verdict: { kind: 'applied' },
+        explanation: ''
+      }
+    ])
+
+    expect(rows.map((row) => row.incarnation)).toEqual([1, 1])
+  })
+
   it('leaves graph-wide ops out of the per-node story', () => {
     const rows = nodeLifecycle([
       {

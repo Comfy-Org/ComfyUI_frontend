@@ -9,7 +9,7 @@
  * {@link crdtLog}, which is what makes the report a transcript.
  */
 import type { CrdtLogLevel } from './crdtDebugGate'
-import { isLevelEnabled } from './crdtDebugGate'
+import { isCrdtDebugEnabled, isLevelEnabled } from './crdtDebugGate'
 import type { CrdtLogScope, DevEventKind } from './devPanelLog'
 import { recordDevEvent } from './devPanelLog'
 
@@ -21,8 +21,7 @@ const SCOPE_STYLE: Record<CrdtLogScope, string> = {
   wire: 'color:#7dd3fc',
   doc: 'color:#a5b4fc',
   ecs: 'color:#86efac',
-  ops: 'color:#fcd34d',
-  panel: 'color:#d8b4fe'
+  ops: 'color:#fcd34d'
 }
 
 const CONSOLE_METHOD: Record<CrdtLogLevel, 'warn' | 'info' | 'debug'> = {
@@ -55,7 +54,11 @@ function crdtLog(entry: CrdtLogEntry): void {
   if (!isLevelEnabled(level)) return
   const line = `%c[crdt:${scope}]%c ${kind} — ${message}`
   const args: unknown[] = [line, SCOPE_STYLE[scope], '']
-  if (detail !== undefined) args.push(detail)
+  // `warn` reaches the console even when the instrument is off, so that a
+  // fail-closed follower is never silent. The MESSAGE is what earns that
+  // exemption — dumping document state into an opted-out user's console does
+  // not. The detail is still in the ring buffer for whoever opted in.
+  if (detail !== undefined && isCrdtDebugEnabled()) args.push(detail)
   console[CONSOLE_METHOD[level]](...args)
 }
 
