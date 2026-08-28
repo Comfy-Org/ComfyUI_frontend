@@ -107,13 +107,55 @@ function readStringField(source: unknown, field: string): string | undefined {
   return typeof value === 'string' ? value : undefined
 }
 
+interface HubspotFormInstance {
+  getFormId?: () => unknown
+  getConversionId?: () => unknown
+}
+
+interface HubspotFormsGlobal {
+  getFormFromEvent?: (event: Event) => HubspotFormInstance | undefined
+}
+
+function asNonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value !== '' ? value : undefined
+}
+
+// The v4 event carries only an instanceId, so both the form's identity and its
+// conversion id have to come from the global form API. The conversion id is
+// what lets a submission be matched to its HubSpot record without sending any
+// of the submitted field values. HubSpot publishes the API under two
+// spellings, and it is absent entirely when the embed script never loaded.
+function readV4Submission(event: Event): {
+  formId: string | undefined
+  conversionId: string | undefined
+} {
+  const globals = window as unknown as Record<
+    string,
+    HubspotFormsGlobal | undefined
+  >
+  const hubspotForms = globals.HubSpotFormsV4 ?? globals.HubspotFormsV4
+
+  try {
+    const form = hubspotForms?.getFormFromEvent?.(event)
+    return {
+      formId: asNonEmptyString(form?.getFormId?.()),
+      conversionId: asNonEmptyString(form?.getConversionId?.())
+    }
+  } catch {
+    return { formId: undefined, conversionId: undefined }
+  }
+}
+
 let hasCapturedSubmission = false
 
-// Both listeners are bound to the window, so another HubSpot form on the page
-// would otherwise consume the latch and mask this form's real submission.
-// Unrecognised payload shapes still count, so a vendor change degrades to
-// over-reporting rather than silently reporting nothing.
-function captureSubmission(submittedFormId: string | undefined) {
+// Both listeners are bound to the window, so a submission reporting a
+// different form id is ignored instead of consuming the latch. A payload with
+// no id still counts: a vendor change should degrade to over-reporting rather
+// than to silence.
+function captureSubmission(
+  submittedFormId: string | undefined,
+  conversionId?: string
+) {
   if (
     submittedFormId !== undefined &&
     submittedFormId !== hubspotContactFormId.value
@@ -121,7 +163,7 @@ function captureSubmission(submittedFormId: string | undefined) {
     return
   if (hasCapturedSubmission) return
   hasCapturedSubmission = true
-  captureContactFormSubmitted(locale, hubspotContactFormId.value)
+  captureContactFormSubmitted(locale, hubspotContactFormId.value, conversionId)
 }
 
 useEventListener('message', (event: MessageEvent) => {
@@ -130,8 +172,9 @@ useEventListener('message', (event: MessageEvent) => {
 })
 
 useEventListener(defaultWindow, HUBSPOT_V4_SUBMISSION_EVENT, (event: Event) => {
+  const { formId, conversionId } = readV4Submission(event)
   const detail = event instanceof CustomEvent ? event.detail : undefined
-  captureSubmission(readStringField(detail, 'formId'))
+  captureSubmission(formId ?? readStringField(detail, 'formId'), conversionId)
 })
 
 onMounted(() => {

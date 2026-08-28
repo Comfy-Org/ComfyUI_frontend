@@ -187,7 +187,23 @@ describe('captureContactFormSubmitted', () => {
 
     expect(hoisted.mockCapture).toHaveBeenCalledWith(
       'website:contact_form_submitted',
-      { locale: 'en', form_id: 'form-guid' }
+      { locale: 'en', form_id: 'form-guid', hubspot_conversion_id: undefined }
+    )
+  })
+
+  it('captures the HubSpot conversion id when one is known', async () => {
+    const { initPostHog, captureContactFormSubmitted } =
+      await import('./posthog')
+    initPostHog()
+    captureContactFormSubmitted('en', 'form-guid', 'conversion-abc')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:contact_form_submitted',
+      {
+        locale: 'en',
+        form_id: 'form-guid',
+        hubspot_conversion_id: 'conversion-abc'
+      }
     )
   })
 
@@ -240,7 +256,7 @@ describe('captures made before initialization', () => {
     expect(hoisted.mockCapture).toHaveBeenCalledOnce()
   })
 
-  it('are dropped when initialization throws', async () => {
+  it('are discarded when initialization throws', async () => {
     hoisted.mockInit.mockImplementationOnce(() => {
       throw new Error('init blew up')
     })
@@ -251,5 +267,27 @@ describe('captures made before initialization', () => {
     initPostHog()
 
     expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+
+  it('are not resurrected by a later init that succeeds', async () => {
+    hoisted.mockInit.mockImplementationOnce(() => {
+      throw new Error('init blew up')
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { initPostHog, captureContactFormViewed } = await import('./posthog')
+    captureContactFormViewed('en')
+    initPostHog()
+    initPostHog()
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+
+  it('stop accumulating once the pending queue is full', async () => {
+    const { initPostHog, captureContactFormViewed } = await import('./posthog')
+    for (let i = 0; i < 60; i++) captureContactFormViewed('en')
+    initPostHog()
+
+    expect(hoisted.mockCapture).toHaveBeenCalledTimes(50)
   })
 })

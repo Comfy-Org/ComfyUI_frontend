@@ -16,6 +16,11 @@ const POSTHOG_UI_HOST =
 let initialized = false
 const capturesPendingInit: (() => void)[] = []
 
+// Outside production initPostHog is never called, so the queue is capped to
+// keep it from growing for the lifetime of the page. Real pages only queue
+// the handful of captures that race initialization.
+const MAX_CAPTURES_PENDING_INIT = 50
+
 // A `client:load` island can mount before the BaseLayout script that calls
 // initPostHog has executed, so mount-time captures have to be held rather
 // than dropped or they are lost on every direct page load.
@@ -29,7 +34,9 @@ function captureWhenReady(description: string, send: () => void) {
   }
 
   if (!initialized) {
-    capturesPendingInit.push(guarded)
+    if (capturesPendingInit.length < MAX_CAPTURES_PENDING_INIT) {
+      capturesPendingInit.push(guarded)
+    }
     return
   }
 
@@ -51,6 +58,7 @@ export function initPostHog() {
     initialized = true
   } catch (error) {
     console.error('PostHog init failed', error)
+    capturesPendingInit.length = 0
     return
   }
 
@@ -97,11 +105,16 @@ export function captureContactFormViewed(locale: Locale) {
   )
 }
 
-export function captureContactFormSubmitted(locale: Locale, formId: string) {
+export function captureContactFormSubmitted(
+  locale: Locale,
+  formId: string,
+  conversionId?: string
+) {
   captureWhenReady('contact form submitted', () =>
     posthog.capture('website:contact_form_submitted', {
       locale,
-      form_id: formId
+      form_id: formId,
+      hubspot_conversion_id: conversionId
     })
   )
 }
