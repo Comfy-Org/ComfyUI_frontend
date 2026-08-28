@@ -227,6 +227,44 @@ describe('ChangeTracker', () => {
     app.ui.autoQueueMode = 'instant'
   })
 
+  describe('selection-only mode', () => {
+    beforeEach(() => {
+      app.canvas.selectOnly = false
+    })
+
+    it('blocks undo while active and resumes after exit', async () => {
+      const initial = createState(1)
+      const tracker = createTracker(initial)
+      mockCanvasState(createState(2))
+      tracker.captureCanvasState()
+
+      app.canvas.selectOnly = true
+      await tracker.undo()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+
+      app.canvas.selectOnly = false
+      await tracker.undo()
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    })
+
+    it('blocks redo while active and resumes after exit', async () => {
+      const initial = createState(1)
+      const tracker = createTracker(initial)
+      mockCanvasState(createState(2))
+      tracker.captureCanvasState()
+      await tracker.undo()
+      vi.mocked(app.loadGraphData).mockClear()
+
+      app.canvas.selectOnly = true
+      await tracker.redo()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+
+      app.canvas.selectOnly = false
+      await tracker.redo()
+      expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('captureCanvasState', () => {
     describe('guards', () => {
       it('is a no-op when app.graph is falsy', () => {

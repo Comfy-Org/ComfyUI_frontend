@@ -33,13 +33,14 @@ describe('useSelectionToolboxPosition', () => {
     canvasStore = useCanvasStore()
   })
 
-  function renderToolboxForSelection(item: Positionable) {
+  function renderToolboxForSelection(item: Positionable, selectOnly = false) {
     canvasStore.canvas = markRaw({
       canvas: document.createElement('canvas'),
       ds: {
         offset: [0, 0],
         scale: 1
       },
+      selectOnly,
       selectedItems: new Set([item]),
       state: {
         draggingItems: false,
@@ -85,6 +86,18 @@ describe('useSelectionToolboxPosition', () => {
     expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
       `${190 - LiteGraph.NODE_TITLE_HEIGHT}px`
     )
+    unmount()
+  })
+
+  it('stays hidden for a selection made in selection-only mode', () => {
+    const node = new LGraphNode('Node')
+    node.id = toNodeId(1)
+    node.pos = [100, 200]
+    node.size = [160, 80]
+
+    const { toolbox, unmount } = renderToolboxForSelection(node, true)
+
+    expect(toolbox.style.getPropertyValue('--tb-y')).toBe('')
     unmount()
   })
 })

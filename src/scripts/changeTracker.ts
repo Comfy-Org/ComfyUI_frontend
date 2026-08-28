@@ -7,6 +7,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -487,10 +488,12 @@ export class ChangeTracker {
   }
 
   async undo() {
+    if (isSelectOnly(app.canvas)) return
     await this.updateState(this.undoQueue, this.redoQueue)
   }
 
   async redo() {
+    if (isSelectOnly(app.canvas)) return
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
