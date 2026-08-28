@@ -72,10 +72,6 @@ const { mockMediaAssets } = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => mockMediaAssets
-}))
-
 vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
   resolveOutputAssetItems: vi.fn().mockResolvedValue([])
 }))

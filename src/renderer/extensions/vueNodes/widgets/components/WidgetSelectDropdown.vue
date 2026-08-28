@@ -12,7 +12,7 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { ResultItemType } from '@/schemas/apiSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -56,7 +56,7 @@ const stringModelValue = computed({
 })
 
 const { t } = useI18n()
-const assetsStore = useAssetsStore()
+const outputAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
 
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
@@ -89,7 +89,7 @@ const {
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue: stringModelValue,
   assetKind: () => props.assetKind,
-  outputMediaAssets: () => assetsStore.outputAssets,
+  outputMediaAssets: () => useAssetsQuery({ tags_any: ['output', 'temp'] }),
   assetData,
   isAssetMode: () => props.isAssetMode
 })
@@ -152,8 +152,7 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 const handleApproachEnd = useDebounceFn(async () => {
-  if (assetsStore.outputAssets.hasMore)
-    await assetsStore.outputAssets.loadMore()
+  if (outputAssets.hasMore) await outputAssets.loadMore()
 }, 300)
 
 const isUploading = ref(false)
@@ -185,7 +184,7 @@ async function updateFiles(files: File[]) {
       :base-model-options
       :is-uploading
       v-bind="combinedProps"
-      :loading-more="toValue(assetsStore.outputAssets.isLoading)"
+      :loading-more="toValue(outputAssets.isLoading)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

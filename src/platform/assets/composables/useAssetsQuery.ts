@@ -7,7 +7,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { createSharedPagedList, usePreemptableQueue } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
-import { encodeParams, sortedParams } from '@/utils/requestUtil'
+import { encodeParams } from '@/utils/requestUtil'
 
 interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
@@ -31,12 +31,11 @@ function assetsQueryInternal(
 
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   async function doLoadMore(signal?: AbortSignal) {
-    if (!hasMore.value || seenCursors.has(nextCursor)) return
+    if (!hasMore.value) return
     if (seenCursors.has(nextCursor)) {
       hasMore.value = false
       return
     }
-    seenCursors.add(nextCursor)
 
     const assetResponse = await doQuery(
       {
@@ -45,6 +44,7 @@ function assetsQueryInternal(
       signal
     )
     if (!assetResponse) return
+    seenCursors.add(nextCursor)
     nextCursor = assetResponse.next_cursor
     hasMore.value = assetResponse.has_more
     items.value.push(...assetResponse.assets)
@@ -93,7 +93,7 @@ function assetsQueryInternal(
   }
 
   async function doQuery(
-    overrideParams: Record<string, unknown>,
+    overrideParams: ListAssetsData['query'],
     signal?: AbortSignal
   ) {
     const requestOptions = { signal }
@@ -126,8 +126,4 @@ function assetsQueryInternal(
 }
 
 export const { constructor: useAssetsQuery, invalidateAll } =
-  createSharedPagedList(
-    assetsQueryInternal,
-    (p) => JSON.stringify(sortedParams(p)),
-    (item) => item.id
-  )
+  createSharedPagedList(assetsQueryInternal, encodeParams, (item) => item.id)

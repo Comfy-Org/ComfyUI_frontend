@@ -15,13 +15,6 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 // reads the full store, so the per-filter count assertions still cover the
 // behavior.
 
-const MIME_TYPES: Record<string, string> = {
-  png: 'image/png',
-  mp4: 'video/mp4',
-  wav: 'audio/wav',
-  glb: 'model/gltf-binary'
-}
-
 const now = Date.now()
 const ages = [0, 86_400_000, 8 * 86_400_000, 40 * 86_400_000]
 const MIXED_ASSETS: Asset[] = (['images', 'video', 'audio', '3D'] as const).map(
@@ -32,7 +25,6 @@ const MIXED_ASSETS: Asset[] = (['images', 'video', 'audio', '3D'] as const).map(
     return {
       id: `${kind}-${String(i + 1).padStart(3, '0')}`,
       name: filename,
-      mime_type: MIME_TYPES[ext] ?? 'application/octet-stream',
       tags: ['output'],
       preview_url: `/api/view?filename=${filename}&type=output`,
       created_at: createdAt,

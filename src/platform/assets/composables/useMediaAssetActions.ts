@@ -100,8 +100,8 @@ export function useMediaAssetActions() {
   function resolveChildItems(
     asset: AssetItem
   ): { name: string; id: AssetId; variants: string[] }[] {
-    const { allOutputs } = getOutputAssetMetadata(asset.user_metadata) ?? {}
-    const allItems = (allOutputs ?? [])?.flatMap((output) => {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    const allItems = (metadata?.allOutputs ?? [])?.flatMap((output) => {
       if (!output.assetId) return []
       const name = output.display_name || output.filename
       const variants = widgetValueVariants(
@@ -116,7 +116,7 @@ export function useMediaAssetActions() {
     const variants = widgetValueVariants(
       asset.name,
       getAssetType(asset, 'input'),
-      getOutputAssetMetadata(asset.user_metadata)?.subfolder,
+      metadata?.subfolder,
       asset.hash
     )
     return [{ name: getAssetDisplayName(asset), id: asset.id, variants }]
