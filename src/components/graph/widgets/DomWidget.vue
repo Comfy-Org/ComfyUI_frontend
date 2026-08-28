@@ -23,9 +23,9 @@ import { useElementBounding, useEventListener, whenever } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { getSelectedNode } from '@/components/graph/widgets/getSelectedNode'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
+import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
@@ -70,7 +70,7 @@ const updateDomClipping = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas || !widgetElement.value) return
 
-  const selectedNode = getSelectedNode(lgCanvas)
+  const selectedNode = findFirstNode(lgCanvas.selectedItems)
   if (!selectedNode) {
     // Clear clipping when no node is selected
     updateClipPath(widgetElement.value, lgCanvas.canvas, false, undefined)
