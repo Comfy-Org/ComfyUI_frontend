@@ -1,10 +1,4 @@
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import type {
-  Plan,
-  SubscriptionTier,
-  TeamCreditStopSummary,
-  TeamCreditStops
-} from '@/platform/workspace/api/workspaceApi'
 
 export type BillingCycle = 'monthly' | 'yearly'
 
@@ -61,53 +55,4 @@ export const isPlanDowngrade = ({
   const targetRank = getPlanRank(target)
 
   return targetRank > currentRank
-}
-
-interface SubscriptionUpgradeEligibility {
-  currentTier: SubscriptionTier | null
-  plans: Plan[]
-  teamCreditStops: TeamCreditStops | null
-  currentTeamCreditStop: TeamCreditStopSummary | null
-}
-
-function getPersonalTierRank(tier: SubscriptionTier | null): number | null {
-  switch (tier) {
-    case 'FREE':
-      return 0
-    case 'STANDARD':
-      return 1
-    case 'CREATOR':
-      return 2
-    case 'PRO':
-      return 3
-    case 'FOUNDERS_EDITION':
-    case 'TEAM':
-    case null:
-      return null
-  }
-}
-
-export function hasEligibleSubscriptionUpgrade({
-  currentTier,
-  plans,
-  teamCreditStops,
-  currentTeamCreditStop
-}: SubscriptionUpgradeEligibility): boolean {
-  if (currentTier === 'TEAM') {
-    const stops = teamCreditStops?.stops
-    if (!stops || !currentTeamCreditStop) return false
-    const currentStop = stops.find(
-      (stop) => stop.id === currentTeamCreditStop.id
-    )
-    if (!currentStop) return false
-    return stops.some((stop) => stop.credits > currentStop.credits)
-  }
-
-  const currentRank = getPersonalTierRank(currentTier)
-  if (currentRank === null) return false
-  return plans.some((plan) => {
-    if (!plan.availability.available) return false
-    const targetRank = getPersonalTierRank(plan.tier)
-    return targetRank !== null && targetRank > currentRank
-  })
 }

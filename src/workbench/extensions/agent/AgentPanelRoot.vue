@@ -16,7 +16,6 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -56,9 +55,8 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
-import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
-import { useBillingPolicyState } from '@/platform/cloud/subscription/composables/useBillingPolicyState'
-import { hasEligibleSubscriptionUpgrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
@@ -111,33 +109,24 @@ const CrdtDevPanel = defineAsyncComponent(
 const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
-const { permissions, workspaceRole } = useWorkspaceUI()
-const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
-const { billingPolicyState } = useBillingPolicyState()
-const { tier, plans, teamCreditStops, currentTeamCreditStop } =
-  useBillingContext()
-const hasEligibleUpgrade = computed(() =>
-  hasEligibleSubscriptionUpgrade({
-    currentTier: tier.value,
-    plans: plans.value,
-    teamCreditStops: teamCreditStops.value,
-    currentTeamCreditStop: currentTeamCreditStop.value
-  })
-)
-const canPaywallTopUp = computed(
-  () =>
-    permissions.value.canTopUp &&
-    billingPolicyCapabilities.value.topUpAccess === 'allowed'
-)
+const { workspaceRole } = useWorkspaceUI()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  isReady: billingCapabilitiesReady
+} = useBillingCapabilities()
 const paywallPresentation = computed(() =>
   resolveAgentPaywallPresentation({
-    distribution: billingPolicyState.value.kind.startsWith('Cloud')
-      ? 'cloud'
-      : 'local',
+    distribution: isCloud ? 'cloud' : 'local',
     role: workspaceRole.value,
-    canTopUp: canPaywallTopUp.value,
-    canSubscribeSelfServe: permissions.value.canManageSubscription,
-    hasEligibleUpgrade: hasEligibleUpgrade.value
+    // The initial false/false pair is not an authoritative sales-managed
+    // result while the shared capability source initializes in the background.
+    canTopUp: billingCapabilitiesReady.value
+      ? canTopUp.value
+      : workspaceRole.value === 'owner',
+    canSubscribeSelfServe: billingCapabilitiesReady.value
+      ? canSubscribeSelfServe.value
+      : workspaceRole.value === 'owner'
   })
 )
 const sidebarTabStore = useSidebarTabStore()

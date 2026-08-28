@@ -2,14 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import { resolveAgentPaywallPresentation } from './agentPaywallPresentation'
 
-type CurrentInput = Parameters<typeof resolveAgentPaywallPresentation>[0]
-
-const resolveServerCapabilities = (
-  input: Omit<CurrentInput, 'hasEligibleUpgrade'>
-) => resolveAgentPaywallPresentation(input as CurrentInput)
+const resolveServerCapabilities = resolveAgentPaywallPresentation
 
 describe('resolveAgentPaywallPresentation', () => {
-  it.each([
+  it.for([
     {
       name: 'both self-serve actions',
       canTopUp: true,

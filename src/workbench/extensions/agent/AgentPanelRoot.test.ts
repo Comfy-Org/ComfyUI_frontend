@@ -304,6 +304,11 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => telemetry
 }))
 
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  isCloud: true
+}))
+
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
 vi.mock(
   '@/platform/cloud/subscription/composables/useAccountPreconditionDialog',
@@ -312,85 +317,33 @@ vi.mock(
   })
 )
 
-const paywallPermissions = vi.hoisted(() => ({
-  canTopUp: true,
-  canManageSubscription: true
-}))
 const paywallWorkspace = vi.hoisted(() => ({
   role: 'owner' as 'owner' | 'member'
 }))
-const paywallPolicy = vi.hoisted(() => ({
-  topUpAccess: 'allowed' as 'allowed' | 'subscription-required'
-}))
-const paywallPolicyState = vi.hoisted(() => ({
-  kind: 'CloudAndStandard'
-}))
-const paywallBilling = vi.hoisted(() => ({
-  tier: 'STANDARD' as string | null,
-  plans: [
-    {
-      tier: 'CREATOR',
-      duration: 'MONTHLY',
-      slug: 'creator-monthly',
-      price_cents: 3500,
-      credits_cents: 7400,
-      max_seats: 5,
-      availability: { available: true },
-      seat_summary: {
-        seat_count: 1,
-        total_cost_cents: 3500,
-        total_credits_cents: 7400
-      }
-    }
-  ],
-  teamCreditStops: null,
-  currentTeamCreditStop: null
+const paywallCapabilities = vi.hoisted(() => ({
+  canTopUp: true,
+  canSubscribeSelfServe: true,
+  isReady: true
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
   const { computed } = await import('vue')
   return {
     useWorkspaceUI: () => ({
-      permissions: computed(() => paywallPermissions),
       workspaceRole: computed(() => paywallWorkspace.role)
     })
   }
 })
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities',
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useBillingPolicyCapabilities: () => ({
-        billingPolicyCapabilities: computed(() => paywallPolicy)
-      })
-    }
-  }
-)
-
-vi.mock(
-  '@/platform/cloud/subscription/composables/useBillingPolicyState',
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useBillingPolicyState: () => ({
-        billingPolicyState: computed(() => paywallPolicyState)
-      })
-    }
-  }
-)
-
-vi.mock('@/composables/billing/useBillingContext', async () => {
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', async () => {
   const { computed } = await import('vue')
   return {
-    useBillingContext: () => ({
-      tier: computed(() => paywallBilling.tier),
-      plans: computed(() => paywallBilling.plans),
-      teamCreditStops: computed(() => paywallBilling.teamCreditStops),
-      currentTeamCreditStop: computed(
-        () => paywallBilling.currentTeamCreditStop
-      )
+    useBillingCapabilities: () => ({
+      canTopUp: computed(() => paywallCapabilities.canTopUp),
+      canSubscribeSelfServe: computed(
+        () => paywallCapabilities.canSubscribeSelfServe
+      ),
+      isReady: computed(() => paywallCapabilities.isReady)
     })
   }
 })
@@ -430,16 +383,10 @@ beforeEach(() => {
   workflowService.openWorkflow.mockClear()
   focusNodeInstance.mockReset()
   socketSend.mockReset()
-  paywallPermissions.canTopUp = true
-  paywallPermissions.canManageSubscription = true
   paywallWorkspace.role = 'owner'
-  paywallPolicy.topUpAccess = 'allowed'
-  paywallPolicyState.kind = 'CloudAndStandard'
-  paywallBilling.tier = 'STANDARD'
-  paywallBilling.plans[0]!.tier = 'CREATOR'
-  paywallBilling.plans[0]!.availability.available = true
-  paywallBilling.teamCreditStops = null
-  paywallBilling.currentTeamCreditStop = null
+  paywallCapabilities.canTopUp = true
+  paywallCapabilities.canSubscribeSelfServe = true
+  paywallCapabilities.isReady = true
 })
 
 afterEach(() => {
@@ -519,8 +466,6 @@ describe('AgentPanelRoot paywall actions', () => {
   })
 
   it('hides purchase actions from a Team member without billing permissions', async () => {
-    paywallPermissions.canTopUp = false
-    paywallPermissions.canManageSubscription = false
     paywallWorkspace.role = 'member'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
@@ -542,8 +487,8 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps Add credits but hides Upgrade at the highest personal tier', async () => {
-    paywallBilling.tier = 'PRO'
+  it('keeps Add credits but hides Upgrade when self-serve subscription is unavailable', async () => {
+    paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
       id: 'msg-paywall' as TurnId,
@@ -561,10 +506,8 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows Subscribe only when Cloud Free requires a subscription', async () => {
-    paywallBilling.tier = 'FREE'
-    paywallPolicy.topUpAccess = 'subscription-required'
-    paywallPolicyState.kind = 'CloudAndFree'
+  it('shows Subscribe only when the server allows self-serve subscription but not top-up', async () => {
+    paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
       id: 'msg-paywall' as TurnId,
@@ -582,9 +525,9 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows the Local copy and Add credits only outside Cloud', async () => {
-    paywallBilling.tier = 'FREE'
-    paywallPolicyState.kind = 'LocalAndFree'
+  it('shows sales-managed remediation for a ready owner with no self-serve capability', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
       id: 'msg-paywall' as TurnId,
@@ -596,14 +539,38 @@ describe('AgentPanelRoot paywall actions', () => {
 
     expect(
       await screen.findByText(
-        "You've spent your credit balance. Add credits to keep the agent running."
+        'This workspace is billed through your Comfy account team. Contact them to add credits.'
       )
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Add credits' })
-    ).toBeInTheDocument()
+      screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /upgrade|subscribe/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not interpret the pending false pair as sales-managed', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    paywallCapabilities.isReady = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(
+      await screen.findByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Upgrade plan' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/billed through your Comfy account team/i)
     ).not.toBeInTheDocument()
   })
 })
