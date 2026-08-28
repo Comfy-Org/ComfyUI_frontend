@@ -108,7 +108,7 @@ describe('arrangeForLegacyRender', () => {
         position: { x: 0, y: 0 },
         size: { width: 140, height: 80 },
         bounds: { x: 0, y: 0, width: 140, height: 80 },
-        zIndex: 2,
+        zIndex: layoutStore.allocateZIndex(),
         visible: true
       },
       timestamp: Date.now(),

@@ -7,6 +7,7 @@ import { compareNodeIds } from '@/types/nodeId'
 const logger = log.getLogger('arrangeForLegacyRender')
 
 interface RenderOrderCacheEntry {
+  graphVersion: number
   layoutVersion: number
   nodes: LGraphNode[]
 }
@@ -16,7 +17,12 @@ const renderOrderCache = new WeakMap<LGraph, RenderOrderCacheEntry>()
 export function nodesInRenderOrder(graph: LGraph): LGraphNode[] {
   const layoutVersion = layoutStore.layoutVersion
   const cached = renderOrderCache.get(graph)
-  if (cached && cached.layoutVersion === layoutVersion) return cached.nodes
+  if (
+    cached &&
+    cached.graphVersion === graph._version &&
+    cached.layoutVersion === layoutVersion
+  )
+    return cached.nodes
 
   const rootGraphId = graph.rootGraph.id
   const nodes = graph._nodes
@@ -26,7 +32,11 @@ export function nodesInRenderOrder(graph: LGraph): LGraphNode[] {
     }))
     .sort((a, b) => a.zIndex - b.zIndex || compareNodeIds(a.node.id, b.node.id))
     .map(({ node }) => node)
-  renderOrderCache.set(graph, { layoutVersion, nodes })
+  renderOrderCache.set(graph, {
+    graphVersion: graph._version,
+    layoutVersion,
+    nodes
+  })
   return nodes
 }
 
