@@ -7,7 +7,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import type { ResultItemInit, TaskItemImpl } from '@/stores/queueStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import {
   getMediaTypeFromFilename,
@@ -18,10 +18,7 @@ class AssetResultItem extends ResultItemImpl {
   private readonly _url: string
   private readonly _previewUrl: string
 
-  constructor(
-    asset: AssetItem,
-    init: ConstructorParameters<typeof ResultItemImpl>[0]
-  ) {
+  constructor(asset: AssetItem, init: ResultItemInit) {
     super(init)
     this._url = asset.preview_url ?? ''
     this._previewUrl = asset.thumbnail_url ?? this._url
