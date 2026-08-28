@@ -34,13 +34,20 @@ export class SemanticProjector {
   project(doc: Y.Doc): number {
     const next = readDocSnapshot(doc)
     const mutations = diffSnapshots(this.snapshot, next)
-    this.snapshot = next
-    if (mutations.length === 0) return 0
+    if (mutations.length === 0) {
+      this.snapshot = next
+      return 0
+    }
+    // Commit the snapshot only after the batch finishes: if a mutation throws
+    // partway, the snapshot still describes the pre-batch canvas, so the next
+    // `project` re-derives the remaining delta instead of diffing an
+    // unchanged document to zero mutations and stranding the canvas.
     this.mutator.applyBatch({
       source: 'agent-remote',
       actor: this.options.actor ?? 'agent',
       mutations
     })
+    this.snapshot = next
     return mutations.length
   }
 

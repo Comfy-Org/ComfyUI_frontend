@@ -9,7 +9,10 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import {
+  getSlotLayoutAtPoint,
+  getSlotPosition
+} from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -216,6 +219,8 @@ interface LGraphCanvasState {
   draggingCanvas: boolean
   /** The canvas is read-only, preventing changes to nodes, disconnecting links, moving items, etc. */
   readOnly: boolean
+  /** Enables node-only selection while disabling other canvas interactions. */
+  selectOnly: boolean
 
   /** Bit flags indicating what is currently below the pointer. */
   hoveringOver: CanvasItem
@@ -338,6 +343,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     draggingItems: false,
     draggingCanvas: false,
     readOnly: false,
+    selectOnly: false,
     hoveringOver: CanvasItem.Nothing,
     shouldSetCursor: true,
     selectionChanged: false,
@@ -433,6 +439,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (changed) {
       this.dispatchEvent('litegraph:read-only-changed', { readOnly: value })
     }
+  }
+
+  /** @inheritdoc {@link LGraphCanvasState.selectOnly} */
+  get selectOnly(): boolean {
+    return this.state.selectOnly
+  }
+
+  set selectOnly(value: boolean) {
+    this.state.selectOnly = value
   }
 
   get isDragging(): boolean {
@@ -2317,7 +2332,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // In Vue nodes mode, slots extend beyond node bounds due to CSS transforms.
     // If no node was found, check if the click is on a slot and use its owning node.
     if (!node && LiteGraph.vueNodesMode) {
-      const slotLayout = layoutStore.querySlotAtPoint({
+      const slotLayout = getSlotLayoutAtPoint(graph, {
         x: e.canvasX,
         y: e.canvasY
       })
@@ -2349,7 +2364,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (
       (e.button === 2 || pointer.isDouble) &&
       this.allow_interaction &&
-      !this.read_only
+      !this.read_only &&
+      !this.selectOnly
     ) {
       // Right / aux button
       const { linkConnector, subgraph } = this
@@ -2467,6 +2483,28 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.read_only) {
       pointer.finally = () => (this.dragging_canvas = false)
       this.dragging_canvas = true
+      return
+    }
+
+    // Select-only picking: node clicks select; empty canvas keeps the user's
+    // configured left-drag behavior (pan or marquee-select, mirrored from the
+    // tail this return bypasses; the pan arm's onClick is inert by design -
+    // processSelect(null) preserves the selection while picking). Clone,
+    // reroute, link, and group interactions stay off - deliberately
+    // including the group double-click and the empty-canvas double-click
+    // search box, and leaving selected_group inert.
+    if (this.selectOnly) {
+      if (node && (this.allow_interaction || node.flags.allow_interaction)) {
+        this._processNodeClick(e, ctrlOrMeta, node)
+      } else if (this.allow_dragcanvas) {
+        if (LiteGraph.leftMouseClickBehavior === 'panning') {
+          pointer.onClick = () => this.processSelect(null, e, false, true)
+          pointer.finally = () => (this.dragging_canvas = false)
+          this.dragging_canvas = true
+        } else {
+          this._setupNodeSelectionDrag(e, pointer)
+        }
+      }
       return
     }
 
@@ -2725,6 +2763,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     pointer: CanvasPointer,
     node?: LGraphNode | undefined
   ): void {
+    // Snapshot the mode at gesture start: a flip mid-drag must not change
+    // how THIS gesture's reconciler treats the selection (a picking-started
+    // marquee stays additive even if the mode ends before pointer-up).
+    const pickingMode = this.selectOnly
     const dragRect: Rect = [0, 0, 0, 0]
 
     dragRect[0] = e.canvasX
@@ -2736,7 +2778,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Click, not drag
       const clickedItem =
         node ?? this._getPositionableOnPos(eUp.canvasX, eUp.canvasY)
-      this.processSelect(clickedItem, eUp)
+      this.processSelect(clickedItem, eUp, false, pickingMode)
     }
     pointer.onDragStart = () => (this.dragging_rectangle = dragRect)
 
@@ -2744,13 +2786,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const initialSelection = new Set(this.selectedItems)
 
       pointer.onDrag = (eMove) =>
-        this.handleLiveSelect(eMove, dragRect, initialSelection)
+        this.handleLiveSelect(eMove, dragRect, initialSelection, pickingMode)
 
       pointer.onDragEnd = () => this.finalizeLiveSelect()
     } else {
       // Classic mode: select only when drag ends
       pointer.onDragEnd = (upEvent) =>
-        this._handleMultiSelect(upEvent, dragRect)
+        this._handleMultiSelect(upEvent, dragRect, pickingMode)
     }
 
     pointer.finally = () => (this.dragging_rectangle = null)
@@ -2779,7 +2821,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const x = e.canvasX
     const y = e.canvasY
 
-    pointer.onClick = () => this.processSelect(node, e)
+    const picking = this.selectOnly
+    pointer.onClick = () => this.processSelect(node, e, false, picking)
+
+    if (picking) return
 
     // Immediately bring to front
     if (!node.flags.pinned) {
@@ -3146,6 +3191,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node &&
       this.allow_interaction &&
       !this.read_only &&
+      !this.selectOnly &&
       !this.connecting_links &&
       !node.flags.collapsed
     ) {
@@ -3367,23 +3413,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // to store the output of isOverNodeInput
         const pos: Point = [0, 0]
 
-        // Try to use layout store for hit testing first, fallback to old method
         let inputId: number = -1
         let outputId: number = -1
 
-        const slotLayout = layoutStore.querySlotAtPoint({ x, y })
-        if (slotLayout && slotLayout.nodeId === String(node.id)) {
-          if (slotLayout.type === 'input') {
-            inputId = slotLayout.index
-            pos[0] = slotLayout.position.x
-            pos[1] = slotLayout.position.y
-          } else {
-            outputId = slotLayout.index
-            pos[0] = slotLayout.position.x
-            pos[1] = slotLayout.position.y
+        if (LiteGraph.vueNodesMode) {
+          const slotLayout = getSlotLayoutAtPoint(graph, { x, y }, node)
+          if (slotLayout) {
+            if (slotLayout.type === 'input') {
+              inputId = slotLayout.index
+              pos[0] = slotLayout.position.x
+              pos[1] = slotLayout.position.y
+            } else {
+              outputId = slotLayout.index
+              pos[0] = slotLayout.position.x
+              pos[1] = slotLayout.position.y
+            }
           }
         } else {
-          // Fallback to old method
           inputId = isOverNodeInput(node, x, y, pos)
           outputId = isOverNodeOutput(node, x, y, pos)
         }
@@ -3628,6 +3674,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     pointer: CanvasPointer,
     sticky = false
   ): void {
+    // Picking selects without dragging or opening a graph change (defence in
+    // depth: unreachable from pointer input in-mode, guards direct callers).
+    if (this.selectOnly) {
+      this.processSelect(item, pointer.eDown, sticky)
+      return
+    }
+
     this.emitBeforeChange()
     this.graph?.beforeChange()
     // Ensure that dragging is properly cleaned up, on success or failure.
@@ -3640,6 +3693,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.processSelect(item, pointer.eDown, sticky)
+
     this.isDragging = true
 
     // Seed the auto-pan modifier state from the pointer-down event so a drag
@@ -4455,7 +4509,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private handleLiveSelect(
     e: CanvasPointerEvent,
     dragRect: Rect,
-    initialSelection: Set<Positionable>
+    initialSelection: Set<Positionable>,
+    pickingMode: boolean
   ): void {
     // Ensure rect is current even if pointer.onDrag fires before processMouseMove updates it
     dragRect[2] = e.canvasX - dragRect[0]
@@ -4479,6 +4534,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (e.altKey && !e.shiftKey) {
       for (const item of initialSelection)
         if (!itemsInRect.has(item)) desired.add(item)
+    } else if (pickingMode) {
+      // Picking is additive (see _handleMultiSelect): never replace.
+      for (const item of initialSelection) desired.add(item)
+      for (const item of itemsInRect) desired.add(item)
     } else {
       for (const item of itemsInRect) desired.add(item)
     }
@@ -4493,7 +4552,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     for (const item of desired) {
       if (!this.selectedItems.has(item)) {
         this.select(item)
-        changed = true
+        // Count only a select that actually landed: select() refuses some
+        // items (groups while picking), and re-marking them every
+        // pointermove churned onSelectionChange + setDirty.
+        if (this.selectedItems.has(item)) changed = true
       }
     }
 
@@ -4517,7 +4579,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param e The pointer up event
    * @param dragRect The drag rectangle
    */
-  private _handleMultiSelect(e: CanvasPointerEvent, dragRect: Rect): void {
+  private _handleMultiSelect(
+    e: CanvasPointerEvent,
+    dragRect: Rect,
+    pickingMode: boolean
+  ): void {
     const normalizedRect: Rect = [
       dragRect[0],
       dragRect[1],
@@ -4535,6 +4601,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (e.altKey) {
       // Remove from selection
       for (const item of itemsInRect) this.deselect(item)
+    } else if (pickingMode) {
+      // Picking is additive: a marquee that misses an already-picked node
+      // must not unpick it, so the replace branch is never taken for a
+      // gesture that started in the mode (snapshot, not the live flag).
+      for (const item of itemsInRect) this.select(item)
     } else {
       // Replace selection
       for (const item of selectedItems.values()) {
@@ -4557,12 +4628,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   processSelect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable | null | undefined,
     e: CanvasPointerEvent | undefined,
-    sticky: boolean = false
+    sticky: boolean = false,
+    // Gesture arms pass their mode SNAPSHOT: a flip between pointerdown and
+    // pointerup must not change how the armed click resolves (live default
+    // covers non-gesture callers).
+    picking: boolean = this.selectOnly
   ): void {
+    if (!item && picking) return
+
     const addModifier = e?.shiftKey
     const subtractModifier = e != null && (e.metaKey || e.ctrlKey)
     const eitherModifier = addModifier || subtractModifier
-    const modifySelection = eitherModifier || this.multi_select
+    const modifySelection = eitherModifier || this.multi_select || picking
 
     if (!item) {
       if (!eitherModifier || this.multi_select) this.deselectAll()
@@ -4597,6 +4674,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   select<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable
   ): void {
+    if (this.selectOnly && !(item instanceof LGraphNode)) return
     if (item.selected && this.selectedItems.has(item)) return
 
     item.selected = true
@@ -6031,12 +6109,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   drawConnections(ctx: CanvasRenderingContext2D): void {
     this.renderedPaths.clear()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
-
-    // Skip link rendering while waiting for slot positions to sync after reconfigure
-    if (LiteGraph.vueNodesMode && layoutStore.pendingSlotSync) {
-      this._visibleReroutes.clear()
-      return
-    }
 
     const { graph, subgraph } = this
     if (!graph) throw new NullGraphError()

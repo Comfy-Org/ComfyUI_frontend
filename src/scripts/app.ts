@@ -5,8 +5,6 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -138,6 +136,7 @@ import {
   executeWidgetsCallback,
   createNode,
   isImageNode,
+  isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
 import {
@@ -686,6 +685,11 @@ export class ComfyApp {
         event.preventDefault()
         event.stopPropagation()
 
+        if (isSelectOnly(this.canvas)) {
+          this.dragOverNode = null
+          return
+        }
+
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it
         // from the drop event so nodes created below land at the cursor.
@@ -914,29 +918,15 @@ export class ComfyApp {
   private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
-      // Set pending sync flag to suppress link rendering until slots are synced
-      if (LiteGraph.vueNodesMode) {
-        layoutStore.setPendingSlotSync(true)
-      }
+      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
+      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      try {
-        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
+      const r = onConfigure?.apply(this, args)
 
-        const r = onConfigure?.apply(this, args)
+      // Fire after onConfigure, used by primitives to generate widget using input nodes config
+      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 
-        // Fire after onConfigure, used by primitives to generate widget using input nodes config
-        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
-
-        return r
-      } finally {
-        // Flush pending slot layout syncs to fix link alignment after undo/redo
-        // Using finally ensures links aren't permanently suppressed if an error occurs
-        if (LiteGraph.vueNodesMode) {
-          flushScheduledSlotLayoutSync()
-          app.canvas?.setDirty(true, true)
-        }
-      }
+      return r
     }
   }
 
@@ -1752,9 +1742,7 @@ export class ComfyApp {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
-            applyPromotedWidgetControl(node, 'beforeQueued', {
-              isPartialExecution
-            })
+            applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
           // Capture workflow before await — activeWorkflow may change if the
@@ -1958,9 +1946,7 @@ export class ComfyApp {
             isPartialExecution
           })
           for (const node of queuedNodes) {
-            applyPromotedWidgetControl(node, 'afterQueued', {
-              isPartialExecution
-            })
+            applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
@@ -2142,6 +2128,9 @@ export class ComfyApp {
    * @param {File} file
    */
   private async handleMeshFile(file: File): Promise<LGraphNode | null> {
+    // Refuse before uploading: the refusal otherwise lands after the file
+    // is already on the server.
+    if (isSelectOnly(this.canvas)) return null
     const uploadedPath = await Load3dUtils.uploadFile(file, '3d')
     if (!uploadedPath) return null
 

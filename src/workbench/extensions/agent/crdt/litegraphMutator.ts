@@ -72,6 +72,21 @@ export class LitegraphMutator implements GraphMutator {
         if (widget) widget.value = mutation.value as TWidgetValue
         return
       }
+      case 'clear_widget': {
+        // The doc stopped tracking this widget. Clean materialization would
+        // leave it at the node-type default (addNode only overrides tracked
+        // keys), so restore that default: read it off a transient node of the
+        // same type, which is never added to the graph.
+        const node = graph.getNodeById(mutation.id)
+        const widget = node?.widgets?.find((w) => w.name === mutation.name)
+        if (!node || !widget) return
+        const pristine = this.deps.createNode(node.type ?? '')
+        const fallback = pristine?.widgets?.find(
+          (w) => w.name === mutation.name
+        )
+        if (fallback) widget.value = fallback.value
+        return
+      }
       case 'connect': {
         const origin = graph.getNodeById(mutation.link.originId)
         const target = graph.getNodeById(mutation.link.targetId)

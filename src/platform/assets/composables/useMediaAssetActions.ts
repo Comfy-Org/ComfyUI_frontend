@@ -12,6 +12,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
@@ -28,7 +29,7 @@ import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetV
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import {
-  getAssetOutputCount,
+  getTotalAssetOutputCount,
   resolveOutputAssetItems
 } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -233,9 +234,9 @@ export function useMediaAssetActions() {
     try {
       const jobIds: string[] = []
       const assetIds: string[] = []
-      const jobAssetNameFilters: Record<string, string[]> = {}
-      const countedOutputJobIds = new Set<string>()
-      let fileCount = 0
+      const namesByJobId = new Map<string, Set<string>>()
+      const wholeJobIds = new Set<string>()
+      const fileCount = getTotalAssetOutputCount(assets)
 
       for (const asset of assets) {
         const assetType = getAssetType(asset)
@@ -245,31 +246,27 @@ export function useMediaAssetActions() {
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
-          // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
           if (metadata?.outputCount != null) {
-            if (!countedOutputJobIds.has(jobId)) {
-              countedOutputJobIds.add(jobId)
-              fileCount += getAssetOutputCount(asset)
-            }
-          } else {
-            fileCount += 1
-          }
-
-          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
-            if (!jobAssetNameFilters[metadata.jobId]) {
-              jobAssetNameFilters[metadata.jobId] = []
-            }
-            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
-              jobAssetNameFilters[metadata.jobId].push(asset.name)
-            }
+            wholeJobIds.add(jobId)
+          } else if (metadata?.jobId && asset.name) {
+            const names = namesByJobId.get(metadata.jobId) ?? new Set<string>()
+            names.add(asset.name)
+            namesByJobId.set(metadata.jobId, names)
           }
         } else {
           assetIds.push(asset.id)
-          fileCount += 1
         }
       }
+
+      // A job-level selection outranks any name filter a sibling child of the
+      // same job contributed, whichever order they were selected in.
+      const jobAssetNameFilters = Object.fromEntries(
+        [...namesByJobId]
+          .filter(([jobId]) => !wholeJobIds.has(jobId))
+          .map(([jobId, names]): [string, string[]] => [jobId, [...names]])
+      )
 
       const spansMultipleJobs = jobIds.length > 1
       const namingStrategy = spansMultipleJobs
@@ -335,6 +332,8 @@ export function useMediaAssetActions() {
    * Uses shared utility to detect appropriate node type based on file extension
    */
   const addWorkflow = async (asset?: AssetItem) => {
+    // A picking refusal is silent-nothing, not a failure.
+    if (isSelectOnly(app.canvas)) return
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
@@ -469,6 +468,8 @@ export function useMediaAssetActions() {
    */
   const addMultipleToWorkflow = async (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
+    // A picking refusal is silent-nothing: no failed count, no summary toast.
+    if (isSelectOnly(app.canvas)) return
 
     const NODE_OFFSET = 50
     let nodeIndex = 0

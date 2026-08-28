@@ -54,10 +54,19 @@ export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =
 
 export const MIME_ASSET_INFO = 'application/x-comfy-asset-info'
 
+// The drag payload EXTENDS a result item with optional asset fields - it is
+// one object schema, never an intersection, so a payload missing the extras
+// still parses as a plain result item.
+const zDraggedAssetInfo = zResultItem.extend({
+  attachment_ref: z.string().min(1).optional().catch(undefined),
+  media_kind: zMediaKindSchema.optional().catch(undefined),
+  preview_url: z.string().url().optional().catch(undefined)
+})
+
 export function parseAssetInfo(dataTransfer: DataTransfer) {
   const assetString = dataTransfer?.getData(MIME_ASSET_INFO)
   try {
-    return zResultItem.safeParse(JSON.parse(assetString ?? '')).data
+    return zDraggedAssetInfo.safeParse(JSON.parse(assetString ?? '')).data
   } catch {
     // output was not parsable, allow fallthrough and return undefined
   }

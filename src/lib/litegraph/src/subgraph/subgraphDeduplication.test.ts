@@ -17,6 +17,12 @@ import type {
 } from '../types/serialisation'
 
 import {
+  MINT_ID_CEILING,
+  MINT_ID_MIN,
+  setCoordinationFreeIds
+} from '@/lib/litegraph/src/idAllocation'
+
+import {
   deduplicateSubgraphGroupIds,
   deduplicateSubgraphLinkIds,
   deduplicateSubgraphNodeIds,
@@ -130,6 +136,19 @@ describe('deduplicateSubgraphNodeIds', () => {
     expect(result.subgraphs[0].floatingLinks?.[0].origin_id).toBe(
       remappedNodeId
     )
+  })
+
+  it('remints collisions inside the coordination-free range while armed', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    const state = freshState()
+    setCoordinationFreeIds(state, true)
+
+    const result = deduplicateSubgraphNodeIds([subgraph], new Set([1]), state)
+
+    const remappedNodeId = Number(result.subgraphs[0].nodes?.[0].id)
+    expect(remappedNodeId).toBeGreaterThanOrEqual(MINT_ID_MIN)
+    expect(remappedNodeId).toBeLessThan(MINT_ID_CEILING)
+    expect(state.lastNodeId).toBe(0)
   })
 })
 

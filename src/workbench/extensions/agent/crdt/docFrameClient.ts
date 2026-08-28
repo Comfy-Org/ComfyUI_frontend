@@ -55,12 +55,24 @@ export interface DocReset {
   actor?: string
 }
 
+/**
+ * Typed failure surface for an inbound frame that named a workflow but could
+ * not be decoded. The frame's bytes are lost, so the only sound recovery is a
+ * same-lineage state-vector replay - the bridge owns that; this frame carries
+ * the report.
+ */
+interface DocFrameError {
+  workflowId: string
+  reason: 'decode_failed'
+}
+
 export type ServerDocFrame =
   | { type: 'doc_update'; data: DocUpdate }
   | { type: 'doc_subscribed'; data: DocSubscribed }
   | { type: 'doc_ops_result'; data: DocOpsResult }
   | { type: 'doc_reset'; data: DocReset }
   | { type: 'awareness'; data: DocAwareness }
+  | { type: 'frame_error'; data: DocFrameError }
 
 export interface DocFrameTransport {
   /**
@@ -133,12 +145,25 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     typeof data.seq === 'number' &&
     typeof data.update_b64 === 'string'
   ) {
+    // A payload that cannot decode is a LOST update, not a malformed frame to
+    // drop silently: the doc now has a hole only a state-vector replay can
+    // fill. Report it typed so the bridge can recover without replacing the
+    // document.
+    let update: Uint8Array
+    try {
+      update = decodeBase64(data.update_b64)
+    } catch {
+      return {
+        type: 'frame_error',
+        data: { workflowId: data.workflow_id, reason: 'decode_failed' }
+      }
+    }
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
-        update: decodeBase64(data.update_b64),
+        update,
         ...(typeof data.actor === 'string' && { actor: data.actor })
       }
     }
@@ -227,7 +252,9 @@ export class DocFrameClient extends EventTarget {
         if (!(event instanceof CustomEvent)) return
         const parsed = parseServerDocFrame({ type, data: event.detail })
         if (parsed)
-          this.dispatchEvent(new CustomEvent(type, { detail: parsed.data }))
+          this.dispatchEvent(
+            new CustomEvent(parsed.type, { detail: parsed.data })
+          )
       }
       this.listeners.set(type, listener)
       transport.addEventListener(type, listener)

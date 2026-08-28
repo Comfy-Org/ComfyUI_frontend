@@ -182,6 +182,9 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
+const mockAppCanvas = vi.hoisted(() => ({
+  value: undefined as { selectOnly: boolean } | undefined
+}))
 vi.mock('@/scripts/app', () => ({
   app: {
     get graph() {
@@ -189,6 +192,9 @@ vi.mock('@/scripts/app', () => ({
     },
     get rootGraph() {
       return mockAppGraph.value
+    },
+    get canvas() {
+      return mockAppCanvas.value
     }
   }
 }))
@@ -298,6 +304,7 @@ function mountMediaActions(asset?: AssetMeta) {
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    mockAppCanvas.value = undefined
     litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
     mockGetOutputAssetMetadata.mockReturnValue(null)
@@ -322,6 +329,25 @@ describe('useMediaAssetActions', () => {
         await actions.addWorkflow(asset)
 
         expect(getAddedImageWidgetValues()).toEqual(['my-image.jpeg'])
+      })
+
+      it('adds nothing and toasts nothing while the canvas is picking-only', async () => {
+        mockAppCanvas.value = { selectOnly: true }
+        const actions = useMediaAssetActions()
+
+        await actions.addWorkflow(createMockAsset({ name: 'my-image.jpeg' }))
+
+        expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
+        expect(useToast().add).not.toHaveBeenCalled()
+      })
+
+      it('adds normally when the canvas is editable', async () => {
+        mockAppCanvas.value = { selectOnly: false }
+        const actions = useMediaAssetActions()
+
+        await actions.addWorkflow(createMockAsset({ name: 'my-image.jpeg' }))
+
+        expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalledOnce()
       })
     })
 
@@ -420,6 +446,19 @@ describe('useMediaAssetActions', () => {
           'hash2.jpeg [temp]',
           'hash3.jpeg [output]'
         ])
+      })
+
+      it('adds nothing and toasts nothing while the canvas is picking-only', async () => {
+        mockAppCanvas.value = { selectOnly: true }
+        const { actions, unmount } = mountMediaActions()
+
+        await actions.addMultipleToWorkflow([
+          createMockAsset({ id: '1', name: 'file1.jpeg', hash: 'hash1.jpeg' })
+        ])
+        unmount()
+
+        expect(litegraphServiceMock.addNodeOnGraph).not.toHaveBeenCalled()
+        expect(useToast().add).not.toHaveBeenCalled()
       })
     })
   })
@@ -912,7 +951,9 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should export temp history outputs through their job IDs', async () => {
-      mockGetAssetType.mockReturnValueOnce('temp').mockReturnValueOnce('output')
+      mockGetAssetType.mockImplementation((asset: AssetItem) =>
+        asset.id === 'temp-job' ? 'temp' : 'output'
+      )
       const tempOutput = createOutputAsset(
         'temp-job',
         'ComfyUI_temp_audio.flac',
@@ -941,9 +982,9 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should export inputs with output-shaped metadata through their asset IDs', async () => {
-      mockGetAssetType
-        .mockReturnValueOnce('input')
-        .mockReturnValueOnce('output')
+      mockGetAssetType.mockImplementation((asset: AssetItem) =>
+        asset.id === 'input-asset' ? 'input' : 'output'
+      )
       const inputWithJobMetadata = createMockAsset({
         id: 'input-asset',
         name: 'reference.png',
@@ -1004,6 +1045,24 @@ describe('useMediaAssetActions', () => {
         job2: ['img2.png']
       })
       expect(payload.naming_strategy).toBe('group_by_job_time')
+    })
+
+    it('should omit name filters when a job-level selection overlaps a child', async () => {
+      const parent = createOutputAsset('parent', 'cover.png', 'job1', 3)
+      const child = createOutputAsset('child', 'img1.png', 'job1')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([parent, child])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockCreateAssetExport).toHaveBeenCalledWith({
+        job_ids: ['job1'],
+        naming_strategy: 'preserve',
+        include_previews: true
+      })
     })
 
     it('should preserve multiple selected outputs from one job', async () => {
@@ -1108,6 +1167,16 @@ describe('useMediaAssetActions', () => {
 
       const actions = useMediaAssetActions()
       actions.downloadAssets([j1, j1Duplicate])
+
+      await expectExportToastFileCount(3)
+    })
+
+    it('should count an overlapping job-level selection and child once', async () => {
+      const parent = createOutputAsset('parent', 'cover.png', 'job1', 3)
+      const child = createOutputAsset('child', 'img1.png', 'job1')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([parent, child])
 
       await expectExportToastFileCount(3)
     })

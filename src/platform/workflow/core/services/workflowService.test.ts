@@ -625,6 +625,35 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('repaints the retained workflow when a replacement load reports failure', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/retained.json'
+      })
+      const failing = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/failing.json'
+      })
+      workflowStore.attachWorkflow(retained, 0)
+      workflowStore.attachWorkflow(failing, 1)
+      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      vi.mocked(app.loadGraphData).mockClear()
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+
+      await expect(useWorkflowService().openWorkflow(failing)).resolves.toBe(
+        false
+      )
+
+      // Second call = the retained workflow repainted from its saved state,
+      // so selection, canvas, and change tracking agree after the abort.
+      const calls = vi.mocked(app.loadGraphData).mock.calls
+      expect(calls).toHaveLength(2)
+      expect(calls[1][3]).toMatchObject({ path: 'workflows/retained.json' })
+      expect(calls[1][0]).toEqual(retained.activeState)
+      expect(workflowStore.activeWorkflow?.path).toBe('workflows/retained.json')
+    })
+
     it('serializes rapid workflow opens so the final selection stays active', async () => {
       const workflowStore = useWorkflowStore()
       const first = createWorkflow(null, {
@@ -1607,6 +1636,35 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('insertWorkflow', () => {
+    it('does not insert while the canvas is picking-only', async () => {
+      const workflow = { load: vi.fn() } as unknown as ComfyWorkflow
+      Reflect.set(app.canvas, 'selectOnly', true)
+      try {
+        await useWorkflowService().insertWorkflow(workflow)
+
+        expect(workflow.load).not.toHaveBeenCalled()
+      } finally {
+        Reflect.set(app.canvas, 'selectOnly', false)
+      }
+    })
+
+    it('inserts when the canvas is editable', async () => {
+      const deserialize = vi.fn()
+      Reflect.set(app.canvas, '_deserializeItems', deserialize)
+      const workflow = {
+        load: vi.fn().mockResolvedValue({
+          initialState: { nodes: [], links: [] }
+        })
+      } as unknown as ComfyWorkflow
+
+      await useWorkflowService().insertWorkflow(workflow)
+
+      expect(workflow.load).toHaveBeenCalledOnce()
+      expect(deserialize).toHaveBeenCalledOnce()
     })
   })
 
