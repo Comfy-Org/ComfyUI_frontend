@@ -14,7 +14,7 @@ const targets = [{ y: 90 }, { y: 190 }]
 <template>
   <div
     aria-hidden="true"
-    class="flex h-full min-h-72 items-center overflow-hidden rounded-3xl bg-black/40 p-6 lg:p-8"
+    class="flex h-full min-h-72 items-center overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-6 lg:p-8"
   >
     <svg viewBox="0 0 480 280" class="h-full w-full">
       <!-- Sources: loose parts, flowing inward -->

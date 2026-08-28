@@ -4,11 +4,11 @@ import Button from '../../components/ui/button/Button.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import BuilderVisual from './BuilderVisual.vue'
+import BuilderIsoVisual from './BuilderIsoVisual.vue'
 import CodeTabs from './CodeTabs.vue'
 import { modelsApiCodeTabs } from './codeSamples'
 import { platformCtas } from './ctas'
-import ServerlessVisual from './ServerlessVisual.vue'
+import ServerlessFlowVisual from './ServerlessFlowVisual.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -53,7 +53,7 @@ const modelsTabs = modelsApiCodeTabs
           </Button>
         </div>
       </div>
-      <ServerlessVisual />
+      <ServerlessFlowVisual />
     </article>
 
     <!-- Models API and Builder, side by side -->
@@ -75,6 +75,7 @@ const modelsTabs = modelsApiCodeTabs
         </p>
         <div class="relative z-10 mt-6">
           <CodeTabs
+            flat
             :tabs="modelsTabs"
             :aria-label="t('platform.products.models.title', locale)"
           />
@@ -108,7 +109,7 @@ const modelsTabs = modelsApiCodeTabs
           {{ t('platform.products.builder.description', locale) }}
         </p>
         <div class="mt-6 flex-1">
-          <BuilderVisual />
+          <BuilderIsoVisual />
         </div>
         <div
           class="relative z-10 mt-auto flex w-fit flex-wrap items-center gap-3 pt-8"

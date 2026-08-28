@@ -1,9 +1,17 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', flat = false } = defineProps<{
+  locale?: Locale
+  flat?: boolean
+}>()
+
+const headCell = flat ? 'px-6 py-4' : 'px-5 py-4'
+const bodyCell = flat ? 'px-6 py-5' : 'px-5 py-3.5'
 
 // Rates from the Limited Beta PRFAQ (USD and Comfy Credits).
 const gpuRates = [
@@ -58,32 +66,55 @@ const storageRates = [
     </SectionHeader>
 
     <div
-      class="mx-auto mt-8 grid max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-2"
+      :class="
+        cn(
+          'mx-auto mt-8 grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-2',
+          flat ? 'rounded-4xl border border-white/10 p-4 lg:p-6' : 'items-start'
+        )
+      "
     >
-      <div class="overflow-hidden rounded-3xl">
+      <div
+        :class="
+          cn(
+            'overflow-hidden rounded-3xl',
+            flat ? 'h-full bg-[#2a2230]' : 'border border-white/10'
+          )
+        "
+      >
         <table class="w-full text-left text-sm">
           <thead>
-            <tr class="bg-white/4 text-xs tracking-wider uppercase">
+            <tr
+              :class="
+                cn(
+                  'text-xs tracking-wider uppercase',
+                  flat ? 'border-b border-white/10' : 'bg-white/4'
+                )
+              "
+            >
               <th
-                class="px-5 py-4 font-bold text-primary-comfy-canvas"
+                :class="cn(headCell, 'font-bold text-primary-comfy-canvas')"
                 scope="col"
               >
                 {{ t('platform.pricing.gpuColumn', locale) }}
               </th>
               <th
-                class="px-5 py-4 font-bold text-primary-comfy-canvas"
+                :class="cn(headCell, 'font-bold text-primary-comfy-canvas')"
                 scope="col"
               >
                 {{ t('platform.pricing.vramColumn', locale) }}
               </th>
               <th
-                class="px-5 py-4 text-right font-bold text-primary-comfy-canvas"
+                :class="
+                  cn(headCell, 'text-right font-bold text-primary-comfy-canvas')
+                "
                 scope="col"
               >
                 {{ t('platform.pricing.priceColumn', locale) }}
               </th>
               <th
-                class="px-5 py-4 text-right font-bold text-primary-comfy-canvas"
+                :class="
+                  cn(headCell, 'text-right font-bold text-primary-comfy-canvas')
+                "
                 scope="col"
               >
                 {{ t('platform.pricing.creditsColumn', locale) }}
@@ -94,50 +125,77 @@ const storageRates = [
             <tr
               v-for="rate in gpuRates"
               :key="rate.gpu"
-              class="border-t border-white/10"
+              :class="cn(!flat && 'border-t border-white/10')"
             >
-              <td class="px-5 py-3.5 text-primary-warm-white">
+              <td :class="cn(bodyCell, 'text-primary-warm-white')">
                 {{ rate.gpu }}
               </td>
-              <td class="px-5 py-3.5 text-primary-comfy-canvas">
+              <td :class="cn(bodyCell, 'text-primary-comfy-canvas')">
                 {{ rate.vram }}
               </td>
               <td
-                class="px-5 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                :class="
+                  cn(bodyCell, 'text-right font-mono text-primary-comfy-canvas')
+                "
               >
                 {{ rate.price }}
               </td>
-              <td class="px-5 py-3.5 text-right font-mono text-smoke-700">
+              <td :class="cn(bodyCell, 'text-right font-mono text-smoke-700')">
                 {{ rate.credits }}
               </td>
             </tr>
           </tbody>
         </table>
         <p
-          class="border-t border-white/10 bg-white/4 px-5 py-3 text-xs text-smoke-700"
+          :class="
+            cn(
+              'text-xs text-smoke-700',
+              flat
+                ? 'px-6 pt-1 pb-6'
+                : 'border-t border-white/10 bg-white/4 px-5 py-3'
+            )
+          "
         >
           {{ t('platform.pricing.billedPerSecond', locale) }}
         </p>
       </div>
 
-      <div class="overflow-hidden rounded-3xl">
+      <div
+        :class="
+          cn(
+            'overflow-hidden rounded-3xl',
+            flat ? 'h-full bg-[#2a2230]' : 'border border-white/10'
+          )
+        "
+      >
         <table class="w-full text-left text-sm">
           <thead>
-            <tr class="bg-white/4 text-xs tracking-wider uppercase">
+            <tr
+              :class="
+                cn(
+                  'text-xs tracking-wider uppercase',
+                  flat ? 'border-b border-white/10' : 'bg-white/4'
+                )
+              "
+            >
               <th
-                class="px-5 py-4 font-bold text-primary-comfy-canvas"
+                :class="cn(headCell, 'font-bold text-primary-comfy-canvas')"
                 scope="col"
               >
                 {{ t('platform.pricing.storageColumn', locale) }}
               </th>
               <th
-                class="px-5 py-4 text-right font-bold text-primary-comfy-canvas"
+                :class="
+                  cn(headCell, 'text-right font-bold text-primary-comfy-canvas')
+                "
                 scope="col"
               >
                 {{ t('platform.pricing.priceColumn', locale) }}
               </th>
               <th
-                class="px-5 py-4 text-right font-bold text-primary-comfy-canvas"
+                :class="
+                  cn(headCell, 'text-right font-bold text-primary-comfy-canvas')
+                "
                 scope="col"
               >
                 {{ t('platform.pricing.creditsColumn', locale) }}
@@ -148,38 +206,72 @@ const storageRates = [
             <tr
               v-for="rate in storageRates"
               :key="rate.key"
-              class="border-t border-white/10"
+              :class="cn(!flat && 'border-t border-white/10')"
             >
-              <td class="px-5 py-3.5 text-primary-warm-white">
+              <td :class="cn(bodyCell, 'text-primary-warm-white')">
                 {{ t(`platform.pricing.storage.${rate.key}`, locale) }}
               </td>
               <td
-                class="px-5 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                :class="
+                  cn(bodyCell, 'text-right font-mono text-primary-comfy-canvas')
+                "
               >
                 {{ rate.price }}
               </td>
-              <td class="px-5 py-3.5 text-right font-mono text-smoke-700">
+              <td :class="cn(bodyCell, 'text-right font-mono text-smoke-700')">
                 {{ rate.credits }}
               </td>
             </tr>
           </tbody>
         </table>
         <p
-          class="border-t border-white/10 bg-white/4 px-5 py-3 text-xs text-smoke-700"
+          :class="
+            cn(
+              'text-xs text-smoke-700',
+              flat
+                ? 'px-6 pt-1 pb-6'
+                : 'border-t border-white/10 bg-white/4 px-5 py-3'
+            )
+          "
         >
           {{ t('platform.pricing.storageNote', locale) }}
         </p>
       </div>
     </div>
 
-    <div class="mx-auto mt-6 max-w-2xl space-y-2 text-center">
-      <p class="text-xs text-primary-comfy-canvas">
+    <div
+      :class="
+        cn(
+          'mx-auto mt-6 space-y-2',
+          flat ? 'max-w-6xl text-left' : 'max-w-2xl text-center'
+        )
+      "
+    >
+      <p
+        :class="
+          cn(
+            'text-xs',
+            flat ? 'text-primary-warm-gray' : 'text-primary-comfy-canvas'
+          )
+        "
+      >
         {{ t('platform.pricing.idleNote', locale) }}
       </p>
-      <p class="text-xs text-primary-comfy-canvas">
+      <p
+        :class="
+          cn(
+            'text-xs',
+            flat ? 'text-primary-warm-gray' : 'text-primary-comfy-canvas'
+          )
+        "
+      >
         {{ t('platform.pricing.storageExample', locale) }}
       </p>
-      <p class="text-xs text-smoke-700">
+      <p
+        :class="
+          cn('text-xs', flat ? 'text-primary-warm-gray' : 'text-smoke-700')
+        "
+      >
         {{ t('platform.pricing.modelsNote', locale) }}
       </p>
     </div>

@@ -163,6 +163,8 @@ const {
           {{ secondaryCta.label }}
         </BrandButton>
       </div>
+
+      <slot name="belowCtas" />
     </div>
 
     <div class="order-first w-full lg:order-last lg:flex-1">

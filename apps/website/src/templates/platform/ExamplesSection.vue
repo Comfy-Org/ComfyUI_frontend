@@ -9,7 +9,10 @@ import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', flat = false } = defineProps<{
+  locale?: Locale
+  flat?: boolean
+}>()
 
 interface Example {
   id: string
@@ -109,16 +112,33 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow/50 group flex flex-col overflow-hidden rounded-3xl focus-visible:ring-2 focus-visible:outline-none"
+        :class="
+          cn(
+            'focus-visible:ring-primary-comfy-yellow/50 group flex flex-col overflow-hidden rounded-3xl focus-visible:ring-2 focus-visible:outline-none',
+            !flat &&
+              'border border-white/10 transition-colors hover:border-white/25'
+          )
+        "
       >
         <div
           :class="
             cn(
               'aspect-2/1 transition-opacity group-hover:opacity-90',
+              !flat && 'flex items-end p-4',
               example.bg
             )
           "
-        />
+        >
+          <div v-if="!flat" class="flex flex-wrap gap-1.5">
+            <span
+              v-for="tag in example.tags"
+              :key="tag"
+              class="rounded-full bg-primary-comfy-ink/70 px-2.5 py-1 font-mono text-[10px] text-primary-comfy-canvas"
+            >
+              {{ tag }}
+            </span>
+          </div>
+        </div>
         <div class="bg-transparency-white-t4 flex flex-1 flex-col p-6">
           <h3 class="text-base font-normal text-primary-warm-white">
             {{ example.title }}
@@ -132,17 +152,19 @@ const more: Omit<Example, 'bg'>[] = [
             >
               {{ t('platform.examples.cookbook', locale) }}
             </span>
-            <div
-              class="ml-auto flex flex-wrap items-center justify-end gap-1.5"
-            >
-              <Badge v-for="tag in example.tags" :key="tag" variant="subtle">
-                {{ tag }}
-              </Badge>
-            </div>
-            <CardArrow
-              hover="group"
-              class="bg-primary-comfy-yellow text-primary-comfy-ink shrink-0"
-            />
+            <template v-if="flat">
+              <div
+                class="ml-auto flex flex-wrap items-center justify-end gap-1.5"
+              >
+                <Badge v-for="tag in example.tags" :key="tag" variant="subtle">
+                  {{ tag }}
+                </Badge>
+              </div>
+              <CardArrow
+                hover="group"
+                class="bg-primary-comfy-yellow text-primary-comfy-ink shrink-0"
+              />
+            </template>
           </div>
         </div>
       </a>
@@ -156,12 +178,24 @@ const more: Omit<Example, 'bg'>[] = [
         :href="externalLinks.docsPlatformExamples"
         target="_blank"
         rel="noopener noreferrer"
-        class="focus-visible:ring-primary-comfy-yellow/50 bg-transparency-white-t4 flex flex-col rounded-3xl p-5 focus-visible:ring-2 focus-visible:outline-none"
+        :class="
+          cn(
+            'focus-visible:ring-primary-comfy-yellow/50 bg-transparency-white-t4 flex flex-col rounded-3xl p-5 focus-visible:ring-2 focus-visible:outline-none',
+            !flat &&
+              'border border-white/10 transition-colors hover:border-white/25'
+          )
+        "
       >
         <div class="flex flex-wrap gap-1.5">
-          <Badge v-for="tag in example.tags" :key="tag" variant="subtle">
-            {{ tag }}
-          </Badge>
+          <template v-for="tag in example.tags" :key="tag">
+            <Badge v-if="flat" variant="subtle">{{ tag }}</Badge>
+            <span
+              v-else
+              class="rounded-full bg-primary-comfy-ink/70 px-2.5 py-1 font-mono text-[10px] text-primary-comfy-canvas"
+            >
+              {{ tag }}
+            </span>
+          </template>
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
           {{ example.title }}

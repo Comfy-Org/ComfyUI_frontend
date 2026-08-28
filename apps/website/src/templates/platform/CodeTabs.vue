@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   useDocumentVisibility,
   useElementVisibility,
@@ -23,9 +24,14 @@ export interface CodeTab {
 
 const CYCLE_INTERVAL_MS = 3000
 
-const { tabs, ariaLabel } = defineProps<{
+const {
+  tabs,
+  ariaLabel,
+  flat = false
+} = defineProps<{
   tabs: Record<string, CodeTab>
   ariaLabel: string
+  flat?: boolean
 }>()
 
 const activeTab = ref(Object.keys(tabs)[0])
@@ -93,7 +99,12 @@ function cycleValue(values: string[]): string {
       class="mt-4 block"
     >
       <pre
-        class="overflow-x-auto rounded-3xl bg-black/40 p-5 font-mono text-xs/relaxed text-primary-comfy-canvas lg:p-6 lg:text-sm/relaxed"
+        :class="
+          cn(
+            'overflow-x-auto rounded-3xl p-5 font-mono text-xs/relaxed text-primary-comfy-canvas lg:p-6 lg:text-sm/relaxed',
+            flat ? 'bg-[#251d30]' : 'border border-white/10 bg-black/40'
+          )
+        "
       ><code><template
           v-for="(segment, index) in tab.segments"
           :key="index"

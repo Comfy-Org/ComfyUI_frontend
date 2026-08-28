@@ -22,6 +22,12 @@ const ctas = platformCtas(locale)
     :primary-cta="ctas.getStarted"
     :secondary-cta="ctas.docs"
   >
+    <template #belowCtas>
+      <p class="text-primary-warm-gray mt-5 max-w-xl text-xs">
+        {{ t('platform.faq.betaBanner', locale) }}
+      </p>
+    </template>
+
     <template #media>
       <DeployTerminal />
     </template>

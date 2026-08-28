@@ -210,6 +210,23 @@
   animation: gpu-pulse 2.4s ease-in-out infinite;
 }
 
+@keyframes iso-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@utility animate-iso-float {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: iso-float 9s ease-in-out infinite;
+  }
+}
+
 @keyframes dash-flow {
   to {
     stroke-dashoffset: -24;

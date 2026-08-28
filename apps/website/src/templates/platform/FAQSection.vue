@@ -15,13 +15,6 @@ const faqs = faqNumbers.map((n) => ({
 </script>
 
 <template>
-  <div class="max-w-9xl mx-auto px-4 pt-10 lg:px-20 lg:pt-14">
-    <p
-      class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 rounded-2xl border px-5 py-3.5 text-xs text-primary-comfy-canvas"
-    >
-      {{ t('platform.faq.betaBanner', locale) }}
-    </p>
-  </div>
   <FAQSplit01
     id="faq"
     compact
