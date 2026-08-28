@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { setCoordinationFreeIds } from '@/lib/litegraph/src/idAllocation'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -411,11 +412,13 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
           recordDevEvent('rebind', { workflowId: persisted })
           subscribedWorkflowId.value = persisted
           bridge.subscribe(persisted)
+          setCoordinationFreeIds(true)
           return
         }
         clearPersistedDocId()
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
+        setCoordinationFreeIds(false)
         return
       }
       initialBind = false
@@ -429,6 +432,10 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       projectedWorkflowId = next
       subscribedWorkflowId.value = next
       bridge.subscribe(next)
+      // Doc-bound workflows allocate contract-scheme (coordination-free) node
+      // and link ids at local creation, so replicas seeded from one snapshot
+      // cannot mint colliding ids; a real detach restores the counters.
+      setCoordinationFreeIds(true)
     },
     { immediate: true }
   )
@@ -440,6 +447,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // failure-tolerant by construction now, but the try/finally makes the
     // "client.destroy() always runs" guarantee local and readable.
     try {
+      setCoordinationFreeIds(false)
       clearSubscribeRetry()
       clearStaleProbe()
       if (import.meta.env.DEV) {

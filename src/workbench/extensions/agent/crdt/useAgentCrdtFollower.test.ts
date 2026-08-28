@@ -68,6 +68,15 @@ vi.mock('./docFrameClient', () => ({
   }
 }))
 
+const idAllocationState = vi.hoisted(() => ({
+  setCoordinationFreeIds: vi.fn()
+}))
+
+vi.mock('@/lib/litegraph/src/idAllocation', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  setCoordinationFreeIds: idAllocationState.setCoordinationFreeIds
+}))
+
 const projectorState = vi.hoisted(() => ({
   current: null as {
     project: ReturnType<typeof vi.fn>
@@ -142,6 +151,7 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     projectorState.current = null
+    idAllocationState.setCoordinationFreeIds.mockClear()
     clientState.destroy.mockClear()
     apiState.api.removeEventListener.mockClear()
   })
@@ -241,6 +251,32 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-persisted')
     expect(status().workflowId).toBe('wf-persisted')
     unmount()
+  })
+
+  it('arms contract-scheme id allocation while bound and restores counters on detach and unmount', async () => {
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    // Bound: local node/link creation allocates coordination-free ids.
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      true
+    )
+
+    workflowId.value = null
+    await nextTick()
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      false
+    )
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      true
+    )
+
+    unmount()
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      false
+    )
   })
 
   it('FE-1902: a real detach clears the persisted binding and unsubscribes', async () => {
