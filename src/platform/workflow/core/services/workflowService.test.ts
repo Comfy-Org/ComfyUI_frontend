@@ -625,6 +625,35 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('repaints the retained workflow when a replacement load reports failure', async () => {
+      const workflowStore = useWorkflowStore()
+      const retained = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/retained.json'
+      })
+      const failing = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/failing.json'
+      })
+      workflowStore.attachWorkflow(retained, 0)
+      workflowStore.attachWorkflow(failing, 1)
+      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      vi.mocked(app.loadGraphData).mockClear()
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+
+      await expect(useWorkflowService().openWorkflow(failing)).resolves.toBe(
+        false
+      )
+
+      // Second call = the retained workflow repainted from its saved state,
+      // so selection, canvas, and change tracking agree after the abort.
+      const calls = vi.mocked(app.loadGraphData).mock.calls
+      expect(calls).toHaveLength(2)
+      expect(calls[1][3]).toMatchObject({ path: 'workflows/retained.json' })
+      expect(calls[1][0]).toEqual(retained.activeState)
+      expect(workflowStore.activeWorkflow?.path).toBe('workflows/retained.json')
+    })
+
     it('serializes rapid workflow opens so the final selection stays active', async () => {
       const workflowStore = useWorkflowStore()
       const first = createWorkflow(null, {
