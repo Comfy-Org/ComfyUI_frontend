@@ -236,3 +236,42 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
     expect(widget?.hidden).toBe(true)
   })
 })
+
+describe('useLitegraphService().addNodeOnGraph', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ createSpy: vi.fn }))
+  })
+
+  const nodeDef = {
+    name: 'TestNode',
+    display_name: 'Test Node'
+  } as unknown as ComfyNodeDefV1
+
+  it('does not create nodes in selection-only mode', () => {
+    Reflect.set(app, 'canvas', { selectOnly: true })
+    const createSpy = vi.spyOn(LiteGraph, 'createNode')
+
+    const node = useLitegraphService().addNodeOnGraph(nodeDef, {
+      pos: [0, 0]
+    })
+
+    // The choke point every creation surface traverses (search popover,
+    // libraries, bookmarks, ghost-drops, job menu) refuses while picking.
+    expect(node).toBeNull()
+    expect(createSpy).not.toHaveBeenCalled()
+  })
+
+  it('creates nodes when the canvas is editable', () => {
+    Reflect.set(app, 'canvas', { selectOnly: false })
+    const createSpy = vi
+      .spyOn(LiteGraph, 'createNode')
+      .mockReturnValue(null as never)
+
+    const node = useLitegraphService().addNodeOnGraph(nodeDef, {
+      pos: [0, 0]
+    })
+
+    expect(node).toBeNull()
+    expect(createSpy).toHaveBeenCalledOnce()
+  })
+})

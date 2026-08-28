@@ -77,6 +77,7 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
   isImageNode,
+  isSelectOnly,
   isVideoNode,
   isVideoOutput,
   migrateWidgetsValues
@@ -922,6 +923,10 @@ export const useLitegraphService = () => {
     options: CreateNodeOptions = {},
     addOptions?: GraphAddOptions
   ): LGraphNode | null {
+    // The choke point every node-creation surface traverses (search popover,
+    // node/model libraries, bookmarks, asset ghost-drops, job menu): one
+    // guard keeps them all out of a picking-only canvas.
+    if (isSelectOnly(app.canvas)) return null
     options.pos ??= getCanvasCenter()
 
     if (isBlueprintType(nodeDef.name)) {
