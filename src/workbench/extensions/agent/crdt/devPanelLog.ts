@@ -1,11 +1,25 @@
 import { shallowRef, triggerRef } from 'vue'
 
+import type { CrdtLogLevel } from './crdtDebugGate'
+
 /**
- * PoC (branch poc/fe-crdt-follower-e2e): in-memory ring buffer feeding the
- * CRDT dev panel. Deliberately module-level (one buffer per page, like the
- * follower gate) so the panel component and the follower composable never
- * need a shared injection seam. Not shipped beyond the PoC branch.
+ * In-memory ring buffer feeding the CRDT debug panel. Deliberately
+ * module-level (one buffer per page, like the follower gate) so the panel
+ * component and the follower composable never need a shared injection seam.
+ *
+ * Every entry carries the same four axes the console logger uses — kind,
+ * scope, level, detail — so "what the panel shows" and "what the console
+ * printed" are the same record read two ways, and a copied report is a
+ * faithful transcript rather than a second, drifting summary.
  */
+
+/**
+ * The layer an event came from. Filtering by scope is how the panel offers
+ * "varying levels of abstraction": `wire` is bytes on the socket, `doc` is
+ * document lineage, `ecs` is the projection onto canvas state, `ops` is the
+ * human write leg's semantic intent.
+ */
+export type CrdtLogScope = 'wire' | 'doc' | 'ecs' | 'ops' | 'panel'
 
 export type DevEventKind =
   | 'ws_out'
@@ -19,12 +33,24 @@ export type DevEventKind =
   | 'doc_nodes_changed'
   | 'rebind'
   | 'stale_probe'
+  | 'doc_gap'
+  | 'doc_effects'
+  | 'op_minted'
+  | 'op_batch_settled'
+  | 'send_dropped'
 
 export interface DevEvent {
   seq: number
   at: number
   kind: DevEventKind
+  scope: CrdtLogScope
+  level: CrdtLogLevel
   detail: unknown
+}
+
+export interface DevEventOptions {
+  scope?: CrdtLogScope
+  level?: CrdtLogLevel
 }
 
 const CAPACITY = 500
@@ -39,8 +65,19 @@ const buffer: DevEvent[] = []
  */
 export const devEvents = shallowRef<readonly DevEvent[]>(buffer)
 
-export function recordDevEvent(kind: DevEventKind, detail: unknown): void {
-  buffer.push({ seq: nextSeq++, at: Date.now(), kind, detail })
+export function recordDevEvent(
+  kind: DevEventKind,
+  detail: unknown,
+  options: DevEventOptions = {}
+): void {
+  buffer.push({
+    seq: nextSeq++,
+    at: Date.now(),
+    kind,
+    scope: options.scope ?? 'doc',
+    level: options.level ?? 'info',
+    detail
+  })
   if (buffer.length > CAPACITY) buffer.splice(0, buffer.length - CAPACITY)
   triggerRef(devEvents)
 }
@@ -52,10 +89,26 @@ export function clearDevEvents(): void {
 
 /** Serializes an event detail defensively (Uint8Array etc. don't JSON well). */
 export function stringifyDevEvents(events: readonly DevEvent[]): string {
-  return JSON.stringify(
-    events,
-    (_key, value) =>
-      value instanceof Uint8Array ? `Uint8Array(${value.length})` : value,
-    2
-  )
+  return JSON.stringify(events, devEventReplacer(), 2)
+}
+
+/**
+ * JSON replacer shared by the panel's copy actions and the debug report.
+ *
+ * A binary payload is summarized by length rather than dumped: the bytes are
+ * a Yjs update, unreadable to a human and large enough to push the interesting
+ * fields out of a paste. Cyclic values degrade to a marker instead of
+ * throwing, because the report must survive whatever the doc happens to hold.
+ */
+export function devEventReplacer(): (key: string, value: unknown) => unknown {
+  const seen = new WeakSet<object>()
+  return (_key, value) => {
+    if (value instanceof Uint8Array) return `Uint8Array(${value.length})`
+    if (typeof value === 'bigint') return value.toString()
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) return '[Circular]'
+      seen.add(value)
+    }
+    return value
+  }
 }

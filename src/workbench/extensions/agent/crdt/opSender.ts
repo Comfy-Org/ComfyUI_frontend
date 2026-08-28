@@ -15,8 +15,10 @@
  * frame upgrade ships (a required backend dependency, recorded on the plan);
  * `onResult` is the seam they will replace.
  */
+import { stampKey, stampTargetKey } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { opsLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -88,6 +90,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
+    opsLog[outcome.state === 'acknowledged' ? 'info' : 'warn'](
+      'op_batch_settled',
+      `batch of ${outcome.ops.length} settled as ${outcome.state}`,
+      {
+        state: outcome.state,
+        opIds: outcome.ops.map((op) => op.op_id),
+        ...(outcome.state === 'acknowledged' && { result: outcome.result })
+      }
+    )
     deps.onBatchSettled(outcome)
     pump()
   }
@@ -175,6 +186,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         actor: deps.actor(),
         baseVersion: deps.baseVersion()
       })
+      for (const op of minted) {
+        opsLog.info('op_minted', `${op.op} minted by ${op.actor}`, {
+          opId: op.op_id,
+          kind: op.op,
+          actor: op.actor,
+          baseVersion: op.base_version,
+          stamp: stampKey(op),
+          register: stampTargetKey(op),
+          op
+        })
+      }
       queue.push(...chunkWireOps(minted))
       pump()
     },
