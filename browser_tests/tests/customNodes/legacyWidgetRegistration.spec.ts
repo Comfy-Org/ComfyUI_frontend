@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
@@ -89,9 +88,8 @@ test.describe('legacy widget registration', { tag: '@custom-nodes' }, () => {
 
     const node = comfyPage.vueNodes.getNodeLocator(created!.id)
     await expect(node).toBeVisible()
-    const rows = node.getByTestId(TestIds.widgets.widget)
     await expect(
-      rows,
+      node.locator('canvas'),
       'Nodes 2.0 mounted the node with no widget rows'
     ).toHaveCount(EXPECTED_WIDGET_ORDER.length)
 
