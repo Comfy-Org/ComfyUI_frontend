@@ -234,52 +234,61 @@ describe('TelemetryRegistry', () => {
   })
 
   describe('agent telemetry dispatch', () => {
+    const feedbackMetadata = {
+      message_id: 'm1',
+      vote: 'up',
+      workflow_id: null
+    } satisfies AgentMessageFeedbackMetadata
+    const panelOpenedMetadata = {
+      source: 'topbar_button'
+    } satisfies AgentPanelOpenedMetadata
+    const panelClosedMetadata = {
+      source: 'close_button',
+      open_duration_ms: 1200
+    } satisfies AgentPanelClosedMetadata
+    const entryClickedMetadata = {
+      resulting_state: 'opened'
+    } satisfies AgentEntryButtonClickedMetadata
+    const messageSentMetadata = {
+      attachment_count: 1,
+      node_tag_count: 2
+    } satisfies AgentMessageSentMetadata
+    const nodeTaggedMetadata = {
+      source: 'mention_picker'
+    } satisfies AgentNodeTaggedMetadata
+    const workflowAppliedMetadata = {
+      workflow_id: 'w1',
+      target: 'new_tab'
+    } satisfies AgentWorkflowAppliedMetadata
+
     const cases: Array<{
-      method: keyof TelemetryProvider
+      method: keyof TelemetryProvider & `trackAgent${string}`
       expected: unknown
       invoke: (registry: TelemetryRegistry) => void
     }> = [
       {
         method: 'trackAgentMessageFeedback',
-        expected: {
-          message_id: 'm1',
-          vote: 'up',
-          workflow_id: null
-        } satisfies AgentMessageFeedbackMetadata,
+        expected: feedbackMetadata,
         invoke: (registry) =>
-          registry.trackAgentMessageFeedback({
-            message_id: 'm1',
-            vote: 'up',
-            workflow_id: null
-          })
+          registry.trackAgentMessageFeedback(feedbackMetadata)
       },
       {
         method: 'trackAgentPanelOpened',
-        expected: {
-          source: 'topbar_button'
-        } satisfies AgentPanelOpenedMetadata,
+        expected: panelOpenedMetadata,
         invoke: (registry) =>
-          registry.trackAgentPanelOpened({ source: 'topbar_button' })
+          registry.trackAgentPanelOpened(panelOpenedMetadata)
       },
       {
         method: 'trackAgentPanelClosed',
-        expected: {
-          source: 'close_button',
-          open_duration_ms: 1200
-        } satisfies AgentPanelClosedMetadata,
+        expected: panelClosedMetadata,
         invoke: (registry) =>
-          registry.trackAgentPanelClosed({
-            source: 'close_button',
-            open_duration_ms: 1200
-          })
+          registry.trackAgentPanelClosed(panelClosedMetadata)
       },
       {
         method: 'trackAgentEntryButtonClicked',
-        expected: {
-          resulting_state: 'opened'
-        } satisfies AgentEntryButtonClickedMetadata,
+        expected: entryClickedMetadata,
         invoke: (registry) =>
-          registry.trackAgentEntryButtonClicked({ resulting_state: 'opened' })
+          registry.trackAgentEntryButtonClicked(entryClickedMetadata)
       },
       {
         method: 'trackAgentCloseButtonClicked',
@@ -288,23 +297,14 @@ describe('TelemetryRegistry', () => {
       },
       {
         method: 'trackAgentMessageSent',
-        expected: {
-          attachment_count: 1,
-          node_tag_count: 2
-        } satisfies AgentMessageSentMetadata,
+        expected: messageSentMetadata,
         invoke: (registry) =>
-          registry.trackAgentMessageSent({
-            attachment_count: 1,
-            node_tag_count: 2
-          })
+          registry.trackAgentMessageSent(messageSentMetadata)
       },
       {
         method: 'trackAgentNodeTagged',
-        expected: {
-          source: 'mention_picker'
-        } satisfies AgentNodeTaggedMetadata,
-        invoke: (registry) =>
-          registry.trackAgentNodeTagged({ source: 'mention_picker' })
+        expected: nodeTaggedMetadata,
+        invoke: (registry) => registry.trackAgentNodeTagged(nodeTaggedMetadata)
       },
       {
         method: 'trackAgentAttachButtonClicked',
@@ -313,15 +313,9 @@ describe('TelemetryRegistry', () => {
       },
       {
         method: 'trackAgentWorkflowApplied',
-        expected: {
-          workflow_id: 'w1',
-          target: 'new_tab'
-        } satisfies AgentWorkflowAppliedMetadata,
+        expected: workflowAppliedMetadata,
         invoke: (registry) =>
-          registry.trackAgentWorkflowApplied({
-            workflow_id: 'w1',
-            target: 'new_tab'
-          })
+          registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
       }
     ]
 

@@ -45,12 +45,18 @@ import {
 
 const PROMPT_CARD_ID = '__prompt__'
 
-export const AGENT_PROMPT_ERROR_TYPES = new Set([
+const AGENT_PROMPT_ERROR_TYPE_LIST = [
   'op_rejected',
   'prefix_abort',
   'guard_trip',
   'apply_failed'
-])
+] as const
+
+export type AgentPromptErrorType = (typeof AGENT_PROMPT_ERROR_TYPE_LIST)[number]
+
+export const AGENT_PROMPT_ERROR_TYPES: ReadonlySet<string> = new Set(
+  AGENT_PROMPT_ERROR_TYPE_LIST
+)
 
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'

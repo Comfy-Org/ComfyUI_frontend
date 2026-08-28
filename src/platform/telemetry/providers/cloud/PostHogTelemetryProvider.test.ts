@@ -1416,7 +1416,7 @@ describe('PostHogTelemetryProvider', () => {
           ([capturedName]) => capturedName === eventName
         )
         expect(calls).toHaveLength(1)
-        expect(calls[0][1]).toEqual(expected)
+        expect(calls[0]).toEqual([eventName, expected])
       }
     )
   })

@@ -34,11 +34,24 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+const promptErrorTitleSeeds = vi.hoisted(
+  () =>
+    ({
+      op_rejected: 'seeded op_rejected title',
+      prefix_abort: 'seeded prefix_abort title',
+      guard_trip: 'seeded guard_trip title',
+      apply_failed: 'seeded apply_failed title'
+    }) as const
+)
+
 vi.mock('@/i18n', () => {
   const messages: Record<string, string> = {
-    'errorCatalog.promptErrors.op_rejected.title': 'seeded op_rejected title',
-    'errorCatalog.promptErrors.prefix_abort.title': 'seeded prefix_abort title',
-    'errorCatalog.promptErrors.guard_trip.title': 'seeded guard_trip title',
+    ...Object.fromEntries(
+      Object.entries(promptErrorTitleSeeds).map(([type, title]) => [
+        `errorCatalog.promptErrors.${type}.title`,
+        title
+      ])
+    ),
     'errorCatalog.validationErrors.required_input_missing.title':
       'Missing connection',
     'errorCatalog.validationErrors.required_input_missing.message':
@@ -67,7 +80,6 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
-    'errorCatalog.promptErrors.apply_failed.title': 'Agent edit failed',
     'errorCatalog.promptErrors.apply_failed.desc':
       'An agent edit could not be applied to the workflow document.',
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
@@ -143,7 +155,8 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { AGENT_PROMPT_ERROR_TYPES, useErrorGroups } from './useErrorGroups'
+import { useErrorGroups } from './useErrorGroups'
+import type { AgentPromptErrorType } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
 function makeMissingNodeType(
@@ -216,6 +229,10 @@ function createErrorGroups() {
   const groups = useErrorGroups(searchQuery)
   return { store, searchQuery, groups }
 }
+
+const AGENT_PROMPT_ERROR_TYPE_MEMBERS = Object.keys(
+  promptErrorTitleSeeds
+) as AgentPromptErrorType[]
 
 describe('useErrorGroups', () => {
   beforeEach(() => {
@@ -1370,24 +1387,26 @@ describe('useErrorGroups', () => {
   })
 
   it('keeps every agent prompt error type resolvable in the prompt catalog', () => {
-    const catalogTitles: Record<string, string> = {
-      op_rejected: 'seeded op_rejected title',
-      prefix_abort: 'seeded prefix_abort title',
-      guard_trip: 'seeded guard_trip title',
-      apply_failed: 'Agent edit failed'
-    }
+    // A legitimate change to the agent error-type set touches, together:
+    // the list in useErrorGroups.ts, KNOWN_PROMPT_ERROR_TYPES in
+    // promptErrorResolver.ts, the locale catalog titles, and the seeds at
+    // the top of this file. The satisfies below turns a set member with no
+    // seed into a compile error, so a silent addition cannot pass.
+    const catalogTitles = promptErrorTitleSeeds satisfies Record<
+      AgentPromptErrorType,
+      string
+    >
 
-    for (const type of AGENT_PROMPT_ERROR_TYPES) {
+    for (const type of AGENT_PROMPT_ERROR_TYPE_MEMBERS) {
       const resolved = resolvePromptErrorMessage(
         fromAny({ type, message: 'x', details: 'd' }),
         fromAny({ isCloud: false })
       )
 
-      expect(
-        resolved.displayTitle,
-        `${type} did not resolve through the prompt catalog - if it was ` +
-          'removed from KNOWN_PROMPT_ERROR_TYPES, remove it here too'
-      ).toBe(catalogTitles[type])
+      expect({ type, title: resolved.displayTitle }).toEqual({
+        type,
+        title: catalogTitles[type]
+      })
     }
   })
 })
