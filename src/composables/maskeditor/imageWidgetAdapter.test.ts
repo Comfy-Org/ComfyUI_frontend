@@ -1,10 +1,9 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
 
 import {
   readImageWidgetValue,
@@ -20,11 +19,13 @@ function makeNode({
 } = {}): LGraphNode {
   const nodeId = toNodeId(1)
   if (registered) {
-    useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, nodeId, 'image'), {
-      type: 'string',
-      value: widgetValue,
-      options: {}
-    })
+    const graph = new LGraph()
+    const node = new LGraphNode('Test')
+    graph.add(node)
+    if (hasWidget) {
+      node.addWidget('string', 'image', widgetValue, () => undefined)
+    }
+    return node
   }
   return fromAny<LGraphNode, unknown>({
     id: nodeId,
@@ -34,16 +35,21 @@ function makeNode({
   })
 }
 
+function registeredWidgetId(node: LGraphNode) {
+  const id = node.widgets?.[0].widgetId
+  if (!id) throw new Error('Expected a registered image widget')
+  return id
+}
+
 function storedValue(node: LGraphNode): unknown {
-  return useWidgetValueStore().getWidget(widgetId(GRAPH_ID, node.id, 'image'))
-    ?.value
+  return useWidgetValueStore().getWidget(registeredWidgetId(node))?.value
 }
 
 describe('readImageWidgetValue', () => {
   it('reads the store value for a registered widget', () => {
     const node = makeNode()
     useWidgetValueStore().setValue(
-      widgetId(GRAPH_ID, node.id, 'image'),
+      registeredWidgetId(node),
       'updated.png [input]'
     )
 
@@ -52,7 +58,7 @@ describe('readImageWidgetValue', () => {
 
   it('preserves a null store value instead of falling back', () => {
     const node = makeNode()
-    useWidgetValueStore().setValue(widgetId(GRAPH_ID, node.id, 'image'), null)
+    useWidgetValueStore().setValue(registeredWidgetId(node), null)
 
     expect(readImageWidgetValue(node)).toBeNull()
   })
@@ -77,6 +83,7 @@ describe('writeImageWidgetValue', () => {
     writeImageWidgetValue(node, 'masked.png [input]')
 
     expect(storedValue(node)).toBe('masked.png [input]')
+    expect(node.widgets?.[0].value).toBe('masked.png [input]')
     expect(node.properties['image']).toBe('masked.png [input]')
   })
 

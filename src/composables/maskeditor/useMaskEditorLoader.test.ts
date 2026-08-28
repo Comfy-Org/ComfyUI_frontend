@@ -75,12 +75,14 @@ class MockImage {
 const GRAPH_ID = 'maskeditor-loader-test'
 
 function createLoadImageNode(widgetValue: string): LGraphNode {
-  useWidgetValueStore().registerWidget(
-    widgetId(GRAPH_ID, toNodeId(7), 'image'),
-    { type: 'string', value: widgetValue, options: {} }
-  )
+  const nodeId = toNodeId(7)
+  useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, nodeId, 'image'), {
+    type: 'string',
+    value: widgetValue,
+    options: {}
+  })
   return fromAny<LGraphNode, unknown>({
-    id: 7,
+    id: nodeId,
     type: 'LoadImage',
     imgs: [{ src: 'http://localhost:8188/api/view?filename=whatever.png' }],
     images: undefined,
@@ -123,7 +125,7 @@ describe('useMaskEditorLoader', () => {
     }
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'clipspace-mask-123.png', type: 'input' },
-      nodeId: 7
+      nodeId: toNodeId(7)
     })
   })
 
@@ -180,7 +182,7 @@ describe('useMaskEditorLoader', () => {
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'clipspace-painted-masked-123.png' },
       paintLayer: undefined,
-      nodeId: 7
+      nodeId: toNodeId(7)
     })
   })
 
