@@ -4,7 +4,7 @@
       <div
         ref="workflowTabRef"
         data-testid="workflow-tab"
-        class="workflow-tab group flex h-(--workflow-tabs-height) items-center justify-center gap-2 px-4 py-2"
+        class="workflow-tab group box-border flex h-(--workflow-tabs-height) items-center justify-center gap-2 px-4 py-2"
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -49,11 +49,10 @@
             />
           </span>
           <Button
-            class="close-button invisible rounded-none p-0 text-smoke-800 group-hover:visible"
+            class="close-button invisible rounded-none text-smoke-800 group-hover:visible"
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('g.close')"
-            data-testid="close-workflow-button"
             @click.stop="onCloseWorkflow(workflowOption)"
           >
             <i
@@ -120,6 +119,8 @@ import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
+
+defineOptions({ inheritAttrs: false })
 
 interface WorkflowOption {
   value: string

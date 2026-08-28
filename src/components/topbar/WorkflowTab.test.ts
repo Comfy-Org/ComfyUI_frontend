@@ -64,14 +64,15 @@ vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
   })
 }))
 
+const popoverSpies = vi.hoisted(() => ({
+  showPopover: vi.fn(),
+  hidePopover: vi.fn(),
+  togglePopover: vi.fn()
+}))
 vi.mock('./WorkflowTabPopover.vue', () => ({
   default: {
     render: () => null,
-    methods: {
-      showPopover: () => {},
-      hidePopover: () => {},
-      togglePopover: () => {}
-    }
+    methods: { ...popoverSpies }
   }
 }))
 
@@ -104,9 +105,10 @@ type WorkflowOverrides = Partial<Workflow>
 // type via Partial<Workflow>, then cast — adding/renaming a read field in
 // the component will fail typecheck on the override map.
 function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
+  const path = overrides.path ?? 'workflows/test.json'
   const workflow = {
-    key: 'test.json',
-    path: 'workflows/test.json',
+    key: path.slice('workflows/'.length),
+    path,
     filename: 'test.json',
     isPersisted: true,
     isModified: false,
@@ -147,7 +149,7 @@ function renderTab({
               activeWorkflow: noActiveWorkflow
                 ? null
                 : {
-                    key: activeWorkflowKey,
+                    key: resolvedActiveWorkflowPath.slice('workflows/'.length),
                     path: resolvedActiveWorkflowPath
                   }
             },
@@ -170,6 +172,10 @@ function renderTab({
     }
   })
 }
+
+beforeEach(() => {
+  mockCloseWorkflow.mockClear()
+})
 
 describe('WorkflowTab - workflow status indicator', () => {
   beforeEach(() => {
@@ -219,35 +225,22 @@ describe('WorkflowTab - workflow status indicator', () => {
     )
   })
 
-  it('compares active identity by path via workflowStore.isActive', () => {
-    renderTab({
-      workflowOption: makeWorkflowOption({ isPersisted: false }),
-      activeWorkflowKey: 'test.json',
-      activeWorkflowPath: 'workflows/other.json'
-    })
-
-    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveAttribute(
-      'data-active',
-      'false'
-    )
-  })
-
   it('shows the unsaved dot when modified and autosave is off', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
 
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeInTheDocument()
   })
 
-  it('renders no active tab and keeps status badges with no active workflow', () => {
-    const workflowOption = makeWorkflowOption({ isPersisted: false })
-    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'running']])
+  it('treats every tab as inactive when no workflow is active', () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({ isPersisted: false }),
+      noActiveWorkflow: true
+    })
 
-    renderTab({ workflowOption, noActiveWorkflow: true })
-
-    expect(
-      screen.getByRole('img', { name: statusAriaLabels.running })
-    ).toBeTruthy()
-    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveAttribute(
+      'data-active',
+      'false'
+    )
   })
 
   it('workflow status replaces the unsaved dot', () => {
@@ -262,6 +255,16 @@ describe('WorkflowTab - workflow status indicator', () => {
   })
 })
 
+describe('WorkflowTab - clean tab', () => {
+  it('renders only the close control for a persisted unmodified tab', () => {
+    renderTab()
+
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+  })
+})
+
 describe('WorkflowTab - close button', () => {
   it('delegates close to workflow service with the tab workflow', async () => {
     renderTab()
@@ -270,7 +273,8 @@ describe('WorkflowTab - close button', () => {
 
     expect(mockCloseWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'test.json' }),
-      expect.anything()
+      expect.objectContaining({ warnIfUnsaved: true })
     )
+    expect(popoverSpies.togglePopover).not.toHaveBeenCalled()
   })
 })
