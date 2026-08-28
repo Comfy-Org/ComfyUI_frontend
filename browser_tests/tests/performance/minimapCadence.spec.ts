@@ -46,7 +46,9 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
         { nodeId, update }
       )
       await comfyPage.nextFrame()
-      await comfyPage.page.waitForTimeout(110)
+      await comfyPage.page.evaluate(
+        () => new Promise((resolve) => window.setTimeout(resolve, 110))
+      )
     }
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-progress-execution-cadence'
@@ -73,7 +75,9 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
         app.graph.setDirtyCanvas(true, true)
       })
       await comfyPage.nextFrame()
-      await comfyPage.page.waitForTimeout(110)
+      await comfyPage.page.evaluate(
+        () => new Promise((resolve) => window.setTimeout(resolve, 110))
+      )
     }
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-progress-geometry-cadence'
@@ -121,7 +125,9 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
         update % 2 === 0
       )
       await comfyPage.nextFrame()
-      await comfyPage.page.waitForTimeout(110)
+      await comfyPage.page.evaluate(
+        () => new Promise((resolve) => window.setTimeout(resolve, 110))
+      )
     }
     const measurement = await comfyPage.perf.stopMeasuring(
       'minimap-progress-topology-cadence'
