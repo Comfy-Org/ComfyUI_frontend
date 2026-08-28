@@ -17,6 +17,7 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
+import { createGraphMutations } from '@/core/graph/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -34,6 +35,12 @@ import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+// The composition root injects the renderer-owned layout port; follower core
+// stays independent of renderer and LiteGraph runtime values.
+// eslint-disable-next-line import-x/no-restricted-paths
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -42,6 +49,7 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -98,6 +106,53 @@ const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
+const graphMutations = createGraphMutations({
+  getScope() {
+    const rootGraphId = canvasStore.rootGraphId
+    return rootGraphId
+      ? {
+          rootGraphId: toRootGraphId(rootGraphId),
+          owningGraphId: toOwningGraphId(rootGraphId)
+        }
+      : null
+  },
+  layout: {
+    createNode(scope, nodeId, layout, context) {
+      const { position, size } = layout
+      layoutStore.applyOperation({
+        type: 'createNode',
+        graphId: scope.rootGraphId,
+        nodeId,
+        layout: {
+          id: nodeId,
+          position,
+          size,
+          bounds: { x: position.x, y: position.y, ...size },
+          zIndex: layoutStore.allocateZIndex(),
+          visible: true
+        },
+        source: LayoutSource.AgentRemote,
+        actor: context.actor,
+        opId: context.opId,
+        timestamp: Date.now()
+      })
+    },
+    deleteNodes(scope, nodeIds, context) {
+      const timestamp = Date.now()
+      layoutStore.applyOperations(
+        nodeIds.map((nodeId) => ({
+          type: 'deleteNode',
+          graphId: scope.rootGraphId,
+          nodeId,
+          source: LayoutSource.AgentRemote,
+          actor: context.actor,
+          opId: context.opId,
+          timestamp
+        }))
+      )
+    }
+  }
+})
 const { focusNodeInstance } = useFocusNode()
 
 function toSelectedNode(node: LGraphNode): SelectedNode {
@@ -302,7 +357,10 @@ const {
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow and projects doc updates onto the canvas.
-const { status: crdtStatus } = useAgentCrdtFollower(boundWorkflowId)
+const { status: crdtStatus } = useAgentCrdtFollower(
+  boundWorkflowId,
+  graphMutations
+)
 // Dev instrument only (slice-02 classification): never ships to users.
 const isCrdtDevPanelEnabled = import.meta.env.DEV
 
