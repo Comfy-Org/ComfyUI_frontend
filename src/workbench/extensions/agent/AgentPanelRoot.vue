@@ -1,3 +1,14 @@
+<script lang="ts">
+import { defineAsyncComponent } from 'vue'
+
+// Async so the merge lab's copy of the CRDT applier never reaches the bundle
+// of the users who cannot open the panel. Module scope, so one wrapper is
+// shared rather than rebuilt per instance.
+const CrdtDevPanel = defineAsyncComponent(
+  () => import('./crdt/CrdtDevPanel.vue')
+)
+</script>
+
 <script setup lang="ts">
 import './agentPanel.css'
 
@@ -5,7 +16,6 @@ import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
-  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   provide,
@@ -364,11 +374,6 @@ const { status: crdtStatus, debugSnapshot: crdtDebugSnapshot } =
 // ?crdtDebug=1 opt-in, because the people who need it are testers on a
 // staging build, where DEV is false.
 const isCrdtDevPanelEnabled = isCrdtDebugEnabled()
-// Async so the panel — and the CRDT applier it pulls in to simulate merges —
-// never reaches the bundle of the users who cannot open it.
-const CrdtDevPanel = defineAsyncComponent(
-  () => import('./crdt/CrdtDevPanel.vue')
-)
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab

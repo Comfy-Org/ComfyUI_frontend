@@ -17,6 +17,7 @@ import type { CrdtLogLevel } from './crdtDebugGate'
 import {
   CRDT_LOG_LEVELS,
   crdtLogLevel,
+  isCrdtDebugEnabled,
   setCrdtDebugEnabled,
   setCrdtLogLevel
 } from './crdtDebugGate'
@@ -160,9 +161,10 @@ const OPEN_KEY = 'Comfy.Agent.CrdtDevPanel.open'
 
 const open = ref(readOpen())
 const tab = ref<'status' | 'log' | 'merge'>('status')
-// The mount gate is read once at panel setup, so hiding must also be local —
-// otherwise "hide" leaves the chip on screen until the next reload.
-const dismissed = ref(false)
+// Seeded from the persisted decision, not from `false`: this component is
+// destroyed and re-created whenever chat history opens, and a per-mount flag
+// would resurrect a chip the tester had explicitly hidden.
+const dismissed = ref(!isCrdtDebugEnabled())
 
 function readOpen(): boolean {
   try {
@@ -207,6 +209,7 @@ const docRows = computed<readonly (readonly [string, string])[]>(() => {
   if (!state) return [['document', S.none]] as const
   return [
     ['schema error', state.schemaError ?? S.none],
+    ['schema version', String(state.meta.schema_version ?? S.none)],
     ['last seq', state.lastSeq === null ? S.none : String(state.lastSeq)],
     ['tab id', state.tabId ?? S.none],
     ['nodes', `${state.nodeIds.length}: ${state.nodeIds.join(', ') || S.none}`],
@@ -405,7 +408,7 @@ function fmtTime(at: number): string {
 <template>
   <div
     v-if="!dismissed"
-    class="relative flex max-h-[50%] min-h-0 flex-col font-mono text-xs"
+    class="relative flex max-h-1/2 min-h-0 flex-col font-mono text-xs"
   >
     <button
       v-if="!open"
