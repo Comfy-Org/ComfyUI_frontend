@@ -104,8 +104,9 @@ export function usePricingTableUrlLoader() {
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
   const { teamCreditStops, fetchPlans } = useBillingContext()
-  const { permissions, canOpenPricingSurface } = useWorkspaceUI()
-  const { initialize: initializeCapabilities } = useBillingCapabilities()
+  const { permissions } = useWorkspaceUI()
+  const { canOpenPricingSurface, initialize: initializeCapabilities } =
+    useBillingCapabilities()
 
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
   async function loadPricingTableFromUrl() {

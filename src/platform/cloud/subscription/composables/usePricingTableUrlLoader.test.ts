@@ -63,13 +63,13 @@ const mockInitializeCapabilities = vi.hoisted(() =>
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
-    permissions: mockPermissions,
-    canOpenPricingSurface: mockCanOpenPricingSurface
+    permissions: mockPermissions
   })
 }))
 
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
+    canOpenPricingSurface: mockCanOpenPricingSurface,
     initialize: mockInitializeCapabilities
   })
 }))

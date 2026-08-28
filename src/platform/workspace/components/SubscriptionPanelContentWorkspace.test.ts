@@ -87,6 +87,7 @@ const mockCanCancel = ref(true)
 const mockCanReactivate = ref(true)
 const mockCanReactivatePlan = ref(true)
 const mockCanOpenPricingSurface = ref(true)
+const mockShowInactiveTeamSubscription = ref(false)
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanChangeSeats = ref(true)
 const mockCanSubscribeSelfServe = ref(true)
@@ -211,6 +212,14 @@ const mockIsTeamPlanCancelled = computed(
 const mockIsSubscriptionCancelled = computed(
   () => mockSubscription.value?.isCancelled ?? false
 )
+const mockIsSubscriptionEnded = computed(() => {
+  if (mockSubscriptionStatus.value === 'ended') return true
+  if (mockIsActiveSubscription.value) return false
+  return (
+    mockIsSubscriptionCancelled.value ||
+    (mockIsInPersonalWorkspace.value && mockBillingStatus.value === 'inactive')
+  )
+})
 
 const mockIsDeleteDisabled = computed(
   () =>
@@ -226,11 +235,12 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canLeaveWorkspace: mockCanLeaveWorkspace.value
     })),
     canReactivatePlan: mockCanReactivatePlan,
-    canOpenPricingSurface: mockCanOpenPricingSurface,
+    showInactiveTeamSubscription: mockShowInactiveTeamSubscription,
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isSubscriptionCancelled: mockIsSubscriptionCancelled,
+    isSubscriptionEnded: mockIsSubscriptionEnded,
     isTeamPlanCancelled: mockIsTeamPlanCancelled,
     isDeleteDisabled: mockIsDeleteDisabled,
     deleteDisabledTooltipKey: computed(() =>
@@ -246,6 +256,7 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
     canCancel: mockCanCancel,
     canReactivate: mockCanReactivate,
     canChangeSeats: mockCanChangeSeats,
+    canOpenPricingSurface: mockCanOpenPricingSurface,
     canSubscribeSelfServe: mockCanSubscribeSelfServe
   })
 }))
@@ -353,6 +364,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanChangeSeats.value = true
     mockCanSubscribeSelfServe.value = true
     mockCanOpenPricingSurface.value = true
+    mockShowInactiveTeamSubscription.value = false
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
     mockSubscriptionTier.value = 'PRO'
@@ -820,6 +832,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockSubscriptionStatus.value = 'canceled'
     mockIsActiveSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
+    mockShowInactiveTeamSubscription.value = true
     renderComponent({ stubFooter: false })
 
     expect(
@@ -835,6 +848,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockSubscriptionStatus.value = 'canceled'
     mockIsActiveSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
+    mockShowInactiveTeamSubscription.value = true
     const user = userEvent.setup()
     renderComponent()
 
@@ -889,6 +903,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsActiveSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
     mockCanSubscribeSelfServe.value = false
+    mockShowInactiveTeamSubscription.value = true
     renderComponent()
 
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(

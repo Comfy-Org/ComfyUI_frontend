@@ -12,6 +12,7 @@ import { useBillingCapabilities } from './useBillingCapabilities'
 const mockGetBillingCapabilities = vi.hoisted(() => vi.fn())
 const mockReportError = vi.hoisted(() => vi.fn())
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
 const mockScope = vi.hoisted(() => ({
   workspaceId: 'workspace-1' as string | null,
   authUid: 'firebase-user-1' as string | null,
@@ -39,6 +40,14 @@ vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
   }
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    get shouldUseWorkspaceBilling() {
+      return mockShouldUseWorkspaceBilling
+    }
+  })
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -178,6 +187,7 @@ describe('useBillingCapabilities', () => {
 
   beforeEach(() => {
     mockIsCloud.value = true
+    mockShouldUseWorkspaceBilling.value = true
     mockScope.workspaceId = 'workspace-1'
     mockScope.authUid = 'firebase-user-1'
     mockScope.role = 'owner'
@@ -198,12 +208,12 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canOpenPricingSurface.value).toBe(true)
     expect(billingCapabilities.canCancel.value).toBe(false)
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
-    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
 
     const initialization = billingCapabilities.initialize()
     expect(billingCapabilities.canTopUp.value).toBe(false)
@@ -213,12 +223,12 @@ describe('useBillingCapabilities', () => {
     await initialization
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.canOpenPricingSurface.value).toBe(true)
     expect(billingCapabilities.canCancel.value).toBe(true)
     expect(billingCapabilities.canReactivate.value).toBe(true)
     expect(billingCapabilities.canChangeSeats.value).toBe(true)
     expect(billingCapabilities.canInviteMembers.value).toBe(true)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(true)
-    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
 
   it('applies denied server capabilities without client-side inference', async () => {
@@ -259,6 +269,19 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.refresh()
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canOpenPricingSurface.value).toBe(false)
+  })
+
+  it('uses workspace ownership for pricing on the legacy billing rail', () => {
+    mockShouldUseWorkspaceBilling.value = false
+
+    expect(billingCapabilities.canOpenPricingSurface.value).toBe(true)
+  })
+
+  it('uses workspace ownership for pricing off Cloud', () => {
+    mockIsCloud.value = false
+
+    expect(billingCapabilities.canOpenPricingSurface.value).toBe(true)
   })
 
   it('forwards the initialization signal to the capability request', async () => {
@@ -279,13 +302,13 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canOpenPricingSurface.value).toBe(true)
     expect(billingCapabilities.canCancel.value).toBe(false)
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
-    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
     expect(mockReportError).toHaveBeenCalledOnce()
   })
 
@@ -297,8 +320,8 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canOpenPricingSurface.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
-    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
   })
 
   it('fails closed when the endpoint denies the current actor', async () => {
@@ -312,8 +335,8 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canOpenPricingSurface.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
-    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
 
   it('does not fail open when capability loading is aborted', async () => {
@@ -333,7 +356,6 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(false)
-    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
     expect(mockReportError).not.toHaveBeenCalled()
   })
 

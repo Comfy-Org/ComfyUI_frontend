@@ -80,13 +80,13 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     })),
-    canReactivatePlan: computed(() => state.canReactivatePlan),
-    canOpenPricingSurface: computed(() => state.canOpenPricingSurface)
+    canReactivatePlan: computed(() => state.canReactivatePlan)
   })
 }))
 
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
+    canOpenPricingSurface: computed(() => state.canOpenPricingSurface),
     canTopUp: computed(() => state.canTopUp),
     canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
     canReactivate: computed(() => state.canReactivate)

@@ -6,6 +6,7 @@ import {
 } from '@vueuse/core'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
@@ -60,6 +61,7 @@ interface ActiveCapabilityRequest {
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
   const readState = shallowRef<CapabilityReadState>({ status: 'idle' })
   let initialized = false
   let latestRequestId = 0
@@ -93,6 +95,9 @@ function useBillingCapabilitiesInternal() {
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
+  const isWorkspaceOwner = computed(
+    () => workspaceStore.activeWorkspace?.role === 'owner'
+  )
   const canTopUp = computed(() => {
     if (!isCloud) return workspaceStore.activeWorkspace?.role !== 'member'
     // An unreadable capability keeps top-up available only for owners, so a
@@ -100,8 +105,7 @@ function useBillingCapabilitiesInternal() {
     // Every other role - including an unresolved one - fails closed.
     return (
       capabilities.value?.can_top_up ??
-      (readUnavailableForCurrentScope.value &&
-        workspaceStore.activeWorkspace?.role === 'owner')
+      (readUnavailableForCurrentScope.value && isWorkspaceOwner.value)
     )
   })
   const canSubscribeSelfServe = computed(
@@ -140,6 +144,21 @@ function useBillingCapabilitiesInternal() {
       state.authUid === authStore.currentUser?.uid &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
+  })
+  // Every pricing-table entry point - menu items, settings links, and the
+  // ?pricing= deep link - reads this one value. legacy_stripe has no capability
+  // projection row, so that rail stays on the ownership check.
+  //
+  // Opening the catalog is navigation, not a billing write, and every checkout
+  // endpoint enforces its own policy - so a snapshot that cannot answer falls
+  // back to ownership rather than stranding a self-serve owner with no route to
+  // a plan. This mirrors canTopUp.
+  const canOpenPricingSurface = computed(() => {
+    if (!isCloud || !shouldUseWorkspaceBilling.value)
+      return isWorkspaceOwner.value
+    return snapshotAuthoritative.value
+      ? canSubscribeSelfServe.value
+      : isWorkspaceOwner.value
   })
 
   function clearRefreshTimer(): void {
@@ -420,13 +439,13 @@ function useBillingCapabilitiesInternal() {
   return {
     canTopUp,
     canSubscribeSelfServe,
+    canOpenPricingSurface,
     canCancel,
     canReactivate,
     canChangeSeats,
     canInviteMembers,
     canDowngradeToPersonal,
     isReady,
-    snapshotAuthoritative,
     initialize,
     refresh
   }
