@@ -90,7 +90,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
-    opsLog[outcome.state === 'acknowledged' ? 'info' : 'warn'](
+    opsLog.info(
       'op_batch_settled',
       `batch of ${outcome.ops.length} settled as ${outcome.state}`,
       {

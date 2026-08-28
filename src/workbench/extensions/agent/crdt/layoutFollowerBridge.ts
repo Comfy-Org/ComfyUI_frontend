@@ -204,7 +204,9 @@ export class LayoutFollowerBridge extends EventTarget {
     // asks the host for a same-lineage state-vector delta using this EXACT
     // follower doc. Only an explicit doc_reset may replace it (ADR-0024).
     if (this.lastSeq !== null && update.seq > this.lastSeq + 1) {
-      docLog.warn(
+      // `info`, not `warn`: warn bypasses the debug gate, and a flapping
+      // socket repeats this indefinitely in shipping builds.
+      docLog.info(
         'doc_gap',
         `sequence gap: expected ${this.lastSeq + 1}, got ${update.seq} — resubscribing for a state-vector delta`,
         { seq: update.seq, lastSeq: this.lastSeq, reason: 'gap' }

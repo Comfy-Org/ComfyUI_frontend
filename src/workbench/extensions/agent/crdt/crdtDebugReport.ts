@@ -38,6 +38,8 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 /** Server logs beyond this are tail-trimmed; a paste has to stay pasteable. */
 const MAX_LOG_CHARS = 40_000
 const MAX_WORKFLOW_CHARS = 20_000
+/** The event log and the stamp ledger both grow without bound with session length. */
+const MAX_SECTION_CHARS = 60_000
 
 /**
  * Setting keys whose VALUE is replaced before the report leaves the browser.
@@ -209,13 +211,12 @@ function redactArgv(argv: readonly string[]): string {
       redactNext = false
       continue
     }
-    redactNext = SECRET_KEY_PATTERN.test(arg)
     const [flag, inlineValue] = arg.split('=', 2)
-    parts.push(
-      inlineValue !== undefined && SECRET_KEY_PATTERN.test(flag)
-        ? `${flag}=${REDACTED}`
-        : arg
-    )
+    const named = SECRET_KEY_PATTERN.test(flag)
+    // An inline `--token=x` already consumed its value; only a bare flag can
+    // put the secret in the NEXT argument.
+    redactNext = named && inlineValue === undefined
+    parts.push(named && inlineValue !== undefined ? `${flag}=${REDACTED}` : arg)
   }
   return parts.join(' ')
 }
@@ -348,11 +349,14 @@ export async function collectCrdtDebugReport(
 
   sections.push('## System', renderSystem(stats))
 
-  sections.push('## CRDT event log', fence('json', json(input.events)))
+  sections.push(
+    '## CRDT event log',
+    fence('json', truncate(json(input.events), MAX_SECTION_CHARS))
+  )
 
   sections.push(
     '## Document stamps (LWW ledger)',
-    fence('json', json(input.crdt.stamps))
+    fence('json', truncate(json(input.crdt.stamps), MAX_SECTION_CHARS))
   )
 
   if (sources.workflow && input.workflow !== undefined) {

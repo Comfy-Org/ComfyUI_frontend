@@ -27,6 +27,18 @@ export type CrdtLogLevel = (typeof CRDT_LOG_LEVELS)[number]
 
 const DEFAULT_LEVEL: CrdtLogLevel = 'info'
 
+/**
+ * Cached because {@link isLevelEnabled} runs on the CRDT hot path — once per
+ * outbound frame, per applied frame and per minted op — and an uncached read
+ * would put a synchronous `localStorage.getItem` on each of them, for
+ * opted-out users most of all. Only the setters below change either value.
+ *
+ * Declared here, above `applyQueryOverride()`'s module-evaluation call, so the
+ * setters it invokes are not reaching into a temporal dead zone.
+ */
+let cachedEnabled: boolean | null = null
+let cachedLevel: CrdtLogLevel | null = null
+
 function isLogLevel(value: unknown): value is CrdtLogLevel {
   return (CRDT_LOG_LEVELS as readonly unknown[]).includes(value)
 }
@@ -76,8 +88,8 @@ function applyQueryOverride(): void {
   const value = raw.trim().toLowerCase()
   if (value === '') return
   const disabling = value === '0' || value === 'false' || value === 'off'
-  writeStorage(ENABLED_KEY, disabling ? 'false' : 'true')
-  if (!disabling && isLogLevel(value)) writeStorage(LEVEL_KEY, value)
+  setCrdtDebugEnabled(!disabling)
+  if (!disabling && isLogLevel(value)) setCrdtLogLevel(value)
   consumeQueryParam()
 }
 
@@ -100,22 +112,33 @@ applyQueryOverride()
  * can silence the instrument without editing code.
  */
 export function isCrdtDebugEnabled(): boolean {
-  const stored = readStorage(ENABLED_KEY)
-  if (stored === 'true') return true
-  if (stored === 'false') return false
-  return import.meta.env.DEV
+  if (cachedEnabled === null) {
+    const stored = readStorage(ENABLED_KEY)
+    cachedEnabled =
+      stored === 'true'
+        ? true
+        : stored === 'false'
+          ? false
+          : import.meta.env.DEV
+  }
+  return cachedEnabled
 }
 
 export function setCrdtDebugEnabled(enabled: boolean): void {
+  cachedEnabled = enabled
   writeStorage(ENABLED_KEY, String(enabled))
 }
 
 export function crdtLogLevel(): CrdtLogLevel {
-  const stored = readStorage(LEVEL_KEY)
-  return isLogLevel(stored) ? stored : DEFAULT_LEVEL
+  if (cachedLevel === null) {
+    const stored = readStorage(LEVEL_KEY)
+    cachedLevel = isLogLevel(stored) ? stored : DEFAULT_LEVEL
+  }
+  return cachedLevel
 }
 
 export function setCrdtLogLevel(level: CrdtLogLevel): void {
+  cachedLevel = level
   writeStorage(LEVEL_KEY, level)
 }
 

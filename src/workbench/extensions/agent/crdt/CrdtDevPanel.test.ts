@@ -18,6 +18,7 @@ vi.mock('@/stores/extensionStore', () => ({
 }))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
+import { setCrdtDebugEnabled } from './crdtDebugGate'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
@@ -39,6 +40,9 @@ const sheet = () => screen.queryByTestId('crdt-dev-panel')
 describe('CrdtDevPanel', () => {
   beforeEach(() => {
     localStorage.clear()
+    // The gate caches its value, so clearing storage behind it is not enough
+    // to undo a previous test's dismissal.
+    setCrdtDebugEnabled(true)
     clearDevEvents()
   })
 
@@ -68,11 +72,25 @@ describe('CrdtDevPanel', () => {
 
     await user.click(screen.getByTestId('crdt-dev-panel-dismiss'))
 
-    // A chip left behind after "hide" is the bug: the mount gate is read once
-    // at setup, so persisting the opt-out alone leaves it on screen.
     expect(chip()).toBeNull()
     expect(sheet()).toBeNull()
     expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('false')
+  })
+
+  it('stays hidden across a remount, not just for the current one', async () => {
+    const user = userEvent.setup()
+    const first = renderPanel()
+    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-dismiss'))
+
+    // The panel lives in a slot inside `v-if="!showHistory"`, so opening chat
+    // history destroys and re-creates it. Per-mount state alone would bring a
+    // deliberately hidden chip back with no user action.
+    first.unmount()
+    renderPanel()
+
+    expect(chip()).toBeNull()
+    expect(sheet()).toBeNull()
   })
 
   it('filters the event log by the layer an event came from', async () => {

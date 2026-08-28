@@ -137,21 +137,38 @@ function simulateOpStream(
   let index = 0
 
   for (const batch of batches) {
-    const alreadyApplied = batch.map((op) => hasAppliedOp(doc, op.op_id))
+    const nodeIds = batch.map(opNodeId)
+    // Both facts must be evaluated at the op's OWN position in the batch, not
+    // at the batch boundary: a resend and the op it repeats can share a batch,
+    // and so can a delete and the write it defeats.
+    const spentOpIds = new Set(
+      batch.filter((op) => hasAppliedOp(doc, op.op_id)).map((op) => op.op_id)
+    )
+    const present = new Map<string, boolean>()
+    for (const id of nodeIds) {
+      if (id !== null && !present.has(id)) present.set(id, hasNode(doc, id))
+    }
+
     const result = applyOps(doc, batch, catalog)
     const stampsAfter = readStamps(doc)
 
     batch.forEach((op, position) => {
       const outcome = result.outcomes[position]
-      const nodeId = opNodeId(op)
+      const nodeId = nodeIds[position]
       const verdict: MergeVerdict = outcome
         ? verdictFor(
             outcome,
-            alreadyApplied[position],
-            nodeId === null ? null : hasNode(doc, nodeId),
+            spentOpIds.has(op.op_id),
+            nodeId === null ? null : (present.get(nodeId) ?? false),
             stampKeyOf(stampsAfter[stampTargetKey(op)])
           )
         : { kind: 'no-op', because: 'unknown' }
+
+      spentOpIds.add(op.op_id)
+      if (nodeId !== null && outcome?.outcome === 'applied') {
+        if (op.op === 'add_node') present.set(nodeId, true)
+        else if (op.op === 'delete_node') present.set(nodeId, false)
+      }
 
       entries.push(traceEntry(op, index, verdict))
       index++
@@ -352,7 +369,7 @@ export const MERGE_SCENARIOS: readonly MergeScenario[] = [
     batches: [
       [
         op(
-          { op: 'set_widget', node_id: 'B', widget: 'seed', value: 1 },
+          { op: 'set_widget', node_id: 'B', widget: 'seed', value: 99 },
           ALICE,
           1
         ),

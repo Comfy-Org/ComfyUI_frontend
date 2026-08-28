@@ -68,7 +68,7 @@ describe('merge scenarios', () => {
   it('keeps the applied prefix when a batch aborts', () => {
     const { survivingWidgets } = runScenario(scenario('batch-abort'))
 
-    expect(survivingWidgets['B.seed']).toBe(1)
+    expect(survivingWidgets['B.seed']).toBe(99)
     expect(survivingWidgets['B.steps']).toBe(20)
   })
 
