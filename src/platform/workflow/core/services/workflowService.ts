@@ -103,20 +103,25 @@ export const useWorkflowService = () => {
     })
   }
 
+  function ensureJsonExtension(name: string): string {
+    return name.toLowerCase().endsWith('.json') ? name : `${name}.json`
+  }
+
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
-      let filename = await dialogService.prompt({
+      const filename = await dialogService.prompt({
         title: t('workflowService.exportWorkflow'),
         message: t('workflowService.enterFilenamePrompt'),
         defaultValue: defaultName
       })
       if (!filename) return null
-      if (!filename.toLowerCase().endsWith('.json')) {
-        filename += '.json'
-      }
-      return filename
+      return ensureJsonExtension(filename)
     }
-    return defaultName
+    // The extension MUST be ensured on this branch too: workflow.filename is the
+    // basename with its extension already stripped, so without this the file
+    // downloads with no .json and the OS cannot open it. The prompt being off
+    // is the default whenever the settings store can't be read.
+    return ensureJsonExtension(defaultName)
   }
 
   /**
