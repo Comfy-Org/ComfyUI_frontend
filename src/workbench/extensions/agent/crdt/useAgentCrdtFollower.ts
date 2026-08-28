@@ -323,12 +323,12 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     recordDevEvent('doc_subscribed', detail)
     if (ok) {
       clearSubscribeRetry()
-      armStaleProbe()
-      // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
-      // a remount — persist on ok, not on intent. The arm applies the same
-      // rule: the bridge re-dispatches a confirm even when the workflow was
-      // just dropped, and a stale confirm must not arm an unbound graph.
+      // FE-1902 (poc-3): only a CONFIRMED binding is worth acting on after a
+      // remount — the bridge re-dispatches a confirm even when the workflow
+      // was just dropped, so the stale probe, the id arm, and the persist
+      // all apply the same currently-bound rule.
       if (subscribedWorkflowId.value !== null) {
+        armStaleProbe()
         armCoordinationFreeIds()
         persistDocId(subscribedWorkflowId.value)
       }
@@ -340,6 +340,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const onUpdate: EventListener = (event) => {
     if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     if (staleProbeTimer !== null) armStaleProbe()
+    // An update proves the binding is live: the retry budget and the
+    // silent-server failsafe must not outlive it.
+    clearSubscribeRetry()
     armCoordinationFreeIds()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
