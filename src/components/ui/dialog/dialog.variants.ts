@@ -54,3 +54,10 @@ export const viewerDialogContentClass =
  */
 export const HUG_CONTENT_CLASS =
   'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)]'
+
+/**
+ * Reka chrome for headless dialogs whose content draws its own panel
+ * (background/border/rounding) - neutralize the DialogContent box and
+ * shrink-wrap it around the content.
+ */
+export const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`

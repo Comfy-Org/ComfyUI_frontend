@@ -97,10 +97,21 @@ describe('markdownRendererUtil', () => {
 
     it('still escapes a quote inside an href attribute', () => {
       const html = renderMarkdownToHtml(
-        '[x](https://example.com/a%22onmouseover=alert(1))'
+        '[x](https://example.com/a"onmouseover=alert(1))'
       )
 
-      expect(html).not.toMatch(/href="[^"]*" onmouseover/)
+      expect(html).toContain('a&quot;onmouseover')
+    })
+
+    it('keeps full entity escaping for titles', () => {
+      const html = renderMarkdownToHtml('[y](https://example.com/x "a&b<c>")')
+
+      // Deliberate asymmetry with hrefs: titles are not URLs, so they keep
+      // the full escape (the href in the same output leaves & raw). The
+      // sanitizer's serializer re-emits < bare inside the quoted attribute,
+      // which is valid; the ampersand pin is what proves the full escape ran.
+      expect(html).toContain('title="a&amp;b<c>"')
+      expect(html).toContain('href="https://example.com/x"')
     })
 
     it('quote-escapes an image src without touching its ampersands', () => {
