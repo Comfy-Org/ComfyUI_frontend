@@ -45,3 +45,12 @@ export const FOR_STORIES = { sizes } as const
  */
 export const viewerDialogContentClass =
   'w-[80vw] sm:max-w-[min(80vw,calc(100vw-var(--workspace-inset-right,0px)-1rem))] h-[80vh] max-h-[80vh]'
+
+/**
+ * Shrink-wrap the Reka DialogContent around the content's intrinsic width,
+ * like the auto-sized PrimeVue root it replaces. The width cap subtracts the
+ * workspace inset so hugged dialogs clear a right-docked surface like every
+ * other dialog width cap.
+ */
+export const HUG_CONTENT_CLASS =
+  'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)]'
