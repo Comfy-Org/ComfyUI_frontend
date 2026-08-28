@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -35,19 +36,14 @@ vi.hoisted(() => {
   } as unknown as typeof ResizeObserver
 })
 
-const { downloadFileMock, copyMock } = vi.hoisted(() => ({
-  downloadFileMock: vi.fn(),
-  copyMock: vi.fn()
-}))
+const { copyMock } = vi.hoisted(() => ({ copyMock: vi.fn() }))
 
 vi.mock('vue-i18n', async (importOriginal) => ({
   ...(await importOriginal<typeof VueI18n>()),
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: downloadFileMock
-}))
+vi.mock('@/base/common/downloadUtil')
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
   useCopyToClipboard: () => ({ copyToClipboard: copyMock })
@@ -145,8 +141,8 @@ describe('WidgetTextPreview', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'g.download' }))
 
-    expect(downloadFileMock).toHaveBeenCalledTimes(1)
-    const [url, filename] = downloadFileMock.mock.calls[0]
+    expect(downloadFile).toHaveBeenCalledTimes(1)
+    const [url, filename] = vi.mocked(downloadFile).mock.calls[0]
     expect(url).toContain('/view?')
     expect(url).toContain('filename=result_00001.txt')
     expect(url).toContain('subfolder=sub')

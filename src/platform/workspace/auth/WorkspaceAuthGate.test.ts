@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { reportError } from '@/platform/telemetry/reportError'
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 
@@ -12,10 +13,7 @@ async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
-const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: mockReportError
-}))
+vi.mock('@/platform/telemetry/reportError')
 
 const mockIsInitialized = ref(false)
 const mockCurrentUser = ref<object | null>(null)
@@ -302,7 +300,7 @@ describe('WorkspaceAuthGate', () => {
       expect(
         screen.getByText("Couldn't load your workspace")
       ).toBeInTheDocument()
-      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledOnce()
     })
   })
 
@@ -377,7 +375,7 @@ describe('WorkspaceAuthGate', () => {
 
       expect(signal).toBeInstanceOf(AbortSignal)
       expect(signal.aborted).toBe(true)
-      expect(mockReportError).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('stops initialization when unmounted', async () => {
@@ -400,7 +398,7 @@ describe('WorkspaceAuthGate', () => {
 
       expect(signal.aborted).toBe(true)
       expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
-      expect(mockReportError).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('skips workspace init when store is already initialized', async () => {
@@ -438,7 +436,7 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
       expect(screen.getByRole('alert')).toHaveFocus()
       expect(splashLoader).not.toBeInTheDocument()
-      expect(mockReportError).toHaveBeenCalledWith(error, {
+      expect(reportError).toHaveBeenCalledWith(error, {
         errorType: 'workspace_auth_gate_initialization_failure'
       })
     })

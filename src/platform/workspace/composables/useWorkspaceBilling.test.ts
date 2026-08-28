@@ -5,6 +5,7 @@ import type {
   BillingStatusResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
@@ -30,7 +31,6 @@ const mockShow = vi.hoisted(() => vi.fn())
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockGetOperation = vi.hoisted(() => vi.fn())
 const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
-const mockReportError = vi.hoisted(() => vi.fn())
 const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
 
 // Hoisted so the vi.mock factory below can reference it: a plain top-level
@@ -75,9 +75,7 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   })
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: mockReportError
-}))
+vi.mock('@/platform/telemetry/reportError')
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
@@ -320,7 +318,7 @@ describe('useWorkspaceBilling', () => {
         undefined,
         actionUrl
       )
-      expect(mockReportError).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it('recovers a pending top-up as a top-up, not a subscription', async () => {
@@ -357,7 +355,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.fetchStatus()
 
-      expect(mockReportError).toHaveBeenCalledWith(
+      expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({
           message: expect.stringContaining('seat_change')
         }),

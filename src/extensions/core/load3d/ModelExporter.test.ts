@@ -1,17 +1,17 @@
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
+
 import { ModelExporter } from './ModelExporter'
 
 const {
-  downloadBlobMock,
   addAlertMock,
   gltfParseMock,
   objParseMock,
   stlParseMock,
   fbxParseAsyncMock
 } = vi.hoisted(() => ({
-  downloadBlobMock: vi.fn(),
   addAlertMock: vi.fn(),
   gltfParseMock: vi.fn(),
   objParseMock: vi.fn(),
@@ -19,9 +19,7 @@ const {
   fbxParseAsyncMock: vi.fn()
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
-  downloadBlob: downloadBlobMock
-}))
+vi.mock('@/base/common/downloadUtil')
 
 vi.mock('@/i18n', () => ({
   t: (key: string, vars?: Record<string, unknown>) =>
@@ -133,7 +131,7 @@ describe('ModelExporter', () => {
         'cube.glb'
       )
 
-      expect(downloadBlobMock).toHaveBeenCalledWith('cube.glb', blob)
+      expect(downloadBlob).toHaveBeenCalledWith('cube.glb', blob)
       vi.unstubAllGlobals()
     })
 
@@ -164,7 +162,7 @@ describe('ModelExporter', () => {
       await expect(
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('HTTP 404')
-      expect(downloadBlobMock).not.toHaveBeenCalled()
+      expect(downloadBlob).not.toHaveBeenCalled()
       expect(addAlertMock).toHaveBeenCalledWith(
         'toastMessages.failedToDownloadFile'
       )
@@ -189,7 +187,7 @@ describe('ModelExporter', () => {
         'http://example.com/api/view?filename=src.glb'
       )
 
-      expect(downloadBlobMock).toHaveBeenCalledWith('out.glb', blob)
+      expect(downloadBlob).toHaveBeenCalledWith('out.glb', blob)
       expect(gltfParseMock).not.toHaveBeenCalled()
       vi.unstubAllGlobals()
     })
@@ -212,7 +210,7 @@ describe('ModelExporter', () => {
       await promise
 
       expect(gltfParseMock).toHaveBeenCalled()
-      expect(downloadBlobMock).toHaveBeenCalledWith('out.glb', expect.any(Blob))
+      expect(downloadBlob).toHaveBeenCalledWith('out.glb', expect.any(Blob))
     })
 
     it('alerts and rethrows when GLTFExporter rejects', async () => {
@@ -248,7 +246,7 @@ describe('ModelExporter', () => {
         'http://example.com/api/view?filename=src.obj'
       )
 
-      expect(downloadBlobMock).toHaveBeenCalledWith('out.obj', blob)
+      expect(downloadBlob).toHaveBeenCalledWith('out.obj', blob)
       expect(objParseMock).not.toHaveBeenCalled()
       vi.unstubAllGlobals()
     })
@@ -261,7 +259,7 @@ describe('ModelExporter', () => {
       await promise
 
       expect(objParseMock).toHaveBeenCalled()
-      expect(downloadBlobMock).toHaveBeenCalledWith('out.obj', expect.any(Blob))
+      expect(downloadBlob).toHaveBeenCalledWith('out.obj', expect.any(Blob))
     })
 
     it('alerts and rethrows when OBJExporter throws', async () => {
@@ -296,7 +294,7 @@ describe('ModelExporter', () => {
         'http://example.com/api/view?filename=src.stl'
       )
 
-      expect(downloadBlobMock).toHaveBeenCalledWith('out.stl', blob)
+      expect(downloadBlob).toHaveBeenCalledWith('out.stl', blob)
       expect(stlParseMock).not.toHaveBeenCalled()
       vi.unstubAllGlobals()
     })
@@ -309,7 +307,7 @@ describe('ModelExporter', () => {
       await promise
 
       expect(stlParseMock).toHaveBeenCalled()
-      expect(downloadBlobMock).toHaveBeenCalledWith('out.stl', expect.any(Blob))
+      expect(downloadBlob).toHaveBeenCalledWith('out.stl', expect.any(Blob))
     })
 
     it('alerts and rethrows when STLExporter throws', async () => {
@@ -344,7 +342,7 @@ describe('ModelExporter', () => {
         'ply'
       )
 
-      expect(downloadBlobMock).toHaveBeenCalledWith('out.ply', blob)
+      expect(downloadBlob).toHaveBeenCalledWith('out.ply', blob)
       vi.unstubAllGlobals()
     })
 
@@ -352,7 +350,7 @@ describe('ModelExporter', () => {
       await expect(
         ModelExporter.exportDirect(null, 'out.spz', 'spz')
       ).rejects.toThrow('No source file available to export as spz')
-      expect(downloadBlobMock).not.toHaveBeenCalled()
+      expect(downloadBlob).not.toHaveBeenCalled()
       expect(addAlertMock).not.toHaveBeenCalled()
     })
   })
@@ -373,7 +371,7 @@ describe('ModelExporter', () => {
         'http://example.com/api/view?filename=src.fbx'
       )
 
-      expect(downloadBlobMock).toHaveBeenCalledWith('out.fbx', blob)
+      expect(downloadBlob).toHaveBeenCalledWith('out.fbx', blob)
       expect(fbxParseAsyncMock).not.toHaveBeenCalled()
       vi.unstubAllGlobals()
     })
@@ -387,7 +385,7 @@ describe('ModelExporter', () => {
       await promise
 
       expect(fbxParseAsyncMock).toHaveBeenCalled()
-      expect(downloadBlobMock).toHaveBeenCalledWith('out.fbx', expect.any(Blob))
+      expect(downloadBlob).toHaveBeenCalledWith('out.fbx', expect.any(Blob))
     })
 
     it('alerts and rethrows when FBXExporter throws', async () => {

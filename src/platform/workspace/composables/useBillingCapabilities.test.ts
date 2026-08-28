@@ -5,12 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 
 const mockGetBillingCapabilities = vi.hoisted(() => vi.fn())
-const mockReportError = vi.hoisted(() => vi.fn())
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockScope = vi.hoisted(() => ({
   workspaceId: 'workspace-1' as string | null,
@@ -31,9 +31,7 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: { getBillingCapabilities: mockGetBillingCapabilities }
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: mockReportError
-}))
+vi.mock('@/platform/telemetry/reportError')
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -283,7 +281,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
-    expect(mockReportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('withholds top-up from members when the endpoint is unavailable', async () => {
@@ -328,7 +326,7 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(false)
-    expect(mockReportError).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('discards a response resolved for a different workspace', async () => {
@@ -663,7 +661,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
     expect(billingCapabilities.isReady.value).toBe(true)
-    expect(mockReportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('retries on a fixed interval after a background refresh fails', async () => {
@@ -910,7 +908,7 @@ describe('useBillingCapabilities', () => {
     await vi.advanceTimersByTimeAsync(2_000)
     expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(4)
 
-    expect(mockReportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('keeps the owner top-up fallback readable while a retry is in flight', async () => {

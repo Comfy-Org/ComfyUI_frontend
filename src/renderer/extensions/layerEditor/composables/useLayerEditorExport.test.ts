@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 import type { Psd } from 'ag-psd'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
 import type { Document } from '@/renderer/extensions/layerEditor/engine/document'
 import { registerBuiltinKinds } from '@/renderer/extensions/layerEditor/engine/kinds'
 import { defaultMode } from '@/renderer/extensions/layerEditor/engine/mode'
@@ -15,14 +16,13 @@ import type {
 import { useLayerEditorExport } from './useLayerEditorExport'
 import type { LayerEditorSession } from './useLayerEditorSession'
 
-const { writePsd, downloadBlob, toastAdd } = vi.hoisted(() => ({
+const { writePsd, toastAdd } = vi.hoisted(() => ({
   writePsd: vi.fn((_psd: unknown) => new ArrayBuffer(4)),
-  downloadBlob: vi.fn(),
   toastAdd: vi.fn()
 }))
 
 vi.mock('ag-psd', () => ({ writePsd }))
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob }))
+vi.mock('@/base/common/downloadUtil')
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
@@ -176,7 +176,7 @@ describe('useLayerEditorExport', () => {
     })
 
     expect(downloadBlob).toHaveBeenCalledTimes(1)
-    const [filename, blob] = downloadBlob.mock.calls[0] as [string, Blob]
+    const [filename, blob] = vi.mocked(downloadBlob).mock.calls[0]
     expect(filename).toMatch(/^comfyui-layers-\d{8}-\d{6}\.psd$/)
     expect(blob).toBeInstanceOf(Blob)
     expect(exporting.value).toBe(false)

@@ -15,21 +15,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import SignInForm from './SignInForm.vue'
 
-// Mock firebase auth modules
-vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn(),
-  sendPasswordResetEmail: vi.fn()
-}))
+vi.mock('firebase/app')
+vi.mock('firebase/auth')
 
 // Mock the auth composables and stores
 const mockSendPasswordReset = vi.fn()

@@ -34,18 +34,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('pinia')
 
-vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signOut: vi.fn()
-}))
+vi.mock('firebase/app')
+vi.mock('firebase/auth')
 
 function renderComponent() {
   const i18n = createI18n({

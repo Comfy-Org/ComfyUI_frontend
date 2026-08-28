@@ -1,19 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { toNodeId } from '@/types/nodeId'
 
 import { useCompositorPsdDownload } from './useCompositorPsdDownload'
 
-const { buildSessionPsdBlob, downloadBlob, loadCompositorSession, toastAdd } =
-  vi.hoisted(() => ({
+const { buildSessionPsdBlob, loadCompositorSession, toastAdd } = vi.hoisted(
+  () => ({
     buildSessionPsdBlob: vi.fn(async () => new Blob(['psd'])),
-    downloadBlob: vi.fn(),
     loadCompositorSession: vi.fn().mockResolvedValue(0),
     toastAdd: vi.fn()
-  }))
+  })
+)
 
 vi.mock(
   '@/renderer/extensions/compositor/composables/compositorSession',
@@ -28,7 +29,7 @@ vi.mock(
     psdExportFilename: () => 'comfyui-layers-test.psd'
   })
 )
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob }))
+vi.mock('@/base/common/downloadUtil')
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
