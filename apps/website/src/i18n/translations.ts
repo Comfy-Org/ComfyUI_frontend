@@ -7363,9 +7363,8 @@ const translations = {
       '在 Comfy 无服务器引擎上从零扩展到数百万次工作流运行。无需配置 GPU，没有冷启动——只为实际用量付费。'
   },
   'platform.serverlessVisual.ariaLabel': {
-    en: 'Animated diagram showing a client request traveling through an API gateway, waking serverless functions, reaching the database, and returning a response.',
-    'zh-CN':
-      '动画图示：客户端请求经过 API 网关，唤醒无服务器函数，到达数据库后返回响应。'
+    en: 'Animated diagram showing serverless activity moving through B200 GPU workers.',
+    'zh-CN': '动画图示：无服务器活动在 B200 GPU 工作节点之间移动。'
   },
   'platform.serverlessVisual.client': {
     en: 'Client request',
@@ -7382,6 +7381,10 @@ const translations = {
   'platform.serverlessVisual.database': {
     en: 'Database  B200s',
     'zh-CN': '数据库  B200s'
+  },
+  'platform.serverlessVisual.worker': {
+    en: 'B200s',
+    'zh-CN': 'B200s'
   },
   'platform.products.builder.title': {
     en: 'Builder',
