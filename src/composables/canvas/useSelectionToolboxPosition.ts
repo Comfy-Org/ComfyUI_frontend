@@ -8,7 +8,11 @@ import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
+import {
+  isLGraphGroup,
+  isLGraphNode,
+  isSelectOnly
+} from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
 /**
@@ -82,6 +86,11 @@ export function useSelectionToolboxPosition(
    * Update position based on selection
    */
   const updateSelectionBounds = () => {
+    if (isSelectOnly(canvasStore.canvas ?? undefined)) {
+      visible.value = false
+      return
+    }
+
     const selectableItems = getSelectableItems()
 
     if (!selectableItems.size) {

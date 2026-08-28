@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -60,6 +61,7 @@ import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
 } from '@/utils/graphTraversalUtil'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   ManagerUIState,
@@ -428,7 +430,9 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        app.canvas.fitViewToSelectionAnimated()
+        app.canvas.fitViewToSelectionAnimated({
+          viewport: visibleCanvasViewport(app.canvas)
+        })
       }
     },
     {
@@ -661,6 +665,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         toggleSelectedNodesMode(LGraphEventMode.NEVER)
         app.canvas.setDirty(true, true)
       }
@@ -672,6 +677,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
         app.canvas.setDirty(true, true)
       }
@@ -683,6 +689,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.11',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         getSelectedNodes().forEach((node) => {
           node.pin(!node.pinned)
         })
@@ -695,6 +702,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Pin/Unpin Selected Items',
       versionAdded: '1.3.33',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         for (const item of app.canvas.selectedItems) {
           if (item instanceof LGraphNode || item instanceof LGraphGroup) {
             item.pin(!item.pinned)
@@ -919,6 +927,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--clipboard-paste]',
       label: 'Paste',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         app.canvas.pasteFromClipboard()
       }
     },
@@ -927,6 +936,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--clipboard-paste]',
       label: () => t('Paste with Connect'),
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         app.canvas.pasteFromClipboard({ connectInputs: true })
       }
     },
@@ -944,6 +954,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Delete Selected Items',
       versionAdded: '1.10.5',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         if (app.canvas.selectedItems.size === 0) {
           app.canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })

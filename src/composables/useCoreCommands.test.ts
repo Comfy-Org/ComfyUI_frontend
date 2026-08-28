@@ -41,6 +41,9 @@ vi.mock('@/scripts/app', () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    deleteSelected: vi.fn(),
+    selectOnly: false,
+    canvas: { dispatchEvent: vi.fn() },
     read_only: false,
     ds: mockDs,
     setDirty: vi.fn()
@@ -410,6 +413,7 @@ describe('useCoreCommands', () => {
 
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
+      app.canvas.selectOnly = false
     })
 
     it('should copy selected items when selection exists', async () => {
@@ -434,11 +438,69 @@ describe('useCoreCommands', () => {
       expect(app.canvas.pasteFromClipboard).toHaveBeenCalledWith()
     })
 
+    it.for([
+      'Comfy.Canvas.PasteFromClipboard',
+      'Comfy.Canvas.PasteFromClipboardWithConnect'
+    ])('should not run %s in selection-only mode', async (commandId) => {
+      app.canvas.selectOnly = true
+
+      await findCommand(commandId).function()
+
+      expect(app.canvas.pasteFromClipboard).not.toHaveBeenCalled()
+    })
+
     it('should select all items', async () => {
       await findCommand('Comfy.Canvas.SelectAll').function()
 
       // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
+    })
+
+    it('should delete selected items outside selection-only mode', async () => {
+      app.canvas.selectedItems = new Set([
+        {}
+      ]) as typeof app.canvas.selectedItems
+
+      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+      expect(app.canvas.deleteSelected).toHaveBeenCalledOnce()
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('should preserve selected items in selection-only mode', async () => {
+      const selectedItem = {}
+      app.canvas.selectedItems = new Set([
+        selectedItem
+      ]) as typeof app.canvas.selectedItems
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+      expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+      expect(app.canvas.setDirty).not.toHaveBeenCalled()
+      expect([...app.canvas.selectedItems]).toEqual([selectedItem])
+    })
+
+    it.for([
+      'Comfy.Canvas.ToggleSelectedNodes.Pin',
+      'Comfy.Canvas.ToggleSelected.Pin',
+      'Comfy.Canvas.ToggleSelectedNodes.Mute',
+      'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+    ])('should not run %s in selection-only mode', async (commandId) => {
+      app.canvas.selectOnly = true
+
+      await findCommand(commandId).function()
+
+      expect(app.canvas.setDirty).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      'Comfy.Canvas.ToggleSelectedNodes.Pin',
+      'Comfy.Canvas.ToggleSelected.Pin'
+    ])('runs %s outside selection-only mode', async (commandId) => {
+      await findCommand(commandId).function()
+
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
   })
 
