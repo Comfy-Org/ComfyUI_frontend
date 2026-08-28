@@ -1,7 +1,11 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import { setCoordinationFreeIds } from '@/lib/litegraph/src/idAllocation'
+import {
+  mintCoordinationFreeId,
+  setCoordinationFreeIds
+} from '@/lib/litegraph/src/idAllocation'
+import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -179,6 +183,27 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   })
   const projector = new SemanticProjector(mutator, { actor: tabId })
 
+  // Arming is graph-scoped: the doc projects onto `app.graph`, so only THAT
+  // graph's state mints coordination-free ids. `LGraph.clear()` replaces the
+  // state object on every workflow load, which drops the arm (fails closed);
+  // re-arming rides the frames that prove the binding is live - the
+  // subscribe confirm and every doc_update - so a swapped-in graph is armed
+  // again by the next doc frame and an unbound graph is never armed at all.
+  let armedIdState: LGraphState | null = null
+
+  function armCoordinationFreeIds(): void {
+    const state = app.graph?.state ?? null
+    if (armedIdState !== null && armedIdState !== state)
+      setCoordinationFreeIds(armedIdState, false)
+    armedIdState = state
+    if (state !== null) setCoordinationFreeIds(state, true)
+  }
+
+  function disarmCoordinationFreeIds(): void {
+    if (armedIdState !== null) setCoordinationFreeIds(armedIdState, false)
+    armedIdState = null
+  }
+
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
@@ -240,7 +265,12 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
 
   const scheduleSubscribeRetry = (): void => {
     if (subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      // Definitive binding failure: the budget is spent, so the doc is not
+      // coming. Restore counter allocation until a later confirm re-arms.
+      disarmCoordinationFreeIds()
+      return
+    }
     const target = subscribedWorkflowId.value
     if (target === null) return
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
@@ -267,6 +297,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
+      armCoordinationFreeIds()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
@@ -279,6 +310,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const onUpdate: EventListener = (event) => {
     if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     if (staleProbeTimer !== null) armStaleProbe()
+    armCoordinationFreeIds()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
@@ -342,6 +374,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     connected.value = false
     lastFrameType.value = event.type
     clearStaleProbe()
+    disarmCoordinationFreeIds()
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -412,13 +445,13 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
           recordDevEvent('rebind', { workflowId: persisted })
           subscribedWorkflowId.value = persisted
           bridge.subscribe(persisted)
-          setCoordinationFreeIds(true)
+          armCoordinationFreeIds()
           return
         }
         clearPersistedDocId()
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
-        setCoordinationFreeIds(false)
+        disarmCoordinationFreeIds()
         return
       }
       initialBind = false
@@ -435,7 +468,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       // Doc-bound workflows allocate contract-scheme (coordination-free) node
       // and link ids at local creation, so replicas seeded from one snapshot
       // cannot mint colliding ids; a real detach restores the counters.
-      setCoordinationFreeIds(true)
+      armCoordinationFreeIds()
     },
     { immediate: true }
   )
@@ -447,7 +480,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // failure-tolerant by construction now, but the try/finally makes the
     // "client.destroy() always runs" guarantee local and readable.
     try {
-      setCoordinationFreeIds(false)
+      disarmCoordinationFreeIds()
       clearSubscribeRetry()
       clearStaleProbe()
       if (import.meta.env.DEV) {
@@ -480,8 +513,6 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     const bytes = crypto.getRandomValues(new Uint8Array(16))
     return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
   }
-  const mintNodeId = (): number =>
-    2 ** 40 + Math.floor(Math.random() * (2 ** 52 - 2 ** 40))
   const pocAddNode = (
     classType: string,
     pos: [number, number] = [100, 100],
@@ -489,7 +520,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   ): DocOp => {
     const userId = useAuthStore().userId ?? 'anonymous'
     const actor = `human:${userId}:${tabId}`
-    const nodeId = mintNodeId()
+    const nodeId = mintCoordinationFreeId()
     let node: Record<string, unknown>
     if (nodeOverride) {
       node = { ...nodeOverride, id: nodeId, type: classType, pos }

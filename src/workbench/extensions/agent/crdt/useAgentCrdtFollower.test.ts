@@ -99,7 +99,17 @@ vi.mock('./devPanelLog', () => ({
 }))
 
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
-vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
+
+const appState = vi.hoisted(() => ({
+  app: {
+    graph: { state: { lastNodeId: 0 } } as {
+      state: Record<string, unknown>
+    } | null,
+    canvas: null
+  }
+}))
+
+vi.mock('@/scripts/app', () => ({ app: appState.app }))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
@@ -149,6 +159,7 @@ describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     sessionStorage.clear()
+    appState.app.graph = { state: { lastNodeId: 0 } }
     bridgeState.current = null
     projectorState.current = null
     idAllocationState.setCoordinationFreeIds.mockClear()
@@ -250,33 +261,102 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-persisted')
     expect(status().workflowId).toBe('wf-persisted')
+    // The rebound doc is a live binding: the panel-remount/reload path must
+    // arm coordination-free allocation exactly like a fresh bind.
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      appState.app.graph!.state,
+      true
+    )
     unmount()
   })
 
-  it('arms contract-scheme id allocation while bound and restores counters on detach and unmount', async () => {
+  it('arms the bound graph state and restores counters on detach and unmount', async () => {
+    const boundState = appState.app.graph!.state
     const { unmount, workflowId } = mountFollower('wf-1')
 
-    // Bound: local node/link creation allocates coordination-free ids.
+    // Bound: local node/link creation on THIS graph allocates
+    // coordination-free ids; every other graph state stays on counters.
     expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
       true
     )
 
+    // A persisted id must not hijack a LATER null into a rebind - only the
+    // mount-time null rebinds; this one is a real detach.
+    sessionStorage.setItem('Comfy.Agent.CrdtDocId', 'wf-stale')
     workflowId.value = null
     await nextTick()
     expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
       false
     )
 
     workflowId.value = 'wf-2'
     await nextTick()
     expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
       true
     )
 
     unmount()
     expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
       false
     )
+  })
+
+  it('re-arms the swapped-in graph state on the next doc frame', () => {
+    const initialState = appState.app.graph!.state
+    const { unmount } = mountFollower('wf-1')
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      initialState,
+      true
+    )
+
+    // A workflow load replaces the graph state (LGraph.clear()), dropping
+    // the arm. The subscribe confirm re-arms the new state and releases the
+    // old one; a doc_update does the same for later swaps.
+    const confirmState = { lastNodeId: 0 }
+    appState.app.graph = { state: confirmState }
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenCalledWith(
+      initialState,
+      false
+    )
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      confirmState,
+      true
+    )
+
+    const updateState = { lastNodeId: 0 }
+    appState.app.graph = { state: updateState }
+    dispatchFrame('doc_update', { seq: 1 })
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      updateState,
+      true
+    )
+    unmount()
+  })
+
+  it('disarms when the subscribe retry budget is exhausted', () => {
+    vi.useFakeTimers()
+    const boundState = appState.app.graph!.state
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    idAllocationState.setCoordinationFreeIds.mockClear()
+    dispatchFrame('doc_subscribed', { ok: false })
+
+    // Definitive binding failure: the doc is not coming, so counter
+    // allocation is restored instead of stranding the arm.
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      false
+    )
+    unmount()
   })
 
   it('FE-1902: a real detach clears the persisted binding and unsubscribes', async () => {
@@ -372,6 +452,12 @@ describe('useAgentCrdtFollower', () => {
 
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
+    // Fail-closed for allocation too: nothing projects from an unreadable
+    // doc, so nothing should mint against it.
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      appState.app.graph!.state,
+      false
+    )
     unmount()
   })
 
