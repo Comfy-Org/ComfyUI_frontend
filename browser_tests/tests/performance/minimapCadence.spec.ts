@@ -25,23 +25,19 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
         ({ nodeId, update }) => {
           const api = window.app?.api
           if (!api) throw new Error('window.app.api is not available')
-          api.dispatchEvent(
-            new CustomEvent('progress_state', {
-              detail: {
-                prompt_id: 'minimap-perf-job',
-                nodes: {
-                  [nodeId]: {
-                    value: update,
-                    max: 20,
-                    state: update % 2 === 0 ? 'running' : 'finished',
-                    node_id: nodeId,
-                    display_node_id: nodeId,
-                    prompt_id: 'minimap-perf-job'
-                  }
-                }
+          api.dispatchCustomEvent('progress_state', {
+            prompt_id: 'minimap-perf-job',
+            nodes: {
+              [nodeId]: {
+                value: update,
+                max: 20,
+                state: update % 2 === 0 ? 'running' : 'finished',
+                node_id: nodeId,
+                display_node_id: nodeId,
+                prompt_id: 'minimap-perf-job'
               }
-            })
-          )
+            }
+          })
         },
         { nodeId, update }
       )
