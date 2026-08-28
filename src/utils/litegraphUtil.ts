@@ -134,16 +134,21 @@ export function addToComboValues(widget: IComboWidget, value: string) {
 }
 
 /**
- * True while the canvas is a picking surface rather than an editable one - the
- * agent's node selection mode sets `selectOnly`.
+ * True while the canvas is a picking surface rather than an editable one
+ * (the `selectOnly` interaction mode).
  *
- * Guard every editing operation with this. It is checked at each call site
- * rather than inside litegraph itself, to keep that vendored library untouched.
- * A new way to edit the canvas therefore has to opt in: add the guard, or the
- * operation will run during picking.
+ * Guard every editing operation with this. A new way to edit the canvas has
+ * to opt in: add the guard, or the operation will run during picking.
+ *
+ * Deliberately unguarded: workflow-lifecycle commands (new/open/load-default)
+ * SWAP the workflow rather than edit the picked canvas - switching workflows
+ * exits the picking mode, and the mode's owner handles that exit. Clear is
+ * guarded despite the resemblance: it destroys the current canvas in place,
+ * which is an edit, not a swap.
  */
-export const isSelectOnly = (canvas: LGraphCanvas | undefined): boolean =>
-  canvas?.selectOnly === true
+export const isSelectOnly = (
+  canvas: LGraphCanvas | null | undefined
+): boolean => canvas?.selectOnly === true
 
 export const isLGraphNode = (item: unknown): item is LGraphNode => {
   return item instanceof LGraphNode

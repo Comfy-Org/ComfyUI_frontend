@@ -113,6 +113,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
   ) => {
+    if (isSelectOnly(app.canvas)) return
     const selectedNodes = getSelectedNodes()
     if (selectedNodes.length === 0) return
 
@@ -273,6 +274,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Clear Workflow',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         const settingStore = useSettingStore()
         if (
           !settingStore.get('Comfy.ConfirmClear') ||
@@ -609,6 +611,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.7',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         const { canvas } = app
         if (!canvas.selectedItems?.size) {
           toastStore.add({
@@ -707,6 +710,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Resize Selected Nodes',
       versionAdded: '',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         getSelectedNodes().forEach((node) => {
           const optimalSize = node.computeSize()
           node.setSize([optimalSize[0], optimalSize[1]])
@@ -720,6 +724,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Collapse/Expand Selected Nodes',
       versionAdded: '1.3.11',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         getSelectedNodes().forEach((node) => {
           node.collapse()
         })
@@ -778,6 +783,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Fit Group To Contents',
       versionAdded: '1.4.9',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         for (const group of app.canvas.selectedItems) {
           if (group instanceof LGraphGroup) {
             group.recomputeInsideNodes()
@@ -1056,6 +1062,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.20.1',
       category: 'essentials' as const,
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         const canvas = canvasStore.getCanvas()
         const graph = canvas.subgraph ?? canvas.graph
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
@@ -1081,6 +1088,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Unpack the selected Subgraph',
       versionAdded: '1.26.3',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         const { unpackSubgraph } = useSubgraphOperations()
         unpackSubgraph()
       }

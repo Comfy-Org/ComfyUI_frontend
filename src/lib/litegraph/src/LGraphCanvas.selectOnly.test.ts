@@ -52,6 +52,7 @@ describe('LGraphCanvas selectOnly', () => {
     } as never)
     LiteGraph.vueNodesMode = false
     LiteGraph.middle_click_slot_add_default_node = false
+    LiteGraph.alt_drag_do_clone_nodes = false
   })
 
   it('accumulates ordinary node clicks and toggles a clicked node off', () => {
@@ -156,8 +157,185 @@ describe('LGraphCanvas selectOnly', () => {
       canvasY: 450
     } as CanvasPointerEvent)
 
-    expect(canvas.pointer.onDrag).toBeDefined()
+    // The group's resize handle arms nothing; the marquee select drag arms.
+    expect(canvas.pointer.onDragStart).toBeDefined()
     expect(resizeSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not clone nodes on alt-click', () => {
+    const { canvas, graph, firstNode } = createHarness()
+    LiteGraph.alt_drag_do_clone_nodes = true
+    const cloneSpy = vi.spyOn(
+      canvas as unknown as { _deserializeItems: (...args: never[]) => unknown },
+      '_deserializeItems'
+    )
+    const event = {
+      canvasX: 150,
+      canvasY: 140,
+      altKey: true,
+      ctrlKey: false
+    } as CanvasPointerEvent
+    const nodeCountBefore = graph.nodes.length
+    canvas.selectOnly = true
+
+    canvas['_processPrimaryButton'](event, firstNode)
+
+    expect(cloneSpy).not.toHaveBeenCalled()
+    expect(graph.nodes.length).toBe(nodeCountBefore)
+  })
+
+  it('retains alt-click node cloning when disabled', () => {
+    const { canvas, firstNode } = createHarness()
+    LiteGraph.alt_drag_do_clone_nodes = true
+    const cloneSpy = vi.spyOn(
+      canvas as unknown as { _deserializeItems: (...args: never[]) => unknown },
+      '_deserializeItems'
+    )
+    const event = {
+      canvasX: 150,
+      canvasY: 140,
+      altKey: true,
+      ctrlKey: false
+    } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](event, firstNode)
+
+    expect(cloneSpy).toHaveBeenCalledOnce()
+  })
+
+  it('does not insert reroutes on alt-click over a link', () => {
+    const { canvas, graph } = createHarness()
+    const linkSegment = {
+      id: 1,
+      path: {} as Path2D,
+      _pos: [300, 300]
+    } as unknown as Parameters<typeof canvas.renderedPaths.add>[0]
+    canvas.renderedPaths.add(linkSegment)
+    canvas.ctx.isPointInStroke = vi.fn().mockReturnValue(true)
+    const createRerouteSpy = vi
+      .spyOn(graph, 'createReroute')
+      .mockReturnValue(null as never)
+    const event = {
+      canvasX: 300,
+      canvasY: 300,
+      altKey: true,
+      shiftKey: false
+    } as CanvasPointerEvent
+    canvas.selectOnly = true
+
+    canvas['_processPrimaryButton'](event, undefined)
+
+    expect(createRerouteSpy).not.toHaveBeenCalled()
+  })
+
+  it('retains alt-click reroute insertion when disabled', () => {
+    const { canvas, graph } = createHarness()
+    const linkSegment = {
+      id: 1,
+      path: {} as Path2D,
+      _pos: [300, 300]
+    } as unknown as Parameters<typeof canvas.renderedPaths.add>[0]
+    canvas.renderedPaths.add(linkSegment)
+    canvas.ctx.isPointInStroke = vi.fn().mockReturnValue(true)
+    const createRerouteSpy = vi
+      .spyOn(graph, 'createReroute')
+      .mockReturnValue(null as never)
+    const event = {
+      canvasX: 300,
+      canvasY: 300,
+      altKey: true,
+      shiftKey: false
+    } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](event, undefined)
+
+    expect(createRerouteSpy).toHaveBeenCalledOnce()
+  })
+
+  it('does not open the link menu from the link marker', () => {
+    const { canvas } = createHarness()
+    const linkSegment = {
+      id: 1,
+      path: {} as Path2D,
+      _pos: [300, 300]
+    } as unknown as Parameters<typeof canvas.renderedPaths.add>[0]
+    canvas.renderedPaths.add(linkSegment)
+    canvas.ctx.isPointInStroke = vi.fn().mockReturnValue(false)
+    const linkMenuSpy = vi
+      .spyOn(canvas, 'showLinkMenu')
+      .mockReturnValue(false as never)
+    const event = { canvasX: 300, canvasY: 300 } as CanvasPointerEvent
+    canvas.selectOnly = true
+
+    canvas['_processPrimaryButton'](event, undefined)
+    canvas.pointer.onClick?.(event)
+
+    expect(linkMenuSpy).not.toHaveBeenCalled()
+  })
+
+  it('retains the link-marker menu when disabled', () => {
+    const { canvas } = createHarness()
+    const linkSegment = {
+      id: 1,
+      path: {} as Path2D,
+      _pos: [300, 300]
+    } as unknown as Parameters<typeof canvas.renderedPaths.add>[0]
+    canvas.renderedPaths.add(linkSegment)
+    canvas.ctx.isPointInStroke = vi.fn().mockReturnValue(false)
+    const linkMenuSpy = vi
+      .spyOn(canvas, 'showLinkMenu')
+      .mockReturnValue(false as never)
+    const event = { canvasX: 300, canvasY: 300 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](event, undefined)
+    canvas.pointer.onClick?.(event)
+
+    expect(linkMenuSpy).toHaveBeenCalledOnce()
+  })
+
+  it('does not reorder nodes on a node click while picking', () => {
+    const { canvas, firstNode } = createHarness()
+    const bringToFrontSpy = vi.spyOn(canvas, 'bringToFront')
+    const event = { canvasX: 150, canvasY: 140 } as CanvasPointerEvent
+    canvas.selectOnly = true
+
+    canvas['_processNodeClick'](event, false, firstNode)
+
+    expect(bringToFrontSpy).not.toHaveBeenCalled()
+  })
+
+  it('retains bring-to-front on node click when disabled', () => {
+    const { canvas, firstNode } = createHarness()
+    const bringToFrontSpy = vi
+      .spyOn(canvas, 'bringToFront')
+      .mockImplementation(() => {})
+    const event = { canvasX: 150, canvasY: 140 } as CanvasPointerEvent
+
+    canvas['_processNodeClick'](event, false, firstNode)
+
+    expect(bringToFrontSpy).toHaveBeenCalledOnce()
+  })
+
+  it('does not emit graph change events when picking starts on an item', () => {
+    const { canvas, firstNode } = createHarness()
+    const beforeChangeSpy = vi.spyOn(canvas, 'emitBeforeChange')
+    canvas.selectOnly = true
+
+    canvas['_startDraggingItems'](firstNode, canvas.pointer, true)
+
+    expect(beforeChangeSpy).not.toHaveBeenCalled()
+    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+  })
+
+  it('leaves node clicks to Vue nodes when vueNodesMode is on', () => {
+    const { canvas, firstNode } = createHarness()
+    LiteGraph.vueNodesMode = true
+    canvas.selectOnly = true
+    const event = { canvasX: 150, canvasY: 140 } as CanvasPointerEvent
+
+    canvas['_processNodeClick'](event, false, firstNode)
+
+    expect(canvas.pointer.onClick).toBeUndefined()
   })
 
   it('does not create default nodes from middle-clicked slots', () => {
