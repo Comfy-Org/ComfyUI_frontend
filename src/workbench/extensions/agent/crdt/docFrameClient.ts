@@ -61,8 +61,6 @@ export interface DocReset {
  * same-lineage state-vector replay - the bridge owns that; this frame carries
  * the report.
  */
-// Re-exported when an out-of-file consumer lands; the bridge reads the
-// event detail structurally.
 interface DocFrameError {
   workflowId: string
   reason: 'decode_failed'
