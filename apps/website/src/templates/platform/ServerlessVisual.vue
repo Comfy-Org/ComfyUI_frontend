@@ -1,92 +1,187 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useElementVisibility, useRafFn } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
-// Abstract autoscaling visual: one endpoint on the left, a fleet of GPU
-// worker cells lighting up in a wave that radiates outward from it.
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
 const COLS = 12
 const ROWS = 6
+const LINE_START = 11.5
+const LINE_END = 95
+const GRID_START = 22
+const REQUEST_DURATION = 3200
+const RESPONSE_DURATION = 2500
+const ACTIVE_DURATION = 3600
+const HOT_DURATION = 850
+const CYCLE_DURATION = 17_000
+const REQUEST_STARTS = [900, 6200, 7100, 8000]
+
+type CellState = 'idle' | 'on' | 'hot'
 
 interface Cell {
   id: number
-  delay: string
-  duration: string
+  col: number
+  row: number
+  tone: string
 }
 
-const cells: Cell[] = Array.from({ length: COLS * ROWS }, (_, i) => {
-  const col = i % COLS
-  const row = Math.floor(i / COLS)
-  const distance = col + Math.abs(row - (ROWS - 1) / 2)
-  return {
-    id: i,
-    delay: `${(distance * 0.16).toFixed(2)}s`,
-    duration: `${(2.4 + (i % 3) * 0.4).toFixed(1)}s`
-  }
-})
+const tones = [
+  'bg-white/10',
+  'bg-secondary-mauve/35',
+  'bg-white/15',
+  'bg-primary-comfy-plum/30'
+]
 
-// The hardware lineup flashes through on a shared CSS cycle: each label owns
-// a quarter of the 7.2s label-flash keyframe via its animation delay.
-const GPUS = ['RTX 6000 PRO', '5090s', 'B200s', 'H100s']
-const GPU_SLOT_SECONDS = 1.8
+const cells: Cell[] = Array.from({ length: COLS * ROWS }, (_, id) => ({
+  id,
+  col: id % COLS,
+  row: Math.floor(id / COLS),
+  tone: tones[(id * 7 + Math.floor(id / COLS) * 3) % tones.length]
+}))
+
+const stageRef = useTemplateRef<HTMLElement>('stageRef')
+const onScreen = useElementVisibility(stageRef)
+const elapsed = ref(0)
+
+const frameTime = computed(() => elapsed.value % CYCLE_DURATION)
+
+function columnArrival(col: number): number {
+  const gridWidth = LINE_END - GRID_START
+  const center = GRID_START + (gridWidth / COLS) * (col + 0.5)
+  return ((center - LINE_START) / (LINE_END - LINE_START)) * REQUEST_DURATION
+}
+
+function wakesCell(cell: Cell, requestIndex: number): boolean {
+  const primaryRow = (cell.col * 2 + requestIndex * 3) % ROWS
+  const secondaryRow = (primaryRow + 3) % ROWS
+  return (
+    cell.row === primaryRow ||
+    (requestIndex >= 2 &&
+      cell.col >= 2 &&
+      cell.col < 10 &&
+      (cell.col + requestIndex) % 2 === 0 &&
+      cell.row === secondaryRow)
+  )
+}
+
+function stateForCell(cell: Cell, now: number): CellState {
+  let state: CellState = 'idle'
+
+  for (const [requestIndex, start] of REQUEST_STARTS.entries()) {
+    const age = now - start - columnArrival(cell.col)
+    if (age < 0 || age >= ACTIVE_DURATION || !wakesCell(cell, requestIndex)) {
+      continue
+    }
+
+    if (age < HOT_DURATION && cell.col > 3 && cell.col < 9) return 'hot'
+    state = 'on'
+  }
+
+  return state
+}
+
+const visualCells = computed(() =>
+  cells.map((cell) => ({
+    ...cell,
+    state: stateForCell(cell, frameTime.value)
+  }))
+)
+
+const pulses = computed(() =>
+  REQUEST_STARTS.flatMap((start, id) => {
+    const age = frameTime.value - start
+    if (age < 0 || age > REQUEST_DURATION + RESPONSE_DURATION) return []
+
+    const progress =
+      age <= REQUEST_DURATION
+        ? age / REQUEST_DURATION
+        : 1 - (age - REQUEST_DURATION) / RESPONSE_DURATION
+
+    return [{ id, position: LINE_START + progress * (LINE_END - LINE_START) }]
+  })
+)
+
+const { pause, resume } = useRafFn(
+  ({ delta }) => {
+    elapsed.value += delta
+  },
+  { immediate: false }
+)
+
+watch(
+  onScreen,
+  (visible) => {
+    if (visible && !prefersReducedMotion()) resume()
+    else pause()
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
   <div
-    aria-hidden="true"
-    class="relative flex h-full min-h-72 items-center gap-6 overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-8 lg:gap-8 lg:p-10"
+    ref="stageRef"
+    role="img"
+    :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
+    class="bg-primary-comfy-ink/60 relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl border border-white/10 font-mono"
   >
-    <!-- The endpoint: a single steady node with a ripple -->
-    <svg viewBox="0 0 48 48" class="size-12 shrink-0">
-      <circle
-        cx="24"
-        cy="24"
-        r="10"
-        class="animate-ripple fill-none stroke-primary-comfy-yellow/60"
+    <div class="absolute top-[47%] left-[6%] z-10 -translate-y-1/2 text-center">
+      <span
+        class="bg-primary-comfy-yellow mx-auto mb-3 block size-5.5 rounded-full"
       />
-      <circle cx="24" cy="24" r="10" class="fill-primary-comfy-yellow" />
-    </svg>
+      <span
+        class="text-primary-comfy-yellow block text-[8px]/relaxed tracking-widest uppercase sm:text-[9px] lg:text-[10px]"
+      >
+        {{ t('platform.serverlessVisual.client', locale) }}
+      </span>
+    </div>
 
-    <!-- Faint link from the endpoint into the fleet -->
-    <svg viewBox="0 0 40 8" class="w-10 shrink-0" preserveAspectRatio="none">
-      <line
-        x1="0"
-        y1="4"
-        x2="40"
-        y2="4"
-        class="animate-dash-flow stroke-primary-comfy-canvas/40"
-        stroke-width="1.5"
-        stroke-dasharray="4 6"
-      />
-    </svg>
-
-    <!-- The worker fleet, scaling out in a wave -->
     <div
-      class="grid flex-1 gap-2"
-      :style="{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }"
+      class="absolute top-[47%] right-[5%] left-[11.5%] border-t-2 border-dashed border-white/15"
+      aria-hidden="true"
+    />
+
+    <div
+      class="absolute top-[9%] right-[5%] bottom-[20%] left-[22%] grid grid-cols-12 grid-rows-6 gap-1 sm:gap-1.5"
+      aria-hidden="true"
     >
-      <div
-        v-for="cell in cells"
+      <span
+        v-for="cell in visualCells"
         :key="cell.id"
-        class="animate-gpu-pulse aspect-square rounded-sm bg-primary-comfy-yellow"
-        :style="{
-          animationDelay: cell.delay,
-          animationDuration: cell.duration
-        }"
+        :class="
+          cn(
+            'rounded-md transition-[background-color,box-shadow,filter] duration-300',
+            cell.state === 'idle' && cell.tone,
+            cell.state === 'on' &&
+              'bg-primary-comfy-yellow shadow-md shadow-primary-comfy-yellow/30',
+            cell.state === 'hot' &&
+              'bg-primary-warm-white shadow-lg shadow-primary-comfy-yellow/60 brightness-110'
+          )
+        "
       />
     </div>
 
-    <!-- The hardware the fleet is running on, flashing through the lineup -->
     <span
-      v-for="(gpu, index) in GPUS"
-      :key="gpu"
-      :class="
-        cn(
-          'animate-label-flash text-primary-comfy-yellow/80 absolute right-5 bottom-4 font-mono text-[10px] tracking-widest uppercase',
-          index === 0 && 'motion-reduce:opacity-100'
-        )
-      "
-      :style="{ animationDelay: `${index * GPU_SLOT_SECONDS}s` }"
+      v-for="pulse in pulses"
+      :key="pulse.id"
+      class="bg-primary-warm-white absolute top-[47%] z-20 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-lg shadow-primary-comfy-yellow/80"
+      :style="{ left: `${pulse.position}%` }"
+      aria-hidden="true"
+    />
+
+    <div
+      class="text-primary-comfy-yellow absolute right-[5%] bottom-[9%] left-[22%] flex justify-between gap-1 text-[7px] tracking-widest uppercase sm:gap-2 sm:text-[9px] lg:gap-4 lg:text-[10px]"
     >
-      {{ gpu }}
-    </span>
+      <span>{{ t('platform.serverlessVisual.gateway', locale) }}</span>
+      <span>{{ t('platform.serverlessVisual.functions', locale) }}</span>
+      <span class="text-right">
+        {{ t('platform.serverlessVisual.database', locale) }}
+      </span>
+    </div>
   </div>
 </template>

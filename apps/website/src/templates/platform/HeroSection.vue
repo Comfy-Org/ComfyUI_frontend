@@ -4,6 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { platformCtas } from './ctas'
 import DeployTerminal from './DeployTerminal.vue'
+import PlatformHeroShader from './PlatformHeroShader.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -11,18 +12,25 @@ const ctas = platformCtas(locale)
 </script>
 
 <template>
-  <HeroSplit01
-    :locale="locale"
-    compact
-    class="pt-12 pb-10 md:pt-16 md:pb-14"
-    :badge-text="t('platform.hero.badge', locale)"
-    :title="t('platform.hero.heading', locale)"
-    :subtitle="t('platform.hero.subtitle', locale)"
-    :primary-cta="ctas.getStarted"
-    :secondary-cta="ctas.docs"
-  >
-    <template #media>
-      <DeployTerminal />
-    </template>
-  </HeroSplit01>
+  <div class="relative isolate overflow-hidden">
+    <PlatformHeroShader />
+    <div
+      class="pointer-events-none absolute inset-0 z-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/45 to-transparent"
+    />
+    <HeroSplit01
+      :locale="locale"
+      compact
+      class="relative z-10 pt-12 pb-10 md:pt-16 md:pb-14"
+      :badge-text="t('platform.hero.badge', locale)"
+      :badge-show-logo="false"
+      :title="t('platform.hero.heading', locale)"
+      :subtitle="t('platform.hero.subtitle', locale)"
+      :primary-cta="ctas.getStarted"
+      :secondary-cta="ctas.docs"
+    >
+      <template #media>
+        <DeployTerminal />
+      </template>
+    </HeroSplit01>
+  </div>
 </template>
