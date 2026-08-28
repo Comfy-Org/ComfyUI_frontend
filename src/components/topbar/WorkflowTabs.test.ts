@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PropType } from 'vue'
 import { defineComponent, h, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -43,6 +44,19 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
+const openWorkflow = vi.hoisted(() => vi.fn())
+const workflowStore = vi.hoisted(() => ({
+  openWorkflows: [] as Array<{
+    key: string
+    path: string
+    filename: string
+  }>,
+  activeWorkflow: null as {
+    key: string
+    path: string
+    filename: string
+  } | null
+}))
 vi.mock('@/platform/support/feedbackDialog', () => ({
   openFeedbackDialog
 }))
@@ -62,17 +76,13 @@ vi.mock('@/composables/element/useOverflowObserver', () => ({
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
-    openWorkflow: vi.fn(),
+    openWorkflow,
     closeWorkflow: vi.fn()
   })
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () =>
-    reactive({
-      openWorkflows: [],
-      activeWorkflow: null
-    })
+  useWorkflowStore: () => reactive(workflowStore)
 }))
 
 vi.mock('@/stores/commandStore', () => ({
@@ -97,7 +107,15 @@ vi.mock('./WorkflowOverflowMenu.vue', () => ({
 vi.mock('./WorkflowTab.vue', () => ({
   default: defineComponent({
     name: 'WorkflowTabStub',
-    render: () => h('div')
+    props: {
+      workflowOption: {
+        type: Object as PropType<{ workflow: { filename: string } }>,
+        required: true
+      }
+    },
+    render() {
+      return h('div', this.workflowOption.workflow.filename)
+    }
   })
 }))
 
@@ -115,7 +133,7 @@ vi.mock('./LoginButton.vue', () => ({
   })
 }))
 
-function renderComponent() {
+function renderComponent(errorHandler?: (error: unknown) => void) {
   const user = userEvent.setup()
   const i18n = createI18n({
     legacy: false,
@@ -125,6 +143,7 @@ function renderComponent() {
 
   const result = render(WorkflowTabs, {
     global: {
+      config: { errorHandler },
       plugins: [i18n],
       directives: {
         tooltip: {}
@@ -141,6 +160,8 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isDesktop = false
     distribution.isNightly = false
     tabBarLayout.value = 'Default'
+    workflowStore.openWorkflows = []
+    workflowStore.activeWorkflow = null
   })
 
   it('opens the feedback dialog tagged with topbar source when clicked', async () => {
@@ -173,5 +194,78 @@ describe('WorkflowTabs feedback button', () => {
     expect(
       screen.queryByRole('button', { name: 'Feedback' })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('WorkflowTabs selection', () => {
+  const firstWorkflow = {
+    key: 'first',
+    path: 'first.json',
+    filename: 'First workflow'
+  }
+  const secondWorkflow = {
+    key: 'second',
+    path: 'second.json',
+    filename: 'Second workflow'
+  }
+
+  beforeEach(() => {
+    workflowStore.openWorkflows = [firstWorkflow, secondWorkflow]
+    workflowStore.activeWorkflow = firstWorkflow
+    openWorkflow.mockReset()
+  })
+
+  it('forwards a click on the selected workflow', async () => {
+    const { user } = renderComponent()
+
+    await user.click(screen.getByText('First workflow'))
+
+    expect(openWorkflow).toHaveBeenCalledOnce()
+    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
+  })
+
+  it('forwards a click on another workflow once', async () => {
+    const { user } = renderComponent()
+
+    await user.click(screen.getByText('Second workflow'))
+
+    expect(openWorkflow).toHaveBeenCalledOnce()
+    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+  })
+
+  it('forwards a keyboard selection through the select button', async () => {
+    const { user } = renderComponent()
+    const secondTab = screen.getByRole('button', { name: 'Second workflow' })
+
+    secondTab.focus()
+    await user.keyboard('{Enter}')
+
+    expect(openWorkflow).toHaveBeenCalledOnce()
+    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+  })
+
+  it('forwards keyboard activation of the selected workflow', async () => {
+    const { user } = renderComponent()
+    const firstTab = screen.getByRole('button', { name: 'First workflow' })
+
+    firstTab.focus()
+    await user.keyboard('{Enter}')
+
+    expect(openWorkflow).toHaveBeenCalledOnce()
+    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
+  })
+
+  it('forwards workflow load failures to the Vue error handler', async () => {
+    const error = new Error('load failed')
+    const errorHandler = vi.fn()
+    openWorkflow.mockRejectedValueOnce(error)
+    const { user } = renderComponent(errorHandler)
+
+    await user.click(screen.getByText('Second workflow'))
+
+    await vi.waitFor(() => {
+      expect(errorHandler).toHaveBeenCalled()
+    })
+    expect(errorHandler.mock.calls[0][0]).toBe(error)
   })
 })

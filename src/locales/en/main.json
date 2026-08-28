@@ -2384,6 +2384,7 @@
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
     "failedToSaveDraft": "Failed to save workflow draft",
+    "failedToLoadReplacementWorkflow": "Failed to load a replacement workflow after closing",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",

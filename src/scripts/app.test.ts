@@ -63,6 +63,7 @@ const {
   mockToastStore,
   mockExtensionService,
   mockNodeOutputStore,
+  mockSubgraphNavigationStore,
   mockTeamWorkspaceStore,
   mockWorkspaceWorkflow,
   mockRefreshMissingModelPipeline,
@@ -101,6 +102,10 @@ const {
     activeWorkspaceId: 'workspace-a' as string | null,
     workspaceTransitionGeneration: 0,
     waitForWorkspaceSwitch: vi.fn(() => Promise.resolve())
+  },
+  mockSubgraphNavigationStore: {
+    saveCurrentViewport: vi.fn(),
+    updateHash: vi.fn(async () => {})
   },
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null,
@@ -189,10 +194,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 }))
 
 vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: vi.fn(() => ({
-    saveCurrentViewport: vi.fn(),
-    updateHash: vi.fn()
-  }))
+  useSubgraphNavigationStore: vi.fn(() => mockSubgraphNavigationStore)
 }))
 
 vi.mock('@/stores/workspaceStore', () => ({
@@ -312,6 +314,23 @@ describe('ComfyApp', () => {
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
+  })
+
+  describe('loadGraphData', () => {
+    it('forwards clean and navigation intent to workflow navigation', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+        workflowNavigationId: 42
+      })
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
+      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        42
+      )
+    })
   })
 
   describe('nodeOutputs', () => {
