@@ -274,4 +274,40 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     ).toBeTruthy()
     expect(screen.getByText('$12,600.00')).toBeTruthy()
   })
+
+  it('renders a Founders Edition refill without borrowing a catalog lookup', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1000,
+          current_plan: plan('STANDARD', 'MONTHLY', 2000),
+          new_plan: plan('FOUNDERS_EDITION', 'MONTHLY', 10_000)
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText(/Founders Edition/)).toBeTruthy()
+  })
+
+  it('renders a tier the catalog does not know as readable words', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1000,
+          current_plan: plan('PRO', 'MONTHLY', 10_000),
+          new_plan: plan(
+            'SOME_FUTURE_TIER' as SubscriptionTier,
+            'MONTHLY',
+            20_000
+          )
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText(/Some Future Tier/)).toBeTruthy()
+  })
 })

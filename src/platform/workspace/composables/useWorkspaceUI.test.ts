@@ -13,6 +13,7 @@ const mockIsCloud = ref(true)
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanReactivate = ref(false)
 const mockCanSubscribeSelfServe = ref(true)
+const mockSnapshotAuthoritative = ref(true)
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
@@ -56,7 +57,8 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canReactivate: computed(() => mockCanReactivate.value),
-    canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value)
+    canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
+    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
   })
 }))
 
@@ -129,6 +131,7 @@ function resetStore() {
   mockShouldUseWorkspaceBilling.value = true
   mockCanReactivate.value = false
   mockCanSubscribeSelfServe.value = true
+  mockSnapshotAuthoritative.value = true
 }
 
 describe('useWorkspaceUI', () => {
@@ -553,6 +556,24 @@ describe('useWorkspaceUI', () => {
 
       const ui = await loadComposable()
       expect(ui.canOpenPricingSurface.value).toBe(true)
+    })
+
+    it('falls back to membership when the snapshot is not authoritative', async () => {
+      mockSnapshotAuthoritative.value = false
+      mockCanSubscribeSelfServe.value = false
+
+      const ui = await loadComposable()
+      expect(ui.canOpenPricingSurface.value).toBe(true)
+    })
+
+    it('keeps the catalog closed for a non-owner with no readable snapshot', async () => {
+      mockStore.activeWorkspace = teamMemberWorkspace
+      mockSnapshotAuthoritative.value = false
+      mockCanSubscribeSelfServe.value = false
+
+      const ui = await loadComposable()
+      expect(ui.permissions.value.canManageSubscription).toBe(false)
+      expect(ui.canOpenPricingSurface.value).toBe(false)
     })
   })
 })
