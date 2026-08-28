@@ -568,9 +568,6 @@ importers:
       '@xterm/addon-fit':
         specifier: ^0.10.0
         version: 0.10.0(@xterm/xterm@5.5.0)
-      '@xterm/addon-serialize':
-        specifier: ^0.13.0
-        version: 0.13.0(@xterm/xterm@5.5.0)
       '@xterm/xterm':
         specifier: ^5.5.0
         version: 5.5.0
@@ -920,76 +917,6 @@ importers:
       zod-to-json-schema:
         specifier: 'catalog:'
         version: 3.25.2(zod@3.25.76)
-
-  apps/desktop-ui:
-    dependencies:
-      '@comfyorg/comfyui-electron-types':
-        specifier: 'catalog:'
-        version: 0.6.2
-      '@comfyorg/shared-frontend-utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-frontend-utils
-      '@comfyorg/tailwind-utils':
-        specifier: workspace:*
-        version: link:../../packages/tailwind-utils
-      '@primevue/core':
-        specifier: 'catalog:'
-        version: 4.2.5(vue@3.5.41(typescript@6.0.3))
-      '@primevue/themes':
-        specifier: 'catalog:'
-        version: 4.2.5
-      '@vueuse/core':
-        specifier: 'catalog:'
-        version: 14.4.0(vue@3.5.41(typescript@6.0.3))
-      pinia:
-        specifier: 'catalog:'
-        version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
-      primeicons:
-        specifier: 'catalog:'
-        version: 7.0.0
-      primevue:
-        specifier: 'catalog:'
-        version: 4.2.5(vue@3.5.41(typescript@6.0.3))
-      vue:
-        specifier: 'catalog:'
-        version: 3.5.41(typescript@6.0.3)
-      vue-i18n:
-        specifier: 'catalog:'
-        version: 11.4.8(vue@3.5.41(typescript@6.0.3))
-      vue-router:
-        specifier: 'catalog:'
-        version: 5.2.0(@vue/compiler-sfc@3.5.41)(esbuild@0.28.1)(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3)))(rolldown@1.2.3)(vite@8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))
-    devDependencies:
-      '@storybook/vue3-vite':
-        specifier: 'catalog:'
-        version: 10.5.6(esbuild@0.28.1)(storybook@10.5.6(@types/react@19.2.17)(prettier@3.9.5)(react@19.2.8))(vite@8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))
-      '@tailwindcss/vite':
-        specifier: 'catalog:'
-        version: 4.3.2(vite@8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 6.0.8(vite@8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))
-      dotenv:
-        specifier: 'catalog:'
-        version: 16.6.1
-      unplugin-icons:
-        specifier: 'catalog:'
-        version: 23.0.1(@vue/compiler-sfc@3.5.41)
-      unplugin-vue-components:
-        specifier: 'catalog:'
-        version: 32.1.0(esbuild@0.28.1)(rolldown@1.2.3)(vite@8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))
-      vite:
-        specifier: ^8.2.0
-        version: 8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
-      vite-plugin-html:
-        specifier: 'catalog:'
-        version: 3.2.2(vite@8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
-      vite-plugin-vue-devtools:
-        specifier: 'catalog:'
-        version: 8.2.1(vite@8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 3.3.9(typescript@6.0.3)
 
   apps/website:
     dependencies:
@@ -4923,11 +4850,6 @@ packages:
 
   '@xterm/addon-fit@0.10.0':
     resolution: {integrity: sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==}
-    peerDependencies:
-      '@xterm/xterm': ^5.0.0
-
-  '@xterm/addon-serialize@0.13.0':
-    resolution: {integrity: sha512-kGs8o6LWAmN1l2NpMp01/YkpxbmO4UrfWybeGu79Khw5K9+Krp7XhXbBTOTc3GJRRhd6EmILjpR8k5+odY39YQ==}
     peerDependencies:
       '@xterm/xterm': ^5.0.0
 
@@ -13246,10 +13168,6 @@ snapshots:
   '@xstate/fsm@1.6.5': {}
 
   '@xterm/addon-fit@0.10.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
-
-  '@xterm/addon-serialize@0.13.0(@xterm/xterm@5.5.0)':
     dependencies:
       '@xterm/xterm': 5.5.0
 

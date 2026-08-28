@@ -71,7 +71,10 @@ export const modelMetadata: Record<string, ModelOverride> = {
   },
   'hunyuan-3d': {
     docsUrl: 'https://docs.comfy.org/tutorials/3d/hunyuan3D-2',
-    hubSlug: 'hunyuan-3d',
+    // The hub spells this family without the hyphen, and unlike the other
+    // mismatches here it is not a variant alias the hub redirects, so the
+    // hyphenated URL 404s rather than resolving.
+    hubSlug: 'hunyuan3d',
     featured: true
   },
   vidu: {

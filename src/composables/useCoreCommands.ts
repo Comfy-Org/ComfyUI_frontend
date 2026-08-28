@@ -82,7 +82,14 @@ export function useCoreCommands(): ComfyCommand[] {
 
   function blockRunWithoutSubscription(): boolean {
     if (!isCloud || canAccessSubscriptionFeatures.value) return false
-    if (!isSalesManagedTier(subscription.value?.tier)) {
+    if (isSalesManagedTier(subscription.value?.tier)) {
+      toastStore.add({
+        severity: 'warn',
+        summary: t('subscription.salesManagedRunBlockedTitle'),
+        detail: t('subscription.salesManagedRunBlockedDetail'),
+        life: 5000
+      })
+    } else {
       showSubscriptionDialog({ reason: 'subscribe_to_run' })
     }
     return true
