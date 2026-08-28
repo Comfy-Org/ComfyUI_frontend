@@ -43,12 +43,12 @@ const productId = jsonLdId(url, 'product')
   ]}
 >
   <MinimaxLicenseHeroSection client:visible />
+  <CloudPricingSection client:load />
+  <WhatsIncludedSection />
   <ModelLaunchComparisonSection
     comparison={minimaxLicenseComparison}
     locale={locale}
     ctaHref={localizeHref('/contact', locale)}
   />
-  <CloudPricingSection client:load />
-  <WhatsIncludedSection />
   <PricingFaq locale={locale} />
 </BaseLayout>

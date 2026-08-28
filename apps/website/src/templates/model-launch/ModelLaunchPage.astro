@@ -56,6 +56,13 @@ const faqPage = page.faq
   : undefined
 
 const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
+
+// Launch-page CTAs are configured as absolute comfy.org urls, which strands a
+// zh-CN reader on the English contact page. Swap in the localized route when
+// that is where the comparison CTA points.
+const comparisonCtaHref = page.comparison?.primaryCta?.href.endsWith('/contact')
+  ? routes.contact
+  : undefined
 ---
 
 <BaseLayout
@@ -115,6 +122,7 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
               <ModelLaunchComparisonSection
                 comparison={page.comparison}
                 locale={locale}
+                ctaHref={comparisonCtaHref}
               />
             )
           )

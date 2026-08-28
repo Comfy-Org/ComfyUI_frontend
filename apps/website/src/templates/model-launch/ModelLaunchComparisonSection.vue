@@ -22,17 +22,25 @@ const {
 
 const heading = computed(() => t(comparison.headingKey, locale))
 
-const isLastRow = (index: number) => index === comparison.rows.length - 1
+function isLastRow(index: number) {
+  return index === comparison.rows.length - 1
+}
 
 // Below md the table stacks into one block per feature, so the rule that
 // separates entries moves off the cells and onto the row.
-const rowRule = (index: number) =>
-  !isLastRow(index) &&
-  'max-md:border-b max-md:border-solid max-md:border-primary-comfy-canvas/15'
+function rowRule(index: number) {
+  return (
+    !isLastRow(index) &&
+    'max-md:border-b max-md:border-solid max-md:border-primary-comfy-canvas/15'
+  )
+}
 
-const cellRule = (index: number) =>
-  !isLastRow(index) &&
-  'md:border-b md:border-solid md:border-primary-comfy-canvas/15'
+function cellRule(index: number) {
+  return (
+    !isLastRow(index) &&
+    'md:border-b md:border-solid md:border-primary-comfy-canvas/15'
+  )
+}
 </script>
 
 <template>

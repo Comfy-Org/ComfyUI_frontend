@@ -46,12 +46,12 @@ const productId = jsonLdId(url, 'product')
   ]}
 >
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
+  <CloudPricingSection locale="zh-CN" client:load />
+  <WhatsIncludedSection locale="zh-CN" />
   <ModelLaunchComparisonSection
     comparison={minimaxLicenseComparison}
     locale="zh-CN"
     ctaHref={localizeHref('/contact', 'zh-CN')}
   />
-  <CloudPricingSection locale="zh-CN" client:load />
-  <WhatsIncludedSection locale="zh-CN" />
   <PricingFaq locale="zh-CN" />
 </BaseLayout>
