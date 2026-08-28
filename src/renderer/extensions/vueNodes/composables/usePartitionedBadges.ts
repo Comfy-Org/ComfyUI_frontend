@@ -10,10 +10,8 @@ import { nodeBadges } from '@/systems/badgeSystem'
 import { CORE_JOIN_ORDER } from '@/types/badgeData'
 import type { CoreBadgePart } from '@/types/badgeData'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import { isComfyCloudNodeModule } from '@/utils/comfyCloudNode'
 import { resolveNode } from '@/utils/litegraphUtil'
-
-/** The module ComfyUI defines the Comfy Cloud partner nodes in. */
-const COMFY_CLOUD_PYTHON_MODULE = 'comfy_api_nodes.nodes_comfy_cloud'
 
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
@@ -39,8 +37,7 @@ export function usePartitionedBadges(nodeData: NodeState) {
         NodeBadgeMode.ShowAll
     // Comfy Cloud nodes are api_nodes like every other partner node, so nothing
     // in the badge data distinguishes them. Key off the module that defines them.
-    const isComfyCloudNode =
-      nodeDef?.python_module === COMFY_CLOUD_PYTHON_MODULE
+    const isComfyCloudNode = isComfyCloudNodeModule(nodeDef?.python_module)
 
     const coreByPart = new Map<CoreBadgePart, NodeBadgeProps>()
     const extension: NodeBadgeProps[] = []

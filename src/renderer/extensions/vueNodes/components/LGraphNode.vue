@@ -82,8 +82,9 @@
         )
       "
       :style="{
-        '--component-node-background': applyLightThemeColor(nodeData.bgcolor),
-        backgroundColor: applyLightThemeColor(nodeData?.color)
+        '--component-node-background':
+          applyLightThemeColor(effectiveNodeBgColor),
+        backgroundColor: applyLightThemeColor(effectiveNodeColor)
       }"
     >
       <div
@@ -188,7 +189,7 @@
       :show-errors-tab-enabled="showErrorsTabEnabled"
       :show-advanced-inputs-button="showAdvancedInputsButton"
       :show-advanced-state="!!nodeData.showAdvanced"
-      :header-color="applyLightThemeColor(nodeData?.color)"
+      :header-color="applyLightThemeColor(effectiveNodeColor)"
       :shape="nodeData.shape"
       @enter-subgraph="handleEnterSubgraph"
       @open-errors="handleOpenErrors"
@@ -290,6 +291,7 @@ import {
   shapeVariantClass
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
@@ -297,6 +299,10 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import {
+  COMFY_CLOUD_NODE_COLOR,
+  isComfyCloudNodeModule
+} from '@/utils/comfyCloudNode'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
@@ -412,6 +418,26 @@ const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
+
+// A Comfy Cloud node carries its accent as a property of the node TYPE, not as
+// user styling: it is never written into the workflow, so a shared graph stays
+// clean and the signal cannot be lost by a round trip. A colour the user did
+// set still wins, so recolouring a node keeps working the way it always has.
+const isComfyCloudNode = computed(() =>
+  isComfyCloudNodeModule(
+    useNodeDefStore().nodeDefsByName[nodeData.type]?.python_module
+  )
+)
+const effectiveNodeColor = computed(
+  () =>
+    nodeData?.color ??
+    (isComfyCloudNode.value ? COMFY_CLOUD_NODE_COLOR.color : undefined)
+)
+const effectiveNodeBgColor = computed(
+  () =>
+    nodeData?.bgcolor ??
+    (isComfyCloudNode.value ? COMFY_CLOUD_NODE_COLOR.bgcolor : undefined)
+)
 
 async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
