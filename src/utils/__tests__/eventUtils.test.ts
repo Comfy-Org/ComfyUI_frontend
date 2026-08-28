@@ -215,6 +215,28 @@ describe('eventUtils', () => {
 
       expect(getDroppedAsset(dataTransfer)).toBeUndefined()
     })
+
+    it('passes an absolute preview URL through untouched', () => {
+      const previewUrl = 'https://cloud.example/api/assets/a1/content'
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({ filename: 'a.png', preview_url: previewUrl })
+      )
+      dataTransfer.setData('text/uri-list', previewUrl)
+
+      expect(getDroppedAsset(dataTransfer)?.previewUrl).toBe(previewUrl)
+    })
+
+    it('treats an empty attachment ref as no asset at all', () => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({ filename: 'a.png', attachment_ref: '' })
+      )
+
+      expect(getDroppedAsset(dataTransfer)).toBeUndefined()
+    })
   })
 
   describe('fetchDroppedAsset', () => {
