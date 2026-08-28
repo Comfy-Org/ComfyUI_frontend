@@ -74,7 +74,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: perf-metrics
-          path: test-results/perf-metrics.json
+          path: |
+            test-results/perf-metrics.json
+            test-results/perf-gate.json
           retention-days: 30
           if-no-files-found: warn
 

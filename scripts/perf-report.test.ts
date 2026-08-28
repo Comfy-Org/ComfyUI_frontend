@@ -135,54 +135,68 @@ describe('performance report CLI gate', () => {
       args: ['--fail-on-fps-budget'],
       rafIntervalP95Ms: null,
       expectedStatus: 1,
-      expectedPassed: false
+      expectedPassed: false,
+      expectedStderr: 'no perf metrics file'
     },
     {
       name: 'below-budget metrics with the flag',
       args: ['--fail-on-fps-budget'],
       rafIntervalP95Ms: 25,
       expectedStatus: 1,
-      expectedPassed: false
+      expectedPassed: false,
+      expectedStderr: 'sample: 40.0 P5 FPS is below the target of 52'
     },
     {
       name: 'passing metrics with the flag',
       args: ['--fail-on-fps-budget'],
       rafIntervalP95Ms: 16,
       expectedStatus: 0,
-      expectedPassed: true
+      expectedPassed: true,
+      expectedStderr: ''
     },
     {
       name: 'below-budget metrics without the flag',
       args: [],
       rafIntervalP95Ms: 25,
       expectedStatus: 0,
-      expectedPassed: false
+      expectedPassed: false,
+      expectedStderr: ''
     }
-  ])('$name', ({ args, rafIntervalP95Ms, expectedStatus, expectedPassed }) => {
-    const cwd = mkdtempSync(join(tmpdir(), 'perf-report-cli-'))
-    try {
-      if (rafIntervalP95Ms !== null) {
-        mkdirSync(join(cwd, 'test-results'))
-        writeFileSync(
-          join(cwd, 'test-results/perf-metrics.json'),
-          JSON.stringify(report([accepted(rafIntervalP95Ms)]))
+  ])(
+    '$name',
+    ({
+      args,
+      rafIntervalP95Ms,
+      expectedStatus,
+      expectedPassed,
+      expectedStderr
+    }) => {
+      const cwd = mkdtempSync(join(tmpdir(), 'perf-report-cli-'))
+      try {
+        if (rafIntervalP95Ms !== null) {
+          mkdirSync(join(cwd, 'test-results'))
+          writeFileSync(
+            join(cwd, 'test-results/perf-metrics.json'),
+            JSON.stringify(report([accepted(rafIntervalP95Ms)]))
+          )
+        }
+
+        const result = spawnSync(
+          process.execPath,
+          [cliPath, reportPath, ...args],
+          { cwd, encoding: 'utf8' }
         )
+
+        expect(result.status).toBe(expectedStatus)
+        expect(result.stderr).toContain(expectedStderr)
+        const artifactPath = join(cwd, 'test-results/perf-gate.json')
+        expect(existsSync(artifactPath)).toBe(true)
+        expect(JSON.parse(readFileSync(artifactPath, 'utf8')).passed).toBe(
+          expectedPassed
+        )
+      } finally {
+        rmSync(cwd, { recursive: true, force: true })
       }
-
-      const result = spawnSync(
-        process.execPath,
-        [cliPath, reportPath, ...args],
-        { cwd, encoding: 'utf8' }
-      )
-
-      expect(result.status).toBe(expectedStatus)
-      const artifactPath = join(cwd, 'test-results/perf-gate.json')
-      expect(existsSync(artifactPath)).toBe(true)
-      expect(JSON.parse(readFileSync(artifactPath, 'utf8')).passed).toBe(
-        expectedPassed
-      )
-    } finally {
-      rmSync(cwd, { recursive: true, force: true })
     }
-  })
+  )
 })
