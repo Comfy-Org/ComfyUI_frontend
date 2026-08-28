@@ -14,7 +14,6 @@ interface AgentPaywallPresentationInput {
   role: WorkspaceRole
   canTopUp: boolean
   canSubscribeSelfServe: boolean
-  hasEligibleUpgrade: boolean
 }
 
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
@@ -26,8 +25,7 @@ export function resolveAgentPaywallPresentation({
   distribution,
   role,
   canTopUp,
-  canSubscribeSelfServe,
-  hasEligibleUpgrade
+  canSubscribeSelfServe
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
   if (role === 'member') return { kind: 'member' }
   if (distribution === 'local') return { kind: 'local' }
@@ -38,6 +36,6 @@ export function resolveAgentPaywallPresentation({
   }
   return {
     kind: 'subscribed',
-    showUpgrade: canSubscribeSelfServe && hasEligibleUpgrade
+    showUpgrade: canSubscribeSelfServe
   }
 }
