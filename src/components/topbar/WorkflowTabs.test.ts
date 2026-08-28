@@ -15,9 +15,6 @@ const distribution = vi.hoisted(() => ({
 }))
 
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
-const overflowObservers = vi.hoisted<
-  Array<{ dispose: ReturnType<typeof vi.fn> }>
->(() => [])
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -36,10 +33,17 @@ vi.mock('primevue/scrollpanel', async () => {
   return {
     default: defineComponent({
       name: 'ScrollPanelStub',
-      setup(_, { slots }) {
+      inheritAttrs: false,
+      setup(_, { attrs, slots }) {
         const contentKey = ref(0)
-        return () =>
-          h('div', [
+        return () => {
+          const contentProps = attrs['pt:content']
+          const passThroughProps =
+            typeof contentProps === 'object' && contentProps !== null
+              ? contentProps
+              : {}
+
+          return h('div', [
             h(
               'button',
               { onClick: () => contentKey.value++ },
@@ -48,6 +52,7 @@ vi.mock('primevue/scrollpanel', async () => {
             h(
               'div',
               {
+                ...passThroughProps,
                 key: contentKey.value,
                 class: 'p-scrollpanel-content',
                 'data-testid': 'scroll-content'
@@ -55,6 +60,7 @@ vi.mock('primevue/scrollpanel', async () => {
               slots.default?.()
             )
           ])
+        }
       }
     })
   }
@@ -82,22 +88,6 @@ vi.mock('@/platform/support/feedbackDialog', () => ({
 vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
-
-vi.mock('@/composables/element/useOverflowObserver', async () => {
-  const { ref } = await import('vue')
-  return {
-    useOverflowObserver: () => {
-      const observer = {
-        isOverflowing: ref(false),
-        disposed: ref(false),
-        checkOverflow: vi.fn(),
-        dispose: vi.fn()
-      }
-      overflowObservers.push(observer)
-      return observer
-    }
-  }
-})
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
@@ -300,13 +290,8 @@ describe('WorkflowTabs agent entry button', () => {
 })
 
 describe('WorkflowTabs scrolling', () => {
-  beforeEach(() => {
-    overflowObservers.length = 0
-  })
-
-  it('rebinds overflow observation when scroll content is replaced', async () => {
+  it('rebinds scroll listeners when scroll content is replaced', async () => {
     const { user, unmount } = renderComponent()
-    await waitFor(() => expect(overflowObservers).toHaveLength(1))
     const oldScrollContent = screen.getByTestId('scroll-content')
     const removeOldListener = vi.spyOn(oldScrollContent, 'removeEventListener')
 
@@ -314,13 +299,13 @@ describe('WorkflowTabs scrolling', () => {
       screen.getByRole('button', { name: 'Replace scroll content' })
     )
 
-    await waitFor(() => expect(overflowObservers).toHaveLength(2))
-    expect(overflowObservers[0].dispose).toHaveBeenCalledOnce()
-    expect(removeOldListener).toHaveBeenCalledWith(
-      'scroll',
-      expect.any(Function),
-      expect.any(Object)
-    )
+    await waitFor(() => {
+      expect(removeOldListener).toHaveBeenCalledWith(
+        'scroll',
+        expect.any(Function),
+        expect.any(Object)
+      )
+    })
     expect(removeOldListener).toHaveBeenCalledWith(
       'scrollend',
       expect.any(Function),

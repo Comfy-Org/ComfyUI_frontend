@@ -18,6 +18,7 @@
     <ScrollPanel
       class="no-drag overflow-hidden"
       :pt:content="{
+        ref: setScrollContent,
         class: 'p-0 w-full flex',
         onwheel: handleWheel
       }"
@@ -122,20 +123,11 @@
 </template>
 
 <script setup lang="ts">
-import { useMutationObserver, useScroll } from '@vueuse/core'
+import { useScroll } from '@vueuse/core'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
-import {
-  computed,
-  effectScope,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  onUpdated,
-  ref,
-  watch
-} from 'vue'
-import type { EffectScope } from 'vue'
+import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -190,9 +182,6 @@ function openFeedback() {
 }
 
 const containerRef = ref<HTMLElement | null>(null)
-const showOverflowArrows = ref(false)
-const leftArrowEnabled = ref(false)
-const rightArrowEnabled = ref(false)
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -248,6 +237,9 @@ const handleWheel = (event: WheelEvent) => {
 }
 
 const scrollContent = ref<HTMLElement | null>(null)
+function setScrollContent(element: Element | ComponentPublicInstance | null) {
+  scrollContent.value = element instanceof HTMLElement ? element : null
+}
 
 const scroll = (direction: number) => {
   const el = scrollContent.value
@@ -284,74 +276,24 @@ watch(
   { immediate: true }
 )
 
-let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
-let scrollContentScope: EffectScope | null = null
-
-function disposeScrollContent() {
-  overflowObserver?.dispose()
-  overflowObserver = null
-  scrollContentScope?.stop()
-  scrollContentScope = null
-}
-
-function bindScrollContent() {
-  const el =
-    containerRef.value?.querySelector<HTMLElement>('.p-scrollpanel-content') ??
-    null
-  if (el === scrollContent.value) return
-
-  disposeScrollContent()
-
-  scrollContent.value = el
-  if (!el) return
-
-  scrollContentScope = effectScope()
-  scrollContentScope.run(() => {
-    const scrollState = useScroll(el)
-
-    watch(
-      [
-        () => scrollState.arrivedState.left,
-        () => scrollState.arrivedState.right
-      ],
-      ([atLeft, atRight]) => {
-        leftArrowEnabled.value = !atLeft
-        rightArrowEnabled.value = !atRight
-      },
-      { immediate: true }
-    )
-
-    overflowObserver = useOverflowObserver(el)
-    watch(
-      overflowObserver.isOverflowing,
-      (isOverflow) => {
-        showOverflowArrows.value = isOverflow
-        if (!isOverflow) return
-        void nextTick(() => {
-          // Force a new check after arrows are updated
-          scrollState.measure()
-          void ensureActiveTabVisible({ waitForDom: false })
-        })
-      },
-      { immediate: true }
-    )
-  })
-}
-
-onMounted(bindScrollContent)
-useMutationObserver(containerRef, bindScrollContent, {
-  childList: true,
-  subtree: true
-})
-
-onBeforeUnmount(disposeScrollContent)
-
-onUpdated(() => {
-  bindScrollContent()
-  if (!overflowObserver?.disposed.value) {
-    overflowObserver?.checkOverflow()
+const scrollState = useScroll(scrollContent)
+const leftArrowEnabled = computed(() => !scrollState.arrivedState.left)
+const rightArrowEnabled = computed(() => !scrollState.arrivedState.right)
+const {
+  isOverflowing: showOverflowArrows,
+  checkOverflow: checkScrollOverflow
+} = useOverflowObserver(scrollContent, {
+  onCheck: (isOverflowing) => {
+    if (!isOverflowing) return
+    void nextTick(() => {
+      // Force a new check after arrows are updated
+      scrollState.measure()
+      void ensureActiveTabVisible({ waitForDom: false })
+    })
   }
 })
+
+onUpdated(checkScrollOverflow)
 </script>
 
 <style scoped>
