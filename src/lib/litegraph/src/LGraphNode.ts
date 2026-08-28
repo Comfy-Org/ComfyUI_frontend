@@ -2248,7 +2248,7 @@ export class LGraphNode
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
     this.widgets ||= []
-    const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
+    const widget = toConcreteWidget(custom_widget, this)
     this.widgets.push(widget)
 
     // Only register with store if node has a valid ID (is already in a graph).
@@ -2290,11 +2290,16 @@ export class LGraphNode
   }
 
   removeWidget(widget: IBaseWidget): void {
-    if (!this.widgets)
-      throw new Error('removeWidget called on node without widgets')
+    if (!this.widgets) {
+      console.error('removeWidget called on node without widgets')
+      return
+    }
 
     const widgetIndex = this.widgets.indexOf(widget)
-    if (widgetIndex === -1) throw new Error('Widget not found on this node')
+    if (widgetIndex === -1) {
+      console.error('Widget not found on this node')
+      return
+    }
     const id = widget.widgetId
 
     // Clean up slot references to prevent memory leaks
@@ -3275,7 +3280,10 @@ export class LGraphNode
     // Assertion: It's either there or it isn't.
     const inputIndex = this.inputs.indexOf(slot as INodeInputSlot)
     const outputIndex = this.outputs.indexOf(slot as INodeOutputSlot)
-    if (inputIndex === -1 && outputIndex === -1) throw new Error('Invalid slot')
+    if (inputIndex === -1 && outputIndex === -1) {
+      console.error('Invalid slot')
+      return
+    }
 
     const slotType = outputIndex === -1 ? 'input' : 'output'
 
@@ -4414,9 +4422,9 @@ export class LGraphNode
       if (!widget) continue
 
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      const pos: [number, number] = [offset, widget.y + offset]
-      slot.pos = pos
-      this.inputs[i].pos = pos
+      const x = offset
+      const y = widget.y + offset
+      if (slot.pos?.[0] !== x || slot.pos[1] !== y) slot.pos = [x, y]
       this._measureSlot(slot, i, true)
     }
   }
