@@ -1,4 +1,8 @@
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import {
+  extractFilesFromDragEvent,
+  fetchDroppedAsset,
+  getDroppedAsset
+} from '@/utils/eventUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
@@ -155,6 +159,97 @@ describe('eventUtils', () => {
       )
 
       expect(actual).toEqual([])
+    })
+  })
+
+  describe('getDroppedAsset', () => {
+    it('returns the media-card name and URI before the URI is fetched', () => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({
+          filename: 'asset.png',
+          display_name: 'My asset',
+          attachment_ref: 'stored-asset.png',
+          media_kind: 'image',
+          preview_url: 'http://localhost/api/assets/asset/content'
+        })
+      )
+      dataTransfer.setData('text/uri-list', 'http://localhost/api/view?x=1')
+
+      expect(getDroppedAsset(dataTransfer)).toEqual({
+        name: 'My asset',
+        uri: 'http://localhost/api/view?x=1',
+        ref: 'stored-asset.png',
+        kind: 'image',
+        previewUrl: 'http://localhost/api/assets/asset/content'
+      })
+    })
+
+    it('returns an existing attachment reference without requiring a URI', () => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({
+          filename: 'asset.mp4',
+          attachment_ref: 'stored-asset.mp4',
+          media_kind: 'video'
+        })
+      )
+
+      expect(getDroppedAsset(dataTransfer)).toEqual({
+        name: 'asset.mp4',
+        uri: undefined,
+        ref: 'stored-asset.mp4',
+        kind: 'video',
+        previewUrl: undefined
+      })
+    })
+
+    it('returns undefined when a Media card has no URI', () => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({ filename: 'asset.png' })
+      )
+
+      expect(getDroppedAsset(dataTransfer)).toBeUndefined()
+    })
+  })
+
+  describe('fetchDroppedAsset', () => {
+    let fetchSpy: ReturnType<typeof vi.fn>
+
+    beforeEach(() => {
+      fetchSpy = vi.fn()
+      vi.stubGlobal('fetch', fetchSpy)
+    })
+
+    it('never fetches when the asset carries no URI', async () => {
+      const actual = await fetchDroppedAsset({
+        name: 'ref-only',
+        ref: 'attachment-1'
+      })
+
+      expect(actual).toBeUndefined()
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it('round-trips a dropped asset into a named File', async () => {
+      const blob = new Blob([new Uint8Array([0x89, 0x50])], {
+        type: 'image/png'
+      })
+      fetchSpy.mockResolvedValue(new Response(blob))
+
+      const actual = await fetchDroppedAsset({
+        name: 'test.png',
+        uri: 'https://example.com/view?f=test.png'
+      })
+
+      expect(fetchSpy).toHaveBeenCalledOnce()
+      expect(actual).toBeInstanceOf(File)
+      expect(actual?.name).toBe('test.png')
+      expect(actual?.type).toBe('image/png')
     })
   })
 })
