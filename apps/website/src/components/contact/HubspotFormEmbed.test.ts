@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import HubspotFormEmbed from './HubspotFormEmbed.vue'
 
@@ -38,8 +38,7 @@ function stubHubspotFormsV4(form: {
   conversionId?: string
   unavailable?: boolean
 }) {
-  const globals = window as unknown as Record<string, unknown>
-  globals.HubSpotFormsV4 = {
+  vi.stubGlobal('HubSpotFormsV4', {
     getFormFromEvent: () => {
       if (form.unavailable) throw new Error('form instance not registered')
       return {
@@ -47,9 +46,6 @@ function stubHubspotFormsV4(form: {
         getConversionId: () => form.conversionId
       }
     }
-  }
-  onTestFinished(() => {
-    delete globals.HubSpotFormsV4
   })
 }
 

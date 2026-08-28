@@ -120,11 +120,12 @@ function asNonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value !== '' ? value : undefined
 }
 
-// The v4 event carries only an instanceId, so both the form's identity and its
-// conversion id have to come from the global form API. The conversion id is
-// what lets a submission be matched to its HubSpot record without sending any
-// of the submitted field values. HubSpot publishes the API under two
-// spellings, and it is absent entirely when the embed script never loaded.
+// The conversion id is what lets a submission be matched to its HubSpot record
+// without sending any of the submitted field values, and the global form API is
+// the only place it is exposed. Form identity is read from the same lookup
+// because it is authoritative, with the event's own detail.formId as fallback.
+// HubSpot publishes the API under two spellings, and it is absent entirely when
+// the embed script never loaded.
 function readV4Submission(event: Event): {
   formId: string | undefined
   conversionId: string | undefined
