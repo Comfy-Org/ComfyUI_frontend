@@ -8,6 +8,7 @@ import {
   drainBackendToIdle,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
+import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 
 const NODE_TYPE = 'DevToolsNodeWithPreAttachLegacyWidgets'
 
@@ -53,33 +54,55 @@ test.describe('legacy widget registration', { tag: '@custom-nodes' }, () => {
   test('renders foreign widgets built before graph attachment', async ({
     comfyPage
   }) => {
+    test.setTimeout(30_000)
     await comfyPage.nodeOps.clearGraph()
 
     const created = await comfyPage.page.evaluate((type) => {
       const node = window.LiteGraph!.createNode(type, undefined, {
         pos: [400, 200]
-      })!
+      })
+      if (!node) return null
       // Read before attaching: this is the detached state the pack builds in.
       const detachedWidgetNames = (node.widgets ?? []).map(
         (widget) => widget.name
       )
       window.app!.graph.add(node)
-      return { id: String(node.id), detachedWidgetNames }
+      const id = String(node.id)
+      return {
+        id,
+        detachedWidgetNames,
+        attachedWidgetNames: (
+          window.app!.graph.getNodeById(node.id)?.widgets ?? []
+        ).map((widget) => widget.name)
+      }
     }, NODE_TYPE)
+
+    expect(
+      created,
+      `${NODE_TYPE} is not registered - ComfyUI_devtools is not installed on this backend`
+    ).not.toBeNull()
 
     // Guard, not the regression: proves the fixture really built its rows
     // while the node was detached, in the reordered sequence. Holds both
     // before and after the fix.
     expect(
-      created.detachedWidgetNames,
+      created!.detachedWidgetNames,
       'fixture did not build its widgets before graph attachment'
     ).toEqual(EXPECTED_WIDGET_ORDER)
 
-    const node = comfyPage.vueNodes.getNodeLocator(created.id)
+    // Attaching normalizes the live array in place, and the store order Vue
+    // renders from is derived from it - so the reorder has to survive.
+    expect(
+      created!.attachedWidgetNames,
+      'graph attachment did not preserve the live widget order'
+    ).toEqual(EXPECTED_WIDGET_ORDER)
+
+    const node = comfyPage.vueNodes.getNodeLocator(created!.id)
     await expect(node).toBeVisible()
     await expect(
       node.getByTestId(TestIds.widgets.widget),
       'Nodes 2.0 mounted the node with no widget rows'
     ).toHaveCount(EXPECTED_WIDGET_ORDER.length)
+    await expectNoVisibleErrors(comfyPage.page, 'after mounting legacy widgets')
   })
 })
