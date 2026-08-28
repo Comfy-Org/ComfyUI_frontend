@@ -20,24 +20,26 @@ import MessageFeedback from './MessageFeedback.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '../../../services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '../../../services/agent/agentPaywallPresentation'
 
 const {
   message,
   answeringAskIds = new Set<string>(),
-  showAddCredits = true,
-  showUpgrade = true
+  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION
 } = defineProps<{
   message: AssistantMessage
   answeringAskIds?: ReadonlySet<string>
-  showAddCredits?: boolean
-  showUpgrade?: boolean
+  paywallPresentation?: AgentPaywallPresentation
 }>()
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
-  addCredits: []
-  upgradeSubscription: []
+  paywallAction: [action: AgentPaywallAction]
 }>()
 
 type Group =
@@ -128,10 +130,8 @@ const hasTools = computed(() =>
       />
       <AgentPaywallCard
         v-else-if="group.kind === 'paywall'"
-        :show-add-credits="showAddCredits"
-        :show-upgrade="showUpgrade"
-        @add-credits="emit('addCredits')"
-        @upgrade-subscription="emit('upgradeSubscription')"
+        :presentation="paywallPresentation"
+        @paywall-action="emit('paywallAction', $event)"
       />
       <div
         v-else

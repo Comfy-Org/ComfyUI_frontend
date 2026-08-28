@@ -1,14 +1,38 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
 
-const { showAddCredits = true, showUpgrade = true } = defineProps<{
-  showAddCredits?: boolean
-  showUpgrade?: boolean
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '../../../services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '../../../services/agent/agentPaywallPresentation'
+
+const { presentation = DEFAULT_AGENT_PAYWALL_PRESENTATION } = defineProps<{
+  presentation?: AgentPaywallPresentation
 }>()
 const emit = defineEmits<{
-  addCredits: []
-  upgradeSubscription: []
+  paywallAction: [action: AgentPaywallAction]
 }>()
+
+const bodyKeys: Record<AgentPaywallPresentation['kind'], string> = {
+  subscribed: 'agent.paywall.body.subscribed',
+  subscriptionRequired: 'agent.paywall.body.subscriptionRequired',
+  member: 'agent.paywall.body.member',
+  salesManaged: 'agent.paywall.body.salesManaged',
+  local: 'agent.paywall.body.local'
+}
+const bodyKey = computed(() => bodyKeys[presentation.kind])
+const showUpgrade = computed(
+  () => presentation.kind === 'subscribed' && presentation.showUpgrade
+)
+const showSubscribe = computed(
+  () => presentation.kind === 'subscriptionRequired'
+)
+const showAddCredits = computed(
+  () => presentation.kind === 'subscribed' || presentation.kind === 'local'
+)
 </script>
 
 <template>
@@ -25,30 +49,38 @@ const emit = defineEmits<{
           {{ $t('agent.paywall.title') }}
         </p>
         <p class="text-agent-fg-muted m-0">
-          {{ $t('agent.paywall.body') }}
+          {{ $t(bodyKey) }}
         </p>
       </div>
     </div>
 
     <div
-      v-if="showAddCredits || showUpgrade"
+      v-if="showAddCredits || showSubscribe || showUpgrade"
       class="flex w-full justify-end gap-2"
     >
       <Button
-        v-if="showAddCredits"
-        variant="textonly"
+        v-if="showUpgrade"
+        variant="secondary"
         size="sm"
-        @click="emit('addCredits')"
+        @click="emit('paywallAction', 'upgrade')"
       >
-        {{ $t('agent.paywall.addCredits') }}
+        {{ $t('agent.paywall.upgradePlan') }}
       </Button>
       <Button
-        v-if="showUpgrade"
+        v-if="showSubscribe"
         variant="inverted"
         size="sm"
-        @click="emit('upgradeSubscription')"
+        @click="emit('paywallAction', 'subscribe')"
       >
-        {{ $t('agent.paywall.upgradeSubscription') }}
+        {{ $t('agent.paywall.subscribe') }}
+      </Button>
+      <Button
+        v-if="showAddCredits"
+        variant="inverted"
+        size="sm"
+        @click="emit('paywallAction', 'addCredits')"
+      >
+        {{ $t('agent.paywall.addCredits') }}
       </Button>
     </div>
   </div>
