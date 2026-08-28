@@ -105,7 +105,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         }
       ]
     },
-    { label: t('nav.pricing', locale), href: routes.cloudPricing },
+    { label: t('nav.pricing', locale), href: routes.pricing },
     {
       label: t('nav.community', locale),
       badge: 'new',

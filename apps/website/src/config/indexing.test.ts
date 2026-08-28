@@ -17,7 +17,7 @@ describe('indexing policy', () => {
     expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(true)
   })
 
-  it.for(['/privacy', '/cloud/pricing', '/p/supported-models/grok-imagine'])(
+  it.for(['/privacy', '/pricing', '/p/supported-models/grok-imagine'])(
     'keeps %s indexable',
     (pathname) => {
       expect(isNoindexPathname(pathname)).toBe(false)
