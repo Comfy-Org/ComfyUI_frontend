@@ -81,11 +81,14 @@ function renderDetail({
 
 describe('WorkflowTemplateDetail', () => {
   it('shows the description control from rendered overflow and updates it after resize', async () => {
-    const resizeCallbacks: ResizeObserverCallback[] = []
+    const user = userEvent.setup()
+    const resizeObserverState = {
+      callback: null as ResizeObserverCallback | null
+    }
     const originalResizeObserver = globalThis.ResizeObserver
     class MockResizeObserver implements ResizeObserver {
       constructor(callback: ResizeObserverCallback) {
-        resizeCallbacks.push(callback)
+        resizeObserverState.callback = callback
       }
 
       observe() {}
@@ -95,12 +98,13 @@ describe('WorkflowTemplateDetail', () => {
     globalThis.ResizeObserver = MockResizeObserver
 
     let scrollHeight = 64
+    let clientHeight = 48
     const scrollHeightSpy = vi
       .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
       .mockImplementation(() => scrollHeight)
     const clientHeightSpy = vi
       .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
-      .mockReturnValue(48)
+      .mockImplementation(() => clientHeight)
 
     try {
       renderDetail({
@@ -112,12 +116,18 @@ describe('WorkflowTemplateDetail', () => {
         await screen.findByRole('button', { name: 'Show more' })
       ).toBeInTheDocument()
 
+      expect(resizeObserverState.callback).not.toBeNull()
+      await user.click(screen.getByRole('button', { name: 'Show more' }))
+      clientHeight = 64
+      resizeObserverState.callback!([], {} as ResizeObserver)
+      expect(
+        screen.getByRole('button', { name: 'Show less' })
+      ).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Show less' }))
       scrollHeight = 48
-      const [resizeCallback] = resizeCallbacks
-      if (!resizeCallback) {
-        throw new Error('Expected the description ResizeObserver to initialize')
-      }
-      resizeCallback([], {} as ResizeObserver)
+      clientHeight = 48
+      resizeObserverState.callback!([], {} as ResizeObserver)
 
       await waitFor(() => {
         expect(
