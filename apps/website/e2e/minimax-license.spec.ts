@@ -80,10 +80,10 @@ test.describe('MiniMax license page @smoke', () => {
     await rateCard.scrollIntoViewIfNeeded()
     await expect(
       rateCard.getByRole('columnheader', { name: /Professional/ })
-    ).toContainText('$5,000')
+    ).toContainText('From $5,000')
     await expect(
       rateCard.getByRole('columnheader', { name: /Enterprise/ })
-    ).toContainText('From $240,000')
+    ).toContainText('Custom')
   })
 
   test('footer links back to this page', async ({ page }) => {

@@ -86,20 +86,34 @@ export const minimaxLicensePage: ModelLaunchPage = {
       {
         id: 'professional',
         name: { en: 'Professional', 'zh-CN': '专业版' },
-        price: { en: '$5,000', 'zh-CN': '$5,000' },
+        price: { en: 'From $5,000', 'zh-CN': '$5,000 起' },
         priceNote: { en: 'per month', 'zh-CN': '每月' }
       },
       {
         id: 'enterprise',
         name: { en: 'Enterprise', 'zh-CN': '企业版' },
-        price: { en: 'From $240,000', 'zh-CN': '$240,000 起' },
+        price: { en: 'Custom', 'zh-CN': '定制' },
         priceNote: {
-          en: 'per year, annual agreement',
-          'zh-CN': '每年，年度协议'
+          en: 'annual agreement, priced to your volume',
+          'zh-CN': '年度协议，按用量定价'
         }
       }
     ],
     rows: [
+      {
+        id: 'fit',
+        label: { en: 'Built for', 'zh-CN': '适合' },
+        values: [
+          {
+            en: 'Studios and teams running H3 on their own hardware, up to 10 people',
+            'zh-CN': '在自有硬件上运行 H3 的工作室与团队，最多 10 人'
+          },
+          {
+            en: 'Larger teams, higher volume, undistilled weights, or H3 inside your own product',
+            'zh-CN': '更大团队、更高用量、未蒸馏权重，或将 H3 集成进自有产品'
+          }
+        ]
+      },
       {
         id: 'term',
         label: { en: 'Term', 'zh-CN': '期限' },
@@ -161,8 +175,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
       }
     ],
     footnote: {
-      en: 'Enterprise pricing is sized to your generation volume and team. Request a license for a quote.',
-      'zh-CN': '企业版定价按你的生成量和团队规模定制。申请许可获取报价。'
+      en: 'You need a license when you run H3 on your own hardware in the US, EU, UK, or Korea, or your company makes over 20 million US dollars a year. Comfy Cloud already includes commercial rights, and outside those territories the free MiniMax community license covers commercial use under that revenue line. Enterprise is quoted to your generation volume and team.',
+      'zh-CN':
+        '当你在美国、欧盟、英国或韩国的自有硬件上运行 H3，或公司年收入超过 2,000 万美元时，需要此许可。Comfy Cloud 已包含商业权利；在上述地区之外且年收入低于该线时，MiniMax 免费的社区许可即可覆盖商业使用。企业版按生成量与团队规模报价。'
     },
     primaryCta: {
       labelKey: 'minimaxLicense.steps.primaryCta',
@@ -182,9 +197,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '谁需要 MiniMax H3 商业许可？'
         },
         answer: {
-          en: 'Anyone running MiniMax models locally for commercial work: business use, client work, or products you ship. Open weights let anyone download the models and start creating; the license is what makes commercial use of your local outputs legal.',
+          en: 'Teams running H3 on their own hardware in the US, EU, UK, or Korea, or with more than 20 million US dollars in yearly revenue, for business use, client work, or products they ship. Comfy Cloud generations already include commercial rights. Outside those four territories and under that revenue line, the free MiniMax community license covers local commercial use with a Powered by MiniMax H3 credit, and the same territory rule applies to where your outputs are used.',
           'zh-CN':
-            '任何在本地运行 MiniMax 模型进行商业创作的人：商业用途、客户项目，或你要发布的产品。开源权重让任何人都能下载模型开始创作；许可让你本地产出的商业使用合法合规。'
+            '在美国、欧盟、英国或韩国的自有硬件上运行 H3，或年收入超过 2,000 万美元的团队，用于商业用途、客户项目或对外发布的产品。Comfy Cloud 的生成已包含商业权利。在这四个地区之外且年收入低于该线时，MiniMax 免费的社区许可即可覆盖本地商业使用（需标注 Powered by MiniMax H3），且同样的地区规则也适用于产出的使用地。'
         }
       },
       {
@@ -230,9 +245,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '商业许可多少钱？'
         },
         answer: {
-          en: 'Professional is $5,000 a month on a monthly term, with up to 10 licensed users on distilled open-weight model versions. Enterprise starts at $240,000 a year on an annual agreement, with pricing sized to your generation volume, no user cap, and every model version, undistilled weights included. Request a license and we will quote it for your team.',
+          en: 'Professional starts at $5,000 a month on a monthly term, with up to 10 licensed users on distilled open-weight model versions. Enterprise is an annual agreement priced to your generation volume, with no user cap and every model version, undistilled weights included; there is no flat list price because it is sized per team. Request a license and we will quote it.',
           'zh-CN':
-            '专业版为每月 5,000 美元，按月订阅，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版为年度协议，每年 240,000 美元起，按生成量定制定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本。申请许可，我们会为你的团队提供报价。'
+            '专业版每月 5,000 美元起，按月订阅，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版为年度协议，按生成量定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本；因按团队定制，不设固定标价。申请许可，我们会为你报价。'
         }
       },
       {

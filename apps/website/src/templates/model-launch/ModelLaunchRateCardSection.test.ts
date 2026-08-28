@@ -18,8 +18,12 @@ describe('ModelLaunchRateCardSection', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: 'License pricing' })
     ).toBeTruthy()
-    expect(screen.getByText('$5,000')).toBeTruthy()
+    expect(screen.getByText('From $5,000')).toBeTruthy()
     expect(screen.getByText('per month')).toBeTruthy()
+    expect(
+      screen.getByText('annual agreement, priced to your volume')
+    ).toBeTruthy()
+    expect(screen.getByRole('rowheader', { name: 'Built for' })).toBeTruthy()
     expect(
       screen.getByRole('columnheader', { name: /Enterprise/ })
     ).toBeTruthy()

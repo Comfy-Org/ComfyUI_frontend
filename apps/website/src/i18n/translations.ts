@@ -6830,8 +6830,9 @@ const translations = {
     'zh-CN': '许可定价'
   },
   'minimaxLicense.rateCard.subtitle': {
-    en: 'Two tiers, one agreement: video, audio, and music under a single license.',
-    'zh-CN': '两种级别，一份协议：视频、音频与音乐同在一份许可之下。'
+    en: 'Professional from $5,000 a month. Enterprise on an annual agreement, priced to your volume. Video, audio, and music under one license.',
+    'zh-CN':
+      '专业版每月 5,000 美元起。企业版为年度协议，按用量定价。视频、音频与音乐同在一份许可之下。'
   },
   'minimaxLicense.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'minimaxLicense.cta.heading': {
