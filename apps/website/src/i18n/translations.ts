@@ -1205,6 +1205,18 @@ const translations = {
     en: 'Seedance 2.0',
     'zh-CN': 'Seedance 2.0'
   },
+  'cloud.aiModels.card.seedance25': {
+    en: 'Seedance 2.5',
+    'zh-CN': 'Seedance 2.5'
+  },
+  'cloud.aiModels.card.minimaxH3': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'cloud.aiModels.card.geminiOmniFlash': {
+    en: 'Gemini\nOmni Flash 1.1',
+    'zh-CN': 'Gemini\nOmni Flash 1.1'
+  },
   'cloud.aiModels.card.qwenImageEdit': {
     en: 'Qwen\nImage Edit',
     'zh-CN': 'Qwen\n图像编辑'

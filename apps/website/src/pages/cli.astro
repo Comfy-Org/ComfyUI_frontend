@@ -11,6 +11,7 @@ import WhySection from '../templates/cli/WhySection.vue'
 import HowItWorksSection from '../templates/cli/HowItWorksSection.vue'
 import FAQSection from '../templates/cli/FAQSection.vue'
 import { cliFaqs } from '../templates/cli/faqs'
+import { cliModelCards } from '../templates/cli/modelCards'
 import { externalLinks } from '../config/routes'
 import { t } from '../i18n/translations'
 import {
@@ -59,7 +60,7 @@ const softwareId = jsonLdId(url, 'software')
   <SetupSection locale="en" client:visible />
   <SessionSection locale="en" client:visible />
   <SkillsSection locale="en" client:visible />
-  <AIModelsSection locale="en" client:visible />
+  <AIModelsSection locale="en" cards={cliModelCards} client:visible />
   <AgentsSection locale="en" />
   <WhySection locale="en" />
   <HowItWorksSection locale="en" />
