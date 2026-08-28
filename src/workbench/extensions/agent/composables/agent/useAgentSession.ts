@@ -151,21 +151,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!isCurrent()) return false
       // Entry-path hydrates committed the identity before fetching; leaving
       // it standing over the previous transcript renders thread A's rows
-      // under thread B's id. Rehost keeps its transcript (b7) instead, and
-      // a turn accepted while the fetch was in flight is never destroyed.
-      const resetSafe =
-        resetOnFailure &&
-        conversationStore.threadId === threadId &&
-        conversationStore.activeTurnId === null
+      // under thread B's id. Rehost keeps its transcript (b7) instead. A
+      // turn accepted while the fetch was in flight is stashed first, so
+      // it survives the reset and resumes on a later load of its thread.
+      const resetOwned =
+        resetOnFailure && conversationStore.threadId === threadId
       if (error instanceof AgentApiError && error.status === 404) {
-        if (resetSafe) conversationStore.reset()
-        else if (conversationStore.threadId === threadId)
+        if (resetOwned) {
+          conversationStore.stashActiveTurn()
+          conversationStore.reset()
+        } else if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
         localStorage.removeItem(THREAD_STORAGE_KEY)
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
-      if (resetSafe) {
+      if (resetOwned) {
+        conversationStore.stashActiveTurn()
         conversationStore.reset()
         localStorage.removeItem(THREAD_STORAGE_KEY)
       }
