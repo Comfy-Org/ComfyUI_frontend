@@ -12,7 +12,7 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { ResultItemType } from '@/schemas/apiSchema'
-import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -56,7 +56,7 @@ const stringModelValue = computed({
 })
 
 const { t } = useI18n()
-const outputAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
+const outputAssets = useAssetsStore().outputAssets
 
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
@@ -89,7 +89,7 @@ const {
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue: stringModelValue,
   assetKind: () => props.assetKind,
-  outputMediaAssets: () => useAssetsQuery({ tags_any: ['output', 'temp'] }),
+  outputMediaAssets: outputAssets,
   assetData,
   isAssetMode: () => props.isAssetMode
 })
