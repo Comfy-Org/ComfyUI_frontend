@@ -24,7 +24,38 @@ export function createLGraphState(): LGraphState {
   }
 }
 
+/**
+ * The shared-doc contract's coordination-free id range: comfy-cli's
+ * `mint_id()` draws integers in `[2^40, 2^53)` (see the `NodeId` note in
+ * `@comfyorg/comfy-multi-player`'s types). The floor keeps minted ids
+ * disjoint from every counter-allocated id, and the ceiling stays inside
+ * `Number.MAX_SAFE_INTEGER`.
+ */
+const MINT_ID_MIN = 2 ** 40
+const MINT_ID_SPAN = 2 ** 53 - MINT_ID_MIN
+
+let coordinationFreeIds = false
+
+/**
+ * Arm the contract's coordination-free id scheme for node and link
+ * allocation. Armed only while a semantic doc is bound to the active
+ * workflow: two replicas seeded from one snapshot then cannot allocate the
+ * same next id, so concurrent `add_node`/`add_link` operations never alias
+ * one document entry. While armed, the sequential counters are not
+ * advanced; unbound graphs keep counter allocation byte-identically.
+ * Groups and reroutes are canvas-local (not shared-doc entities) and stay
+ * on counters in both modes.
+ */
+export function setCoordinationFreeIds(enabled: boolean): void {
+  coordinationFreeIds = enabled
+}
+
+function mintCoordinationFreeId(): number {
+  return MINT_ID_MIN + Math.floor(Math.random() * MINT_ID_SPAN)
+}
+
 export function mintNodeId(state: LGraphState): NodeId {
+  if (coordinationFreeIds) return toNodeId(mintCoordinationFreeId())
   return toNodeId(++state.lastNodeId)
 }
 
@@ -33,6 +64,7 @@ export function mintGroupId(state: LGraphState): GroupId {
 }
 
 export function mintLinkId(state: LGraphState): LinkId {
+  if (coordinationFreeIds) return toLinkId(mintCoordinationFreeId())
   state.lastLinkId = toLinkId(Number(state.lastLinkId) + 1)
   return state.lastLinkId
 }
