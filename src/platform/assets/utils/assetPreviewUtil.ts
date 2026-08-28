@@ -26,7 +26,7 @@ async function fetchAssets(
   return data.assets ?? []
 }
 
-function resolvePreviewUrl(asset: AssetRecord): string {
+export function resolvePreviewUrl(asset: AssetRecord): string {
   if (asset.preview_url) return api.apiURL(asset.preview_url)
 
   const contentId = asset.preview_id ?? asset.id
