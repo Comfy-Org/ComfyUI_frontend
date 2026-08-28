@@ -1,8 +1,8 @@
 /**
  * Layout-store mint port over the injected change feed (both applyOperation
- * entries funnel through it). Provenance rides operation.actor - stamped at
- * apply, so deferred delivery still carries it; remote applies run as
- * AGENT_REMOTE_ACTOR and never re-mint (KA-6). Teardown clears are inert
+ * entries funnel through it). Provenance rides each operation's source and
+ * actor, so deferred delivery still carries it; remote applies never re-mint
+ * (KA-6). Teardown clears are inert
  * outside runIntentionalClear, whose capture is the authoritative pre-clear
  * node set; delete_node consumes the link port's severance capture.
  */
@@ -24,6 +24,7 @@ export interface LayoutChangeView {
   operation: {
     type: string
     actor?: string
+    source?: string
     nodeId?: NodeId
     layout?: { position: { x: number; y: number } }
   }
@@ -77,7 +78,9 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
       localProvenance:
-        actor !== undefined && actor.startsWith(deps.localActorPrefix),
+        change.operation.source !== AGENT_REMOTE_ACTOR &&
+        actor !== undefined &&
+        actor.startsWith(deps.localActorPrefix),
       teardown
     })
   }

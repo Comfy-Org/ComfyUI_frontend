@@ -13,6 +13,8 @@ import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
 
+import type { GraphMutations } from '@/core/graph/graphMutations'
+
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
     subscribe = vi.fn()
@@ -32,6 +34,14 @@ const bridgeState = vi.hoisted(() => {
 })
 
 const clientState = vi.hoisted(() => ({
+  destroy: vi.fn()
+}))
+
+const adapterState = vi.hoisted(() => ({
+  bind: vi.fn(),
+  applyFrame: vi.fn(),
+  clearForReset: vi.fn(),
+  discardPending: vi.fn(),
   destroy: vi.fn()
 }))
 
@@ -68,10 +78,13 @@ vi.mock('./docFrameClient', () => ({
   }
 }))
 
-vi.mock('./semanticProjector', () => ({
-  SemanticProjector: class {
-    project = vi.fn()
-    reset = vi.fn()
+vi.mock('./ecsFollowerAdapter', () => ({
+  EcsFollowerAdapter: class {
+    bind = adapterState.bind
+    applyFrame = adapterState.applyFrame
+    clearForReset = adapterState.clearForReset
+    discardPending = adapterState.discardPending
+    destroy = adapterState.destroy
   }
 }))
 
@@ -88,6 +101,8 @@ vi.mock('@/stores/authStore', () => ({
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
+const graphMutations = {} as GraphMutations
+
 function mountFollower(initial: string | null = null): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -97,7 +112,7 @@ function mountFollower(initial: string | null = null): {
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(workflowId)
+      const { status } = useAgentCrdtFollower(workflowId, graphMutations)
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
     }
@@ -121,8 +136,6 @@ describe('useAgentCrdtFollower', () => {
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
-    clientState.destroy.mockClear()
-    apiState.api.removeEventListener.mockClear()
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -225,7 +238,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('resets and resubscribes on a socket reconnect', () => {
+  it('retains the follower and resubscribes on a socket reconnect', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
     expect(status().connected).toBe(true)
@@ -234,6 +247,24 @@ describe('useAgentCrdtFollower', () => {
 
     expect(status().connected).toBe(false)
     expect(bridge().resubscribe).toHaveBeenCalled()
+    expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('clears only for an explicit reset and rebinds after replacement', () => {
+    const { unmount } = mountFollower('wf-1')
+    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('doc_reset', { actor: 'agent:turn', seq: 43 })
+    expect(adapterState.clearForReset).toHaveBeenCalledWith({
+      source: 'agent-remote',
+      actor: 'agent:turn',
+      opId: 'doc-reset:43'
+    })
+
+    dispatchFrame('follower_replaced', { seq: 43 })
+    expect(adapterState.bind).toHaveBeenCalledTimes(2)
+    expect(adapterState.bind).toHaveBeenLastCalledWith(bridge().follower)
     unmount()
   })
 
@@ -254,6 +285,7 @@ describe('useAgentCrdtFollower', () => {
 
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
+    expect(adapterState.discardPending).toHaveBeenCalled()
     unmount()
   })
 
@@ -261,10 +293,12 @@ describe('useAgentCrdtFollower', () => {
     const { unmount, status } = mountFollower('wf-1')
     bridge().follower.updatesApplied = 3
 
-    dispatchFrame('doc_update', { seq: 7 })
+    const update = { seq: 7 }
+    dispatchFrame('doc_update', update)
 
     expect(status().updatesApplied).toBe(3)
     expect(status().lastFrameType).toBe('doc_update')
+    expect(adapterState.applyFrame).toHaveBeenCalledWith(update)
     unmount()
   })
 
@@ -273,7 +307,10 @@ describe('useAgentCrdtFollower', () => {
     let send!: (ops: never[]) => void
     const host = defineComponent({
       setup() {
-        const { sendHumanOps } = useAgentCrdtFollower(workflowId)
+        const { sendHumanOps } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
         send = sendHumanOps as (ops: never[]) => void
         return () => null
       }
@@ -351,7 +388,7 @@ describe('useAgentCrdtFollower', () => {
     const workflowId = ref<string | null>('wf-1')
     const host = defineComponent({
       setup() {
-        useAgentCrdtFollower(workflowId)
+        useAgentCrdtFollower(workflowId, graphMutations)
         return () => null
       }
     })
@@ -372,6 +409,7 @@ describe('useAgentCrdtFollower', () => {
 
     expect(String(hookErrors[0])).toContain('half-dead bridge')
     expect(clientState.destroy).toHaveBeenCalled()
+    expect(adapterState.destroy).toHaveBeenCalled()
     expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
       'reconnected',
       expect.any(Function)

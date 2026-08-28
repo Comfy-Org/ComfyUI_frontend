@@ -11,6 +11,8 @@ export interface DocUpdate {
   seq: number
   update: Uint8Array
   actor?: string
+  /** Accepted semantic op identities folded into this effect frame (DQ-9). */
+  opIds?: string[]
 }
 
 export interface DocSubscribed {
@@ -72,7 +74,7 @@ export interface DocFrameTransport {
    * awaiting its auth token — not an exception. Throwing here aborted the
    * `watch(..., { immediate: true })` subscribe (leaving the follower
    * permanently inert) and aborted `onBeforeUnmount` before `client.destroy()`
-   * (leaking listeners and a live projector). Callers reconcile intent against
+   * (leaking listeners and a live adapter). Callers reconcile intent against
    * the returned boolean instead.
    */
   send(frame: string): boolean
@@ -86,6 +88,7 @@ interface WireData {
   seq?: unknown
   update_b64?: unknown
   actor?: unknown
+  op_ids?: unknown
   ok?: unknown
   code?: unknown
   message?: unknown
@@ -139,7 +142,12 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         workflowId: data.workflow_id,
         seq: data.seq,
         update: decodeBase64(data.update_b64),
-        ...(typeof data.actor === 'string' && { actor: data.actor })
+        ...(typeof data.actor === 'string' && { actor: data.actor }),
+        ...(Array.isArray(data.op_ids) && {
+          opIds: data.op_ids.filter(
+            (item): item is string => typeof item === 'string'
+          )
+        })
       }
     }
   }

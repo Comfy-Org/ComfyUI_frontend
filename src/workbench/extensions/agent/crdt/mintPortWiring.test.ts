@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GraphScope } from '@/types/graphScopeId'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkTopology } from '@/types/linkTopology'
 
 import { useLinkStore } from '@/stores/linkStore'
@@ -184,6 +185,25 @@ describe('attachMintPortWiring', () => {
       widgetStore.setValue(id, 42)
     })
 
+    expect(minted).toEqual([])
+  })
+
+  it('suppresses remote store calls from their call-carried context', () => {
+    const context: RemoteMutationContext = {
+      source: 'agent-remote',
+      actor: 'agent:test',
+      opId: 'op-1'
+    }
+    const link = useLinkStore().registerLink(ROOT_SCOPE, topology(41), context)
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+    const widget = widgetStore.setValue(id, 42, context)
+
+    expect(link).toBeDefined()
+    expect(widget).toBe(true)
     expect(minted).toEqual([])
   })
 
