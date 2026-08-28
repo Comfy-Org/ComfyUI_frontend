@@ -45,9 +45,12 @@ vi.mock('@/i18n', () => ({
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
+const persistThumbnailFromDataUrl = vi.hoisted(() => vi.fn(async () => {}))
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   isAssetPreviewSupported,
-  persistThumbnail
+  persistThumbnail,
+  persistThumbnailFromDataUrl,
+  THUMBNAIL_CAPTURE_SIZE: 256
 }))
 
 vi.mock('@/extensions/core/load3d/Load3d', () => ({
@@ -785,9 +788,9 @@ describe('useLoad3dViewer', () => {
       )
 
       await vi.waitFor(() =>
-        expect(persistThumbnail).toHaveBeenCalledWith(
+        expect(persistThumbnailFromDataUrl).toHaveBeenCalledWith(
           'mesh.glb',
-          expect.any(Blob)
+          'data:image/png;base64,x'
         )
       )
       expect(mockLoad3d.captureThumbnail).toHaveBeenCalledWith(256, 256)
@@ -800,7 +803,8 @@ describe('useLoad3dViewer', () => {
       await viewer.initializeStandaloneViewer(containerRef, 'model.glb')
       await nextTick()
 
-      expect(persistThumbnail).not.toHaveBeenCalled()
+      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
+      expect(persistThumbnailFromDataUrl).not.toHaveBeenCalled()
     })
   })
 
