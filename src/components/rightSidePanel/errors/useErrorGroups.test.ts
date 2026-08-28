@@ -1,3 +1,4 @@
+import { resolvePromptErrorMessage } from '@/platform/errorCatalog/promptErrorResolver'
 import { fromAny } from '@total-typescript/shoehorn'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -139,7 +140,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useErrorGroups } from './useErrorGroups'
+import { AGENT_PROMPT_ERROR_TYPES, useErrorGroups } from './useErrorGroups'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
 function makeMissingNodeType(
@@ -1363,5 +1364,19 @@ describe('useErrorGroups', () => {
       expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(true)
       expect(groups.selectionMatchedCardIds.value.has('node-9')).toBe(false)
     })
+  })
+
+  it('keeps every agent prompt error type resolvable in the prompt catalog', () => {
+    for (const type of AGENT_PROMPT_ERROR_TYPES) {
+      const resolved = resolvePromptErrorMessage(
+        fromAny({ type, message: 'x', details: 'd' }),
+        fromAny({ isCloud: false })
+      )
+
+      expect(
+        resolved.displayTitle,
+        `${type} is not in KNOWN_PROMPT_ERROR_TYPES`
+      ).toBeDefined()
+    }
   })
 })

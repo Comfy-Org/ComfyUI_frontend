@@ -532,15 +532,12 @@ export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
   workflow_id: string | null
 }
 
-// Re-exported when the agent panel store (its sole consumer) lands.
-type AgentPanelCloseSource = 'topbar_button' | 'close_button'
-
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
   source: 'topbar_button' | 'restored'
 }
 
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
-  source: AgentPanelCloseSource
+  source: 'topbar_button' | 'close_button'
   open_duration_ms: number | null
 }
 

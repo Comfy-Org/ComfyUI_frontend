@@ -21,7 +21,8 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 
 /**
- * Billing facade consumers — FE-933 (B3) regression.
+ * Billing facade consumers — FE-933 (B3) regression, plus the free-tier
+ * quota display (FE-1774: the quota chip renders inside the action bars).
  *
  * The repointed surfaces (avatar popover balance, free-tier dialog renewal
  * date) must keep rendering from `useBillingContext`. Cloud
@@ -232,18 +233,27 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     expect(billingRequests.legacyBalance).toBe(0)
   })
 
-  test('shows the complete free-tier quota and routes to pricing', async ({
+  const FREE_INACTIVE_SUBSCRIPTION = {
+    is_active: false,
+    subscription_tier: 'FREE',
+    subscription_duration: 'MONTHLY',
+    // 10:00Z keeps the en-US calendar date stable across CI timezones.
+    renewal_date: '2099-02-20T10:00:00Z',
+    has_funds: false
+  } as const
+
+  const FREE_TIER_REMOTE_CONFIG = {
+    subscription_required: true,
+    free_tier_job_allowance_enabled: true,
+    free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
+  } satisfies RemoteConfig & {
+    free_tier_job_allowance_enabled: boolean
+  }
+
+  test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
     page
   }) => {
     test.setTimeout(60_000)
-
-    const remoteConfig = {
-      subscription_required: true,
-      free_tier_job_allowance_enabled: true,
-      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
-    } satisfies RemoteConfig & {
-      free_tier_job_allowance_enabled: boolean
-    }
 
     // The facade routes a personal workspace through the workspace
     // `/api/billing/*` endpoints. With
@@ -253,21 +263,34 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     // from the features mock, not an init script.)
     await mockCloudBoot(
       page,
-      {
-        is_active: false,
-        subscription_tier: 'FREE',
-        subscription_duration: 'MONTHLY',
-        // 10:00Z keeps the en-US calendar date stable across CI timezones.
-        renewal_date: '2099-02-20T10:00:00Z',
-        has_funds: false
-      },
-      remoteConfig,
+      FREE_INACTIVE_SUBSCRIPTION,
+      FREE_TIER_REMOTE_CONFIG,
       'stripe'
     )
     await bootApp(page)
 
-    const quota = page.getByTestId(TestIds.topbar.freeTierQuota)
+    await page.getByTestId(TestIds.topbar.subscribeToRunButton).click()
+
+    await expect(
+      page.getByRole('heading', { name: 'Choose a Plan' })
+    ).toBeVisible()
+  })
+
+  test('renders the free-tier quota inside the action bars', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(
+      page,
+      FREE_INACTIVE_SUBSCRIPTION,
+      FREE_TIER_REMOTE_CONFIG,
+      'stripe'
+    )
+    await bootApp(page)
+
     const actionBars = page.getByTestId(TestIds.topbar.actionBars)
+    const quota = actionBars.getByTestId(TestIds.topbar.freeTierQuota)
     await expect(quota).toBeVisible()
 
     await expect
@@ -278,18 +301,15 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
         ])
         if (!quotaBox || !actionBarsBox) return Number.POSITIVE_INFINITY
 
-        return (
+        return Math.max(
+          actionBarsBox.x - quotaBox.x,
+          actionBarsBox.y - quotaBox.y,
+          quotaBox.x + quotaBox.width - (actionBarsBox.x + actionBarsBox.width),
           quotaBox.y +
-          quotaBox.height -
-          (actionBarsBox.y + actionBarsBox.height)
+            quotaBox.height -
+            (actionBarsBox.y + actionBarsBox.height)
         )
       })
       .toBeLessThanOrEqual(0)
-
-    await page.getByTestId('subscribe-to-run-button').click()
-
-    await expect(
-      page.getByRole('heading', { name: 'Choose a Plan' })
-    ).toBeVisible()
   })
 })

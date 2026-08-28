@@ -168,6 +168,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
+              // Chartered inversion (FE-1771): the server override wins over
+              // this client default - the spread below is deliberate.
               person_profiles: 'identified_only',
               // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
               // automatically when persistence includes 'cookie' (the default).
@@ -175,8 +177,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               // to clear localStorage on other subdomains, causing identity bleed on logout.
               ...serverConfig
             }
-            // Assigned after the server spread: no remote config shape can
-            // displace the PII strip.
+            // Post-spread: remote config cannot displace the PII strip.
             initConfig.before_send = createPostHogBeforeSend()
             this.posthog!.init(apiKey, initConfig)
             this.isInitialized = true

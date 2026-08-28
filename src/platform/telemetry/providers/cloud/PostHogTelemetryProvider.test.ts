@@ -100,6 +100,8 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
+    // A developer's real .env token must never leak into these tests.
+    vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', '')
     hoisted.refs.remoteConfig.value = null
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
@@ -1299,5 +1301,71 @@ describe('PostHogTelemetryProvider', () => {
       expect(sent.$set_once).not.toHaveProperty('user_email')
       expect(sent.$set_once).toHaveProperty('plan', 'free')
     })
+  })
+
+  describe('agent event names', () => {
+    const cases = [
+      [
+        'trackAgentMessageFeedback',
+        { message_id: 'm1', vote: 'up', workflow_id: null },
+        'app:agent_message_feedback'
+      ],
+      [
+        'trackAgentPanelOpened',
+        { source: 'topbar_button' },
+        'app:agent_panel_opened'
+      ],
+      [
+        'trackAgentPanelClosed',
+        { source: 'close_button', open_duration_ms: 1200 },
+        'app:agent_panel_closed'
+      ],
+      [
+        'trackAgentEntryButtonClicked',
+        { resulting_state: 'opened' },
+        'app:agent_entry_button_clicked'
+      ],
+      [
+        'trackAgentCloseButtonClicked',
+        undefined,
+        'app:agent_close_button_clicked'
+      ],
+      [
+        'trackAgentMessageSent',
+        { attachment_count: 1, node_tag_count: 2 },
+        'app:agent_message_sent'
+      ],
+      [
+        'trackAgentNodeTagged',
+        { source: 'mention_picker' },
+        'app:agent_node_tagged'
+      ],
+      [
+        'trackAgentAttachButtonClicked',
+        undefined,
+        'app:agent_attach_button_clicked'
+      ],
+      [
+        'trackAgentWorkflowApplied',
+        { workflow_id: 'w1', target: 'new_tab' },
+        'app:agent_workflow_applied'
+      ]
+    ] as const
+
+    it.for(cases)(
+      '%s captures its exact event string',
+      async ([method, metadata, eventName]) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(provider as any)[method](metadata)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(
+          eventName,
+          metadata ?? {}
+        )
+      }
+    )
   })
 })

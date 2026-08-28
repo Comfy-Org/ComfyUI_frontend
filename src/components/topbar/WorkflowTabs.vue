@@ -93,10 +93,7 @@
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i
-          data-testid="feedback-icon"
-          class="icon-[hugeicons--megaphone-03] size-4"
-        />
+        <i class="icon-[hugeicons--megaphone-03] size-4" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />

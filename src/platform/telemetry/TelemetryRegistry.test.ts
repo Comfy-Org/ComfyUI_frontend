@@ -222,4 +222,47 @@ describe('TelemetryRegistry', () => {
       payload
     )
   })
+
+  describe('agent telemetry dispatch', () => {
+    const cases = [
+      [
+        'trackAgentMessageFeedback',
+        { message_id: 'm1', vote: 'up', workflow_id: null }
+      ],
+      ['trackAgentPanelOpened', { source: 'topbar_button' }],
+      [
+        'trackAgentPanelClosed',
+        { source: 'close_button', open_duration_ms: 1200 }
+      ],
+      ['trackAgentEntryButtonClicked', { resulting_state: 'opened' }],
+      ['trackAgentCloseButtonClicked', undefined],
+      ['trackAgentMessageSent', { attachment_count: 1, node_tag_count: 2 }],
+      ['trackAgentNodeTagged', { source: 'mention_picker' }],
+      ['trackAgentAttachButtonClicked', undefined],
+      ['trackAgentWorkflowApplied', { workflow_id: 'w1', target: 'new_tab' }]
+    ] as const
+
+    it.for(cases)(
+      'dispatches %s to every registered provider',
+      ([method, metadata]) => {
+        const a: TelemetryProvider = { [method]: vi.fn() }
+        const b: TelemetryProvider = { [method]: vi.fn() }
+        const registry = new TelemetryRegistry()
+        registry.registerProvider(a)
+        registry.registerProvider(b)
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(registry as any)[method](metadata)
+
+        for (const provider of [a, b]) {
+          const spy = provider[method as keyof TelemetryProvider]
+          if (metadata === undefined) {
+            expect(spy).toHaveBeenCalledExactlyOnceWith()
+          } else {
+            expect(spy).toHaveBeenCalledExactlyOnceWith(metadata)
+          }
+        }
+      }
+    )
+  })
 })

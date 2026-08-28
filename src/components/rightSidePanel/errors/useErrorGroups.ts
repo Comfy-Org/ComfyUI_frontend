@@ -45,8 +45,7 @@ import {
 
 const PROMPT_CARD_ID = '__prompt__'
 
-const AGENT_PROMPT_ERROR_TYPES = new Set([
-  'agent_api_failed',
+export const AGENT_PROMPT_ERROR_TYPES = new Set([
   'op_rejected',
   'prefix_abort',
   'guard_trip',

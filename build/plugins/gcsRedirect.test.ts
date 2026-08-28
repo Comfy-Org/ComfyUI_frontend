@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { PassThrough } from 'node:stream'
 import { describe, expect, it, vi } from 'vitest'
 
-import { handleGcsRedirect } from '../../vite.config.mts'
+import { handleGcsRedirect } from './gcsRedirect'
 
 function createProxyRes(
   headers: Record<string, string>,
@@ -103,6 +103,50 @@ describe('handleGcsRedirect', () => {
       'Wed, 01 Jan 2025 00:00:00 GMT'
     )
     expect(res.statusCode).toBe(200)
+  })
+
+  it('treats a 302 to a non-GCS host as a plain pass-through', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const res = createRes()
+
+    handleGcsRedirect(
+      createProxyRes(
+        { location: 'https://elsewhere.example.com/obj', via: '1.1 google' },
+        302
+      ),
+      createReq(),
+      res as unknown as ServerResponse
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'location',
+      'https://elsewhere.example.com/obj'
+    )
+    expect(res.writeHead).toHaveBeenCalledWith(302)
+  })
+
+  it('relays a partial-content status with its content-range', async () => {
+    const partial = gcsResponse({
+      'content-type': 'video/mp4',
+      'content-range': 'bytes 0-1/2',
+      'content-length': '2'
+    })
+    partial.status = 206
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(partial))
+    const res = createRes()
+
+    handleGcsRedirect(
+      createProxyRes(GCS_REDIRECT_HEADERS, 302),
+      createReq({ range: 'bytes=0-1' }),
+      res as unknown as ServerResponse
+    )
+
+    await vi.waitFor(() => {
+      expect(res.setHeader).toHaveBeenCalledWith('content-range', 'bytes 0-1/2')
+    })
+    expect(res.statusCode).toBe(206)
   })
 
   it('forwards the range header to GCS', async () => {
