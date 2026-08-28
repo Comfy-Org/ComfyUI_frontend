@@ -830,13 +830,16 @@
       "insufficientMessage": "אין לך מספיק קרדיטים כדי להריץ תהליך עבודה זה.",
       "insufficientTitle": "אין מספיק קרדיטים",
       "insufficientWorkflowMessage": "אין לך מספיק קרדיטים כדי להריץ תהליך עבודה זה.",
+      "manageBillingError": "פתיחת פורטל החיוב נכשלה. נסו שוב.",
       "maxAllowed": "{credits} קרדיטים מקסימום.",
       "maxAmount": "(מקסימום 1,000$ USD)",
       "maximumAmount": "{amount}$ מקסימום.",
       "minRequired": "{credits} קרדיטים מינימום",
       "minimumPurchase": "{amount}$ מינימום ({credits} קרדיטים)",
       "needMore": "צריך עוד?",
+      "noPaymentMethodError": "לא נשמר אמצעי תשלום עבור סביבת עבודה זו. הוסיפו אמצעי תשלום דרך הגדרות → תוכנית וקרדיטים → ניהול חיוב, ולאחר מכן נסו שוב לבצע את ההטענה.",
       "payAmount": "שלם {amount}",
+      "paymentDetailsRequiredNote": "תתבקשו להוסיף אמצעי תשלום כדי להשלים רכישה זו.",
       "purchaseError": "הרכישה נכשלה",
       "purchaseErrorDetail": "רכישת הקרדיטים נכשלה: {error}",
       "purchaseSuccess": "הקרדיטים נוספו בהצלחה!",
@@ -1705,6 +1708,7 @@
     "micPermissionDenied": "ההרשאה לשימוש במיקרופון נדחתה",
     "migrate": "העברה",
     "missing": "חסר",
+    "missingNodeTypesInGroup": "חסר: {types}",
     "modifyKeybinding": "שינוי מקש הקיצור",
     "more": "עוד",
     "moreOptions": "אפשרויות נוספות",
@@ -3217,15 +3221,26 @@
     "done": "סיום",
     "firstRun": {
       "nudge": {
-        "dismiss": "לא עכשיו",
-        "explore": "גלה תבניות",
-        "noTour": {
-          "body": "עיין בתבניות ובחר משהו לבנות.",
-          "title": "יש עוד מאות כאלה"
+        "animate": {
+          "detail": "מתמונה לווידאו · 5 שניות",
+          "title": "הנפישו אותה"
         },
-        "ran": {
-          "body": "יצרת עכשיו את הראשונה שלך. גלה מה עוד אפשר לבנות.",
-          "title": "זו הייתה אחת מתוך מאות"
+        "body": "כל אחד מתחיל מהתמונה שיצרתם זה עתה.",
+        "explore": "עיון בכל התבניות",
+        "fallback": {
+          "body": "עיינו בתבניות ובחרו מה לבנות.",
+          "title": "ועוד מאות כאלה"
+        },
+        "loadFailed": "לא ניתן היה לטעון את התבנית הזו. נסו שוב.",
+        "restyle": {
+          "detail": "מודל שותף · כל תוכנית בתשלום",
+          "title": "שנו סגנון עם Nano Banana"
+        },
+        "title": "הפלט הראשון שלכם. הנה מה הלאה.",
+        "upscale": {
+          "badge": "4x",
+          "detail": "אותה תמונה, יותר פרטים",
+          "title": "הגדילו את הרזולוציה שלה"
         }
       },
       "prompt": {
@@ -4363,6 +4378,8 @@
     "resubscribeFailed": "נכשל ניסיון להפעיל מחדש את המנוי",
     "resubscribeSuccess": "המנוי הופעל מחדש בהצלחה",
     "resubscribeTo": "הירשם מחדש ל-{plan}",
+    "salesManagedRunBlockedDetail": "התוכנית של סביבת עבודה זו אינה פעילה עוד. פנו למנהל החשבון שלכם ב-Comfy כדי לשחזר את הגישה.",
+    "salesManagedRunBlockedTitle": "התוכנית אינה פעילה",
     "saveYearly": "חסוך 20%",
     "saveYearlyUpTo": "חסוך עד 20%",
     "soloUseOnly": "לשימוש יחיד בלבד",
@@ -4441,6 +4458,7 @@
     "title": "מנוי",
     "titleUnsubscribed": "הירשם ל-Comfy Cloud",
     "totalCredits": "סך הקרדיטים",
+    "unknownTierName": "התוכנית הנוכחית",
     "upgrade": "שדרוג",
     "upgradePlan": "שדרוג המסלול",
     "upgradeTo": "שדרג ל-{plan}",
