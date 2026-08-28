@@ -129,7 +129,7 @@
   --comfy-menu-bg: #353535;
   --comfy-menu-secondary-bg: #292929;
   --comfy-topbar-height: 2.5rem;
-  --workflow-tabs-height: 2.375rem;
+  --workflow-tabs-height: 2.125rem;
   --comfy-input-bg: #222;
   --comfy-textarea-font-size: 10px;
   --input-text: #ddd;
@@ -174,6 +174,21 @@
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
+  --region-stroke: color-mix(in srgb, var(--border-color) 25%, transparent);
+  --workflow-tab-divider: color-mix(
+    in srgb,
+    var(--border-color) 25%,
+    transparent
+  );
+  --sidebar-surface: oklch(from var(--comfy-menu-bg) calc(l - 0.0274) c h);
+  --workflow-tab-selected-surface: oklch(
+    from var(--comfy-menu-bg) calc(l - 0.0274) c h
+  );
+  --base-background-sunken: var(
+    --canvas-clear-background,
+    oklch(from var(--comfy-menu-bg) calc(l - 0.0648) c h)
+  );
+  --workflow-tab-hover-surface: var(--content-hover-bg);
 
   --interface-builder-mode-background: var(--color-ocean-300);
   --interface-builder-mode-button-background: var(--color-ocean-600);
@@ -297,6 +312,24 @@
   --modal-card-tag-background: var(--color-smoke-200);
   --modal-card-tag-foreground: var(--base-foreground);
   --modal-panel-background: var(--color-white);
+}
+
+:root[data-color-palette='dark'] {
+  --sidebar-surface: var(--color-charcoal-900);
+  --workflow-tab-selected-surface: var(--color-charcoal-900);
+  --workflow-tab-hover-surface: var(--color-charcoal-700);
+}
+
+:root[data-color-palette='light'] {
+  --sidebar-surface: var(--color-smoke-100);
+  --workflow-tab-selected-surface: var(--color-smoke-200);
+  --workflow-tab-hover-surface: var(--color-smoke-400);
+  --workflow-tab-divider: color-mix(
+    in srgb,
+    var(--color-smoke-400) 50%,
+    transparent
+  );
+  --region-stroke: color-mix(in srgb, var(--color-smoke-300) 50%, transparent);
 }
 
 .dark-theme {
@@ -642,11 +675,16 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
+  background-color: var(--bg-color);
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
   min-width: -webkit-fill-available;
   max-width: -webkit-fill-available;
   font-family: Inter, Arial, sans-serif;
+}
+
+:root[data-color-palette] body {
+  background-color: var(--base-background-sunken);
 }
 
 .comfy-multiline-input {

@@ -10,11 +10,11 @@
         <SubgraphBreadcrumb />
       </div>
 
-      <div class="mx-1 flex flex-col items-end gap-1">
+      <div class="mx-1 flex flex-col items-end gap-1 pt-1">
         <div class="flex items-start gap-2">
           <div
             v-if="managerState.shouldShowManagerButtons.value || isCloud"
-            class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+            class="pointer-events-auto flex shrink-0 items-center rounded-lg bg-comfy-menu-bg px-2 py-1 shadow-interface"
           >
             <Button
               v-tooltip.bottom="customNodesManagerTooltipConfig"
@@ -37,14 +37,14 @@
           <div
             ref="actionbarCardRef"
             data-testid="action-bar-card"
-            class="pointer-events-auto relative z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
+            class="pointer-events-auto relative z-1 flex flex-col rounded-lg bg-comfy-menu-bg px-2 py-1 shadow-interface"
           >
             <div
               :class="
                 cn(
                   'actionbar-container relative flex items-center gap-2',
                   isActionbarContainerEmpty &&
-                    '-ml-2 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
+                    '-ml-2 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
                 )
               "
             >
@@ -70,14 +70,12 @@
                 v-if="isCloud && flags.workflowSharingEnabled"
                 v-tooltip.bottom="shareTooltipConfig"
                 variant="secondary"
+                size="icon"
                 :aria-label="t('actionbar.shareTooltip')"
                 @click="() => openShareDialog().catch(toastErrorHandler)"
                 @pointerenter="prefetchShareDialog"
               >
                 <i class="icon-[comfy--send] size-4" />
-                <span class="not-md:hidden">
-                  {{ t('actionbar.share') }}
-                </span>
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button

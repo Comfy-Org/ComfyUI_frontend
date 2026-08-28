@@ -3939,7 +3939,6 @@
     "feedbackTooltip": "Feedback",
     "freeTierRuns": "{available} / {MAX_AVAILABLE} runs left",
     "freeTierPartner": "Partner nodes need a paid plan",
-    "share": "Share",
     "shareTooltip": "Share workflow"
   },
   "shareNoOutputs": {
