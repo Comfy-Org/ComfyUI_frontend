@@ -926,6 +926,14 @@ const translations = {
       '没有功能限制、没有试用期、核心功能没有"专业"层级。没有供应商可以锁定你或强迫你离开平台。构建自己的节点，随心修改 ComfyUI。'
   },
 
+  // Download – meta (decoupled from the hero subtitle so SERP copy can carry
+  // the download queries without changing the visible hero)
+  'download.meta.description': {
+    en: 'Download ComfyUI for Windows or macOS, or install from GitHub. The full open source engine, free forever, running on your own hardware.',
+    'zh-CN':
+      '下载适用于 Windows 或 macOS 的 ComfyUI，也可从 GitHub 安装。完整的开源引擎，永久免费，在你自己的硬件上运行。'
+  },
+
   // Download – HeroSection
   'download.hero.heading': {
     en: 'Run on your hardware.\nFree forever.',
@@ -1766,6 +1774,15 @@ const translations = {
 
   // LearningDirectorySection
   'learning.title': { en: 'Learning', 'zh-CN': '学习' },
+  'learning.metaTitle': {
+    en: 'ComfyUI Tutorials - Learn ComfyUI by Discipline',
+    'zh-CN': 'ComfyUI 教程 - 按创作领域学习'
+  },
+  'learning.metaDescription': {
+    en: 'Free hands-on ComfyUI tutorials with workflows you can open and run. Start with node graph basics, then go deeper into VFX, animation, and ad creative.',
+    'zh-CN':
+      '免费的 ComfyUI 实战教程，工作流可直接打开运行。从节点图基础开始，深入 VFX、动画与广告创意。'
+  },
   'learning.tagline': {
     en: 'Hands-on ComfyUI tutorials and workflows, by discipline.',
     'zh-CN': '按创作领域分类的 ComfyUI 实战教程与工作流。'
@@ -1803,8 +1820,12 @@ const translations = {
     en: 'ComfyUI Basics',
     'zh-CN': 'ComfyUI 基础教程'
   },
+  'learning.categories.basics.metaTitle': {
+    en: 'ComfyUI Basics - Tutorials for Beginners',
+    'zh-CN': 'ComfyUI 基础教程 - 新手入门'
+  },
   'learning.categories.basics.description': {
-    en: 'Beginner ComfyUI tutorials — learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
+    en: 'Beginner ComfyUI tutorials: learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
     'zh-CN':
       '面向初学者的 ComfyUI 教程——从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
   },
@@ -1812,8 +1833,12 @@ const translations = {
     en: 'VFX Tutorials',
     'zh-CN': 'VFX 教程'
   },
+  'learning.categories.vfx.metaTitle': {
+    en: 'ComfyUI VFX Tutorials - Shot Work You Can Run',
+    'zh-CN': 'ComfyUI VFX 教程 - 可运行的镜头处理工作流'
+  },
   'learning.categories.vfx.description': {
-    en: 'Hands-on ComfyUI VFX tutorials — cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
+    en: 'Hands-on ComfyUI VFX tutorials: cleanplates, sky replacement, de-aging, mattes, and shot work you can open and run yourself.',
     'zh-CN':
       '实战 ComfyUI VFX 教程——净板、天空替换、减龄、遮罩与镜头处理，均可亲自打开并运行。'
   },
@@ -1821,8 +1846,12 @@ const translations = {
     en: 'Animation Tutorials',
     'zh-CN': '动画教程'
   },
+  'learning.categories.animations.metaTitle': {
+    en: 'ComfyUI Animation Tutorials - Character Sheets to Compositing',
+    'zh-CN': 'ComfyUI 动画教程 - 从角色设定表到合成'
+  },
   'learning.categories.animations.description': {
-    en: 'Hands-on ComfyUI animation tutorials — character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
+    en: 'Hands-on ComfyUI animation tutorials: character sheets, keyframes, in-betweening, backgrounds, and compositing you can run yourself.',
     'zh-CN':
       '实战 ComfyUI 动画教程——角色设定表、关键帧、中间帧、背景与合成，均可亲自运行。'
   },
@@ -1830,8 +1859,12 @@ const translations = {
     en: 'Ad Creative Tutorials',
     'zh-CN': '广告创意教程'
   },
+  'learning.categories.ads.metaTitle': {
+    en: 'ComfyUI Ad Creative Tutorials - Moodboards to B-Roll',
+    'zh-CN': 'ComfyUI 广告创意教程 - 从情绪板到 B-Roll'
+  },
   'learning.categories.ads.description': {
-    en: 'Hands-on ComfyUI ad creative tutorials — moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
+    en: 'Hands-on ComfyUI ad creative tutorials: moodboards, storyboards, product photography, B-roll, and campaign assets you can run yourself.',
     'zh-CN':
       '实战 ComfyUI 广告创意教程——情绪板、故事板、产品摄影、B-Roll 与广告素材，均可亲自运行。'
   },
@@ -5986,8 +6019,8 @@ const translations = {
   // Seedance 2.5 SEO page (/seedance-2.5). zh-CN hand-translated; some body
   // copy carries placeholder intent from Figma and may change (June, CRE-145).
   'seedance.meta.title': {
-    en: 'Seedance 2.5 on Comfy — Cinematic AI Video Model',
-    'zh-CN': 'Comfy 上的 Seedance 2.5 — 电影级 AI 视频模型'
+    en: 'Seedance 2.5 on Comfy: Cinematic AI Video Model',
+    'zh-CN': 'Comfy 上的 Seedance 2.5：电影级 AI 视频模型'
   },
   'seedance.meta.description': {
     en: 'Run ByteDance Seedance 2.5 on Comfy: multi-shot cinematic video with native audio, from text or image. Draft free on Wan 2.2 and spend credits only on the final render.',
@@ -6313,8 +6346,8 @@ const translations = {
   'modelLaunch.tagPremium': { en: 'Premium', 'zh-CN': '高级' },
   // Flux 3 model page (/flux-3)
   'flux3.meta.title': {
-    en: 'Flux 3 on Comfy — Video With Native Audio',
-    'zh-CN': 'Comfy 上的 Flux 3 — 带原生音频的视频模型'
+    en: 'Flux 3 on Comfy: Video With Native Audio',
+    'zh-CN': 'Comfy 上的 Flux 3：带原生音频的视频模型'
   },
   'flux3.meta.description': {
     en: "Run Flux 3 on Comfy: Black Forest Labs' multimodal model generates video with native audio, up to 20 seconds in one generation, from text, image, video or keyframes.",
@@ -6413,8 +6446,8 @@ const translations = {
   'footer.flux3': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
   // Wan Animate 2 model page (/wan-animate-2)
   'wanAnimate2.meta.title': {
-    en: 'Wan Animate 2 on Comfy — Open-Source Character Animation',
-    'zh-CN': 'Comfy 上的 Wan Animate 2 — 开源角色动画模型'
+    en: 'Wan Animate 2 on Comfy: Open-Source Character Animation',
+    'zh-CN': 'Comfy 上的 Wan Animate 2：开源角色动画模型'
   },
   'wanAnimate2.meta.description': {
     en: 'Run Wan Animate 2 on Comfy: upload a reference image of your character plus a driving video, and it transfers that motion onto your character. Open source, on Comfy Cloud or your own hardware.',
@@ -6506,8 +6539,8 @@ const translations = {
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
   // Wan 3.0 model page (/wan-3.0)
   'wan3.meta.title': {
-    en: 'Wan 3.0 on Comfy — Text, Image and Reference to Video',
-    'zh-CN': 'Comfy 上的 Wan 3.0 — 文生、图生与参考生视频'
+    en: 'Wan 3.0 on Comfy: Text, Image and Reference to Video',
+    'zh-CN': 'Comfy 上的 Wan 3.0：文生、图生与参考生视频'
   },
   'wan3.meta.description': {
     en: 'Run Wan 3.0 on Comfy Cloud. Generate up to 30 seconds of video from a text prompt, an image, or video, image and audio references, with sound produced alongside the picture.',
@@ -6571,8 +6604,8 @@ const translations = {
   'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
   'minimax.meta.title': {
-    en: 'MiniMax H3 on Comfy — Open-Weight Video Model',
-    'zh-CN': 'Comfy 上的 MiniMax H3 — 开源权重视频模型'
+    en: 'MiniMax H3 on Comfy: Open-Weight Video Model',
+    'zh-CN': 'Comfy 上的 MiniMax H3：开源权重视频模型'
   },
   'minimax.meta.description': {
     en: 'Run MiniMax H3 on Comfy: Open Weights or Partner Nodes, multi-modal in/out, native stereo audio on every clip, up to 2K and 5-15s per generation. Free to start.',
@@ -6582,8 +6615,8 @@ const translations = {
   'minimax.breadcrumb.model': { en: 'MiniMax H3', 'zh-CN': 'MiniMax H3' },
   // MiniMax Music 3 SEO page (/minimax-music-3). zh-CN hand-translated.
   'minimaxMusic3.meta.title': {
-    en: 'MiniMax Music 3 on Comfy — Open-Weights Music Model',
-    'zh-CN': 'Comfy 上的 MiniMax Music 3 — 开源权重音乐模型'
+    en: 'MiniMax Music 3 on Comfy: Open-Weights Music Model',
+    'zh-CN': 'Comfy 上的 MiniMax Music 3：开源权重音乐模型'
   },
   'minimaxMusic3.meta.description': {
     en: 'Run MiniMax Music 3 on Comfy. Open weights for text to music, directed on the canvas alongside every other model, on Comfy Cloud or your own GPU.',

@@ -4,6 +4,8 @@ import {
   categoryChapters,
   filterByCategory,
   learningCategories,
+  learningMetaDescription,
+  learningMetaTitle,
   learningTutorials,
   recommendedFor,
   youtubeEmbedUrl
@@ -86,5 +88,33 @@ describe('recommendedFor', () => {
     expect(recommendedFor(firstVfx, learningTutorials.length).length).toBe(
       learningTutorials.length - filterByCategory('vfx').length
     )
+  })
+})
+
+describe('directory meta', () => {
+  const locales = ['en', 'zh-CN'] as const
+  const pages = [undefined, ...learningCategories]
+
+  it('names ComfyUI in every directory page title', () => {
+    for (const locale of locales) {
+      for (const category of pages) {
+        expect(learningMetaTitle(locale, category)).toContain('ComfyUI')
+      }
+    }
+  })
+
+  it('gives every directory page a meta description', () => {
+    for (const locale of locales) {
+      for (const category of pages) {
+        expect(learningMetaDescription(locale, category)).not.toBe('')
+      }
+    }
+  })
+
+  it('keeps en meta copy free of em dashes', () => {
+    for (const category of pages) {
+      expect(learningMetaTitle('en', category)).not.toContain('—')
+      expect(learningMetaDescription('en', category)).not.toContain('—')
+    }
   })
 })

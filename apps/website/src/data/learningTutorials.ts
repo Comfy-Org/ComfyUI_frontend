@@ -91,6 +91,15 @@ const categoryDescriptionKeys: Record<LearningCategory, TranslationKey> = {
   ads: 'learning.categories.ads.description'
 }
 
+/** Per-vertical document title, decoupled from the h1 so SERP copy can carry
+ * the queries searchers actually use without changing the page design. */
+const categoryMetaTitleKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics.metaTitle',
+  vfx: 'learning.categories.vfx.metaTitle',
+  animations: 'learning.categories.animations.metaTitle',
+  ads: 'learning.categories.ads.metaTitle'
+}
+
 /** Visible h1 for a directory page: per-vertical when filtered, else generic. */
 export const learningHeading = (
   locale: Locale,
@@ -109,7 +118,20 @@ export const learningDescription = (
 export const learningMetaTitle = (
   locale: Locale,
   category?: LearningCategory
-): string => `${learningHeading(locale, category)} - Comfy`
+): string =>
+  t(category ? categoryMetaTitleKeys[category] : 'learning.metaTitle', locale)
+
+/** Meta description for a directory page: the root page gets a fuller
+ * description than its one-line visible tagline; category pages reuse their
+ * lead-in. */
+export const learningMetaDescription = (
+  locale: Locale,
+  category?: LearningCategory
+): string =>
+  t(
+    category ? categoryDescriptionKeys[category] : 'learning.metaDescription',
+    locale
+  )
 
 const partnerNodesTag: TranslationKey = 'tags.partnerNodes'
 const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
