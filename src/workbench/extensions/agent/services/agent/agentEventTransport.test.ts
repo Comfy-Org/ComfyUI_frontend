@@ -111,6 +111,43 @@ function activeTab(
   }
 }
 
+function runApproval(askId = 'turn-1:call-1'): AgentChatEvent {
+  return {
+    type: 'agent_ask',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      kind: 'run_approval',
+      context: {
+        workflow_id: 'workflow-1',
+        workflow_name: 'Portrait workflow'
+      },
+      prompt: 'Run workflow “Portrait workflow”?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  } as unknown as AgentChatEvent
+}
+
+function askResolved(askId = 'turn-1:call-1'): AgentChatEvent {
+  return {
+    type: 'agent_ask_resolved',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      status: 'answered',
+      selected: ['run']
+    }
+  } as unknown as AgentChatEvent
+}
+
 const parts = (m: AssistantMessage) => m.parts
 const toolParts = (m: AssistantMessage): ToolPart[] =>
   m.parts.filter((p): p is ToolPart => p.type === 'tool')
@@ -345,6 +382,44 @@ describe('agentEventTransport text and tool parts', () => {
         durationMs: undefined
       }
     ])
+  })
+})
+
+describe('agentEventTransport run approval', () => {
+  it('places the approval card at the decision point in transcript order', () => {
+    const message = drive([
+      delta('before'),
+      runApproval(),
+      delta('after the decision')
+    ])
+
+    expect(message.parts).toEqual([
+      { type: 'text', text: 'before', state: 'done' },
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow'
+      },
+      { type: 'text', text: 'after the decision', state: 'streaming' }
+    ])
+  })
+
+  it('removes only the matching approval when the ask resolves', () => {
+    const message = drive([
+      runApproval('ask-1'),
+      runApproval('ask-2'),
+      askResolved('ask-1')
+    ])
+
+    expect(
+      message.parts.flatMap((part) =>
+        (part as { type: string }).type === 'runApproval'
+          ? [(part as { askId: string }).askId]
+          : []
+      )
+    ).toEqual(['ask-2'])
+    expect(message.streaming).toBe(true)
   })
 })
 

@@ -193,16 +193,88 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(false)
   })
 
-  it('exposes exactly the five agent event types', () => {
+  it('exposes the Agent event types, including the ask lifecycle', () => {
     expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
       [
         'agent_active_tab',
+        'agent_ask',
+        'agent_ask_resolved',
         'agent_message_delta',
         'agent_message_done',
         'agent_thinking',
         'agent_tool_call'
       ].sort()
     )
+  })
+
+  it('parses the additive run-approval ask and resolution contract', () => {
+    const pending = zAgentWsEvent.parse({
+      type: 'agent_ask',
+      data: {
+        thread_id: 'th-1',
+        message_id: 'message-1',
+        ask_id: 'turn-1:call-1',
+        kind: 'run_approval',
+        context: {
+          workflow_id: 'workflow-1',
+          workflow_name: 'Portrait workflow'
+        },
+        prompt: 'Run workflow “Portrait workflow”?',
+        options: [
+          { id: 'run', label: 'Run' },
+          { id: 'cancel', label: 'Cancel' }
+        ],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+    })
+    expect(pending.type).toBe('agent_ask')
+
+    const resolved = zAgentWsEvent.parse({
+      type: 'agent_ask_resolved',
+      data: {
+        thread_id: 'th-1',
+        message_id: 'message-1',
+        ask_id: 'turn-1:call-1',
+        status: 'answered',
+        selected: ['run']
+      }
+    })
+    expect(resolved.type).toBe('agent_ask_resolved')
+  })
+
+  it('keeps a run-approval pending_ask on a hydrated assistant message', () => {
+    const parsed = zAgentMessage.parse({
+      id: 'message-1',
+      thread_id: 'th-1',
+      seq: 2,
+      role: 'assistant',
+      status: 'streaming',
+      turn_id: 'turn-1',
+      pending_ask: {
+        message_id: 'message-1',
+        ask_id: 'turn-1:call-1',
+        kind: 'run_approval',
+        context: {
+          workflow_id: 'workflow-1',
+          workflow_name: 'Portrait workflow'
+        },
+        prompt: 'Run workflow “Portrait workflow”?',
+        options: [
+          { id: 'run', label: 'Run' },
+          { id: 'cancel', label: 'Cancel' }
+        ],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+    })
+
+    expect(parsed.pending_ask).toMatchObject({
+      kind: 'run_approval',
+      ask_id: 'turn-1:call-1'
+    })
   })
 
   it('parses agent_active_tab with an optional stable locator and rejects a missing workflow_id', () => {

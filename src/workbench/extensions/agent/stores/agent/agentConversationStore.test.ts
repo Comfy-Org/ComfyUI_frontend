@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
@@ -36,6 +36,17 @@ const done = (id: string): AgentChatEvent =>
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th', usage: null }
   })
+const askResolved = (id: string, askId: string): AgentChatEvent =>
+  ({
+    type: 'agent_ask_resolved',
+    data: {
+      message_id: id,
+      thread_id: 'th',
+      ask_id: askId,
+      status: 'answered',
+      selected: ['run']
+    }
+  }) as unknown as AgentChatEvent
 
 const T1 = 't1' as TurnId
 const T2 = 't2' as TurnId
@@ -213,6 +224,64 @@ describe('useAgentConversationStore', () => {
       name: 'add_node',
       ok: true
     })
+  })
+
+  it('restores a pending run approval as the live turn and continues after it resolves', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-1', 'Run it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: {
+            message_id: 'assistant-message-1',
+            ask_id: 'turn-1:call-1',
+            kind: 'run_approval',
+            context: {
+              workflow_id: 'workflow-1',
+              workflow_name: 'Portrait workflow'
+            },
+            prompt: 'Run workflow “Portrait workflow”?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])[0]
+    ])
+
+    expect(store.activeTurnId).toBe('assistant-message-1')
+    expect(store.isStreaming).toBe(true)
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'runApproval',
+      askId: 'turn-1:call-1',
+      workflowId: 'workflow-1',
+      workflowName: 'Portrait workflow'
+    })
+
+    store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
+    store.ingest(delta('assistant-message-1', 'Running now.'))
+
+    expect(
+      store.messages[0].parts.some(
+        (part) => (part as { type: string }).type === 'runApproval'
+      )
+    ).toBe(false)
+    expect(partTexts(store)).toContain('Running now.')
+    expect(store.isStreaming).toBe(true)
+
+    store.ingest(done('assistant-message-1'))
+    expect(store.isStreaming).toBe(false)
   })
 
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
