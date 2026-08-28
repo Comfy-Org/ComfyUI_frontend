@@ -245,43 +245,12 @@
       >
         {{
           authenticationError ||
-          (canRetryAuthentication
-            ? $t('billingOperation.authenticationFailedDetail')
-            : $t('billingOperation.authenticationManagerRequired'))
+          $t('billingOperation.authenticationFailedDetail')
         }}
       </div>
 
       <Button
-        v-if="
-          embeddedCheckoutEnabled &&
-          (authenticationState === 'failed_retryable' ||
-            authenticationState === 'requires_action') &&
-          canRetryAuthentication
-        "
-        variant="inverted"
-        size="lg"
-        class="w-full rounded-lg"
-        :loading="isAuthenticating"
-        @click="$emit('retryAuthentication')"
-      >
-        {{
-          $t(
-            authenticationState === 'failed_retryable'
-              ? 'billingOperation.retryVerification'
-              : 'subscription.preview.completeVerification'
-          )
-        }}
-      </Button>
-
-      <Button
-        v-if="
-          actionUrl &&
-          !(
-            (authenticationState === 'failed_retryable' ||
-              authenticationState === 'requires_action') &&
-            canRetryAuthentication
-          )
-        "
+        v-if="actionUrl"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -394,8 +363,6 @@ interface Props {
   actionUrl?: string | null
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
-  canRetryAuthentication?: boolean
-  isAuthenticating?: boolean
   reconciliationOperationId?: string | null
   usePaymentElement?: boolean
   /** Saved payment methods; when present the capture form is skipped and the
@@ -418,8 +385,6 @@ const {
   actionUrl = null,
   authenticationState = null,
   authenticationError = null,
-  canRetryAuthentication = false,
-  isAuthenticating = false,
   reconciliationOperationId = null,
   usePaymentElement = false,
   savedMethods = null,
@@ -435,7 +400,6 @@ const emit = defineEmits<{
   changePaymentMethod: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
-  retryAuthentication: []
 }>()
 
 const { locale, n, t } = useI18n()

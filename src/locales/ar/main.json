@@ -460,7 +460,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "تعذر إكمال التحقق من الدفع. يُرجى المحاولة مرة أخرى.",
-    "authenticationManagerRequired": "يتطلب التحقق من الدفع اهتمام مدير فواتير مساحة العمل.",
     "authenticationUnavailable": "مصادقة الدفع الآمن غير متاحة. يُرجى تحديث الصفحة والمحاولة مرة أخرى.",
     "cancelFailed": "فشل في إلغاء الاشتراك",
     "cancelTimeout": "انتهت مهلة إلغاء الاشتراك",
@@ -471,7 +470,6 @@
     "processingErrorDetail": "تعذرت معالجة دفعتك. حاول مرة أخرى أو استخدم طريقة دفع أخرى.",
     "reconciliationDetail": "تم استلام دفعتك، لكن تعذر علينا إكمال تحديث مساحة عملك. تواصل مع الدعم وأدرج معرّف العملية هذا:",
     "reconciliationTitle": "تم استلام الدفعة — التأكيد قيد الانتظار",
-    "retryVerification": "إعادة محاولة التحقق",
     "subscriptionActionRequired": "يرجى التحقق من الدفع لإكمال إعداد مساحة العمل الخاصة بك",
     "subscriptionFailed": "فشل تحديث الاشتراك",
     "subscriptionFailedDetail": "تعذر تحديث اشتراكك. يرجى المحاولة مرة أخرى.",

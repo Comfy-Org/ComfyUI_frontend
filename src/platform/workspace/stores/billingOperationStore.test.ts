@@ -1074,7 +1074,7 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-3ds')).toMatchObject({
         status: 'pending',
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         isAuthenticating: false,
         errorMessage: 'Stripe.js blocked'
       })
@@ -1106,7 +1106,7 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-3ds')).toMatchObject({
         status: 'pending',
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         isAuthenticating: false,
         errorMessage: 'Challenge was closed'
       })
@@ -1160,12 +1160,41 @@ describe('billingOperationStore', () => {
       expect(mockHandleNextAction).toHaveBeenCalledOnce()
     })
 
-    it('retries explicitly and resumes polling after verification succeeds', async () => {
+    it('reports a resume that returns an unmoved intent as failed, not processing', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+      mockHandleNextAction.mockResolvedValue({
+        paymentIntent: { status: 'requires_payment_method' }
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockHandleNextAction).toHaveBeenCalledOnce()
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        status: 'pending',
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: false,
+        isAuthenticating: false,
+        errorMessage: 'billingOperation.authenticationFailedDetail'
+      })
+    })
+
+    it('resumes a live challenge explicitly and polls on after verification succeeds', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({
           id: 'op-3ds',
           status: 'pending',
-          authentication_state: 'failed_retryable',
+          authentication_state: 'requires_action',
           payment_intent_client_secret: 'pi_secret_current',
           started_at: new Date().toISOString()
         })
@@ -1189,7 +1218,7 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(store.getOperation('op-3ds')?.authenticationState).toBe(
-        'failed_retryable'
+        'requires_action'
       )
       await expect(store.retryPaymentAuthentication('op-3ds')).resolves.toBe(
         true
@@ -1210,7 +1239,7 @@ describe('billingOperationStore', () => {
       )
     })
 
-    it('shows a safe declined-card detail while preserving authentication retry', async () => {
+    it('shows a safe declined-card detail without offering to resume the challenge', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-declined',
         status: 'pending',
@@ -1230,20 +1259,17 @@ describe('billingOperationStore', () => {
         opId: 'op-declined',
         status: 'pending',
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         errorMessage: 'billingOperation.paymentDeclinedDetail'
       })
-      expect(mockHandleNextAction).not.toHaveBeenCalled()
 
       await expect(
         store.retryPaymentAuthentication('op-declined')
-      ).resolves.toBe(true)
-      expect(mockHandleNextAction).toHaveBeenCalledWith({
-        clientSecret: 'pi_secret_current'
-      })
+      ).resolves.toBe(false)
+      expect(mockHandleNextAction).not.toHaveBeenCalled()
     })
 
-    it('keeps authentication declines actionable without retrying automatically', async () => {
+    it('keeps authentication declines visible without retrying automatically', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-authentication-failed',
         status: 'pending',
@@ -1261,17 +1287,17 @@ describe('billingOperationStore', () => {
 
       expect(store.subscriptionActionOperation).toMatchObject({
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         errorMessage: 'billingOperation.authenticationFailedDetail'
       })
       expect(mockHandleNextAction).not.toHaveBeenCalled()
     })
 
-    it('remains retryable after retry failure and never relaunches Stripe automatically', async () => {
+    it('stops offering the challenge once resuming it fails, and never relaunches Stripe automatically', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',
         status: 'pending',
-        authentication_state: 'failed_retryable',
+        authentication_state: 'requires_action',
         payment_intent_client_secret: 'pi_secret_current',
         started_at: new Date().toISOString()
       })
@@ -1288,14 +1314,17 @@ describe('billingOperationStore', () => {
 
       expect(store.getOperation('op-3ds')).toMatchObject({
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         errorMessage: 'Verification failed again'
       })
+      await expect(store.retryPaymentAuthentication('op-3ds')).resolves.toBe(
+        false
+      )
       await vi.advanceTimersByTimeAsync(60_000)
       expect(mockHandleNextAction).toHaveBeenCalledOnce()
       expect(store.getOperation('op-3ds')).toMatchObject({
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         errorMessage: 'Verification failed again'
       })
     })
@@ -1316,7 +1345,7 @@ describe('billingOperationStore', () => {
       expect(store.subscriptionActionOperation).toMatchObject({
         opId: 'op-recovered',
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true
+        canRetryAuthentication: false
       })
       expect(mockHandleNextAction).not.toHaveBeenCalled()
     })

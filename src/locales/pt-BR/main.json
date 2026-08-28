@@ -460,7 +460,6 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Não foi possível concluir a verificação do pagamento. Tente novamente.",
-    "authenticationManagerRequired": "A verificação do pagamento precisa da atenção de um gerente de faturamento do espaço de trabalho.",
     "authenticationUnavailable": "A autenticação de pagamento seguro não está disponível. Atualize a página e tente novamente.",
     "cancelFailed": "Falha ao cancelar a assinatura",
     "cancelTimeout": "Tempo esgotado ao cancelar a assinatura",
@@ -471,7 +470,6 @@
     "processingErrorDetail": "Não foi possível processar seu pagamento. Tente novamente ou use outro método de pagamento.",
     "reconciliationDetail": "Seu pagamento foi recebido, mas não foi possível concluir a atualização do seu espaço de trabalho. Entre em contato com o suporte e inclua este ID da operação:",
     "reconciliationTitle": "Pagamento recebido — confirmação pendente",
-    "retryVerification": "Tentar verificar novamente",
     "subscriptionActionRequired": "Verifique seu pagamento para finalizar a configuração do seu workspace",
     "subscriptionFailed": "Falha ao atualizar a assinatura",
     "subscriptionFailedDetail": "Não foi possível atualizar sua assinatura. Por favor, tente novamente.",

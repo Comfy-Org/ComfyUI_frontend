@@ -208,15 +208,15 @@
     <div class="mt-auto flex flex-col gap-8 p-8">
       <div v-if="step === 'verifying'">
         <Button
-          v-if="topupCanRetryAuthentication"
+          v-if="topupCanResumeAuthentication"
           variant="primary"
           size="lg"
           class="h-10 w-full justify-center"
           :loading="topupIsAuthenticating"
           :disabled="!canTopUp"
-          @click="retryTopupAuthentication"
+          @click="resumeTopupAuthentication"
         >
-          {{ $t('billingOperation.retryVerification') }}
+          {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
           v-else-if="!topupReconciliationOperationId"
@@ -321,7 +321,7 @@ const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
   () => topupOperation.value?.errorMessage ?? null
 )
-const topupCanRetryAuthentication = computed(
+const topupCanResumeAuthentication = computed(
   () => topupOperation.value?.canRetryAuthentication ?? false
 )
 const topupIsAuthenticating = computed(
@@ -397,13 +397,7 @@ watch([isPolling, topupOperation], ([polling, operation]) => {
     step.value = 'amount'
     return
   }
-  if (
-    operation &&
-    canTopUp.value &&
-    (operation.actionUrl ||
-      operation.canRetryAuthentication ||
-      operation.status === 'reconciliation_needed')
-  ) {
+  if (operation && canTopUp.value) {
     step.value = 'verifying'
   }
 })
@@ -462,7 +456,7 @@ function openTopupVerification() {
   window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
 }
 
-function retryTopupAuthentication() {
+function resumeTopupAuthentication() {
   const operation = topupOperation.value
   if (!operation || !canTopUp.value) return
   void billingOperationStore.retryPaymentAuthentication(operation.opId)

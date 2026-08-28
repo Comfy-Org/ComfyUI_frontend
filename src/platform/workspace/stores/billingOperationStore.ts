@@ -39,6 +39,13 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
+// Statuses that mean the resumed challenge handed the payment on to Stripe.
+// Anything else leaves the intent where it started, awaiting a fresh attempt.
+const RESUMED_INTENT_STATUSES: ReadonlySet<string> = new Set([
+  'processing',
+  'succeeded',
+  'requires_capture'
+])
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus =
@@ -156,7 +163,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
         ((op.status === 'pending' &&
-          (op.actionUrl !== null || op.canRetryAuthentication)) ||
+          (op.actionUrl !== null ||
+            op.authenticationState === 'requires_action' ||
+            op.authenticationState === 'failed_retryable')) ||
           op.status === 'reconciliation_needed')
     )
   )
@@ -415,10 +424,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (clientSecret) paymentIntentClientSecrets.set(opId, clientSecret)
     const secret = clientSecret ?? knownSecret
     // requires_action after a failed browser attempt is the same challenge the
-    // customer just abandoned — the intent has not moved. Keeping the retry
-    // presentation stops the failure alert and button label flapping between
-    // polls; a state that actually advanced (processing, succeeded, failed)
-    // still flows through and resolves the UI.
+    // customer just abandoned — the intent has not moved. Keeping the failure
+    // presentation stops the alert flapping between polls; a state that
+    // actually advanced (processing, succeeded, failed) still flows through and
+    // resolves the UI.
     //
     // Likewise after a browser attempt that SUCCEEDED: the server can keep
     // reporting requires_action for the same intent until it observes the
@@ -443,9 +452,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperation(opId, {
       authenticationState: displayState,
       canRetryAuthentication:
-        Boolean(secret) &&
-        (displayState === 'requires_action' ||
-          displayState === 'failed_retryable'),
+        Boolean(secret) && displayState === 'requires_action',
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || state === 'requires_action',
       ...(declineDetail && { errorMessage: declineDetail })
@@ -478,7 +485,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       !operation ||
       operation.status !== 'pending' ||
       !paymentIntentClientSecrets.has(opId) ||
-      !operation.canRetryAuthentication
+      operation.authenticationState !== 'requires_action'
     ) {
       return false
     }
@@ -501,19 +508,28 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
       const stripe = publishableKey ? await loadStripe(publishableKey) : null
       if (!stripe) {
-        setAuthenticationRetry(
+        setAuthenticationFailed(
           opId,
-          t('billingOperation.authenticationUnavailable'),
-          false
+          t('billingOperation.authenticationUnavailable')
         )
         return false
       }
-      const result = await stripe.handleNextAction({ clientSecret })
-      if (result.error) {
-        setAuthenticationRetry(
+      const { error, paymentIntent } = await stripe.handleNextAction({
+        clientSecret
+      })
+      if (error) {
+        setAuthenticationFailed(
           opId,
-          result.error.message ||
-            t('billingOperation.authenticationFailedDetail')
+          error.message || t('billingOperation.authenticationFailedDetail')
+        )
+        return false
+      }
+      // With no action left to resume the call succeeds and changes nothing, so
+      // an intent still sitting on its pre-challenge status has not paid.
+      if (paymentIntent && !RESUMED_INTENT_STATUSES.has(paymentIntent.status)) {
+        setAuthenticationFailed(
+          opId,
+          t('billingOperation.authenticationFailedDetail')
         )
         return false
       }
@@ -528,7 +544,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       intervals.set(opId, INITIAL_INTERVAL_MS)
       return true
     } catch (error) {
-      setAuthenticationRetry(
+      setAuthenticationFailed(
         opId,
         error instanceof Error
           ? error.message
@@ -538,25 +554,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
-  function setAuthenticationRetry(
-    opId: string,
-    errorMessage: string,
-    canRetry = true
-  ) {
+  function setAuthenticationFailed(opId: string, errorMessage: string) {
     const operation = operations.value.get(opId)
     if (!operation) return
     updateOperation(opId, {
       authenticationState: 'failed_retryable',
       isAuthenticating: false,
-      canRetryAuthentication: canRetry && paymentIntentClientSecrets.has(opId),
+      canRetryAuthentication: false,
       errorMessage
     })
     // A browser-step error is not a verdict on the payment: the challenge may
     // have completed server-side despite the client error (observed: the
     // intent succeeded seconds after handleNextAction reported failure, and a
     // paused UI stayed on "failed" for a live subscription). Keep polling so
-    // the server's state resolves the presentation; the retry button remains
-    // the manual path while it is genuinely parked.
+    // the server's state resolves the presentation.
     scheduleNextPoll(opId)
   }
 

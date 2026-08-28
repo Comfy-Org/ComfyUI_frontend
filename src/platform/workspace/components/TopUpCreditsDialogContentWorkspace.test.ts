@@ -449,27 +449,45 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('retries failed payment authentication', async () => {
+  it('resumes a live challenge in page', async () => {
     renderDialog()
 
     setIsAddingCredits(true)
     setTopupActionOperation({
-      opId: 'op-retry',
+      opId: 'op-resume',
+      status: 'pending',
+      actionUrl: null,
+      authenticationState: 'requires_action',
+      canRetryAuthentication: true
+    })
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Complete verification' })
+    )
+    expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith('op-resume')
+  })
+
+  it('reports a failed challenge without offering to resume it', async () => {
+    renderDialog()
+
+    setIsAddingCredits(true)
+    setTopupActionOperation({
+      opId: 'op-failed',
       status: 'pending',
       actionUrl: null,
       authenticationState: 'failed_retryable',
-      errorMessage: 'Your bank rejected the verification.',
-      canRetryAuthentication: true
+      errorMessage: 'Your bank rejected the verification.'
     })
     await nextTick()
 
     expect(
       screen.getByText('Your bank rejected the verification.')
     ).toBeInTheDocument()
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Retry verification' })
-    )
-    expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith('op-retry')
+    expect(
+      screen.getByRole('button', { name: 'Complete verification' })
+    ).toBeDisabled()
+    expect(mockRetryPaymentAuthentication).not.toHaveBeenCalled()
   })
 
   it('keeps a top-up locked when reconciliation needs support', () => {
