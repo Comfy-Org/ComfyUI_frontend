@@ -7,16 +7,22 @@ const config: KnipConfig = {
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
+        'vitest.matrix.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
-        'src/storybook/mocks/**/*.ts'
+        'src/storybook/mocks/**/*.ts',
+        'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/vitestCleanup.ts'
       ],
-      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
-    },
-    'apps/desktop-ui': {
-      entry: ['src/i18n.ts'],
-      project: ['src/**/*.{js,ts,vue}']
+      project: [
+        '**/*.{js,ts,vue}',
+        '*.{js,ts,mts}',
+        '!.claude/**',
+        '!worktrees/**',
+        '!src/__ecs_matrix__/**'
+      ],
+      ignore: ['scripts/registry-census/detection-proof/**']
     },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
@@ -35,8 +41,15 @@ const config: KnipConfig = {
     },
     'apps/website': {
       entry: ['src/scripts/**/*.ts']
+    },
+    'tools/test-recorder': {
+      project: ['src/**/*.ts']
     }
   },
+  ignoreBinaries: [
+    // Optional host tool the recorder probes for and degrades without
+    'xcode-select'
+  ],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json'

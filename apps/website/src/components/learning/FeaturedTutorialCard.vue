@@ -56,7 +56,7 @@ const { tutorial, locale = 'en' } = defineProps<{
           size="default"
           class="ps-0"
         >
-          {{ t('cta.tryWorkflow', locale) }}
+          {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', locale) }}
         </ButtonPill>
       </div>
     </div>
