@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, ref, shallowRef, toValue } from 'vue'
 import type { Ref } from 'vue'
 
-import type { PagedList } from './pagedList'
-import { createSharedPagedList, usePreemptableQueue } from './pagedList'
+import type { PagedList, SharedPagedListState } from './pagedList'
+import { getPagedList, usePreemptableQueue } from './pagedList'
 
 function mockPagedList<T>(initial: T[] = [], genNew?: () => T): PagedList<T> {
   const items: Ref<T[]> = shallowRef(initial)
@@ -19,12 +19,26 @@ function mockPagedList<T>(initial: T[] = [], genNew?: () => T): PagedList<T> {
   }
 }
 
-describe('createSharedPagedList', () => {
+function makeShared<TParams, TItem>(
+  factory: (params: TParams) => PagedList<TItem>,
+  paramKeyFn: (params: TParams) => string,
+  itemKeyFn: (item: TItem) => unknown = (item) => item
+) {
+  const state: SharedPagedListState<TParams, TItem> = {
+    cache: new Map(),
+    factory,
+    paramKeyFn,
+    itemKeyFn
+  }
+  return (params: TParams) => getPagedList(params, state)
+}
+
+describe('getPagedList', () => {
   it('same params share reactive state', async () => {
-    const useShared = createSharedPagedList(
+    const useShared = makeShared(
       () => mockPagedList<string>([], () => 'test'),
       (p: string) => p
-    ).constructor
+    )
     const scope = effectScope()
     await scope.run(async () => {
       const a = useShared('key')
@@ -40,13 +54,13 @@ describe('createSharedPagedList', () => {
 
   it('cache entry survives partial dispose and cleans up when all scopes end', () => {
     let createCount = 0
-    const useShared = createSharedPagedList(
+    const useShared = makeShared(
       () => {
         createCount++
         return mockPagedList()
       },
       (p: string) => p
-    ).constructor
+    )
     const scope1 = effectScope()
     const scope2 = effectScope()
 
@@ -81,14 +95,14 @@ describe('createSharedPagedList', () => {
     const list1 = mockPagedList<{ id: string }>()
     const list2 = mockPagedList<{ id: string }>()
     let callCount = 0
-    const useShared = createSharedPagedList(
+    const useShared = makeShared(
       () => {
         callCount++
         return callCount === 1 ? list1 : list2
       },
       (p: string) => p,
       (item) => item.id
-    ).constructor
+    )
     const scope = effectScope()
     const stale = ['x']
     await scope.run(async () => {
@@ -106,21 +120,21 @@ describe('createSharedPagedList', () => {
     const list2 = mockPagedList<{ id: string }>([{ id: 'shared' }, { id: 'b' }])
     const list3 = mockPagedList<{ id: string }>([{ id: 'c' }])
     let callCount = 0
-    const useShared = createSharedPagedList(
+    const useShared = makeShared(
       () => {
         callCount++
         return [list1, list2, list3][callCount - 1]
       },
       (p: string) => p,
       (item) => item.id
-    ).constructor
+    )
     const scope = effectScope()
     await scope.run(async () => {
       const outputs = useShared('outputs')
       useShared('outputs,temp')
       useShared('inputs')
       await outputs.invalidate()
-      expect(list2.invalidate).toHaveBeenCalledWith()
+      expect(list2.invalidate).toHaveBeenCalledWith(undefined)
       expect(list3.invalidate).not.toHaveBeenCalled()
     })
     scope.stop()
