@@ -75,9 +75,10 @@ export const minimaxLicensePage: ModelLaunchPage = {
       }
     ]
   },
-  // The public rate card. Professional's list price and both tiers' terms are
-  // the customer-facing halves of Schedule 3; per-video-second rates, bundle
-  // volumes, and the Enterprise minimum stay in sales conversations.
+  // The public rate card. Professional's list price, the Enterprise annual
+  // floor, and both tiers' terms are the customer-facing halves of Schedule 3;
+  // per-video-second rates, bundle volumes, and overage mechanics stay in
+  // sales conversations.
   rateCard: {
     headingKey: 'minimaxLicense.rateCard.heading',
     subtitleKey: 'minimaxLicense.rateCard.subtitle',
@@ -91,8 +92,11 @@ export const minimaxLicensePage: ModelLaunchPage = {
       {
         id: 'enterprise',
         name: { en: 'Enterprise', 'zh-CN': '企业版' },
-        price: { en: 'Custom', 'zh-CN': '定制' },
-        priceNote: { en: 'annual agreement', 'zh-CN': '年度协议' }
+        price: { en: 'From $240,000', 'zh-CN': '$240,000 起' },
+        priceNote: {
+          en: 'per year, annual agreement',
+          'zh-CN': '每年，年度协议'
+        }
       }
     ],
     rows: [
@@ -226,9 +230,9 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '商业许可多少钱？'
         },
         answer: {
-          en: 'Professional is $5,000 a month on a monthly term, with up to 10 licensed users on distilled open-weight model versions. Enterprise is an annual agreement with custom pricing sized to your generation volume, no user cap, and every model version, undistilled weights included. Request a license and we will quote it for your team.',
+          en: 'Professional is $5,000 a month on a monthly term, with up to 10 licensed users on distilled open-weight model versions. Enterprise starts at $240,000 a year on an annual agreement, with pricing sized to your generation volume, no user cap, and every model version, undistilled weights included. Request a license and we will quote it for your team.',
           'zh-CN':
-            '专业版为每月 5,000 美元，按月订阅，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版为年度协议，按生成量定制定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本。申请许可，我们会为你的团队提供报价。'
+            '专业版为每月 5,000 美元，按月订阅，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版为年度协议，每年 240,000 美元起，按生成量定制定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本。申请许可，我们会为你的团队提供报价。'
         }
       },
       {
