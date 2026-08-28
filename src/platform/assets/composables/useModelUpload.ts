@@ -9,16 +9,18 @@ import type {
 } from '@/platform/assets/composables/useUploadModelWizard'
 import UploadModelUpgradeModal from '@/platform/assets/components/UploadModelUpgradeModal.vue'
 import UploadModelUpgradeModalHeader from '@/platform/assets/components/UploadModelUpgradeModalHeader.vue'
+import { HUG_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useDialogStore } from '@/stores/dialogStore'
 
 type UploadModelContextResolver = () => UploadModelDialogContext | undefined
 
 // Contents bring their own width and padding — shrink-wrap the chrome and
 // zero the section padding (the PrimeVue `pt` overrides this replaces).
+// The shared hug class carries the workspace-inset width cap.
 const uploadDialogComponentProps = {
   renderer: 'reka',
   size: 'lg',
-  contentClass: 'w-fit max-w-[calc(100vw-1rem)]',
+  contentClass: HUG_CONTENT_CLASS,
   headerClass: 'py-0 pl-0',
   bodyClass: 'min-h-0 overflow-hidden p-0'
 } as const

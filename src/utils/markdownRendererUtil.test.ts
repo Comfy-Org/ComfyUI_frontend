@@ -84,6 +84,34 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('href="https://example.com/a"')
     })
 
+    it('does not double-encode a URL that already carries entities', () => {
+      // Extension-visible regression: full entity escaping turned an
+      // already-encoded &amp; into &amp;amp; and broke the URL.
+      const html = renderMarkdownToHtml(
+        '[report](https://example.com/view?a=1&amp;b=2)'
+      )
+
+      expect(html).toContain('href="https://example.com/view?a=1&amp;b=2"')
+      expect(html).not.toContain('&amp;amp;')
+    })
+
+    it('still escapes a quote inside an href attribute', () => {
+      const html = renderMarkdownToHtml(
+        '[x](https://example.com/a%22onmouseover=alert(1))'
+      )
+
+      expect(html).not.toMatch(/href="[^"]*" onmouseover/)
+    })
+
+    it('quote-escapes an image src without touching its ampersands', () => {
+      const html = renderMarkdownToHtml(
+        '![p](https://example.com/img?w=1&amp;h=2)'
+      )
+
+      expect(html).toContain('src="https://example.com/img?w=1&amp;h=2"')
+      expect(html).not.toContain('&amp;amp;')
+    })
+
     it('leaves absolute raw-HTML media srcs verbatim', () => {
       const html = renderMarkdownToHtml(
         '<video src="https://cloud.comfy.org/api/view?f=a.mp4" controls></video>',
