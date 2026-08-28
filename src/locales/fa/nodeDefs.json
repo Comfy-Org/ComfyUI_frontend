@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "یک ویدیوی موجود را با PixVerse ادامه می‌دهد، با امکان افزودن صدای بومی. منبع باید کمتر از ۴۰ ثانیه و حداکثر ۱۹۲۰px در هر ضلع باشد. خروجی وضوح منبع را حفظ می‌کند؛ بنابراین کیفیت تعیین می‌کند ادامه با چه کیفیتی رندر شود، نه اندازهٔ فریم.",
+    "display_name": "PixVerse V6 گسترش ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "ویدیویی که باید ادامه یابد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "ویدیویی تولید می‌کند که با PixVerse از فریم اول به فریم آخر گذار می‌کند، با امکان افزودن صدای بومی. خروجی نسبت تصویر فریم اول را حفظ می‌کند.",
+    "display_name": "PixVerse V6 فریم اول-آخر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "با PixVerse از سوژه‌ها، پس‌زمینه‌ها و ویدیوهای مرجع یک ویدیو می‌سازد. با نام‌بردن از یک مرجع در prompt، آن را در صحنه قرار دهید؛ برای مثال، '{'@'}Subject1 از میان {'@'}Background1 راه می‌رود'. اتصال یک ویدیوی مرجع، مدل را به حالت Omni تغییر می‌دهد که در آن طول خروجی با طولانی‌ترین ویدیوی مرجع برابر است.",
+    "display_name": "PixVerse V6 ترکیب (مرجع به ویدیو)",
+    "inputs": {
+      "backgrounds": {
+        "name": "backgrounds",
+        "tooltip": "تصاویر مرجع صحنه‌ای که سوژه‌ها در آن قرار می‌گیرند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "مدت (ثانیه)"
+      },
+      "model_generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model_negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_style": {
+        "name": "سبک"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "تصاویر مرجع سوژه‌هایی که باید در صحنه قرار گیرند."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "ویدیوهای مرجع برای اقتباس سوژه‌ها، حرکت، کادربندی یا سبک. حداکثر ۲ مورد و در مجموع حداکثر ۱۵ ثانیه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "یک تصویر را با PixVerse متحرک می‌کند و در صورت تمایل، صدای بومی نیز اضافه می‌کند. خروجی نسبت تصویرِ تصویر ورودی را حفظ می‌کند.",
+    "display_name": "PixVerse V6 تصویر به ویدئو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_duration_seconds": {
+        "name": "مدت (ثانیه)"
+      },
+      "model_generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model_multi_clip": {
+        "name": "چند کلیپ"
+      },
+      "model_negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_style": {
+        "name": "سبک"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "با PixVerse از یک پرامپت متنی و در صورت تمایل با صدای بومی، ویدئو تولید می‌کند.",
+    "display_name": "PixVerse V6 متن به ویدئو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "تنظیمات مدل و تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_duration_seconds": {
+        "name": "مدت (ثانیه)"
+      },
+      "model_generate_audio": {
+        "name": "تولید صدا"
+      },
+      "model_multi_clip": {
+        "name": "چند کلیپ"
+      },
+      "model_negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_style": {
+        "name": "سبک"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "PolyexponentialScheduler",
     "inputs": {
@@ -17540,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "انتخاب سبک realistic_image و زیرسبک اختیاری.",
+    "description": "سبک و زیرسبک logo_raster را انتخاب کنید.",
     "display_name": "سبک Recraft - رستر لوگو",
     "inputs": {
       "substyle": {
@@ -17651,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "یک سبک قابل‌استفاده‌مجدد Recraft V4 از ۱ تا ۱۰ تصویر مرجع ایجاد کنید. style_id بازگردانده‌شده با همهٔ مدل‌های Recraft V4 و V4.1 با نوع خروجی یکسان کار می‌کند. مجموع حجم همهٔ تصاویر به ۱۰ MB محدود است.",
+    "display_name": "ایجاد سبک Recraft V4",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "تصاویر مرجع تعیین‌کنندهٔ سبک. مراجع مشابه تطابق را دقیق‌تر و مراجع متنوع دامنهٔ آن را گسترده‌تر می‌کنند."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نوع خروجی که سبک برای آن ایجاد می‌شود: recraftv4_styles برای تصاویر رستری و recraftv4_styles_vector برای SVG."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "تولید تصویر با استفاده از مدل‌های Recraft V4 یا V4 Pro.",
     "display_name": "تبدیل متن به تصویر Recraft V4",
@@ -17660,7 +17912,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "مدل مورد استفاده برای تولید."
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
       },
       "model_size": {
         "name": "اندازه"
@@ -17684,10 +17936,26 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID یک سبک Recraft V4 برای اعمال کردن؛ برای مثال از نود Recraft V4 Create Style یا خروجی style_id اجرای قبلی. با style_references قابل ترکیب نیست."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "میزان پیروی دقیق از سبک: precise آن را با جزئیات بازتولید می‌کند و flexible ظاهر کلی را تطبیق می‌دهد. فقط هنگامی استفاده می‌شود که سبکی ارائه شده باشد."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "تصاویر مرجع برای ایجاد سبک به‌صورت آنی که هزینهٔ آن علاوه بر تولید محاسبه می‌شود. سبک ایجادشده برای استفادهٔ مجدد به‌صورت style_id بازگردانده می‌شود. با style_id قابل ترکیب نیست."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17701,7 +17969,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "مدل مورد استفاده برای تولید."
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
       },
       "model_size": {
         "name": "اندازه"
@@ -17725,10 +17993,26 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID یک سبک وکتور Recraft V4 برای اعمال کردن؛ برای مثال از نود Recraft V4 Create Style یا خروجی style_id اجرای قبلی. با style_references قابل ترکیب نیست."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "میزان پیروی دقیق از سبک: precise آن را با جزئیات بازتولید می‌کند و flexible ظاهر کلی را تطبیق می‌دهد. فقط هنگامی استفاده می‌شود که سبکی ارائه شده باشد."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "تصاویر مرجع برای ایجاد یک سبک وکتور به‌صورت آنی که هزینهٔ آن علاوه بر تولید محاسبه می‌شود. سبک ایجادشده برای استفادهٔ مجدد به‌صورت style_id بازگردانده می‌شود. با style_id قابل ترکیب نیست."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -23452,30 +23736,6 @@
       }
     }
   },
-  "TripoRefineNode": {
-    "description": "بهبود یک مدل پیش‌نویس که فقط توسط مدل‌های Tripo نسخه ۱.۴ ایجاد شده است.",
-    "display_name": "Tripo: بهبود مدل پیش‌نویس",
-    "inputs": {
-      "model_task_id": {
-        "name": "شناسه وظیفه مدل",
-        "tooltip": "باید یک مدل Tripo نسخه ۱.۴ باشد"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
   "TripoRetargetNode": {
     "display_name": "Tripo: هدف‌گذاری مجدد مدل ریگ‌شده",
     "inputs": {
@@ -24405,61 +24665,11 @@
       },
       "resolution": {
         "name": "وضوح تصویر",
-        "tooltip": "وضوح خروجی ویدیو. وضوح ۴K برای مدل‌های veo-3.1-lite و veo-3.0 در دسترس نیست."
+        "tooltip": "وضوح ویدیوی خروجی. 4K برای مدل veo-3.1-lite در دسترس نیست."
       },
       "seed": {
         "name": "seed",
         "tooltip": "seed برای تولید ویدیو (۰ برای تصادفی)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "تولید ویدیو از طریق متن با استفاده از API گوگل Veo ۲",
-    "display_name": "تولید ویدیو با Google Veo 2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "نسبت تصویر ویدیوی خروجی"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "مدت زمان ویدیوی خروجی بر حسب ثانیه"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "آیا توضیح متنی با کمک هوش مصنوعی بهبود یابد"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "تصویر مرجع اختیاری برای راهنمایی تولید ویدیو"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "مدل Veo ۲ برای تولید ویدیو"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "راهنمای متنی منفی برای تعیین مواردی که باید در ویدیو اجتناب شود"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "آیا تولید افراد در ویدیو مجاز باشد"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "توضیح متنی برای ویدیو"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed برای تولید ویدیو (۰ برای تصادفی)"
       }
     },
     "outputs": {

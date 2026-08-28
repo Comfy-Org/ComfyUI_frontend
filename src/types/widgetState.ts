@@ -26,4 +26,4 @@ export interface WidgetState<
 export type WidgetStateInit<TValue = WidgetValue> = Omit<
   WidgetState<TValue>,
   'nodeId' | 'name' | 'y'
-> & { y?: number }
+> & { name?: string; y?: number }

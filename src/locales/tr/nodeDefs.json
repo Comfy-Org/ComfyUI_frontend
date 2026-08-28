@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "PixVerse ile mevcut bir videoyu isteğe bağlı yerel sesle sürdürür. Kaynak 40 saniyenin altında olmalı ve her iki kenarda en fazla 1920px olmalıdır. Çıktı, kaynağın çözünürlüğünü korur; bu nedenle kalite, kare boyutundan ziyade devamın ne kadar iyi işleneceğini belirler.",
+    "display_name": "PixVerse V6 Videoyu Uzat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve üretim ayarları."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Devam ettirilecek video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "PixVerse ile ilk kareden son kareye geçiş yapan, isteğe bağlı yerel sesli bir video üretir. Çıktı, ilk karenin en-boy oranını korur.",
+    "display_name": "PixVerse V6 İlk ve Son Kareden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve üretim ayarları."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_style": {
+        "name": "stil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "PixVerse ile referans özneler, arka planlar ve videolardan bir video oluşturur. Bir referansı, istem içinde adlandırarak sahneye yerleştirin; örneğin, '{'@'}Subject1 {'@'}Background1 içinde yürür'. Bir referans video bağlamak, modeli çıktı uzunluğunun en uzun referans videoyla eşleştiği Omni moduna geçirir.",
+    "display_name": "PixVerse V6 Füzyon (Referanstan Videoya)",
+    "inputs": {
+      "backgrounds": {
+        "name": "arka planlar",
+        "tooltip": "Öznelerin yerleştirildiği sahnenin referans görüntüleri."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve üretim ayarları."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "subjects": {
+        "name": "özneler",
+        "tooltip": "Sahneye yerleştirilecek öznelerin referans görüntüleri."
+      },
+      "videos": {
+        "name": "videolar",
+        "tooltip": "Özneleri, hareketi, kadrajı veya stili almak için referans videolar. En fazla iki adet, toplamda en fazla 15 saniye."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "Bir görüntüyü PixVerse ile, isteğe bağlı olarak yerel sesle canlandırır. Çıktı, giriş görüntüsünün en-boy oranını korur.",
+    "display_name": "PixVerse V6 Görüntüden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "PixVerse ile bir metin isteminden, isteğe bağlı olarak yerel sesle video oluşturur.",
+    "display_name": "PixVerse V6 Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "ÇokÜstelZamanlayıcı",
     "inputs": {
@@ -17540,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "Gerçekçi_görüntü stilini ve isteğe bağlı alt stili seçin.",
+    "description": "logo_raster stilini ve alt stilini seçin.",
     "display_name": "Recraft Stili - Logo Raster",
     "inputs": {
       "substyle": {
@@ -17651,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "1-10 referans görüntüden yeniden kullanılabilir bir Recraft V4 stili oluşturun. Döndürülen style_id, aynı çıktı türündeki tüm Recraft V4 ve V4.1 modelleriyle çalışır. Tüm görüntülerin toplam boyutu 10 MB ile sınırlıdır.",
+    "display_name": "Recraft V4 Stil Oluştur",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Stili tanımlayan referans görüntüler. Benzer referanslar eşleşmeyi keskinleştirir, çeşitli referanslar ise kapsamını genişletir."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Stilin oluşturulacağı çıktı türü: raster görüntüler için recraftv4_styles, SVG için recraftv4_styles_vector."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Recraft V4 veya V4 Pro modelleriyle görseller üretir.",
     "display_name": "Recraft V4 Metinden Görsele",
@@ -17660,7 +17912,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Üretim için kullanılacak model."
+        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlı üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
       },
       "model_size": {
         "name": "boyut"
@@ -17684,10 +17936,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "Uygulanacak Recraft V4 stilinin UUID'si; örneğin Recraft V4 Stil Oluştur düğümünden veya önceki bir çalıştırmanın style_id çıktısından. style_references ile birleştirilemez."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Stilin ne kadar yakından takip edileceği: precise ayrıntılı olarak yeniden üretir, flexible genel görünümü eşleştirir. Yalnızca bir stil sağlandığında kullanılır."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Anında stil oluşturmak için kullanılan referans görüntüler; üretime ek olarak ücretlendirilir. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17701,7 +17969,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Üretim için kullanılacak model."
+        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlı üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
       },
       "model_size": {
         "name": "boyut"
@@ -17725,10 +17993,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; tohuma bakılmaksızın gerçek sonuçlar deterministik değildir."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "Uygulanacak Recraft V4 vektör stilinin UUID'si; örneğin Recraft V4 Stil Oluştur düğümünden veya önceki bir çalıştırmanın style_id çıktısından. style_references ile birleştirilemez."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Stilin ne kadar yakından takip edileceği: precise ayrıntılı olarak yeniden üretir, flexible genel görünümü eşleştirir. Yalnızca bir stil sağlandığında kullanılır."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Anında vektör stili oluşturmak için kullanılan referans görüntüler; üretime ek olarak ücretlendirilir. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -23452,30 +23736,6 @@
       }
     }
   },
-  "TripoRefineNode": {
-    "description": "Sadece v1.4 Tripo modelleri tarafından oluşturulan taslak bir modeli iyileştirir.",
-    "display_name": "Tripo: Taslak Modeli İyileştir",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_görev_id",
-        "tooltip": "Bir v1.4 Tripo modeli olmalı"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model_görev_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
   "TripoRetargetNode": {
     "display_name": "Tripo: Riglenmiş Modeli Yeniden Hedefle",
     "inputs": {
@@ -24405,57 +24665,7 @@
       },
       "resolution": {
         "name": "çözünürlük",
-        "tooltip": "Çıktı video çözünürlüğü. 4K, veo-3.1-lite ve veo-3.0 modelleri için mevcut değildir."
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Video oluşturma için tohum (rastgele için 0)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Google'ın Veo API'sini kullanarak metin istemlerinden videolar oluşturur",
-    "display_name": "Google Veo2 Video Oluşturma",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "en_boy_oranı",
-        "tooltip": "Çıktı videosunun en boy oranı"
-      },
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "duration_seconds": {
-        "name": "süre_saniye",
-        "tooltip": "Çıktı videosunun saniye cinsinden süresi"
-      },
-      "enhance_prompt": {
-        "name": "istemi_geliştir",
-        "tooltip": "İstemi yapay zeka yardımıyla geliştirip geliştirmeme"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Video oluşturmayı yönlendirmek için isteğe bağlı referans görüntü"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "Video oluşturma için kullanılacak Veo 2 modeli"
-      },
-      "negative_prompt": {
-        "name": "negatif_istem",
-        "tooltip": "Videoda kaçınılması gerekenleri yönlendirmek için negatif metin istemi"
-      },
-      "person_generation": {
-        "name": "kişi_oluşturma",
-        "tooltip": "Videoda insan oluşturmaya izin verip vermeme"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Videonun metin açıklaması"
+        "tooltip": "Çıktı video çözünürlüğü. 4K, veo-3.1-lite modeli için kullanılamaz."
       },
       "seed": {
         "name": "tohum",

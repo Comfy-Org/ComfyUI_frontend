@@ -5,8 +5,6 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -14,6 +12,7 @@ import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
   inputAsSerialisable,
   LGraph,
@@ -247,6 +246,25 @@ export interface QueuePromptOptions {
   intent?: WorkflowQueueIntent
 }
 
+function createNodeOutputsMutationView(
+  outputs: Record<string, NodeExecutionOutput>,
+  commit: () => void
+): Record<string, NodeExecutionOutput> {
+  const views = new WeakMap<object, object>()
+  const mapNestedValue = (_property: PropertyKey, value: unknown): unknown => {
+    if (value === null || typeof value !== 'object') return value
+    const existing = views.get(value)
+    if (existing) return existing
+    const view = createMutationView(value, {
+      commit,
+      mapValue: mapNestedValue
+    })
+    views.set(value, view)
+    return view
+  }
+  return createMutationView(outputs, { commit, mapValue: mapNestedValue })
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -278,7 +296,14 @@ export class ComfyApp {
   api: ComfyApi
   ui: ComfyUI
   extensionManager!: ExtensionManager
-  private _nodeOutputs!: Record<string, NodeExecutionOutput>
+  private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
+  private readonly _nodeOutputs = createNodeOutputsMutationView(
+    this.nodeOutputsData,
+    () => {
+      if (this.vueAppReady)
+        useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
+    }
+  )
   nodePreviewImages: Record<string, string[]>
 
   private rootGraphInternal: LGraph | undefined
@@ -443,9 +468,15 @@ export class ComfyApp {
   }
 
   set nodeOutputs(value) {
-    this._nodeOutputs = value
-    if (this.vueAppReady)
+    if (value !== this._nodeOutputs) {
+      for (const key of Object.keys(this.nodeOutputsData))
+        delete this.nodeOutputsData[key]
+      Object.assign(this.nodeOutputsData, value)
+    }
+    if (this.vueAppReady) {
+      useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
       useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
+    }
   }
 
   /**
@@ -507,8 +538,7 @@ export class ComfyApp {
     const combinedIndex = imgs ? imgs.length + 2 : 2
 
     // for vueNodes mode
-    const images =
-      node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
+    const images = useNodeOutputStore().getNodeOutputs(node)?.images
 
     ComfyApp.clipspace = {
       widgets: widgets,
@@ -543,16 +573,11 @@ export class ComfyApp {
       if (ComfyApp.clipspace.imgs && node.imgs) {
         // Update node.images even if it's initially undefined (vueNodes mode)
         if (ComfyApp.clipspace.images) {
-          if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            node.images = [
-              ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-            ]
-          } else {
-            node.images = ComfyApp.clipspace.images
-          }
-
-          if (app.nodeOutputs[node.id + ''])
-            app.nodeOutputs[node.id + ''].images = node.images
+          const images =
+            ComfyApp.clipspace['img_paste_mode'] == 'selected'
+              ? [ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]]
+              : ComfyApp.clipspace.images
+          useNodeOutputStore().setNodeOutputImages(node, images)
         }
 
         if (ComfyApp.clipspace.imgs) {
@@ -643,8 +668,6 @@ export class ComfyApp {
       }
 
       app.canvas.setDirty(true)
-
-      useNodeOutputStore().updateNodeImages(node)
     }
   }
 
@@ -889,29 +912,15 @@ export class ComfyApp {
   private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
-      // Set pending sync flag to suppress link rendering until slots are synced
-      if (LiteGraph.vueNodesMode) {
-        layoutStore.setPendingSlotSync(true)
-      }
+      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
+      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      try {
-        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
+      const r = onConfigure?.apply(this, args)
 
-        const r = onConfigure?.apply(this, args)
+      // Fire after onConfigure, used by primitives to generate widget using input nodes config
+      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 
-        // Fire after onConfigure, used by primitives to generate widget using input nodes config
-        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
-
-        return r
-      } finally {
-        // Flush pending slot layout syncs to fix link alignment after undo/redo
-        // Using finally ensures links aren't permanently suppressed if an error occurs
-        if (LiteGraph.vueNodesMode) {
-          flushScheduledSlotLayoutSync()
-          app.canvas?.setDirty(true, true)
-        }
-      }
+      return r
     }
   }
 

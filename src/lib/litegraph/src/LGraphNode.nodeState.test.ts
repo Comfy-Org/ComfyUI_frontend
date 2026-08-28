@@ -10,6 +10,8 @@ import type { NodeState } from '@/types/nodeState'
 
 import { LGraphNode } from './litegraph'
 import type { Subgraph } from './litegraph'
+import { NodeInputSlot } from './node/NodeInputSlot'
+import { NodeOutputSlot } from './node/NodeOutputSlot'
 import { createTestSubgraph } from './subgraph/__fixtures__/subgraphHelpers'
 
 describe('LGraphNode node-data adoption', () => {
@@ -36,13 +38,92 @@ describe('LGraphNode node-data adoption', () => {
     const { subgraph, node } = addNodeToSubgraph()
 
     const title = computed(() => statesIn(subgraph)[0]?.title)
+    const boxcolor = computed(() => statesIn(subgraph)[0]?.boxcolor)
 
     node.title = 'Renamed'
+    node.boxcolor = '#778899'
     expect(title.value).toBe('Renamed')
+    expect(boxcolor.value).toBe('#778899')
     expect(node.title).toBe('Renamed')
+    expect(node.boxcolor).toBe('#778899')
 
     node.flags.collapsed = true
     expect(statesIn(subgraph)[0]?.flags.collapsed).toBe(true)
+  })
+
+  it('keeps direct property mutation and assignment store-backed', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+    const properties = node.properties
+
+    node.properties.settings = { strength: 0.5 }
+    node.properties = { model: 'flux.safetensors' }
+
+    expect(node.properties).toBe(properties)
+    expect(statesIn(subgraph)[0]?.properties).toBe(properties)
+    expect(properties).toEqual({ model: 'flux.safetensors' })
+  })
+
+  it('orchestrates setProperty callbacks and property-backed widgets', () => {
+    const node = new LGraphNode('Node')
+    const widget = node.addWidget('text', 'model', '', () => undefined, {
+      property: 'model'
+    })
+    node.properties.model = 'old'
+    node.onPropertyChanged = vi.fn((_name, value) => value !== 'rejected')
+
+    node.setProperty('model', 'new')
+    expect(node.properties.model).toBe('new')
+    expect(widget.value).toBe('new')
+    expect(node.onPropertyChanged).toHaveBeenCalledWith('model', 'new', 'old')
+
+    node.setProperty('model', 'rejected')
+    expect(node.properties.model).toBe('new')
+  })
+
+  it('configures and round-trips properties through the store authority', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+    const properties = node.properties
+    node.onPropertyChanged = vi.fn()
+    const serialised = {
+      ...node.serialize(),
+      properties: { nested: { value: 1 } }
+    }
+
+    node.configure(serialised)
+    const roundTrip = node.serialize()
+
+    expect(node.properties).toBe(properties)
+    expect(statesIn(subgraph)[0]?.properties).toBe(properties)
+    expect(node.onPropertyChanged).toHaveBeenCalledWith('nested', {
+      value: 1
+    })
+    expect(roundTrip.properties).toEqual(serialised.properties)
+    expect(roundTrip.properties).not.toBe(node.properties)
+  })
+
+  it('keeps extension-visible slot identity and serializes plain descriptors', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+    const input = node.addInput('prompt', 'STRING')
+    const output = node.addOutput('result', 'STRING')
+    const [state] = statesIn(subgraph)
+
+    expect(state.inputs[0]).toBe(input)
+    expect(state.outputs[0]).toBe(output)
+    expect(node.inputs[0]).toBe(input)
+    expect(node.outputs[0]).toBe(output)
+    expect(input).toBeInstanceOf(NodeInputSlot)
+    expect(output).toBeInstanceOf(NodeOutputSlot)
+    expect(Object.getPrototypeOf(node.serialize().inputs![0])).toBe(
+      Object.prototype
+    )
+    expect(Object.getPrototypeOf(node.serialize().outputs![0])).toBe(
+      Object.prototype
+    )
+
+    input.label = 'Prompt'
+    output.label = 'Result'
+    expect(state.inputs[0].label).toBe('Prompt')
+    expect(state.outputs[0].label).toBe('Result')
   })
 
   it('exposes enumerable own collection fields without replacing their views', () => {
@@ -59,8 +140,15 @@ describe('LGraphNode node-data adoption', () => {
     expect(Object.hasOwn(node, 'inputs')).toBe(true)
     expect(Object.hasOwn(node, 'outputs')).toBe(true)
     expect(Object.hasOwn(node, 'widgets')).toBe(true)
+    expect(Object.hasOwn(node, 'boxcolor')).toBe(true)
     expect(Object.keys(node)).toEqual(
-      expect.arrayContaining(['inputs', 'outputs', 'widgets'])
+      expect.arrayContaining([
+        'inputs',
+        'outputs',
+        'properties',
+        'widgets',
+        'boxcolor'
+      ])
     )
     expect(node.inputs).toBe(inputs)
     expect(node.outputs).toBe(outputs)

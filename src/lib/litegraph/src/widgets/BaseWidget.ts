@@ -20,7 +20,7 @@ import type {
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 
 export interface DrawWidgetOptions {
@@ -165,6 +165,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return undefined
+    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return undefined
     return widgetId(graphId, nodeId, this.name)
   }
 
@@ -175,13 +176,19 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   setNodeId(nodeId: NodeId): void {
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
+    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
 
     const registered = useWidgetValueStore().registerWidget(
       widgetId(graphId, nodeId, this.name),
       {
-        ...this._state,
+        disabled: this.disabled,
+        label: this.label,
+        name: this.name,
+        options: this.options,
+        serialize: this.serialize,
         type: this.type,
-        value: this.value
+        value: this.value,
+        y: this.y
       },
       deriveWidgetRenderState(this)
     )

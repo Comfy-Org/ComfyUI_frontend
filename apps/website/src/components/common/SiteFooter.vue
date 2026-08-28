@@ -46,9 +46,14 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         label: t('footer.minimaxMusic3', locale),
         href: routes.minimaxMusic3
       },
+      {
+        label: t('footer.minimaxLicense', locale),
+        href: routes.minimaxLicense
+      },
       { label: t('footer.seedance', locale), href: routes.seedance },
       { label: t('footer.wanAnimate2', locale), href: routes.wanAnimate2 },
       { label: t('footer.ltx', locale), href: routes.ltx },
+      { label: t('footer.geminiOmni', locale), href: routes.geminiOmni },
       { label: t('footer.wan3', locale), href: routes.wan3 },
       { label: t('footer.flux3', locale), href: routes.flux3 }
     ]

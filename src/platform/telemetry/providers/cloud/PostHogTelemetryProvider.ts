@@ -14,6 +14,9 @@ import type {
   AddCreditsClickMetadata,
   AuthErrorMetadata,
   AuthMetadata,
+  ImageLoadFailureMetadata,
+  UnifiedAuthRefreshMetadata,
+  UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
   DefaultViewSetMetadata,
@@ -376,6 +379,28 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAuthFailed(metadata: AuthErrorMetadata): void {
     this.trackEvent(TelemetryEvents.USER_AUTH_FAILED, metadata)
+  }
+
+  trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_RETRY_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      metadata
+    )
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_REFRESH_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      metadata
+    )
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
   trackUserLoggedIn(): void {

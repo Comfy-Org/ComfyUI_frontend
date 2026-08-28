@@ -28,7 +28,8 @@ const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
   type: 'KSampler',
   mode: 0,
   flags: { collapsed: false },
-  ...overrides
+  ...overrides,
+  properties: overrides.properties ?? {}
 })
 
 const setupMockStores = () => {
