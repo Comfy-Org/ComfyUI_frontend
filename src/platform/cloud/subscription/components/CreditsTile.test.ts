@@ -353,11 +353,11 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('shows disabled credit details for an inactive plan', () => {
+  it('shows disabled credit details for an inactive plan even while top-up reads open', () => {
     activeProSubscription()
-    // Lapsed self-serve plans withhold top-up server-side
-    // (lapsedSelfServeCapabilities), which is what zeroes the tile.
-    state.canTopUp = false
+    // canTopUp fails open for owners on an unreadable snapshot, so a lapsed
+    // self-serve plan must keep this state on tier alone.
+    state.canTopUp = true
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
@@ -370,8 +370,8 @@ describe('CreditsTile', () => {
 
   it('keeps Add credits and the real balance on an inactive sales-managed plan', () => {
     activeProSubscription()
-    // hideLifecycleCapabilities keeps top-up open for Enterprise whatever the
-    // subscription row says, so the inactive zero-state must not apply.
+    // A sales-managed plan has no self-serve reactivation to sell, so the
+    // reactivate-to-use-credits treatment must not apply.
     state.canTopUp = true
     state.tier = 'ENTERPRISE'
     state.subscription = {

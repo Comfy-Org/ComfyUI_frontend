@@ -40,6 +40,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('nav.comfyEnterprise', locale), href: routes.enterprise },
       { label: t('nav.pricing', locale), href: routes.cloudPricing },
       { label: t('nav.mcpServer', locale), href: routes.mcp },
+      { label: t('nav.comfyCli', locale), href: routes.cli },
       { label: t('nav.supportedModels', locale), href: routes.models },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },
       {
@@ -53,6 +54,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('footer.seedance', locale), href: routes.seedance },
       { label: t('footer.wanAnimate2', locale), href: routes.wanAnimate2 },
       { label: t('footer.ltx', locale), href: routes.ltx },
+      { label: t('footer.geminiOmni', locale), href: routes.geminiOmni },
       { label: t('footer.wan3', locale), href: routes.wan3 },
       { label: t('footer.flux3', locale), href: routes.flux3 }
     ]

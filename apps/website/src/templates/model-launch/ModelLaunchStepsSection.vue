@@ -46,7 +46,10 @@ const stepNumber = (index: number) => String(index + 1).padStart(2, '0')
         <p class="text-2xl/snug font-medium text-primary-warm-white">
           {{ step.title[locale] }}
         </p>
-        <p class="text-[17px]/relaxed font-light text-primary-comfy-canvas">
+        <p
+          v-if="step.description"
+          class="text-[17px]/relaxed font-light text-primary-comfy-canvas"
+        >
           {{ step.description[locale] }}
         </p>
       </li>
