@@ -273,6 +273,19 @@ describe('eventUtils', () => {
       expect(actual?.name).toBe('test.png')
       expect(actual?.type).toBe('image/png')
     })
+
+    it('returns undefined for a non-OK response instead of wrapping the error body', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response('not found', { status: 404, statusText: 'Not Found' })
+      )
+
+      const actual = await fetchDroppedAsset({
+        name: 'missing.png',
+        uri: 'https://example.com/view?f=missing.png'
+      })
+
+      expect(actual).toBeUndefined()
+    })
   })
 })
 
