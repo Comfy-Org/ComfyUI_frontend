@@ -5143,6 +5143,13 @@
     "captionExpanded": "The AI agent can make mistakes. Double check your response.",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
+    "runApproval": {
+      "lead": "This tool wants to run the workflow:",
+      "question": "Do you approve?",
+      "thisWorkflow": "this workflow",
+      "cancel": "Cancel",
+      "run": "Run"
+    },
     "dismiss": "Dismiss",
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",

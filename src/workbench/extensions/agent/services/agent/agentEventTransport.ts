@@ -127,12 +127,7 @@ export function createAgentEventTransport(
         break
       }
       case 'agent_ask': {
-        if (
-          event.data.kind !== 'run_approval' ||
-          !event.data.context?.workflow_id ||
-          !event.data.context.workflow_name
-        )
-          return
+        if (event.data.kind !== 'run_approval') return
         closeOpenText()
         closeOpenThinking()
         message.thinking = false
@@ -140,8 +135,8 @@ export function createAgentEventTransport(
         const part: RunApprovalPart = {
           type: 'runApproval',
           askId: event.data.ask_id,
-          workflowId: event.data.context.workflow_id,
-          workflowName: event.data.context.workflow_name
+          workflowId: event.data.context?.workflow_id || undefined,
+          workflowName: event.data.context?.workflow_name || undefined
         }
         message.parts.push(part)
         break

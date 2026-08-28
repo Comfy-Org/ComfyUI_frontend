@@ -1,7 +1,12 @@
-import { zWorkflowListResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentAnswerAccepted,
+  zWorkflowListResponse
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
+
+export { zAgentAnswerAccepted }
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
@@ -15,6 +20,7 @@ export const zAgentTurnAccepted = z
   })
   .passthrough()
 export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
+export type AgentAnswerAccepted = z.infer<typeof zAgentAnswerAccepted>
 
 const zAgentAskOption = z
   .object({

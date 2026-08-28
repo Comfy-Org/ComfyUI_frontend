@@ -13,13 +13,20 @@ import type { TurnId } from '../../schemas/agentApiSchema'
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
 
-const { entries, editableTurnId = null } = defineProps<{
+const {
+  entries,
+  editableTurnId = null,
+  answeringAskIds = new Set<string>()
+} = defineProps<{
   entries: ConversationEntry[]
   editableTurnId?: TurnId | null
+  answeringAskIds?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [text: string]
+  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  openWorkflow: [workflowId: string, workflowName?: string]
 }>()
 
 const { t } = useI18n()
@@ -86,7 +93,15 @@ watch(
             <AgentMessage
               v-else
               :message="entry"
+              :answering-ask-ids="answeringAskIds"
               @feedback="emit('feedback', entry.id, $event)"
+              @answer-ask="
+                (askId, selection) => emit('answerAsk', askId, selection)
+              "
+              @open-workflow="
+                (workflowId, workflowName) =>
+                  emit('openWorkflow', workflowId, workflowName)
+              "
             />
           </template>
           <div ref="bottom" />
