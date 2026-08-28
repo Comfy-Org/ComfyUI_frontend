@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import { GRAPH_CANVAS_ANCHOR } from '@/constants/splitterConstants'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const toastService = vi.hoisted(() => ({
@@ -69,7 +70,7 @@ describe('GlobalToast', () => {
     renderToast()
     // Toast is stubbed, so the outlets carry no roles or text; the stub
     // elements' attributes are the only assertion surface.
-    // eslint-disable-next-line testing-library/no-node-access -- stub-attribute pin; no Testing Library query can reach a stub
+    // eslint-disable-next-line testing-library/no-node-access -- the auto-stub renders no role or testid, so no Testing Library query can select it
     const [main] = document.body.querySelectorAll('toast-stub')
     const classes = main.getAttribute('class') ?? ''
 
@@ -78,15 +79,15 @@ describe('GlobalToast', () => {
     // LiteGraphCanvasSplitterOverlay.test); each carries a fallback so the
     // toast still renders when no anchor target is mounted yet.
     expect(main.getAttribute('position')).toBe('bottom-right')
-    expect(classes).toContain('anchor(--graph-canvas-panel_top,1rem)')
+    expect(classes).toContain(`anchor(${GRAPH_CANVAS_ANCHOR}_top,1rem)`)
     expect(classes).toContain(
-      'anchor(--graph-canvas-panel_right,anchor(--docked-agent-panel_left,calc(100vw-0.75rem)))'
+      `anchor(${GRAPH_CANVAS_ANCHOR}_right,calc(100vw-var(--workspace-inset-right,0px)-0.75rem))`
     )
   })
 
   it('keeps the billing-operation toast group on its own top-right outlet', () => {
     renderToast()
-    // eslint-disable-next-line testing-library/no-node-access -- stub-attribute pin; no Testing Library query can reach a stub
+    // eslint-disable-next-line testing-library/no-node-access -- the auto-stub renders no role or testid, so no Testing Library query can select it
     const stubs = document.body.querySelectorAll('toast-stub')
 
     expect(stubs).toHaveLength(2)

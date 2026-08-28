@@ -30,8 +30,10 @@ const NON_REBASEABLE_HREF = /^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i
  * quote is the only character that can terminate the attribute, and encoding
  * ampersands would double-encode a URL that already carries entities.
  */
-const escapeAttributeUrl = (value: string): string =>
-  value.replaceAll('"', '&quot;')
+function escapeAttributeUrl(value: string): string {
+  return value.replaceAll('"', '&quot;')
+}
+
 const COMFY_ORG_HOST = /(?:^|\.)comfy\.org$/
 
 export function resolveMarkdownUrl(href: string, baseUrl: string): string {
@@ -72,7 +74,7 @@ function createMarkdownRenderer(baseUrl?: string): Renderer {
     const target = resolveMarkdownUrl(href, normalizedBase)
     const linkText =
       text === href
-        ? target
+        ? escape(target)
         : tokens
           ? renderer.parser.parseInline(tokens)
           : text

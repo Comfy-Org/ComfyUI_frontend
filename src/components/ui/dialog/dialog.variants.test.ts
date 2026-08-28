@@ -8,15 +8,20 @@ import {
 } from './dialog.variants'
 
 /**
- * The workspace-inset teeth: every dialog width cap must subtract the
- * docked-surface inset. Reverting the inset from any single surface has to
- * fail here by name, not survive as an unasserted class string.
+ * The workspace-inset teeth for the variants module's own class strings:
+ * each size cap's OWN residue (not the maximized/placement classes), the
+ * shared viewer cap, and the hug token must carry the inset term by name.
  */
 const INSET_TERM = 'var(--workspace-inset-right,0px)'
 
 describe('dialog width caps carry the workspace inset', () => {
   it.for(FOR_STORIES.sizes)('size variant %s', (size) => {
-    expect(dialogContentVariants({ size })).toContain(INSET_TERM)
+    // Against the maximized:true baseline the size cap is the only possible
+    // inset source (the maximized:false placement classes carry their own
+    // inset terms, which made the old form vacuous).
+    expect(dialogContentVariants({ size, maximized: true })).toContain(
+      INSET_TERM
+    )
   })
 
   it('non-maximized placement centers and sizes against the inset', () => {
@@ -27,7 +32,9 @@ describe('dialog width caps carry the workspace inset', () => {
   })
 
   it('the shared viewer class caps against the inset', () => {
-    expect(viewerDialogContentClass).toContain(INSET_TERM)
+    expect(viewerDialogContentClass).toContain(
+      `sm:max-w-[min(80vw,calc(100vw-${INSET_TERM}-1rem))]`
+    )
   })
 
   it('the hug class caps against the inset at both breakpoints', () => {

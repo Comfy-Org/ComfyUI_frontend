@@ -3,6 +3,10 @@ import { watch } from 'vue'
 import type { Component } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
+import {
+  HUG_CONTENT_CLASS,
+  SELF_STYLED_PANEL_CONTENT_CLASS
+} from '@/components/ui/dialog/dialog.variants'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
@@ -38,15 +42,6 @@ const lazyCloudNotificationContent = () =>
   import('@/platform/cloud/notification/components/CloudNotificationContent.vue')
 const lazyPublishDialog = () =>
   import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
-
-import { HUG_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
-
-/**
- * Reka chrome for headless dialogs whose content draws its own panel
- * (background/border/rounding) — neutralize the DialogContent box and
- * shrink-wrap it around the content.
- */
-const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
 
 export type ConfirmationDialogType =
   | 'default'
@@ -463,8 +458,7 @@ export const useDialogService = () => {
         closable: true,
         // Contents bring their own width and separators — shrink-wrap the
         // chrome and zero the section padding.
-        contentClass:
-          'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] border-border-default',
+        contentClass: `${HUG_CONTENT_CLASS} border-border-default`,
         headerClass: 'p-0',
         bodyClass: 'p-0 overflow-y-hidden',
         footerClass: 'p-0',
