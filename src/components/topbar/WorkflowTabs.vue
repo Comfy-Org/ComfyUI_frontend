@@ -96,7 +96,7 @@
         :class="
           cn(
             'no-drag shrink-0 border border-solid text-base-foreground',
-            agentPanelStore.isOpen
+            agentPanelStore.isVisible
               ? 'border-plum-500 bg-plum-600/20'
               : 'border-plum-600 bg-ink-700 hover:border-plum-500'
           )
@@ -173,17 +173,15 @@ const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
 const { withConsent } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
-
-function onAgentEntryClick(): void {
-  // Closing never needs consent; opening does, the first time. Report the
-  // click only once it has an outcome, so a declined consent is not counted
-  // as an open.
-  if (agentPanelStore.isOpen) {
+async function onAgentEntryClick(): Promise<void> {
+  if (agentPanelStore.isVisible) {
     useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'closed' })
     agentPanelStore.toggle()
     return
   }
-  withConsent(() => {
+
+  agentPanelStore.suppressRestoredOpen()
+  await withConsent(() => {
     useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'opened' })
     agentPanelStore.open()
   })

@@ -7,6 +7,12 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
 vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({ get: () => true })
+}))
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({ isLoggedIn: { value: true } })
+}))
 
 describe('visibleCanvasViewport', () => {
   beforeEach(() => {

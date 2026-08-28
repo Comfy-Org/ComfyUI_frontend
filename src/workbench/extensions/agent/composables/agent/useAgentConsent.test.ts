@@ -57,13 +57,6 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: addToast })
 }))
 
-function resetPrototypeConsent(): void {
-  const consent = useAgentConsent() as ReturnType<typeof useAgentConsent> & {
-    accepted?: { value: boolean }
-  }
-  if (consent.accepted) consent.accepted.value = false
-}
-
 async function waitForConsentDialog() {
   const dialogStore = useDialogStore()
   await vi.waitFor(() => {
@@ -89,7 +82,6 @@ describe('useAgentConsent', () => {
     showSignInDialog.mockReset()
     reportError.mockReset()
     addToast.mockReset()
-    resetPrototypeConsent()
   })
 
   it('waits for settings to load before deciding whether to ask', async () => {
@@ -111,6 +103,22 @@ describe('useAgentConsent', () => {
     const dialog = await waitForConsentDialog()
     ;(dialog.contentProps.onReject as () => void)()
     await Promise.resolve(request)
+  })
+
+  it('reports a settings load failure without opening the card or panel', async () => {
+    settingState.load.mockRejectedValueOnce(new Error('offline'))
+    const onOpen = vi.fn()
+
+    await useAgentConsent().withConsent(onOpen)
+
+    expect(useDialogStore().dialogStack).toHaveLength(0)
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(addToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: 'Could not load your Agent preference. Try again.'
+      })
+    )
   })
 
   it('configures the first-use card as an accessible dismissable dialog', async () => {

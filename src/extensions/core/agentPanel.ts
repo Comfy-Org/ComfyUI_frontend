@@ -25,7 +25,7 @@ export function registerAgentPanelExtension(): void {
     beforeLoadGraph() {
       notifyMintPortsBeforeGraphLoad()
       const agentPanelStore = useAgentPanelStore()
-      if (!agentPanelStore.enabled || !agentPanelStore.isOpen) return
+      if (!agentPanelStore.isVisible) return
 
       const nodeSelectionStore = useAgentNodeSelectionStore()
       nodeSelectionStore.beginWorkflowLoad()
@@ -34,7 +34,7 @@ export function registerAgentPanelExtension(): void {
       const agentPanelStore = useAgentPanelStore()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
-      if (!agentPanelStore.enabled || !agentPanelStore.isOpen) {
+      if (!agentPanelStore.isVisible) {
         nodeSelectionStore.finishWorkflowLoad()
         return
       }
