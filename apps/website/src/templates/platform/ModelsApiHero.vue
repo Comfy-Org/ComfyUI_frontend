@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
+import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CodeTabs from './CodeTabs.vue'
@@ -19,7 +20,11 @@ const ctas = platformCtas(locale)
     :title="t('platform.products.models.title', locale)"
     :subtitle="t('platform.products.models.description', locale)"
     :primary-cta="ctas.getStarted"
-    :secondary-cta="ctas.docs"
+    :secondary-cta="{
+      label: ctas.docs.label,
+      href: externalLinks.docsComfyRouter,
+      target: '_blank'
+    }"
   >
     <template #media>
       <CodeTabs

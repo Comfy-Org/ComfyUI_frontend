@@ -7352,9 +7352,8 @@ const translations = {
     'zh-CN': '部署并扩展 ComfyUI 工作流'
   },
   'platform.hero.subtitle': {
-    en: 'The fastest way from ComfyUI workflow to production endpoint. Built for production by the team behind ComfyUI.',
-    'zh-CN':
-      '从 ComfyUI 工作流到生产端点的最快路径。由 ComfyUI 团队打造，为生产而生。'
+    en: 'The fastest way from ComfyUI workflow to production endpoint.',
+    'zh-CN': '从 ComfyUI 工作流到生产端点的最快路径。'
   },
   'platform.hero.getStarted': {
     en: 'Get Started',
@@ -7446,8 +7445,8 @@ const translations = {
     'zh-CN': '企业版：托管构建'
   },
   'platform.products.models.title': {
-    en: 'Models API',
-    'zh-CN': 'Models API'
+    en: 'Comfy Router',
+    'zh-CN': 'Comfy Router'
   },
   'platform.products.models.description': {
     en: 'Call partner models — Seedance, Minimax H3, Nano Banana, GPT-Image-2 — and access the latest models with a single API key.',
@@ -7606,6 +7605,10 @@ const translations = {
     en: 'Self-hosting docs',
     'zh-CN': '自托管文档'
   },
+  'pricing.resourceCosts.note': {
+    en: 'Applies to the Serverless API on the Developer Platform.',
+    'zh-CN': '仅适用于开发者平台上的 Serverless API。'
+  },
   'pricing.resourceCosts.heading': {
     en: 'Resource costs',
     'zh-CN': '资源成本'
@@ -7672,9 +7675,9 @@ const translations = {
     'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $45.50 + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
-    en: 'Models API usage shows per-output prices on each model card and draws from the same credit pool.',
+    en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
     'zh-CN':
-      'Models API 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
+      'Comfy Router 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
   },
   // ── Serverless API subpage ────────────────────────────────────
   'platform.serverlessFeatures.heading': {

@@ -29,7 +29,7 @@ const featured: Example[] = [
     id: 'higgsfield',
     title: t('platform.examples.higgsfield.title', locale),
     description: t('platform.examples.higgsfield.description', locale),
-    tags: ['Models API', 'Seedance', 'Next.js'],
+    tags: ['Comfy Router', 'Seedance', 'Next.js'],
     bg: 'bg-secondary-mauve'
   }
 ]

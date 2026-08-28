@@ -34,7 +34,7 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
       "')"
     ]
   },
-  // Models API run route — POST /v1/models/{provider}/{model}: native JSON in, native JSON out
+  // Comfy Router run route — POST /v1/models/{provider}/{model}: native JSON in, native JSON out
   // (services/comfy-api/docs/router-quickstart.mdx in Comfy-Org/cloud).
   curl: {
     name: 'cURL',

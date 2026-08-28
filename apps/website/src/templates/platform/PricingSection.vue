@@ -6,8 +6,14 @@ import { t } from '../../i18n/translations'
 const {
   locale = 'en',
   heading,
-  subtitle
-} = defineProps<{ locale?: Locale; heading?: string; subtitle?: string }>()
+  subtitle,
+  note
+} = defineProps<{
+  locale?: Locale
+  heading?: string
+  subtitle?: string
+  note?: string
+}>()
 
 // Rates from the Limited Beta PRFAQ (USD and Comfy Credits).
 const gpuRates = [
@@ -57,6 +63,9 @@ const storageRates = [
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
           {{ subtitle ?? t('platform.pricing.subtitle', locale) }}
+        </p>
+        <p v-if="note" class="mt-2 text-xs text-smoke-700/80">
+          {{ note }}
         </p>
       </template>
     </SectionHeader>
