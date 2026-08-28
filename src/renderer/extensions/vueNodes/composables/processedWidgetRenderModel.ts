@@ -143,8 +143,11 @@ function buildSlotMetadata(
       promoted: input.widgetId !== undefined,
       type: String(input.type)
     }
-    if (input.name) metadata.set(input.name, slotInfo)
-    if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
+    const widgetName = input.widget?.name
+    if (widgetName) metadata.set(widgetName, slotInfo)
+    else if ((input.widgetId !== undefined || linked) && input.name) {
+      metadata.set(input.name, slotInfo)
+    }
   })
   return metadata
 }
@@ -382,7 +385,7 @@ function processWidget(
     ? ctx.nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
     : undefined
   const linkedDisplay = resolveLinkedWidgetDisplay(
-    { name: widgetState.name, type: widgetState.type, spec },
+    { name: widgetState.name, type, spec },
     options,
     {
       assetApiEnabled: assetService.isAssetAPIEnabled(),

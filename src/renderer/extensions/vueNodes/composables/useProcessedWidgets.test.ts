@@ -187,7 +187,7 @@ function createLinkedWidgetFixture({
   graphId?: string
 } = {}) {
   const id = widgetId(graphId, nodeId, name)
-  const widget = createMockWidget({ name, type, widgetId: id })
+  const widget = createMockWidget({ name, type, value, widgetId: id })
   const { graph, node } = createGraphWithNode(
     [widget],
     nodeId,
@@ -230,8 +230,32 @@ function createLinkedWidgetFixture({
   }
   useLinkStore().registerLink(scope, topology)
 
-  return { graph, id, nodeId, scope, topology }
+  return { graph, id, nodeId, scope, topology, widget }
 }
+
+describe('widget slot ownership', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('does not assign a non-widget input socket to a same-named custom widget', () => {
+    const { graph, node } = createGraphWithNode([])
+    node.addInput('model', 'MODEL')
+    node.addWidget('custom', 'model', null, () => {})
+
+    const [processedWidget] = computeProcessedWidgets({
+      nodeData: node._state,
+      widgetIds: undefined,
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: true,
+      rootGraph: graph,
+      ui: noopUi
+    })
+
+    expect(processedWidget.slotMetadata).toBeUndefined()
+  })
+})
 
 describe('widget visibility', () => {
   beforeEach(() => {
@@ -646,6 +670,21 @@ describe('computeProcessedWidgets linked presentation', () => {
       nodeId: toNodeId(2),
       outputName: 'value'
     })
+  })
+
+  it('uses the live widget type for linked display policy', () => {
+    const { graph, id, widget } = createLinkedWidgetFixture({
+      type: 'number'
+    })
+    widget.type = 'gradientslider'
+
+    const [linked] = processWidgets({
+      widgetIds: [id],
+      rootGraph: graph
+    })
+
+    expect(linked.simplified.type).toBe('gradientslider')
+    expect(linked.simplified.linkedDisplay).toBeUndefined()
   })
 
   it('restores the standard widget state after disconnect', () => {

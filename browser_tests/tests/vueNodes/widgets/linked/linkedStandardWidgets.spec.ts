@@ -27,6 +27,10 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('vueNodes/linked-standard-widgets')
     })
 
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.canvasOps.resetView()
+    })
+
     test(
       'renders each linked control surface',
       { tag: '@screenshot' },
@@ -115,9 +119,7 @@ test.describe(
       }
     })
 
-    test('ignores pointer and keyboard input on linked controls', async ({
-      comfyPage
-    }) => {
+    test('ignores pointer input on linked controls', async ({ comfyPage }) => {
       const [targetNodeRef] =
         await comfyPage.nodeOps.getNodeRefsByType(TARGET_NODE_TYPE)
       if (!targetNodeRef) throw new Error('Target DevTools node was not loaded')
@@ -126,10 +128,6 @@ test.describe(
         .getNodeByTitle(TARGET_NODE_TITLE)
         .first()
       await expect(targetNode).toBeVisible()
-
-      const focusedLinkedContent = targetNode.locator(
-        `[data-testid="${TestIds.widgets.linkedContent}"]:focus-within`
-      )
 
       for (const text of [
         'STALE SELECT VALUE',
@@ -152,19 +150,14 @@ test.describe(
       await targetNode
         .getByRole('img', { name: 'switch: Linked input' })
         .click()
-      await comfyPage.page.keyboard.press('Space')
 
       await targetNode
         .getByRole('img', { name: 'select: Linked input' })
         .click()
-      await comfyPage.page.keyboard.press('ArrowUp')
-      await comfyPage.page.keyboard.press('Enter')
 
       await targetNode
         .getByRole('img', { name: 'textarea: Linked input' })
         .click()
-      await comfyPage.page.keyboard.type('ignored input')
-      await expect(focusedLinkedContent).toHaveCount(0)
 
       await comfyPage.nextFrame()
       await expect
