@@ -7,6 +7,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import type * as LitegraphUtilModule from '@/utils/litegraphUtil'
 import {
   createNode,
   isAudioNode,
@@ -108,12 +109,11 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => ({
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof LitegraphUtilModule>()),
   createNode: vi.fn(),
   isAudioNode: vi.fn(),
   isImageNode: vi.fn(),
-  isSelectOnly: (canvas: LGraphCanvas | undefined) =>
-    canvas?.selectOnly === true,
   isVideoNode: vi.fn()
 }))
 
@@ -526,7 +526,7 @@ describe('usePaste', () => {
     expect(createNode).not.toHaveBeenCalled()
   })
 
-  it('should ignore graph paste while the canvas is picking-only', () => {
+  it('should ignore image paste while the canvas is picking-only', () => {
     mockCanvas.selectOnly = true
 
     usePaste()
@@ -537,8 +537,21 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     expect(createNode).not.toHaveBeenCalled()
-    expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-    expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+  })
+
+  it('should ignore workflow JSON paste while the canvas is picking-only', () => {
+    mockCanvas.selectOnly = true
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData(
+      'text/plain',
+      JSON.stringify({ version: 1, nodes: [{}], extra: {} })
+    )
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 

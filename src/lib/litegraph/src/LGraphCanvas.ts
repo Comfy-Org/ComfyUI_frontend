@@ -2486,6 +2486,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
+    // Select-only picking: node clicks select, empty canvas marquee-selects;
+    // clone, reroute, link, and group interactions stay off.
+    if (this.selectOnly) {
+      if (node && (this.allow_interaction || node.flags.allow_interaction)) {
+        this._processNodeClick(e, ctrlOrMeta, node)
+      } else if (this.allow_dragcanvas) {
+        this._setupNodeSelectionDrag(e, pointer)
+      }
+      return
+    }
+
     // clone node ALT dragging
     if (
       !LiteGraph.vueNodesMode &&
@@ -2661,7 +2672,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           pointer.onDragStart = () => (this.resizingGroup = group)
           pointer.onDrag = (eMove) => {
-            if (this.read_only || this.selectOnly) return
+            if (this.read_only) return
 
             // Resize only by the exact pointer movement
             const pos: Point = [
@@ -2797,12 +2808,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     pointer.onClick = () => this.processSelect(node, e)
 
+    if (this.selectOnly) return
+
     // Immediately bring to front
     if (!node.flags.pinned) {
       this.bringToFront(node)
     }
-
-    if (this.selectOnly) return
 
     // Collapse toggle
     const inCollapse = node.isPointInCollapse(x, y)
@@ -3647,6 +3658,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     pointer: CanvasPointer,
     sticky = false
   ): void {
+    // Picking selects without dragging - and without opening a graph change.
+    if (this.selectOnly) {
+      this.processSelect(item, pointer.eDown, sticky)
+      return
+    }
+
     this.emitBeforeChange()
     this.graph?.beforeChange()
     // Ensure that dragging is properly cleaned up, on success or failure.
@@ -3659,7 +3676,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.processSelect(item, pointer.eDown, sticky)
-    if (this.selectOnly) return
 
     this.isDragging = true
 

@@ -46,7 +46,7 @@ describe('useFocusNode', () => {
     })
   })
 
-  it('uses the same viewport-aware path for an execution-id lookup', async () => {
+  it('frames without switching graphs when the node is already current', async () => {
     const graph = { isRootGraph: true } as LGraph
     const node = {
       graph,
@@ -60,5 +60,31 @@ describe('useFocusNode', () => {
     expect(canvas.animateToBounds).toHaveBeenCalledWith(node.boundingRect, {
       viewport
     })
+  })
+
+  it('exits a subgraph to focus a root-graph node', async () => {
+    const rootGraph = { isRootGraph: true } as LGraph
+    const subgraph = { isRootGraph: false } as LGraph
+    const node = {
+      graph: rootGraph,
+      boundingRect: [5, 6, 7, 8]
+    } as unknown as LGraphNode
+    canvas.graph = subgraph
+    canvas.subgraph = subgraph
+
+    await useFocusNode().focusNode('node-1', new Map([['node-1', node]]))
+
+    expect(canvas.subgraph).toBeUndefined()
+    expect(canvas.setGraph).toHaveBeenCalledWith(rootGraph)
+    expect(canvas.animateToBounds).toHaveBeenCalledWith(node.boundingRect, {
+      viewport
+    })
+  })
+
+  it('does nothing when the id misses the execution-id map', async () => {
+    await useFocusNode().focusNode('missing', new Map())
+
+    expect(canvas.setGraph).not.toHaveBeenCalled()
+    expect(canvas.animateToBounds).not.toHaveBeenCalled()
   })
 })

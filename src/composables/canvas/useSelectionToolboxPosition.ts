@@ -86,7 +86,7 @@ export function useSelectionToolboxPosition(
    * Update position based on selection
    */
   const updateSelectionBounds = () => {
-    if (isSelectOnly(canvasStore.canvas ?? undefined)) {
+    if (isSelectOnly(canvasStore.canvas)) {
       visible.value = false
       return
     }
@@ -158,6 +158,13 @@ export function useSelectionToolboxPosition(
       stopSync()
     }
   })
+
+  // Re-evaluate when select-only mode flips: entering hides the toolbox
+  // (fail-closed), leaving restores it for the still-current selection.
+  watch(
+    () => canvasStore.canvas?.selectOnly,
+    () => updateSelectionBounds()
+  )
 
   // Watch for selection changes
   watch(

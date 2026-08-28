@@ -3,7 +3,11 @@ import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphEventMode,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as DistributionModule from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -46,6 +50,7 @@ vi.mock('@/scripts/app', () => {
     canvas: { dispatchEvent: vi.fn() },
     read_only: false,
     ds: mockDs,
+    state: { selectionChanged: false },
     setDirty: vi.fn()
   }
 
@@ -345,6 +350,24 @@ describe('useCoreCommands', () => {
   })
 
   describe('ClearWorkflow command', () => {
+    beforeEach(() => {
+      app.canvas.selectOnly = false
+    })
+
+    it('does not clear in selection-only mode', async () => {
+      app.canvas.selectOnly = true
+
+      const commands = useCoreCommands()
+      const clearCommand = commands.find(
+        (cmd) => cmd.id === 'Comfy.ClearWorkflow'
+      )!
+      await clearCommand.function()
+
+      expect(app.clean).not.toHaveBeenCalled()
+      expect(app.rootGraph.clear).not.toHaveBeenCalled()
+      expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+    })
+
     it('should clear main graph when not in subgraph', async () => {
       const commands = useCoreCommands()
       const clearCommand = commands.find(
@@ -485,7 +508,9 @@ describe('useCoreCommands', () => {
       'Comfy.Canvas.ToggleSelectedNodes.Pin',
       'Comfy.Canvas.ToggleSelected.Pin',
       'Comfy.Canvas.ToggleSelectedNodes.Mute',
-      'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+      'Comfy.Canvas.ToggleSelectedNodes.Bypass',
+      'Comfy.Canvas.Resize',
+      'Comfy.Canvas.ToggleSelectedNodes.Collapse'
     ])('should not run %s in selection-only mode', async (commandId) => {
       app.canvas.selectOnly = true
 
@@ -496,11 +521,110 @@ describe('useCoreCommands', () => {
 
     it.for([
       'Comfy.Canvas.ToggleSelectedNodes.Pin',
-      'Comfy.Canvas.ToggleSelected.Pin'
+      'Comfy.Canvas.ToggleSelected.Pin',
+      'Comfy.Canvas.Resize',
+      'Comfy.Canvas.ToggleSelectedNodes.Collapse'
     ])('runs %s outside selection-only mode', async (commandId) => {
       await findCommand(commandId).function()
 
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it.for([
+      ['Comfy.Canvas.ToggleSelectedNodes.Mute', LGraphEventMode.NEVER],
+      ['Comfy.Canvas.ToggleSelectedNodes.Bypass', LGraphEventMode.BYPASS]
+    ] as const)(
+      'flips the node mode via %s outside selection-only mode',
+      async ([commandId, mode]) => {
+        const node = new LGraphNode('node')
+        node.mode = LGraphEventMode.ALWAYS
+        app.canvas.selectedItems = new Set([
+          node
+        ]) as typeof app.canvas.selectedItems
+
+        await findCommand(commandId).function()
+
+        expect(node.mode).toBe(mode)
+      }
+    )
+
+    it.for([
+      'Comfy.Canvas.ToggleSelectedNodes.Mute',
+      'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+    ])(
+      'preserves the node mode under %s in selection-only mode',
+      async (commandId) => {
+        const node = new LGraphNode('node')
+        node.mode = LGraphEventMode.ALWAYS
+        app.canvas.selectedItems = new Set([
+          node
+        ]) as typeof app.canvas.selectedItems
+        app.canvas.selectOnly = true
+
+        await findCommand(commandId).function()
+
+        expect(node.mode).toBe(LGraphEventMode.ALWAYS)
+      }
+    )
+
+    it('does not fit groups to contents in selection-only mode', async () => {
+      const group = new LGraphGroup('Group')
+      app.canvas.selectedItems = new Set([
+        group
+      ]) as typeof app.canvas.selectedItems
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Graph.FitGroupToContents').function()
+
+      expect(app.canvas.setDirty).not.toHaveBeenCalled()
+    })
+
+    it('fits groups to contents outside selection-only mode', async () => {
+      const group = new LGraphGroup('Group')
+      vi.spyOn(group, 'recomputeInsideNodes').mockImplementation(() => {})
+      vi.spyOn(group, 'resizeTo').mockImplementation(() => {})
+      app.canvas.selectedItems = new Set([
+        group
+      ]) as typeof app.canvas.selectedItems
+
+      await findCommand('Comfy.Graph.FitGroupToContents').function()
+
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(false, true)
+    })
+
+    it('does not move selected nodes in selection-only mode', async () => {
+      vi.mocked(useSettingStore).mockReturnValue(
+        fromPartial<ReturnType<typeof useSettingStore>>({
+          get: vi.fn().mockReturnValue(10)
+        })
+      )
+      const node = new LGraphNode('node')
+      node.pos = [100, 200]
+      app.canvas.selectedItems = new Set([
+        node
+      ]) as typeof app.canvas.selectedItems
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Canvas.MoveSelectedNodes.Up').function()
+
+      expect([...node.pos]).toEqual([100, 200])
+    })
+
+    it('moves selected nodes outside selection-only mode', async () => {
+      vi.mocked(useSettingStore).mockReturnValue(
+        fromPartial<ReturnType<typeof useSettingStore>>({
+          get: vi.fn().mockReturnValue(10)
+        })
+      )
+      const node = new LGraphNode('node')
+      node.pos = [100, 200]
+      app.canvas.selectedItems = new Set([
+        node
+      ]) as typeof app.canvas.selectedItems
+
+      await findCommand('Comfy.Canvas.MoveSelectedNodes.Up').function()
+
+      expect([...node.pos]).toEqual([100, 190])
     })
   })
 
