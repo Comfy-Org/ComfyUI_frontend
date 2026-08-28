@@ -329,6 +329,16 @@ export function findSubgraphPathById(
   rootGraph: LGraph,
   targetId: string
 ): string[] | null {
+  return findSubgraphPathBy(rootGraph, targetId, (_node, subgraph) =>
+    String(subgraph.id)
+  )
+}
+
+function findSubgraphPathBy(
+  rootGraph: LGraph,
+  targetId: string,
+  segment: (node: LGraphNode, subgraph: Subgraph) => string
+): string[] | null {
   const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
     { graph: rootGraph, path: [] }
   ]
@@ -336,14 +346,13 @@ export function findSubgraphPathById(
   while (stack.length > 0) {
     const { graph, path } = stack.pop()!
 
-    // Check if graph exists and has _nodes property
     if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
       continue
     }
 
     for (const node of graph._nodes) {
       if (node.isSubgraphNode?.() && node.subgraph) {
-        const newPath = [...path, String(node.subgraph.id)]
+        const newPath = [...path, segment(node, node.subgraph)]
         if (node.subgraph.id === targetId) {
           return newPath
         }
@@ -353,6 +362,23 @@ export function findSubgraphPathById(
   }
 
   return null
+}
+
+/**
+ * Iteratively finds the path of subgraph NODE ids (not subgraph UUIDs) to a
+ * target subgraph - the address form node-scoped consumers need (e.g. the
+ * agent write leg's interior `set_widget`, whose wire `path` is a resolved
+ * node-id chain).
+ * @param rootGraph The graph to start searching from.
+ * @param targetUuid The UUID of the subgraph to find.
+ * @returns Subgraph-node ids from the root down to the node whose definition
+ * is the target, or `null` if not found.
+ */
+export function findSubgraphNodePathById(
+  rootGraph: LGraph,
+  targetUuid: string
+): string[] | null {
+  return findSubgraphPathBy(rootGraph, targetUuid, (node) => String(node.id))
 }
 
 /**
