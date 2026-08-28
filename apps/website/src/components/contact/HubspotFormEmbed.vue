@@ -149,19 +149,16 @@ function readV4Submission(event: Event): {
 
 let hasCapturedSubmission = false
 
-// Both listeners are bound to the window, so a submission reporting a
-// different form id is ignored instead of consuming the latch. A payload with
-// no id still counts: a vendor change should degrade to over-reporting rather
-// than to silence.
+// Both listeners are bound to the window, so a submission has to prove it came
+// from this form before it is counted or allowed to consume the latch. An
+// unattributable submission is dropped rather than recorded: a conversion count
+// that reads zero is a visible failure, whereas one inflated by phantom
+// conversions is indistinguishable from a real one downstream.
 function captureSubmission(
   submittedFormId: string | undefined,
   conversionId?: string
 ) {
-  if (
-    submittedFormId !== undefined &&
-    submittedFormId !== hubspotContactFormId.value
-  )
-    return
+  if (submittedFormId !== hubspotContactFormId.value) return
   if (hasCapturedSubmission) return
   hasCapturedSubmission = true
   captureContactFormSubmitted(locale, hubspotContactFormId.value, conversionId)

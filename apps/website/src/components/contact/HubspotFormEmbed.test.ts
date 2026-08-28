@@ -74,7 +74,7 @@ describe('HubspotFormEmbed', () => {
 
   it('captures a submission from the v3 postMessage callback', () => {
     render(HubspotFormEmbed)
-    dispatchV3Submission()
+    dispatchV3Submission(EN_FORM_ID)
 
     expect(hoisted.mockSubmitted).toHaveBeenCalledWith(
       'en',
@@ -85,7 +85,7 @@ describe('HubspotFormEmbed', () => {
 
   it('captures a submission from the v4 form event', () => {
     render(HubspotFormEmbed)
-    dispatchV4Submission()
+    dispatchV4Submission(EN_FORM_ID)
 
     expect(hoisted.mockSubmitted).toHaveBeenCalledWith(
       'en',
@@ -96,7 +96,7 @@ describe('HubspotFormEmbed', () => {
 
   it('reports the localized form id on submission', () => {
     render(HubspotFormEmbed, { props: { locale: 'zh-CN' } })
-    dispatchV4Submission()
+    dispatchV4Submission(ZH_FORM_ID)
 
     expect(hoisted.mockSubmitted).toHaveBeenCalledWith(
       'zh-CN',
@@ -107,8 +107,8 @@ describe('HubspotFormEmbed', () => {
 
   it('captures once when both HubSpot form versions report the submission', () => {
     render(HubspotFormEmbed)
-    dispatchV3Submission()
-    dispatchV4Submission()
+    dispatchV3Submission(EN_FORM_ID)
+    dispatchV4Submission(EN_FORM_ID)
 
     expect(hoisted.mockSubmitted).toHaveBeenCalledOnce()
   })
@@ -167,6 +167,27 @@ describe('HubspotFormEmbed', () => {
     expect(hoisted.mockSubmitted).not.toHaveBeenCalled()
   })
 
+  it('ignores a submission that names no form at all', () => {
+    render(HubspotFormEmbed)
+    dispatchV3Submission()
+    dispatchV4Submission()
+
+    expect(hoisted.mockSubmitted).not.toHaveBeenCalled()
+  })
+
+  it('still captures this form after an unattributable submission', () => {
+    render(HubspotFormEmbed)
+    dispatchV4Submission()
+    dispatchV4Submission(EN_FORM_ID)
+
+    expect(hoisted.mockSubmitted).toHaveBeenCalledOnce()
+    expect(hoisted.mockSubmitted).toHaveBeenCalledWith(
+      'en',
+      EN_FORM_ID,
+      undefined
+    )
+  })
+
   it('still captures this form after another form was submitted', () => {
     render(HubspotFormEmbed)
     dispatchV4Submission('some-other-form')
@@ -195,7 +216,7 @@ describe('HubspotFormEmbed', () => {
   it('stops listening once the form is unmounted', () => {
     const { unmount } = render(HubspotFormEmbed)
     unmount()
-    dispatchV4Submission()
+    dispatchV4Submission(EN_FORM_ID)
 
     expect(hoisted.mockSubmitted).not.toHaveBeenCalled()
   })
