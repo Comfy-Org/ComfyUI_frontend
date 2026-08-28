@@ -33,7 +33,7 @@ async function centerOnNode(comfyPage: ComfyPage, nodeId: string) {
   await comfyPage.page.evaluate(
     ([id, zoomFloor]) => {
       const canvas = window.app!.canvas
-      const graph = window.graph as unknown as TestGraphAccess
+      const graph = window.graph as TestGraphAccess
       const node = graph._nodes_by_id[id]
       if (!node) {
         // A silent return here surfaces later as an opaque locator timeout

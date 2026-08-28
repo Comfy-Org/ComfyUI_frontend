@@ -466,8 +466,6 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     })
   })
 
-  })
-
   test(
     'subgraph transition (enter and exit)',
     { tag: ['@vue-nodes'] },
