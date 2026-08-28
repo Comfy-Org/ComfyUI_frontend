@@ -316,8 +316,14 @@ const paywallPermissions = vi.hoisted(() => ({
   canTopUp: true,
   canManageSubscription: true
 }))
+const paywallWorkspace = vi.hoisted(() => ({
+  role: 'owner' as 'owner' | 'member'
+}))
 const paywallPolicy = vi.hoisted(() => ({
   topUpAccess: 'allowed' as 'allowed' | 'subscription-required'
+}))
+const paywallPolicyState = vi.hoisted(() => ({
+  kind: 'CloudAndStandard'
 }))
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as string | null,
@@ -345,7 +351,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
   const { computed } = await import('vue')
   return {
     useWorkspaceUI: () => ({
-      permissions: computed(() => paywallPermissions)
+      permissions: computed(() => paywallPermissions),
+      workspaceRole: computed(() => paywallWorkspace.role)
     })
   }
 })
@@ -357,6 +364,18 @@ vi.mock(
     return {
       useBillingPolicyCapabilities: () => ({
         billingPolicyCapabilities: computed(() => paywallPolicy)
+      })
+    }
+  }
+)
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useBillingPolicyState',
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingPolicyState: () => ({
+        billingPolicyState: computed(() => paywallPolicyState)
       })
     }
   }
@@ -413,7 +432,9 @@ beforeEach(() => {
   socketSend.mockReset()
   paywallPermissions.canTopUp = true
   paywallPermissions.canManageSubscription = true
+  paywallWorkspace.role = 'owner'
   paywallPolicy.topUpAccess = 'allowed'
+  paywallPolicyState.kind = 'CloudAndStandard'
   paywallBilling.tier = 'STANDARD'
   paywallBilling.plans[0]!.tier = 'CREATOR'
   paywallBilling.plans[0]!.availability.available = true
@@ -476,7 +497,7 @@ describe('AgentPanelRoot paywall actions', () => {
     openAccountPrecondition.mockClear()
   })
 
-  it('routes the inline card actions through account preconditions', async () => {
+  it('routes the subscribed owner actions through account preconditions', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
       id: 'msg-paywall' as TurnId,
@@ -487,19 +508,41 @@ describe('AgentPanelRoot paywall actions', () => {
     })
 
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Add credits' })
+      await screen.findByRole('button', { name: 'Upgrade plan' })
     )
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Upgrade subscription' })
-    )
+    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
 
     expect(openAccountPrecondition.mock.calls).toEqual([
-      ['credits'],
-      ['subscription']
+      ['subscription'],
+      ['credits']
     ])
   })
 
   it('hides purchase actions from a Team member without billing permissions', async () => {
+    paywallPermissions.canTopUp = false
+    paywallPermissions.canManageSubscription = false
+    paywallWorkspace.role = 'member'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    await screen.findByText(
+      'This workspace has used all its credits. Ask your workspace owner to add more.'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /upgrade|subscribe/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows account-team remediation for a sales-managed owner', async () => {
     paywallPermissions.canTopUp = false
     paywallPermissions.canManageSubscription = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -511,13 +554,15 @@ describe('AgentPanelRoot paywall actions', () => {
       thinking: false
     })
 
-    await screen.findByText('Usage limit reached')
     expect(
-      screen.queryByRole('button', { name: 'Add credits' })
-    ).not.toBeInTheDocument()
+      await screen.findByText(
+        'This workspace is billed through your Comfy account team. Contact them to add credits.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /credits/i })).toBeNull()
     expect(
-      screen.queryByRole('button', { name: 'Upgrade subscription' })
-    ).not.toBeInTheDocument()
+      screen.queryByRole('button', { name: /upgrade|subscribe/i })
+    ).toBeNull()
   })
 
   it('keeps Add credits but hides Upgrade at the highest personal tier', async () => {
@@ -535,13 +580,14 @@ describe('AgentPanelRoot paywall actions', () => {
       await screen.findByRole('button', { name: 'Add credits' })
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Upgrade subscription' })
+      screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
   })
 
-  it('hides Add credits but keeps Upgrade when Cloud Free requires a subscription', async () => {
+  it('shows Subscribe only when Cloud Free requires a subscription', async () => {
     paywallBilling.tier = 'FREE'
     paywallPolicy.topUpAccess = 'subscription-required'
+    paywallPolicyState.kind = 'CloudAndFree'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
       id: 'msg-paywall' as TurnId,
@@ -552,10 +598,35 @@ describe('AgentPanelRoot paywall actions', () => {
     })
 
     expect(
-      await screen.findByRole('button', { name: 'Upgrade subscription' })
+      await screen.findByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the Local copy and Add credits only outside Cloud', async () => {
+    paywallBilling.tier = 'FREE'
+    paywallPolicyState.kind = 'LocalAndFree'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(
+      await screen.findByText(
+        "You've spent your credit balance. Add credits to keep the agent running."
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /upgrade|subscribe/i })
     ).not.toBeInTheDocument()
   })
 })
