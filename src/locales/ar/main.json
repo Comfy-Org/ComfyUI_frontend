@@ -830,13 +830,16 @@
       "insufficientMessage": "ليس لديك رصيد كافٍ لتشغيل هذا الإجراء.",
       "insufficientTitle": "رصيد غير كافٍ",
       "insufficientWorkflowMessage": "ليس لديك رصيد كافٍ لتشغيل هذا سير العمل.",
+      "manageBillingError": "تعذر فتح بوابة الفوترة. يُرجى المحاولة مرة أخرى.",
       "maxAllowed": "الحد الأقصى {credits} أرصدة.",
       "maxAmount": "(الحد الأقصى 1000 دولار أمريكي)",
       "maximumAmount": "الحد الأقصى ${amount}.",
       "minRequired": "الحد الأدنى {credits} أرصدة",
       "minimumPurchase": "الحد الأدنى ${amount} ({credits} أرصدة)",
       "needMore": "تحتاج المزيد؟",
+      "noPaymentMethodError": "لا توجد طريقة دفع محفوظة لمساحة العمل هذه. أضف واحدة عبر الإعدادات ← الخطة والأرصدة ← إدارة الفوترة، ثم أعد محاولة شحن الرصيد.",
       "payAmount": "ادفع {amount}",
+      "paymentDetailsRequiredNote": "سيُطلب منك إضافة طريقة دفع لإتمام عملية الشراء هذه.",
       "purchaseError": "فشل الشراء",
       "purchaseErrorDetail": "فشل شراء الرصيد: {error}",
       "purchaseSuccess": "تمت إضافة الرصيد بنجاح!",
@@ -1705,6 +1708,7 @@
     "micPermissionDenied": "تم رفض إذن الميكروفون",
     "migrate": "ترحيل",
     "missing": "مفقود",
+    "missingNodeTypesInGroup": "مفقود: {types}",
     "modifyKeybinding": "تعديل اختصار لوحة المفاتيح",
     "more": "المزيد",
     "moreOptions": "خيارات إضافية",
@@ -3217,15 +3221,26 @@
     "done": "تم",
     "firstRun": {
       "nudge": {
-        "dismiss": "ليس الآن",
-        "explore": "استكشف القوالب",
-        "noTour": {
-          "body": "تصفح القوالب واختر شيئًا لتبنيه.",
-          "title": "هناك المئات غيرها"
+        "animate": {
+          "detail": "من صورة إلى فيديو · 5 ثوانٍ",
+          "title": "حرّكها"
         },
-        "ran": {
-          "body": "لقد أنشأت أول نتيجة لك. استكشف ما يمكنك بناؤه أيضًا.",
-          "title": "كانت هذه واحدة من مئات"
+        "body": "كل منها يبدأ من الصورة التي أنشأتها للتو.",
+        "explore": "تصفح جميع القوالب",
+        "fallback": {
+          "body": "تصفح القوالب واختر شيئًا لإنشائه.",
+          "title": "وهناك مئات الخيارات الأخرى"
+        },
+        "loadFailed": "تعذر تحميل ذلك القالب. يُرجى المحاولة مرة أخرى.",
+        "restyle": {
+          "detail": "نموذج شريك · أي خطة مدفوعة",
+          "title": "أعد تصميمها باستخدام Nano Banana"
+        },
+        "title": "نتيجتك الأولى. إليك ما التالي.",
+        "upscale": {
+          "badge": "4x",
+          "detail": "الصورة نفسها، تفاصيل أكثر",
+          "title": "حسّن دقتها"
         }
       },
       "prompt": {
@@ -4363,6 +4378,8 @@
     "resubscribeFailed": "فشل في إعادة تفعيل الاشتراك",
     "resubscribeSuccess": "تمت إعادة تفعيل الاشتراك بنجاح",
     "resubscribeTo": "إعادة الاشتراك في {plan}",
+    "salesManagedRunBlockedDetail": "لم تعد خطة مساحة العمل هذه نشطة. تواصل مع مدير حسابك في Comfy لاستعادة الوصول.",
+    "salesManagedRunBlockedTitle": "الخطة غير نشطة",
     "saveYearly": "وفّر 20%",
     "saveYearlyUpTo": "وفر حتى ٢٠٪",
     "soloUseOnly": "للاستخدام الفردي فقط",
@@ -4441,6 +4458,7 @@
     "title": "الاشتراك",
     "titleUnsubscribed": "اشترك في Comfy Cloud",
     "totalCredits": "إجمالي الرصيد",
+    "unknownTierName": "الخطة الحالية",
     "upgrade": "ترقية",
     "upgradePlan": "ترقية الخطة",
     "upgradeTo": "الترقية إلى {plan}",

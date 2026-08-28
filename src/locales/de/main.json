@@ -830,13 +830,16 @@
       "insufficientMessage": "Sie haben nicht genügend Credits, um diesen Workflow auszuführen.",
       "insufficientTitle": "Unzureichende Credits",
       "insufficientWorkflowMessage": "Sie haben nicht genügend Credits, um diesen Workflow auszuführen.",
+      "manageBillingError": "Das Abrechnungsportal konnte nicht geöffnet werden. Bitte versuchen Sie es erneut.",
       "maxAllowed": "Maximal {credits} Credits.",
       "maxAmount": "(Max. $1,000 USD)",
       "maximumAmount": "${amount} max.",
       "minRequired": "Mindestens {credits} Credits",
       "minimumPurchase": "${amount} Mindestbetrag ({credits} Credits)",
       "needMore": "Benötigen Sie mehr?",
+      "noPaymentMethodError": "Für diesen Workspace ist keine Zahlungsmethode gespeichert. Fügen Sie eine unter Einstellungen → Tarif & Guthaben → Abrechnung verwalten hinzu und versuchen Sie die Aufladung dann erneut.",
       "payAmount": "{amount} bezahlen",
+      "paymentDetailsRequiredNote": "Sie werden aufgefordert, eine Zahlungsmethode hinzuzufügen, um diesen Kauf abzuschließen.",
       "purchaseError": "Kauf fehlgeschlagen",
       "purchaseErrorDetail": "Credits konnten nicht gekauft werden: {error}",
       "purchaseSuccess": "Credits wurden erfolgreich hinzugefügt!",
@@ -1705,6 +1708,7 @@
     "micPermissionDenied": "Mikrofonberechtigung verweigert",
     "migrate": "Migrieren",
     "missing": "Fehlt",
+    "missingNodeTypesInGroup": "fehlt: {types}",
     "modifyKeybinding": "Tastenkürzel ändern",
     "more": "Mehr",
     "moreOptions": "Weitere Optionen",
@@ -3217,15 +3221,26 @@
     "done": "Fertig",
     "firstRun": {
       "nudge": {
-        "dismiss": "Jetzt nicht",
-        "explore": "Vorlagen entdecken",
-        "noTour": {
+        "animate": {
+          "detail": "Bild zu Video · 5 s",
+          "title": "Animieren"
+        },
+        "body": "Jede beginnt mit dem Bild, das Sie gerade erstellt haben.",
+        "explore": "Alle Vorlagen durchsuchen",
+        "fallback": {
           "body": "Durchsuchen Sie die Vorlagen und wählen Sie etwas zum Erstellen aus.",
           "title": "Hunderte weitere warten auf Sie"
         },
-        "ran": {
-          "body": "Sie haben gerade Ihr erstes erstellt. Entdecken Sie, was Sie noch alles erstellen können.",
-          "title": "Das war eines von Hunderten"
+        "loadFailed": "Diese Vorlage konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+        "restyle": {
+          "detail": "Partnermodell · Jeder kostenpflichtige Tarif",
+          "title": "Mit Nano Banana neu gestalten"
+        },
+        "title": "Ihr erstes Ergebnis. So geht es weiter.",
+        "upscale": {
+          "badge": "4x",
+          "detail": "Dasselbe Bild, mehr Details",
+          "title": "Hochskalieren"
         }
       },
       "prompt": {
@@ -4363,6 +4378,8 @@
     "resubscribeFailed": "Abonnement konnte nicht reaktiviert werden",
     "resubscribeSuccess": "Abonnement erfolgreich reaktiviert",
     "resubscribeTo": "{plan} erneut abonnieren",
+    "salesManagedRunBlockedDetail": "Der Tarif dieses Workspace ist nicht mehr aktiv. Wenden Sie sich an Ihre Comfy-Kundenbetreuung, um den Zugriff wiederherzustellen.",
+    "salesManagedRunBlockedTitle": "Tarif inaktiv",
     "saveYearly": "20 % sparen",
     "saveYearlyUpTo": "Bis zu 20 % sparen",
     "soloUseOnly": "Nur für Einzelnutzung",
@@ -4441,6 +4458,7 @@
     "title": "Abonnement",
     "titleUnsubscribed": "Comfy Cloud abonnieren",
     "totalCredits": "Credits insgesamt",
+    "unknownTierName": "Aktueller Tarif",
     "upgrade": "UPGRADEN",
     "upgradePlan": "Plan upgraden",
     "upgradeTo": "Auf {plan} upgraden",
