@@ -164,7 +164,7 @@ describe('API key authentication initialization', () => {
 
     expect(mockFetch).toHaveBeenCalledOnce()
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/customers'),
+      expect.stringContaining('/api/user'),
       expect.objectContaining({
         headers: expect.objectContaining({ 'X-API-KEY': 'key-b' })
       })
