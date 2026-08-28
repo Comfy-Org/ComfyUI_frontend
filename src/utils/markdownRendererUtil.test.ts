@@ -64,6 +64,35 @@ describe('markdownRendererUtil', () => {
       )
     })
 
+    it('rewrites protocol-relative Comfy API URLs through the parse fallback', () => {
+      const html = renderMarkdownToHtml(
+        '[asset](//cloud.comfy.org/api/view?filename=gen.png)',
+        'http://localhost:5228/api'
+      )
+
+      expect(html).toContain(
+        'href="http://localhost:5228/api/view?filename=gen.png"'
+      )
+    })
+
+    it('keeps a quoted title inside its attribute', () => {
+      const html = renderMarkdownToHtml(
+        '[asset](https://example.com/a "quo\\"te onmouseover=alert(1)")'
+      )
+
+      expect(html).toContain('title="quo&quot;te onmouseover=alert(1)"')
+      expect(html).toContain('href="https://example.com/a"')
+    })
+
+    it('leaves absolute raw-HTML media srcs verbatim', () => {
+      const html = renderMarkdownToHtml(
+        '<video src="https://cloud.comfy.org/api/view?f=a.mp4" controls></video>',
+        'http://localhost:5228/api'
+      )
+
+      expect(html).toContain('src="https://cloud.comfy.org/api/view?f=a.mp4"')
+    })
+
     it('does not rebase API URLs on unrelated hosts', () => {
       const html = renderMarkdownToHtml(
         '[asset](https://example.com/api/view?filename=gen.png)',
