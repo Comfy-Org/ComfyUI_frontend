@@ -7,7 +7,8 @@ import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import {
   isAssetPreviewSupported,
-  persistThumbnail
+  persistThumbnailFromDataUrl,
+  THUMBNAIL_CAPTURE_SIZE
 } from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
@@ -511,10 +512,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     const name = standaloneAssetName(modelUrl)
     if (!name) return
     void load3d
-      .captureThumbnail(256, 256)
-      .then((dataUrl) => fetch(dataUrl))
-      .then((response) => response.blob())
-      .then((blob) => persistThumbnail(name, blob))
+      .captureThumbnail(THUMBNAIL_CAPTURE_SIZE, THUMBNAIL_CAPTURE_SIZE)
+      .then((dataUrl) => persistThumbnailFromDataUrl(name, dataUrl))
       .catch(() => {})
   }
 

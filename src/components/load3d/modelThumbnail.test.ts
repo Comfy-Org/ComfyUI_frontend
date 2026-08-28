@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateModelThumbnail } from './modelThumbnail'
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
-const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
+const persistThumbnailFromDataUrl = vi.hoisted(() => vi.fn(async () => {}))
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   isAssetPreviewSupported,
-  persistThumbnail
+  persistThumbnailFromDataUrl,
+  THUMBNAIL_CAPTURE_SIZE: 256
 }))
 
 const createLoad3d = vi.hoisted(() => vi.fn())
@@ -25,7 +26,7 @@ describe('generateModelThumbnail', () => {
   beforeEach(() => {
     createLoad3d.mockReset()
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
-    persistThumbnail.mockReset()
+    persistThumbnailFromDataUrl.mockClear()
   })
 
   it('renders offscreen, returns the data url, and disposes the instance', async () => {
@@ -40,7 +41,7 @@ describe('generateModelThumbnail', () => {
     expect(result).toBe('data:image/png;base64,thumb')
     expect(instance.loadModel).toHaveBeenCalledWith('/api/view?filename=a.glb')
     expect(instance.remove).toHaveBeenCalledTimes(1)
-    expect(persistThumbnail).not.toHaveBeenCalled()
+    expect(persistThumbnailFromDataUrl).not.toHaveBeenCalled()
   })
 
   it('persists the thumbnail when the asset API is available', async () => {
@@ -54,20 +55,30 @@ describe('generateModelThumbnail', () => {
     await generateModelThumbnail('/a.glb', 'a.glb')
 
     await vi.waitFor(() =>
-      expect(persistThumbnail).toHaveBeenCalledWith('a.glb', expect.any(Blob))
+      expect(persistThumbnailFromDataUrl).toHaveBeenCalledWith(
+        'a.glb',
+        'data:image/png;base64,thumb'
+      )
     )
   })
 
-  it('returns null and still disposes when the model fails to load', async () => {
-    const instance = mockInstance({
+  it('fails observably: null result, disposal, no persist, live queue', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const broken = mockInstance({
       loadModel: vi.fn().mockRejectedValue(new Error('bad model'))
     })
-    createLoad3d.mockReturnValue(instance)
+    const healthy = mockInstance()
+    createLoad3d.mockReturnValueOnce(broken).mockReturnValueOnce(healthy)
 
     const result = await generateModelThumbnail('/broken.glb', 'broken.glb')
 
     expect(result).toBeNull()
-    expect(instance.remove).toHaveBeenCalledTimes(1)
+    expect(broken.remove).toHaveBeenCalledTimes(1)
+    expect(persistThumbnailFromDataUrl).not.toHaveBeenCalled()
+
+    const followUp = await generateModelThumbnail('/fine.glb', 'fine.glb')
+    expect(followUp).not.toBeNull()
+    expect(healthy.remove).toHaveBeenCalledTimes(1)
   })
 
   it('runs generations one at a time', async () => {

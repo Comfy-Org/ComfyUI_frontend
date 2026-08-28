@@ -1,6 +1,7 @@
 import {
   isAssetPreviewSupported,
-  persistThumbnail
+  persistThumbnailFromDataUrl,
+  THUMBNAIL_CAPTURE_SIZE
 } from '@/platform/assets/utils/assetPreviewUtil'
 
 let queue: Promise<unknown> = Promise.resolve()
@@ -28,18 +29,18 @@ async function renderThumbnail(
     const { createLoad3d } =
       await import('@/extensions/core/load3d/createLoad3d')
     const load3d = createLoad3d(document.createElement('div'), {
-      width: 256,
-      height: 256,
+      width: THUMBNAIL_CAPTURE_SIZE,
+      height: THUMBNAIL_CAPTURE_SIZE,
       isViewerMode: true
     })
     try {
       await load3d.loadModel(modelUrl)
-      const dataUrl = await load3d.captureThumbnail(256, 256)
+      const dataUrl = await load3d.captureThumbnail(
+        THUMBNAIL_CAPTURE_SIZE,
+        THUMBNAIL_CAPTURE_SIZE
+      )
       if (isAssetPreviewSupported()) {
-        void fetch(dataUrl)
-          .then((response) => response.blob())
-          .then((blob) => persistThumbnail(assetName, blob))
-          .catch(() => {})
+        void persistThumbnailFromDataUrl(assetName, dataUrl)
       }
       return dataUrl
     } finally {
