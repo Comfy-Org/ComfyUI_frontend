@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
@@ -14,7 +15,7 @@ export class OnboardingCoachmarks {
   public readonly landing: Locator
   public readonly landingStartButton: Locator
   public readonly landingSkipButton: Locator
-  /** The current spotlight step card (the dialog carrying a "Step N of M" label). */
+  /** The current spotlight card, including non-step result states. */
   public readonly spotlight: Locator
   public readonly card: Locator
   public readonly cardNextButton: Locator
@@ -30,7 +31,7 @@ export class OnboardingCoachmarks {
       exact: true
     })
     this.spotlight = page.getByTestId('coach-spotlight')
-    this.card = page.getByRole('dialog').filter({ hasText: /Step \d+ of \d+/ })
+    this.card = page.getByTestId('coach-card')
     this.cardNextButton = this.card.getByRole('button', { name: 'Next' })
     this.cardDoneButton = this.card.getByRole('button', { name: 'Done' })
   }
@@ -43,6 +44,34 @@ export class OnboardingCoachmarks {
   /** The spotlight card while it is showing the given step number. */
   cardForStep(step: number): Locator {
     return this.card.filter({ hasText: new RegExp(`Step ${step} of `) })
+  }
+
+  /** How many steps the card says the tour has, once it says anything. */
+  async stepCount(): Promise<number> {
+    await expect(this.card).toContainText(/Step \d+ of \d+/)
+    const label = await this.card.textContent()
+    return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
+  }
+
+  /**
+   * Steps forward until the card parks on the step carrying `title`, whatever
+   * the sequence is, and reports how many steps the tour said it had.
+   */
+  async walkToStep(title: string): Promise<number> {
+    const target = this.card.getByText(title)
+    const totalSteps = await this.stepCount()
+
+    for (let step = 1; step < totalSteps; step++) {
+      await expect(this.card).toContainText(`Step ${step} of ${totalSteps}`)
+      if (await target.isVisible()) break
+      await this.cardNextButton.click()
+    }
+
+    await expect(
+      target,
+      `the tour ran out of steps before reaching "${title}"`
+    ).toBeVisible()
+    return totalSteps
   }
 
   /**

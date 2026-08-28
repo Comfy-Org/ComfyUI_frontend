@@ -7,6 +7,8 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import FirstRunTourNudge from './FirstRunTourNudge.vue'
+import { FIRST_RUN_SUGGESTIONS } from './firstRunNudgeSuggestions'
+import type { FirstRunSuggestionId } from './firstRunNudgeSuggestions'
 
 const APPEAR_DELAY_MS = 1500
 const CATALOG_WAIT_MS = 3000
@@ -15,12 +17,22 @@ const FIRST_OUTPUT = {
   subfolder: 'tour',
   type: 'output' as const
 }
-type SuggestionId = 'animate' | 'upscale' | 'restyle'
 
-const SUGGESTION_TITLES: Record<SuggestionId, string> = {
-  animate: enMessages.onboardingCoachmarks.firstRun.nudge.animate.title,
-  upscale: enMessages.onboardingCoachmarks.firstRun.nudge.upscale.title,
-  restyle: enMessages.onboardingCoachmarks.firstRun.nudge.restyle.title
+/**
+ * The template each action continues into, spelled out rather than read off
+ * `FIRST_RUN_SUGGESTIONS`, so repointing an action at another template fails
+ * here instead of being asserted against itself.
+ */
+const CONTINUATION_TEMPLATE_IDS = {
+  animate: 'video_minimax_h3_i2v_continuation',
+  upscale: 'utility_seedvr2_7b_int8_upscale_image',
+  restyle: 'api_google_nano_banana2_image_edit_continuation'
+} as const satisfies Record<FirstRunSuggestionId, string>
+
+function suggestionTitle(id: FirstRunSuggestionId): string {
+  const found = FIRST_RUN_SUGGESTIONS.find((entry) => entry.id === id)
+  if (!found) throw new Error(`No such suggestion: ${id}`)
+  return i18n.global.t(found.titleKey)
 }
 
 type Deferred<T> = {
@@ -36,11 +48,7 @@ function createDeferred<T>(): Deferred<T> {
   return { promise, resolve }
 }
 
-const CATALOG_TEMPLATE_IDS = [
-  'video_minimax_h3_i2v_continuation',
-  'utility_seedvr2_7b_int8_upscale_image',
-  'api_google_nano_banana2_image_edit_continuation'
-]
+const CATALOG_TEMPLATE_IDS = Object.values(CONTINUATION_TEMPLATE_IDS)
 
 /** Stands in for what the install's template package actually serves. */
 function catalogEntry(name: string, withIo: boolean) {
@@ -153,9 +161,9 @@ function nudge() {
   return screen.queryByTestId('first-run-nudge')
 }
 
-function suggestionButton(id: SuggestionId) {
+function suggestionButton(id: FirstRunSuggestionId) {
   return screen.getByRole('button', {
-    name: new RegExp(SUGGESTION_TITLES[id], 'i')
+    name: new RegExp(suggestionTitle(id), 'i')
   })
 }
 
@@ -190,7 +198,7 @@ describe('FirstRunTourNudge', () => {
     ).toBeTruthy()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
       tour: 'firstRun',
-      suggestion_count: 3
+      suggestion_count: FIRST_RUN_SUGGESTIONS.length
     })
   })
 
@@ -221,29 +229,16 @@ describe('FirstRunTourNudge', () => {
     expect(mocks.dismissNudge).toHaveBeenCalledTimes(2)
   })
 
-  it.for([
-    {
-      id: 'animate',
-      templateId: 'video_minimax_h3_i2v_continuation'
-    },
-    {
-      id: 'upscale',
-      templateId: 'utility_seedvr2_7b_int8_upscale_image'
-    },
-    {
-      id: 'restyle',
-      templateId: 'api_google_nano_banana2_image_edit_continuation'
-    }
-  ] as const)(
+  it.for(FIRST_RUN_SUGGESTIONS)(
     'continues the first output through $id',
-    async ({ id, templateId }) => {
+    async ({ id }) => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       await showNudge()
 
       await user.click(suggestionButton(id))
 
       expect(mocks.loadWorkflowTemplate).toHaveBeenCalledWith(
-        templateId,
+        CONTINUATION_TEMPLATE_IDS[id],
         'default',
         { input: FIRST_OUTPUT }
       )
@@ -251,7 +246,7 @@ describe('FirstRunTourNudge', () => {
         'nudge_suggestion_clicked',
         {
           tour: 'firstRun',
-          suggestion_count: 3,
+          suggestion_count: FIRST_RUN_SUGGESTIONS.length,
           suggestion: id,
           loaded: true
         }
@@ -282,7 +277,7 @@ describe('FirstRunTourNudge', () => {
     expect(suggestionButton('animate')).toBeTruthy()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
       tour: 'firstRun',
-      suggestion_count: 3
+      suggestion_count: FIRST_RUN_SUGGESTIONS.length
     })
   })
 
@@ -313,7 +308,7 @@ describe('FirstRunTourNudge', () => {
 
     expect(
       screen.queryByRole('button', {
-        name: new RegExp(SUGGESTION_TITLES.animate, 'i')
+        name: new RegExp(suggestionTitle('animate'), 'i')
       }),
       'the catalog deadline already decided what the card showed and reported'
     ).toBeNull()
@@ -354,13 +349,13 @@ describe('FirstRunTourNudge', () => {
   })
 
   it('offers only the continuations the install actually serves', async () => {
-    mocks.catalog.value = ['utility_seedvr2_7b_int8_upscale_image']
+    mocks.catalog.value = [CONTINUATION_TEMPLATE_IDS.upscale]
     await showNudge()
 
     expect(suggestionButton('upscale')).toBeTruthy()
     expect(
       screen.queryByRole('button', {
-        name: new RegExp(SUGGESTION_TITLES.animate, 'i')
+        name: new RegExp(suggestionTitle('animate'), 'i')
       }),
       'this build knows the id, but the pinned template package does not serve it'
     ).toBeNull()
@@ -382,7 +377,7 @@ describe('FirstRunTourNudge', () => {
 
       expect(
         screen.queryByRole('button', {
-          name: new RegExp(SUGGESTION_TITLES.animate, 'i')
+          name: new RegExp(suggestionTitle('animate'), 'i')
         }),
         'every action would be a dead end found by clicking it'
       ).toBeNull()
@@ -410,7 +405,7 @@ describe('FirstRunTourNudge', () => {
     ).toBeTruthy()
     expect(
       screen.queryByRole('button', {
-        name: new RegExp(SUGGESTION_TITLES.animate, 'i')
+        name: new RegExp(suggestionTitle('animate'), 'i')
       }),
       'there is nothing to seed a continuation with'
     ).toBeNull()
@@ -475,7 +470,7 @@ describe('FirstRunTourNudge', () => {
       'nudge_suggestion_clicked',
       {
         tour: 'firstRun',
-        suggestion_count: 3,
+        suggestion_count: FIRST_RUN_SUGGESTIONS.length,
         suggestion: 'animate',
         loaded: false
       }
@@ -495,7 +490,7 @@ describe('FirstRunTourNudge', () => {
     expect(mocks.showTemplates).toHaveBeenCalledWith('first_run_nudge')
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
       'explore_templates_clicked',
-      { tour: 'firstRun', suggestion_count: 3 }
+      { tour: 'firstRun', suggestion_count: FIRST_RUN_SUGGESTIONS.length }
     )
     expect(mocks.dismissNudge).toHaveBeenCalled()
   })
