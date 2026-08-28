@@ -14,19 +14,6 @@
           <stop offset="0%" stop-color="#49378B" stop-opacity="0.32" />
           <stop offset="100%" stop-color="#211927" stop-opacity="0" />
         </radialGradient>
-        <filter
-          id="builder-source-glow"
-          x="-150%"
-          y="-150%"
-          width="400%"
-          height="400%"
-        >
-          <feGaussianBlur stdDeviation="10" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
       </defs>
 
       <rect width="1200" height="700" fill="#211927" />
@@ -75,14 +62,19 @@
         width="362"
         height="192"
       />
-      <image
-        href="/assets/platform/builder/cube-large.png"
-        x="520"
-        y="190"
-        width="160"
-        height="190"
-        class="animate-platform-builder-float"
-      />
+      <g class="animate-platform-builder-float">
+        <image
+          href="/assets/platform/builder/cube-large.png"
+          x="520"
+          y="190"
+          width="160"
+          height="190"
+        />
+        <path
+          d="M592 192 Q600 187 608 192 L672 228 Q686 236 672 246 L608 282 Q600 287 592 282 L528 246 Q514 236 528 228 Z"
+          class="fill-primary-comfy-yellow"
+        />
+      </g>
 
       <image
         href="/assets/platform/builder/base-small.svg"
@@ -98,28 +90,37 @@
         width="142"
         height="77"
       />
-      <image
-        href="/assets/platform/builder/cube-small.png"
-        x="1018"
-        y="202"
-        width="64"
-        height="69"
-        class="animate-platform-builder-float-slow"
-      />
-      <image
-        href="/assets/platform/builder/cube-small.png"
-        x="1018"
-        y="437"
-        width="64"
-        height="69"
-        class="animate-platform-builder-float-delayed"
-      />
+      <g class="animate-platform-builder-float-slow">
+        <image
+          href="/assets/platform/builder/cube-small.png"
+          x="1018"
+          y="202"
+          width="64"
+          height="69"
+        />
+        <path
+          d="M1046.8 202.8 Q1050 200.8 1053.2 202.8 L1078.8 217.2 Q1084.4 220.4 1078.8 224.4 L1053.2 238.8 Q1050 240.8 1046.8 238.8 L1021.2 224.4 Q1015.6 220.4 1021.2 217.2 Z"
+          class="fill-primary-comfy-yellow"
+        />
+      </g>
+      <g class="animate-platform-builder-float-delayed">
+        <image
+          href="/assets/platform/builder/cube-small.png"
+          x="1018"
+          y="437"
+          width="64"
+          height="69"
+        />
+        <path
+          d="M1046.8 437.8 Q1050 435.8 1053.2 437.8 L1078.8 452.2 Q1084.4 455.4 1078.8 459.4 L1053.2 473.8 Q1050 475.8 1046.8 473.8 L1021.2 459.4 Q1015.6 455.4 1021.2 452.2 Z"
+          class="fill-primary-comfy-yellow"
+        />
+      </g>
 
       <g class="animate-platform-builder-pulse">
         <polygon
           points="110,106 80.6,123 80.6,157 110,174 139.4,157 139.4,123"
           fill="#F2FF59"
-          filter="url(#builder-source-glow)"
         />
       </g>
       <polygon
