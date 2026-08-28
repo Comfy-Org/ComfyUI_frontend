@@ -978,23 +978,6 @@
     "WAN_CAMERA_EMBEDDING": "WAN_KAMERA_GÖMÜLMESİ",
     "WEBCAM": "WEBCAM"
   },
-  "desktopDialogs": {
-    "invalidDialog": {
-      "buttons": {
-        "Close": "Kapat"
-      },
-      "message": "Geçersiz iletişim kutusu kimliği sağlandı.",
-      "title": "Geçersiz İletişim Kutusu"
-    },
-    "reinstallVenv": {
-      "buttons": {
-        "Learn More": "Daha Fazla Bilgi",
-        "Reinstall": "Yeniden Yükle"
-      },
-      "message": "Üzgünüz, yüklü bazı paketler uyumlu olmadığı için ComfyUI'yi başlatamıyoruz.\n\nComfyUI'yi geri yüklemek ve tekrar çalışır duruma getirmek için Yeniden Yükle'ye tıklayın.\n\nLütfen dikkat: özel düğümler eklediyseniz, bu işlemden sonra onları yeniden yüklemeniz gerekir.",
-      "title": "ComfyUI yeniden yüklensin mi (Temiz Başlangıç)?"
-    }
-  },
   "desktopLogin": {
     "confirmMessage": "ComfyUI masaüstü uygulaması hesabınızla oturum açmayı bekliyor. Yalnızca ComfyUI masaüstü uygulamasından oturum açmayı yeni başlattıysanız devam edin.",
     "confirmSummary": "Masaüstü oturum açmayı onayla?",
