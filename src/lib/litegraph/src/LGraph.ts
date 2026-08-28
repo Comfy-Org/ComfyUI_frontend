@@ -644,11 +644,12 @@ export class LGraph
   }
 
   set last_node_id(value) {
-    if (value < MINT_ID_MIN) {
-      this.state.lastNodeId = value
+    const numeric = Number(value)
+    if (Number.isInteger(numeric) && numeric < MINT_ID_MIN - 1) {
+      this.state.lastNodeId = numeric
     } else if (import.meta.env.DEV) {
       console.warn(
-        `last_node_id write ${value} is in the coordination-free mint range; ignored`
+        `last_node_id write ${value} is not a counter-range integer; ignored`
       )
     }
   }
@@ -659,11 +660,12 @@ export class LGraph
   }
 
   set last_link_id(value) {
-    if (value < MINT_ID_MIN) {
-      this.state.lastLinkId = toLinkId(value)
+    const numeric = Number(value)
+    if (Number.isInteger(numeric) && numeric < MINT_ID_MIN - 1) {
+      this.state.lastLinkId = toLinkId(numeric)
     } else if (import.meta.env.DEV) {
       console.warn(
-        `last_link_id write ${value} is in the coordination-free mint range; ignored`
+        `last_link_id write ${value} is not a counter-range integer; ignored`
       )
     }
   }

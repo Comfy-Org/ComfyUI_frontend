@@ -88,7 +88,8 @@ export function mintRerouteId(state: LGraphState): RerouteId {
 }
 
 /**
- * Ids at or above `MINT_ID_MIN` never seed a counter: absorbing a minted id
+ * Ids at or above `MINT_ID_MIN - 1` never seed a counter (the boundary
+ * value's own next ++ would allocate exactly the floor): absorbing a minted id
  * would advance `lastNodeId`/`lastLinkId` into the mint range, and the next
  * counter allocation on any replica could then alias a minted entry - the
  * disjointness the range exists to guarantee, in the other direction.
@@ -97,7 +98,7 @@ export function observeNodeId(state: LGraphState, id: NodeId): void {
   const numericId = Number(id)
   if (
     Number.isInteger(numericId) &&
-    numericId < MINT_ID_MIN &&
+    numericId < MINT_ID_MIN - 1 &&
     numericId > state.lastNodeId
   ) {
     state.lastNodeId = numericId
@@ -109,7 +110,11 @@ export function observeGroupId(state: LGraphState, id: GroupId): void {
 }
 
 export function observeLinkId(state: LGraphState, id: LinkId): void {
-  if (Number.isInteger(Number(id)) && id < MINT_ID_MIN && id > state.lastLinkId)
+  if (
+    Number.isInteger(Number(id)) &&
+    id < MINT_ID_MIN - 1 &&
+    id > state.lastLinkId
+  )
     state.lastLinkId = id
 }
 
