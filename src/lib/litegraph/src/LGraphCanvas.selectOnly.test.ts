@@ -528,6 +528,21 @@ describe('LGraphCanvas selectOnly', () => {
     expect(canvas.selectedItems).toEqual(new Set([firstNode]))
   })
 
+  it('a node-armed click keeps picking additive after the mode ends', () => {
+    const { canvas, firstNode, secondNode } = createHarness()
+    canvas.select(firstNode)
+    canvas.selectOnly = true
+    const event = { canvasX: 460, canvasY: 150 } as CanvasPointerEvent
+    canvas['_processPrimaryButton'](event, secondNode)
+
+    // The third gesture arm: a node press resolves its click on the
+    // gesture snapshot too, so the flip cannot turn the pick replacing.
+    canvas.selectOnly = false
+    canvas.pointer.onClick?.(event)
+
+    expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
+  })
+
   it('live-selects additively through the full gesture without churning', () => {
     const { canvas, graph, firstNode, secondNode } = createHarness()
     LiteGraph.leftMouseClickBehavior = 'select'
@@ -554,6 +569,7 @@ describe('LGraphCanvas selectOnly', () => {
     // Additive through the live path; the group is refused by picking.
     expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
     const callsAfterFirstMove = changes.mock.calls.length
+    expect(callsAfterFirstMove).toBe(1)
 
     canvas.pointer.onDrag?.(move)
 
@@ -578,6 +594,26 @@ describe('LGraphCanvas selectOnly', () => {
     canvas['_processPrimaryButton'](press, undefined)
     canvas.pointer.onDragStart?.(canvas.pointer)
     canvas.pointer.onDrag?.(move)
+
+    expect(canvas.selectedItems).toEqual(new Set([secondNode]))
+  })
+
+  it('retains the replacing classic marquee through the full gesture when disabled', () => {
+    const { canvas, firstNode, secondNode } = createHarness()
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.select(firstNode)
+    const press = { canvasX: 380, canvasY: 80 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](press, undefined)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+    canvas.dragging_rectangle![2] = 200
+    canvas.dragging_rectangle![3] = 120
+    canvas.pointer.onDragEnd?.({
+      canvasX: 580,
+      canvasY: 200,
+      shiftKey: false,
+      altKey: false
+    } as CanvasPointerEvent)
 
     expect(canvas.selectedItems).toEqual(new Set([secondNode]))
   })
