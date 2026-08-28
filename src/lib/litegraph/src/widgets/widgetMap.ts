@@ -103,7 +103,8 @@ function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
     if (
       concreteDescriptor.get !== undefined &&
       concreteDescriptor.set === undefined &&
-      Object.getOwnPropertyDescriptor(widget, key)?.writable === true
+      (foreignDescriptor.set !== undefined ||
+        Object.getOwnPropertyDescriptor(widget, key)?.writable === true)
     ) {
       descriptors.set(key, foreignDescriptor)
       continue
