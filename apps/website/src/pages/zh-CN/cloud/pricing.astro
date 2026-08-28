@@ -4,6 +4,8 @@ import CloudPricingSection from '../../../components/pricing/CloudPricingSection
 import WhatsIncludedSection from '../../../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../../../components/pricing/PricingFaq.astro'
 import MinimaxLicenseHeroSection from '../../../components/common/MinimaxLicenseHeroSection.vue'
+import ModelLaunchComparisonSection from '../../../templates/model-launch/ModelLaunchComparisonSection.vue'
+import { minimaxLicenseComparison } from '../../../data/minimaxLicense'
 import { pricingOffers } from '../../../config/pricing'
 import { t } from '../../../i18n/translations'
 import {
@@ -43,6 +45,10 @@ const productId = jsonLdId(url, 'product')
   ]}
 >
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
+  <ModelLaunchComparisonSection
+    comparison={minimaxLicenseComparison}
+    locale="zh-CN"
+  />
   <CloudPricingSection locale="zh-CN" client:load />
   <WhatsIncludedSection locale="zh-CN" />
   <PricingFaq locale="zh-CN" />

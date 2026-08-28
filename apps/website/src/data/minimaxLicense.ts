@@ -1,4 +1,7 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type {
+  ModelLaunchComparison,
+  ModelLaunchPage
+} from '../templates/model-launch/types'
 
 import { minimaxLinks } from './minimax'
 
@@ -14,6 +17,145 @@ const HERO_POSTER_SRC =
 // contact and H3 routes are spelled out rather than taken from baseRoutes.
 const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
+
+// Published on /minimax/license and /cloud/pricing both — a number changed
+// here changes two live pages. No "model upgrades" row: Professional is still
+// TBD, and the Enterprise side of it is the successor-model line held back
+// below.
+export const minimaxLicenseComparison: ModelLaunchComparison = {
+  headingKey: 'minimaxLicense.comparison.heading',
+  subtitleKey: 'minimaxLicense.comparison.subtitle',
+  footnoteKey: 'minimaxLicense.comparison.footnote',
+  primaryCta: {
+    labelKey: 'minimaxLicense.comparison.primaryCta',
+    href: CONTACT_HREF
+  },
+  columns: [
+    { id: 'professional', label: { en: 'Professional', 'zh-CN': '专业版' } },
+    {
+      id: 'enterprise',
+      label: { en: 'Enterprise', 'zh-CN': '企业版' },
+      featured: true
+    }
+  ],
+  rows: [
+    {
+      id: 'monthly-price',
+      label: { en: 'Monthly price', 'zh-CN': '月费' },
+      values: {
+        professional: { en: '$5,000', 'zh-CN': '5,000 美元' },
+        enterprise: {
+          en: 'Custom, from $20,000',
+          'zh-CN': '定制，20,000 美元起'
+        }
+      }
+    },
+    {
+      id: 'video-seconds',
+      label: { en: 'Video-seconds included', 'zh-CN': '含视频秒数' },
+      values: {
+        professional: { en: '~46,250', 'zh-CN': '约 46,250' },
+        enterprise: { en: 'Custom', 'zh-CN': '定制' }
+      }
+    },
+    {
+      id: 'bundle-rate',
+      label: {
+        en: 'Price per video-second (in bundle)',
+        'zh-CN': '套餐内每视频秒单价'
+      },
+      values: {
+        professional: { en: '$0.108', 'zh-CN': '0.108 美元' },
+        enterprise: {
+          en: '$0.108, down to a $0.06 floor',
+          'zh-CN': '0.108 美元，最低降至 0.06 美元'
+        }
+      }
+    },
+    {
+      id: 'overage-rate',
+      label: { en: 'Overage per video-second', 'zh-CN': '超额每视频秒' },
+      values: {
+        professional: { en: '$0.036', 'zh-CN': '0.036 美元' },
+        enterprise: {
+          en: '1/3 of the bundle rate, min $0.02',
+          'zh-CN': '套餐单价的 1/3，最低 0.02 美元'
+        }
+      }
+    },
+    {
+      id: 'licensed-users',
+      label: { en: 'Licensed users', 'zh-CN': '授权用户数' },
+      values: {
+        professional: { en: 'Up to 10', 'zh-CN': '最多 10 个' },
+        enterprise: { en: 'No cap', 'zh-CN': '不限' }
+      }
+    },
+    {
+      id: 'domains',
+      label: { en: 'Domains', 'zh-CN': '域名数' },
+      values: {
+        professional: { en: '1', 'zh-CN': '1 个' },
+        enterprise: { en: 'Custom', 'zh-CN': '定制' }
+      }
+    },
+    {
+      id: 'commercial-use',
+      label: { en: 'Commercial use of outputs', 'zh-CN': '产出的商业使用' },
+      values: {
+        professional: {
+          en: 'Yes, full commercial rights',
+          'zh-CN': '是，完整商业权利'
+        },
+        enterprise: {
+          en: 'Yes, full commercial rights',
+          'zh-CN': '是，完整商业权利'
+        }
+      }
+    },
+    {
+      id: 'fine-tuning',
+      label: {
+        en: 'Fine-tuning and LoRA training',
+        'zh-CN': '微调与 LoRA 训练'
+      },
+      values: {
+        professional: { en: 'Yes', 'zh-CN': '是' },
+        enterprise: { en: 'Yes', 'zh-CN': '是' }
+      }
+    },
+    {
+      id: 'downstream-work',
+      label: { en: 'Client and downstream work', 'zh-CN': '客户与下游项目' },
+      values: {
+        professional: { en: 'Yes', 'zh-CN': '是' },
+        enterprise: { en: 'Yes', 'zh-CN': '是' }
+      }
+    },
+    {
+      id: 'model-versions',
+      label: { en: 'Model versions', 'zh-CN': '模型版本' },
+      values: {
+        professional: {
+          en: 'Distilled open-weight versions',
+          'zh-CN': '蒸馏开源权重版本'
+        },
+        enterprise: {
+          en: 'Every version, undistilled weights included',
+          'zh-CN': '所有版本，含未蒸馏权重'
+        }
+      }
+    },
+    {
+      id: 'term',
+      label: { en: 'Term', 'zh-CN': '合约期限' },
+      values: {
+        professional: { en: 'Monthly', 'zh-CN': '按月' },
+        enterprise: { en: '12-month minimum', 'zh-CN': '至少 12 个月' }
+      }
+    }
+  ]
+}
 
 export const minimaxLicensePage: ModelLaunchPage = {
   metaTitleKey: 'minimaxLicense.meta.title',
@@ -42,7 +184,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
       'minimaxLicense.hero.tagGlobal'
     ]
   },
-  sectionOrder: ['steps', 'faq', 'closingCta'],
+  sectionOrder: ['steps', 'comparison', 'faq', 'closingCta'],
   steps: {
     headingKey: 'minimaxLicense.steps.heading',
     stepLabelKey: 'minimaxLicense.steps.step',
@@ -75,6 +217,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
       }
     ]
   },
+  comparison: minimaxLicenseComparison,
   // Open-weight successor models roll into an active license per the deal, but
   // that line stays OFF the page until the contract's "qualifying" language is
   // tightened (Kevin, 08-27) — stick to what's covered today.

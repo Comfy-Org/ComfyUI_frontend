@@ -118,6 +118,32 @@ interface ModelLaunchPricingBanner {
   cta: ModelLaunchCta
 }
 
+// A tier-by-tier comparison table, e.g. the MiniMax commercial-license tiers.
+// Rows key their cells by column id, not by position, so a row missing a
+// column is a type error rather than a silently blank cell.
+interface ModelLaunchComparisonColumn {
+  id: string
+  label: LocalizedText
+  // Lifts the column onto a raised surface, the way the pricing cards mark
+  // the plan being steered towards.
+  featured?: boolean
+}
+
+interface ModelLaunchComparisonRow<ColumnId extends string = string> {
+  id: string
+  label: LocalizedText
+  values: Readonly<Record<ColumnId, LocalizedText>>
+}
+
+export interface ModelLaunchComparison<ColumnId extends string = string> {
+  headingKey: TranslationKey
+  subtitleKey?: TranslationKey
+  columns: readonly (ModelLaunchComparisonColumn & { id: ColumnId })[]
+  rows: readonly ModelLaunchComparisonRow<ColumnId>[]
+  footnoteKey?: TranslationKey
+  primaryCta?: ModelLaunchCta
+}
+
 export interface ModelLaunchPricing {
   banner?: ModelLaunchPricingBanner
   defaultBillingCycle?: BillingCycle
@@ -181,6 +207,7 @@ export type ModelLaunchSection =
   | 'audioGallery'
   | 'steps'
   | 'pricing'
+  | 'comparison'
   | 'faq'
   | 'closingCta'
 
@@ -192,6 +219,7 @@ export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
   'gallery',
   'audioGallery',
   'pricing',
+  'comparison',
   'faq',
   'steps',
   'closingCta'
@@ -208,6 +236,7 @@ export interface ModelLaunchPage {
   gallery?: ModelLaunchGallery
   audioGallery?: ModelLaunchAudioGallery
   pricing?: ModelLaunchPricing
+  comparison?: ModelLaunchComparison
   faq?: ModelLaunchFaqSection
   steps?: ModelLaunchSteps
   // Pages that end on a steps CTA row do not need a separate closing CTA.

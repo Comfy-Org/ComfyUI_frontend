@@ -6825,6 +6825,22 @@ const translations = {
     en: 'SEE MINIMAX H3',
     'zh-CN': '了解 MiniMax H3'
   },
+  'minimaxLicense.comparison.heading': {
+    en: 'License pricing',
+    'zh-CN': '许可定价'
+  },
+  'minimaxLicense.comparison.subtitle': {
+    en: 'Both tiers are priced on video-seconds and carry full commercial rights to everything you generate.',
+    'zh-CN': '两种级别均按视频秒数计价，并对你生成的一切内容享有完整商业权利。'
+  },
+  'minimaxLicense.comparison.footnote': {
+    en: 'Prices in USD and exclude tax. Enterprise volume pricing and terms are quoted per agreement.',
+    'zh-CN': '价格以美元计，不含税。企业版批量定价与条款按协议报价。'
+  },
+  'minimaxLicense.comparison.primaryCta': {
+    en: 'REQUEST LICENSE',
+    'zh-CN': '申请许可'
+  },
   'minimaxLicense.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'minimaxLicense.cta.heading': {
     en: 'One model, every use case. Licensed for yours.',

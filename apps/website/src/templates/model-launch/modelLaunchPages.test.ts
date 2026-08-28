@@ -64,6 +64,10 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.pricing?.banner?.titleKey,
       page.pricing?.banner?.subtitleKey,
       page.pricing?.banner?.cta.labelKey,
+      page.comparison?.headingKey,
+      page.comparison?.subtitleKey,
+      page.comparison?.footnoteKey,
+      page.comparison?.primaryCta?.labelKey,
       page.faq?.headingKey,
       page.steps?.headingKey,
       page.steps?.stepLabelKey,
@@ -109,6 +113,30 @@ describe.for(pages)('$name launch page config', ({ page }) => {
     }
   })
 
+  it('fills every comparison cell in both locales', () => {
+    const columnIds = page.comparison?.columns.map((column) => column.id) ?? []
+
+    expect(new Set(columnIds).size).toBe(columnIds.length)
+
+    for (const row of page.comparison?.rows ?? []) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(row.label[locale], `${row.id} label`).not.toBe('')
+        for (const columnId of columnIds) {
+          expect(
+            row.values[columnId]?.[locale],
+            `${row.id} / ${columnId}`
+          ).toBeTruthy()
+        }
+      }
+    }
+
+    for (const column of page.comparison?.columns ?? []) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(column.label[locale], `${column.id} label`).not.toBe('')
+      }
+    }
+  })
+
   it('points every outbound link at an absolute url', () => {
     const hrefs = [
       page.hero.primaryCta?.href,
@@ -119,6 +147,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.steps?.secondaryCta?.href,
       page.hero.promptBar?.cta.href,
       page.pricing?.banner?.cta.href,
+      page.comparison?.primaryCta?.href,
       ...(page.gallery?.cards.map((card) => card.href) ?? [])
     ].filter((href): href is string => href !== undefined)
 
