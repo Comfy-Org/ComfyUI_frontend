@@ -25,19 +25,19 @@ const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({
     getInputSpecForWidget: mockGetInputSpecForWidget
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     canvas: { setDirty: vi.fn() }
   })
 }))
 
-vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/favoritedWidgetsStore'), () => ({
   useFavoritedWidgetsStore: () => ({
     isFavorited: vi.fn().mockReturnValue(false),
     toggleFavorite: vi.fn()
@@ -45,15 +45,15 @@ vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
 }))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
+  import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
   () => ({
     getComponent: () => StubWidgetComponent,
     shouldExpand: () => false
   })
 )
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'),
   () => ({
     default: StubWidgetComponent
   })

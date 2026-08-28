@@ -26,13 +26,13 @@ const overlayMock = vi.hoisted(() => ({
   overlayTitle: 'Required input missing'
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canRunWorkflows: billingMock.canRunWorkflows
   })
 }))
 
-vi.mock('@/components/error/useErrorOverlayState', () => ({
+vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
   useErrorOverlayState: () => ({
     overlayMessage: overlayMock.overlayMessage,
     overlayTitle: overlayMock.overlayTitle

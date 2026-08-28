@@ -16,13 +16,13 @@ const { mockLoadTurnstile, mockGetSiteKey, mockLightTheme } = vi.hoisted(
   })
 )
 
-vi.mock('@/composables/auth/turnstileScript', () => ({
+vi.mock(import('@/composables/auth/turnstileScript'), () => ({
   loadTurnstile: mockLoadTurnstile
 }))
-vi.mock('@/config/turnstile', () => ({
+vi.mock(import('@/config/turnstile'), () => ({
   getTurnstileSiteKey: mockGetSiteKey
 }))
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
   useColorPaletteStore: () => ({
     completedActivePalette: {
       get light_theme() {

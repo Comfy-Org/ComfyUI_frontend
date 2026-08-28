@@ -9,23 +9,26 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const actual = await vi.importActual(
-    '@/platform/workflow/management/stores/workflowStore'
-  )
-  return {
-    ...actual,
-    useWorkflowStore: () => ({
-      activeWorkflow: {
-        changeTracker: {
-          captureCanvasState: mockCaptureCanvasState
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const actual = await vi.importActual(
+      '@/platform/workflow/management/stores/workflowStore'
+    )
+    return {
+      ...actual,
+      useWorkflowStore: () => ({
+        activeWorkflow: {
+          changeTracker: {
+            captureCanvasState: mockCaptureCanvasState
+          }
         }
-      }
-    })
+      })
+    }
   }
-})
+)
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     apiURL: vi.fn((url: string) => url),

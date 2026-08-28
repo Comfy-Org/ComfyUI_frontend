@@ -18,24 +18,24 @@ import { useMediaAssetActions } from './useMediaAssetActions'
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: mockDownloadFile
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('primevue/usetoast', () => {
+vi.mock<unknown>(import('primevue/usetoast'), () => {
   const add = vi.fn()
   return {
     useToast: () => ({ add })
   }
 })
 
-vi.mock('vue-i18n', () => {
+vi.mock<unknown>(import('vue-i18n'), () => {
   const t = vi.fn((key: string) => key)
   return {
     useI18n: () => ({ t }),
@@ -46,7 +46,7 @@ vi.mock('vue-i18n', () => {
 })
 
 const mockShowDialog = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     showDialog: mockShowDialog
   })
@@ -57,7 +57,7 @@ const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
 const mockUpdateHistory = vi.hoisted(() => vi.fn())
 const mockUpdateInputs = vi.hoisted(() => vi.fn())
 const mockHasCategory = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({
     setAssetDeleting: mockSetAssetDeleting,
     updateHistory: mockUpdateHistory,
@@ -67,11 +67,11 @@ vi.mock('@/stores/assetsStore', () => ({
   })
 }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
   useModelToNodeStore: () => ({})
 }))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
     copyToClipboard: vi.fn()
   })
@@ -79,15 +79,18 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
 
 const mockExportWorkflowAction = vi.hoisted(() => vi.fn())
 const mockOpenWorkflowAction = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/workflow/core/services/workflowActionsService', () => ({
-  useWorkflowActionsService: () => ({
-    openWorkflowAction: mockOpenWorkflowAction,
-    exportWorkflowAction: mockExportWorkflowAction
+vi.mock(
+  import('@/platform/workflow/core/services/workflowActionsService'),
+  () => ({
+    useWorkflowActionsService: () => ({
+      openWorkflowAction: mockOpenWorkflowAction,
+      exportWorkflowAction: mockExportWorkflowAction
+    })
   })
-}))
+)
 
 const mockExtractWorkflowFromAsset = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
+vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
   extractWorkflowFromAsset: mockExtractWorkflowFromAsset
 }))
 
@@ -95,11 +98,11 @@ const litegraphServiceMock = vi.hoisted(() => ({
   addNodeOnGraph: vi.fn<(nodeDef: unknown, options?: unknown) => LGraphNode>(),
   getCanvasCenter: vi.fn<() => [number, number]>()
 }))
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => litegraphServiceMock
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({
     nodeDefsByName: {
       LoadImage: {
@@ -110,19 +113,19 @@ vi.mock('@/stores/nodeDefStore', () => ({
   })
 }))
 
-vi.mock('@/utils/loaderNodeUtil', () => ({
+vi.mock<unknown>(import('@/utils/loaderNodeUtil'), () => ({
   detectNodeTypeFromFilename: vi.fn(() => ({
     nodeType: 'LoadImage',
     widgetName: 'image'
   }))
 }))
 
-vi.mock('@/utils/typeGuardUtil', () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isResultItemType: vi.fn(() => true)
 }))
 
 const mockGetAssetType = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/assets/utils/assetTypeUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetTypeUtil'), () => ({
   getAssetType: mockGetAssetType
 }))
 
@@ -133,14 +136,14 @@ const mockGetOutputAssetMetadata = vi.hoisted(() =>
     ) => Record<string, unknown> | null
   >(() => null)
 )
-vi.mock('../schemas/assetMetadataSchema', () => ({
+vi.mock<unknown>(import('../schemas/assetMetadataSchema'), () => ({
   getOutputAssetMetadata: mockGetOutputAssetMetadata
 }))
 
 const mockResolveOutputAssetItems = vi.hoisted(() =>
   vi.fn<typeof outputAssetUtilModule.resolveOutputAssetItems>(async () => [])
 )
-vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
+vi.mock(import('../utils/outputAssetUtil'), async (importOriginal) => {
   const actual = await importOriginal<typeof outputAssetUtilModule>()
   return {
     ...actual,
@@ -156,7 +159,7 @@ const mockCreateAssetExport = vi.hoisted(() =>
     ) => Promise<{ task_id: string; status: string; message?: string }>
   >(async () => ({ task_id: 'test-task-id', status: 'pending' }))
 )
-vi.mock('../services/assetService', () => ({
+vi.mock<unknown>(import('../services/assetService'), () => ({
   assetService: {
     deleteAsset: mockDeleteAsset,
     createAssetExport: mockCreateAssetExport
@@ -164,13 +167,13 @@ vi.mock('../services/assetService', () => ({
 }))
 
 const mockTrackExport = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/assetExportStore', () => ({
+vi.mock<unknown>(import('@/stores/assetExportStore'), () => ({
   useAssetExportStore: () => ({
     trackExport: mockTrackExport
   })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     deleteItem: vi.fn(),
     apiURL: vi.fn((path: string) => `http://localhost:8188/api${path}`),
@@ -182,7 +185,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get graph() {
       return mockAppGraph.value
@@ -195,7 +198,7 @@ vi.mock('@/scripts/app', () => ({
 
 const mockRemoveNodeOutputs = vi.hoisted(() => vi.fn())
 const mockRemoveNodeOutputsForNode = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({
     removeNodeOutputs: mockRemoveNodeOutputs,
     removeNodeOutputsForNode: mockRemoveNodeOutputsForNode
@@ -203,27 +206,30 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 }))
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: {
-      changeTracker: { captureCanvasState: mockCaptureCanvasState }
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      activeWorkflow: {
+        changeTracker: { captureCanvasState: mockCaptureCanvasState }
+      }
+    })
   })
-}))
+)
 
 const mockClearNodePreviewCache = vi.hoisted(() => vi.fn())
-vi.mock('../utils/clearNodePreviewCacheForValues', () => ({
+vi.mock(import('../utils/clearNodePreviewCacheForValues'), () => ({
   clearNodePreviewCacheForValues: mockClearNodePreviewCache,
   findNodesReferencingValues: vi.fn(() => [])
 }))
 
 const mockClearWidgetValues = vi.hoisted(() => vi.fn())
-vi.mock('../utils/clearDeletedAssetWidgetValues', () => ({
+vi.mock(import('../utils/clearDeletedAssetWidgetValues'), () => ({
   clearDeletedAssetWidgetValues: mockClearWidgetValues
 }))
 
 const mockMarkMissingMedia = vi.hoisted(() => vi.fn())
-vi.mock('../utils/markDeletedAssetsAsMissingMedia', () => ({
+vi.mock(import('../utils/markDeletedAssetsAsMissingMedia'), () => ({
   markDeletedAssetsAsMissingMedia: mockMarkMissingMedia
 }))
 

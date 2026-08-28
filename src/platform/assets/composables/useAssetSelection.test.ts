@@ -10,7 +10,7 @@ const mockShiftKey = ref(false)
 const mockCtrlKey = ref(false)
 const mockMetaKey = ref(false)
 
-vi.mock('@vueuse/core', async (importOriginal) => {
+vi.mock(import('@vueuse/core'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),

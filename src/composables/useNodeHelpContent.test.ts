@@ -30,19 +30,19 @@ function createMockNode(
   } as ComfyNodeDefImpl
 }
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fileURL: vi.fn((url) => url)
   }
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     locale: ref('en')
   })
 }))
 
-vi.mock('@/types/nodeSource', () => ({
+vi.mock<unknown>(import('@/types/nodeSource'), () => ({
   NodeSourceType: {
     Core: 'core',
     CustomNodes: 'custom_nodes'

@@ -14,11 +14,11 @@ const mockStore: MockStore = {
   maskCanvas: null
 }
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
     fn
 }))

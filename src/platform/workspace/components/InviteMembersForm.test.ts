@@ -21,25 +21,28 @@ const {
   mockTrackInviteFailed: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ fetchStatus: mockFetchStatus })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite as (
-      email: string
-    ) => Promise<WorkspacePendingInvite>
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      createInvite: mockCreateInvite as (
+        email: string
+      ) => Promise<WorkspacePendingInvite>
+    })
   })
-}))
+)
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({
     add: mockToastAdd
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackWorkspaceInviteSent: mockTrackInviteSent,
     trackWorkspaceInviteFailed: mockTrackInviteFailed

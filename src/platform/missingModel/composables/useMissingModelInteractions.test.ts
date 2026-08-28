@@ -16,31 +16,32 @@ const mockDownloadList = vi.fn(
   (): Array<{ taskId: string; status: string }> => []
 )
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: null
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: (...args: unknown[]) =>
     mockGetNodeByExecutionId(...args)
 }))
 
-vi.mock('@/utils/nodeTitleUtil', () => ({
+vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: (...args: unknown[]) =>
     mockResolveNodeDisplayName(...args)
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+// eslint-disable-next-line import-x/no-restricted-paths
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({})
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({
     updateModelsForNodeType: mockUpdateModelsForNodeType,
     invalidateModelsForCategory: mockInvalidateModelsForCategory,
@@ -48,7 +49,7 @@ vi.mock('@/stores/assetsStore', () => ({
   })
 }))
 
-vi.mock('@/stores/assetDownloadStore', () => ({
+vi.mock<unknown>(import('@/stores/assetDownloadStore'), () => ({
   useAssetDownloadStore: () => ({
     get downloadList() {
       return mockDownloadList()
@@ -57,7 +58,7 @@ vi.mock('@/stores/assetDownloadStore', () => ({
   })
 }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
   useModelToNodeStore: () => ({
     getAllNodeProviders: mockGetAllNodeProviders
   })

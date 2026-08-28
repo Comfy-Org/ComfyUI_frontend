@@ -12,17 +12,19 @@ const { mockIsCloud } = vi.hoisted(() => ({
   mockIsCloud: { value: false }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+// eslint-disable-next-line import-x/no-restricted-paths
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+// eslint-disable-next-line import-x/no-restricted-paths
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: vi.fn(() => ({ addAlert: vi.fn() }))
 }))
 

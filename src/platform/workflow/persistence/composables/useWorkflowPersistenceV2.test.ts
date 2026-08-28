@@ -14,7 +14,7 @@ const settingMocks = vi.hoisted(() => ({
   values: {} as Record<string, unknown>
 }))
 
-vi.mock('@/platform/settings/settingStore', async () => {
+vi.mock<unknown>(import('@/platform/settings/settingStore'), async () => {
   const { ref } = await import('vue')
   settingMocks.persistRef = ref(true)
   return {
@@ -32,20 +32,20 @@ vi.mock('@/platform/settings/settingStore', async () => {
 })
 
 const mockToastAdd = vi.fn()
-vi.mock('primevue', () => ({
+vi.mock<unknown>(import('primevue'), () => ({
   useToast: () => ({
     add: mockToastAdd
   })
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({
     add: mockToastAdd
   })
 }))
 
 vi.mock(
-  '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader',
+  import('@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'),
   () => ({
     useSharedWorkflowUrlLoader: () => ({
       loadSharedWorkflowFromUrl: vi.fn().mockResolvedValue('not-present')
@@ -55,15 +55,18 @@ vi.mock(
 
 const openWorkflowMock = vi.fn()
 const loadBlankWorkflowMock = vi.fn()
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    openWorkflow: openWorkflowMock,
-    loadBlankWorkflow: loadBlankWorkflowMock
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      openWorkflow: openWorkflowMock,
+      loadBlankWorkflow: loadBlankWorkflowMock
+    })
   })
-}))
+)
 
 vi.mock(
-  '@/platform/workflow/templates/composables/useTemplateUrlLoader',
+  import('@/platform/workflow/templates/composables/useTemplateUrlLoader'),
   () => ({
     useTemplateUrlLoader: () => ({
       loadTemplateFromUrl: vi.fn()
@@ -75,7 +78,7 @@ const commandStoreMocks = vi.hoisted(() => ({
   execute: vi.fn()
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     execute: commandStoreMocks.execute
   })
@@ -85,7 +88,7 @@ const routeMocks = vi.hoisted(() => ({
   query: {} as Record<string, unknown>
 }))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     get query() {
       return routeMocks.query
@@ -101,7 +104,7 @@ const currentUserMocks = vi.hoisted(() => ({
   onUserResolved: vi.fn()
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     onUserLogout: currentUserMocks.onUserLogout,
     onUserResolved: currentUserMocks.onUserResolved
@@ -112,7 +115,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
   payloads: {} as Record<string, Record<string, string> | undefined>
 }))
 
-vi.mock('@/platform/navigation/preservedQueryManager', () => ({
+vi.mock<unknown>(import('@/platform/navigation/preservedQueryManager'), () => ({
   hydratePreservedQuery: vi.fn(),
   mergePreservedQueryIntoQuery: vi.fn(
     (namespace: string, query: Record<string, unknown> = {}) => {
@@ -130,13 +133,16 @@ vi.mock('@/platform/navigation/preservedQueryManager', () => ({
   )
 }))
 
-vi.mock('@/platform/navigation/preservedQueryNamespaces', () => ({
-  PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
-}))
+vi.mock<unknown>(
+  import('@/platform/navigation/preservedQueryNamespaces'),
+  () => ({
+    PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
+  })
+)
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distributionMocks.isCloud
   }
@@ -147,11 +153,14 @@ const teamWorkspaceStoreMocks = reactive({
   activeWorkspaceId: null as string | null
 })
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => teamWorkspaceStoreMocks
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => teamWorkspaceStoreMocks
+  })
+)
 
-vi.mock('../migration/migrateV1toV2', () => ({
+vi.mock(import('../migration/migrateV1toV2'), () => ({
   migrateV1toV2: vi.fn()
 }))
 
@@ -177,7 +186,7 @@ const mocks = vi.hoisted(() => {
   return { state, serializeMock, loadGraphDataMock, apiMock }
 })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     graph: {
       serialize: () => mocks.serializeMock()
@@ -190,7 +199,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mocks.apiMock
 }))
 

@@ -13,34 +13,34 @@ const { mockReportError } = vi.hoisted(() => ({
   mockReportError: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: mockToastAdd })
 }))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     fetchBalance: mockAuthFetchBalance
   })
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     fetchBalance: mockBillingFetchBalance,
     fetchStatus: mockFetchStatus
   })
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
   })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     execute: mockExecute
   })
@@ -57,7 +57,7 @@ const {
   mockTrackAddApiCreditButtonClicked: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value
       ? {

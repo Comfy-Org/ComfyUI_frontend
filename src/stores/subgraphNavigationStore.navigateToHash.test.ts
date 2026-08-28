@@ -27,7 +27,7 @@ const routerMocks = vi.hoisted(() => ({
 
 const routeHashRef = ref('')
 
-vi.mock('vue-router', async (importOriginal) => {
+vi.mock<unknown>(import('vue-router'), async (importOriginal) => {
   const actual = await importOriginal<typeof VueRouter>()
   return {
     ...actual,
@@ -35,11 +35,11 @@ vi.mock('vue-router', async (importOriginal) => {
   }
 })
 
-vi.mock('@vueuse/router', () => ({
+vi.mock(import('@vueuse/router'), () => ({
   useRouteHash: () => routeHashRef
 }))
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     subgraph: null,
     graph: null,
@@ -69,14 +69,14 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     getCanvas: () => app.canvas,
     currentGraph: null
   })
 }))
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ fitView: vi.fn() })
 }))
 
@@ -84,13 +84,19 @@ const workflowServiceMocks = vi.hoisted(() => ({
   openWorkflow: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => workflowServiceMocks
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => workflowServiceMocks
+  })
+)
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => workflowStoreState
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => workflowStoreState
+  })
+)
 
 function makeSubgraph(id: string): Subgraph {
   return fromPartial<Subgraph>({

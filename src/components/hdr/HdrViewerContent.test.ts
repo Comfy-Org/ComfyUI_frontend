@@ -6,10 +6,10 @@ import { createI18n } from 'vue-i18n'
 
 import HdrViewerContent from './HdrViewerContent.vue'
 
-vi.mock('@/base/common/downloadUtil', () => ({ downloadFile: vi.fn() }))
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadFile: vi.fn() }))
 
 const holder = vi.hoisted(() => ({ viewer: undefined as unknown }))
-vi.mock('@/composables/useHdrViewer', () => ({
+vi.mock<unknown>(import('@/composables/useHdrViewer'), () => ({
   useHdrViewer: () => holder.viewer,
   CHANNEL_MODES: ['rgb', 'r', 'g', 'b', 'a', 'luminance']
 }))

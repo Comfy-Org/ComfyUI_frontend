@@ -23,20 +23,23 @@ const mocks = vi.hoisted(() => ({
   captureCanvasState: vi.fn()
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: {
-      changeTracker: { captureCanvasState: mocks.captureCanvasState }
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      activeWorkflow: {
+        changeTracker: { captureCanvasState: mocks.captureCanvasState }
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/composables/node/useNodeImage', () => ({
+vi.mock(import('@/composables/node/useNodeImage'), () => ({
   useNodeImage: () => ({ showPreview: mocks.showPreview }),
   useNodeVideo: () => ({ showPreview: mocks.showPreview })
 }))
 
-vi.mock('@/composables/node/useNodeImageUpload', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeImageUpload'), () => ({
   useNodeImageUpload: (
     _node: LGraphNode,
     options: CapturedImageUploadOptions
@@ -46,17 +49,17 @@ vi.mock('@/composables/node/useNodeImageUpload', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({
     setNodeOutputs: mocks.setNodeOutputs
   })
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock(import('@/utils/litegraphUtil'), () => ({
   addToComboValues: (widget: IComboWidget, value: string) => {
     const values = widget.options?.values
     if (Array.isArray(values) && !values.includes(value)) {

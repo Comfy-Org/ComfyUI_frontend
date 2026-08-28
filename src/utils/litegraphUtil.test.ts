@@ -21,11 +21,14 @@ beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 const mockBringNodeToFront = vi.fn()
 
-vi.mock('@/renderer/extensions/vueNodes/composables/useNodeZIndex', () => ({
-  useNodeZIndex: () => ({ bringNodeToFront: mockBringNodeToFront })
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/composables/useNodeZIndex'),
+  () => ({
+    useNodeZIndex: () => ({ bringNodeToFront: mockBringNodeToFront })
+  })
+)
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ addAlert: vi.fn() })
 }))
 

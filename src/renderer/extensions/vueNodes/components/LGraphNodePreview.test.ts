@@ -8,7 +8,7 @@ import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSc
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-vi.mock('@/stores/widgetStore', () => ({
+vi.mock<unknown>(import('@/stores/widgetStore'), () => ({
   useWidgetStore: () => ({ inputIsWidget: () => true })
 }))
 

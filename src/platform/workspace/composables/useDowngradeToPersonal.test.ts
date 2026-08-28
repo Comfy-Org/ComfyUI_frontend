@@ -28,7 +28,7 @@ const mockPermissions = vi.hoisted(() => ({
 }))
 const mockCanDowngradeToPersonal = vi.hoisted(() => ({ value: true }))
 
-vi.mock('pinia', async (importOriginal) => {
+vi.mock<unknown>(import('pinia'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),
@@ -36,33 +36,45 @@ vi.mock('pinia', async (importOriginal) => {
   }
 })
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    members: mockMembers,
-    removeMember: mockRemoveMember,
-    fetchMembers: mockFetchMembers
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      members: mockMembers,
+      removeMember: mockRemoveMember,
+      fetchMembers: mockFetchMembers
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    startOperation: mockStartOperation
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/billingOperationStore'),
+  () => ({
+    useBillingOperationStore: () => ({
+      startOperation: mockStartOperation
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({ permissions: mockPermissions })
-}))
-
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
-
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canDowngradeToPersonal: mockCanDowngradeToPersonal
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({ permissions: mockPermissions })
   })
-}))
+)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canDowngradeToPersonal: mockCanDowngradeToPersonal
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
     previewSubscribe: mockPreviewSubscribe,
@@ -72,22 +84,22 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userEmail: mockUserEmail
   })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, unknown>) =>
     params ? `${key} ${JSON.stringify(params)}` : key
 }))
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBillingEvent: mockTrackBillingEvent
   })

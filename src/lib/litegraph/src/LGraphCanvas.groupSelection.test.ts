@@ -11,7 +11,7 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 

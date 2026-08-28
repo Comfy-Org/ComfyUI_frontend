@@ -15,7 +15,7 @@ const mockGetCommand = vi.fn(() => ({
 }))
 const mockFormatKeySequence = vi.fn(() => 'V')
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     execute: mockExecute,
     getCommand: mockGetCommand,
@@ -23,7 +23,7 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     canvas: { read_only: false }
   })

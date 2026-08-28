@@ -26,13 +26,13 @@ const { mockIsSettingUp, mockSubscriptionActionOperation } = vi.hoisted(() => ({
 }))
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
@@ -174,7 +174,7 @@ const mockInitialize = vi.fn()
 const mockIsLoading = ref(false)
 const mockError = ref<string | null>(null)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     type: mockBillingType,
     canAccessSubscriptionFeatures: computed(
@@ -198,12 +198,15 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      isInPersonalWorkspace: mockIsInPersonalWorkspace,
+      isWorkspaceSubscribed: mockIsWorkspaceSubscribed
+    })
   })
-}))
+)
 
 const mockIsTeamPlanCancelled = computed(
   () => mockHasTeamPlan.value && (mockSubscription.value?.isCancelled ?? false)
@@ -218,50 +221,60 @@ const mockIsDeleteDisabled = computed(
     !(mockSubscription.value?.isCancelled ?? false)
 )
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscription: mockCanManageSubscription.value,
-      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
-      canLeaveWorkspace: mockCanLeaveWorkspace.value
-    })),
-    canReactivatePlan: mockCanReactivatePlan,
-    canOpenPricingSurface: mockCanOpenPricingSurface,
-    uiConfig: computed(() => mockUiConfig.value),
-    isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
-    isSubscriptionCancelled: mockIsSubscriptionCancelled,
-    isTeamPlanCancelled: mockIsTeamPlanCancelled,
-    isDeleteDisabled: mockIsDeleteDisabled,
-    deleteDisabledTooltipKey: computed(() =>
-      mockIsDeleteDisabled.value
-        ? mockUiConfig.value.workspaceMenuDisabledTooltip
-        : null
-    )
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => ({
+        canManageSubscription: mockCanManageSubscription.value,
+        canManageSubscriptionLifecycle:
+          mockCanManageSubscriptionLifecycle.value,
+        canLeaveWorkspace: mockCanLeaveWorkspace.value
+      })),
+      canReactivatePlan: mockCanReactivatePlan,
+      canOpenPricingSurface: mockCanOpenPricingSurface,
+      uiConfig: computed(() => mockUiConfig.value),
+      isInPersonalWorkspace: mockIsInPersonalWorkspace,
+      isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+      isSubscriptionCancelled: mockIsSubscriptionCancelled,
+      isTeamPlanCancelled: mockIsTeamPlanCancelled,
+      isDeleteDisabled: mockIsDeleteDisabled,
+      deleteDisabledTooltipKey: computed(() =>
+        mockIsDeleteDisabled.value
+          ? mockUiConfig.value.workspaceMenuDisabledTooltip
+          : null
+      )
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canCancel: mockCanCancel,
-    canReactivate: mockCanReactivate,
-    canChangeSeats: mockCanChangeSeats,
-    canSubscribeSelfServe: mockCanSubscribeSelfServe
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canCancel: mockCanCancel,
+      canReactivate: mockCanReactivate,
+      canChangeSeats: mockCanChangeSeats,
+      canSubscribeSelfServe: mockCanSubscribeSelfServe
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    get isSettingUp() {
-      return mockIsSettingUp.value
-    },
-    get subscriptionActionOperation() {
-      return mockSubscriptionActionOperation.value
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/billingOperationStore'),
+  () => ({
+    useBillingOperationStore: () => ({
+      get isSettingUp() {
+        return mockIsSettingUp.value
+      },
+      get subscriptionActionOperation() {
+        return mockSubscriptionActionOperation.value
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showCancelSubscriptionFlow: mockShowCancelSubscriptionFlow,
     showLeaveWorkspaceDialog: mockShowLeaveWorkspaceDialog,
@@ -270,14 +283,14 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ showPricingTable: vi.fn() })
   })
 )
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({ add: vi.fn() })
 }))
 

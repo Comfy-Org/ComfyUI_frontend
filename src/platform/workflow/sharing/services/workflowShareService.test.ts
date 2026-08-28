@@ -10,7 +10,7 @@ const mockApp = vi.hoisted(() => ({
   graphToPrompt: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
@@ -18,7 +18,7 @@ const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
 const mockInvalidateInputAssetsIncludingPublic = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
     fetchApi: (...args: unknown[]) => mockFetchApi(...args),
@@ -27,7 +27,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     invalidateInputAssetsIncludingPublic:
       mockInvalidateInputAssetsIncludingPublic

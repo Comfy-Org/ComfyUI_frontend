@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-vi.mock('./SwapNodeGroupRow.vue', () => ({
+vi.mock<unknown>(import('./SwapNodeGroupRow.vue'), () => ({
   default: {
     name: 'SwapNodeGroupRow',
     template:

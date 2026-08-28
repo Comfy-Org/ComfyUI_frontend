@@ -17,24 +17,24 @@ import {
 } from '@/types/nodeIdentification'
 
 // Mock dependencies
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
 const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn(() => mockShowErrorsTab.value)
   }))
 }))
 
-vi.mock(
-  '@/platform/missingModel/composables/useMissingModelInteractions',
+vi.mock<unknown>(
+  import('@/platform/missingModel/composables/useMissingModelInteractions'),
   () => ({
     clearMissingModelState: vi.fn()
   })

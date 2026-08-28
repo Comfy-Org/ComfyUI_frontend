@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, reactive } from 'vue'
 import type { EffectScope } from 'vue'
 
-vi.mock('typegpu', () => ({
+vi.mock<unknown>(import('typegpu'), () => ({
   tgpu: {
     init: vi.fn().mockRejectedValue(new Error('WebGPU not supported'))
   }
@@ -18,7 +18,7 @@ const mockRenderer = vi.hoisted(() => ({
   renderStrokeToAccumulator: vi.fn()
 }))
 
-vi.mock('./gpu/GPUBrushRenderer', () => ({
+vi.mock<unknown>(import('./gpu/GPUBrushRenderer'), () => ({
   GPUBrushRenderer: vi.fn(
     class MockGPUBrushRenderer {
       constructor() {
@@ -54,7 +54,7 @@ const mockStore = reactive({
   rgbColor: '#FF0000'
 })
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 

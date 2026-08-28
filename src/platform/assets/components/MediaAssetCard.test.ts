@@ -12,26 +12,29 @@ const { downloadAssets } = vi.hoisted(() => ({
   downloadAssets: vi.fn()
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({ isAssetDeleting: () => false })
 }))
 
-vi.mock('../composables/useMediaAssetActions', () => ({
+vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
 
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: () => ({
-    allOutputs: [
-      {
-        filename: 'a.png',
-        subfolder: '',
-        type: 'output',
-        display_name: 'Display A'
-      }
-    ]
+vi.mock<unknown>(
+  import('@/platform/assets/schemas/assetMetadataSchema'),
+  () => ({
+    getOutputAssetMetadata: () => ({
+      allOutputs: [
+        {
+          filename: 'a.png',
+          subfolder: '',
+          type: 'output',
+          display_name: 'Display A'
+        }
+      ]
+    })
   })
-}))
+)
 
 const asset: AssetItem = fromPartial({
   id: 'a',

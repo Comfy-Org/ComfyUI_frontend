@@ -39,12 +39,15 @@ const { isCloudRef } = vi.hoisted(() => ({
   isCloudRef: { value: true }
 }))
 
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  get isCloud() {
-    return isCloudRef.value
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  async (importOriginal) => ({
+    ...(await importOriginal<Record<string, unknown>>()),
+    get isCloud() {
+      return isCloudRef.value
+    }
+  })
+)
 
 describe('assetMetadataUtils', () => {
   const mockAsset: AssetItem = {

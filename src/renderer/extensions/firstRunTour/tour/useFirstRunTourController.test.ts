@@ -41,7 +41,7 @@ const mocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canRunWorkflows: mocks.canRunWorkflows,
     showSubscriptionDialog: mocks.showSubscriptionDialog
@@ -51,7 +51,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 // Each factory runs on the first dynamic import, which lands mid-test for
 // whichever test runs first. Seed the new ref from the holder so that test's
 // setup survives instead of being discarded.
-vi.mock('@/stores/executionStore', async () => {
+vi.mock<unknown>(import('@/stores/executionStore'), async () => {
   const { shallowRef } = await import('vue')
   mocks.workflowStatus = shallowRef(new Map(mocks.workflowStatus.value))
   mocks.queuedJobs = shallowRef(mocks.queuedJobs.value)
@@ -66,25 +66,28 @@ vi.mock('@/stores/executionStore', async () => {
   }
 })
 
-vi.mock('@/stores/executionErrorStore', async () => {
+vi.mock<unknown>(import('@/stores/executionErrorStore'), async () => {
   const { reactive } = await import('vue')
   mocks.executionErrors = reactive({ ...mocks.executionErrors })
   return { useExecutionErrorStore: () => mocks.executionErrors }
 })
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { shallowRef } = await import('vue')
-  mocks.activeWorkflow = shallowRef(mocks.activeWorkflow.value)
-  return {
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return mocks.activeWorkflow.value
-      }
-    })
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const { shallowRef } = await import('vue')
+    mocks.activeWorkflow = shallowRef(mocks.activeWorkflow.value)
+    return {
+      useWorkflowStore: () => ({
+        get activeWorkflow() {
+          return mocks.activeWorkflow.value
+        }
+      })
+    }
   }
-})
+)
 
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), async () => {
   const { shallowRef } = await import('vue')
   mocks.linearMode = shallowRef(mocks.linearMode.value)
   return {
@@ -96,7 +99,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: () => mocks.vueNodesEnabled,
     // A spy, not a plain writer: a value that was flipped and put back reads
@@ -105,7 +108,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('./firstRunTourDefinition', () => ({
+vi.mock<unknown>(import('./firstRunTourDefinition'), () => ({
   firstRunTourSteps: (_templateId: string, runState: Ref<string>) => {
     mocks.runState = runState
     return Promise.resolve(mocks.steps)
@@ -113,11 +116,14 @@ vi.mock('./firstRunTourDefinition', () => ({
   releaseFirstRunTargets: mocks.releaseFirstRunTargets
 }))
 
-vi.mock('@/platform/onboarding/onboardingTourStore', async () => {
-  const { reactive } = await import('vue')
-  mocks.engine = reactive(mocks.engine)
-  return { useOnboardingTourStore: () => mocks.engine }
-})
+vi.mock<unknown>(
+  import('@/platform/onboarding/onboardingTourStore'),
+  async () => {
+    const { reactive } = await import('vue')
+    mocks.engine = reactive(mocks.engine)
+    return { useOnboardingTourStore: () => mocks.engine }
+  }
+)
 
 function runStep(): SpotlightStep {
   return {

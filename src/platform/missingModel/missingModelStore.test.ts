@@ -12,20 +12,23 @@ const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
   vi.fn((nodeLocatorId: string) => nodeLocatorId)
 )
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) => `translated:${key}`),
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+    })
   })
-}))
+)
 
 import { useMissingModelStore } from './missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'

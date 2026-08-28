@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceTierLabel } from './useWorkspaceTierLabel'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: vi.fn((key: string, params?: Record<string, unknown>) => {
       if (key === 'subscription.tierNameYearly') return `${params?.name} Yearly`

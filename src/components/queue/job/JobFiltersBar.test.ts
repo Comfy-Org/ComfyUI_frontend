@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { defineComponent } from 'vue'
 
-vi.mock('primevue/popover', () => {
+vi.mock<unknown>(import('primevue/popover'), () => {
   const PopoverStub = defineComponent({
     name: 'Popover',
     setup(_, { slots, expose }) {
@@ -18,7 +18,7 @@ vi.mock('primevue/popover', () => {
   return { default: PopoverStub }
 })
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 

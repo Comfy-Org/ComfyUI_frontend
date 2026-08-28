@@ -9,13 +9,13 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key
   })
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({
     isAssetDeleting: () => false
   })

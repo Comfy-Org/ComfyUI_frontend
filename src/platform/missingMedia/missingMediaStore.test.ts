@@ -6,19 +6,20 @@ import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
 // Mock dependencies
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+// eslint-disable-next-line import-x/no-restricted-paths
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     currentGraph: null
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: null
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getActiveGraphNodeIds: () => new Set<string>()
 }))
 

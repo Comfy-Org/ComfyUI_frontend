@@ -59,7 +59,7 @@ const mockCanCancel = vi.hoisted(() => ({ value: true }))
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
     cancelSubscription: mockCancelSubscription,
     fetchStatus: mockFetchStatus,
@@ -68,46 +68,52 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   }))
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canCancel: mockCanCancel
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canCancel: mockCanCancel
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return {
-          canManageSubscriptionLifecycle:
-            mockCanManageSubscriptionLifecycle.value
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return {
+            canManageSubscriptionLifecycle:
+              mockCanManageSubscriptionLifecycle.value
+          }
         }
       }
-    }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackSubscriptionCancellation: mockTrackCancellation
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: vi.fn(() => ({
     closeDialog: mockCloseDialog
   }))
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: vi.fn(() => ({
     add: mockToastAdd
   }))

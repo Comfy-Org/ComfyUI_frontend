@@ -12,7 +12,7 @@ const STORAGE_KEY = 'Comfy.PreservedQuery.settings'
 
 let testRouter: Router
 
-vi.mock('vue-router', async (importOriginal) => {
+vi.mock(import('vue-router'), async (importOriginal) => {
   const actual = await importOriginal<typeof VueRouter>()
   return {
     ...actual,
@@ -23,11 +23,14 @@ vi.mock('vue-router', async (importOriginal) => {
 
 const mockShowSettings = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({
-    show: mockShowSettings
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingsDialog'),
+  () => ({
+    useSettingsDialog: () => ({
+      show: mockShowSettings
+    })
   })
-}))
+)
 
 function createAppLikeRouter(): Router {
   const router = createRouter({

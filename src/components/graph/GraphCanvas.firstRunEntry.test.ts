@@ -34,8 +34,8 @@ const mocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock(
-  '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry',
+vi.mock<unknown>(
+  import('@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'),
   () => ({
     useFirstRunEntry: () => ({
       gettingStartedVisible: { value: false },
@@ -47,7 +47,7 @@ vi.mock(
 )
 
 vi.mock(
-  '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2',
+  import('@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'),
   () => ({
     useWorkflowPersistenceV2: () => ({
       initializeWorkflow: mocks.initializeWorkflow,
@@ -59,7 +59,7 @@ vi.mock(
   })
 )
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const canvas = {
     render_canvas_border: false,
     graph: null,
@@ -79,72 +79,69 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/scripts/changeTracker', () => ({
+vi.mock<unknown>(import('@/scripts/changeTracker'), () => ({
   ChangeTracker: { init: vi.fn() }
 }))
 
-vi.mock('@/services/useNewUserService', () => ({
+vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({
     initializeIfNewUser: vi.fn(),
     isNewUser: () => false
   })
 }))
 
-vi.mock('@/composables/useUrlActionLoaders', () => ({
+vi.mock(import('@/composables/useUrlActionLoaders'), () => ({
   useUrlActionLoaders: () => ({
     runUrlActionLoaders: mocks.runUrlActionLoaders
   })
 }))
 
-vi.mock('@/platform/updates/common/releaseStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/releaseStore'), () => ({
   useReleaseStore: () => ({ initialize: vi.fn() })
 }))
 
-vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
-  useVueNodeLifecycle: () => ({
-    nodeManager: { value: null },
-    setupEmptyGraphListener: vi.fn(),
-    initializeNodeManager: vi.fn(),
-    disposeNodeManagerAndSyncs: vi.fn(),
-    cleanup: vi.fn()
-  })
-}))
-
-vi.mock('@/composables/graph/useErrorClearingHooks', () => ({
+vi.mock(import('@/composables/graph/useErrorClearingHooks'), () => ({
   installErrorClearingHooks: () => vi.fn()
 }))
 
-vi.mock('@/services/colorPaletteService', () => ({
+vi.mock<unknown>(import('@/services/colorPaletteService'), () => ({
   useColorPaletteService: () => ({ loadColorPalette: vi.fn() })
 }))
 
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: () => ({ forwardEventToCanvas: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
+  () => ({
+    useCanvasInteractions: () => ({ forwardEventToCanvas: vi.fn() })
+  })
+)
 
-vi.mock('@/composables/useCanvasDrop', () => ({ useCanvasDrop: vi.fn() }))
-vi.mock('@/platform/settings/composables/useLitegraphSettings', () => ({
+vi.mock(import('@/composables/useCanvasDrop'), () => ({
+  useCanvasDrop: vi.fn()
+}))
+vi.mock(import('@/platform/settings/composables/useLitegraphSettings'), () => ({
   useLitegraphSettings: vi.fn()
 }))
-vi.mock('@/composables/node/useNodeBadge', () => ({ useNodeBadge: vi.fn() }))
-vi.mock('@/composables/useGlobalLitegraph', () => ({
+vi.mock(import('@/composables/node/useNodeBadge'), () => ({
+  useNodeBadge: vi.fn()
+}))
+vi.mock(import('@/composables/useGlobalLitegraph'), () => ({
   useGlobalLitegraph: vi.fn()
 }))
-vi.mock('@/composables/useContextMenuTranslation', () => ({
+vi.mock(import('@/composables/useContextMenuTranslation'), () => ({
   useContextMenuTranslation: vi.fn()
 }))
-vi.mock('@/composables/graph/useGroupContextMenu', () => ({
+vi.mock(import('@/composables/graph/useGroupContextMenu'), () => ({
   useGroupContextMenu: vi.fn()
 }))
 // Instantiating the real one pulls in the Firebase auth store.
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => mocks.workspaceStore
 }))
 
-vi.mock('@/composables/useCopy', () => ({ useCopy: vi.fn() }))
-vi.mock('@/composables/usePaste', () => ({ usePaste: vi.fn() }))
+vi.mock(import('@/composables/useCopy'), () => ({ useCopy: vi.fn() }))
+vi.mock(import('@/composables/usePaste'), () => ({ usePaste: vi.fn() }))
 vi.mock(
-  '@/platform/workflow/persistence/composables/useWorkflowAutoSave',
+  import('@/platform/workflow/persistence/composables/useWorkflowAutoSave'),
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
 

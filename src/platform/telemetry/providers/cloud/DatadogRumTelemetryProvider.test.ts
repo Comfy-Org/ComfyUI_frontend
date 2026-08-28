@@ -10,7 +10,7 @@ const { addAction, addDurationVital, getInternalContext } = vi.hoisted(() => ({
   getInternalContext: vi.fn()
 }))
 
-vi.mock('@datadog/browser-rum', () => ({
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: { addAction, addDurationVital, getInternalContext }
 }))
 

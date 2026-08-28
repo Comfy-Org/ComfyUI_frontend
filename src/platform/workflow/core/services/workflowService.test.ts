@@ -79,14 +79,14 @@ const draftStoreMocks = vi.hoisted(() => ({
   markDraftUsed: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     prompt: vi.fn(),
     confirm: mockConfirm
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: { ds: { offset: [0, 0], scale: 1 } },
     rootGraph: { serialize: vi.fn(() => ({})), extra: {} },
@@ -96,23 +96,28 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/defaultGraph', () => ({
+vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
   defaultGraph: {},
   blankGraph: {}
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+// eslint-disable-next-line import-x/no-restricted-paths
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({ linearMode: false })
 }))
 
-vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
-  useWorkflowThumbnail: () => ({
-    storeThumbnail: vi.fn(),
-    getThumbnail: vi.fn()
+vi.mock<unknown>(
+  // eslint-disable-next-line import-x/no-restricted-paths
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'),
+  () => ({
+    useWorkflowThumbnail: () => ({
+      storeThumbnail: vi.fn(),
+      getThumbnail: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackDefaultViewSet: vi.fn(),
     trackWorkflowSaved: mockTrackWorkflowSaved,
@@ -120,23 +125,26 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
-  useWorkflowDraftStoreV2: () => draftStoreMocks
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/persistence/stores/workflowDraftStoreV2'),
+  () => ({
+    useWorkflowDraftStoreV2: () => draftStoreMocks
+  })
+)
 
-vi.mock('@/stores/domWidgetStore', () => ({
+vi.mock<unknown>(import('@/stores/domWidgetStore'), () => ({
   useDomWidgetStore: () => ({
     clear: vi.fn()
   })
 }))
 
-vi.mock('@/stores/subgraphNavigationStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphNavigationStore'), () => ({
   useSubgraphNavigationStore: () => ({
     saveCurrentViewport: vi.fn()
   })
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({
     get workflow() {
       return useWorkflowStore()

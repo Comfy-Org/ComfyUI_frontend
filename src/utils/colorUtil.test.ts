@@ -31,7 +31,7 @@ interface ColorTestCase {
 
 type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
 
-vi.mock('es-toolkit/compat', () => ({
+vi.mock<unknown>(import('es-toolkit/compat'), () => ({
   memoize: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
 }))
 

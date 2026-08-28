@@ -3,7 +3,7 @@ import { cloneDeep } from 'es-toolkit'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined },
   ComfyApp: class {}
 }))

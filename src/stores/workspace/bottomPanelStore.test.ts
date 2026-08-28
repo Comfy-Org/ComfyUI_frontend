@@ -4,7 +4,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 // Mock dependencies
-vi.mock('@/composables/bottomPanelTabs/useShortcutsTab', () => ({
+vi.mock(import('@/composables/bottomPanelTabs/useShortcutsTab'), () => ({
   useShortcutsTab: () => [
     {
       id: 'shortcuts-essentials',
@@ -23,7 +23,7 @@ vi.mock('@/composables/bottomPanelTabs/useShortcutsTab', () => ({
   ]
 }))
 
-vi.mock('@/composables/bottomPanelTabs/useTerminalTabs', () => ({
+vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
   useLogsTerminalTab: () => ({
     id: 'logs',
     title: 'Logs',
@@ -40,7 +40,7 @@ vi.mock('@/composables/bottomPanelTabs/useTerminalTabs', () => ({
   })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     registerCommand: vi.fn()
   })
@@ -48,7 +48,7 @@ vi.mock('@/stores/commandStore', () => ({
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return mockData.isDesktop
   }

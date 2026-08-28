@@ -11,15 +11,15 @@ import { IsInstallingKey } from '@/workbench/extensions/manager/types/comfyManag
 import PackCardFooter from './PackCardFooter.vue'
 
 // Mock the child components
-vi.mock(
-  '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'),
   () => ({
     default: { template: '<div data-testid="pack-install-button"></div>' }
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue'),
   () => ({
     default: { template: '<div data-testid="pack-enable-toggle"></div>' }
   })
@@ -29,14 +29,17 @@ vi.mock(
 const mockIsPackInstalled = vi.fn()
 const mockCheckNodeCompatibility = vi.fn()
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    isPackInstalled: mockIsPackInstalled
-  }))
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: vi.fn(() => ({
+      isPackInstalled: mockIsPackInstalled
+    }))
+  })
+)
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictDetection',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictDetection'),
   () => ({
     useConflictDetection: vi.fn(() => ({
       checkNodeCompatibility: mockCheckNodeCompatibility

@@ -5,28 +5,31 @@ import { useLegacyBilling } from './useLegacyBilling'
 const mockSubscribe = vi.fn()
 const mockSubscribeDirect = vi.fn()
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    isActiveSubscription: { value: false },
-    subscriptionTier: { value: null },
-    subscriptionDuration: { value: null },
-    subscriptionStatus: { value: null },
-    isCancelled: { value: false },
-    fetchStatus: vi.fn(),
-    manageSubscription: vi.fn(),
-    subscribe: mockSubscribe,
-    subscribeDirect: mockSubscribeDirect,
-    showSubscriptionDialog: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscription'),
+  () => ({
+    useSubscription: () => ({
+      isActiveSubscription: { value: false },
+      subscriptionTier: { value: null },
+      subscriptionDuration: { value: null },
+      subscriptionStatus: { value: null },
+      isCancelled: { value: false },
+      fetchStatus: vi.fn(),
+      manageSubscription: vi.fn(),
+      subscribe: mockSubscribe,
+      subscribeDirect: mockSubscribeDirect,
+      showSubscriptionDialog: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     purchaseCredits: vi.fn()
   })
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({ balance: null })
 }))
 

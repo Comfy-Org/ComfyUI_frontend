@@ -17,7 +17,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 let mockedTopBarWidth: Ref<number>
 
-vi.mock('@vueuse/core', async () => {
+vi.mock<unknown>(import('@vueuse/core'), async () => {
   const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
   return {
     ...actual,

@@ -40,27 +40,30 @@ const { downloadFileMock, copyMock } = vi.hoisted(() => ({
   copyMock: vi.fn()
 }))
 
-vi.mock('vue-i18n', async (importOriginal) => ({
+vi.mock<unknown>(import('vue-i18n'), async (importOriginal) => ({
   ...(await importOriginal<typeof VueI18n>()),
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: downloadFileMock
 }))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: copyMock })
 }))
 
-vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), async (importOriginal) => ({
   ...(await importOriginal<typeof LitegraphUtil>()),
   resolveNode: () => ({})
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ nodeToNodeLocatorId: () => LOCATOR })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({ nodeToNodeLocatorId: () => LOCATOR })
+  })
+)
 
 interface SavedFile {
   filename: string

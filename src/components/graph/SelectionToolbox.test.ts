@@ -51,54 +51,63 @@ function mockSettingValues(overrides: Record<string, unknown> = {}) {
 }
 
 // Mock the composables and services
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: vi.fn(() => ({
-    handleWheel: vi.fn()
-  }))
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
+  () => ({
+    useCanvasInteractions: vi.fn(() => ({
+      handleWheel: vi.fn()
+    }))
+  })
+)
 
-vi.mock('@/composables/canvas/useSelectionToolboxPosition', () => ({
-  useSelectionToolboxPosition: vi.fn(() => ({
-    visible: { value: true }
-  })),
-  resetMoreOptionsState: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@/composables/canvas/useSelectionToolboxPosition'),
+  () => ({
+    useSelectionToolboxPosition: vi.fn(() => ({
+      visible: { value: true }
+    })),
+    resetMoreOptionsState: vi.fn()
+  })
+)
 
-vi.mock('@/renderer/extensions/minimap/composables/useMinimap', () => ({
-  useMinimap: vi.fn(() => ({
-    containerStyles: {
-      value: {
-        backgroundColor: '#ffffff'
+vi.mock<unknown>(
+  import('@/renderer/extensions/minimap/composables/useMinimap'),
+  () => ({
+    useMinimap: vi.fn(() => ({
+      containerStyles: {
+        value: {
+          backgroundColor: '#ffffff'
+        }
       }
-    }
-  }))
-}))
+    }))
+  })
+)
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: vi.fn(() => ({
     extensionCommands: { value: new Map() },
     invokeExtensions: vi.fn(() => [])
   }))
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(() => true),
   isImageNode: vi.fn(() => false),
   isLoad3dNode: vi.fn(() => false)
 }))
 
-vi.mock('@/utils/nodeFilterUtil', () => ({
+vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   isOutputNode: vi.fn(() => false),
   filterOutputNodes: vi.fn((nodes) => nodes.filter(() => false))
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: settingGetMock
   })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     getCommand: vi.fn(() => ({ id: 'test-command', title: 'Test Command' }))
   })
@@ -109,7 +118,7 @@ let nodeDefMock = {
   title: 'Test Node'
 } as unknown
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({
     fromLGraphNode: vi.fn(() => nodeDefMock)
   })

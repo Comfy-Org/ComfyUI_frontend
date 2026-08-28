@@ -8,14 +8,14 @@ import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
 const mockStartDrag = vi.fn()
 const mockHandleNativeDrop = vi.fn()
 
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
     handleNativeDrop: mockHandleNativeDrop
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: vi.fn().mockReturnValue('left')
   })

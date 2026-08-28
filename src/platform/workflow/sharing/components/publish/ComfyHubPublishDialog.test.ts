@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-vi.mock('vue-i18n', async (importOriginal) => {
+vi.mock<unknown>(import('vue-i18n'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as Record<string, unknown>),
@@ -16,7 +16,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
@@ -38,8 +38,8 @@ const mockFormDataHolder = vi.hoisted(
   () => ({ value: null }) as { value: Record<string, unknown> | null }
 )
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubProfileGate'),
   () => ({
     useComfyHubProfileGate: () => ({
       fetchProfile: mockFetchProfile
@@ -47,8 +47,8 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishWizard',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubPublishWizard'),
   () => {
     mockFormDataHolder.value = {
       name: '',
@@ -87,7 +87,7 @@ vi.mock(
 )
 
 vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission',
+  import('@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'),
   () => ({
     useComfyHubPublishSubmission: () => ({
       submitToComfyHub: mockSubmitToComfyHub
@@ -95,18 +95,24 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  useWorkflowShareService: () => ({
-    getPublishStatus: mockGetPublishStatus
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    useWorkflowShareService: () => ({
+      getPublishStatus: mockGetPublishStatus
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    renameWorkflow: mockRenameWorkflow,
-    saveWorkflow: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      renameWorkflow: mockRenameWorkflow,
+      saveWorkflow: vi.fn()
+    })
   })
-}))
+)
 
 const mockWorkflowStore = vi.hoisted(() => {
   return {
@@ -114,27 +120,30 @@ const mockWorkflowStore = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { reactive } = await import('vue')
-  mockWorkflowStore.instance = reactive({
-    activeWorkflow: {
-      path: 'workflows/test.json',
-      filename: 'test.json',
-      directory: 'workflows',
-      isTemporary: false,
-      isModified: false
-    } as Record<string, unknown> | null
-  })
-  return {
-    useWorkflowStore: () => ({
-      ...mockWorkflowStore.instance,
-      get activeWorkflow() {
-        return mockWorkflowStore.instance?.activeWorkflow ?? null
-      },
-      saveWorkflow: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const { reactive } = await import('vue')
+    mockWorkflowStore.instance = reactive({
+      activeWorkflow: {
+        path: 'workflows/test.json',
+        filename: 'test.json',
+        directory: 'workflows',
+        isTemporary: false,
+        isModified: false
+      } as Record<string, unknown> | null
     })
+    return {
+      useWorkflowStore: () => ({
+        ...mockWorkflowStore.instance,
+        get activeWorkflow() {
+          return mockWorkflowStore.instance?.activeWorkflow ?? null
+        },
+        saveWorkflow: vi.fn()
+      })
+    }
   }
-})
+)
 
 function setActiveWorkflow(workflow: Record<string, unknown> | null) {
   if (mockWorkflowStore.instance) {

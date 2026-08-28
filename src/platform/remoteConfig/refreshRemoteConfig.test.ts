@@ -10,7 +10,7 @@ import {
   remoteConfigState
 } from './remoteConfig'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     apiURL: vi.fn((route: string) => `/ComfyUI/api${route}`)

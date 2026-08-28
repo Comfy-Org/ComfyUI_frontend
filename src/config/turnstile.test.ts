@@ -13,7 +13,7 @@ const STAGING_TURNSTILE_SITE_KEY = '0x4AAAAAADnYY4_Q0qxHZ5a7'
 const { mockRemoteConfig } = vi.hoisted(() => ({
   mockRemoteConfig: { value: {} as Record<string, unknown> }
 }))
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: mockRemoteConfig,
   configValueOrDefault: (
     cfg: Record<string, unknown>,

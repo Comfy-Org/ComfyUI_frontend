@@ -8,7 +8,7 @@ const hoisted = vi.hoisted(() => ({
   widths: [] as { value: number }[]
 }))
 
-vi.mock('@vueuse/core', async () => {
+vi.mock<unknown>(import('@vueuse/core'), async () => {
   const actual = await vi.importActual('@vueuse/core')
   const { ref } = await import('vue')
   return {

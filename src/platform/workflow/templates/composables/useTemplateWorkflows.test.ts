@@ -9,15 +9,15 @@ async function flushPromises() {
 }
 
 // Mock the store
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/repositories/workflowTemplatesStore'),
   () => ({
     useWorkflowTemplatesStore: vi.fn()
   })
 )
 
 // Mock the API
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fileURL: vi.fn((path) => `mock-file-url${path}`),
     apiURL: vi.fn((path) => `mock-api-url${path}`)
@@ -25,14 +25,14 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the app
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     loadGraphData: vi.fn()
   }
 }))
 
 // Mock Vue I18n
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: vi.fn((key, fallback) => fallback || key)
   }),
@@ -44,7 +44,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 // Mock the dialog store
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: vi.fn(() => ({
     closeDialog: vi.fn()
   }))
@@ -56,7 +56,7 @@ const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockTrackTemplate: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))

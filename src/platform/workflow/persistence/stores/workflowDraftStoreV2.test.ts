@@ -4,14 +4,14 @@ import { MAX_DRAFTS } from '../base/draftTypes'
 import { StorageKeys } from '../base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     clientId: 'test-client',
     initialClientId: 'test-client'
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     loadGraphData: vi.fn().mockResolvedValue(undefined)
   }

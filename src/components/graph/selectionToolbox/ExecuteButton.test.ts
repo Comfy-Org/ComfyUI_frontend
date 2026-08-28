@@ -13,15 +13,15 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn((node) => !!node?.type)
 }))
 
-vi.mock('@/utils/nodeFilterUtil', () => ({
+vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   isOutputNode: vi.fn((node) => !!node?.constructor?.nodeData?.output_node)
 }))
 
-vi.mock('@/composables/graph/useSelectionState', () => ({
+vi.mock<unknown>(import('@/composables/graph/useSelectionState'), () => ({
   useSelectionState: vi.fn(() => ({
     selectedNodes: {
       value: []

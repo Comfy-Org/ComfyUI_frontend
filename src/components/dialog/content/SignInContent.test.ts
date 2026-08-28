@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     signInWithGoogle: vi.fn(),
     signInWithGithub: vi.fn(),
@@ -15,12 +15,14 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
   })
 }))
 
-vi.mock('@/base/webviewDetection', () => ({ isEmbeddedWebView: () => false }))
-vi.mock('@/utils/hostWhitelist', () => ({
+vi.mock(import('@/base/webviewDetection'), () => ({
+  isEmbeddedWebView: () => false
+}))
+vi.mock(import('@/utils/hostWhitelist'), () => ({
   isHostWhitelisted: () => true,
   normalizeHost: (host: string) => host
 }))
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: ref({}),
   configValueOrDefault: (_config: unknown, _key: string, fallback: string) =>
     fallback
@@ -45,7 +47,7 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock('@/utils/networkUtil', () => ({
+vi.mock(import('@/utils/networkUtil'), () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 

@@ -15,11 +15,11 @@ const state = vi.hoisted(() => ({
   trackBillingEvent: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ resubscribe: state.resubscribe })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: {
       get value() {
@@ -29,43 +29,49 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canReactivate: {
-      get value() {
-        return state.canReactivate
-      }
-    }
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return {
-          canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canReactivate: {
+        get value() {
+          return state.canReactivate
         }
       }
-    },
-    canReactivatePlan: {
-      get value() {
-        return state.canReactivatePlan
-      }
-    }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return {
+            canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+          }
+        }
+      },
+      canReactivatePlan: {
+        get value() {
+          return state.canReactivatePlan
+        }
+      }
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackResubscribeClicked: state.trackResubscribeClicked,
     trackBillingEvent: state.trackBillingEvent
   })
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock(import('@/stores/authStore'), () => ({
   AuthStoreError: class AuthStoreError extends Error {
     readonly status: number | undefined
     constructor(message: string, status?: number) {
@@ -76,11 +82,11 @@ vi.mock('@/stores/authStore', () => ({
   }
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({ add: state.toastAdd })
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 

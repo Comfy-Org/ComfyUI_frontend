@@ -6,11 +6,11 @@ import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelN
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
   useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get supportsModelTypeTags() {

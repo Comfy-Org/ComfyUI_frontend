@@ -21,13 +21,13 @@ const createExecutionStoreMock = () => ({
   }
 })
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     locale: localeRef
   })
 }))
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => createExecutionStoreMock()
 }))
 

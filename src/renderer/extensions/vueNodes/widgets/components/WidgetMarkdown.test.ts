@@ -13,7 +13,7 @@ import WidgetMarkdown from './WidgetMarkdown.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 // Mock the markdown renderer utility
-vi.mock('@/utils/markdownRendererUtil', () => ({
+vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((markdown: string) => {
     // Simple mock that converts some markdown to HTML
     return markdown

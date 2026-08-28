@@ -4,7 +4,7 @@ import { useComfyRegistrySearchProvider } from '@/services/providers/registrySea
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 
 // Mock the store
-vi.mock('@/stores/comfyRegistryStore', () => ({
+vi.mock<unknown>(import('@/stores/comfyRegistryStore'), () => ({
   useComfyRegistryStore: vi.fn()
 }))
 

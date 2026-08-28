@@ -17,52 +17,58 @@ const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 const mockSelectedSavedPaymentMethodId = ref<string | null>('pm_default')
 const mockSavedPaymentMethods = ref<Record<string, unknown>[]>([])
 
-vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: () => ({
-    checkoutStep: mockCheckoutStep,
-    isLoadingPreview: ref(false),
-    loadingTier: ref(null),
-    isSubscribing: ref(false),
-    isResubscribing: ref(false),
-    previewData: mockPreviewData,
-    quoteIsCurrent: ref(false),
-    savedPaymentMethods: mockSavedPaymentMethods,
-    selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
-    selectedTierKey: ref(null),
-    selectedTeamStop: mockSelectedTeamStop,
-    selectedBillingCycle: ref('yearly'),
-    activeCheckoutActionUrl: ref(null),
-    authenticationState: ref(null),
-    authenticationError: ref(null),
-    canRetryAuthentication: ref(false),
-    isAuthenticating: ref(false),
-    reconciliationOperationId: ref(null),
-    isPolling: ref(false),
-    isTeamCheckout: computed(() => false),
-    previewVariant: computed(() => mockPreviewVariant.value),
-    handleSubscribeClick: mockHandleSubscribeClick,
-    handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
-    handleBackToPricing: vi.fn(),
-    handleSuccessClose: vi.fn(),
-    handleAddCreditCard: vi.fn(),
-    handleConfirmTransition: vi.fn(),
-    handleTeamSubscribe: vi.fn(),
-    handleSubscriptionPayment: vi.fn(),
-    handleTeamSubscriptionPayment: vi.fn(),
-    retryPaymentAuthentication: vi.fn(),
-    applyPromotionCode: vi.fn(),
-    invalidateQuote: mockInvalidateQuote,
-    handleResubscribe: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  () => ({
+    useSubscriptionCheckout: () => ({
+      checkoutStep: mockCheckoutStep,
+      isLoadingPreview: ref(false),
+      loadingTier: ref(null),
+      isSubscribing: ref(false),
+      isResubscribing: ref(false),
+      previewData: mockPreviewData,
+      quoteIsCurrent: ref(false),
+      savedPaymentMethods: mockSavedPaymentMethods,
+      selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
+      selectedTierKey: ref(null),
+      selectedTeamStop: mockSelectedTeamStop,
+      selectedBillingCycle: ref('yearly'),
+      activeCheckoutActionUrl: ref(null),
+      authenticationState: ref(null),
+      authenticationError: ref(null),
+      canRetryAuthentication: ref(false),
+      isAuthenticating: ref(false),
+      reconciliationOperationId: ref(null),
+      isPolling: ref(false),
+      isTeamCheckout: computed(() => false),
+      previewVariant: computed(() => mockPreviewVariant.value),
+      handleSubscribeClick: mockHandleSubscribeClick,
+      handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
+      handleBackToPricing: vi.fn(),
+      handleSuccessClose: vi.fn(),
+      handleAddCreditCard: vi.fn(),
+      handleConfirmTransition: vi.fn(),
+      handleTeamSubscribe: vi.fn(),
+      handleSubscriptionPayment: vi.fn(),
+      handleTeamSubscriptionPayment: vi.fn(),
+      retryPaymentAuthentication: vi.fn(),
+      applyPromotionCode: vi.fn(),
+      invalidateQuote: mockInvalidateQuote,
+      handleResubscribe: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get isInPersonalWorkspace() {
-      return mockIsInPersonalWorkspace.value
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get isInPersonalWorkspace() {
+        return mockIsInPersonalWorkspace.value
+      }
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

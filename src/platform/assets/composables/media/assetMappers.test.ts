@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { mapInputFileToAssetItem } from './assetMappers'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (path: string) => `/api${path}`
   }
 }))
 
-vi.mock('@/platform/distribution/cloudPreviewUtil', () => ({
+vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
   appendCloudResParam: vi.fn()
 }))
 

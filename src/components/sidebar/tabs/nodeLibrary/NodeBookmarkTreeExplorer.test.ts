@@ -80,7 +80,7 @@ const mockBookmarkedRoot: TreeNode = {
   ]
 }
 
-vi.mock('@/stores/nodeBookmarkStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeBookmarkStore'), () => ({
   useNodeBookmarkStore: () => ({
     bookmarks: [],
     bookmarkedRoot: mockBookmarkedRoot,
@@ -97,18 +97,18 @@ vi.mock('@/stores/nodeBookmarkStore', () => ({
   })
 }))
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
 }))
 
-vi.mock('@/composables/useTreeExpansion', () => ({
+vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
     expandNode: vi.fn(),
     toggleNodeOnEvent: mockToggleNodeOnEvent
   })
 }))
 
-vi.mock('@/components/common/TreeExplorer.vue', () => ({
+vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), () => ({
   default: {
     name: 'TreeExplorer',
     template: '<div />',
@@ -119,7 +119,7 @@ vi.mock('@/components/common/TreeExplorer.vue', () => ({
   }
 }))
 
-vi.mock('@/components/common/CustomizationDialog.vue', () => ({
+vi.mock<unknown>(import('@/components/common/CustomizationDialog.vue'), () => ({
   default: {
     name: 'FolderCustomizationDialog',
     template: '<div />',
@@ -127,21 +127,27 @@ vi.mock('@/components/common/CustomizationDialog.vue', () => ({
   }
 }))
 
-vi.mock('@/components/node/NodePreview.vue', () => ({
+vi.mock<unknown>(import('@/components/node/NodePreview.vue'), () => ({
   default: { name: 'NodePreview', template: '<div />' }
 }))
 
-vi.mock('@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue', () => ({
-  default: { name: 'NodeTreeFolder', template: '<div />', props: ['node'] }
-}))
+vi.mock<unknown>(
+  import('@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'),
+  () => ({
+    default: { name: 'NodeTreeFolder', template: '<div />', props: ['node'] }
+  })
+)
 
-vi.mock('@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue', () => ({
-  default: {
-    name: 'NodeTreeLeaf',
-    template: '<div />',
-    props: ['node', 'openNodeHelp']
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'),
+  () => ({
+    default: {
+      name: 'NodeTreeLeaf',
+      template: '<div />',
+      props: ['node', 'openNodeHelp']
+    }
+  })
+)
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 

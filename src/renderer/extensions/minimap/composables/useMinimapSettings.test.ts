@@ -7,8 +7,8 @@ type MockSettingStore = ReturnType<typeof useSettingStore>
 
 const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/settings/settingStore')
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+vi.mock(import('@/platform/settings/settingStore'))
+vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
   useColorPaletteStore: mockUseColorPaletteStore
 }))
 

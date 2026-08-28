@@ -35,17 +35,17 @@ const mockAssetsStoreState = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/scripts/widgets', () => ({
+vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: vi.fn(() => ({
     get inputAssets() {
       return mockAssetsStoreState.inputAssets
@@ -60,33 +60,36 @@ vi.mock('@/stores/assetsStore', () => ({
 }))
 
 const mockSettingStoreGet = vi.fn(() => false)
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: mockSettingStoreGet
   }))
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) =>
     key === 'widgets.selectModel' ? 'Select model' : key
   )
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false),
     shouldUseAssetBrowser: vi.fn(() => false)
   }
 }))
 
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => {
-  const mockAssetBrowserDialogShow = vi.fn()
-  return {
-    useAssetBrowserDialog: vi.fn(() => ({
-      show: mockAssetBrowserDialogShow
-    }))
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetBrowserDialog'),
+  () => {
+    const mockAssetBrowserDialogShow = vi.fn()
+    return {
+      useAssetBrowserDialog: vi.fn(() => ({
+        show: mockAssetBrowserDialogShow
+      }))
+    }
   }
-})
+)
 
 function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
   const mockCallback = vi.fn()

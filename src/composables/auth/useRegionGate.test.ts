@@ -7,7 +7,7 @@ import { useRegionGate } from '@/composables/auth/useRegionGate'
 const detection = vi.hoisted(() => ({
   outcome: Promise.resolve(false) as Promise<boolean>
 }))
-vi.mock('@/utils/networkUtil', () => ({
+vi.mock(import('@/utils/networkUtil'), () => ({
   isInChina: () => detection.outcome
 }))
 

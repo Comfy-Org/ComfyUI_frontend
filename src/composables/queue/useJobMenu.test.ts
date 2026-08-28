@@ -5,12 +5,12 @@ import type { Ref } from 'vue'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
 const downloadFileMock = vi.fn()
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: (url: string, filename?: string) => {
     if (filename === undefined) {
       return downloadFileMock(url)
@@ -20,7 +20,7 @@ vi.mock('@/base/common/downloadUtil', () => ({
 }))
 
 const copyToClipboardMock = vi.fn()
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
     copyToClipboard: (text: string) => copyToClipboardMock(text)
   })
@@ -28,13 +28,13 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
 
 const stMock = vi.fn((_: string, fallback?: string) => fallback ?? _)
 const tMock = vi.fn((key: string) => `i18n:${key}`)
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: (...args: Parameters<typeof stMock>) => stMock(...args),
   t: (...args: Parameters<typeof tMock>) => tMock(...args)
 }))
 
 const mapTaskOutputToAssetItemMock = vi.fn()
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
+vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   mapTaskOutputToAssetItem: (taskItem: TaskItemImpl, output: ResultItemImpl) =>
     mapTaskOutputToAssetItemMock(taskItem, output)
 }))
@@ -42,41 +42,50 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
 const mediaAssetActionsMock = {
   deleteAssets: vi.fn()
 }
-vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => mediaAssetActionsMock
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useMediaAssetActions'),
+  () => ({
+    useMediaAssetActions: () => mediaAssetActionsMock
+  })
+)
 
 const settingStoreMock = {
   get: vi.fn()
 }
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => settingStoreMock
 }))
 
 const workflowServiceMock = {
   openWorkflow: vi.fn()
 }
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => workflowServiceMock
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => workflowServiceMock
+  })
+)
 
 const workflowStoreMock = {
   createTemporary: vi.fn()
 }
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => workflowStoreMock,
-  ComfyWorkflow: class {}
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => workflowStoreMock,
+    ComfyWorkflow: class {}
+  })
+)
 
 const cancelJobMock = vi.fn()
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     cancelJob: (jobId: string) => cancelJobMock(jobId)
   }
 }))
 
 const downloadBlobMock = vi.fn()
-vi.mock('@/scripts/utils', () => ({
+vi.mock(import('@/scripts/utils'), () => ({
   downloadBlob: (filename: string, blob: Blob) =>
     downloadBlobMock(filename, blob)
 }))
@@ -86,7 +95,7 @@ const dialogServiceMock = {
   showExecutionErrorDialog: vi.fn(),
   prompt: vi.fn()
 }
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => dialogServiceMock
 }))
 
@@ -94,7 +103,7 @@ const litegraphServiceMock = {
   addNodeOnGraph: vi.fn(),
   getCanvasCenter: vi.fn()
 }
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => litegraphServiceMock
 }))
 
@@ -103,7 +112,7 @@ const nodeDefStoreMock: {
 } = {
   nodeDefsByName: {}
 }
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => nodeDefStoreMock,
   ComfyNodeDefImpl: class {}
 }))
@@ -112,26 +121,26 @@ const queueStoreMock = {
   update: vi.fn(),
   delete: vi.fn()
 }
-vi.mock('@/stores/queueStore', () => ({
+vi.mock<unknown>(import('@/stores/queueStore'), () => ({
   useQueueStore: () => queueStoreMock
 }))
 
 const executionStoreMock = {
   clearInitializationByJobId: vi.fn()
 }
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => executionStoreMock
 }))
 
 const getJobWorkflowMock = vi.fn()
-vi.mock('@/services/jobOutputCache', () => ({
+vi.mock(import('@/services/jobOutputCache'), () => ({
   getJobWorkflow: (jobId: string) => getJobWorkflowMock(jobId)
 }))
 
 const appendJsonExtMock = vi.fn((value: string) =>
   value.toLowerCase().endsWith('.json') ? value : `${value}.json`
 )
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   appendJsonExt: (...args: Parameters<typeof appendJsonExtMock>) =>
     appendJsonExtMock(...args)
 }))

@@ -16,12 +16,12 @@ import {
 } from '@/services/jobOutputCache'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
+vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), () => ({
   fetchJobDetail: vi.fn(),
   extractWorkflow: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getJobDetail: vi.fn(),
     getJobAssets: vi.fn(),

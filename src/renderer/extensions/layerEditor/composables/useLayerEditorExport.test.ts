@@ -21,12 +21,12 @@ const { writePsd, downloadBlob, toastAdd } = vi.hoisted(() => ({
   toastAdd: vi.fn()
 }))
 
-vi.mock('ag-psd', () => ({ writePsd }))
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock(import('ag-psd'), () => ({ writePsd }))
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 

@@ -5,9 +5,12 @@ import type { components } from '@/types/comfyRegistryTypes'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: vi.fn()
+  })
+)
 
 type NodePack = components['schemas']['Node']
 type ManagerStoreReturn = ReturnType<typeof useComfyManagerStore>

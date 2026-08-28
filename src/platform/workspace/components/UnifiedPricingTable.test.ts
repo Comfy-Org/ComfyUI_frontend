@@ -40,7 +40,7 @@ const mockPermissions = ref({
 })
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     plans: ref([]),
     currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
@@ -52,23 +52,29 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
-    canReactivate: computed(() => mockRawCanReactivate.value),
-    canChangeSeats: computed(() => mockCanManageSubscription.value),
-    canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
+      canReactivate: computed(() => mockRawCanReactivate.value),
+      canChangeSeats: computed(() => mockCanManageSubscription.value),
+      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value)
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => mockPermissions.value),
-    canReactivatePlan: computed(() => mockCanReactivatePlan.value)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => mockPermissions.value),
+      canReactivatePlan: computed(() => mockCanReactivatePlan.value)
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

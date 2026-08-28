@@ -10,7 +10,7 @@ import { useVersionCompatibilityStore } from '@/platform/updates/common/versionC
 global.__COMFYUI_FRONTEND_VERSION__ = '1.0.0'
 
 // Mock config first - this needs to be before any imports
-vi.mock('@/config', () => ({
+vi.mock(import('@/config'), () => ({
   default: {
     app_title: 'ComfyUI',
     app_version: '1.0.0'
@@ -18,7 +18,7 @@ vi.mock('@/config', () => ({
 }))
 
 // Mock app
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     ui: {
       settings: {
@@ -29,7 +29,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 // Mock api
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSettings: vi.fn(() => Promise.resolve({})),
     storeSetting: vi.fn(() => Promise.resolve(undefined))
@@ -37,7 +37,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock vue-i18n
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string, params?: Record<string, string | number> | unknown) => {
       if (key === 'g.versionMismatchWarning')
@@ -71,7 +71,7 @@ vi.mock('vue-i18n', () => ({
 
 // Mock lifecycle hooks to track their calls
 const mockOnMounted = vi.fn()
-vi.mock('vue', async () => {
+vi.mock(import('vue'), async () => {
   const actual = await vi.importActual('vue')
   return {
     ...actual,

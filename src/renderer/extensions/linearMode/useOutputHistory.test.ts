@@ -25,48 +25,57 @@ const selectAsLatestFn = vi.fn()
 const resolveIfReadyFn = vi.fn()
 const resolvedOutputsCacheRef = new Map<string, ResultItemImpl[]>()
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => ({
-    media: mediaRef,
-    loading: ref(false),
-    error: ref(null),
-    fetchMediaList: vi.fn().mockResolvedValue([]),
-    refresh: vi.fn().mockResolvedValue([]),
-    loadMore: vi.fn(),
-    hasMore: ref(false),
-    isLoadingMore: ref(false)
+vi.mock<unknown>(
+  import('@/platform/assets/composables/media/useAssetsApi'),
+  () => ({
+    useAssetsApi: () => ({
+      media: mediaRef,
+      loading: ref(false),
+      error: ref(null),
+      fetchMediaList: vi.fn().mockResolvedValue([]),
+      refresh: vi.fn().mockResolvedValue([]),
+      loadMore: vi.fn(),
+      hasMore: ref(false),
+      isLoadingMore: ref(false)
+    })
   })
-}))
+)
 
-vi.mock('@/renderer/extensions/linearMode/linearOutputStore', () => ({
-  useLinearOutputStore: () => ({
-    get pendingResolve() {
-      return pendingResolveRef.value
-    },
-    get inProgressItems() {
-      return inProgressItemsRef.value
-    },
-    get activeWorkflowInProgressItems() {
-      return activeWorkflowInProgressItemsRef.value
-    },
-    get selectedId() {
-      return selectedIdRef.value
-    },
-    resolvedOutputsCache: resolvedOutputsCacheRef,
-    selectAsLatest: selectAsLatestFn,
-    resolveIfReady: resolveIfReadyFn
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/linearOutputStore'),
+  () => ({
+    useLinearOutputStore: () => ({
+      get pendingResolve() {
+        return pendingResolveRef.value
+      },
+      get inProgressItems() {
+        return inProgressItemsRef.value
+      },
+      get activeWorkflowInProgressItems() {
+        return activeWorkflowInProgressItemsRef.value
+      },
+      get selectedId() {
+        return selectedIdRef.value
+      },
+      resolvedOutputsCache: resolvedOutputsCacheRef,
+      selectAsLatest: selectAsLatestFn,
+      resolveIfReady: resolveIfReadyFn
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return { path: activeWorkflowPathRef.value }
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return { path: activeWorkflowPathRef.value }
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => ({
     get jobIdToSessionWorkflowPath() {
       return jobIdToPathRef.value
@@ -77,7 +86,7 @@ vi.mock('@/stores/executionStore', () => ({
   })
 }))
 
-vi.mock('@/stores/queueStore', async (importOriginal) => {
+vi.mock<unknown>(import('@/stores/queueStore'), async (importOriginal) => {
   return {
     ...(await importOriginal()),
     useQueueStore: () => ({
@@ -95,27 +104,30 @@ const { jobDetailResults } = vi.hoisted(() => ({
   jobDetailResults: new Map<string, unknown>()
 }))
 
-vi.mock('@/services/jobOutputCache', () => ({
+vi.mock<unknown>(import('@/services/jobOutputCache'), () => ({
   getJobDetail: (jobId: string) =>
     Promise.resolve(jobDetailResults.get(jobId) ?? undefined)
 }))
 
-vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
-  flattenNodeOutput: ([nodeId, output]: [
-    string | number,
-    Record<string, unknown>
-  ]) => {
-    if (!output.images) return []
-    return (output.images as Array<Record<string, string>>).map(
-      (img) =>
-        new ResultItemImpl({
-          ...img,
-          nodeId: String(nodeId),
-          mediaType: 'images'
-        })
-    )
-  }
-}))
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/flattenNodeOutput'),
+  () => ({
+    flattenNodeOutput: ([nodeId, output]: [
+      string | number,
+      Record<string, unknown>
+    ]) => {
+      if (!output.images) return []
+      return (output.images as Array<Record<string, string>>).map(
+        (img) =>
+          new ResultItemImpl({
+            ...img,
+            nodeId: String(nodeId),
+            mediaType: 'images'
+          })
+      )
+    }
+  })
+)
 
 function makeAsset(
   id: string,

@@ -6,11 +6,11 @@ import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { createMockFileList } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: vi.fn()
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key) => key)
 }))
 

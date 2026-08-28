@@ -11,7 +11,7 @@ import { useNodeCanvasImagePreview } from './useNodeCanvasImagePreview'
 const imagePreviewWidget = vi.hoisted(() => vi.fn())
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget'),
   () => ({
     useImagePreviewWidget: () => imagePreviewWidget
   })

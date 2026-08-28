@@ -26,39 +26,45 @@ const mockSharedWorkspaces = vi.hoisted(() => ({
   }>
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({
     add: mockToastAdd
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceSwitch', () => ({
+vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({
     switchWorkspace: mockSwitchWorkspace
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceTierLabel', () => ({
-  useWorkspaceTierLabel: () => ({
-    getTierLabel: (w: { subscriptionTier: string | null }) =>
-      w.subscriptionTier === 'PRO' ? 'Pro' : null
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceTierLabel'),
+  () => ({
+    useWorkspaceTierLabel: () => ({
+      getTierLabel: (w: { subscriptionTier: string | null }) =>
+        w.subscriptionTier === 'PRO' ? 'Pro' : null
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    sharedWorkspaces: mockSharedWorkspaces,
-    createWorkspace: mockCreateWorkspace
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      sharedWorkspaces: mockSharedWorkspaces,
+      createWorkspace: mockCreateWorkspace
+    })
   })
-}))
+)
 
-vi.mock('pinia', async (importOriginal) => {
+vi.mock<unknown>(import('pinia'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),

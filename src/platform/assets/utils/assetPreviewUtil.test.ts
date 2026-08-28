@@ -17,7 +17,7 @@ const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
 const mockSetAssetPreview = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: mockFetchApi,
     apiURL: mockApiURL,
@@ -26,7 +26,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetAPIEnabled: mockIsAssetAPIEnabled,
     uploadAssetFromBase64: mockUploadAssetFromBase64,
@@ -34,7 +34,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({ setAssetPreview: mockSetAssetPreview })
 }))
 

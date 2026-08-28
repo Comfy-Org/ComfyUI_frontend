@@ -13,11 +13,11 @@ const mockDataStore: Record<string, unknown> = {
   setLoading: vi.fn()
 }
 
-vi.mock('@/stores/maskEditorDataStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorDataStore'), () => ({
   useMaskEditorDataStore: vi.fn(() => mockDataStore)
 }))
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: vi.fn(() => ({
     getNodeOutputs: vi.fn(() => undefined)
   }))
@@ -25,20 +25,20 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     apiURL: vi.fn((route: string) => `http://localhost:8188/api${route}`)
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => ''),
     getRandParam: vi.fn(() => '')

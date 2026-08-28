@@ -8,7 +8,7 @@ import { useUpdateAvailableNodes } from '@/workbench/extensions/manager/composab
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 // Mock Vue's onMounted to execute immediately for testing
-vi.mock('vue', async () => {
+vi.mock(import('vue'), async () => {
   const actual = await vi.importActual('vue')
   return {
     ...actual,
@@ -18,17 +18,20 @@ vi.mock('vue', async () => {
 
 // Mock the dependencies
 vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks',
+  import('@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'),
   () => ({
     useInstalledPacks: vi.fn()
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: vi.fn()
+  })
+)
 
-vi.mock('semver', () => ({
+vi.mock(import('semver'), () => ({
   compare: vi.fn(),
   valid: vi.fn()
 }))

@@ -12,7 +12,7 @@ const { mockFetchApi, mockAddAlert, mockUpdateInputs } = vi.hoisted(() => ({
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
 
-vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (
     _node: LGraphNode,
     opts: { onDrop: typeof capturedDragOnDrop }
@@ -21,27 +21,27 @@ vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
   }
 }))
 
-vi.mock('@/composables/node/useNodeFileInput', () => ({
+vi.mock(import('@/composables/node/useNodeFileInput'), () => ({
   useNodeFileInput: () => ({ openFileSelection: vi.fn() })
 }))
 
-vi.mock('@/composables/node/useNodePaste', () => ({
+vi.mock(import('@/composables/node/useNodePaste'), () => ({
   useNodePaste: vi.fn()
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ addAlert: mockAddAlert })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { fetchApi: mockFetchApi }
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({ updateInputs: mockUpdateInputs })
 }))
 

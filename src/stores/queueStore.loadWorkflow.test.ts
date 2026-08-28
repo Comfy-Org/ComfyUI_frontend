@@ -10,7 +10,7 @@ import type { ComfyApp } from '@/scripts/app'
 import * as jobOutputCache from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
 
-vi.mock('@/services/extensionService', () => ({
+vi.mock<unknown>(import('@/services/extensionService'), () => ({
   useExtensionService: vi.fn(() => ({
     invokeExtensions: vi.fn()
   }))

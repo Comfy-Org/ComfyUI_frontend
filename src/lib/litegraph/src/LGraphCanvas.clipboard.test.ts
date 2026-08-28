@@ -38,10 +38,10 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({})
 }))
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 

@@ -18,7 +18,7 @@ const mockT = vi.fn((key: string) => {
   return translations[key] || key
 })
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: mockT
   })

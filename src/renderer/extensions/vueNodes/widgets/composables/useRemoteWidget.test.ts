@@ -22,7 +22,7 @@ const mockCloudAuth = vi.hoisted(() => ({
   authHeader: null as { Authorization: string } | null
 }))
 
-vi.mock('axios', async (importOriginal) => {
+vi.mock<unknown>(import('axios'), async (importOriginal) => {
   const actual = await importOriginal<typeof axios>()
   return {
     default: {
@@ -32,13 +32,13 @@ vi.mock('axios', async (importOriginal) => {
   }
 })
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockCloudAuth.isCloud
   }
 }))
 
-vi.mock('@/stores/authStore', async () => {
+vi.mock<unknown>(import('@/stores/authStore'), async () => {
   return {
     useAuthStore: vi.fn(() => ({
       getAuthHeader: vi.fn(() => Promise.resolve(mockCloudAuth.authHeader))
@@ -46,7 +46,7 @@ vi.mock('@/stores/authStore', async () => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', async () => {
+vi.mock<unknown>(import('@/platform/settings/settingStore'), async () => {
   return {
     useSettingStore: () => ({
       settings: {}

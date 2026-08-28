@@ -25,10 +25,10 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({})
 }))
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 

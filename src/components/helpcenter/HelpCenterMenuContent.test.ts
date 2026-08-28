@@ -16,7 +16,7 @@ const distribution = vi.hoisted(() => ({
 
 const commandStoreExecute = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
@@ -28,7 +28,7 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     staticUrls: {
       discord: '',
@@ -39,13 +39,13 @@ vi.mock('@/composables/useExternalLink', () => ({
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: () => false
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackHelpResourceClicked: vi.fn(),
     trackHelpCenterOpened: vi.fn(),
@@ -53,7 +53,7 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/updates/common/releaseStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/releaseStore'), () => ({
   useReleaseStore: () => ({
     releases: [],
     recentReleases: [],
@@ -62,34 +62,40 @@ vi.mock('@/platform/updates/common/releaseStore', () => ({
   })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: commandStoreExecute })
 }))
 
-vi.mock('@/utils/envUtil', () => ({
+vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => null
 }))
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
   () => ({
     useConflictAcknowledgment: () => ({ shouldShowRedDot: { value: false } })
   })
 )
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: () => ({ isNewManagerUI: { value: false } })
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
+  () => ({
+    useManagerState: () => ({ isNewManagerUI: { value: false } })
+  })
+)
 
-vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
-  useComfyManagerService: () => ({})
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/services/comfyManagerService'),
+  () => ({
+    useComfyManagerService: () => ({})
+  })
+)
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => ({ add: vi.fn() })
 }))
 
-vi.mock('@/components/icons/PuzzleIcon.vue', () => ({
+vi.mock(import('@/components/icons/PuzzleIcon.vue'), () => ({
   default: defineComponent({
     name: 'PuzzleIconStub',
     render: () => h('div')

@@ -6,7 +6,7 @@ import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     isGraphReady: true,
     rootGraph: {
@@ -16,7 +16,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
   getRootParentNode: vi.fn(() => null),
@@ -28,13 +28,13 @@ const mockIsCloud = vi.hoisted(() => ({ value: false }))
 const unknownValidationMessage = vi.hoisted(
   () => 'A node returned a validation error ComfyUI does not recognize.'
 )
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/i18n', () => {
+vi.mock<unknown>(import('@/i18n'), () => {
   const messages: Record<string, string> = {
     'errorCatalog.validationErrors.required_input_missing.title':
       'Missing connection',
@@ -103,22 +103,22 @@ vi.mock('@/i18n', () => {
   }
 })
 
-vi.mock('@/stores/comfyRegistryStore', () => ({
+vi.mock<unknown>(import('@/stores/comfyRegistryStore'), () => ({
   useComfyRegistryStore: () => ({
     inferPackFromNodeName: vi.fn()
   })
 }))
 
-vi.mock('@/utils/nodeTitleUtil', () => ({
+vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: vi.fn(() => '')
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(() => false)
 }))
 
-vi.mock(
-  '@/platform/missingModel/composables/useMissingModelInteractions',
+vi.mock<unknown>(
+  import('@/platform/missingModel/composables/useMissingModelInteractions'),
   () => ({
     clearMissingModelState: vi.fn()
   })

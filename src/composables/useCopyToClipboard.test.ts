@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockWriteText = vi.fn()
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: vi.fn(() => ({
     add: mockToastAdd
   }))
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 

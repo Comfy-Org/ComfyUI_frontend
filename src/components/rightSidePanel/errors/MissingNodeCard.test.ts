@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -20,8 +20,8 @@ const mockSystemStats = vi.hoisted(() => ({
   value: null as { system?: { comfyui_version?: string } } | null
 }))
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useMissingNodes',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/useMissingNodes'),
   () => ({
     useMissingNodes: () => ({
       missingCoreNodes: mockMissingCoreNodes,
@@ -33,7 +33,7 @@ vi.mock(
   })
 )
 
-vi.mock('@/stores/systemStatsStore', () => ({
+vi.mock<unknown>(import('@/stores/systemStatsStore'), () => ({
   useSystemStatsStore: () => ({
     get systemStats() {
       return mockSystemStats.value
@@ -43,30 +43,39 @@ vi.mock('@/stores/systemStatsStore', () => ({
 
 const mockApplyChanges = vi.hoisted(() => vi.fn())
 const mockIsRestarting = vi.hoisted(() => ({ value: false }))
-vi.mock('@/workbench/extensions/manager/composables/useApplyChanges', () => ({
-  useApplyChanges: () => ({
-    get isRestarting() {
-      return mockIsRestarting.value
-    },
-    applyChanges: mockApplyChanges
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useApplyChanges'),
+  () => ({
+    useApplyChanges: () => ({
+      get isRestarting() {
+        return mockIsRestarting.value
+      },
+      applyChanges: mockApplyChanges
+    })
   })
-}))
+)
 
 const mockIsPackInstalled = vi.hoisted(() => vi.fn(() => false))
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    isPackInstalled: mockIsPackInstalled
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: () => ({
+      isPackInstalled: mockIsPackInstalled
+    })
   })
-}))
+)
 
 const mockShouldShowManagerButtons = vi.hoisted(() => ({ value: false }))
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: () => ({
-    shouldShowManagerButtons: mockShouldShowManagerButtons
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
+  () => ({
+    useManagerState: () => ({
+      shouldShowManagerButtons: mockShouldShowManagerButtons
+    })
   })
-}))
+)
 
-vi.mock('./MissingPackGroupRow.vue', () => ({
+vi.mock<unknown>(import('./MissingPackGroupRow.vue'), () => ({
   default: {
     name: 'MissingPackGroupRow',
     template: `<div class="pack-row" data-testid="pack-row"

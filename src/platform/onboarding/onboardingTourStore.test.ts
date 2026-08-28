@@ -19,7 +19,7 @@ import type { CoachId, CoachStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
 const settings = vi.hoisted(() => ({ store: new Map<string, unknown>() }))
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) =>
       settings.store.get(key) ?? (key === TOUR_SEEN_SETTING ? [] : undefined),
@@ -31,7 +31,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 const telemetry = vi.hoisted(() => ({ track: vi.fn() }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
 }))
 
@@ -42,12 +42,12 @@ const appModeMock = vi.hoisted(
       hasOutputs: Ref<boolean> | null
     }
 )
-vi.mock('@/composables/useAppMode', async () => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { ref: r } = await import('vue')
   appModeMock.mode = r<AppMode>('graph')
   return { useAppMode: () => ({ mode: appModeMock.mode }) }
 })
-vi.mock('@/stores/appModeStore', async () => {
+vi.mock<unknown>(import('@/stores/appModeStore'), async () => {
   const { ref: r } = await import('vue')
   appModeMock.hasOutputs = r(false)
   const hasOutputs = appModeMock.hasOutputs

@@ -29,7 +29,7 @@ const runState = ref<RunState>('idle')
 const framings: { glide?: boolean }[] = []
 
 const disposals = vi.hoisted(() => ({ spy: vi.fn() }))
-vi.mock('./canvasCoachTarget', async (importOriginal) => {
+vi.mock(import('./canvasCoachTarget'), async (importOriginal) => {
   const actual = await importOriginal<typeof CanvasCoachTarget>()
   return {
     canvasNodeTarget: (...args: Parameters<typeof actual.canvasNodeTarget>) => {
@@ -45,7 +45,7 @@ vi.mock('./canvasCoachTarget', async (importOriginal) => {
   }
 })
 
-vi.mock('./cameraFraming', () => ({
+vi.mock(import('./cameraFraming'), () => ({
   frameNode: (_id: unknown, _signal: AbortSignal, options = {}) => {
     framings.push(options)
     return Promise.resolve()
@@ -62,7 +62,7 @@ function buildResolution(templateId: keyof typeof TOUR_ROLE_PINS | string) {
 }
 
 const appState = vi.hoisted(() => ({ graph: undefined as LGraph | undefined }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
       return appState.graph

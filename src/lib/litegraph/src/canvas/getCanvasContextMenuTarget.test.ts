@@ -9,7 +9,7 @@ const { mockQueryRerouteAtPoint } = vi.hoisted(() => ({
   mockQueryRerouteAtPoint: vi.fn<() => unknown>(() => null)
 }))
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: { queryRerouteAtPoint: mockQueryRerouteAtPoint }
 }))
 

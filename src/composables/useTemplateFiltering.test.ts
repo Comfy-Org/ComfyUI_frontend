@@ -37,29 +37,32 @@ const mockSystemStatsStore = {
   }
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => defaultSettingStore)
 }))
 
-vi.mock('@/stores/templateRankingStore', () => ({
+vi.mock<unknown>(import('@/stores/templateRankingStore'), () => ({
   useTemplateRankingStore: vi.fn(() => defaultRankingStore)
 }))
 
-vi.mock('@/stores/systemStatsStore', () => ({
+vi.mock<unknown>(import('@/stores/systemStatsStore'), () => ({
   useSystemStatsStore: vi.fn(() => mockSystemStatsStore)
 }))
 
 const trackTemplateFilterChanged = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackTemplateFilterChanged,
     trackSearchQuery: vi.fn()
   }))
 }))
 
-vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
-  useSearchQueryTracking: vi.fn()
-}))
+vi.mock(
+  import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
+  () => ({
+    useSearchQueryTracking: vi.fn()
+  })
+)
 
 describe('useTemplateFiltering', () => {
   beforeEach(() => {

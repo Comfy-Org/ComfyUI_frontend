@@ -19,13 +19,16 @@ const mockWorkflowStore = reactive<{
   activeWorkflow: null
 })
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => mockWorkflowStore
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => mockWorkflowStore
+  })
+)
 
 const mockTrackShareFlow = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackShareFlow: mockTrackShareFlow
   })
@@ -33,11 +36,11 @@ vi.mock('@/platform/telemetry', () => ({
 
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: () => mockToast
 }))
 
-vi.mock('@formkit/auto-animate/vue', () => ({
+vi.mock(import('@formkit/auto-animate/vue'), () => ({
   vAutoAnimate: {}
 }))
 
@@ -48,14 +51,14 @@ const mockFlags = vi.hoisted(() => ({
 
 const mockShowPublishDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: mockFlags
   })
 }))
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishDialog',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubPublishDialog'),
   () => ({
     useComfyHubPublishDialog: () => ({
       show: mockShowPublishDialog
@@ -63,12 +66,15 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    saveWorkflow: vi.fn(),
-    renameWorkflow: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      saveWorkflow: vi.fn(),
+      renameWorkflow: vi.fn()
+    })
   })
-}))
+)
 
 const mockShareServiceData = vi.hoisted(() => ({
   items: [
@@ -97,13 +103,16 @@ const mockGetPublishStatus = vi.hoisted(() => vi.fn())
 const mockPublishWorkflow = vi.hoisted(() => vi.fn())
 const mockGetShareableAssets = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  useWorkflowShareService: () => ({
-    getPublishStatus: mockGetPublishStatus,
-    publishWorkflow: mockPublishWorkflow,
-    getShareableAssets: mockGetShareableAssets
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    useWorkflowShareService: () => ({
+      getPublishStatus: mockGetPublishStatus,
+      publishWorkflow: mockPublishWorkflow,
+      getShareableAssets: mockGetShareableAssets
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

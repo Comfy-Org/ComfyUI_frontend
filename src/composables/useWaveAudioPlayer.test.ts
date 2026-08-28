@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
 
-vi.mock('@vueuse/core', async (importOriginal) => {
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
   return {
     ...actual,
@@ -24,7 +24,7 @@ afterEach(() => {
   mockFetchApi.mockReset()
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => '/api' + route,
     fetchApi: (...args: unknown[]) => mockFetchApi(...args)

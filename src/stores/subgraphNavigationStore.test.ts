@@ -21,7 +21,7 @@ function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
   return fromPartial<Subgraph>(mockSubgraph)
 }
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     subgraph: null,
     ds: {
@@ -51,16 +51,16 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     getCanvas: () => app.canvas
   })
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   findSubgraphPathById: vi.fn()
 }))
-vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {

@@ -65,7 +65,7 @@ const accessErrorCodes = [
   'auth/unauthorized-continue-uri'
 ]
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, values?: Record<string, string>) =>
     values ? `${key}:${Object.values(values).join(':')}` : key,
   st: (key: string, fallback: string) => {
@@ -74,48 +74,54 @@ vi.mock('@/i18n', () => ({
   }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackAuthFailed: mockTrackAuthFailed
   }))
 }))
 
-vi.mock('@/composables/billing/usePendingTopup', () => ({
+vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: vi.fn(() => mockToastStore)
 }))
 
-vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
+vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearAllWorkflowStorage: mockClearAllWorkflowStorage,
   prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => mockWorkflowStore)
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => mockWorkflowStore)
+  })
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => mockWorkflowService)
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: vi.fn(() => mockWorkflowService)
+  })
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => mockDialogService)
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => mockAuthStore)
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
     canAccessSubscriptionFeatures: {
       value: mockBillingState.canAccessSubscriptionFeatures
@@ -125,7 +131,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   }))
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync:
       <TArgs extends unknown[], TReturn>(

@@ -12,18 +12,21 @@ const mockStore = vi.hoisted(() => ({
   setFillOpacity: vi.fn()
 }))
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 
-vi.mock('@/components/maskeditor/controls/SliderControl.vue', () => ({
-  default: {
-    name: 'SliderControlStub',
-    props: ['label', 'min', 'max', 'step', 'modelValue'],
-    emits: ['update:modelValue'],
-    template: `<button :aria-label="label" @click="$emit('update:modelValue', 42)">{{ modelValue }}</button>`
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/controls/SliderControl.vue'),
+  () => ({
+    default: {
+      name: 'SliderControlStub',
+      props: ['label', 'min', 'max', 'step', 'modelValue'],
+      emits: ['update:modelValue'],
+      template: `<button :aria-label="label" @click="$emit('update:modelValue', 42)">{{ modelValue }}</button>`
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

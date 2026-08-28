@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import WorkspaceSwitcherPopover from './WorkspaceSwitcherPopover.vue'
 
-vi.mock('@/platform/workspace/composables/useWorkspaceSwitch', () => ({
+vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({ switchWorkspace: vi.fn() })
 }))
 
@@ -15,13 +15,13 @@ const billingMocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ subscription: billingMocks.subscription })
 }))
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/platform/distribution/types', () => distributionMocks)
+vi.mock(import('@/platform/distribution/types'), () => distributionMocks)
 
 const LONG_WORKSPACE_NAME =
   'Quantum Renaissance Collective for Hyperdimensional Latent Diffusion Research and Experimental Workflow Engineering'

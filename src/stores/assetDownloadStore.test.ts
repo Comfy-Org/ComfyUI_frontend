@@ -12,7 +12,7 @@ const eventHandler = vi.hoisted(() => {
   return state
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn((_event: string, handler: DownloadEventHandler) => {
       eventHandler.current = handler
@@ -21,7 +21,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/platform/tasks/services/taskService', () => ({
+vi.mock(import('@/platform/tasks/services/taskService'), () => ({
   taskService: {
     getTask: vi.fn()
   }

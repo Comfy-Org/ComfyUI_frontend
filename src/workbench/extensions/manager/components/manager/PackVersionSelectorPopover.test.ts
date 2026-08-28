@@ -56,27 +56,30 @@ const mockIsPackInstalled = vi.fn(() => false)
 const mockGetInstalledPackVersion = vi.fn(() => undefined)
 
 // Mock the registry service
-vi.mock('@/services/comfyRegistryService', () => ({
+vi.mock<unknown>(import('@/services/comfyRegistryService'), () => ({
   useComfyRegistryService: vi.fn(() => ({
     getPackVersions: mockGetPackVersions
   }))
 }))
 
 // Mock the manager store
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    installPack: {
-      call: mockInstallPack,
-      clear: vi.fn()
-    },
-    isPackInstalled: mockIsPackInstalled,
-    getInstalledPackVersion: mockGetInstalledPackVersion
-  }))
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: vi.fn(() => ({
+      installPack: {
+        call: mockInstallPack,
+        clear: vi.fn()
+      },
+      isPackInstalled: mockIsPackInstalled,
+      getInstalledPackVersion: mockGetInstalledPackVersion
+    }))
+  })
+)
 
 // Mock the conflict detection composable
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictDetection',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictDetection'),
   () => ({
     useConflictDetection: vi.fn(() => ({
       checkNodeCompatibility: mockCheckNodeCompatibility

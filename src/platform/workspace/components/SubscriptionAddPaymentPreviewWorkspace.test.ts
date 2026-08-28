@@ -44,7 +44,7 @@ function previewFixture(
   }
 }
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key,
     n: (value: number) => value.toLocaleString('en-US'),

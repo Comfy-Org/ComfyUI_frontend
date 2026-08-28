@@ -48,23 +48,23 @@ const mockCoordinateTransform = {
   canvasToScreen: vi.fn()
 }
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
-vi.mock('@/composables/maskeditor/useBrushDrawing', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useBrushDrawing'), () => ({
   useBrushDrawing: vi.fn(() => mockBrushDrawing)
 }))
 
-vi.mock('@/composables/maskeditor/useCanvasTools', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useCanvasTools'), () => ({
   useCanvasTools: vi.fn(() => mockCanvasTools)
 }))
 
-vi.mock('@/composables/maskeditor/useCoordinateTransform', () => ({
+vi.mock(import('@/composables/maskeditor/useCoordinateTransform'), () => ({
   useCoordinateTransform: vi.fn(() => mockCoordinateTransform)
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     extensionManager: {
       setting: {
