@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import SectionHeader from '../../components/common/SectionHeader.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
@@ -20,14 +19,10 @@ const modelsTabs = modelsApiCodeTabs
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
-    <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.products.heading', locale) }}
-    </SectionHeader>
-
     <!-- Serverless API: the headline product, full width -->
     <article
       id="serverless"
-      class="group bg-transparency-white-t4 relative mt-8 grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl p-6 lg:mt-12 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
+      class="group bg-transparency-white-t4 relative grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl p-6 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
     >
       <a
         :href="routes.platformServerless"

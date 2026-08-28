@@ -64,7 +64,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             { label: t('nav.comfyLocal', locale), href: routes.download },
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
-              label: t('nav.platform', locale),
+              label: t('nav.developerPlatform', locale),
               href: routes.platform,
               badge: 'new'
             },
@@ -105,7 +105,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         }
       ]
     },
-    { label: t('nav.pricing', locale), href: routes.cloudPricing },
+    { label: t('nav.pricing', locale), href: routes.pricing },
     {
       label: t('nav.community', locale),
       badge: 'new',

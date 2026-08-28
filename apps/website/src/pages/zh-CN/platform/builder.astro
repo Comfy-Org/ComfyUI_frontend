@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
-import BuilderFaqSection from '../../../templates/platform/BuilderFaqSection.vue'
+import BuilderEnterpriseSection from '../../../templates/platform/BuilderEnterpriseSection.vue'
 import BuilderHero from '../../../templates/platform/BuilderHero.vue'
 import BuilderPillarsSection from '../../../templates/platform/BuilderPillarsSection.vue'
 import BuilderProblemSection from '../../../templates/platform/BuilderProblemSection.vue'
@@ -16,7 +16,7 @@ import { t } from '../../../i18n/translations'
   <BuilderHero locale="zh-CN" client:load />
   <BuilderProblemSection locale="zh-CN" />
   <BuilderPillarsSection locale="zh-CN" />
-  <BuilderFaqSection client:visible locale="zh-CN" />
+  <BuilderEnterpriseSection locale="zh-CN" />
   <ClosingCtaSection locale="zh-CN" />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
 </BaseLayout>

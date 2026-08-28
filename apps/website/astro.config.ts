@@ -27,6 +27,8 @@ export default defineConfig({
     '/platform/router': '/platform/models/',
     '/zh-CN/platform/router': '/zh-CN/platform/models/',
     '/cloud/enterprise': '/enterprise/',
+    '/cloud/pricing': '/pricing/',
+    '/zh-CN/cloud/pricing': '/zh-CN/pricing/',
     '/zh-CN/cloud/enterprise': '/zh-CN/enterprise/',
     '/zh-CN/api': '/zh-CN/platform/',
     '/minimax': { status: 307, destination: '/minimax-h3/' },

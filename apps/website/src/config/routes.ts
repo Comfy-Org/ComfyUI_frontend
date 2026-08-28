@@ -4,7 +4,7 @@ const baseRoutes = {
   home: '/',
   download: '/download',
   cloud: '/cloud',
-  cloudPricing: '/cloud/pricing',
+  pricing: '/pricing',
   enterprise: '/enterprise',
   enterpriseManagedBuilds: '/enterprise/managed-builds',
   gallery: '/gallery',
@@ -122,6 +122,8 @@ export const externalLinks = {
   docsPlatform: 'https://docs.comfy.org/development/overview',
   docsPlatformExamples: 'https://docs.comfy.org/platform/examples',
   docsSdk: 'https://docs.comfy.org/development/api-development/sdks',
+  docsSelfHosted:
+    'https://docs.comfy.org/development/deploy/overview#self-hosted-comfyui',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   g2ComfyUi: 'https://www.g2.com/products/comfyui',
   github: 'https://github.com/Comfy-Org/ComfyUI',

@@ -5,7 +5,7 @@ import PlatformFeatureGrid from './PlatformFeatureGrid.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const cardNumbers = [1, 2, 3, 4, 5, 6] as const
+const cardNumbers = [1, 2, 3, 4] as const
 
 const cards = cardNumbers.map((n) => ({
   title: t(`platform.builderPillars.${n}.title`, locale),
@@ -17,5 +17,6 @@ const cards = cardNumbers.map((n) => ({
   <PlatformFeatureGrid
     :heading="t('platform.builderPillars.heading', locale)"
     :cards="cards"
+    :columns="4"
   />
 </template>
