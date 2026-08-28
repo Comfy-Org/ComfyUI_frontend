@@ -182,6 +182,11 @@ vi.mock('@/core/graph/subgraph/promotionUtils', async (importOriginal) => ({
   tryToggleWidgetPromotion: mockTryToggleWidgetPromotion
 }))
 
+const mockToggleSearchBox = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/workspace/searchBoxStore', () => ({
+  useSearchBoxStore: () => ({ toggleVisible: mockToggleSearchBox })
+}))
+
 const mockUnpackSubgraph = vi.hoisted(() => vi.fn())
 vi.mock(
   '@/composables/graph/useSubgraphOperations',
@@ -631,6 +636,20 @@ describe('useCoreCommands', () => {
       await findCommand('Comfy.Graph.UnpackSubgraph').function()
 
       expect(mockUnpackSubgraph).toHaveBeenCalledOnce()
+    })
+
+    it('does not open the search box in selection-only mode', async () => {
+      app.canvas.selectOnly = true
+
+      await findCommand('Workspace.SearchBox.Toggle').function()
+
+      expect(mockToggleSearchBox).not.toHaveBeenCalled()
+    })
+
+    it('toggles the search box outside selection-only mode', async () => {
+      await findCommand('Workspace.SearchBox.Toggle').function()
+
+      expect(mockToggleSearchBox).toHaveBeenCalledOnce()
     })
 
     it('does not toggle widget promotion in selection-only mode', async () => {

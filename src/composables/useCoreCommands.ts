@@ -857,6 +857,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Toggle Search Box',
       versionAdded: '1.5.7',
       function: () => {
+        // Node creation is gated during picking; opening the search box
+        // would dead-end.
+        if (isSelectOnly(app.canvas)) return
         useSearchBoxStore().toggleVisible()
       }
     },

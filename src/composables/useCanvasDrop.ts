@@ -10,6 +10,7 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowSto
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { ComfyModelDef } from '@/stores/modelStore'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -24,6 +25,9 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
       args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
     onDrop: async (event) => {
+      // Sidebar drops create nodes, write model widgets, or insert
+      // workflows - all edits of the picked canvas.
+      if (isSelectOnly(comfyApp.canvas)) return
       const loc = event.location.current.input
       const dndData = event.source.data
 

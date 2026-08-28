@@ -49,6 +49,11 @@ export async function createNode(
   if (!name) {
     return null
   }
+  // Node creation is an edit of the picked canvas (the file-drop path's
+  // second gate, after the drop handler's own).
+  if (isSelectOnly(canvas)) {
+    return null
+  }
 
   const {
     graph,
@@ -146,8 +151,12 @@ export function addToComboValues(widget: IComboWidget, value: string) {
  *   (LGraphCanvas's own `selectOnly` checks in its pointer paths);
  * - undo/redo is gated at the TRACKER level (ChangeTracker.undo()/redo() -
  *   not the command registry, which keyboard shortcuts bypass);
- * - node creation is gated at useLitegraphService's addNodeOnGraph, which
- *   every creation surface traverses.
+ * - node creation from NODE DEFINITIONS is gated at useLitegraphService's
+ *   addNodeOnGraph (search popover, libraries, bookmarks, ghost-drops, job
+ *   menu), with three surface guards closing the non-definition creation
+ *   paths: the document file-drop handler (app.ts), the sidebar drop
+ *   handler (useCanvasDrop), and workflow insertion
+ *   (workflowService.insertWorkflow).
  *
  * Deliberately unguarded: workflow-lifecycle commands (new/open/load-default)
  * SWAP the workflow rather than edit the picked canvas - switching workflows
@@ -156,10 +165,14 @@ export function addToComboValues(widget: IComboWidget, value: string) {
  * which is an edit, not a swap.
  *
  * KNOWN UNGUARDED (deferred to the mode-owner slice, which arms the mode
- * only where these cannot fire): the Vue-nodes pointer paths - the click
- * replace in useNodeEventHandlers and the drag path in
- * useNodePointerInteractions. Classic-canvas picking never reaches them;
- * arming picking under Vue nodes requires guarding them first.
+ * only where these cannot fire): the Vue-nodes pointer paths - BOTH
+ * click-replace paths (handleNodeSelect and
+ * toggleNodeSelectionAfterPointerUp in useNodeEventHandlers), the drag path
+ * in useNodePointerInteractions, useSlotLinkInteraction,
+ * useVueNodeResizeTracking - plus useNodeReplacement's replaceNode and
+ * widgetInputs' programmatic widget conversion, which are reachable only
+ * through surfaces guarded above. Classic-canvas picking never reaches
+ * them; arming picking under Vue nodes requires guarding them first.
  */
 export const isSelectOnly = (
   canvas: LGraphCanvas | null | undefined
