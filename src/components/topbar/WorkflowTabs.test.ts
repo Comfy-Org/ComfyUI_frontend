@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, reactive } from 'vue'
+import { defineComponent, h, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -87,7 +87,6 @@ const agentPanelHolder = vi.hoisted(() => ({
   store: null as unknown as {
     isOpen: { value: boolean }
     enabled: { value: boolean }
-    gateSettled: { value: boolean }
     toggle: ReturnType<typeof vi.fn>
   }
 }))
@@ -96,7 +95,6 @@ vi.mock('@/workbench/extensions/agent/stores/agentPanelStore', async () => {
   agentPanelHolder.store = {
     isOpen: ref(false),
     enabled: ref(false),
-    gateSettled: ref(false),
     toggle: vi.fn(() => {
       agentPanelHolder.store.isOpen.value = !agentPanelHolder.store.isOpen.value
     })
@@ -245,17 +243,5 @@ describe('WorkflowTabs agent entry button', () => {
 
     expect(agentPanelHolder.store.toggle).toHaveBeenCalledTimes(1)
     expect(button).toHaveAttribute('aria-pressed', 'true')
-  })
-
-  it('exposes the gate-settled signal on the actions container once the gate settles', async () => {
-    renderComponent()
-
-    const actions = screen.getByTestId('integrated-tab-bar-actions')
-    expect(actions).not.toHaveAttribute('data-agent-gate-settled')
-
-    agentPanelHolder.store.gateSettled.value = true
-    await nextTick()
-
-    expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
   })
 })

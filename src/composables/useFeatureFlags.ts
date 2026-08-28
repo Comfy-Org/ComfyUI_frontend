@@ -1,4 +1,4 @@
-import { computed, reactive, readonly } from 'vue'
+import { computed, reactive, readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
@@ -42,8 +42,13 @@ export enum ServerFeatureFlag {
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
+  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience'
 }
+
+// Deliberately uncached (unlike the billing flags): a stale true here would
+// mount the agent panel and fetch agent chunks across a flag-off boundary.
+const agentPanelUncached: Ref<boolean | undefined> = ref(undefined)
 
 /**
  * Resolves a feature flag value with session override > dev override >
@@ -209,6 +214,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
         cachedBillingControlEnabled
+      )
+    },
+    get agentPanelEnabled() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
+        remoteConfig.value['agent-in-app-experience'],
+        agentPanelUncached
       )
     },
     get legacyBillingMigrationEnabled() {

@@ -82,7 +82,6 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
-      :data-agent-gate-settled="agentPanelStore?.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button

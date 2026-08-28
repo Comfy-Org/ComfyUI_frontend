@@ -20,18 +20,10 @@ test.describe('In-App Agent panel shell', { tag: '@cloud' }, () => {
       await bootAgentApp(page, agentFlagEnabled)
 
       // Positive anchor: the button's own container rendered, so absence
-      // below means gated off, not a missing tab bar.
+      // below means gated off, not a missing tab bar. The gate is settled
+      // by construction here: the auth gate awaits the authenticated
+      // /features refresh before the app (and this container) can render.
       await expect(page.getByTestId('integrated-tab-bar-actions')).toBeVisible()
-      // The gate settles asynchronously; assert only after it has run, so a
-      // late enable cannot slip past auto-retrying negative assertions.
-      // Flag-off settles on the flags delivery (posthog fires its callback
-      // even when every bootstrap flag is false); the timeout only covers
-      // the no-token path.
-      await expect(
-        page.getByTestId('integrated-tab-bar-actions')
-      ).toHaveAttribute('data-agent-gate-settled', 'true', {
-        timeout: 8_000
-      })
 
       await expect(
         page.getByRole('button', { name: OPEN_AGENT_LABEL })

@@ -12,8 +12,6 @@ export const useAgentPanelStore = /* @__PURE__ */ defineStore(
     const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
       writeDefaults: false
     })
-    /** True once the flag gate reached a terminal state (delivered, timed out, or failed closed). */
-    const gateSettled = ref(false)
 
     function close(): void {
       isOpen.value = false
@@ -26,7 +24,6 @@ export const useAgentPanelStore = /* @__PURE__ */ defineStore(
     return {
       enabled,
       isOpen,
-      gateSettled,
       close,
       toggle
     }

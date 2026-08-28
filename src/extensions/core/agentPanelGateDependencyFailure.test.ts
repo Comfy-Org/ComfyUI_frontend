@@ -1,8 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
-
 const registered = vi.hoisted(() => ({
   setup: null as (() => Promise<void> | void) | null
 }))
@@ -15,8 +13,8 @@ vi.mock('@/platform/telemetry/reportError', () => ({
 
 // The throwing factory rejects the gate's guarded dynamic import - the
 // dependency-chunk failure an ad blocker produces.
-vi.mock('@/workbench/extensions/agent/utils/postHogFlagSource', () => {
-  throw new Error('flag source chunk failed to load')
+vi.mock('@/workbench/extensions/agent/stores/agentPanelStore', () => {
+  throw new Error('agent store chunk failed to load')
 })
 
 vi.mock('@/services/extensionService', () => ({
@@ -33,9 +31,10 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     reportErrorMock.mockClear()
   })
 
-  it('settles fail-closed, reports, and resolves the setup promise', async () => {
+  it('fails closed, reports, and resolves the setup promise', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.resetModules()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { registerAgentPanelExtension } = await import('./agentPanel')
     registerAgentPanelExtension()
 
@@ -44,11 +43,13 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     // await doubles as the no-unhandled-rejection pin.
     await registered.setup?.()
 
-    const store = useAgentPanelStore()
-    expect(store.gateSettled).toBe(true)
-    expect(store.enabled).toBe(false)
+    expect(consoleError).toHaveBeenCalledWith(
+      '[Comfy.AgentPanel] feature-flag gate failed to load',
+      expect.any(Error)
+    )
     expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_flag_gate_load_failure'
     })
+    consoleError.mockRestore()
   })
 })
