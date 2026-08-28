@@ -304,7 +304,8 @@ describe('GraphCanvas execution progress updates', () => {
   it.for([
     { totalNodes: 1, activeEntries: 0 },
     { totalNodes: 1, activeEntries: 1 },
-    { totalNodes: 8, activeEntries: 8 }
+    { totalNodes: 8, activeEntries: 8 },
+    { totalNodes: 1_000, activeEntries: 500 }
   ])(
     'pins equal-state fanout for $totalNodes nodes and $activeEntries active entries',
     async ({ totalNodes, activeEntries }) => {
@@ -328,7 +329,8 @@ describe('GraphCanvas execution progress updates', () => {
 
   it.for([
     { totalNodes: 1, activeEntries: 1 },
-    { totalNodes: 8, activeEntries: 8 }
+    { totalNodes: 8, activeEntries: 8 },
+    { totalNodes: 1_000, activeEntries: 500 }
   ])(
     'pins single-change fanout for $totalNodes nodes and $activeEntries active entries',
     async ({ totalNodes, activeEntries }) => {
