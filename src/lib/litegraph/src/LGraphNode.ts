@@ -4422,9 +4422,9 @@ export class LGraphNode
       if (!widget) continue
 
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      const pos: [number, number] = [offset, widget.y + offset]
-      slot.pos = pos
-      this.inputs[i].pos = pos
+      const x = offset
+      const y = widget.y + offset
+      if (slot.pos?.[0] !== x || slot.pos[1] !== y) slot.pos = [x, y]
       this._measureSlot(slot, i, true)
     }
   }

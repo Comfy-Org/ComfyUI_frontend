@@ -2,52 +2,53 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
+const foreignBehavior = Symbol('foreignBehavior')
+
 class ForeignWidget implements IBaseWidget {
   [symbol: symbol]: boolean
   #drawResult = 'drawn'
+  #name = 'foreign'
+  #value = 10
+  #symbolReads = 0
   type = 'foreign_test'
   options = {}
   y = 0
+  height = 24
   nameReads = 0
   nameWrites = 0
   valueReads = 0
   valueWrites = 0
-  private _name = 'foreign'
-  private _value = 10
+  foreignClicks = 0
 
-  constructor() {
-    Object.defineProperties(this, {
-      name: {
-        configurable: true,
-        enumerable: true,
-        get: () => {
-          this.nameReads++
-          return this._name
-        },
-        set: (name: string) => {
-          this.nameWrites++
-          this._name = name
-        }
-      },
-      value: {
-        configurable: true,
-        enumerable: true,
-        get: () => {
-          this.valueReads++
-          return this._value
-        },
-        set: (value: number) => {
-          this.valueWrites++
-          this._value = value
-        }
-      }
-    })
+  get name() {
+    this.nameReads++
+    return this.#name
+  }
+
+  set name(name: string) {
+    this.nameWrites++
+    this.#name = name
+  }
+
+  get value() {
+    this.valueReads++
+    return this.#value
+  }
+
+  set value(value: number) {
+    this.valueWrites++
+    this.#value = value
+  }
+
+  get [foreignBehavior]() {
+    this.#symbolReads++
+    return this.#symbolReads > 0
   }
 
   draw() {
@@ -62,8 +63,9 @@ class ForeignWidget implements IBaseWidget {
     return [120, 24]
   }
 
-  declare name: string
-  declare value: number
+  onClick() {
+    this.foreignClicks++
+  }
 }
 
 function createNodeWithWidgets(values: Record<string, number>) {
@@ -90,6 +92,7 @@ function storedValue(widget: IBaseWidget) {
 describe('widgets view', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    LiteGraph.vueNodesMode = false
   })
 
   it('restores order and value when a widget is spliced out and pushed back', () => {
@@ -161,33 +164,49 @@ describe('widgets view', () => {
     expect(storedValue(widget)).toBe(10)
   })
 
-  it.for([
-    [
-      'addCustomWidget',
-      (node: LGraphNode, widget: ForeignWidget) => node.addCustomWidget(widget)
-    ],
-    [
-      'widgets.push',
-      (node: LGraphNode, widget: ForeignWidget) => {
-        node.widgets ||= []
-        node.widgets.push(widget)
-        return node.widgets.at(-1)
-      }
-    ]
-  ] as const)(
-    'preserves foreign widget behavior through $0',
-    ([, addWidget]) => {
+  it.for(
+    ([false, true] as const).flatMap(
+      (vueNodesMode) =>
+        [
+          [
+            vueNodesMode,
+            'addCustomWidget',
+            (node: LGraphNode, widget: ForeignWidget) =>
+              node.addCustomWidget(widget)
+          ],
+          [
+            vueNodesMode,
+            'widgets.push',
+            (node: LGraphNode, widget: ForeignWidget) => {
+              node.widgets ||= []
+              node.widgets.push(widget)
+              return node.widgets.at(-1)
+            }
+          ]
+        ] as const
+    )
+  )(
+    'preserves foreign widget behavior through $1 with VueNodes=$0',
+    ([vueNodesMode, , addWidget]) => {
+      LiteGraph.vueNodesMode = vueNodesMode
       const graph = new LGraph()
       const node = new LGraphNode('test')
       graph.add(node)
       const widget = new ForeignWidget()
+      expect(Object.getOwnPropertyDescriptor(widget, 'height')?.writable).toBe(
+        true
+      )
       const result = addWidget(node, widget)
 
       expect(result).toBe(widget)
-      expect(widget).not.toBeInstanceOf(ForeignWidget)
+      expect(() => (widget.height = 48)).not.toThrow()
+      expect(widget.height).toBe(48)
       expect(widget.draw()).toBe('drawn')
       expect(widget.mouse()).toBe(true)
       expect(widget.computeSize()).toEqual([120, 24])
+      expect(widget[foreignBehavior]).toBe(true)
+      widget.onClick()
+      expect(widget.foreignClicks).toBe(0)
       expect(storedOrder(node)).toEqual(['foreign'])
       expect(storedValue(widget)).toBe(10)
       const nameReadsAfterNormalization = widget.nameReads

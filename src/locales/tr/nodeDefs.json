@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Google'ın Gemini Omni Flash modellerini kullanarak bir metin isteminden sesli video oluşturun. Sonucu yönlendirmek veya düzenlemek için isteğe bağlı olarak referans görseller ve/veya videolar sağlayın. İstenen uzunluğu (3-10 sn.) doğrudan istemde belirtin.",
+    "display_name": "Google Gemini Omni (Video)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Videoyu oluşturmak için kullanılan Gemini video modeli."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "iz_uzunluğu",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Bir 3D model dosyasını (GLB, GLTF, OBJ, STL), mesh işleme düğümlerinde (decimate, remesh, UV unwrap, bake, ...) düzenlenebilir bir MESH olarak ayrıştırır. Tüm sahne düğümleri/ilkelleri, dönüşümleri uygulanmış şekilde tek bir mesh içinde birleştirilir; dokular ve malzeme faktörleri ilk malzemeden alınır. MeshToFile3D'nin karşılığıdır.",
+    "display_name": "3D Bileşenlerini Al",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Load 3D veya başka bir 3D düğümünden gelen 3D model dosyası. FBX/USDZ desteklenmez; önce GLB'ye dönüştürün."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
