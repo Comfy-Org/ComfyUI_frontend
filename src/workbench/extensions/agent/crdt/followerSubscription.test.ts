@@ -19,7 +19,7 @@
  *   FE-KA11-1       nothing read `meta.schema_version`, so a doc written at a
  *                   schema this build does not understand was projected anyway.
  */
-import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -440,15 +440,17 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
-    const v2 = hostDocUpdate((doc) =>
-      doc.getMap('meta').set('schema_version', 2)
+    const newerSchema = hostDocUpdate((doc) =>
+      doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
     )
-    transport.deliver('doc_update', docUpdateFrame(v2))
+    transport.deliver('doc_update', docUpdateFrame(newerSchema))
 
     // Fail CLOSED: the frame is never re-dispatched, so nothing renders.
     expect(projected).toHaveLength(0)
     // …and the failure is distinguishable, not a silent "disconnected".
-    expect(schemaErrors).toEqual([{ workflowId: WORKFLOW_ID, found: 2 }])
+    expect(schemaErrors).toEqual([
+      { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
+    ])
     expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
     expect(error).toHaveBeenCalled()
     error.mockRestore()
