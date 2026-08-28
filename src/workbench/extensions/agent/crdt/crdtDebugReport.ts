@@ -29,7 +29,7 @@ import type { MergeTraceEntry } from './mergeTrace'
 
 /** Server logs beyond this are tail-trimmed; a paste has to stay pasteable. */
 const MAX_LOG_CHARS = 40_000
-const MAX_WORKFLOW_CHARS = 20_000
+const MAX_WORKFLOW_CHARS = 200_000
 /** The event log and the stamp ledger both grow without bound with session length. */
 const MAX_SECTION_CHARS = 60_000
 
@@ -73,10 +73,16 @@ function redactSecrets(value: unknown, depth = 0): unknown {
 /**
  * The sources a tester must opt into.
  *
- * The panel this replaced shipped all three unconditionally. The dialog
- * DELETED in #5259 did not: it listed them as unchecked opt-ins under "what
- * can we include", and restoring the collection without restoring that choice
- * would be a privacy regression dressed as a feature.
+ * The panel this replaced shipped everything unconditionally. The dialog
+ * DELETED in #5259 did not: it listed Workflow, Logs, Settings AND SystemStats
+ * as unchecked opt-ins under "what can we include", and restoring the
+ * collection without restoring that choice would be a privacy regression
+ * dressed as a feature.
+ *
+ * SystemStats is deliberately NOT gated here: it is the "copy system stats"
+ * capability this report exists to provide, and the only privacy-bearing part
+ * of it — `argv` — is redacted by {@link redactArgv} instead. Versions, OS and
+ * RAM carry nothing a tester would withhold.
  */
 export interface ReportSources {
   serverLogs: boolean
@@ -112,7 +118,15 @@ async function attempt<T>(label: string, load: () => Promise<T>) {
 }
 
 function fence(language: string, body: string): string {
-  return ['```' + language, body, '```'].join('\n')
+  // Server logs and workflow JSON are untrusted text: a body containing its
+  // own fence would otherwise terminate the block early and let the rest of
+  // the payload render as markdown.
+  const longestRun = Math.max(
+    0,
+    ...[...body.matchAll(/`+/g)].map((match) => match[0].length)
+  )
+  const delimiter = '`'.repeat(Math.max(3, longestRun + 1))
+  return [delimiter + language, body, delimiter].join('\n')
 }
 
 function json(value: unknown): string {
@@ -130,43 +144,62 @@ function truncate(text: string, max: number): string {
 
 type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
 
-/** `--api-token <value>`: the flag names the secret, so blank the value after it. */
+/**
+ * A value is anything not starting with `-`; only a leading dash makes a token
+ * a flag. Pattern-testing every token instead treated `/home/me/private/x` as
+ * a flag — leaking it and blanking the harmless argument after it.
+ *
+ * Two rules: a credential-shaped FLAG blanks its value, and a value that looks
+ * like an absolute path or a URL is blanked whatever names it, because
+ * `--output-directory` and `--extra-model-paths-config` carry private paths
+ * under a flag no credential pattern matches.
+ */
+const PRIVATE_VALUE_PATTERN = /^(\/|~|[A-Za-z]:[\\/])|:\/\//
+
 function redactArgv(argv: readonly string[]): string {
   const parts: string[] = []
-  let redactNext = false
+  let flagWantsSecretValue = false
+
   for (const arg of argv) {
-    if (redactNext && !arg.startsWith('-')) {
-      parts.push(REDACTED)
-      redactNext = false
+    if (!arg.startsWith('-')) {
+      const secret = flagWantsSecretValue || PRIVATE_VALUE_PATTERN.test(arg)
+      parts.push(secret ? REDACTED : arg)
+      flagWantsSecretValue = false
       continue
     }
     const [flag, inlineValue] = arg.split('=', 2)
-    const named = SECRET_KEY_PATTERN.test(flag)
-    // An inline `--token=x` already consumed its value; only a bare flag can
-    // put the secret in the NEXT argument.
-    redactNext = named && inlineValue === undefined
-    parts.push(named && inlineValue !== undefined ? `${flag}=${REDACTED}` : arg)
+    if (inlineValue !== undefined) {
+      const secret =
+        SECRET_KEY_PATTERN.test(flag) || PRIVATE_VALUE_PATTERN.test(inlineValue)
+      parts.push(secret ? `${flag}=${REDACTED}` : arg)
+      flagWantsSecretValue = false
+      continue
+    }
+    parts.push(arg)
+    flagWantsSecretValue = SECRET_KEY_PATTERN.test(flag)
   }
   return parts.join(' ')
 }
 
 function systemSection(stats: SystemStats): string {
+  const system: Partial<SystemStats['system']> = stats.system ?? {}
+  const devices = Array.isArray(stats.devices) ? stats.devices : []
   const lines = [
-    `- **ComfyUI version:** ${stats.system.comfyui_version}`,
-    `- **OS:** ${stats.system.os}`,
-    `- **Python:** ${stats.system.python_version}`,
-    `- **Embedded Python:** ${stats.system.embedded_python}`,
-    `- **PyTorch:** ${stats.system.pytorch_version}`,
-    `- **Arguments:** ${redactArgv(stats.system.argv)}`,
-    `- **RAM:** ${stats.system.ram_free} free / ${stats.system.ram_total} total`
+    `- **ComfyUI version:** ${system.comfyui_version ?? '?'}`,
+    `- **OS:** ${system.os ?? '?'}`,
+    `- **Python:** ${system.python_version ?? '?'}`,
+    `- **Embedded Python:** ${system.embedded_python ?? '?'}`,
+    `- **PyTorch:** ${system.pytorch_version ?? '?'}`,
+    `- **Arguments:** ${redactArgv(system.argv ?? [])}`,
+    `- **RAM:** ${system.ram_free ?? '?'} free / ${system.ram_total ?? '?'} total`
   ]
-  if (stats.system.cloud_version)
-    lines.push(`- **Cloud version:** ${stats.system.cloud_version}`)
-  if (stats.system.comfyui_frontend_version)
+  if (system.cloud_version)
+    lines.push(`- **Cloud version:** ${system.cloud_version}`)
+  if (system.comfyui_frontend_version)
     lines.push(
-      `- **Frontend (reported by backend):** ${stats.system.comfyui_frontend_version}`
+      `- **Frontend (reported by backend):** ${system.comfyui_frontend_version}`
     )
-  for (const device of stats.devices) {
+  for (const device of devices) {
     lines.push(
       `- **Device ${device.index ?? '?'}:** ${device.name} (${device.type}) — VRAM ${device.vram_free} free / ${device.vram_total} total, torch ${device.torch_vram_free} / ${device.torch_vram_total}`
     )
@@ -197,25 +230,6 @@ function mergeSection(entries: readonly MergeTraceEntry[]): string {
         `${entry.index + 1}. \`${entry.kind}\` by ${entry.actor} on ${entry.registerLabel} → **${entry.verdict.kind}**\n   ${entry.explanation}`
     )
     .join('\n')
-}
-
-/**
- * `systemSection` reads fields off an unvalidated `/system_stats` payload, so
- * a backend that answers 200 with a different shape would throw straight out
- * of the collector — losing the entire report at exactly the moment the
- * backend is the thing being reported on.
- */
-function renderSystem(
-  stats:
-    | { label: string; ok: true; value: SystemStats }
-    | { label: string; ok: false; error: string }
-): string {
-  if (!stats.ok) return `_${stats.label} unavailable: ${stats.error}_`
-  try {
-    return systemSection(stats.value)
-  } catch (error) {
-    return `_${stats.label} could not be rendered (${String(error)}); raw payload:_\n${fence('json', json(stats.value))}`
-  }
 }
 
 /**
@@ -276,7 +290,12 @@ export async function collectCrdtDebugReport(
     ].join('\n')
   )
 
-  sections.push('## System', renderSystem(stats))
+  sections.push(
+    '## System',
+    stats.ok
+      ? systemSection(stats.value)
+      : `_${stats.label} unavailable: ${stats.error}_`
+  )
 
   sections.push(
     '## CRDT event log',

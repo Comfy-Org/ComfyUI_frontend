@@ -449,10 +449,35 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(projected).toHaveLength(0)
     // …and the failure is distinguishable, not a silent "disconnected".
     expect(schemaErrors).toEqual([
-      { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
+      {
+        workflowId: WORKFLOW_ID,
+        found: SCHEMA_VERSION + 1,
+        firstFailure: true
+      }
     ])
     expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
     expect(error).toHaveBeenCalled()
+    error.mockRestore()
+  })
+
+  it('keeps refusing every later frame, not just the first', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { transport, bridge, projected, schemaErrors } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    const v2 = hostDocUpdate((doc) =>
+      doc.getMap('meta').set('schema_version', 2)
+    )
+    transport.deliver('doc_update', docUpdateFrame(v2, WORKFLOW_ID, 1))
+    transport.deliver('doc_update', docUpdateFrame(v2, WORKFLOW_ID, 2))
+
+    // This event is not just a log line: its listener also clears `connected`
+    // and cancels the stale probe, which a resubscribe re-arms. Firing it only
+    // once left the follower resubscribing forever, reporting itself connected.
+    expect(projected).toHaveLength(0)
+    expect(schemaErrors).toHaveLength(2)
+    expect(schemaErrors[1]).toMatchObject({ firstFailure: false })
     error.mockRestore()
   })
 
@@ -472,7 +497,7 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
 
     expect(projected).toHaveLength(0)
     expect(schemaErrors).toEqual([
-      { workflowId: WORKFLOW_ID, found: undefined }
+      { workflowId: WORKFLOW_ID, found: undefined, firstFailure: true }
     ])
     error.mockRestore()
   })

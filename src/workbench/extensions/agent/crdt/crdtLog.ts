@@ -9,7 +9,11 @@
  * {@link crdtLog}, which is what makes the report a transcript.
  */
 import type { CrdtLogLevel } from './crdtDebugGate'
-import { isCrdtDebugEnabled, isLevelEnabled } from './crdtDebugGate'
+import {
+  isCrdtDebugEnabled,
+  isCrdtDebugOptedOut,
+  isLevelEnabled
+} from './crdtDebugGate'
 import type { CrdtLogScope, DevEventKind } from './devPanelLog'
 import { recordDevEvent } from './devPanelLog'
 
@@ -43,12 +47,14 @@ interface CrdtLogEntry {
 /**
  * Emit one CRDT-internal event.
  *
- * The ring buffer records unconditionally: a tester who only turns the panel
- * on AFTER something went wrong still needs the run-up in the copied report,
- * and 500 capped entries cost nothing. Only the console print is gated.
+ * The ring buffer records even when the console is quiet: a tester who only
+ * turns the panel on AFTER something went wrong still needs the run-up in the
+ * copied report, and 500 capped entries cost nothing. An explicit opt-out is
+ * the one case that skips recording too.
  */
 function crdtLog(entry: CrdtLogEntry): void {
   const { scope, level, kind, message, detail } = entry
+  if (isCrdtDebugOptedOut()) return
   recordDevEvent(kind, detail ?? null, { scope, level })
 
   if (!isLevelEnabled(level)) return
