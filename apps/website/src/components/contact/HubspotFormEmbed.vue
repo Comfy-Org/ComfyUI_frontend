@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import { defaultWindow, useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
+import {
+  captureContactFormSubmitted,
+  captureContactFormViewed
+} from '../../scripts/posthog'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -77,7 +82,61 @@ const hubspotFormStyles: Record<`--${string}`, string> = {
   '--hsf-infoalert__font-family': "'PP Formula', sans-serif"
 }
 
+// HubSpot signals a successful submission differently per form version: v3
+// embeds postMessage from their iframe, v4 dispatches a window event. Which
+// one this portal serves can change without a code change here, so listen for
+// both and let captureSubmission collapse them into a single event.
+const HUBSPOT_V4_SUBMISSION_EVENT = 'hs-form-event:on-submission:success'
+
+function isHubspotSubmittedMessage(data: unknown): boolean {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'type' in data &&
+    data.type === 'hsFormCallback' &&
+    'eventName' in data &&
+    data.eventName === 'onFormSubmitted'
+  )
+}
+
+function readStringField(source: unknown, field: string): string | undefined {
+  if (typeof source !== 'object' || source === null || !(field in source)) {
+    return undefined
+  }
+  const value = (source as Record<string, unknown>)[field]
+  return typeof value === 'string' ? value : undefined
+}
+
+let hasCapturedSubmission = false
+
+// Both listeners are bound to the window, so another HubSpot form on the page
+// would otherwise consume the latch and mask this form's real submission.
+// Unrecognised payload shapes still count, so a vendor change degrades to
+// over-reporting rather than silently reporting nothing.
+function captureSubmission(submittedFormId: string | undefined) {
+  if (
+    submittedFormId !== undefined &&
+    submittedFormId !== hubspotContactFormId.value
+  )
+    return
+  if (hasCapturedSubmission) return
+  hasCapturedSubmission = true
+  captureContactFormSubmitted(locale, hubspotContactFormId.value)
+}
+
+useEventListener('message', (event: MessageEvent) => {
+  if (!isHubspotSubmittedMessage(event.data)) return
+  captureSubmission(readStringField(event.data, 'id'))
+})
+
+useEventListener(defaultWindow, HUBSPOT_V4_SUBMISSION_EVENT, (event: Event) => {
+  const detail = event instanceof CustomEvent ? event.detail : undefined
+  captureSubmission(readStringField(detail, 'formId'))
+})
+
 onMounted(() => {
+  captureContactFormViewed(locale)
+
   if (document.getElementById(HUBSPOT_CONTACT_SCRIPT_ID)) return
 
   const script = document.createElement('script')
@@ -101,7 +160,7 @@ onMounted(() => {
   <div class="min-h-[640px] w-full">
     <p
       v-if="hasEmbedLoadError"
-      class="text-primary-comfy-canvas text-sm/6"
+      class="text-sm/6 text-primary-comfy-canvas"
       role="status"
     >
       {{ t('contact.form.embedLoadErrorPrefix', locale) }}

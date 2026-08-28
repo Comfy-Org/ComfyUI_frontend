@@ -149,3 +149,107 @@ describe('captureMcpClientTabClick', () => {
     expect(hoisted.mockCapture).not.toHaveBeenCalled()
   })
 })
+
+describe('captureContactFormViewed', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('captures the contact form view with the locale', async () => {
+    const { initPostHog, captureContactFormViewed } = await import('./posthog')
+    initPostHog()
+    captureContactFormViewed('zh-CN')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:contact_form_viewed',
+      { locale: 'zh-CN' }
+    )
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureContactFormViewed } = await import('./posthog')
+    captureContactFormViewed('en')
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
+describe('captureContactFormSubmitted', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('captures the contact form submission with the locale and form id', async () => {
+    const { initPostHog, captureContactFormSubmitted } =
+      await import('./posthog')
+    initPostHog()
+    captureContactFormSubmitted('en', 'form-guid')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:contact_form_submitted',
+      { locale: 'en', form_id: 'form-guid' }
+    )
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureContactFormSubmitted } = await import('./posthog')
+    captureContactFormSubmitted('en', 'form-guid')
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
+describe('captures made before initialization', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('are sent once PostHog initializes', async () => {
+    const { initPostHog, captureContactFormViewed } = await import('./posthog')
+    captureContactFormViewed('en')
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+
+    initPostHog()
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:contact_form_viewed',
+      { locale: 'en' }
+    )
+  })
+
+  it('are replayed in the order they were made', async () => {
+    const { initPostHog, captureContactFormViewed, captureDownloadClick } =
+      await import('./posthog')
+    captureContactFormViewed('en')
+    captureDownloadClick('mac')
+    initPostHog()
+
+    expect(hoisted.mockCapture.mock.calls.map((call) => call[0])).toEqual([
+      'website:contact_form_viewed',
+      'website:download_button_clicked'
+    ])
+  })
+
+  it('are not replayed a second time on a repeat init', async () => {
+    const { initPostHog, captureContactFormViewed } = await import('./posthog')
+    captureContactFormViewed('en')
+    initPostHog()
+    initPostHog()
+
+    expect(hoisted.mockCapture).toHaveBeenCalledOnce()
+  })
+
+  it('are dropped when initialization throws', async () => {
+    hoisted.mockInit.mockImplementationOnce(() => {
+      throw new Error('init blew up')
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { initPostHog, captureContactFormViewed } = await import('./posthog')
+    captureContactFormViewed('en')
+    initPostHog()
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
