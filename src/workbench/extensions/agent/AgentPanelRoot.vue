@@ -58,6 +58,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
+import { useBillingPolicyState } from '@/platform/cloud/subscription/composables/useBillingPolicyState'
 import { hasEligibleSubscriptionUpgrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -87,7 +88,12 @@ import type {
 } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { createAgentRestClient } from './services/agent/agentRestClient'
+import {
+  AgentApiError,
+  createAgentRestClient
+} from './services/agent/agentRestClient'
+import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
+import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 import type {
   DraftSnapshot,
   OpenTabsSnapshot
@@ -109,8 +115,9 @@ const CrdtDevPanel = defineAsyncComponent(
 const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
-const { permissions } = useWorkspaceUI()
+const { permissions, workspaceRole } = useWorkspaceUI()
 const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
+const { billingPolicyState } = useBillingPolicyState()
 const { tier, plans, teamCreditStops, currentTeamCreditStop } =
   useBillingContext()
 const hasEligibleUpgrade = computed(() =>
@@ -121,13 +128,21 @@ const hasEligibleUpgrade = computed(() =>
     currentTeamCreditStop: currentTeamCreditStop.value
   })
 )
-const showPaywallAddCredits = computed(
+const canPaywallTopUp = computed(
   () =>
     permissions.value.canTopUp &&
     billingPolicyCapabilities.value.topUpAccess === 'allowed'
 )
-const showPaywallUpgrade = computed(
-  () => permissions.value.canManageSubscription && hasEligibleUpgrade.value
+const paywallPresentation = computed(() =>
+  resolveAgentPaywallPresentation({
+    distribution: billingPolicyState.value.kind.startsWith('Cloud')
+      ? 'cloud'
+      : 'local',
+    role: workspaceRole.value,
+    canTopUp: canPaywallTopUp.value,
+    canSubscribeSelfServe: permissions.value.canManageSubscription,
+    hasEligibleUpgrade: hasEligibleUpgrade.value
+  })
 )
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
@@ -140,6 +155,10 @@ const userName = computed(
 const rest = createAgentRestClient()
 
 const events = createAgentEventSource(api)
+
+function onPaywallAction(action: AgentPaywallAction): void {
+  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+}
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -1097,8 +1116,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :get-mention-assets="mentionableAssets"
-      :show-paywall-add-credits="showPaywallAddCredits"
-      :show-paywall-upgrade="showPaywallUpgrade"
+      :paywall-presentation="paywallPresentation"
       @select-tab="onSelectTab"
       @clear-workflow="onClearWorkflow"
       @send="onSend"
@@ -1112,8 +1130,7 @@ function onPanelDrop(event: DragEvent): void {
       @feedback="onFeedback"
       @answer-ask="answerAsk"
       @open-workflow="onOpenApprovalWorkflow"
-      @add-credits="openAccountPrecondition('credits')"
-      @upgrade-subscription="openAccountPrecondition('subscription')"
+      @paywall-action="onPaywallAction"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"

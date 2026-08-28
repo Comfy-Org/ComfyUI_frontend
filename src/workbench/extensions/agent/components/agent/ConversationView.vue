@@ -7,6 +7,11 @@ import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '../../services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '../../services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { TurnId } from '../../schemas/agentApiSchema'
 
@@ -15,14 +20,12 @@ import UserMessage from './message/UserMessage.vue'
 
 const {
   entries,
-  showPaywallAddCredits = true,
-  showPaywallUpgrade = true,
+  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
-  showPaywallAddCredits?: boolean
-  showPaywallUpgrade?: boolean
+  paywallPresentation?: AgentPaywallPresentation
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
 }>()
@@ -31,8 +34,7 @@ const emit = defineEmits<{
   editPrompt: [text: string]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
-  addCredits: []
-  upgradeSubscription: []
+  paywallAction: [action: AgentPaywallAction]
 }>()
 
 const { t } = useI18n()
@@ -100,8 +102,7 @@ watch(
               v-else
               :message="entry"
               :answering-ask-ids="answeringAskIds"
-              :show-add-credits="showPaywallAddCredits"
-              :show-upgrade="showPaywallUpgrade"
+              :paywall-presentation="paywallPresentation"
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
@@ -111,8 +112,7 @@ watch(
                 (workflowId: string, workflowName?: string) =>
                   emit('openWorkflow', workflowId, workflowName)
               "
-              @add-credits="emit('addCredits')"
-              @upgrade-subscription="emit('upgradeSubscription')"
+              @paywall-action="emit('paywallAction', $event)"
             />
           </template>
           <div ref="bottom" />
