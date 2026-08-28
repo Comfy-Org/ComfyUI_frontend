@@ -67,7 +67,10 @@ function capabilitiesResponse(
   workspaceId = 'workspace-1',
   canSubscribeSelfServe = true,
   freshness: { expiresAt?: string; revision?: number } = {},
-  overrides: Partial<BillingCapabilitiesResponse['capabilities']> = {}
+  overrides: Partial<BillingCapabilitiesResponse['capabilities']> = {},
+  rolloutDefaults: Partial<
+    BillingCapabilitiesResponse['rollout_defaults_applied']
+  > = {}
 ): BillingCapabilitiesResponse {
   return {
     resolved_for: {
@@ -87,7 +90,8 @@ function capabilitiesResponse(
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,
       can_subscribe_self_serve: false,
-      can_top_up: false
+      can_top_up: false,
+      ...rolloutDefaults
     },
     revision: freshness.revision ?? 1,
     expires_at: freshness.expiresAt ?? '2099-01-01T00:00:00Z'
@@ -272,18 +276,19 @@ describe('useBillingCapabilities', () => {
     )
   })
 
-  it('keeps top-up available for owners when the endpoint is unavailable', async () => {
+  it('keeps rollout-defaulted capabilities available for owners when the endpoint is unavailable', async () => {
     mockGetBillingCapabilities.mockRejectedValueOnce(new Error('unavailable'))
 
     await billingCapabilities.initialize()
 
     expect(billingCapabilities.canTopUp.value).toBe(true)
-    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(true)
+    // Deterministic policy results carry no rollout default to fall back on.
     expect(billingCapabilities.canCancel.value).toBe(false)
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
-    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
     expect(mockReportError).toHaveBeenCalledOnce()
@@ -299,6 +304,54 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
+  })
+
+  it('keeps self-serve open for owners when the server answers with a rollout default', async () => {
+    mockGetBillingCapabilities.mockResolvedValueOnce(
+      capabilitiesResponse(
+        true,
+        'workspace-1',
+        false,
+        {},
+        {},
+        { can_subscribe_self_serve: true }
+      )
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    // The snapshot is authoritative, so an authoritativeness guard alone leaves
+    // the defaulted value reading as a policy deny.
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+  })
+
+  it('withholds a rollout-defaulted capability from members', async () => {
+    mockScope.role = 'member'
+    mockGetBillingCapabilities.mockResolvedValueOnce(
+      capabilitiesResponse(
+        true,
+        'workspace-1',
+        false,
+        {},
+        {},
+        { can_subscribe_self_serve: true }
+      )
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+  })
+
+  it('closes self-serve for owners when the server resolves a real policy deny', async () => {
+    mockGetBillingCapabilities.mockResolvedValueOnce(
+      capabilitiesResponse(true, 'workspace-1', false)
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
   })
 
   it('fails closed when the endpoint denies the current actor', async () => {
@@ -346,12 +399,12 @@ describe('useBillingCapabilities', () => {
 
     expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(true)
-    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(true)
     expect(billingCapabilities.canCancel.value).toBe(false)
     expect(billingCapabilities.canReactivate.value).toBe(false)
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
-    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 
   it('discards a stale response after the active workspace changes', async () => {
@@ -883,12 +936,12 @@ describe('useBillingCapabilities', () => {
       .mockResolvedValueOnce(capabilitiesResponse(true))
 
     await billingCapabilities.initialize()
-    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canCancel.value).toBe(false)
 
     await vi.advanceTimersByTimeAsync(31_000)
 
     expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
-    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.canCancel.value).toBe(true)
   })
 
   it('backs off between retries and reports the outage once', async () => {

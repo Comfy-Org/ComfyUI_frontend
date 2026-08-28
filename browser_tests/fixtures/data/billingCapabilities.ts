@@ -7,7 +7,10 @@ import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 export function createBillingCapabilities(
   workspaceId: string,
-  overrides: Partial<BillingCapabilities> = {}
+  overrides: Partial<BillingCapabilities> = {},
+  rolloutDefaults: Partial<
+    BillingCapabilitiesResponse['rollout_defaults_applied']
+  > = {}
 ): BillingCapabilitiesResponse {
   return {
     resolved_for: {
@@ -27,7 +30,8 @@ export function createBillingCapabilities(
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,
       can_subscribe_self_serve: false,
-      can_top_up: false
+      can_top_up: false,
+      ...rolloutDefaults
     },
     revision: 1,
     // Far-future expiry so the snapshot never goes stale mid-test.

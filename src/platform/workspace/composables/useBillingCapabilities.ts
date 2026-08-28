@@ -1,4 +1,7 @@
-import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingCapabilitiesResponse,
+  BillingCapabilityRolloutDefaults
+} from '@comfyorg/ingest-types'
 import {
   createSharedComposable,
   defaultDocument,
@@ -68,7 +71,7 @@ function useBillingCapabilitiesInternal() {
   let readFailures = 0
   let invalidatedRequestId = 0
 
-  const capabilities = computed(() => {
+  const resolvedResponse = computed(() => {
     const userId = authStore.currentUser?.uid
     const workspaceId = workspaceStore.activeWorkspaceId
     const state = readState.value
@@ -83,8 +86,11 @@ function useBillingCapabilitiesInternal() {
       return null
     }
 
-    return state.response.capabilities
+    return state.response
   })
+  const capabilities = computed(
+    () => resolvedResponse.value?.capabilities ?? null
+  )
   const readUnavailableForCurrentScope = computed(() => {
     const state = readState.value
     return (
@@ -93,19 +99,43 @@ function useBillingCapabilitiesInternal() {
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
+  const isWorkspaceOwner = computed(
+    () => workspaceStore.activeWorkspace?.role === 'owner'
+  )
+
+  // rollout_defaults_applied marks a field the server answered with a safe
+  // default because its rollout is incomplete — "UI guidance, not evidence that
+  // the corresponding write will succeed". It carries no policy decision, so it
+  // is treated exactly like an unreadable snapshot rather than as a deny.
+  function policyResult(
+    field: keyof BillingCapabilityRolloutDefaults
+  ): boolean | null {
+    const response = resolvedResponse.value
+    if (!response || response.rollout_defaults_applied[field]) return null
+    return response.capabilities[field]
+  }
+
+  // Without a policy answer only owners keep the capability, so a rollout gap
+  // or transient outage does not strand the one role that can act on it. Every
+  // other role — including an unresolved one — fails closed.
+  function ownerFallback(
+    field: keyof BillingCapabilityRolloutDefaults
+  ): boolean {
+    const awaitingPolicy =
+      readUnavailableForCurrentScope.value ||
+      resolvedResponse.value?.rollout_defaults_applied[field] === true
+    return awaitingPolicy && isWorkspaceOwner.value
+  }
+
   const canTopUp = computed(() => {
     if (!isCloud) return workspaceStore.activeWorkspace?.role !== 'member'
-    // An unreadable capability keeps top-up available only for owners, so a
-    // transient outage does not strand the one role that can actually top up.
-    // Every other role - including an unresolved one - fails closed.
-    return (
-      capabilities.value?.can_top_up ??
-      (readUnavailableForCurrentScope.value &&
-        workspaceStore.activeWorkspace?.role === 'owner')
-    )
+    return policyResult('can_top_up') ?? ownerFallback('can_top_up')
   })
   const canSubscribeSelfServe = computed(
-    () => isCloud && (capabilities.value?.can_subscribe_self_serve ?? false)
+    () =>
+      isCloud &&
+      (policyResult('can_subscribe_self_serve') ??
+        ownerFallback('can_subscribe_self_serve'))
   )
   const canCancel = computed(
     () => isCloud && (capabilities.value?.can_cancel ?? false)
@@ -120,7 +150,10 @@ function useBillingCapabilitiesInternal() {
     () => isCloud && (capabilities.value?.can_invite_members ?? false)
   )
   const canDowngradeToPersonal = computed(
-    () => isCloud && (capabilities.value?.can_downgrade_to_personal ?? false)
+    () =>
+      isCloud &&
+      (policyResult('can_downgrade_to_personal') ??
+        ownerFallback('can_downgrade_to_personal'))
   )
   const isReady = computed(() => {
     if (!isCloud) return true

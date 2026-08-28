@@ -7,6 +7,7 @@ import type {
 
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   DEFAULT_TEAM_MEMBERS,
   INACTIVE_TEAM_BILLING_STATUS,
@@ -262,6 +263,33 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     await workspace.setup(DEFAULT_TEAM_MEMBERS, TEAM_WORKSPACE)
     await page.route('**/api/billing/capabilities', (route) =>
       route.fulfill({ status: 503 })
+    )
+
+    await page.goto(`${APP_URL}/?pricing=team`)
+
+    await expect(
+      page.getByRole('heading', { name: 'Plans for Team Workspace' })
+    ).toBeVisible({ timeout: 45_000 })
+    await expect(page).not.toHaveURL(/[?&]pricing=/)
+  })
+
+  test('keeps the pricing surface usable when the server answers with a rollout default', async ({
+    page
+  }) => {
+    const workspace = new CloudWorkspaceMockHelper(page)
+    await workspace.setup(DEFAULT_TEAM_MEMBERS, TEAM_WORKSPACE)
+    await page.route('**/api/billing/capabilities', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          createBillingCapabilities(
+            TEAM_WORKSPACE.id,
+            { can_subscribe_self_serve: false },
+            { can_subscribe_self_serve: true }
+          )
+        )
+      })
     )
 
     await page.goto(`${APP_URL}/?pricing=team`)
