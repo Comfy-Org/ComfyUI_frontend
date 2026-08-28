@@ -58,6 +58,12 @@ const config: KnipConfig = {
     // TRANSITIONAL (agent-v1 chain): dev-only debug panel with no mount site
     // until slices 07+ import the crdt tree; removable then. See docs/adr/0024.
     'src/workbench/extensions/agent/crdt/CrdtDevPanel.vue',
+    // TRANSITIONAL (agent-v1 chain): control-plane part/client/schema types
+    // consumed by the session (08), renderer (10/11), and panel (14) slices;
+    // removable then.
+    'src/workbench/extensions/agent/services/agent/agentMessageParts.ts',
+    'src/workbench/extensions/agent/services/agent/agentRestClient.ts',
+    'src/workbench/extensions/agent/schemas/agentApiSchema.ts',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
