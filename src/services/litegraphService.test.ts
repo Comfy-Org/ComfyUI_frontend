@@ -9,7 +9,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -178,6 +178,11 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     setActivePinia(createTestingPinia({ createSpy: vi.fn }))
   })
 
+  afterEach(() => {
+    Reflect.set(app, 'canvas', undefined)
+    Reflect.set(app, 'graph', undefined)
+  })
+
   const nodeDef = {
     name: 'TestNode',
     display_name: 'Test Node'
@@ -197,17 +202,19 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     expect(createSpy).not.toHaveBeenCalled()
   })
 
-  it('creates nodes when the canvas is editable', () => {
+  it('creates and adds the node when the canvas is editable', () => {
     Reflect.set(app, 'canvas', { selectOnly: false })
-    const createSpy = vi
-      .spyOn(LiteGraph, 'createNode')
-      .mockReturnValue(null as never)
+    const added = new LGraphNode('Test Node')
+    const graphAdd = vi.fn()
+    Reflect.set(app, 'graph', { add: graphAdd })
+    const createSpy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(added)
 
     const node = useLitegraphService().addNodeOnGraph(nodeDef, {
       pos: [0, 0]
     })
 
-    expect(node).toBeNull()
+    expect(node).toBe(added)
     expect(createSpy).toHaveBeenCalledOnce()
+    expect(graphAdd).toHaveBeenCalledWith(added, undefined)
   })
 })

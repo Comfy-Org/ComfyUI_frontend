@@ -138,6 +138,7 @@ import {
   executeWidgetsCallback,
   createNode,
   isImageNode,
+  isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
 import {
@@ -685,6 +686,10 @@ export class ComfyApp {
 
         event.preventDefault()
         event.stopPropagation()
+
+        // Dropped files create nodes or load workflows - both are edits of
+        // the picked canvas.
+        if (isSelectOnly(this.canvas)) return
 
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it

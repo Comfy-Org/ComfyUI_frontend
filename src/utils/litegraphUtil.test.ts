@@ -107,6 +107,19 @@ describe('createNode', () => {
     expect(mockBringNodeToFront).not.toHaveBeenCalled()
   })
 
+  it('does not create nodes while the canvas is picking-only', async () => {
+    const spy = vi.spyOn(LiteGraph, 'createNode')
+    const canvas = makeCanvas(new LGraph())
+    Reflect.set(canvas, 'selectOnly', true)
+
+    const result = await createNode(canvas, 'LoadImage')
+
+    expect(result).toBeNull()
+    expect(spy).not.toHaveBeenCalled()
+    expect(mockBringNodeToFront).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
   it('places the new node at the canvas graph_mouse position', async () => {
     const newNode = new LGraphNode('LoadImage')
     const spy = vi.spyOn(LiteGraph, 'createNode').mockReturnValue(newNode)

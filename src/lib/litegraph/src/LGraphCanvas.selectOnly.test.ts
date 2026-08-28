@@ -213,7 +213,8 @@ describe('LGraphCanvas selectOnly', () => {
         altKey: false
       } as CanvasPointerEvent,
       [380, 80, 0, 0],
-      new Set([firstNode])
+      new Set([firstNode]),
+      false
     )
 
     expect(canvas.selectedItems).toEqual(new Set([secondNode]))
@@ -287,7 +288,8 @@ describe('LGraphCanvas selectOnly', () => {
 
     canvas['_handleMultiSelect'](
       { shiftKey: false, altKey: false } as CanvasPointerEvent,
-      [380, 80, 200, 120]
+      [380, 80, 200, 120],
+      false
     )
 
     expect(canvas.selectedItems).toEqual(new Set([secondNode]))
@@ -495,6 +497,89 @@ describe('LGraphCanvas selectOnly', () => {
     )
 
     expect(canvas.pointer.onClick).toBeUndefined()
+  })
+
+  it('a pan-armed click cannot wipe the picks after the mode ends', () => {
+    const { canvas, firstNode } = createHarness()
+    canvas.select(firstNode)
+    canvas.selectOnly = true
+    const event = { canvasX: 700, canvasY: 500 } as CanvasPointerEvent
+    canvas['_processPrimaryButton'](event, undefined)
+
+    // Mode flips off between pointerdown and a non-drag pointerup: the
+    // armed click resolves on the gesture snapshot, not the live flag.
+    canvas.selectOnly = false
+    canvas.pointer.onClick?.(event)
+
+    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+  })
+
+  it('a marquee-armed click cannot wipe the picks after the mode ends', () => {
+    const { canvas, firstNode } = createHarness()
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.select(firstNode)
+    canvas.selectOnly = true
+    const event = { canvasX: 700, canvasY: 500 } as CanvasPointerEvent
+    canvas['_processPrimaryButton'](event, undefined)
+
+    canvas.selectOnly = false
+    canvas.pointer.onClick?.(event)
+
+    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+  })
+
+  it('live-selects additively through the full gesture without churning', () => {
+    const { canvas, graph, firstNode, secondNode } = createHarness()
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.liveSelection = true
+    const group = new LGraphGroup('Group')
+    group._bounding.set([420, 120, 60, 40])
+    graph.add(group)
+    canvas.select(firstNode)
+    canvas.selectOnly = true
+    const changes = vi.fn()
+    canvas.onSelectionChange = changes
+    const press = { canvasX: 380, canvasY: 80 } as CanvasPointerEvent
+    const move = {
+      canvasX: 580,
+      canvasY: 200,
+      shiftKey: false,
+      altKey: false
+    } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](press, undefined)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+    canvas.pointer.onDrag?.(move)
+
+    // Additive through the live path; the group is refused by picking.
+    expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
+    const callsAfterFirstMove = changes.mock.calls.length
+
+    canvas.pointer.onDrag?.(move)
+
+    // The refused group must not re-trigger selection-change every move.
+    expect(changes.mock.calls.length).toBe(callsAfterFirstMove)
+    expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
+  })
+
+  it('retains replacing live selection through the full gesture when disabled', () => {
+    const { canvas, firstNode, secondNode } = createHarness()
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.liveSelection = true
+    canvas.select(firstNode)
+    const press = { canvasX: 380, canvasY: 80 } as CanvasPointerEvent
+    const move = {
+      canvasX: 580,
+      canvasY: 200,
+      shiftKey: false,
+      altKey: false
+    } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](press, undefined)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+    canvas.pointer.onDrag?.(move)
+
+    expect(canvas.selectedItems).toEqual(new Set([secondNode]))
   })
 
   it('defence in depth: selects nodes without starting a drag', () => {
