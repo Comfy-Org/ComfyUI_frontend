@@ -229,7 +229,6 @@ export class PerformanceHelper {
         'Measurement already in progress — call stopMeasuring() first'
       )
     }
-    const snapshot = await this.getSnapshot()
     await this.page.evaluate(() => {
       const win = window as unknown as Record<string, unknown>
       if (!win.__perfLongtaskState) {
@@ -258,6 +257,7 @@ export class PerformanceHelper {
     })
     try {
       await this.startRafCollector()
+      const snapshot = await this.getSnapshot()
       this.measurementState = { kind: 'measuring', snapshot }
     } catch (error) {
       await Promise.allSettled([this.stopRafCollectorIfRunning()])
@@ -272,8 +272,13 @@ export class PerformanceHelper {
 
     const before = this.measurementState.snapshot
     this.measurementState = { kind: 'idle' }
-    const rafCollection = await this.stopRafCollectorIfRunning()
-    const after = await this.getSnapshot()
+    let after: PerfSnapshot
+    let rafCollection: RafCollection | null
+    try {
+      after = await this.getSnapshot()
+    } finally {
+      rafCollection = await this.stopRafCollectorIfRunning()
+    }
 
     function delta(key: Exclude<keyof PerfSnapshot, 'cdpMetrics'>): number {
       return after[key] - before[key]
