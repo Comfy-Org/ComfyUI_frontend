@@ -74,7 +74,7 @@ function createMarkdownRenderer(baseUrl?: string): Renderer {
     const target = resolveMarkdownUrl(href, normalizedBase)
     const linkText =
       text === href
-        ? escape(target)
+        ? target
         : tokens
           ? renderer.parser.parseInline(tokens)
           : text

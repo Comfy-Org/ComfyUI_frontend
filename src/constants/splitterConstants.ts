@@ -10,6 +10,5 @@ export const SIDEBAR_MIN_SIZE = 10
 /** Minimum panel size (%) for the builder panel */
 export const BUILDER_MIN_SIZE = 15
 
-/** CSS anchor name declared on the graph-canvas SplitterPanel; the global
- * toast positions against it. Tests pin both sides to this one name. */
+/** CSS anchor name declared on the graph-canvas SplitterPanel; the toast positions against it */
 export const GRAPH_CANVAS_ANCHOR = '--graph-canvas-panel'

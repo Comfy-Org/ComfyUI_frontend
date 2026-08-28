@@ -74,10 +74,8 @@ describe('GlobalToast', () => {
     const [main] = document.body.querySelectorAll('toast-stub')
     const classes = main.getAttribute('class') ?? ''
 
-    // The anchor names must match the [anchor-name:--graph-canvas-panel]
-    // declaration on the canvas SplitterPanel (see
-    // LiteGraphCanvasSplitterOverlay.test); each carries a fallback so the
-    // toast still renders when no anchor target is mounted yet.
+    // Both sides build from GRAPH_CANVAS_ANCHOR; each anchor() carries a
+    // fallback so the toast still renders before the panel mounts.
     expect(main.getAttribute('position')).toBe('bottom-right')
     expect(classes).toContain(`anchor(${GRAPH_CANVAS_ANCHOR}_top,1rem)`)
     expect(classes).toContain(

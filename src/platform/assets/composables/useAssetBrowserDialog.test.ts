@@ -2,6 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { describe, expect, it, vi } from 'vitest'
 
+import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
+
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -95,6 +97,16 @@ describe('useAssetBrowserDialog', () => {
   })
 
   describe('.browse() method', () => {
+    it('shrink-wraps the dialog with the self-styled panel token', async () => {
+      const { mockShowDialog } = setupDialogMocks()
+      await useAssetBrowserDialog().browse({ assetType: 'models' })
+
+      const [args] = mockShowDialog.mock.calls[0]
+      expect(args.dialogComponentProps.contentClass).toBe(
+        SELF_STYLED_PANEL_CONTENT_CLASS
+      )
+    })
+
     it('opens asset browser dialog with tag-based filtering', async () => {
       const { mockShowDialog } = setupDialogMocks()
       const assetBrowserDialog = useAssetBrowserDialog()
