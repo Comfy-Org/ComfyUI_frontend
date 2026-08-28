@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { HUG_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import UploadModelDialog from '@/platform/assets/components/UploadModelDialog.vue'
 import UploadModelDialogHeader from '@/platform/assets/components/UploadModelDialogHeader.vue'
@@ -9,7 +10,6 @@ import type {
 } from '@/platform/assets/composables/useUploadModelWizard'
 import UploadModelUpgradeModal from '@/platform/assets/components/UploadModelUpgradeModal.vue'
 import UploadModelUpgradeModalHeader from '@/platform/assets/components/UploadModelUpgradeModalHeader.vue'
-import { HUG_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useDialogStore } from '@/stores/dialogStore'
 
 type UploadModelContextResolver = () => UploadModelDialogContext | undefined

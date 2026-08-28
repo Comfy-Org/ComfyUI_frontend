@@ -8,17 +8,14 @@ import {
 } from './dialog.variants'
 
 /**
- * The workspace-inset teeth for the variants module's own class strings:
- * each size cap's OWN residue (not the maximized/placement classes), the
- * shared viewer cap, and the hug token must carry the inset term by name.
+ * The workspace-inset teeth: against the maximized baseline each size cap,
+ * the shared viewer cap, and the hug token must carry the inset term by name.
  */
 const INSET_TERM = 'var(--workspace-inset-right,0px)'
 
 describe('dialog width caps carry the workspace inset', () => {
   it.for(FOR_STORIES.sizes)('size variant %s', (size) => {
-    // Against the maximized:true baseline the size cap is the only possible
-    // inset source (the maximized:false placement classes carry their own
-    // inset terms, which made the old form vacuous).
+    // maximized:true carries no inset term, so the size cap is the only source.
     expect(dialogContentVariants({ size, maximized: true })).toContain(
       INSET_TERM
     )

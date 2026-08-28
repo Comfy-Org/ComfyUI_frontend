@@ -40,7 +40,10 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   })
 }))
 
-import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
+import {
+  HUG_CONTENT_CLASS,
+  SELF_STYLED_PANEL_CONTENT_CLASS
+} from '@/components/ui/dialog/dialog.variants'
 import { useDialogService } from '@/services/dialogService'
 
 describe('dialogService Reka renderer opt-in', () => {
@@ -147,7 +150,9 @@ describe('dialogService Reka renderer opt-in', () => {
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.pt).toBeUndefined()
-    expect(args.dialogComponentProps.contentClass).toContain('w-fit')
+    expect(args.dialogComponentProps.contentClass).toBe(
+      `${HUG_CONTENT_CLASS} border-border-default`
+    )
     expect(args.dialogComponentProps.headerClass).toBe('p-0')
     expect(args.dialogComponentProps.bodyClass).toBe('p-0 overflow-y-hidden')
     expect(args.dialogComponentProps.footerClass).toBe('p-0')
