@@ -7,6 +7,10 @@ export interface NormalizedAgentTranscript {
   userTexts: Map<TurnId, string>
   rowIds: Set<string>
   assistantTurnIds: Set<TurnId>
+  pending?: {
+    messageId: TurnId
+    message: AssistantMessage
+  }
 }
 
 export function normalizeAgentTranscript(
@@ -17,6 +21,7 @@ export function normalizeAgentTranscript(
   const turnOrder: TurnId[] = []
   const seenTurns = new Set<TurnId>()
   const rowIds = new Set<string>()
+  let pending: NormalizedAgentTranscript['pending']
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
     const turnId = row.turn_id as TurnId
@@ -35,13 +40,31 @@ export function normalizeAgentTranscript(
           ...message.parts,
           { type: 'text', text, state: 'done' }
         ]
+      if (
+        row.status === 'streaming' &&
+        row.pending_ask?.kind === 'run_approval' &&
+        row.pending_ask.context?.workflow_id &&
+        row.pending_ask.context.workflow_name
+      ) {
+        message.parts.push({
+          type: 'runApproval',
+          askId: row.pending_ask.ask_id,
+          workflowId: row.pending_ask.context.workflow_id,
+          workflowName: row.pending_ask.context.workflow_name
+        })
+        message.streaming = true
+        pending = {
+          messageId: row.id as TurnId,
+          message
+        }
+      }
       assistants.set(turnId, message)
     }
   }
 
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-    message.streaming = false
+    message.streaming = message === pending?.message
     return message
   })
 
@@ -49,6 +72,7 @@ export function normalizeAgentTranscript(
     messages,
     userTexts,
     rowIds,
-    assistantTurnIds: new Set(assistants.keys())
+    assistantTurnIds: new Set(assistants.keys()),
+    pending
   }
 }

@@ -16,6 +16,35 @@ export const zAgentTurnAccepted = z
   .passthrough()
 export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
 
+const zAgentAskOption = z
+  .object({
+    id: z.string(),
+    label: z.string(),
+    description: z.string().optional()
+  })
+  .passthrough()
+
+export const zAgentPendingAsk = z
+  .object({
+    message_id: z.string(),
+    ask_id: z.string(),
+    kind: z.string().optional(),
+    context: z
+      .object({
+        workflow_id: z.string().optional(),
+        workflow_name: z.string().optional()
+      })
+      .passthrough()
+      .optional(),
+    prompt: z.string(),
+    options: z.array(zAgentAskOption),
+    min_selections: z.number().int(),
+    max_selections: z.number().int(),
+    allow_other: z.boolean()
+  })
+  .passthrough()
+export type AgentPendingAsk = z.infer<typeof zAgentPendingAsk>
+
 export const zAgentMessage = z
   .object({
     id: z.string(),
@@ -24,7 +53,8 @@ export const zAgentMessage = z
     role: z.enum(['user', 'assistant', 'tool', 'system']),
     status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
     turn_id: z.string(),
-    content: z.record(z.string(), z.unknown()).optional()
+    content: z.record(z.string(), z.unknown()).optional(),
+    pending_ask: zAgentPendingAsk.optional()
   })
   .passthrough()
 
@@ -160,12 +190,32 @@ const zAgentActiveTabEvent = z.object({
   data: zAgentActiveTabData
 })
 
+const zAgentAskEvent = z.object({
+  type: z.literal('agent_ask'),
+  data: zAgentPendingAsk.extend({ thread_id: z.string() })
+})
+
+const zAgentAskResolvedEvent = z.object({
+  type: z.literal('agent_ask_resolved'),
+  data: z
+    .object({
+      thread_id: z.string(),
+      message_id: z.string(),
+      ask_id: z.string(),
+      status: z.enum(['answered', 'cancelled', 'expired']),
+      selected: z.array(z.string()).nullable()
+    })
+    .passthrough()
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDoneEvent,
-  zAgentActiveTabEvent
+  zAgentActiveTabEvent,
+  zAgentAskEvent,
+  zAgentAskResolvedEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
