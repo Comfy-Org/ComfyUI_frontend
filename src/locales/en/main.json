@@ -5110,6 +5110,17 @@
     "loadFailed": "The agent panel failed to load.",
     "malformedEvent": "The agent sent an event this panel could not read",
     "sendBusy": "A message is already being sent",
-    "sendFailed": "Message failed to send"
+    "sendFailed": "Message failed to send",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "ranToolCalls": "Ran {count} tool call | Ran {count} tool calls",
+    "ranToolCallsTimed": "Ran {count} tool call for {seconds} seconds | Ran {count} tool calls for {seconds} seconds",
+    "thinking": "Thinking...",
+    "thought": "Thought",
+    "thoughtTimed": "Thought for {seconds} seconds",
+    "toolOpenedNewTab": "Opened a new tab",
+    "toolSwitchedTabs": "Switched tabs",
+    "toolSavedPreference": "Saved a preference",
+    "toolForgotPreference": "Forgot a preference"
   }
 }
