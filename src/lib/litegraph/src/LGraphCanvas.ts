@@ -2821,9 +2821,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const x = e.canvasX
     const y = e.canvasY
 
-    pointer.onClick = () => this.processSelect(node, e)
+    const picking = this.selectOnly
+    pointer.onClick = () => this.processSelect(node, e, false, picking)
 
-    if (this.selectOnly) return
+    if (picking) return
 
     // Immediately bring to front
     if (!node.flags.pinned) {
