@@ -11,24 +11,25 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const COLS = 12
 const ROWS = 6
-const WAVE_START = 700
-const WAVE_STEP_DURATION = 240
-const WAVE_HOT_DURATION = 420
-const WAVE_ACTIVE_DURATION = 1400
+const CELL_COUNT = COLS * ROWS
+const CELL_STEP_DURATION = 150
+const TRAIL_LENGTH = 3
+const REST_DURATION = 1400
 const LINE_START = 11.5
 const LINE_END = 95
 const REQUEST_DURATION = 3200
 const RESPONSE_DURATION = 2500
-const CYCLE_DURATION = 7200
-const REQUEST_STARTS = [500]
+const CYCLE_DURATION =
+  (CELL_COUNT + TRAIL_LENGTH) * CELL_STEP_DURATION + REST_DURATION
+const REQUEST_STARTS = [400, 6600]
 
-type CellState = 'idle' | 'on' | 'hot'
+type CellState = 'idle' | 'trail' | 'hot'
 
 interface ActivityCell {
   id: number
   column: number
   row: number
-  tone: string
+  sequence: number
 }
 
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
@@ -37,34 +38,28 @@ const elapsed = ref(0)
 
 const frameTime = computed(() => elapsed.value % CYCLE_DURATION)
 
-const tones = [
-  'bg-white/8',
-  'bg-primary-comfy-plum/30',
-  'bg-secondary-mauve/35',
-  'bg-white/12'
-]
-
 const activityCells: ActivityCell[] = Array.from(
-  { length: COLS * ROWS },
+  { length: CELL_COUNT },
   (_, id) => {
+    const column = id % COLS
     const row = Math.floor(id / COLS)
 
     return {
       id,
-      column: id % COLS,
+      column,
       row,
-      tone: tones[(id * 7 + row * 3) % tones.length]
+      sequence: (COLS - 1 - column) * ROWS + (ROWS - 1 - row)
     }
   }
 )
 
 function cellState(cell: ActivityCell, now: number): CellState {
-  const diagonal = COLS - 1 - cell.column + (ROWS - 1 - cell.row)
-  const age = now - WAVE_START - diagonal * WAVE_STEP_DURATION
+  const currentSequence = Math.floor(now / CELL_STEP_DURATION)
+  const distance = currentSequence - cell.sequence
 
-  if (age < 0 || age >= WAVE_ACTIVE_DURATION) return 'idle'
-  if (age < WAVE_HOT_DURATION) return 'hot'
-  return 'on'
+  if (distance === 0) return 'hot'
+  if (distance > 0 && distance <= TRAIL_LENGTH) return 'trail'
+  return 'idle'
 }
 
 const visualCells = computed(() =>
@@ -137,9 +132,9 @@ watch(
         :key="cell.id"
         :class="
           cn(
-            'rounded-md transition-[background-color,box-shadow,filter] duration-300',
-            cell.state === 'idle' && cell.tone,
-            cell.state === 'on' && 'bg-primary-comfy-yellow/45',
+            'rounded-md transition-[background-color,box-shadow] duration-150',
+            cell.state === 'idle' && 'bg-primary-comfy-plum/35',
+            cell.state === 'trail' && 'bg-secondary-mauve/55',
             cell.state === 'hot' &&
               'bg-primary-comfy-yellow shadow-primary-comfy-yellow/35 shadow-md'
           )
