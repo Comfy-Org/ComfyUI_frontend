@@ -103,6 +103,7 @@
     "icon": "Icon",
     "color": "Color",
     "error": "Error",
+    "assertionFailed": "Assertion failed",
     "enter": "Enter",
     "enterSubgraph": "Enter subgraph",
     "inSubgraph": "in subgraph '{name}'",

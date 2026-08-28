@@ -93,6 +93,7 @@ describe('createAssertReporter', () => {
     expect(useToastStore(pinia).messagesToAdd).toEqual([
       expect.objectContaining({
         severity: 'warn',
+        summary: 'Assertion failed',
         detail: '[Assertion failed]: loud'
       })
     ])

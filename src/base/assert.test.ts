@@ -93,6 +93,7 @@ describe('assert', () => {
 
     assert(false, 'tracker is inactive', { workflowPath: 'a/b.json' })
 
+    expect(consoleErrorSpy).toHaveBeenCalledOnce()
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       '[Assertion failed]: tracker is inactive'
     )
