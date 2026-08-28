@@ -17772,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "选择 realistic_image 风格和可选的子风格。",
+    "description": "选择 logo_raster 样式和子样式。",
     "display_name": "Recraft 风格 - 标志光栅图",
     "inputs": {
       "substyle": {
@@ -17883,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "从 1-10 张参考图像创建可复用的 Recraft V4 样式。返回的 style_id 适用于相同输出类型的所有 Recraft V4 和 V4.1 模型。所有图像的总大小限制为 10 MB。",
+    "display_name": "Recraft V4 创建样式",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "用于定义样式的参考图像。相似的参考图像可提高匹配精度，多样的参考图像可扩大样式范围。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "创建样式所对应的输出类型：recraftv4_styles 用于栅格图像，recraftv4_styles_vector 用于 SVG。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "使用Recraft V4或V4 Pro模型生成图像。",
     "display_name": "Recraft V4 文本转图像",
@@ -17892,7 +17912,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为保持样式一致的生成而设计，且始终需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17916,10 +17936,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要应用的 Recraft V4 样式的 UUID，例如来自 Recraft V4 创建样式节点或先前运行的 style_id 输出。不能与 style_references 结合使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "与样式的贴合程度：precise 会细致复现样式，flexible 会匹配整体外观。仅在提供样式时使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "即时创建样式所用的参考图像，费用在生成费用之外另计。创建的样式将作为 style_id 返回以供复用。不能与 style_id 结合使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +17969,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为保持样式一致的生成而设计，且始终需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17957,10 +17993,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要应用的 Recraft V4 矢量样式的 UUID，例如来自 Recraft V4 创建样式节点或先前运行的 style_id 输出。不能与 style_references 结合使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "与样式的贴合程度：precise 会细致复现样式，flexible 会匹配整体外观。仅在提供样式时使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "即时创建矢量样式所用的参考图像，费用在生成费用之外另计。创建的样式将作为 style_id 返回以供复用。不能与 style_id 结合使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24268,7 +24320,7 @@
     }
   },
   "VAEEncodeTiled": {
-    "display_name": "VAE编码分块）",
+    "display_name": "VAE编码（分块）",
     "inputs": {
       "overlap": {
         "name": "重叠"
@@ -24613,61 +24665,11 @@
       },
       "resolution": {
         "name": "分辨率",
-        "tooltip": "输出视频分辨率。veo-3.1-lite 和 veo-3.0 模型不支持 4K。"
+        "tooltip": "输出视频分辨率。veo-3.1-lite 模型不支持 4K。"
       },
       "seed": {
         "name": "随机种",
         "tooltip": "视频生成的种子值（0 表示随机）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "使用 Google 的 Veo API 根据文本提示生成视频",
-    "display_name": "Google Veo2 视频生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "输出视频的宽高比"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration_seconds": {
-        "name": "时长",
-        "tooltip": "输出视频的时长（秒）"
-      },
-      "enhance_prompt": {
-        "name": "优化提示词",
-        "tooltip": "是否使用 AI 辅助增强提示词"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "可选的参考图像，用于引导视频生成"
-      },
-      "model": {
-        "name": "模型",
-        "tooltip": "用于视频生成的 Veo 2 模型"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "用于指导视频中应避免内容的负面文本提示"
-      },
-      "person_generation": {
-        "name": "生成人类",
-        "tooltip": "是否允许在视频中生成人物"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "视频的文本描述"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "视频生成的种子（0 表示随机）"
       }
     },
     "outputs": {
