@@ -2,6 +2,10 @@ import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isCloud } from '@/platform/distribution/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
 
@@ -10,6 +14,8 @@ const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
+  const settingStore = useSettingStore()
+  const { isLoggedIn } = useCurrentUser()
   const enabled = ref(false)
   // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
@@ -21,14 +27,19 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   let openedAt: number | null = null
 
-  watch(
-    () => enabled.value && isOpen.value,
-    (docked) => {
-      if (!docked || openedAt !== null) return
-      openedAt = Date.now()
-      useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
-    }
+  const isVisible = computed(
+    () =>
+      enabled.value &&
+      isOpen.value &&
+      settingStore.get(AGENT_CONSENT_SETTING_ID) === true &&
+      (isCloud || isLoggedIn.value)
   )
+
+  watch(isVisible, (visible) => {
+    if (!visible || openedAt !== null) return
+    openedAt = Date.now()
+    useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
+  })
 
   const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
@@ -50,6 +61,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   }
 
+  function suppressRestoredOpen(): void {
+    if (!isOpen.value || isVisible.value) return
+    isOpen.value = false
+    openedAt = null
+  }
+
   function toggle(): void {
     if (isOpen.value) close('topbar_button')
     else open()
@@ -66,6 +83,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   return {
     enabled,
     isOpen,
+    isVisible,
     gateSettled,
     width,
     isMaximized,
@@ -73,6 +91,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     open,
     toggle,
     close,
+    suppressRestoredOpen,
     setWidth,
     toggleMaximize
   }
