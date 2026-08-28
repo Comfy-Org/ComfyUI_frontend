@@ -997,6 +997,26 @@ describe('setActiveGraph', () => {
     expect(store.lastNodeErrors).toBeNull()
   })
 
+  it('prunes a bucket when its last error is cleared', () => {
+    const store = useExecutionErrorStore()
+    const promptError = {
+      type: 'execution',
+      message: 'prompt failed',
+      details: ''
+    }
+
+    store.setActiveGraph(graphAId)
+    store.recordPromptError(promptError)
+    expect(store.lastPromptError).toEqual(promptError)
+
+    store.clearPromptError()
+    store.setActiveGraph(graphBId)
+    store.setActiveGraph(graphAId)
+
+    expect(store.lastPromptError).toBeNull()
+    expect(store.hasAnyError).toBe(false)
+  })
+
   it('closes the error overlay when the active graph changes', () => {
     const store = useExecutionErrorStore()
 

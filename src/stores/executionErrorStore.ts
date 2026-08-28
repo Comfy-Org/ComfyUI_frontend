@@ -211,19 +211,18 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  function clearExecutionStartErrors() {
-    updateRunErrors(
-      { executionError: null, promptError: null },
-      activeRunErrorKey.value
-    )
-    if (!lastNodeErrors.value) {
+  function clearExecutionStartErrors(
+    key: string | null = activeRunErrorKey.value
+  ) {
+    updateRunErrors({ executionError: null, promptError: null }, key)
+    if (key === activeRunErrorKey.value && !lastNodeErrors.value) {
       isErrorOverlayOpen.value = false
     }
   }
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */
-  function clearPromptError() {
-    updateRunErrors({ promptError: null }, activeRunErrorKey.value)
+  function clearPromptError(key: string | null = activeRunErrorKey.value) {
+    updateRunErrors({ promptError: null }, key)
   }
 
   function clearSimpleNodeErrorsFromRecord(

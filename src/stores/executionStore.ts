@@ -454,7 +454,6 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     executionIdToLocatorCache.clear()
-    executionErrorStore.clearExecutionStartErrors()
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
@@ -465,6 +464,9 @@ export const useExecutionStore = defineStore('execution', () => {
       const path = queuedJobs.value[activeJobId.value]?.workflow?.path
       if (path) ensureSessionWorkflowPath(activeJobId.value, path)
     }
+    executionErrorStore.clearExecutionStartErrors(
+      runErrorKeyForJob(activeJobId.value)
+    )
     queuedJobs.value[activeJobId.value].executionStartedAt ??= performance.now()
     setWorkflowStatus(activeJobId.value, {
       status: 'running',
@@ -659,11 +661,10 @@ export const useExecutionStore = defineStore('execution', () => {
    * queue and history polling — backs it up for jobs from a previous page load.
    *
    * `undefined` means the job cannot be attributed to any known workflow, which
-   * leaves the error on the visible one. With no evidence of another producer
-   * that is the best available guess, and dropping the error would hide a real
-   * failure.
+   * leaves the error on the visible one. `null` means the graph is known but its
+   * workflow path is ambiguous or unavailable, so recording is suppressed.
    */
-  function runErrorKeyForJob(jobId: string): string | undefined {
+  function runErrorKeyForJob(jobId: string): string | null | undefined {
     const workflow = jobIdToWorkflow.get(jobId)
     const graphId =
       workflow?.activeState?.id ??
@@ -675,7 +676,7 @@ export const useExecutionStore = defineStore('execution', () => {
       workflow?.path ??
       jobIdToSessionWorkflowPath.value.get(jobId) ??
       openWorkflowPathForGraph(graphId)
-    if (path === undefined) return undefined
+    if (path === undefined) return null
 
     return executionErrorStore.runErrorKey(graphId, path)
   }
@@ -743,7 +744,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleServiceLevelError(
     detail: ExecutionErrorWsMessage,
-    runErrorKey: string | undefined
+    runErrorKey: string | null | undefined
   ): boolean {
     const nodeId = detail.node_id
     if (nodeId !== null && nodeId !== undefined && String(nodeId) !== '')
@@ -766,7 +767,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleCloudValidationError(
     detail: ExecutionErrorWsMessage,
-    runErrorKey: string | undefined
+    runErrorKey: string | null | undefined
   ): boolean {
     const result = classifyCloudValidationError(detail.exception_message)
     if (!result) return false
@@ -850,6 +851,7 @@ export const useExecutionStore = defineStore('execution', () => {
     executionIdToLocatorCache.clear()
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
+    const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
     if (jobId) {
       const map = { ...nodeProgressStatesByJob.value }
       delete map[jobId]
@@ -860,7 +862,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (jobId) delete queuedJobs.value[jobId]
     activeJobId.value = null
     _executingNodeProgress.value = null
-    executionErrorStore.clearPromptError()
+    executionErrorStore.clearPromptError(runErrorKey)
   }
 
   function getNodeIdIfExecuting(nodeId: string | number) {

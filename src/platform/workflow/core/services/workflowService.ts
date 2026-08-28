@@ -44,7 +44,7 @@ import {
 } from '@/utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
 import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { ensureNonZeroUuid } from '@/utils/uuid'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -63,9 +63,8 @@ function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
   if (!app.isGraphReady) return null
 
   const rootGraph = app.rootGraph
-  if (rootGraph.id === zeroUuid) rootGraph.id = createUuidv4()
-  workflowData.id = rootGraph.id
-  return rootGraph.id
+  workflowData.id = ensureNonZeroUuid(rootGraph)
+  return workflowData.id
 }
 
 export const useWorkflowService = () => {

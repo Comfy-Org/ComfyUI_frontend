@@ -1038,6 +1038,14 @@ describe('useExecutionStore - background workflow error routing', () => {
     )
   }
 
+  function fireExecutionStart(jobId: string) {
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', { detail: { prompt_id: jobId } })
+    )
+  }
+
   const cloudValidationMessage = JSON.stringify({
     error: { type: 'prompt_outputs_failed_validation', message: 'invalid' },
     node_errors: {
@@ -1129,6 +1137,38 @@ describe('useExecutionStore - background workflow error routing', () => {
 
     errorStore.setActiveGraph(graphBId, workflowB.path)
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
+  })
+
+  it('clears execution-start errors only for the producing workflow', () => {
+    errorStore.recordPromptError({
+      type: 'visible-error',
+      message: 'visible workflow failed',
+      details: ''
+    })
+    callStoreJob('job-b', workflowB)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    errorStore.recordPromptError({
+      type: 'background-error',
+      message: 'background workflow failed',
+      details: ''
+    })
+    errorStore.setActiveGraph(graphAId, workflowA.path)
+
+    fireExecutionStart('job-b')
+
+    expect(errorStore.lastPromptError?.type).toBe('visible-error')
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(errorStore.lastPromptError).toBeNull()
+  })
+
+  it('does not route a known ambiguous job to the visible workflow', () => {
+    const duplicateWorkflow = makeWorkflow('/workflows/c.json', graphBId)
+    mockOpenWorkflows.value = [workflowA, workflowB, duplicateWorkflow]
+    store.registerJobWorkflowIdMapping('job-ambiguous', graphBId)
+
+    fireExecutionError('job-ambiguous')
+
+    expect(errorStore.lastExecutionError).toBeNull()
   })
 
   it('attributes an unattributable failure to the visible workflow', () => {

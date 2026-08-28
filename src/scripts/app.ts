@@ -125,7 +125,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
   forEachNode,
@@ -2536,9 +2536,7 @@ export class ComfyApp {
     // (`LGraph`) `clear` breaks the subgraph structure.
     if (this.rootGraph && !this.canvas.subgraph) {
       this.rootGraph.clear()
-      if (this.rootGraph.id === zeroUuid) {
-        this.rootGraph.id = createUuidv4()
-      }
+      ensureNonZeroUuid(this.rootGraph)
     }
 
     executionErrorStore.setActiveGraph(this.rootGraph?.id ?? null)
