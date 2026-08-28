@@ -187,14 +187,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         baseVersion: deps.baseVersion()
       })
       for (const op of minted) {
+        // Envelope only. An `add_node` carries a whole serialized node, and
+        // the ring buffer holds 500 entries — retaining the payloads would
+        // pin megabytes of graph for the lifetime of the tab.
         opsLog.info('op_minted', `${op.op} minted by ${op.actor}`, {
           opId: op.op_id,
           kind: op.op,
           actor: op.actor,
           baseVersion: op.base_version,
           stamp: stampKey(op),
-          register: stampTargetKey(op),
-          op
+          register: stampTargetKey(op)
         })
       }
       queue.push(...chunkWireOps(minted))

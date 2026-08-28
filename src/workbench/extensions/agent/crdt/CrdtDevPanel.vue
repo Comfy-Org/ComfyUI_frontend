@@ -87,7 +87,7 @@ const STATUS_ROWS = [
   ['last frame', () => status.lastFrameType ?? S.none]
 ] as const
 
-const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc', 'ecs', 'ops', 'panel']
+const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc', 'ecs', 'ops']
 
 const EVENT_KINDS: readonly DevEventKind[] = [
   'ws_out',
@@ -135,6 +135,7 @@ function readOpen(): boolean {
 
 function setOpen(value: boolean) {
   open.value = value
+  if (value) poll()
   try {
     localStorage.setItem(OPEN_KEY, String(value))
   } catch {
@@ -287,7 +288,7 @@ async function copyReport() {
   copyState.value = 'busy'
   try {
     const report = await collectCrdtDebugReport({
-      crdt: docState.value ?? fallbackSnapshot(),
+      crdt: snapshot?.() ?? docState.value ?? fallbackSnapshot(),
       events: devEvents.value,
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
@@ -358,7 +359,7 @@ function fmtTime(at: number): string {
       v-if="!open"
       type="button"
       :title="S.open"
-      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover pointer-events-auto absolute top-10 right-2 flex h-6 cursor-pointer items-center gap-1 rounded-full border px-2 transition-colors"
+      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover pointer-events-auto absolute top-12 right-2 flex h-6 cursor-pointer items-center gap-1 rounded-full border px-2 transition-colors"
       data-testid="crdt-dev-panel-chip"
       @click="setOpen(true)"
     >
@@ -375,7 +376,7 @@ function fmtTime(at: number): string {
 
     <section
       v-else
-      class="bg-agent-surface border-agent-border text-agent-fg pointer-events-auto absolute inset-x-0 top-10 bottom-0 flex flex-col border-t"
+      class="bg-agent-surface border-agent-border text-agent-fg pointer-events-auto absolute inset-x-0 top-12 bottom-1/3 flex flex-col border-y"
       data-testid="crdt-dev-panel"
     >
       <header
@@ -601,7 +602,7 @@ function fmtTime(at: number): string {
             <ol class="space-y-2" data-testid="crdt-dev-panel-trace">
               <li
                 v-for="entry in simulation.entries"
-                :key="entry.opId"
+                :key="entry.index"
                 class="border-agent-border border-l-2 pl-2"
               >
                 <div class="flex flex-wrap items-baseline gap-1">
@@ -647,7 +648,7 @@ function fmtTime(at: number): string {
                 <div class="font-bold">{{ group.label }}</div>
                 <div
                   v-for="entry in group.entries"
-                  :key="entry.opId"
+                  :key="entry.index"
                   class="text-agent-fg-muted pl-2"
                 >
                   {{ entry.kind }} · {{ entry.actor }} ·
@@ -662,7 +663,7 @@ function fmtTime(at: number): string {
               </div>
               <div
                 v-for="row in lifecycle"
-                :key="`${row.nodeId}-${row.entry.opId}`"
+                :key="`${row.nodeId}-${row.entry.index}`"
                 class="text-agent-fg-muted"
               >
                 {{ lifecycleLine(row) }}

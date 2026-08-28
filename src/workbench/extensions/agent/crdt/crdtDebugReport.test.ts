@@ -103,6 +103,30 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('doc-1')
   })
 
+  it('redacts credential-shaped setting values and says the section needs review', async () => {
+    getSettings.mockResolvedValue({
+      'Comfy.Theme': 'dark',
+      'MyNodePack.apiKey': 'sk-live-do-not-leak',
+      'Other.auth_token': 'do-not-leak-either'
+    })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).not.toContain('sk-live-do-not-leak')
+    expect(report).not.toContain('do-not-leak-either')
+    expect(report).toContain('dark')
+    expect(report).toContain('Review before sharing')
+  })
+
+  it('renders the report even when /system_stats answers with an unexpected shape', async () => {
+    getSystemStats.mockResolvedValue({ system: {}, devices: undefined })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).toContain('## System')
+    expect(report).toContain('doc-1')
+  })
+
   it('omits an oversized workflow rather than producing an unpasteable report', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,

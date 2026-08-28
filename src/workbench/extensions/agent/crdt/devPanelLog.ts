@@ -100,14 +100,22 @@ export function stringifyDevEvents(events: readonly DevEvent[]): string {
  * fields out of a paste. Cyclic values degrade to a marker instead of
  * throwing, because the report must survive whatever the doc happens to hold.
  */
-export function devEventReplacer(): (key: string, value: unknown) => unknown {
-  const seen = new WeakSet<object>()
-  return (_key, value) => {
+export function devEventReplacer(): (
+  this: unknown,
+  key: string,
+  value: unknown
+) => unknown {
+  // Tracks the ANCESTOR chain, not everything visited: a doc snapshot legally
+  // references one object from two sibling positions, and a visited-set would
+  // report the second as `[Circular]` and silently drop real data.
+  const ancestors: unknown[] = []
+  return function (this: unknown, _key, value) {
+    while (ancestors.length > 0 && ancestors.at(-1) !== this) ancestors.pop()
     if (value instanceof Uint8Array) return `Uint8Array(${value.length})`
     if (typeof value === 'bigint') return value.toString()
     if (typeof value === 'object' && value !== null) {
-      if (seen.has(value)) return '[Circular]'
-      seen.add(value)
+      if (ancestors.includes(value)) return '[Circular]'
+      ancestors.push(value)
     }
     return value
   }
