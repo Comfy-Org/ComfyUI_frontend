@@ -1,4 +1,4 @@
-# 0024. In-App Agent Offscreen Graphs and Target Addressing
+# 0024. Graph Activation and Document Objects for In-App Agent Targets
 
 Date: 2026-08-28
 
@@ -8,83 +8,357 @@ Proposed
 
 ## Context
 
-An In-App Agent turn can continue working on workflow A while the user views and edits
-workflow B. The active canvas is therefore a presentation choice, not the address of the
-agent's mutation. A follower that samples the active graph at apply time can write A's
-remote effects into B. A single follower document also cannot isolate two agent targets or
-hold effects for a target whose graph is not currently loaded.
+The In-App Agent can continue working on workflow A while the user views and edits
+workflow B. The active canvas is therefore a presentation choice, not the address of
+an agent mutation. A follower that samples the active graph at apply time can write A's
+remote effects into B. A single process-local follower also cannot isolate two agent
+targets or retain work for a target whose graph is not currently loaded.
 
-The cross-repository contract is recorded in the program's
-[ADR-015](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md).
-This ADR places the frontend obligations at the store, follower, and rendering boundaries.
+The missing abstraction is larger than an offscreen queue: a workflow graph needs to be
+a first-class domain document that exists independently of a tab and renderer. Activation
+then becomes an explicit binding between that document and the active canvas. This ADR
+evolves the narrow target-addressing contract from PR [#16195](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16195)
+into that document model. The program repository's [ADR-015](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md)
+remains the cross-repository target-routing contract; this document is the frontend-owned
+model and lifecycle mirror.
+
+The current `ChangeTracker` is important prior art. It stores serialized state during
+tab deactivation, allowing transient graph state to survive a tab switch, but its
+`captureCanvasState()` guard is intentionally active-workflow-only. That is a useful
+compatibility boundary, not a document model: offscreen remote application must not be
+silently discarded because no canvas is active.
+
+The design also follows the existing ECS direction. Dedicated stores own increasing
+shares of graph state, while LiteGraph classes remain compatibility shells and render
+targets. [ADR-0003](0003-crdt-based-layout-system.md) keeps durable layout in a separate
+frontend-owned Y.Doc, and [ADR-0008](0008-entity-component-system.md) separates graph
+identity, components, systems, and rendering. The document object composes those pieces;
+it does not create a second ECS or a second CRDT applier.
 
 ## Decision
 
-Every remote mutation batch is routed by its explicit canonical `workflow_id` document
-identity. The frontend will maintain target-keyed follower sessions rather than selecting a
-scope from `canvasStore` or `app.graph` at apply time.
+Introduce a document-owned graph domain model. Make activation an explicit state
+transition from a document to a canvas binding, and route every agent or remote mutation
+through the target document's ECS/domain stores whether or not that document is active.
 
-Each target session owns its follower Y.Doc, resolved `GraphScope`, state-vector and sequence
-baseline, document lineage, and bounded pending-effect queue. A loaded target applies through
-the yjs-backed ECS/domain stores even when it is offscreen. An unloaded target is queued by
-target identity until its domain registration is available, or recovered with a
-target-scoped state-vector resubscribe after queue loss or overflow. A target mismatch is a
-rejection, never an active-canvas fallback.
+### Document object
 
-Remote apply may update target domain and target-aware layout state only. It must not focus a
-tab, alter selection or presence, call active-canvas-only APIs, or require a renderer-attached
-graph. Layout remains in the separate frontend-owned Y.Doc described by [ADR-0003](0003-crdt-based-layout-system.md).
-The follower remains host-to-follower for raw Yjs updates; semantic operations and their
-original `[base_version, actor, op_id]` identity remain governed by the shared applier.
+`GraphDocument` is the frontend's first-class workflow entity. Its identity is the
+canonical wire `workflow_id`; an internal `document_id` may be an alias only when it
+preserves that same stable value. A nested `GraphId`/graph scope identifies a graph
+inside the workflow document, not a second top-level document. Subgraphs remain domain
+scopes within the same document.
 
-Reconnection and ordinary sequence-gap recovery use the matching target session's state
-vector and retain its Y.Doc. Only an explicit `doc_reset` may replace that document, after
-reset has been dispatched to its consumers. DQ-11(c)'s `node_incarnation` is preserved as
-shared-applier data and is never inferred from the active canvas or regenerated during queue
-drain.
+The document owns or references the following state:
+
+```text
+GraphDocument (document_id = workflow_id)
+├── lifecycle: created | loaded | dirty | persisted | closed
+├── graph-scope registry and ECS/domain stores
+├── document-owned ChangeTracker and persistence baseline
+├── target session: follower Y.Doc, state vector, sequence, lineage, queue
+├── FE-owned layout Y.Doc (separate semantic document)
+└── zero or more tab/view bindings
+    └── at most one active canvas binding at a time per active-canvas policy
+```
+
+`dirty` and `persisted` describe the persistence position of a loaded document: a
+successful save establishes a persisted baseline, while a later human or remote domain
+mutation makes the document dirty. The lifecycle is independent of whether a renderer
+is attached:
+
+```text
+created ──load/hydrate──> loaded (clean)
+                              │
+                         domain mutation
+                              ▼
+                         loaded (dirty)
+                              │ save
+                              ▼
+                         persisted (clean)
+                              │ explicit close
+                              ▼
+                            closed
+```
+
+Created, loaded, and closed describe document existence. Dirty and persisted describe
+its save baseline; they are not permissions to mutate the graph. Closing a dirty
+document requires an explicit save or discard decision. Closing removes domain/render
+bindings only after that decision. A target session may remain detached and retain a
+bounded queue after a document is closed; it must not be mistaken for a new document or
+silently redirected to the active tab.
+
+A tab is a view binding that names a `document_id`; it does not own document identity,
+ECS stores, CRDT state, or persistence. A document may have no tab while it is queued,
+being hydrated, or being used by a headless agent target. A tab switch changes a view
+binding and may request activation; it does not implicitly select the target of a
+remote frame.
+
+The document's `ChangeTracker` becomes the owner of change history and save dirtiness.
+Activation may connect the active-canvas event hooks, and deactivation may flush the
+active view snapshot, but neither operation transfers tracker ownership. The existing
+active-only tracker APIs remain compatibility APIs for user gestures; document-targeted
+remote application must use a target-aware tracker seam that records the document's
+new state and provenance rather than calling an inactive tracker and returning early.
+Whether a remote effect is user-undoable is an explicit source policy, not an accidental
+consequence of canvas focus.
+
+### Activation is a domain-to-view transition
+
+Activation is an explicit operation, for example `activate(document_id, canvas)`, with
+the inverse `deactivate(document_id, canvas)`. It is not a side effect of tab focus.
+The transition validates that the document is loaded, resolves its graph scopes, and
+then attaches only view concerns:
+
+- the renderer/canvas binding and its render-facing compatibility projection;
+- render-attached caches and transient measured geometry;
+- the active view's viewport and subgraph-navigation projection; and
+- active input/event hooks and awareness presentation for that view.
+
+The transition does not reseed or replace the semantic follower Y.Doc, recreate the ECS
+stores, mint IDs, rewrite workflow data, or infer a remote target from the canvas. On
+deactivation, the document remains loaded and its domain stores, follower, queue,
+change tracking, persistence, and agent subscription continue to operate. A deactivated
+document must continue to support:
+
+- ECS/domain mutations, including agent effects and human mutations delivered through
+  the document mutation API;
+- host-produced CRDT frame application and target-scoped state-vector recovery;
+- document dirty-state and undo/redo bookkeeping; and
+- serialization, save, and reload without a renderer.
+
+Selection, hover, viewport, awareness, and DOM measurements are view/presence state.
+They do not become semantic document state merely because activation changes.
+
+```text
+tab focus / explicit activate
+             │
+             ▼
+     ┌─────────────────┐       render projection
+     │ GraphDocument   │ ─────────────────────────> canvas
+     │ ECS + tracker   │                              │
+     │ follower + queue│ <── explicit deactivate ─────┘
+     └────────┬────────┘
+              │ remains alive without canvas
+              ├── CRDT apply / replay
+              ├── target ECS mutation
+              ├── dirty + persistence
+              └── save / reload
+```
+
+### Agent targeting and application
+
+Every remote or agent mutation batch carries the explicit canonical `workflow_id` at
+the command, document-frame, and adapter-dispatch boundaries. The frontend resolves it
+through a target-session registry. It never substitutes `canvasStore.rootGraphId`,
+`app.graph`, the active tab, or another render-attached singleton.
+
+```text
+agent / host frame { workflow_id, ... }
+                 │
+                 ▼
+       document/target-session registry
+          ┌────────────┴────────────┐
+          │ document A              │ document B
+          │ follower + GraphScope   │ follower + GraphScope
+          │ tracker + queue         │ tracker + queue
+          └────────────┬────────────┘
+                       ▼
+             target ECS mutation path
+                       │
+             ┌─────────┴─────────┐
+             │ active renderer  │ offscreen/headless
+             │ downstream view  │ domain state only
+             └───────────────────┘
+```
+
+For a loaded target, the target session applies the batch through the typed ECS/domain
+mutation path even when its document has no active canvas. Rendering is a downstream
+projection. A target mismatch, missing identity, or failed scope resolution is a loud
+rejection with target-specific telemetry; it is never an active-canvas fallback.
+
+The target session is a delivery and projection boundary, not a merge authority. Raw
+Yjs updates flow host to follower only. Semantic operations remain owned by the shared
+`@comfyorg/comfy-multi-player` applier, and their original
+`[base_version, actor, op_id]` stamps are not regenerated, reordered, or replaced by
+frontend command IDs. The separate FE layout Y.Doc remains separate from the shared
+semantic document as required by ADR-0003.
+
+### Unloaded-target queue and commit boundary
+
+When a target document is not loaded, its registry entry becomes a detached target
+session. The session queues complete host-produced, target-scoped document frames in
+arrival order. The queue is not a second op log, does not derive `add_node` payloads,
+and never contains raw Yjs updates exchanged between independently edited documents.
+It preserves the frame's target, lineage, sequence, and semantic provenance, including
+the original operation stamps when present.
+
+Queue application has one observable commit boundary:
+
+1. Validate target identity and lineage and stage the next frame against the target's
+   last committed follower state.
+2. Project the staged result and validate the target ECS/domain mutation.
+3. Commit the follower state, ECS/domain effects, document change-tracker update, and
+   applied sequence/state-vector advancement together.
+4. Remove the frame from the queue only after that commit succeeds.
+
+The implementation may use a staged follower clone or an equivalent replayable
+checkpoint. It must not advance the advertised state vector or applied sequence before
+the domain effect is committed. If staging or projection fails, the frame remains
+recoverable and the target reports a loud failure; it is not acknowledged by dropping
+the effect.
+
+The queue is bounded. On overflow, process restart, or loss of a detached session, the
+frontend retains the last committed target state vector and resubscribes for that
+target's delta. Any delivery frames beyond that boundary are discarded only as a
+recoverable transport buffer, never as accepted mutations. Ordinary replay preserves
+the follower document object and lineage. If the authority cannot provide the delta,
+only an explicit `doc_reset`/snapshot lineage break may replace it, after reset is
+dispatched to every document-store and projection consumer.
+
+### Reconnect, replay, and node incarnation
+
+Each target session has independent sequence, state-vector, pending-effect, and lineage
+state. A gap or reconnect for A must use A's state vector and cannot subscribe or replay
+against B. Ordinary recovery applies the missing delta to the existing follower Y.Doc;
+it never wipes or independently reseeds that document. A `doc_reset` is the sole
+replacement path and starts a new lineage only after all projectors have observed the
+reset.
+
+DQ-11(c)'s `node_incarnation` is shared-applier payload data. The frontend carries it
+through the document, queue, projection, and reload boundaries. It never infers an
+incarnation from the active canvas, collapses it into a client ID, or mints a replacement.
+A delete/re-add with the same node ID therefore cannot allow stale widget stamps from
+the prior incarnation to affect the new target occupant. Retries preserve the original
+`op_id`.
+
+## Invariants
+
+- **Stable target identity:** `workflow_id` is mandatory at command, frame, session, and
+  adapter seams. Missing or unresolved targets fail loudly; active-canvas fallback is
+  forbidden.
+- **Activation is presentation:** activation/deactivation attaches or detaches view
+  concerns only. It does not alter semantic graph state, CRDT lineage, IDs, or merge
+  authority.
+- **Deactivated documents remain live:** ECS mutations, CRDT apply, change tracking,
+  persistence, save, and reload work without a renderer or focused tab.
+- **One target, one session:** each target owns its follower Y.Doc, scope resolution,
+  queue, state vector, sequence baseline, and lineage. State never crosses target keys.
+- **Host/follower direction:** the follower never writes the shared semantic Y.Doc;
+  raw Yjs updates are host-to-follower only. The frontend has no second applier.
+- **Replay safety:** queue removal and state-vector/sequence advancement happen only
+  after the target domain effect commits. Ordinary gap recovery is state-vector delta
+  replay, not a canvas or follower-document wipe.
+- **Stamp preservation:** `[base_version, actor, op_id]`, `op_id`, and `node_incarnation`
+  are preserved through retry, queue drain, reconnect, and projection.
+- **Separate view state:** layout remains in the separate FE-owned Y.Doc; presence,
+  selection, hover, viewport, and renderer measurements are not semantic shared state.
+- **Byte-identical persistence:** serializing a document, deactivating/activating it any
+  number of times, saving, and reloading must produce byte-identical workflow JSON,
+  apart from the explicitly permitted node-ID normalization. Activation must not persist
+  viewport or measurement artifacts. This is a hard Base/ECS/Nodes-2.0 QA invariant.
+- **Loud illegal state:** invalid activation, scope resolution, projection, catalog, or
+  widget state fails at the domain boundary and is observable; activation must not widen
+  silent Nodes-2.0 widget-protocol failure surfaces.
+
+## V1 API and ECS sequencing
+
+This document does not change the V1 custom-node API surface. The document object is an
+adapter around the current graph/domain boundary first, so V1 can ship non-breaking on
+the existing codebase. The intended sequence is V1 API, at least two weeks of
+stabilization, ECS, Nodes 2.0, and only then removal of the old graph compatibility
+layer. Activation must not require a completed ECS rewrite, but every new agent or
+remote mutation must enter through the typed document/ECS seam so the later migration
+does not create an active-canvas-only API.
+
+PR [#15721](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15721) is prior art for
+this boundary: its graph-level atomicity audit found validate-before-mutate behavior at
+the audited store call sites, while also documenting that ID minting and whole-graph
+atomicity still have gaps. Target-frame application therefore needs the explicit staged
+commit boundary above; it cannot infer transactionality from individual store actions.
+PR [#15421](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15421) is prior art for
+the repository-owned domain glossary and for separating current implementation facts
+from planned architecture. This ADR uses that discipline for the document lifecycle:
+the current `ChangeTracker` and compatibility graph are named as prior art, while the
+document registry and target-aware tracker seam are the intended follow-up.
+
+## Alternatives considered
+
+- **Keep the active tab as the target** — rejected because tab focus is presentation and
+  can redirect A's effects into B.
+- **Add only an offscreen queue to the current singleton follower** — rejected because
+  it leaves document identity, CRDT lineage, change tracking, and persistence coupled to
+  one active graph.
+- **Open/focus the target tab before applying** — rejected because correctness would
+  depend on presentation, interrupt the user, and still fail for an unloaded target.
+- **Use one mutable follower and switch its workflow ID** — rejected because state
+  vectors, pending effects, trackers, and lineage can leak across targets.
+- **Queue full-document replacements** — rejected because this clobbers concurrent
+  edits and violates the op-based replication contract. Queue entries are target-scoped
+  host frames with replayable commit boundaries.
+- **Make the frontend a second merge authority** — rejected because the shared
+  `comfy-multi-player` applier must remain the portable, deterministic authority.
 
 ## Consequences
 
 ### Positive
 
-- Agent changes remain attached to the intended graph across tab switches.
-- Multiple targets can follow and apply independently.
-- Offscreen application does not interrupt user focus or depend on a mounted renderer.
-- Per-target replay preserves the existing state-vector and reset lifecycle rules.
-- Target-aware store notifications provide a clean path for visible rendering without making
-  rendering the mutation authority.
+- Agent work remains attached to the intended document across tab switches.
+- Offscreen and headless targets can receive, track, save, and recover mutations without
+  stealing focus or requiring a mounted renderer.
+- A stable document identity gives tabs, ECS stores, persistence, CRDT frames, and
+  reconnect state one auditable ownership boundary.
+- The same activation seam can support the V1 API, incremental ECS migration, and later
+  Nodes 2.0 renderer replacement without changing the public custom-node contract.
+- Explicit commit and replay boundaries make target isolation, byte-identical persistence,
+  and DQ-11(c) incarnation handling testable.
 
 ### Negative
 
-- The follower needs a registry and target lifecycle instead of one process-local document.
-- Unloaded-target queues require bounds, observability, registration, and resync behavior.
-- Active-canvas invalidation calls must move to a target-aware notification boundary.
-- Workflow-to-graph resolution must be explicit; a direct workflow-ID-to-graph-ID cast is not
-  sufficient for nested graphs, reloads, or multiple representations.
+- The frontend needs a document registry and lifecycle in addition to its tab registry.
+- The follower and tracker must become target-aware, and detached queues need bounds,
+  telemetry, registration, and resync behavior.
+- Existing active-only `ChangeTracker` calls and active-canvas invalidation need a
+  compatibility migration; they cannot be reused for offscreen remote effects.
+- Staged projection and byte-identical save/reload checks add implementation and QA
+  work before old graph compatibility code can be removed.
 
-## Notes
+## References
 
-The program audit of the fec-9 candidate branches found that `bindScope()` fixes one
-active-canvas race for one target, but does not provide the multi-target registry, unloaded
-queue, or active-canvas isolation required here. See
-`reports/review-queue/offscreen-graphs-gap.md` in the program repository.
-
-Required coverage includes simultaneous A/B targets, active-canvas switching during an A
-apply, unloaded-target queue and drain, per-target reconnect/reset, no active-canvas side
-effects, and DQ-11(c) re-add behavior.
+- [ADR-0003: Centralized Layout Management with CRDT](0003-crdt-based-layout-system.md)
+- [ADR-0008: Entity Component System](0008-entity-component-system.md)
+- [ADR-0019: In-App Agent CRDT Follower and Distribution-Resolved Boundaries](0019-in-app-agent-crdt-follower-and-distribution.md)
+- [Change Tracker](../architecture/change-tracker.md)
+- [ECS Target Architecture](../architecture/ecs-target-architecture.md)
+- [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md)
+- [PR #15721: graph-level atomicity audit](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15721)
+- [PR #15421: canonical architecture knowledge and domain glossary](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15421)
+- [Program ADR-015: target-graph addressing and offscreen queues](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md)
 
 ## Glossary
 
-- **Target graph** — the workflow/document named by an agent command's `workflow_id`, whether
-  or not it is visible.
-- **Target session** — one target's follower document, graph scope, queue, replay state, and
-  lineage lifecycle.
-- **Offscreen graph** — a target that is not the active visible canvas.
-- **ECS/domain store** — the typed frontend state path that owns graph entities; LiteGraph is a
-  downstream render/compatibility projection.
-- **State vector** — Yjs's summary of updates known by one document replica, used to request a
-  target-scoped delta.
-- **`doc_reset`** — an explicit lineage-break frame that permits replacing a target follower
-  document after consumers are notified.
-- **`node_incarnation`** — DQ-11(c)'s stamp namespace for a node after delete/re-add with the
-  same node ID.
+- **Activation** — explicit attachment of a loaded document to the active canvas and
+  its renderer/view state; it is not tab focus itself.
+- **CRDT** — conflict-free replicated data type; here the host-produced Yjs semantic
+  workflow document and the separate FE-owned layout document.
+- **Document object / `GraphDocument`** — first-class workflow domain entity keyed by
+  canonical `workflow_id`, independent of tabs and renderers.
+- **ECS** — Entity Component System; the frontend direction in which dedicated stores
+  own graph data and systems own behavior, with LiteGraph as a compatibility projection.
+- **Follower** — receive-only frontend replica that integrates host-produced Yjs updates.
+- **Graph scope / `GraphId`** — identity for a graph within one workflow document,
+  including nested subgraphs; it is not a top-level workflow identity.
+- **Host** — authoritative process using the shared `comfy-multi-player` applier to
+  apply semantic operations and produce follower updates.
+- **Lineage** — history identity of a document; an explicit `doc_reset` starts a new
+  lineage and is the only ordinary follower-document replacement path.
+- **`node_incarnation` / DQ-11(c)** — stamp namespace distinguishing a node after a
+  delete/re-add from its prior occupant with the same node ID.
+- **Pending-effect queue** — bounded, target-scoped delivery buffer whose entries are
+  not acknowledged until follower, ECS, tracker, and replay state commit together.
+- **State vector** — Yjs summary of updates known by one follower, used for target-scoped
+  delta replay after reconnect or queue recovery.
+- **Target session** — one registry entry for a document's follower, scope, replay state,
+  lineage, and pending queue.
+- **View/presentation state** — renderer, viewport, selection, hover, awareness, and
+  measurements that may attach to a document but are not semantic workflow state.
