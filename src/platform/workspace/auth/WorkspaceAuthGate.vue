@@ -119,6 +119,7 @@ async function initialize(): Promise<void> {
 
   const authStore = useAuthStore()
   const { isInitialized, currentUser } = storeToRefs(authStore)
+  const apiKeyStore = useApiKeyAuthStore()
 
   try {
     // Step 1: Wait for Firebase auth to resolve
@@ -134,7 +135,7 @@ async function initialize(): Promise<void> {
 
     // Step 2: If not authenticated, nothing more to do
     // Unauthenticated users don't have workspace context
-    if (!currentUser.value) {
+    if (!currentUser.value && !apiKeyStore.isAuthenticated) {
       initializationState.value = 'ready'
       return
     }

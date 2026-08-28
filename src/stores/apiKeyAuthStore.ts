@@ -1,10 +1,13 @@
 import { useLocalStorage } from '@vueuse/core'
+import type { UserResponse } from '@comfyorg/ingest-types'
 import { defineStore } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -23,19 +26,26 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const currentUser = ref<ComfyApiUser | null>(null)
   const isAuthenticated = computed(() => !!currentUser.value)
 
+  async function getCloudUser(): Promise<ComfyApiUser | undefined> {
+    const response = await api.fetchApi('/user')
+    if (!response.ok) return
+    const user: UserResponse = await response.json()
+    return { id: user.id }
+  }
+
   const initializeUserFromApiKey = async (watchedApiKey: string) => {
-    const createCustomerResponse = await authStore
-      .createCustomer()
-      .catch((err) => {
-        console.error(err)
-        return
-      })
+    const user = await (
+      isCloud ? getCloudUser() : authStore.createCustomer()
+    ).catch((err) => {
+      console.error(err)
+      return
+    })
     if (apiKey.value !== watchedApiKey) return
-    if (!createCustomerResponse) {
+    if (!user) {
       apiKey.value = null
       throw new Error(t('auth.login.noAssociatedUser'))
     }
-    currentUser.value = createCustomerResponse
+    currentUser.value = user
   }
 
   // The stored key and its validated user form one session value: replacing

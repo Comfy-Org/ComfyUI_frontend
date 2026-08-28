@@ -1,5 +1,10 @@
 <template>
-  <div class="flex w-full flex-col">
+  <ApiKeyForm
+    v-if="showApiKeyForm"
+    @back="showApiKeyForm = false"
+    @success="onAuthSuccess"
+  />
+  <div v-else class="flex w-full flex-col">
     <h1
       class="mt-8 mb-0 text-2xl/snug font-light tracking-tighter text-primary-comfy-canvas sm:text-3xl/snug lg:text-4xl/snug xl:text-5xl/snug 2xl:text-6xl/snug"
     >
@@ -36,6 +41,15 @@
         />
 
         <button
+          v-if="localApiKeyAuthEnabled"
+          type="button"
+          :class="CLOUD_AUTH_LINK_BUTTON_CLASS"
+          @click="showApiKeyForm = true"
+        >
+          {{ t('auth.login.useApiKey') }}
+        </button>
+
+        <button
           type="button"
           :class="CLOUD_AUTH_LINK_BUTTON_CLASS"
           @click="switchToEmailForm"
@@ -61,9 +75,11 @@
 
 <script setup lang="ts">
 import Message from 'primevue/message'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
+import ApiKeyForm from '@/components/dialog/content/signin/ApiKeyForm.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
@@ -74,6 +90,9 @@ import type { SignInData } from '@/schemas/signInSchema'
 const { t } = useI18n()
 const route = useRoute()
 const authActions = useAuthActions()
+const showApiKeyForm = ref(false)
+const localApiKeyAuthEnabled =
+  import.meta.env.DEV && import.meta.env.VITE_LOCAL_CLOUD_AUTH === 'true'
 
 const {
   authError,
