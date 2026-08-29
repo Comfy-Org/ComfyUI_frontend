@@ -106,7 +106,7 @@ const cards = [
     --paper: #f5f5f5;
     --dot: 5px;
     position: relative;
-    min-height: 78vh;
+    min-height: 66vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -175,12 +175,14 @@ const cards = [
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: radial-gradient(
-      ellipse 65% 50% at 50% 50%,
-      rgba(33, 25, 39, 0.72) 0%,
-      rgba(33, 25, 39, 0.9) 65%,
-      rgba(33, 25, 39, 0.98) 100%
-    );
+    background:
+      linear-gradient(to bottom, transparent 55%, #211927 92%),
+      radial-gradient(
+        ellipse 65% 50% at 50% 50%,
+        rgba(33, 25, 39, 0.72) 0%,
+        rgba(33, 25, 39, 0.9) 65%,
+        rgba(33, 25, 39, 0.98) 100%
+      );
   }
 
   @keyframes shift {
@@ -317,6 +319,7 @@ const cards = [
     .waitlist-form {
       flex-direction: column;
       background: transparent;
+      border: 0;
       padding: 0;
       gap: 12px;
     }
