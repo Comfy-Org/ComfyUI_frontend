@@ -12,7 +12,7 @@ describe('fdct HeroSection', () => {
     const video = screen.getByLabelText(t('fdct.hero.title', 'en'))
     expect(video.hasAttribute('autoplay')).toBe(true)
     expect(video.hasAttribute('loop')).toBe(true)
-    expect(video.hasAttribute('muted')).toBe(true)
+    expect((video as HTMLVideoElement).muted).toBe(true)
     expect(video.getAttribute('poster')).toContain('FDCT_V4_thumb')
   })
 
