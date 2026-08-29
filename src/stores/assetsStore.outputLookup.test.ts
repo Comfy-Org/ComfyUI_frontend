@@ -41,7 +41,7 @@ function asset(id: string): AssetItem {
 
 function pagedList(
   items: AssetItem[],
-  loadMore: () => Promise<void>,
+  loadMore: () => Promise<boolean>,
   hasMore = ref(true)
 ): PagedList<AssetItem> {
   return {
@@ -67,6 +67,7 @@ describe('assetsStore output lookup', () => {
           ? asset('requested-output')
           : asset('second-page')
       )
+      return true
     })
     query.current = {
       ...pagedList([], loadMore),
@@ -79,13 +80,13 @@ describe('assetsStore output lookup', () => {
     expect(loadMore).toHaveBeenCalledTimes(2)
   })
 
-  it('stops after 1,000 pages when the requested output is absent', async () => {
-    const loadMore = vi.fn(async () => {})
+  it('stops when pagination cannot advance to the requested output', async () => {
+    const loadMore = vi.fn(async () => false)
     query.current = pagedList([], loadMore)
 
     const found = await useAssetsStore().loadOutputAsset('missing-output')
 
     expect(found).toBe(false)
-    expect(loadMore).toHaveBeenCalledTimes(1_000)
+    expect(loadMore).toHaveBeenCalledOnce()
   })
 })
