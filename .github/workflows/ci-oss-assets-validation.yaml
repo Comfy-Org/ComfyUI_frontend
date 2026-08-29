@@ -107,7 +107,7 @@ jobs:
           # Use license-checker-rseidelsohn (actively maintained fork, handles monorepos)
           # Exclude internal @comfyorg packages from license check
           # Run in if condition to capture exit code
-          if npx license-checker-rseidelsohn@4 \
+          if pnpx license-checker-rseidelsohn@4 \
             --production \
             --summary \
             --excludePackages '@comfyorg/comfyui-frontend;@comfyorg/design-system;@comfyorg/ingest-types;@comfyorg/registry-types;@comfyorg/shared-frontend-utils;@comfyorg/tailwind-utils;@comfyorg/comfyui-electron-types' \
