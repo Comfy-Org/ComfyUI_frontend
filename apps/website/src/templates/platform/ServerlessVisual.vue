@@ -81,7 +81,7 @@ const GPU_SLOT_SECONDS = 1.8
       :class="
         cn(
           'animate-label-flash text-primary-comfy-yellow/80 absolute right-5 bottom-4 font-mono text-[10px] tracking-widest uppercase',
-          index === 0 && 'motion-reduce:opacity-100'
+          index === 0 ? 'motion-reduce:opacity-100' : 'motion-reduce:hidden'
         )
       "
       :style="{ animationDelay: `${index * GPU_SLOT_SECONDS}s` }"

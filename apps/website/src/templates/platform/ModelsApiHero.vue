@@ -30,7 +30,7 @@ const ctas = platformCtas(locale)
     <template #media>
       <CodeTabs
         :tabs="modelsApiCodeTabs"
-        :aria-label="t('platform.products.models.title', locale)"
+        :label="t('platform.products.models.title', locale)"
       />
     </template>
   </HeroSplit01>

@@ -63,7 +63,7 @@ test.describe('Pricing', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS) {
     test(`pricing-tiers-${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndSettle(page, '/cloud/pricing')
+      await navigateAndSettle(page, '/pricing')
       await assertNoOverflow(page)
 
       const section = page.locator('section', {
@@ -77,8 +77,8 @@ test.describe('Pricing', { tag: '@visual' }, () => {
 })
 
 const FAQ_PAGES = [
-  { name: 'pricing', url: '/cloud/pricing' },
-  { name: 'enterprise', url: '/cloud/enterprise' }
+  { name: 'pricing', url: '/pricing' },
+  { name: 'enterprise', url: '/enterprise' }
 ]
 
 for (const { name, url } of FAQ_PAGES) {
@@ -150,8 +150,8 @@ test.describe('Overflow guards', { tag: '@visual' }, () => {
   const pages = [
     '/',
     '/cloud',
-    '/cloud/enterprise',
-    '/cloud/pricing',
+    '/enterprise',
+    '/pricing',
     '/contact',
     '/download',
     '/gallery',

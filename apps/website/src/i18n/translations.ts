@@ -7357,6 +7357,18 @@ const translations = {
     en: 'Deploy and scale ComfyUI workflows. Your workflows. Every model. One API.',
     'zh-CN': '部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。'
   },
+  'platform.terminal.buildResolved': {
+    en: 'Build resolved by Builder (nodes · models · pinned deps)',
+    'zh-CN': 'Builder 已解析构建（节点 · 模型 · 锁定依赖）'
+  },
+  'platform.terminal.deployed': {
+    en: 'Deployed → https://your-build.run.comfy.app',
+    'zh-CN': '已部署 → https://your-build.run.comfy.app'
+  },
+  'enterprise.managedBuilds.badge': {
+    en: 'Enterprise',
+    'zh-CN': '企业版'
+  },
   'platform.hero.badge': {
     en: 'Developer Platform',
     'zh-CN': '开发者平台'

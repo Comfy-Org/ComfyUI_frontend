@@ -52,7 +52,7 @@ $ comfy deploy run --workflow workflow_api.json
     <div class="mx-auto mt-8 max-w-3xl">
       <CodeTabs
         :tabs="deployTabs"
-        :aria-label="t('platform.serverlessDeploy.heading', locale)"
+        :label="t('platform.serverlessDeploy.heading', locale)"
       />
     </div>
   </section>
