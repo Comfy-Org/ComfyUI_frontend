@@ -226,11 +226,23 @@ Queue application has one observable commit boundary:
    applied sequence/state-vector advancement together.
 4. Remove the frame from the queue only after that commit succeeds.
 
-The implementation may use a staged follower clone or an equivalent replayable
-checkpoint. It must not advance the advertised state vector or applied sequence before
-the domain effect is committed. If staging or projection fails, the frame remains
-recoverable and the target reports a loud failure; it is not acknowledged by dropping
-the effect.
+The implementation uses one document-scoped commit coordinator and a stable frame commit
+ID. Prepare builds immutable next snapshots for the follower, ECS/domain stores,
+`ChangeTracker`, state vector, and applied sequence in private revision-keyed slots. Under
+the document's write lock, the coordinator validates that the starting revision is still
+current, then advances one document-level committed-revision pointer. Every owner resolves
+its visible snapshot through that pointer, so this single assignment publishes the whole
+tuple; no owner may independently expose a staged revision. Queue acknowledgement happens
+only after the coordinator records that commit ID as published.
+
+If prepare or validation fails, all staged snapshots are discarded. Failure before the
+pointer advance leaves the prior tuple visible, the frame queued, and its sequence and
+state vector unacknowledged. If process failure makes publication status uncertain,
+recovery compares the stable commit ID and committed-revision pointer. It either recognizes
+the fully published tuple or discards private staging and idempotently reapplies the queued
+frame; mixed tuples are never advertised. The implementation may use a staged follower
+clone or an equivalent replayable checkpoint, but partial component commits are not a
+valid observable state.
 
 The queue is bounded. On overflow, process restart, or loss of a detached session, the
 frontend retains the last committed target state vector and resubscribes for that
