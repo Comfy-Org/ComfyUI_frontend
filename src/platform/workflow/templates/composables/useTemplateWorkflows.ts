@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { z } from 'zod'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
@@ -20,6 +21,13 @@ export type PreparedWorkflowTemplate = {
   workflowName: string
   workflow: ComfyWorkflowJSON
 }
+
+const zLegacyWorkflowEnvelope = z
+  .object({
+    version: z.number(),
+    nodes: z.array(z.record(z.unknown()))
+  })
+  .passthrough()
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -198,8 +206,13 @@ export function useTemplateWorkflows() {
       throw new Error(`Failed to fetch workflow template (${response.status})`)
     }
 
-    const workflow = await response.json()
-    return (await validateComfyWorkflow(workflow)) ?? workflow
+    const workflow: unknown = await response.json()
+    const validatedWorkflow = await validateComfyWorkflow(workflow)
+    if (validatedWorkflow) return validatedWorkflow
+
+    const legacyWorkflow = zLegacyWorkflowEnvelope.safeParse(workflow)
+    if (!legacyWorkflow.success) throw new Error('Invalid workflow template')
+    return legacyWorkflow.data as ComfyWorkflowJSON
   }
 
   return {
