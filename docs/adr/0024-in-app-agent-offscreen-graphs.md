@@ -142,6 +142,15 @@ document must continue to support:
 - document dirty-state and undo/redo bookkeeping; and
 - serialization, save, and reload without a renderer.
 
+Activation requests use a monotonic generation owned by the active-canvas binding. A new
+request cancels any older in-flight request. Each request hydrates and validates its
+document without changing the current binding, then checks its generation before a single
+ordered handoff: detach the previous document's view hooks, attach the new document's
+projection and hooks, and publish the new active binding. A stale or cancelled request may
+clean up its private staged work but cannot detach, attach, or publish. Thus a late
+`activate(A)` completion cannot overwrite a later `activate(B)` request, and deactivation
+always belongs to the same serialized handoff as the activation that replaces it.
+
 Selection, hover, viewport, awareness, and DOM measurements are view/presence state.
 They do not become semantic document state merely because activation changes.
 
