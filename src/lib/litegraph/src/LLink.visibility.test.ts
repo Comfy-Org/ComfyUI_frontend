@@ -1,8 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import {
   createTestRootGraph,
@@ -15,35 +16,13 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 
-const NODE_TYPE = 'test/link-visibility'
-
-class LinkVisibilityNode extends LGraphNode {
-  constructor() {
-    super('Link visibility')
-    this.addInput('in', 'MODEL')
-    this.addOutput('out', 'MODEL')
-  }
-}
-
 function makeLink(id: number = 1): LLink {
   return new LLink(toLinkId(id), 'MODEL', 4, 0, 5, 0)
-}
-
-function createNode(graph: LGraph): LGraphNode {
-  const node = LiteGraph.createNode(NODE_TYPE)
-  if (!node) throw new Error('Failed to create link visibility test node')
-  graph.add(node)
-  return node
 }
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
-  LiteGraph.registerNodeType(NODE_TYPE, LinkVisibilityNode)
-})
-
-afterEach(() => {
-  LiteGraph.unregisterNodeType(NODE_TYPE)
 })
 
 describe('LLink visibility serialization', () => {
@@ -143,8 +122,8 @@ describe('LLink visibility serialization', () => {
     const rootGraph = createTestRootGraph()
     const subgraph = createTestSubgraph({ rootGraph })
     rootGraph.subgraphs.set(subgraph.id, subgraph)
-    const source = createNode(subgraph)
-    const target = createNode(subgraph)
+    const source = createTestNode(subgraph, ['MODEL'], ['MODEL'])
+    const target = createTestNode(subgraph, ['MODEL'], ['MODEL'])
     const link = source.connect(0, target, 0)
     if (!link) throw new Error('Failed to connect link visibility test nodes')
     link.hidden = true

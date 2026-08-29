@@ -35,10 +35,6 @@ interface OwnedLinkPresentation extends LinkPresentation {
   graphId: OwningGraphId
 }
 
-function toPresentation(entry: OwnedLinkPresentation): LinkPresentation {
-  return compactLinkPresentation(entry.hidden, entry.label)
-}
-
 /**
  * Link presentation store, partitioned by root graph and keyed by link id —
  * the durable sidecar of the link topology store for non-topology link state
@@ -60,10 +56,9 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
   }
 
   /**
-   * Merges a partial presentation into a link's entry. A key present with
-   * value `undefined` clears that field; an entry with no remaining fields is
-   * deleted. The first-writing graph owns the entry: a different owner cannot
-   * overwrite it.
+   * Merges a {@link LinkPresentationPatch} into a link's entry; an entry with
+   * no remaining fields is deleted. The first-writing graph owns the entry: a
+   * different owner cannot overwrite it.
    */
   function patch(
     scope: GraphScope,
@@ -103,7 +98,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     if (!bucket || !entry || entry.graphId !== scope.owningGraphId) return
     bucket.delete(linkId)
     if (bucket.size === 0) roots.delete(scope.rootGraphId)
-    return toPresentation(entry)
+    return compactLinkPresentation(entry.hidden, entry.label)
   }
 
   /** Returns the live store record for a link `scope` owns. */

@@ -521,18 +521,27 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       this.type = o[5]
       this.hidden = undefined
       this.label = undefined
+    } else if (o instanceof LLink) {
+      this.id = o.id
+      this.type = o.type
+      this.origin_id = o.origin_id
+      this.origin_slot = o.origin_slot
+      this.target_id = o.target_id
+      this.target_slot = o.target_slot
+      this.parentId = o.parentId
+      this.hidden = o.hidden
+      this.label = o.label
     } else {
-      const link = o instanceof LLink ? o : LLink.create(o)
-      this.id = link.id
-      this.type = link.type
-      this.origin_id = link.origin_id
-      this.origin_slot = link.origin_slot
-      this.target_id = link.target_id
-      this.target_slot = link.target_slot
+      this.id = toLinkId(o.id)
+      this.type = o.type
+      this.origin_id = toNodeId(o.origin_id)
+      this.origin_slot = o.origin_slot
+      this.target_id = toNodeId(o.target_id)
+      this.target_slot = o.target_slot
       this.parentId =
-        link.parentId === undefined ? undefined : toRerouteId(link.parentId)
-      this.hidden = link.hidden
-      this.label = link.label
+        o.parentId === undefined ? undefined : toRerouteId(o.parentId)
+      this.hidden = o.hidden
+      this.label = o.label
     }
   }
 
