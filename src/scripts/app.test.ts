@@ -91,6 +91,7 @@ const {
     invokeExtensionsAsync: vi.fn()
   },
   mockNodeOutputStore: {
+    nodeOutputs: {} as Record<string, unknown>,
     refreshNodeOutputs: vi.fn(),
     replaceOutputsFromLegacy: vi.fn(),
     setOutputFromLegacy: vi.fn(),
@@ -316,6 +317,18 @@ describe('ComfyApp', () => {
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
+    mockNodeOutputStore.nodeOutputs = {}
+    mockNodeOutputStore.replaceOutputsFromLegacy.mockImplementation(
+      (outputs: Record<string, unknown>) => {
+        mockNodeOutputStore.nodeOutputs = { ...outputs }
+      }
+    )
+    mockNodeOutputStore.setOutputFromLegacy.mockImplementation((id, output) => {
+      mockNodeOutputStore.nodeOutputs[id] = structuredClone(output)
+    })
+    mockNodeOutputStore.removeOutputFromLegacy.mockImplementation((id) => {
+      delete mockNodeOutputStore.nodeOutputs[id]
+    })
   })
 
   describe('loadGraphData', () => {
@@ -399,17 +412,13 @@ describe('ComfyApp', () => {
         '1',
         output
       )
-      expect(
-        mockNodeOutputStore.replaceOutputsFromLegacy
-      ).not.toHaveBeenCalled()
+      expect(mockNodeOutputStore.nodeOutputs['1']).toEqual(output)
 
       delete app.nodeOutputs['1']
       expect(mockNodeOutputStore.removeOutputFromLegacy).toHaveBeenCalledWith(
         '1'
       )
-      expect(
-        mockNodeOutputStore.replaceOutputsFromLegacy
-      ).not.toHaveBeenCalled()
+      expect(mockNodeOutputStore.nodeOutputs['1']).toBeUndefined()
     })
 
     it('commits nested legacy output mutations to the output store', () => {
@@ -423,6 +432,9 @@ describe('ComfyApp', () => {
         '1',
         { images: [{ filename: 'second.png' }] }
       )
+      expect(mockNodeOutputStore.nodeOutputs['1']).toEqual({
+        images: [{ filename: 'second.png' }]
+      })
 
       mockNodeOutputStore.setOutputFromLegacy.mockClear()
       const images = output.images
@@ -433,6 +445,9 @@ describe('ComfyApp', () => {
           images: [{ filename: 'second.png' }, { filename: 'third.png' }]
         }
       )
+      expect(mockNodeOutputStore.nodeOutputs['1']).toEqual({
+        images: [{ filename: 'second.png' }, { filename: 'third.png' }]
+      })
       expect(app.nodeOutputs['1']).toBe(output)
       expect(output.images).toBe(images)
 
@@ -446,6 +461,9 @@ describe('ComfyApp', () => {
           images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
         }
       )
+      expect(mockNodeOutputStore.nodeOutputs['1']).toEqual({
+        images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
+      })
       expect(images?.[0]).toBe(image)
     })
 
@@ -465,6 +483,7 @@ describe('ComfyApp', () => {
         '2',
         shared
       )
+      expect(mockNodeOutputStore.nodeOutputs['2']).toEqual(shared)
     })
 
     it('commits only the changed entry after whole-record assignment', () => {
@@ -480,6 +499,10 @@ describe('ComfyApp', () => {
         '2',
         second
       )
+      expect(mockNodeOutputStore.nodeOutputs).toEqual({
+        '1': { images: [{ filename: 'first.png' }] },
+        '2': second
+      })
     })
   })
 
