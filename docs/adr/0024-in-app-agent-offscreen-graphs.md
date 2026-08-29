@@ -362,7 +362,6 @@ document registry and target-aware tracker seam are the intended follow-up.
 
 - [ADR-0003: Centralized Layout Management with CRDT](0003-crdt-based-layout-system.md)
 - [ADR-0008: Entity Component System](0008-entity-component-system.md)
-- [ADR-0019: In-App Agent CRDT Follower and Distribution-Resolved Boundaries](0019-in-app-agent-crdt-follower-and-distribution.md)
 - [Change Tracker](../architecture/change-tracker.md)
 - [ECS Target Architecture](../architecture/ecs-target-architecture.md)
 - [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md)
