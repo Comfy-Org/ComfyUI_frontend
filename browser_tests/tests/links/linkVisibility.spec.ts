@@ -75,7 +75,7 @@ async function parkPointer(comfyPage: ComfyPage): Promise<void> {
   await comfyPage.nextFrame()
 }
 
-test.describe('Hidden link badges', { tag: ['@canvas'] }, () => {
+test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
   })
@@ -135,7 +135,7 @@ test.describe('Hidden link badges', { tag: ['@canvas'] }, () => {
 
 test.describe(
   'Hidden link Vue slot reveal',
-  { tag: ['@canvas', '@vue-nodes'] },
+  { tag: ['@canvas', '@vue-nodes', '@screenshot'] },
   () => {
     test('reveals the link while connected input and output slots are hovered', async ({
       comfyPage
