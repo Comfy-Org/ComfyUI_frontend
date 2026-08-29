@@ -14,18 +14,34 @@
         {{ t('auth.signup.passwordLabel') }}
       </label>
     </div>
-    <Password
-      v-model="password"
-      input-id="comfy-org-sign-up-password"
-      pt:pc-input-text:root:autocomplete="new-password"
-      name="password"
-      :feedback="false"
-      toggle-mask
-      :placeholder="t('auth.signup.passwordPlaceholder')"
-      :pt:pc-input-text:root:class="fieldClass"
-      :class="{ 'p-invalid': $field.invalid }"
-      fluid
-    />
+    <div class="relative">
+      <Input
+        v-bind="$field.props"
+        id="comfy-org-sign-up-password"
+        autocomplete="new-password"
+        :type="passwordVisible ? 'text' : 'password'"
+        :placeholder="t('auth.signup.passwordPlaceholder')"
+        :class="cn('pr-10', fieldClass)"
+        :aria-invalid="$field.invalid"
+        @input="updatePasswordChecks"
+      />
+      <button
+        type="button"
+        class="absolute top-1/2 right-3 flex -translate-y-1/2 text-muted-foreground"
+        :aria-label="
+          t(passwordVisible ? 'auth.hidePassword' : 'auth.showPassword')
+        "
+        :aria-pressed="passwordVisible"
+        @click="passwordVisible = !passwordVisible"
+      >
+        <i
+          :class="
+            passwordVisible ? 'icon-[lucide--eye-off]' : 'icon-[lucide--eye]'
+          "
+          class="size-4"
+        />
+      </button>
+    </div>
     <div v-if="$field.dirty && isPasswordFocused" class="flex flex-col gap-1">
       <small class="text-sm">
         {{ t('validation.password.requirements') }}:
@@ -78,17 +94,35 @@
     >
       {{ t('auth.login.confirmPasswordLabel') }}
     </label>
-    <Password
-      name="confirmPassword"
-      input-id="comfy-org-sign-up-confirm-password"
-      pt:pc-input-text:root:autocomplete="new-password"
-      :feedback="false"
-      toggle-mask
-      :placeholder="t('auth.login.confirmPasswordPlaceholder')"
-      :pt:pc-input-text:root:class="fieldClass"
-      :class="{ 'p-invalid': $field.invalid }"
-      fluid
-    />
+    <div class="relative">
+      <Input
+        v-bind="$field.props"
+        id="comfy-org-sign-up-confirm-password"
+        autocomplete="new-password"
+        :type="confirmPasswordVisible ? 'text' : 'password'"
+        :placeholder="t('auth.login.confirmPasswordPlaceholder')"
+        :class="cn('pr-10', fieldClass)"
+        :aria-invalid="$field.invalid"
+      />
+      <button
+        type="button"
+        class="absolute top-1/2 right-3 flex -translate-y-1/2 text-muted-foreground"
+        :aria-label="
+          t(confirmPasswordVisible ? 'auth.hidePassword' : 'auth.showPassword')
+        "
+        :aria-pressed="confirmPasswordVisible"
+        @click="confirmPasswordVisible = !confirmPasswordVisible"
+      >
+        <i
+          :class="
+            confirmPasswordVisible
+              ? 'icon-[lucide--eye-off]'
+              : 'icon-[lucide--eye]'
+          "
+          class="size-4"
+        />
+      </button>
+    </div>
     <small v-if="$field.error" class="text-red-500">{{
       $field.error.message
     }}</small>
@@ -98,10 +132,13 @@
 <script setup lang="ts">
 import { FormField } from '@primevue/forms'
 import { useFocusWithin } from '@vueuse/core'
-import Password from 'primevue/password'
 import { computed, ref, useTemplateRef } from 'vue'
 import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import Input from '@/components/ui/input/Input.vue'
 
 const { fieldClass = 'h-10' } = defineProps<{
   fieldClass?: HTMLAttributes['class']
@@ -109,8 +146,16 @@ const { fieldClass = 'h-10' } = defineProps<{
 
 const { t } = useI18n()
 const password = ref('')
+const passwordVisible = ref(false)
+const confirmPasswordVisible = ref(false)
 const passwordField = useTemplateRef<ComponentPublicInstance>('passwordField')
 const { focused: isPasswordFocused } = useFocusWithin(passwordField)
+
+const updatePasswordChecks = (event: Event) => {
+  if (event.target instanceof HTMLInputElement) {
+    password.value = event.target.value
+  }
+}
 
 // TODO: Use dynamic form to better organize the password checks.
 // Ref: https://primevue.org/forms/#dynamic
