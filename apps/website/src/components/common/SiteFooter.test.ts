@@ -15,18 +15,24 @@ describe('SiteFooter', () => {
     expect(hrefs).not.toContain('/models')
   })
 
-  it('links the workflow use-cases hub in the same tab', () => {
-    render(SiteFooter, { props: { locale: 'en' } })
+  it.for([
+    ['en', 'Workflows', 'https://comfy.org/workflows'],
+    ['en', 'Use Cases', 'https://comfy.org/workflows/use-cases/'],
+    ['zh-CN', '工作流', 'https://comfy.org/workflows'],
+    ['zh-CN', '用例', 'https://comfy.org/workflows/use-cases/']
+  ] as const)(
+    'links the Comfy Workflows hub in the same tab (%s: %s)',
+    ([locale, name, href]) => {
+      render(SiteFooter, { props: { locale } })
 
-    const links = screen.getAllByRole('link', { name: 'Workflow Use Cases' })
-    expect(links.length).toBeGreaterThan(0)
-    for (const link of links) {
-      expect(link.getAttribute('href')).toBe(
-        'https://comfy.org/workflows/use-cases/'
-      )
-      expect(link.getAttribute('target')).toBeNull()
+      const links = screen.getAllByRole('link', { name })
+      expect(links.length).toBeGreaterThan(0)
+      for (const link of links) {
+        expect(link.getAttribute('href')).toBe(href)
+        expect(link.getAttribute('target')).toBeNull()
+      }
     }
-  })
+  )
 
   it('links the MiniMax license page at its localized path for zh-CN', () => {
     render(SiteFooter, { props: { locale: 'zh-CN' } })
