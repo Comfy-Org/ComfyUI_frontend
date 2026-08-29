@@ -43,11 +43,13 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const { mockCloseDialog, mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
-  mockCloseDialog: vi.fn(),
-  mockIsCloud: { value: true },
-  mockTrackTemplate: vi.fn()
-}))
+const { mockCloseDialog, mockIsCloud, mockReportError, mockTrackTemplate } =
+  vi.hoisted(() => ({
+    mockCloseDialog: vi.fn(),
+    mockIsCloud: { value: true },
+    mockReportError: vi.fn(),
+    mockTrackTemplate: vi.fn()
+  }))
 
 // Mock the dialog store
 vi.mock('@/stores/dialogStore', () => ({
@@ -60,6 +62,10 @@ vi.mock('@/stores/dialogStore', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 // Mock fetch
@@ -373,6 +379,19 @@ describe('useTemplateWorkflows', () => {
       expect(app.loadGraphData).toHaveBeenCalledOnce()
     })
 
+    it('reports prepared workflow opening failures', async () => {
+      const { prepared, workflows } = await prepareTemplate()
+      const error = new Error('Graph load failed')
+      vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
+
+      const result = await workflows.openPreparedWorkflowTemplate(prepared)
+
+      expect(result).toBe(false)
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(error, {
+        errorType: 'workflow_template_open_failed'
+      })
+    })
+
     it('keeps loadWorkflowTemplate as the compatible prepare-and-open path', async () => {
       mockWorkflowTemplatesStore.isLoaded = true
       const { loadWorkflowTemplate } = useTemplateWorkflows()
@@ -480,20 +499,16 @@ describe('useTemplateWorkflows', () => {
     // Set the store as loaded
     mockWorkflowTemplatesStore.isLoaded = true
 
-    // Mock fetch to throw an error
-    vi.mocked(fetch).mockRejectedValueOnce(new Error('Failed to fetch'))
-
-    // Spy on console.error
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = new Error('Failed to fetch')
+    vi.mocked(fetch).mockRejectedValueOnce(error)
 
     // Load a template that will fail
     const result = await loadWorkflowTemplate('error-template', 'default')
 
     expect(result).toBe(false)
-    expect(consoleSpy).toHaveBeenCalled()
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'workflow_template_prepare_failed'
+    })
     expect(loadingTemplateId.value).toBe(null) // Should reset even after error
-
-    // Restore console.error
-    consoleSpy.mockRestore()
   })
 })
