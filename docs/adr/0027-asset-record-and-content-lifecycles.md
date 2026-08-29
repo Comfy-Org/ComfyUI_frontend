@@ -65,12 +65,35 @@ promising that assets survive it.
    retain, or separately disclose records and bytes requires an explicit
    domain decision and backend evidence.
 
+### Update, 2026-08-29 (Assets PR meta-review meeting, 2026-08-27)
+
+The team settled the output Delete action semantics that this ADR previously
+left open:
+
+6. **The output Delete action becomes asset-record deletion.** Delete
+   deregisters the asset record through `DELETE /api/assets/{id}` using a real
+   asset-record ID. It does not delete files off disk. This was confirmed as
+   working as intended, with the stated goal of minimal behavior change
+   relative to the pre-assets hide behavior.
+7. **Batch deletion resolves targets before execution and unwinds on partial
+   failure.** All files are resolved and reported before execution. If some
+   record deletions in a chunk fail, the owning job's history entry is not
+   deleted. History deletion per job is gated on record-deletion success.
+8. **Success copy must not claim disk deletion.** A toast that says assets
+   were deleted when nothing was removed from disk is a bug. The server
+   currently provides no discriminated return for cases where nothing was
+   deleted, so the copy must reflect deregistration.
+9. **A feature flag tells the frontend what delete will do.** The flag is
+   acknowledged as poorly named (it previously meant something different); it
+   gates behavior, and any rename is a separate cleanup.
+
 ## Current Gaps
 
-- **Action semantics:** The output item's current Delete action deletes history,
-  not an asset record. Product and domain owners must decide whether that action
-  should remain a history action or become record deletion through a real asset
-  ID; this ADR does not choose for them.
+- **Action semantics:** Decided at the 2026-08-27 meta-review (see Update
+  above). The output Delete action becomes record deletion through a real
+  asset ID, deregister-only, with history deletion per job gated on record
+  success. Implementation lands in the deletion PR; comments there are to be
+  closed out and re-reviewed with this understanding.
 - **Listing semantics:** The output panel is history-derived, so it cannot prove
   that records outlive transient history or keep surviving records visible.
 - **Identifier coverage:** Not every displayed output has a real asset-record
@@ -90,8 +113,9 @@ promising that assets survive it.
   the deleted record identity is not revived.
 - Generated-output UI cannot claim to delete an asset record while it sends a
   job ID to `/history`.
-- Product copy, listing behavior, and requests must be reconciled together once
-  the output action's intended semantics are decided.
+- Product copy, listing behavior, and requests must be reconciled with the
+  decided semantics: record deletion through real asset IDs, deregister-only,
+  no disk-deletion claims in success copy.
 - A future asset/job cascade requires its own evidence and decision; it is not
   an accepted invariant merely because `job_id` exists.
 
@@ -102,3 +126,6 @@ promising that assets survive it.
 - [Asset record deletion scenario](https://github.com/Comfy-Org/ideation-sharing/blob/synap5e/docs/asset-record-content-split/asset-record-content-split/architecture/scenarios.md#delete-a-record-through-the-api)
 - [Current frontend output deletion path](../../src/platform/assets/composables/useMediaAssetActions.ts)
 - [Current history-derived asset store](../../src/stores/assetsStore.ts)
+- Assets PR meta-review meeting, 2026-08-27 (Christian, Simon, Austin, Alex):
+  settled output Delete as record deletion, deregister-only, unwind on partial
+  batch failure, no disk-deletion claims in success copy
