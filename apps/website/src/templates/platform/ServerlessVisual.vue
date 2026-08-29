@@ -10,10 +10,10 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const COLS = 12
-const ROWS = 6
+const ROWS = 5
 const CELL_COUNT = COLS * ROWS
 const CELL_STEP_DURATION = 140
-const REST_DURATION = 1400
+const REST_DURATION = 0
 const LETTER_PATTERNS = [
   ['111', '100', '111', '001', '111'],
   ['111', '100', '110', '100', '111'],
@@ -167,7 +167,7 @@ watch(
     />
 
     <div
-      class="absolute top-[13%] right-[5%] bottom-[14%] left-3/10 grid grid-cols-12 grid-rows-6 gap-1.5 sm:gap-2"
+      class="absolute inset-y-[18%] right-[5%] left-3/10 grid grid-cols-12 grid-rows-5 gap-1.5 sm:gap-2"
       aria-hidden="true"
     >
       <span
