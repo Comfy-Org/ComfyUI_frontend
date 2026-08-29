@@ -8,24 +8,46 @@ import IsometricColumnIllustration from './IsometricColumnIllustration.vue'
     aria-hidden="true"
   >
     <div
-      class="absolute top-1/2 -left-24 size-56 -translate-y-1/2 sm:-left-8 sm:size-72 lg:left-8 lg:size-80"
+      class="absolute top-1/2 -left-20 size-52 -translate-y-1/2 sm:-left-8 sm:size-60 lg:left-0"
     >
       <IsometricColumnIllustration
         class="animate-platform-builder-float"
         style="
-          --platform-column-grow-duration: 6.5s;
-          --platform-column-grow-delay: -1.4s;
+          --platform-column-grow-duration: 5.8s;
+          --platform-column-grow-delay: -1.2s;
+          --platform-ring-offset: -0.4s;
+        "
+      />
+    </div>
+    <div class="absolute top-1 left-[17%] hidden size-36 lg:block">
+      <IsometricColumnIllustration
+        class="animate-platform-builder-float-delayed"
+        style="
+          --platform-column-grow-duration: 6.7s;
+          --platform-column-grow-delay: -4.1s;
+          --platform-ring-offset: -2.1s;
         "
       />
     </div>
     <div
-      class="absolute top-1/2 -right-20 hidden size-52 -translate-y-1/2 sm:block lg:right-10 lg:size-60"
+      class="absolute top-1/2 -right-16 hidden size-48 -translate-y-1/2 sm:block lg:right-0 lg:size-52"
     >
       <IsometricColumnIllustration
         class="animate-platform-builder-float-delayed"
         style="
-          --platform-column-grow-duration: 5.7s;
-          --platform-column-grow-delay: -3.2s;
+          --platform-column-grow-duration: 6.2s;
+          --platform-column-grow-delay: -3.4s;
+          --platform-ring-offset: -1.2s;
+        "
+      />
+    </div>
+    <div class="absolute right-[17%] bottom-0 hidden size-36 lg:block">
+      <IsometricColumnIllustration
+        class="animate-platform-builder-float-slow"
+        style="
+          --platform-column-grow-duration: 5.4s;
+          --platform-column-grow-delay: -2.3s;
+          --platform-ring-offset: -3s;
         "
       />
     </div>
