@@ -384,6 +384,10 @@ const translations = {
     en: 'SEE DESKTOP FEATURES',
     'zh-CN': '查看桌面版属性'
   },
+  'products.ctaShort': {
+    en: 'SEE FEATURES',
+    'zh-CN': '查看属性'
+  },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
     'zh-CN': 'Comfy\nCloud'
@@ -7370,7 +7374,7 @@ const translations = {
     'zh-CN': '企业版'
   },
   'platform.hero.badge': {
-    en: 'Developer Platform',
+    en: 'DEVELOPER PLATFORM',
     'zh-CN': '开发者平台'
   },
   'platform.hero.heading': {

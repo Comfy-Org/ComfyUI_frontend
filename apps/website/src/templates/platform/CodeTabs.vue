@@ -102,7 +102,7 @@ function cycleValue(values: string[]): string {
         v-for="(tab, tabId) in tabs"
         :key="tabId"
         :value="tabId"
-        class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow cursor-pointer rounded-xl px-5 py-2 text-xs font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink"
+        class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-secondary-mauve cursor-pointer rounded-xl px-5 py-2 text-xs font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-warm-white"
       >
         {{ tab.name }}
       </TabsTrigger>
