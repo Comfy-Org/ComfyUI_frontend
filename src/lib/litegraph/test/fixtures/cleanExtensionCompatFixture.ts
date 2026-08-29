@@ -88,10 +88,15 @@ export function installCleanExtensionFixture(
   const facadeActive = mode === 'legacy-facade' || mode === 'combined'
   const timerActive = mode === 'dirty-timer' || mode === 'combined'
 
-  host.drawNode = function cleanExtensionDrawNode(node, context) {
+  const wrapper = function cleanExtensionDrawNode(
+    node: LGraphNode,
+    context: CleanExtensionDrawContext
+  ) {
     counters.wrapperCalls++
     originalDrawNode.call(host, node, context)
     counters.forwardedCoreDraws++
+
+    if (installation.disposed) return
 
     if (labelActive && node.type === 'fixture/label') {
       counters.labelHookCalls++
@@ -106,6 +111,7 @@ export function installCleanExtensionFixture(
       sweepNodeFacades(node, node.graph, counters, outputViews)
     }
   }
+  host.drawNode = wrapper
 
   const onRefresh = () => {
     counters.listenerCalls++
@@ -133,7 +139,7 @@ export function installCleanExtensionFixture(
     dispose() {
       if (installation.disposed) return
       installation.disposed = true
-      host.drawNode = originalDrawNode
+      if (host.drawNode === wrapper) host.drawNode = originalDrawNode
       host.events.removeEventListener('fixture:refresh', onRefresh)
       cancelTimer?.()
       activeInstallations.delete(host)
