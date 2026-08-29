@@ -261,7 +261,7 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('4.2K left of 4.2K')
   })
 
-  it('uses the backend Founder allowance when clamping reconstructed credits', () => {
+  it('uses the Founder allowance fallback when clamping reconstructed credits', () => {
     state.canAccessSubscriptionFeatures = true
     state.tier = 'FOUNDERS_EDITION'
     state.subscription = {
