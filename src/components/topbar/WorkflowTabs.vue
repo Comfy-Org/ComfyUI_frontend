@@ -84,27 +84,11 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
+      :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelEnabled"
-        variant="link"
-        size="sm"
-        :class="
-          cn(
-            'no-drag shrink-0 border border-solid text-base-foreground',
-            isAgentPanelOpen
-              ? 'border-plum-500 bg-plum-600/20'
-              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
-          )
-        "
-        @click="onAgentEntryClick"
-      >
-        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
-        <span>{{ $t('agent.askComfyAgent') }}</span>
-      </Button>
-      <Button
-        v-if="agentPanelStore?.enabled"
+        v-if="agentPanelStore.enabled"
         variant="link"
         size="sm"
         :aria-pressed="agentPanelStore.isOpen"
@@ -113,10 +97,10 @@
             'no-drag shrink-0 border border-solid text-base-foreground',
             agentPanelStore.isOpen
               ? 'border-plum-500 bg-plum-600/20'
-              : 'border-plum-600 bg-secondary-background hover:border-plum-500'
+              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
           )
         "
-        @click="agentPanelStore.toggle()"
+        @click="onAgentEntryClick"
       >
         <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
         <span>{{ $t('agent.askComfyAgent') }}</span>
@@ -141,7 +125,6 @@
 
 <script setup lang="ts">
 import { useScroll } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import {
@@ -194,12 +177,10 @@ const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
 const tabActivity = useWorkflowTabActivityStore()
-const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
-  storeToRefs(agentPanelStore)
 
 function onAgentEntryClick(): void {
   useTelemetry()?.trackAgentEntryButtonClicked({
-    resulting_state: isAgentPanelOpen.value ? 'closed' : 'opened'
+    resulting_state: agentPanelStore.isOpen ? 'closed' : 'opened'
   })
   agentPanelStore.toggle()
 }

@@ -61,7 +61,6 @@ function createHarness() {
 
 describe('LGraphCanvas selectOnly', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     LiteGraph.vueNodesMode = false
     LiteGraph.middle_click_slot_add_default_node = false
   })

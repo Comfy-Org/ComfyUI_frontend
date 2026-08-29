@@ -7,6 +7,16 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
+// jsdom does not implement ResizeObserver (happy-dom does); stub it before the
+// Vue node preview chain constructs its module-level observer at import time.
+vi.hoisted(() => {
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+})
+
 import { i18n } from '@/i18n'
 import { assetService } from '@/platform/assets/services/assetService'
 import { app } from '@/scripts/app'

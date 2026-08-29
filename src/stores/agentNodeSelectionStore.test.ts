@@ -45,12 +45,18 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
   const animateToBounds = vi.fn()
   const selectedItems = new Set(selected)
   const deselectAll = vi.fn(() => selectedItems.clear())
+  // A real element, not a `{ width, height }` literal: canvasStore attaches its
+  // litegraph event listeners to `canvas.canvas` on assignment, and a plain
+  // object rejects that registration on a post-flush tick nothing can await.
+  const element = document.createElement('canvas')
+  element.width = 1600
+  element.height = 900
   useCanvasStore().canvas = {
     graph: { nodes },
     selectedItems,
     deselectAll,
     animateToBounds,
-    canvas: { width: 1600, height: 900 }
+    canvas: element
   } as never
   return { animateToBounds, deselectAll, selectedItems }
 }
@@ -65,7 +71,6 @@ describe('agentNodeSelectionStore', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
     document.body.classList.remove('node-selection-active')
   })
 
