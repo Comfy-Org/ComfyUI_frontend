@@ -139,7 +139,7 @@ export const externalLinks = {
   wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
   wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',
-  workflows: 'https://comfy.org/workflows',
+  workflows: 'https://comfy.org/workflows/',
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
