@@ -97,18 +97,35 @@ test.describe('MiniMax license page @smoke', () => {
   test('quotes no Enterprise price anywhere in the rate card', async ({
     page
   }) => {
-    const enterpriseCells = await page.evaluate((heading) => {
+    const enterpriseRows = await page.evaluate((heading) => {
       const table = [...document.querySelectorAll('table')].find(
         (candidate) =>
           candidate.querySelector('caption')?.textContent?.trim() === heading
       )
-      return [...(table?.querySelectorAll('tbody tr') ?? [])].map(
-        (row) => row.querySelectorAll('td')[1]?.textContent?.trim() ?? ''
-      )
+      return [...(table?.querySelectorAll('tbody tr') ?? [])].map((row) => {
+        const cell = row.querySelectorAll('td')[1]
+        return {
+          label: row.querySelector('th')?.textContent?.trim() ?? '',
+          text: cell?.textContent?.trim() ?? '',
+          value:
+            cell?.querySelector('span:last-child')?.textContent?.trim() ?? ''
+        }
+      })
     }, COMPARISON_HEADING)
 
-    expect(enterpriseCells.length).toBeGreaterThan(0)
-    expect(enterpriseCells.filter((cell) => cell.includes('$'))).toEqual([])
+    expect(enterpriseRows.length).toBeGreaterThan(0)
+    expect(enterpriseRows.filter((row) => row.text.includes('$'))).toEqual([])
+
+    const metered = [
+      'Price',
+      'Price per video-second (in bundle)',
+      'Overage per video-second'
+    ]
+    expect(
+      metered.map(
+        (label) => enterpriseRows.find((row) => row.label === label)?.value
+      )
+    ).toEqual(['Contact sales', 'Contact sales', 'Contact sales'])
   })
 
   test('footer links back to this page', async ({ page }) => {

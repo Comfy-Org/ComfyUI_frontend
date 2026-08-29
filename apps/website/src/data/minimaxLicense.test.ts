@@ -23,6 +23,15 @@ const BANNED_IN_COPY = [
   /视频秒/
 ]
 
+// Pinned exactly rather than checked for absence of currency: a bare rate like
+// '0.05 / video-second' names no currency yet still discloses the Enterprise
+// price.
+const QUOTE_ONLY_ENTERPRISE = {
+  price: { en: 'Contact sales', 'zh-CN': '联系销售' },
+  'bundle-rate': { en: 'Contact sales', 'zh-CN': '联系销售' },
+  'overage-rate': { en: 'Contact sales', 'zh-CN': '联系销售' }
+}
+
 function cellsFor(columnId: 'professional' | 'enterprise') {
   return minimaxLicenseComparison.rows.map((row) => ({
     id: row.id,
@@ -31,6 +40,18 @@ function cellsFor(columnId: 'professional' | 'enterprise') {
 }
 
 describe('minimaxLicenseComparison', () => {
+  it('leaves every metered Enterprise rate quote-only', () => {
+    const published = Object.fromEntries(
+      Object.keys(QUOTE_ONLY_ENTERPRISE).map((id) => {
+        const value = minimaxLicenseComparison.rows.find((row) => row.id === id)
+          ?.values.enterprise
+        return [id, value && { en: value.en, 'zh-CN': value['zh-CN'] }]
+      })
+    )
+
+    expect(published).toEqual(QUOTE_ONLY_ENTERPRISE)
+  })
+
   it('quotes no Enterprise price in either locale', () => {
     const offenders = cellsFor('enterprise').flatMap(({ id, value }) =>
       LOCALES.filter((locale) => CURRENCY.test(value[locale])).map(
