@@ -25,7 +25,10 @@ function pageCopy(locale: Locale): { label: string; text: string }[] {
     ]),
     ...(seedancePage.steps?.items ?? []).flatMap((step) => [
       { label: `step ${step.id} title`, text: step.title[locale] },
-      { label: `step ${step.id} description`, text: step.description[locale] }
+      {
+        label: `step ${step.id} description`,
+        text: step.description?.[locale] ?? ''
+      }
     ])
   ]
 }

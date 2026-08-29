@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Générez une vidéo avec audio à partir d’une invite textuelle à l’aide des modèles Gemini Omni Flash de Google. Fournissez éventuellement des images et/ou vidéos de référence pour guider ou modifier le résultat. Décrivez directement la durée souhaitée (3-10 s) dans l’invite.",
+    "display_name": "Google Gemini Omni (vidéo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle vidéo Gemini utilisé pour générer la vidéo."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "longueur_de_piste",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Analyse un fichier de modèle 3D (GLB, GLTF, OBJ, STL) en un MESH modifiable pour les nœuds de traitement de maillage (décimation, remaillage, dépliage UV, baking, ...). Tous les nœuds/primitives de la scène sont fusionnés en un seul maillage avec leurs transformations appliquées ; les textures et facteurs de matériau proviennent du premier matériau. Équivalent inverse de MeshToFile3D.",
+    "display_name": "Obtenir les composants 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Fichier de modèle 3D provenant de Load 3D ou d’un autre nœud 3D. FBX/USDZ ne sont pas pris en charge : convertissez d’abord en GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }

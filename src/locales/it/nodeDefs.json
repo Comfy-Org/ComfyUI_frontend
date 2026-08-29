@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Genera un video con audio da un prompt di testo usando i modelli Gemini Omni Flash di Google. Facoltativamente, fornisci immagini e/o video di riferimento per guidare o modificare il risultato. Descrivi direttamente nel prompt la durata desiderata (3-10 s).",
+    "display_name": "Google Gemini Omni (Video)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Il modello video Gemini usato per generare il video."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "Genera Tracce Video",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "lunghezza_traccia",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Analizza un file di modello 3D (GLB, GLTF, OBJ, STL) in una MESH modificabile per i nodi di elaborazione mesh (decimate, remesh, UV unwrap, bake, ...). Tutti i nodi/primitivi della scena vengono uniti in un'unica mesh con le relative trasformazioni applicate; le texture e i fattori del materiale provengono dal primo materiale. Controparte di MeshToFile3D.",
+    "display_name": "Ottieni componenti 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "File di modello 3D da Load 3D o da un altro nodo 3D. FBX/USDZ non sono supportati: converti prima in GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }

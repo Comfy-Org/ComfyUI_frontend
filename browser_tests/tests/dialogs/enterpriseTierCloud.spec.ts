@@ -9,6 +9,7 @@ import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import {
   DEFAULT_TEAM_MEMBERS,
+  INACTIVE_TEAM_BILLING_STATUS,
   TEAM_BILLING_STATUS,
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
@@ -207,6 +208,12 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toHaveCount(0)
+    await expect(page.locator('.p-toast-message-warn')).toContainText(
+      'Plan inactive'
+    )
+    await expect(page.locator('.p-toast-message-warn')).toContainText(
+      'Contact your Comfy account manager to restore access.'
+    )
   })
 })
 
@@ -246,6 +253,46 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
         .getByTestId('current-user-popover')
         .getByTestId('plans-pricing-menu-item')
     ).toBeVisible()
+  })
+
+  test('keeps the pricing deep link available during a capability outage', async ({
+    page
+  }) => {
+    const workspace = new CloudWorkspaceMockHelper(page)
+    await workspace.setup(DEFAULT_TEAM_MEMBERS, TEAM_WORKSPACE)
+    await page.route('**/api/billing/capabilities', (route) =>
+      route.fulfill({ status: 503 })
+    )
+
+    await page.goto(`${APP_URL}/?pricing=team`)
+
+    await expect(
+      page.getByRole('heading', { name: 'Plans for Team Workspace' })
+    ).toBeVisible({ timeout: 45_000 })
+    await expect(page).not.toHaveURL(/[?&]pricing=/)
+  })
+
+  test('keeps inactive credits disabled during a capability outage', async ({
+    page
+  }) => {
+    const workspace = new CloudWorkspaceMockHelper(page)
+    await workspace.setup(
+      DEFAULT_TEAM_MEMBERS,
+      TEAM_WORKSPACE,
+      INACTIVE_TEAM_BILLING_STATUS
+    )
+    await page.route('**/api/billing/capabilities', (route) =>
+      route.fulfill({ status: 503 })
+    )
+
+    const content = await workspace.openPlanAndCreditsSettings()
+
+    await expect(
+      content.getByText('Reactivate your plan to use these credits')
+    ).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Add credits' })
+    ).toHaveCount(0)
   })
 })
 
