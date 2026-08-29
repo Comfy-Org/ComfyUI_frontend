@@ -66,6 +66,20 @@ describe('moveNode', () => {
       }
     )
   })
+
+  it('carries a remote source through emitted change events', async () => {
+    const sources: LayoutSource[] = []
+    const stop = layoutStore.onChange(({ source }) => sources.push(source))
+    onTestFinished(stop)
+
+    useLayoutMutations(LayoutSource.Remote).moveNode(GRAPH, NODE_1, {
+      x: 500,
+      y: 600
+    })
+    await vi.waitFor(() => expect(sources).not.toHaveLength(0))
+
+    expect(sources).toEqual([LayoutSource.Remote])
+  })
 })
 
 describe('setNodeZIndex', () => {

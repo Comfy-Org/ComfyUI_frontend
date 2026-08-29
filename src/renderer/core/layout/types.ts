@@ -14,7 +14,13 @@ import type { UUID } from '@/utils/uuid'
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
-  Vue = 'vue'
+  Vue = 'vue',
+  /**
+   * Operation projected from a remote authority (e.g. a collaborative or
+   * agent-driven document follower). Local human-op capture must ignore
+   * changes carrying this source to avoid echoing remote operations back.
+   */
+  Remote = 'remote'
 }
 
 // Basic geometric types
