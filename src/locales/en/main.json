@@ -1,5 +1,7 @@
 {
   "g": {
+    "mute": "Mute",
+    "unmute": "Unmute",
     "shortcutSuffix": " ({shortcut})",
     "user": "User",
     "you": "You",
@@ -5114,6 +5116,13 @@
     "toolOpenedNewTab": "Opened a new tab",
     "toolSwitchedTabs": "Switched tabs",
     "toolSavedPreference": "Saved a preference",
-    "toolForgotPreference": "Forgot a preference"
+    "toolForgotPreference": "Forgot a preference",
+    "copyMarkdown": "Copy as markdown",
+    "downloadAssets": "Download assets",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "showLess": "Show less",
+    "showMore": "Show more",
+    "openWorkflowTab": "Open {name}"
   }
 }
