@@ -3,10 +3,10 @@ import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
-import InputText from 'primevue/inputtext'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
+import Input from '@/components/ui/input/Input.vue'
 import UrlInput from './UrlInput.vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -23,7 +23,7 @@ describe('UrlInput', () => {
     const result = render(UrlInput, {
       global: {
         plugins: [PrimeVue],
-        components: { IconField, InputIcon, InputText }
+        components: { IconField, InputIcon, Input }
       },
       props
     })
