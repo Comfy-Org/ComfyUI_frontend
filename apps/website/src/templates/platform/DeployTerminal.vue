@@ -1,16 +1,18 @@
 <script setup lang="ts">
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
 interface TerminalLine {
   kind: 'command' | 'success'
   text: string
 }
 
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
 const lines: TerminalLine[] = [
   { kind: 'command', text: 'comfy deploy ./workflow_api.json' },
-  {
-    kind: 'success',
-    text: 'Build resolved by Builder (nodes · models · pinned deps)'
-  },
-  { kind: 'success', text: 'Deployed → https://your-build.run.comfy.app' }
+  { kind: 'success', text: t('platform.terminal.buildResolved', locale) },
+  { kind: 'success', text: t('platform.terminal.deployed', locale) }
 ]
 </script>
 

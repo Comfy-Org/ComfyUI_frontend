@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SectionHeader from '../../components/common/SectionHeader.vue'
+import Badge from '../../components/ui/badge/Badge.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
@@ -20,23 +20,24 @@ const modelsTabs = modelsApiCodeTabs
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
-    <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.products.heading', locale) }}
-    </SectionHeader>
-
     <!-- Serverless API: the headline product, full width -->
     <article
       id="serverless"
-      class="group bg-transparency-white-t4 relative mt-8 grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl border border-white/10 p-6 transition-colors hover:border-white/25 lg:mt-12 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
+      class="group bg-transparency-white-t4 relative grid scroll-mt-24 grid-cols-1 items-center gap-8 rounded-4xl border border-white/10 p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:grid-cols-2 lg:gap-12 lg:p-10"
     >
       <a
         :href="routes.platformServerless"
-        :aria-label="t('platform.products.serverless.title', locale)"
+        :label="t('platform.products.serverless.title', locale)"
         class="absolute inset-0 rounded-4xl"
       ></a>
       <div>
-        <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">
+        <h3
+          class="flex items-center gap-2.5 text-lg font-normal text-primary-warm-white lg:text-xl"
+        >
           {{ t('platform.products.serverless.title', locale) }}
+          <Badge variant="accent" size="xs">
+            {{ t('nav.badgeBeta', locale) }}
+          </Badge>
         </h3>
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
           {{ t('platform.products.serverless.description', locale) }}
@@ -64,7 +65,7 @@ const modelsTabs = modelsApiCodeTabs
       >
         <a
           :href="routes.platformModels"
-          :aria-label="t('platform.products.models.title', locale)"
+          :label="t('platform.products.models.title', locale)"
           class="absolute inset-0 rounded-4xl"
         ></a>
         <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">
@@ -76,7 +77,7 @@ const modelsTabs = modelsApiCodeTabs
         <div class="relative z-10 mt-6">
           <CodeTabs
             :tabs="modelsTabs"
-            :aria-label="t('platform.products.models.title', locale)"
+            :label="t('platform.products.models.title', locale)"
           />
         </div>
         <div class="relative z-10 mt-auto w-fit pt-8">
@@ -98,7 +99,7 @@ const modelsTabs = modelsApiCodeTabs
       >
         <a
           :href="routes.platformBuilder"
-          :aria-label="t('platform.products.builder.title', locale)"
+          :label="t('platform.products.builder.title', locale)"
           class="absolute inset-0 rounded-4xl"
         ></a>
         <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">

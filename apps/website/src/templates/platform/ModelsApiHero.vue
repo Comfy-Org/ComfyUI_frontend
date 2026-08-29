@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
+import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CodeTabs from './CodeTabs.vue'
@@ -15,17 +16,22 @@ const ctas = platformCtas(locale)
   <HeroSplit01
     :locale="locale"
     compact
+    beta
     :badge-text="t('platform.hero.badge', locale)"
     :badge-show-logo="false"
     :title="t('platform.products.models.title', locale)"
     :subtitle="t('platform.products.models.description', locale)"
     :primary-cta="ctas.getStarted"
-    :secondary-cta="ctas.docs"
+    :secondary-cta="{
+      label: ctas.docs.label,
+      href: externalLinks.docsComfyRouter,
+      target: '_blank'
+    }"
   >
     <template #media>
       <CodeTabs
         :tabs="modelsApiCodeTabs"
-        :aria-label="t('platform.products.models.title', locale)"
+        :label="t('platform.products.models.title', locale)"
       />
     </template>
   </HeroSplit01>

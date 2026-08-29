@@ -44,11 +44,6 @@
   ],
   "redirects": [
     {
-      "source": "/pricing",
-      "destination": "/cloud/pricing",
-      "permanent": true
-    },
-    {
       "source": "/career",
       "destination": "/careers",
       "permanent": true
@@ -130,6 +125,56 @@
     },
     {
       "source": "/zh-CN/platform/router",
+      "destination": "/zh-CN/platform/models",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/pricing",
+      "destination": "/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/pricing",
+      "destination": "/zh-CN/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/api/",
+      "destination": "/platform",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/api/",
+      "destination": "/zh-CN/platform",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/enterprise/",
+      "destination": "/enterprise",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise/",
+      "destination": "/zh-CN/enterprise",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/pricing/",
+      "destination": "/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/pricing/",
+      "destination": "/zh-CN/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/platform/router/",
+      "destination": "/platform/models",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/platform/router/",
       "destination": "/zh-CN/platform/models",
       "permanent": true
     }
