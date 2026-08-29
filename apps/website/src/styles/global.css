@@ -103,6 +103,16 @@
   initial-value: 0deg;
 }
 
+@utility mask-platform-terminal-feather {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 18%,
+    black 82%,
+    transparent
+  );
+}
+
 /* Pre-hydration hide for a dismissed announcement banner (set by an inline
    script in BaseLayout head) — prevents any flash before Vue hydrates.
    The [data-banner-dismissed] literal is BANNER_DISMISS_ATTR in utils/banner.ts;
