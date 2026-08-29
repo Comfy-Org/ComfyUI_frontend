@@ -1,7 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ICompositorWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
   getCompositorWidgetValue,
@@ -9,73 +14,92 @@ import {
   setCompositorWidgetValue
 } from './compositorWidgets'
 
-function makeNode() {
-  const compositorWidget = {
-    name: 'compositor',
-    value: { layers: [] },
-    callback: vi.fn()
-  } as unknown as IBaseWidget
-  const otherWidget = {
-    name: 'other',
-    value: 42,
-    callback: vi.fn()
-  } as unknown as IBaseWidget
-  const node = {
-    widgets: [otherWidget, compositorWidget],
-    widgets_values: [42, { layers: [] }]
-  } as unknown as LGraphNode
-  return { node, compositorWidget, otherWidget }
+const GRAPH_ID = 'compositor-test-graph'
+
+let nodeCounter = 0
+
+function makeNode({ registered = true } = {}): LGraphNode {
+  nodeCounter += 1
+  const nodeId = toNodeId(nodeCounter)
+  if (registered) {
+    useWidgetValueStore().registerWidget(
+      widgetId(GRAPH_ID, nodeId, 'compositor'),
+      { type: 'compositor', value: { layers: [] }, options: {} }
+    )
+  }
+  return createMockLGraphNode({
+    id: nodeId,
+    graph: { rootGraph: { id: GRAPH_ID } }
+  })
+}
+
+function storedValue(node: LGraphNode): unknown {
+  return useWidgetValueStore().getWidget(
+    widgetId(GRAPH_ID, node.id, 'compositor')
+  )?.value
 }
 
 describe('setCompositorWidgetValue', () => {
-  it('writes the widget value, fires its callback, and syncs widgets_values', () => {
-    const { node, compositorWidget } = makeNode()
+  it('writes the widget value to the store', () => {
+    const node = makeNode()
     const next = { canvas: { w: 8, h: 8 }, layers: [] }
 
     setCompositorWidgetValue(node, next)
 
-    expect(compositorWidget.value).toEqual(next)
-    expect(compositorWidget.callback).toHaveBeenCalledWith(next)
-    expect(node.widgets_values?.[1]).toEqual(next)
+    expect(storedValue(node)).toEqual(next)
   })
 
-  it('is a no-op when the compositor widget is missing', () => {
-    const { node, otherWidget } = makeNode()
-    node.widgets = [otherWidget]
-    node.widgets_values = [42]
+  it('falls back to the widget object when the store has no entry', () => {
+    const node = makeNode({ registered: false })
+    const widget = fromPartial<ICompositorWidget>({
+      name: 'compositor',
+      type: 'compositor',
+      value: { layers: [] }
+    })
+    node.widgets = [widget]
+    const next = { canvas: { w: 4, h: 4 }, layers: [] }
+
+    setCompositorWidgetValue(node, next)
+
+    expect(widget.value).toEqual(next)
+    expect(getCompositorWidgetValue(node)).toEqual(next)
+  })
+
+  it('is a no-op when the widget exists nowhere', () => {
+    const node = makeNode({ registered: false })
 
     setCompositorWidgetValue(node, { layers: [] })
 
-    expect(otherWidget.value).toBe(42)
-    expect(node.widgets_values).toEqual([42])
+    expect(storedValue(node)).toBeUndefined()
   })
 })
 
 describe('getCompositorWidgetValue', () => {
   it('returns the widget value when it has the expected shape', () => {
-    const { node } = makeNode()
+    const node = makeNode()
 
     expect(getCompositorWidgetValue(node)).toEqual({ layers: [] })
   })
 
   it('returns null for missing widgets or malformed values', () => {
-    const { node, compositorWidget } = makeNode()
-    compositorWidget.value = 'legacy-string'
+    const node = makeNode()
+    useWidgetValueStore().setValue(
+      widgetId(GRAPH_ID, node.id, 'compositor'),
+      'legacy-string'
+    )
     expect(getCompositorWidgetValue(node)).toBeNull()
 
-    node.widgets = []
-    expect(getCompositorWidgetValue(node)).toBeNull()
+    expect(getCompositorWidgetValue(makeNode({ registered: false }))).toBeNull()
   })
 })
 
 describe('resetCompositorStateWidgets', () => {
   it('resets the compositor widget to the empty value durably', () => {
-    const { node, compositorWidget } = makeNode()
+    const node = makeNode()
+    setCompositorWidgetValue(node, { canvas: { w: 8, h: 8 }, layers: [] })
 
     resetCompositorStateWidgets(node)
 
-    expect(compositorWidget.value).toEqual({})
-    expect(compositorWidget.callback).toHaveBeenCalledWith({})
-    expect(node.widgets_values).toEqual([42, {}])
+    expect(storedValue(node)).toEqual({})
   })
 })
