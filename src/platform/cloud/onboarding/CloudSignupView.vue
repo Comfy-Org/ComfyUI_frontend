@@ -86,7 +86,6 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
@@ -94,6 +93,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { useRegionGate } from '@comfyorg/account/vue'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
+import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'

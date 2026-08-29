@@ -10,8 +10,7 @@
     <Tag
       v-if="!showCreditsOnly"
       severity="secondary"
-      rounded
-      class="p-1 text-amber-400"
+      class="rounded-full p-1 text-amber-400"
     >
       <template #icon>
         <i class="icon-[lucide--coins]" />
@@ -25,11 +24,11 @@
 
 <script setup lang="ts">
 import Skeleton from 'primevue/skeleton'
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import Tag from '@/components/ui/badge/Badge.vue'
 import { useAuthStore } from '@/stores/authStore'
 
 const { textClass, showCreditsOnly } = defineProps<{

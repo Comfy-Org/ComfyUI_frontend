@@ -130,7 +130,6 @@
           v-if="authActions.accessError.value"
           severity="info"
           icon="pi pi-info-circle"
-          variant="outlined"
           closable
         >
           {{ t('toastMessages.useApiKeyTip') }}
@@ -165,7 +164,6 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -173,6 +171,7 @@ import { useRegionGate } from '@comfyorg/account/vue'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
