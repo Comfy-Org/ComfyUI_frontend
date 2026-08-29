@@ -236,7 +236,7 @@ describe('drawConnections', () => {
   })
 
   it.for([245, 500, 1_000])(
-    'rebuilds render order independently for both passes at %i nodes',
+    'reuses render order across both passes at %i nodes',
     { timeout: 10_000 },
     (nodeCount) => {
       for (let index = 0; index < nodeCount; index++) {
@@ -258,13 +258,13 @@ describe('drawConnections', () => {
         .length
 
       expect(foregroundLayoutReads).toBe(nodeCount)
-      expect(totalLayoutReads - foregroundLayoutReads).toBe(nodeCount)
+      expect(totalLayoutReads - foregroundLayoutReads).toBe(0)
       expect(foregroundSorts).toBe(1)
       expect(
         sort.mock.instances.filter(
           (items) => Array.isArray(items) && items.length === nodeCount
         )
-      ).toHaveLength(2)
+      ).toHaveLength(1)
     }
   )
 
