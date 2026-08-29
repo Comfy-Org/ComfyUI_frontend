@@ -1,6 +1,25 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+
+const mocks = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ref } = require('vue')
+  return {
+    currentUser: {
+      resolvedUserInfo: ref({ id: 'user-1' } as { id: string } | null)
+    },
+    workspace: { activeWorkspaceId: ref('workspace-1' as string | null) }
+  }
+})
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => mocks.currentUser
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => mocks.workspace
+}))
 
 import type { ChatSession } from './agentChatHistoryStore'
 import {
@@ -62,6 +81,8 @@ describe('useAgentChatHistoryStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    mocks.currentUser.resolvedUserInfo.value = { id: 'user-1' }
+    mocks.workspace.activeWorkspaceId.value = 'workspace-1'
   })
 
   it('overlays a rename onto the grouped list and titleFor', () => {
@@ -137,5 +158,29 @@ describe('useAgentChatHistoryStore', () => {
     reloaded.replaceAll([session('a', NOW - 1_000), session('b', NOW - 2_000)])
     expect(reloaded.sessions.map((s) => s.id)).toEqual(['a'])
     expect(reloaded.titleFor('a')).toBe('Kept title')
+  })
+
+  it('rotates persisted metadata and clears the in-memory list on account change', async () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', NOW - 1_000)])
+    store.rename('a', 'Account one')
+    await nextTick()
+
+    expect(
+      localStorage.getItem('Comfy.Agent.ChatTitles.user-1.workspace-1')
+    ).toContain('Account one')
+
+    mocks.currentUser.resolvedUserInfo.value = { id: 'user-2' }
+    await nextTick()
+
+    expect(store.sessions).toHaveLength(0)
+    expect(store.titleFor('a')).toBeUndefined()
+    expect(
+      localStorage.getItem('Comfy.Agent.ChatTitles.user-2.workspace-1')
+    ).toBe('{}')
+
+    mocks.currentUser.resolvedUserInfo.value = { id: 'user-1' }
+    await nextTick()
+    expect(store.titleFor('a')).toBe('Account one')
   })
 })

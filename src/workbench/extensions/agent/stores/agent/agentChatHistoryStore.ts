@@ -1,6 +1,9 @@
 import { useLocalStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 export interface ChatSession {
   id: string
@@ -49,14 +52,38 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const activeId = ref<string | null>(null)
   const now = useTimestamp({ interval: 60_000 })
 
+  const currentUser = useCurrentUser()
+  const workspaceStore = useTeamWorkspaceStore()
+  const storageScope = computed(() => {
+    const userId = currentUser.resolvedUserInfo.value?.id ?? 'signed-out'
+    const workspaceId = toValue(workspaceStore.activeWorkspaceId) ?? 'personal'
+    return `${encodeURIComponent(userId)}.${encodeURIComponent(workspaceId)}`
+  })
+
+  // These are user content metadata, so their keys must rotate with both
+  // authenticated identity and workspace. The in-memory list is cleared at
+  // the same boundary so a switched account cannot see the prior account's
+  // sessions while the reactive storage refs load the new keys.
+  watch(
+    storageScope,
+    () => {
+      sessions.value = []
+      activeId.value = null
+    },
+    { flush: 'sync' }
+  )
+
   // The server owns thread titles but has no rename or delete endpoint yet
   // (BE-3130), so renames live in a local overlay applied over the server
   // titles and deletes in a local tombstone set filtered out of every refresh.
   const customTitles = useLocalStorage<Record<string, string>>(
-    'Comfy.Agent.ChatTitles',
+    computed(() => `Comfy.Agent.ChatTitles.${storageScope.value}`),
     {}
   )
-  const deletedIds = useLocalStorage<string[]>('Comfy.Agent.DeletedThreads', [])
+  const deletedIds = useLocalStorage<string[]>(
+    computed(() => `Comfy.Agent.DeletedThreads.${storageScope.value}`),
+    []
+  )
 
   const titled = computed(() =>
     sessions.value.map((session) => {
