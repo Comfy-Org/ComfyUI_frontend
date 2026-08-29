@@ -28,26 +28,42 @@
     </FormField>
 
     <!-- Password Field -->
-    <div class="flex flex-col gap-2">
+    <FormField v-slot="$field" name="password" class="flex flex-col gap-2">
       <label
         class="mb-1 text-base text-primary-comfy-canvas/70"
         for="cloud-sign-in-password"
       >
         {{ t('auth.login.passwordLabel') }}
       </label>
-      <Password
-        input-id="cloud-sign-in-password"
-        pt:pc-input-text:root:autocomplete="current-password"
-        :pt:pc-input-text:root:class="CLOUD_AUTH_FIELD_CLASS"
-        name="password"
-        :feedback="false"
-        toggle-mask
-        :placeholder="t('auth.login.passwordPlaceholder')"
-        :class="{ 'p-invalid': $form.password?.invalid }"
-        fluid
-      />
-      <small v-if="$form.password?.invalid" class="text-red-500">{{
-        $form.password.error.message
+      <div class="relative">
+        <Input
+          v-bind="$field.props"
+          id="cloud-sign-in-password"
+          autocomplete="current-password"
+          :type="passwordVisible ? 'text' : 'password'"
+          :placeholder="t('auth.login.passwordPlaceholder')"
+          :class="cn('pr-10', CLOUD_AUTH_FIELD_CLASS)"
+          :aria-invalid="$field.invalid"
+        />
+        <button
+          type="button"
+          class="absolute top-1/2 right-3 flex -translate-y-1/2 text-primary-comfy-canvas/70"
+          :aria-label="
+            t(passwordVisible ? 'auth.hidePassword' : 'auth.showPassword')
+          "
+          :aria-pressed="passwordVisible"
+          @click="passwordVisible = !passwordVisible"
+        >
+          <i
+            :class="
+              passwordVisible ? 'icon-[lucide--eye-off]' : 'icon-[lucide--eye]'
+            "
+            class="size-4"
+          />
+        </button>
+      </div>
+      <small v-if="$field.invalid" class="text-red-500">{{
+        $field.error.message
       }}</small>
 
       <router-link
@@ -56,7 +72,7 @@
       >
         {{ t('auth.login.forgotPassword') }}
       </router-link>
-    </div>
+    </FormField>
 
     <!-- Auth Error Message -->
     <Message v-if="authError" severity="error">
@@ -80,9 +96,10 @@
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Password from 'primevue/password'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
@@ -106,6 +123,7 @@ const emit = defineEmits<{
 }>()
 
 const emailInputId = 'cloud-sign-in-email'
+const passwordVisible = ref(false)
 
 const onSubmit = (event: FormSubmitEvent) => {
   if (event.valid) {
