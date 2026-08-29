@@ -15,6 +15,7 @@ const CELL_COUNT = COLS * ROWS
 const CELL_STEP_DURATION = 260
 const TRAIL_LENGTH = 3
 const REST_DURATION = 1400
+const SERVERLESS_LABEL = 'SERVERLESS'
 const CYCLE_DURATION =
   (COLS + TRAIL_LENGTH) * CELL_STEP_DURATION + REST_DURATION
 const CELL_OPACITIES = [
@@ -42,6 +43,18 @@ const elapsed = ref(0)
 const reducedMotion = prefersReducedMotion()
 
 const frameTime = computed(() => elapsed.value % CYCLE_DURATION)
+const activeSequence = computed(() =>
+  Math.floor(frameTime.value / CELL_STEP_DURATION)
+)
+const serverlessLetters = computed(() =>
+  [...SERVERLESS_LABEL].map((letter, index, letters) => ({
+    letter,
+    revealed:
+      reducedMotion ||
+      activeSequence.value >=
+        Math.round((index * (COLS - 1)) / (letters.length - 1))
+  }))
+)
 
 const activityCells: ActivityCell[] = Array.from(
   { length: CELL_COUNT },
@@ -168,6 +181,20 @@ watch(
                 : 1
         }"
       />
+    </div>
+
+    <div
+      class="text-primary-comfy-yellow pointer-events-none absolute top-[13%] right-[5%] bottom-[14%] left-3/10 z-10 grid grid-cols-10 items-center font-bold tracking-wider"
+      aria-hidden="true"
+    >
+      <span
+        v-for="({ letter, revealed }, index) in serverlessLetters"
+        :key="`${letter}-${index}`"
+        class="text-center text-[clamp(0.6rem,1.1vw,0.9rem)] transition-opacity duration-150"
+        :style="{ opacity: revealed ? 1 : 0.08 }"
+      >
+        {{ letter }}
+      </span>
     </div>
 
     <div
