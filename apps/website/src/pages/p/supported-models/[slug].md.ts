@@ -28,10 +28,21 @@ export const GET: APIRoute = ({ props, site }) => {
     ? `https://www.comfy.org/workflows/model/${model.hubSlug}`
     : 'https://www.comfy.org/workflows'
 
+  const description = buildWhatIsDescription(model)
+  const summary = description.split('. ')[0]
+
   const lines = [
+    '---',
+    `title: ${JSON.stringify(`${model.displayName} in ComfyUI`)}`,
+    `description: ${JSON.stringify(summary.endsWith('.') ? summary : `${summary}.`)}`,
+    `canonical: ${pageUrl}`,
+    'lang: en',
+    `index: ${new URL('/llms.txt', base).href}`,
+    '---',
+    '',
     `# ${model.displayName} in ComfyUI`,
     '',
-    buildWhatIsDescription(model),
+    description,
     '',
     '## Facts',
     '',
@@ -54,7 +65,15 @@ export const GET: APIRoute = ({ props, site }) => {
           '2. On Comfy Cloud — hosted GPUs, every parameter still exposed: https://cloud.comfy.org'
         ]),
     `3. Start from a community workflow template and adjust it node by node: ${workflowsUrl}`,
-    '4. From your own application with the Comfy SDKs (Python and TypeScript, beta): https://docs.comfy.org/development/api-development/sdks',
+    '4. From your own application with the Comfy SDKs (Python and TypeScript, beta): https://docs.comfy.org/development/api-development/sdks.md',
+    ...(isPartnerModel(model)
+      ? [
+          '5. From a terminal or a coding agent with Comfy CLI; `comfy generate list` shows the partner models your CLI version can call: https://docs.comfy.org/agent-tools/cli.md'
+        ]
+      : [
+          '5. From a terminal or a coding agent with Comfy CLI, which runs workflows on Comfy Cloud or a local ComfyUI: https://docs.comfy.org/agent-tools/cli.md'
+        ]),
+    '6. From Claude Code, Cursor, or Codex over Comfy MCP at https://cloud.comfy.org/mcp: https://docs.comfy.org/agent-tools/mcp.md',
     '',
     `This page as HTML: ${pageUrl}`,
     `Full model catalog: ${new URL('/p/supported-models/llms.txt', base).href}`

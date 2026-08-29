@@ -47,6 +47,16 @@ describe('GET', () => {
     )
   })
 
+  it('leads with front matter and ends with the agent run paths', async () => {
+    const body = await render(open, new URL('https://example.org')).text()
+    expect(body.startsWith('---\ntitle: "')).toBe(true)
+    expect(body).toContain(
+      `canonical: https://example.org/p/supported-models/${open.slug}\nlang: en\nindex: https://example.org/llms.txt\n---`
+    )
+    expect(body).toContain('https://docs.comfy.org/agent-tools/cli.md')
+    expect(body).toContain('https://cloud.comfy.org/mcp')
+  })
+
   it('falls back to comfy.org when no site is configured', async () => {
     const body = await render(open).text()
     expect(body).toContain(`https://comfy.org/p/supported-models/${open.slug}`)
