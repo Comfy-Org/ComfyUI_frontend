@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -17,21 +16,13 @@ import { zAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
-  OpenTabsSnapshot,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
-import type { AgentEventSource } from '../../services/agent/agentEventSource'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 
+import type { SelectedNode } from './useCanvasSelection'
+import type { AgentEventSource } from '../../services/agent/agentEventSource'
 import { useAgentSession } from './useAgentSession'
-
-// TRANSITIONAL (agent-v1 chain): local shadow of useCanvasSelection's
-// SelectedNode; slice 16 lands the canonical type and retires this copy.
-interface SelectedNode {
-  id: string
-  locatorId?: NodeLocatorId
-  title: string
-}
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -60,41 +51,27 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
 }
 
 function fakeEvents() {
-  // Mirrors createAgentEventSource: every subscribe call is its own
-  // subscription (fresh closures on the host), even for a repeated listener.
-  const listeners = new Set<{ fn: (raw: unknown) => void }>()
-  const statusListeners = new Set<{ fn: (live: boolean) => void }>()
+  let listener: ((raw: unknown) => void) | undefined
+  let statusListener: ((live: boolean) => void) | undefined
   const source: AgentEventSource = {
     subscribe(fn) {
-      const entry = { fn }
-      listeners.add(entry)
+      listener = fn
       return () => {
-        listeners.delete(entry)
+        listener = undefined
       }
     },
     onStatus(fn) {
-      const entry = { fn }
-      statusListeners.add(entry)
+      statusListener = fn
       return () => {
-        statusListeners.delete(entry)
+        statusListener = undefined
       }
     }
   }
   return {
     source,
-    emit: (raw: unknown) => {
-      for (const { fn } of [...listeners]) fn(raw)
-    },
-    status: (live: boolean) => {
-      for (const { fn } of [...statusListeners]) fn(live)
-    }
+    emit: (raw: unknown) => listener?.(raw),
+    status: (live: boolean) => statusListener?.(live)
   }
-}
-
-function resetHarness() {
-  setActivePinia(createPinia())
-  useAgentSession({ rest: fakeRest(), events: fakeEvents().source }).newChat()
-  localStorage.clear()
 }
 
 const wire = (raw: unknown): unknown => zAgentWsEvent.parse(raw)
@@ -140,7 +117,10 @@ const historyRow = (
 })
 
 describe('useAgentSession (v1 composition root)', () => {
-  beforeEach(resetHarness)
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
     const rest = fakeRest()
@@ -1357,7 +1337,10 @@ describe('thread resume (B17)', () => {
     }
   ]
 
-  beforeEach(resetHarness)
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+  })
 
   it('restores the persisted thread and hydrates its transcript on start', async () => {
     localStorage.setItem('Comfy.Agent.ThreadId', 'th-9')
