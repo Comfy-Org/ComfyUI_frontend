@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   useDocumentVisibility,
   useElementVisibility,
@@ -23,9 +24,9 @@ export interface CodeTab {
 
 const CYCLE_INTERVAL_MS = 3000
 
-const { tabs, ariaLabel } = defineProps<{
+const { tabs, label } = defineProps<{
   tabs: Record<string, CodeTab>
-  ariaLabel: string
+  label: string
 }>()
 
 const activeTab = ref(Object.keys(tabs)[0])
@@ -94,7 +95,7 @@ function cycleValue(values: string[]): string {
     class="block"
   >
     <TabsList
-      :aria-label="ariaLabel"
+      :aria-label="label"
       class="inline-flex max-w-full scrollbar-none overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1"
     >
       <TabsTrigger
@@ -125,7 +126,7 @@ function cycleValue(values: string[]): string {
             mode="out-in"
           ><span
               :key="cycleValue(segment.values)"
-              :class="segment.highlight && 'text-primary-comfy-yellow'"
+              :class="cn(segment.highlight && 'text-primary-comfy-yellow')"
             >{{ cycleValue(segment.values) }}</span></Transition><template
             v-else
           >{{ segment }}</template></template></code></pre>

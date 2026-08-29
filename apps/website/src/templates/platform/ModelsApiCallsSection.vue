@@ -60,7 +60,7 @@ video = comfy.models.result("kling/v3-omni", handle.request_id)`
     <div class="mx-auto mt-8 max-w-3xl">
       <CodeTabs
         :tabs="callTabs"
-        :aria-label="t('platform.modelsCalls.heading', locale)"
+        :label="t('platform.modelsCalls.heading', locale)"
       />
     </div>
   </section>

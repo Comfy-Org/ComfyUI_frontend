@@ -3,8 +3,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
 import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
-import ExamplesSection from '../../templates/platform/ExamplesSection.vue'
-import FAQSection from '../../templates/platform/FAQSection.vue'
 import HeroSection from '../../templates/platform/HeroSection.vue'
 import PricingSection from '../../templates/platform/PricingSection.vue'
 import ProductsSection from '../../templates/platform/ProductsSection.vue'
@@ -18,9 +16,7 @@ import { t } from '../../i18n/translations'
   <HeroSection locale="zh-CN" client:load />
   <ProductsSection locale="zh-CN" client:visible />
   <SocialProofBarSection />
-  <ExamplesSection locale="zh-CN" />
   <PricingSection locale="zh-CN" />
-  <FAQSection client:visible locale="zh-CN" />
   <ClosingCtaSection locale="zh-CN" />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
 </BaseLayout>

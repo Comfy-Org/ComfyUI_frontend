@@ -3363,6 +3363,7 @@ const translations = {
   },
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
+  'nav.badgeBeta': { en: 'BETA', 'zh-CN': 'BETA' },
   // Column headers used in HeaderMainDesktop dropdowns
   'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
   'nav.supportedModels': { en: 'Supported Models', 'zh-CN': '支持的模型' },
@@ -7216,6 +7217,19 @@ const translations = {
   },
 
   // ── Managed Builds (/enterprise + /enterprise/managed-builds) ──
+  'enterprise.platformBand.label': {
+    en: 'DEVELOPER PLATFORM',
+    'zh-CN': '开发者平台'
+  },
+  'enterprise.platformBand.text': {
+    en: 'Deploy and scale ComfyUI workflows — Serverless API, Models API, and Builder behind one API key. Now in limited beta.',
+    'zh-CN':
+      '部署并扩展 ComfyUI 工作流——Serverless API、Models API 和 Builder 共用一个 API 密钥。现已开启有限测试。'
+  },
+  'enterprise.platformBand.cta': {
+    en: 'Explore the Developer Platform',
+    'zh-CN': '了解开发者平台'
+  },
   'enterprise.managedBuilds.heading': {
     en: 'Managed Builds',
     'zh-CN': '托管构建'
@@ -7226,61 +7240,68 @@ const translations = {
       '治理你的组织运行的每一个 ComfyUI 环境——经批准的模型、经审核的节点、锁定的依赖——一键共享给团队。'
   },
   'enterprise.managedBuilds.hero.subtitle': {
-    en: 'Pinned, governed builds of ComfyUI for your whole organization: the models legal approved, the nodes security vetted, and the exact environment every artist installs.',
+    en: 'Full governance over ComfyUI used in your organization: use only legal-approved models, and distribute the same environment to every artist or server.',
     'zh-CN':
-      '为整个组织提供锁定、受治理的 ComfyUI 构建：法务批准的模型、安全审核过的节点，以及每位创作者安装的完全一致的环境。'
+      '全面治理组织内使用的 ComfyUI：只使用法务批准的模型，并将同一环境分发给每位创作者或服务器。'
   },
   'enterprise.managedBuilds.explore': {
     en: 'Explore Managed Builds',
     'zh-CN': '了解托管构建'
   },
   'enterprise.managedBuilds.talkToUs': {
-    en: 'Talk to us',
-    'zh-CN': '联系我们'
+    en: 'Contact sales',
+    'zh-CN': '联系销售'
   },
   'enterprise.managedBuilds.aboutBuilder': {
     en: 'About Builder',
     'zh-CN': '了解 Builder'
   },
   'enterprise.managedBuilds.1.title': {
-    en: 'Approved checkpoints',
-    'zh-CN': '经批准的模型检查点'
+    en: 'Open Source Models',
+    'zh-CN': '开源模型'
   },
   'enterprise.managedBuilds.1.description': {
-    en: 'Allowlist the exact model checkpoints your organization has cleared. Decide whether users can bring their own or stay on the approved set.',
-    'zh-CN':
-      '只允许组织已批准的那些模型检查点。由你决定用户能否自带模型，还是只用批准集合。'
+    en: 'Only allow open source models approved by your organization. Observe which models are used by your team.',
+    'zh-CN': '只允许组织批准的开源模型，并观察团队实际在使用哪些模型。'
   },
   'enterprise.managedBuilds.2.title': {
-    en: 'Vetted nodes',
-    'zh-CN': '经审核的节点'
+    en: 'Custom Nodes',
+    'zh-CN': '自定义节点'
   },
   'enterprise.managedBuilds.2.description': {
-    en: 'Three tiers of custom nodes: the Comfy-verified set, reviewed registry nodes, or your own private uploads.',
+    en: 'Ensure your team only uses vetted custom nodes and their exact versions. Effortlessly build and use your own private custom nodes in builds.',
     'zh-CN':
-      '三个层级的自定义节点：Comfy 认证节点集、经审查的注册表节点，或你自己的私有上传。'
+      '确保团队只使用经过审核的自定义节点及其确切版本。还能毫不费力地在构建中制作并使用你自己的私有自定义节点。'
   },
   'enterprise.managedBuilds.3.title': {
-    en: 'Per-partner-node control',
-    'zh-CN': '逐个控制合作伙伴节点'
+    en: 'Partner Models',
+    'zh-CN': '合作伙伴模型'
   },
   'enterprise.managedBuilds.3.description': {
-    en: 'Enable partner models one by one instead of all-or-nothing — and run the approved ones on your own keys with BYOK.',
+    en: 'Dynamically control which ',
+    'zh-CN': '动态控制团队可以使用哪些'
+  },
+  'enterprise.managedBuilds.3.linkLabel': {
+    en: 'partner models',
+    'zh-CN': '合作伙伴模型'
+  },
+  'enterprise.managedBuilds.3.linkSuffix': {
+    en: ' are available to your team (e.g. Seedance, GPT-Image-2). Run models with your own key (BYOK).',
     'zh-CN':
-      '逐个启用合作伙伴模型，而不是全有或全无——获批的模型还可以通过 BYOK 用你自己的密钥运行。'
+      '（如 Seedance、GPT-Image-2），还可以用你自己的密钥运行模型（BYOK）。'
   },
   'enterprise.managedBuilds.4.title': {
-    en: 'Edit vs. install permissions',
-    'zh-CN': '编辑与安装权限分离'
+    en: 'Security Patches',
+    'zh-CN': '安全补丁'
   },
   'enterprise.managedBuilds.4.description': {
-    en: 'Control who can change a build and who simply installs it. Installers always get exactly the pinned package.',
+    en: 'Control which versions of ComfyUI and Python dependencies are used in builds. Easily apply security patches or improvements to your whole team.',
     'zh-CN':
-      '控制谁能修改构建、谁只能安装。安装者拿到的永远是完全锁定的软件包。'
+      '控制构建中使用的 ComfyUI 版本和 Python 依赖。轻松将安全补丁或改进应用到整个团队。'
   },
   'enterprise.managedBuilds.5.title': {
-    en: 'One-click rollout',
-    'zh-CN': '一键分发'
+    en: 'Easy Installation',
+    'zh-CN': '轻松安装'
   },
   'enterprise.managedBuilds.5.description': {
     en: 'Teammates sign into Comfy Desktop with their work email and see only the builds they have been granted.',
@@ -7291,9 +7312,29 @@ const translations = {
     'zh-CN': '部署管理'
   },
   'enterprise.managedBuilds.6.description': {
-    en: 'Pin a build per project for its whole duration, cut new versions deliberately, and deploy the same build to Serverless endpoints for scale.',
+    en: 'Decide which builds are used for the duration of your project, whether used locally or on ',
+    'zh-CN': '决定项目周期内使用哪些构建——无论在本地运行，还是部署到'
+  },
+  'enterprise.managedBuilds.6.linkLabel': {
+    en: 'Serverless API',
+    'zh-CN': 'Serverless API'
+  },
+  'enterprise.managedBuilds.6.linkSuffix': {
+    en: '.',
+    'zh-CN': '。'
+  },
+  'enterprise.managedBuilds.builderNote.title': {
+    en: 'Powered by Builder',
+    'zh-CN': '由 Builder 驱动'
+  },
+  'enterprise.managedBuilds.builderNote.description': {
+    en: 'Builder creates consistent, immutable builds of ComfyUI with your exact models, custom nodes, and Python dependencies — private custom nodes and models included.',
     'zh-CN':
-      '按项目锁定构建并贯穿整个周期，按需发布新版本，同一构建还能部署到 Serverless 端点实现规模化。'
+      'Builder 会用你指定的模型、自定义节点和 Python 依赖，构建一致且不可变的 ComfyUI 构建——私有自定义节点和模型同样支持。'
+  },
+  'enterprise.managedBuilds.gridSubtitle': {
+    en: 'On top of that, Managed Builds gives your admins the ability to control:',
+    'zh-CN': '在此之上，托管构建让管理员能够控制：'
   },
   'enterprise.managedBuilds.gridHeading': {
     en: 'What your admins control',
@@ -7304,10 +7345,6 @@ const translations = {
     'zh-CN': '治理整个集群，保持全速前进。'
   },
   // ── Developer Platform landing page (/platform) ───────────────────
-  'nav.platform': {
-    en: 'Platform',
-    'zh-CN': '平台'
-  },
   'nav.developerPlatform': {
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
@@ -7320,6 +7357,18 @@ const translations = {
     en: 'Deploy and scale ComfyUI workflows. Your workflows. Every model. One API.',
     'zh-CN': '部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。'
   },
+  'platform.terminal.buildResolved': {
+    en: 'Build resolved by Builder (nodes · models · pinned deps)',
+    'zh-CN': 'Builder 已解析构建（节点 · 模型 · 锁定依赖）'
+  },
+  'platform.terminal.deployed': {
+    en: 'Deployed → https://your-build.run.comfy.app',
+    'zh-CN': '已部署 → https://your-build.run.comfy.app'
+  },
+  'enterprise.managedBuilds.badge': {
+    en: 'Enterprise',
+    'zh-CN': '企业版'
+  },
   'platform.hero.badge': {
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
@@ -7329,9 +7378,8 @@ const translations = {
     'zh-CN': 'Comfy 开发者平台'
   },
   'platform.hero.subtitle': {
-    en: 'Deploy and scale your ComfyUI workflows: every model, one API, built for production pipelines by the ComfyUI team.',
-    'zh-CN':
-      '部署并扩展你的 ComfyUI 工作流：所有模型，一个 API，由 ComfyUI 团队为生产管线打造。'
+    en: 'The fastest way from ComfyUI workflow to production endpoint.',
+    'zh-CN': '从 ComfyUI 工作流到生产端点的最快路径。'
   },
   'platform.hero.getStarted': {
     en: 'Get Started',
@@ -7341,10 +7389,6 @@ const translations = {
     en: 'Read the docs',
     'zh-CN': '阅读文档'
   },
-  'platform.products.heading': {
-    en: 'One API key. One credit pool. One SDK.',
-    'zh-CN': '一个 API 密钥。一个积分池。一个 SDK。'
-  },
   'platform.serverless.codeHeading': {
     en: 'Call your endpoint',
     'zh-CN': '调用你的端点'
@@ -7353,14 +7397,65 @@ const translations = {
     en: 'The SDK is the front door; plain HTTP works too.',
     'zh-CN': 'SDK 是首选入口，纯 HTTP 同样可用。'
   },
+  'platform.serverlessDeploy.heading': {
+    en: 'Ship in minutes',
+    'zh-CN': '几分钟内上线'
+  },
+  'platform.serverlessDeploy.subtitle': {
+    en: 'Easily package up your existing ComfyUI environment — or a single workflow — and deploy to Serverless.',
+    'zh-CN':
+      '轻松打包你现有的 ComfyUI 环境——或单个工作流——并部署到 Serverless。'
+  },
+  'platform.serverlessDeploy.tabInstall': {
+    en: 'Start with your installation',
+    'zh-CN': '从你的安装开始'
+  },
+  'platform.serverlessDeploy.tabWorkflow': {
+    en: 'Start with your workflow',
+    'zh-CN': '从你的工作流开始'
+  },
+  'platform.serverlessScale.heading': {
+    en: 'Engineered for scale',
+    'zh-CN': '为规模而生'
+  },
+  'platform.serverlessScale.subtitle': {
+    en: 'Deploy on the Developer Platform across thousands of GPUs — autoscaling, logs, and performance controls built in.',
+    'zh-CN':
+      '在开发者平台上跨数千块 GPU 部署——自动扩缩、日志和性能控制开箱即用。'
+  },
+  'platform.serverlessScale.1.title': {
+    en: 'Autoscaling',
+    'zh-CN': '自动扩缩'
+  },
+  'platform.serverlessScale.1.description': {
+    en: 'Endpoints scale with request volume. Set minimum and maximum workers, and keep warm workers where cold starts matter.',
+    'zh-CN':
+      '端点随请求量自动扩缩。设置最小和最大工作节点数，在冷启动敏感的场景保留常驻节点。'
+  },
+  'platform.serverlessScale.2.title': {
+    en: 'Logs & events',
+    'zh-CN': '日志与事件'
+  },
+  'platform.serverlessScale.2.description': {
+    en: 'Stream deployment logs and job events straight from the CLI or the console.',
+    'zh-CN': '直接从 CLI 或控制台实时查看部署日志和任务事件。'
+  },
+  'platform.serverlessScale.3.title': {
+    en: 'Run any workflow & model',
+    'zh-CN': '运行任何工作流与模型'
+  },
+  'platform.serverlessScale.3.description': {
+    en: 'Supports the thousands of open source models, custom nodes, and partner models available in the ComfyUI ecosystem.',
+    'zh-CN': '支持 ComfyUI 生态中数以千计的开源模型、自定义节点和合作伙伴模型。'
+  },
   'platform.products.serverless.title': {
     en: 'Serverless API',
     'zh-CN': 'Serverless API'
   },
   'platform.products.serverless.description': {
-    en: "Scale from zero to millions of workflow runs on Comfy's serverless engine. No GPUs to configure and no cold starts. Pay only for what you use.",
+    en: "Scale from 0 to millions of generations on Comfy's serverless engine. No GPUs to configure, no cold starts — only pay for what you use.",
     'zh-CN':
-      '在 Comfy 无服务器引擎上从零扩展到数百万次工作流运行。无需配置 GPU，没有冷启动——只为实际用量付费。'
+      '在 Comfy 无服务器引擎上从 0 扩展到数百万次生成。无需配置 GPU，没有冷启动——只为实际用量付费。'
   },
   'platform.serverlessVisual.ariaLabel': {
     en: 'Animated diagram showing serverless activity moving through B200 GPU workers.',
@@ -7537,8 +7632,36 @@ const translations = {
       '托管构建：经批准的模型检查点、经审核的节点，以及覆盖整个集群的部署治理。SOC 2 认证进行中。'
   },
   'platform.customers.enterprise.cta': {
-    en: 'Talk to us',
-    'zh-CN': '联系我们'
+    en: 'Contact sales',
+    'zh-CN': '联系销售'
+  },
+  'pricing.lookingForElse.heading': {
+    en: 'Looking for something else?',
+    'zh-CN': '在找别的方案？'
+  },
+  'pricing.lookingForElse.community.title': {
+    en: 'Community Edition',
+    'zh-CN': '社区版'
+  },
+  'pricing.lookingForElse.community.description': {
+    en: 'A standard, self-hosted version of ComfyUI is available on GitHub.',
+    'zh-CN': '标准的自托管版 ComfyUI 已在 GitHub 上提供。'
+  },
+  'pricing.lookingForElse.community.github': {
+    en: 'View on GitHub',
+    'zh-CN': '前往 GitHub'
+  },
+  'pricing.lookingForElse.community.docs': {
+    en: 'Self-hosting docs',
+    'zh-CN': '自托管文档'
+  },
+  'pricing.resourceCosts.note': {
+    en: 'Applies to the Serverless API on the Developer Platform.',
+    'zh-CN': '仅适用于开发者平台上的 Serverless API。'
+  },
+  'pricing.resourceCosts.heading': {
+    en: 'Resource costs',
+    'zh-CN': '资源成本'
   },
   'platform.pricing.heading': {
     en: 'Pricing',
@@ -7876,116 +7999,51 @@ const translations = {
     'zh-CN': '让每个人都用上同一个 Comfy'
   },
   'platform.builderPillars.1.title': {
-    en: 'Consistency you can ship on',
-    'zh-CN': '值得托付的一致性'
+    en: 'Consistency',
+    'zh-CN': '一致性'
   },
   'platform.builderPillars.1.description': {
-    en: 'Pinned, immutable, reproducible. The same workflow gives the same result on every machine, all production long.',
+    en: 'Ensure your team is using the same consistent build. Deploy exact models, custom nodes, pip dependencies and get consistent results.',
     'zh-CN':
-      '锁定、不可变、可复现。同一个工作流在每台机器上给出同样的结果，贯穿整个制作周期。'
+      '确保团队使用同一个一致的构建。部署完全一致的模型、自定义节点和 pip 依赖，获得一致的结果。'
   },
   'platform.builderPillars.2.title': {
-    en: 'Control over your pipeline',
-    'zh-CN': '管线尽在掌控'
+    en: 'Comfy Desktop',
+    'zh-CN': 'Comfy Desktop'
   },
   'platform.builderPillars.2.description': {
-    en: 'Allowlist exactly the models legal has approved. Enable partner nodes one by one. Use Comfy-verified nodes, registry nodes, or your own private uploads.',
-    'zh-CN':
-      '只允许法务批准的那些模型。逐个启用合作伙伴节点。可用 Comfy 认证节点、注册表节点或你自己的私有上传。'
+    en: 'Run builds locally on Desktop. Easily reinstall the same working build.',
+    'zh-CN': '在 Desktop 上本地运行构建，随时轻松重装同一个可用构建。'
   },
   'platform.builderPillars.3.title': {
-    en: 'Local first, serverless for scale',
-    'zh-CN': '本地优先，规模化上无服务器'
+    en: 'Scale on Serverless',
+    'zh-CN': '在 Serverless 上扩展'
   },
   'platform.builderPillars.3.description': {
-    en: 'One-click install through Comfy Desktop. The same build deploys to a Serverless API endpoint — if it works locally, it works in the cloud.',
-    'zh-CN':
-      '通过 Comfy Desktop 一键安装。同一个构建可部署为 Serverless API 端点——本地能跑，云端就能跑。'
+    en: 'Builds can be deployed to Serverless and run programmatically.',
+    'zh-CN': '构建可以部署到 Serverless，并以编程方式运行。'
   },
   'platform.builderPillars.4.title': {
-    en: 'Bring your own keys',
-    'zh-CN': '自带密钥（BYOK）'
+    en: 'Migrate in minutes',
+    'zh-CN': '几分钟内完成迁移'
   },
   'platform.builderPillars.4.description': {
-    en: "Run partner models on your organization's own provider keys and contracts. Credentials live encrypted in a vault, artists never see them, and every minted key is individually revocable.",
+    en: 'Easily migrate using the UI or your agent via Skills maintained by our team.',
     'zh-CN':
-      '用你所在组织自己的供应商密钥和合同运行合作伙伴模型。凭据加密存放在保险库中，创作者永远接触不到，每个签发的密钥都可单独吊销。'
+      '通过界面轻松迁移，或让你的智能体使用我们团队维护的 Skills 完成迁移。'
   },
-  'platform.builderPillars.5.title': {
-    en: 'Your work stays yours',
-    'zh-CN': '你的作品只属于你'
+  'platform.builderEnterprise.heading': {
+    en: 'Need enterprise controls?',
+    'zh-CN': '需要企业级控制？'
   },
-  'platform.builderPillars.5.description': {
-    en: 'For local installs, workflows and outputs never leave your environment. Comfy receives the recipe — nodes, dependencies, models — not your work.',
+  'platform.builderEnterprise.subtitle': {
+    en: "Model allowlists, per-partner-node control, and BYOK — run partner models on your organization's own keys. Managed Builds gives your admins governance over every build your organization runs.",
     'zh-CN':
-      '本地安装时，工作流和产出永远不会离开你的环境。Comfy 拿到的是配方——节点、依赖、模型——而不是你的作品。'
-  },
-  'platform.builderPillars.6.title': {
-    en: 'Migrate without starting over',
-    'zh-CN': '迁移无需从头再来'
-  },
-  'platform.builderPillars.6.description': {
-    en: 'Build from scratch in the console, or import a snapshot of an existing Comfy Desktop install. Enterprise teams get hands-on migration help.',
-    'zh-CN':
-      '在控制台从零开始构建，或导入现有 Comfy Desktop 安装的快照。企业团队可获得一对一迁移协助。'
-  },
-  'platform.builderFaq.1.q': {
-    en: 'Can I bring my own custom nodes and models?',
-    'zh-CN': '可以使用我自己的自定义节点和模型吗？'
-  },
-  'platform.builderFaq.1.a': {
-    en: 'Yes — the Comfy-verified set, any node from the registry, or your own private uploads. Private models are supported.',
-    'zh-CN':
-      '可以——Comfy 认证节点集、注册表中的任意节点，或你自己的私有上传。私有模型同样支持。'
-  },
-  'platform.builderFaq.2.q': {
-    en: 'How do I migrate an existing Comfy setup?',
-    'zh-CN': '如何迁移现有的 Comfy 环境？'
-  },
-  'platform.builderFaq.2.a': {
-    en: 'Import a snapshot from an existing Comfy Desktop install, or start a build from scratch in the console. Enterprise customers get hands-on migration help.',
-    'zh-CN':
-      '从现有 Comfy Desktop 安装导入快照，或在控制台从零开始创建构建。企业客户可获得一对一迁移协助。'
-  },
-  'platform.builderFaq.3.q': {
-    en: 'Do my workflows leave my environment?',
-    'zh-CN': '我的工作流会离开我的环境吗？'
-  },
-  'platform.builderFaq.3.a': {
-    en: 'For local installs, no. Comfy receives the build recipe — the list of nodes, dependencies, and models — not your workflow JSON or outputs.',
-    'zh-CN':
-      '本地安装时不会。Comfy 收到的是构建配方——节点、依赖和模型清单——而不是你的工作流 JSON 或产出。'
-  },
-  'platform.builderFaq.4.q': {
-    en: 'Can teammates change the environment?',
-    'zh-CN': '队友可以更改环境吗？'
-  },
-  'platform.builderFaq.4.a': {
-    en: 'Only with edit access. Everyone else installs exactly the pinned package — and version one stays frozen forever.',
-    'zh-CN':
-      '只有拥有编辑权限的人可以。其他人安装的就是锁定的软件包——第一版永远保持冻结。'
-  },
-  'platform.builderFaq.5.q': {
-    en: 'Can I control which models my team uses?',
-    'zh-CN': '可以控制团队使用哪些模型吗？'
-  },
-  'platform.builderFaq.5.a': {
-    en: 'Yes — per-build model allowlists and per-partner-node control, instead of all-or-nothing access.',
-    'zh-CN':
-      '可以——每个构建都有模型白名单和逐个合作伙伴节点的控制，而不是全有或全无。'
-  },
-  'platform.builderFaq.6.q': {
-    en: 'How do I run builds at scale?',
-    'zh-CN': '如何规模化运行构建？'
-  },
-  'platform.builderFaq.6.a': {
-    en: 'Deploy the build to a Serverless API endpoint and call any workflow in it programmatically.',
-    'zh-CN':
-      '把构建部署为 Serverless API 端点，即可以编程方式调用其中的任意工作流。'
+      '模型白名单、逐个控制合作伙伴节点、BYOK——用组织自己的密钥运行合作伙伴模型。托管构建让管理员治理组织运行的每一个构建。'
   },
   'platform.closing.heading': {
-    en: 'Your workflows. Every model. One API.',
-    'zh-CN': '你的工作流。所有模型。一个 API。'
+    en: 'Maximize scale and control on Developer Platform',
+    'zh-CN': '在开发者平台上将规模与控制力最大化'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

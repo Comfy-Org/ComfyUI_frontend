@@ -3,7 +3,17 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  locale = 'en',
+  heading,
+  subtitle,
+  note
+} = defineProps<{
+  locale?: Locale
+  heading?: string
+  subtitle?: string
+  note?: string
+}>()
 
 // Rates from the Limited Beta PRFAQ (USD and Comfy Credits).
 const gpuRates = [
@@ -49,10 +59,13 @@ const storageRates = [
     class="max-w-9xl mx-auto scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
   >
     <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.pricing.heading', locale) }}
+      {{ heading ?? t('platform.pricing.heading', locale) }}
       <template #subtitle>
         <p class="mt-4 text-sm text-smoke-700">
-          {{ t('platform.pricing.subtitle', locale) }}
+          {{ subtitle ?? t('platform.pricing.subtitle', locale) }}
+        </p>
+        <p v-if="note" class="mt-2 text-xs text-smoke-700/80">
+          {{ note }}
         </p>
       </template>
     </SectionHeader>

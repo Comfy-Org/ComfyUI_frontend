@@ -13,7 +13,10 @@ const cardNumbers = [1, 3, 5] as const
 
 const cards = cardNumbers.map((n) => ({
   title: t(`enterprise.managedBuilds.${n}.title`, locale),
-  description: t(`enterprise.managedBuilds.${n}.description`, locale)
+  description:
+    n === 3
+      ? `${t('enterprise.managedBuilds.3.description', locale)}${t('enterprise.managedBuilds.3.linkLabel', locale)}${t('enterprise.managedBuilds.3.linkSuffix', locale)}`
+      : t(`enterprise.managedBuilds.${n}.description`, locale)
 }))
 </script>
 

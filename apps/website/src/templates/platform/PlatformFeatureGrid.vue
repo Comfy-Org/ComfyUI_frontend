@@ -1,15 +1,19 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
 
 interface FeatureCard {
   title: string
   description: string
+  link?: { label: string; href: string; suffix?: string }
 }
 
-defineProps<{
+const { columns = 3 } = defineProps<{
   heading: string
   subtitle?: string
   cards: readonly FeatureCard[]
+  columns?: 3 | 4
 }>()
 </script>
 
@@ -24,7 +28,14 @@ defineProps<{
       </template>
     </SectionHeader>
 
-    <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div
+      :class="
+        cn(
+          'mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2',
+          columns === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+        )
+      "
+    >
       <article
         v-for="card in cards"
         :key="card.title"
@@ -34,7 +45,14 @@ defineProps<{
           {{ card.title }}
         </h3>
         <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
-          {{ card.description }}
+          {{ card.description
+          }}<template v-if="card.link"
+            ><a
+              :href="card.link.href"
+              class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+              >{{ card.link.label }}</a
+            >{{ card.link.suffix }}</template
+          >
         </p>
       </article>
     </div>

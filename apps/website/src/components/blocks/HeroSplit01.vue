@@ -4,6 +4,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+import Badge from '../ui/badge/Badge.vue'
 import BrandButton from '../common/BrandButton.vue'
 import ProductHeroBadge from '../common/ProductHeroBadge.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
@@ -52,6 +54,7 @@ const {
   videoAriaLabel,
   compact = false,
   ctaWrapperClass,
+  beta = false,
   class: className
 } = defineProps<{
   locale?: Locale
@@ -84,6 +87,7 @@ const {
   videoAriaLabel?: string
   compact?: boolean
   ctaWrapperClass?: HTMLAttributes['class']
+  beta?: boolean
 }>()
 </script>
 
@@ -98,12 +102,17 @@ const {
     "
   >
     <div class="w-full lg:flex-1">
-      <ProductHeroBadge
-        :text="badgeText"
-        :logo-src="badgeLogoSrc"
-        :logo-alt="badgeLogoAlt"
-        :show-logo="badgeShowLogo"
-      />
+      <div class="flex items-center gap-3">
+        <ProductHeroBadge
+          :text="badgeText"
+          :logo-src="badgeLogoSrc"
+          :logo-alt="badgeLogoAlt"
+          :show-logo="badgeShowLogo"
+        />
+        <Badge v-if="beta" variant="accent" size="xs">
+          {{ t('nav.badgeBeta', locale) }}
+        </Badge>
+      </div>
 
       <h1
         :class="
