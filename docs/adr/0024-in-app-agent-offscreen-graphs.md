@@ -288,10 +288,13 @@ the prior incarnation to affect the new target occupant. Retries preserve the or
   are preserved through retry, queue drain, reconnect, and projection.
 - **Separate view state:** layout remains in the separate FE-owned Y.Doc; presence,
   selection, hover, viewport, and renderer measurements are not semantic shared state.
-- **Byte-identical persistence:** serializing a document, deactivating/activating it any
-  number of times, saving, and reloading must produce byte-identical workflow JSON,
-  apart from the explicitly permitted node-ID normalization. Activation must not persist
-  viewport or measurement artifacts. This is a hard Base/ECS/Nodes-2.0 QA invariant.
+- **Byte-identical persistence:** the test first performs any node-ID reminting required by
+  ADR-0018, serializes the normalized document with the production serializer, and captures
+  those exact bytes as its baseline. It then deactivates/activates the document any number
+  of times, saves, reloads, and serializes again with the same serializer. The final bytes
+  must exactly equal the post-normalization baseline; no later ID normalization or
+  comparison-time exception is permitted. Activation must not persist viewport or
+  measurement artifacts. This is a hard Base/ECS/Nodes-2.0 QA invariant.
 - **Loud illegal state:** invalid activation, scope resolution, projection, catalog, or
   widget state fails at the domain boundary and is observable; activation must not widen
   silent Nodes-2.0 widget-protocol failure surfaces.
