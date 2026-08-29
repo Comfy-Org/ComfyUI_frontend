@@ -63,6 +63,33 @@ function requestedAfterCursors() {
   })
 }
 
+const transientFailures: {
+  name: string
+  fail: () => Promise<Response>
+  reason: string
+}[] = [
+  {
+    name: 'HTTP 500',
+    fail: () => Promise.resolve(new Response(null, { status: 500 })),
+    reason: 'asset request failed'
+  },
+  {
+    name: 'malformed JSON',
+    fail: () =>
+      Promise.resolve(
+        new Response('{', {
+          headers: { 'Content-Type': 'application/json' }
+        })
+      ),
+    reason: 'failed to decode asset json response'
+  },
+  {
+    name: 'offline request',
+    fail: () => Promise.reject(new Error('offline')),
+    reason: 'asset fetch failed'
+  }
+]
+
 describe('useAssetsQuery loadNew pagination', () => {
   it('prepends multiple pages in newest-to-oldest order', async () => {
     const list = await createList('order', ['known'])
@@ -229,4 +256,33 @@ describe('useAssetsQuery loadMore pagination', () => {
     expect(toValue(list.hasMore)).toBe(true)
     expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
   })
+
+  it.for(transientFailures)(
+    'retains rows and retries the same cursor after $name',
+    async ({ fail, reason }) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const list = await createList(`retry-${reason}`, ['newest'], {
+        hasMore: true,
+        nextCursor: 'page-2'
+      })
+      fetchApiMock
+        .mockImplementationOnce(fail)
+        .mockResolvedValueOnce(response(['older'], { hasMore: false }))
+
+      await expect(list.loadMore()).resolves.toBe(false)
+
+      expect(error).toHaveBeenCalledWith(reason, expect.anything())
+      expect(toValue(list.hasMore)).toBe(true)
+      expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
+
+      await expect(list.loadMore()).resolves.toBe(true)
+
+      expect(requestedAfterCursors()).toEqual(['page-2', 'page-2'])
+      expect(toValue(list.hasMore)).toBe(false)
+      expect(toValue(list.items).map(({ id }) => id)).toEqual([
+        'newest',
+        'older'
+      ])
+    }
+  )
 })
