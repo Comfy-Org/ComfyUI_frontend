@@ -110,6 +110,7 @@ test.describe(
       expect(viewport).not.toBeNull()
       expect(box!.width).toBeGreaterThan(0)
       expect(box!.width).toBeLessThanOrEqual(420)
+      expect(box!.x).toBeGreaterThanOrEqual(-1)
       expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1)
       await expect(page.getByTestId('integrated-tab-bar-actions')).toBeVisible()
     })

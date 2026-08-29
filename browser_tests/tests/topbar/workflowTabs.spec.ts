@@ -66,10 +66,11 @@ test.describe('Workflow tabs', () => {
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
       await topbar.getTab(1).click()
-      await topbar.closeWorkflowTab('Unsaved Workflow (2)')
+      const activeTabName = await topbar.getActiveTabName()
+      await topbar.closeWorkflowTab(activeTabName)
 
       await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
-      await expect(topbar.getActiveTab()).toBeVisible()
+      await expect.poll(() => topbar.getActiveTabName()).not.toBe(activeTabName)
     })
 
     test('preserves tab identity across browser reload', async ({
