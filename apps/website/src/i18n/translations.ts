@@ -7370,8 +7370,8 @@ const translations = {
     'zh-CN': '部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。'
   },
   'platform.terminal.buildResolved': {
-    en: 'Builder resolved 5 models, 3 custom nodes and pinned 5 python dependencies',
-    'zh-CN': 'Builder 已解析 5 个模型、3 个自定义节点，并锁定 5 个 Python 依赖'
+    en: 'Builder resolved 5 models, 3 custom nodes...',
+    'zh-CN': 'Builder 已解析 5 个模型、3 个自定义节点...'
   },
   'platform.terminal.deployed': {
     en: 'Deployed https://abc-ref2v.run.comfy.app',
