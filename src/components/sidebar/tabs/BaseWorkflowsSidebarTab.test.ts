@@ -59,8 +59,8 @@ const {
     mockWorkflowService: {
       openWorkflow: vi.fn().mockResolvedValue(undefined),
       closeWorkflow: vi.fn().mockResolvedValue(undefined),
-      renameWorkflow: vi.fn().mockResolvedValue(undefined),
-      deleteWorkflow: vi.fn().mockResolvedValue(undefined),
+      renameWorkflow: vi.fn().mockResolvedValue(true),
+      deleteWorkflow: vi.fn().mockResolvedValue(true),
       insertWorkflow: vi.fn().mockResolvedValue(undefined),
       duplicateWorkflow: vi.fn().mockResolvedValue(undefined)
     },
@@ -275,6 +275,22 @@ describe('BaseWorkflowsSidebarTab', () => {
     await nextTick()
 
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
+  })
+
+  it('propagates failed workflow operations to the tree', async () => {
+    const workflow = createMockWorkflow('workflows/test.json')
+    mockWorkflowStore.workflows = [workflow]
+    mockWorkflowService.renameWorkflow.mockResolvedValueOnce(false)
+    mockWorkflowService.deleteWorkflow.mockResolvedValueOnce(false)
+
+    renderComponent()
+    setSearchQuery('test')
+    await nextTick()
+    const leaf = getSearchRoot()?.children?.[0]
+
+    expect(leaf).toBeDefined()
+    expect(await leaf?.handleRename?.('renamed')).toBe(false)
+    expect(await leaf?.handleDelete?.()).toBe(false)
   })
 
   it('refreshes when idle and exposes busy state while workflows are syncing', async () => {

@@ -107,32 +107,35 @@ const wrapperRef = ref<HTMLAnchorElement>()
 const rename = async (
   newName: string | null | undefined,
   initialName: string
-) => {
+): Promise<boolean> => {
   if (newName && newName !== initialName) {
-    // Synchronize the node titles with the new name
-    item.updateTitle?.(newName)
-
     if (workflowStore.activeSubgraph) {
       workflowStore.activeSubgraph.name = newName
     } else if (workflowStore.activeWorkflow) {
       try {
         const suffix = getWorkflowSuffix(workflowStore.activeWorkflow.suffix)
-        await workflowService.renameWorkflow(
-          workflowStore.activeWorkflow,
-          ComfyWorkflow.basePath + ensureWorkflowSuffix(newName, suffix)
+        if (
+          !(await workflowService.renameWorkflow(
+            workflowStore.activeWorkflow,
+            ComfyWorkflow.basePath + ensureWorkflowSuffix(newName, suffix)
+          ))
         )
+          return false
       } catch (error) {
         console.error(error)
         dialogService.showErrorDialog(error)
-        return
+        return false
       }
     }
+
+    item.updateTitle?.(newName)
 
     // Force the navigation stack to recompute the labels
     // TODO: investigate if there is a better way to do this
     const navigationStore = useSubgraphNavigationStore()
     navigationStore.restoreState(navigationStore.exportState())
   }
+  return true
 }
 
 const isRoot = item.key === 'root'
@@ -187,9 +190,7 @@ const handleClick = (event: MouseEvent) => {
 }
 
 const inputBlur = async (doRename: boolean) => {
-  if (doRename) {
-    await rename(itemLabel.value, item.label as string)
-  }
+  if (doRename && !(await rename(itemLabel.value, item.label as string))) return
 
   isEditing.value = false
 }

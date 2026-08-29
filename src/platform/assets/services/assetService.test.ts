@@ -824,6 +824,19 @@ describe(assetService.seedModelAssets, () => {
 })
 
 describe(assetService.updateAsset, () => {
+  it('returns unknown server state when the request reports failure', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildResponse({}, { ok: false, status: 500 })
+    )
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(
+      assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
+    ).resolves.toEqual({ kind: 'failed', serverState: 'unknown' })
+    expect(consoleSpy).toHaveBeenCalledOnce()
+    consoleSpy.mockRestore()
+  })
+
   it('returns unknown server state when the response body is invalid', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({ name: 'no-id-field.safetensors' })
