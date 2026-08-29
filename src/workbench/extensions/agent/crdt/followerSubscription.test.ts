@@ -223,8 +223,12 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
   it('replaces the follower doc and resubscribes with an empty state vector', () => {
     const { transport, bridge, projected } = wire()
     const resets: unknown[] = []
+    let docAtNotification: typeof bridge.follower | null = null
     bridge.addEventListener('doc_reset', (event) => {
-      if (event instanceof CustomEvent) resets.push(event.detail)
+      if (event instanceof CustomEvent) {
+        resets.push(event.detail)
+        docAtNotification = bridge.follower
+      }
     })
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -234,6 +238,7 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
 
     transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
 
+    expect(docAtNotification).toBe(oldDoc)
     // The old lineage is dropped wholesale, never folded into.
     expect(bridge.follower).not.toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(0)
@@ -341,20 +346,36 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
 
     transport.deliver(
       'doc_update',
-      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+    const followerBeforeGap = bridge.follower
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 4)
     )
 
-    expect(projected).toHaveLength(0)
-    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(projected).toHaveLength(1)
+    expect(bridge.follower).toBe(followerBeforeGap)
+    expect(bridge.follower.updatesApplied).toBe(1)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(followerBeforeGap.stateVector())
+    )
+    expect(subscribes[1].data.state_vector_b64).not.toBe(
+      encodeBase64(new Uint8Array())
+    )
 
     // The resubscribe re-baselined: the catch-up frame lands whatever its seq.
     transport.deliver(
       'doc_update',
       docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
     )
-    expect(projected).toHaveLength(1)
+    expect(projected).toHaveLength(2)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
   })
 

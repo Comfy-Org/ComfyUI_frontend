@@ -176,7 +176,8 @@ export class LayoutFollowerBridge extends EventTarget {
     // best-effort, so a jump means a frame was dropped — possibly a
     // `doc_reset`, in which case these bytes belong to a NEW lineage and
     // folding them in duplicates the canvas. The frame is therefore NOT
-    // applied; the resubscribe's ordinary catch-up delivers everything missed.
+    // applied; resubscribe() keeps this FollowerDoc and its state vector so
+    // the ordinary catch-up delivers everything missed.
     if (this.lastSeq !== null && update.seq > this.lastSeq + 1) {
       this.resubscribe()
       return
@@ -219,11 +220,14 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
+    // Consumers/projectors must observe the lineage break while their old
+    // doc reference is still valid. Replacement is the final step of the
+    // ordering barrier and is reserved for this explicit frame.
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
     this.resubscribe()
-    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
   }
 
   /**

@@ -74,6 +74,40 @@ export interface AgentCrdtStatus {
   workflowId: string | null
   updatesApplied: number
   lastFrameType: string | null
+  subscriptionStatus: AgentCrdtSubscriptionStatus
+  refusalCode: string | null
+}
+
+export type AgentCrdtSubscriptionStatus =
+  | 'idle'
+  | 'connected'
+  | 'retrying'
+  | 'too_large'
+  | 'permanent_failure'
+
+export type SubscribeRefusalDisposition =
+  | 'too_large'
+  | 'permanent'
+  | 'transient'
+
+/**
+ * Refusal classes are deliberately decided from the server code, not from
+ * `ok` alone. `not_found` remains transient for the FE-1901 creation race;
+ * an unknown code is also retried so a newly added transient server refusal
+ * does not silently strand the follower.
+ */
+export function classifySubscribeRefusal(
+  code: unknown
+): SubscribeRefusalDisposition {
+  if (code === 'too_large') return 'too_large'
+  if (code === 'unsupported' || code === 'invalid_frame') return 'permanent'
+  return 'transient'
+}
+
+function isTerminalSubscriptionStatus(
+  status: AgentCrdtSubscriptionStatus
+): boolean {
+  return status === 'too_large' || status === 'permanent_failure'
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -98,6 +132,8 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  const subscriptionStatus = ref<AgentCrdtSubscriptionStatus>('idle')
+  const refusalCode = ref<string | null>(null)
 
   if (!enabled) {
     return {
@@ -107,7 +143,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
           connected: false,
           workflowId: null,
           updatesApplied: 0,
-          lastFrameType: null
+          lastFrameType: null,
+          subscriptionStatus: 'idle',
+          refusalCode: null
         })
       ),
       sendHumanOps: (_ops: DocOp[]) => undefined
@@ -215,12 +253,31 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       clearSubscribeRetry()
+      subscriptionStatus.value = 'connected'
+      refusalCode.value = null
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
         persistDocId(subscribedWorkflowId.value)
     } else {
-      scheduleSubscribeRetry()
+      const code = event.detail?.code
+      refusalCode.value = typeof code === 'string' ? code : null
+      switch (classifySubscribeRefusal(code)) {
+        case 'too_large':
+          // s2-3: recovery is owned by s2-5. Do not keep issuing a request
+          // that the relay has already proved cannot fit in one frame.
+          clearSubscribeRetry()
+          subscriptionStatus.value = 'too_large'
+          break
+        case 'permanent':
+          clearSubscribeRetry()
+          subscriptionStatus.value = 'permanent_failure'
+          break
+        case 'transient':
+          subscriptionStatus.value = 'retrying'
+          scheduleSubscribeRetry()
+          break
+      }
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -285,7 +342,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     )
   }
   const onReconnected: EventListener = () => {
+    if (isTerminalSubscriptionStatus(subscriptionStatus.value)) return
     connected.value = false
+    subscriptionStatus.value = 'retrying'
     projector.reset()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
@@ -304,6 +363,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
    * nothing.
    */
   const onSocketActivity: EventListener = () => {
+    if (isTerminalSubscriptionStatus(subscriptionStatus.value)) return
     bridge.reconcile()
   }
 
@@ -324,6 +384,8 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     (next) => {
       clearSubscribeRetry()
       connected.value = false
+      subscriptionStatus.value = 'idle'
+      refusalCode.value = null
       projector.reset()
       knownDocNodeIds = new Set()
       if (next === null) {
@@ -485,6 +547,8 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       // Mirror the watch path so status/persistence agree with the binding
       // (otherwise the dev panel shows "no document" on a live subscription).
       clearSubscribeRetry()
+      subscriptionStatus.value = 'idle'
+      refusalCode.value = null
       subscribedWorkflowId.value = id
       bridge.subscribe(id)
     },
@@ -515,7 +579,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
         connected: connected.value,
         workflowId: subscribedWorkflowId.value,
         updatesApplied: updatesApplied.value,
-        lastFrameType: lastFrameType.value
+        lastFrameType: lastFrameType.value,
+        subscriptionStatus: subscriptionStatus.value,
+        refusalCode: refusalCode.value
       }
     }
   }
@@ -526,7 +592,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
-    lastFrameType: lastFrameType.value
+    lastFrameType: lastFrameType.value,
+    subscriptionStatus: subscriptionStatus.value,
+    refusalCode: refusalCode.value
   }))
 
   return {
