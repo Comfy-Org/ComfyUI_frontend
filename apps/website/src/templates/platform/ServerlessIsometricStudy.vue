@@ -8,26 +8,26 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const COLS = 12
-const ROWS = 5
-const TILE_SIZE = 34
+const COLS = 20
+const ROWS = 7
+const TILE_SIZE = 20
 const ISO_X = 0.866025
 const ISO_Y = 0.5
 const TILE_WIDTH = TILE_SIZE * ISO_X * 2
 const TILE_HEIGHT = TILE_SIZE * ISO_Y * 2
-const GRID_STEP_X = 35
-const GRID_STEP_Y = 18.5
-const ORIGIN_X = 235
+const GRID_STEP_X = 21
+const GRID_STEP_Y = 11
+const ORIGIN_X = 260
 const ORIGIN_Y = 60
-const MAX_HEIGHT = 138
+const MAX_HEIGHT = 72
 const TOP_PADDING = 18
 const BUILD_DURATION = 1800
 const HOLD_DURATION = 3000
 const RESET_DURATION = 650
 const CYCLE_DURATION = BUILD_DURATION + HOLD_DURATION + RESET_DURATION
 const BUILD_STAGGER = 0.62
-const PEAK_COUNT = 4
 const MAX_TEXTURE_SHADE_OPACITY = 0.62
+const CONTRIBUTION_HEIGHTS = [0, 14, 26, 40, 56, 72] as const
 
 interface Tile {
   id: number
@@ -88,38 +88,32 @@ const tiles: Tile[] = Array.from({ length: COLS * ROWS }, (_, id) => {
 }).sort((a, b) => a.y - b.y || a.x - b.x)
 
 function patternHeight(tile: Tile, pattern: number) {
-  const x = tile.column / (COLS - 1)
-  const y = tile.row / (ROWS - 1)
-  let field = 0
+  const weeklyDensity =
+    0.46 + seededUnit(pattern * 149 + tile.column * 37) * 0.44
+  const active =
+    seededUnit(pattern * 211 + tile.id * 53 + tile.row * 17) < weeklyDensity
 
-  for (let peak = 0; peak < PEAK_COUNT; peak += 1) {
-    const seed = pattern * 97 + peak * 17
-    const centerX = 0.12 + seededUnit(seed + 1) * 0.76
-    const centerY = 0.08 + seededUnit(seed + 2) * 0.84
-    const spreadX = 0.12 + seededUnit(seed + 3) * 0.2
-    const spreadY = 0.2 + seededUnit(seed + 4) * 0.32
-    const amplitude = 0.62 + seededUnit(seed + 5) * 0.38
-    const distance =
-      Math.pow((x - centerX) / spreadX, 2) +
-      Math.pow((y - centerY) / spreadY, 2)
+  if (!active) return 0
 
-    field = Math.max(field, Math.exp(-distance * 0.7) * amplitude)
-  }
-
-  const edgeTaper =
-    0.68 +
-    Math.sin((Math.PI * (tile.column + 0.5)) / COLS) *
-      Math.sin((Math.PI * (tile.row + 0.5)) / ROWS) *
-      0.32
-  const variation = 0.72 + seededUnit(pattern * 131 + tile.id * 11) * 0.56
-  const height = Math.round(field * edgeTaper * variation * MAX_HEIGHT)
+  const intensity = seededUnit(pattern * 307 + tile.id * 97 + tile.column * 23)
+  const level =
+    intensity < 0.46
+      ? 1
+      : intensity < 0.72
+        ? 2
+        : intensity < 0.88
+          ? 3
+          : intensity < 0.97
+            ? 4
+            : 5
+  const height = CONTRIBUTION_HEIGHTS[level]
   const maximumVisibleHeight = Math.min(
     MAX_HEIGHT,
     tile.y - TILE_HEIGHT / 2 - TOP_PADDING
   )
   const visibleHeight = Math.min(height, maximumVisibleHeight)
 
-  return visibleHeight < 14 ? 0 : visibleHeight
+  return visibleHeight < CONTRIBUTION_HEIGHTS[1] ? 0 : visibleHeight
 }
 
 const patternIndex = computed(() =>
