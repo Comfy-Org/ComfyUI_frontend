@@ -1,56 +1,55 @@
 <script setup lang="ts">
-import {
-  Ascii,
-  Checkerboard,
-  CRTScreen,
-  CursorTrail,
-  Shader,
-  SineWave,
-  Swirl
-} from 'shaders/vue'
+import { Ascii, CRTScreen, Godrays, Shader, SineWave, Swirl } from 'shaders/vue'
 import { computed } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 
-const swirlSpeed = computed(() => (prefersReducedMotion() ? 0 : 2.8))
+const raySpeed = computed(() => (prefersReducedMotion() ? 0 : 1.02))
 </script>
 
 <template>
   <div class="size-full bg-primary-comfy-ink">
     <Shader class="size-full">
-      <Swirl
-        :blend="60"
-        color-a="#ff6600"
-        color-b="#00ffee"
-        :detail="1.9"
-        :speed="swirlSpeed"
-        :stops="[
-          { color: '#ff6600', position: 0 },
-          { color: '#00ffee', position: 1 }
-        ]"
-      />
       <CRTScreen
-        blend-mode="hardLight"
-        :brightness="1.1"
-        :color-shift="0"
-        :contrast="1.2"
+        :brightness="2.5"
+        :color-shift="10"
+        :curvature="0"
+        :pixel-size="108"
+        :scale-to-fill="0"
+        :scanline-frequency="150"
+        :scanline-intensity="0.56"
       >
-        <Checkerboard />
-        <SineWave
-          :amplitude="0.01"
-          :frequency="0.9"
-          :softness="0.27"
-          :thickness="0.78"
+        <Swirl
+          :blend="88"
+          :coarse-x="50"
+          :coarse-y="50"
+          color-a="#010b17"
+          color-b="#040617"
+          :detail="1.8"
+          :fine-x="50"
+          :fine-y="50"
+          :medium-x="50"
+          :medium-y="50"
         />
-        <CursorTrail
-          color-a="#ffee00"
-          :radius="1"
-          :stops="[
-            { color: '#ffee00', position: 0 },
-            { color: '#ff00aa', position: 1 }
-          ]"
-        />
-        <Ascii :cell-size="82" :spacing="0.5" />
+        <Ascii
+          characters="01010101010101010101010101 "
+          font-family="Space Mono"
+        >
+          <Godrays
+            :center="{ x: 1, y: 0.5 }"
+            :density="0.08"
+            ray-color="#78a7ff"
+            :speed="raySpeed"
+          />
+          <SineWave
+            :amplitude="0.06"
+            color="#3c4f8f"
+            :frequency="0.6"
+            :position="{ x: 0.5, y: 0 }"
+            :softness="0.83"
+            :thickness="0.09"
+          />
+        </Ascii>
       </CRTScreen>
     </Shader>
   </div>

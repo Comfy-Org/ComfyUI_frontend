@@ -12,6 +12,7 @@ const ctas = platformCtas(locale)
 <template>
   <CtaCenter01
     compact
+    class="bg-primary-comfy-ink"
     :heading="t('platform.closing.heading', locale)"
     :primary-cta="ctas.getStarted"
     :secondary-cta="ctas.docs"

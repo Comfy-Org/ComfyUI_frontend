@@ -15,7 +15,7 @@ onMounted(() => {
 <template>
   <div
     aria-hidden="true"
-    class="pointer-events-none absolute inset-0 z-0 overflow-hidden mask-[radial-gradient(ellipse_100%_92%_at_64%_52%,black_0%,black_54%,rgba(0,0,0,0.7)_74%,transparent_100%)] opacity-50 filter-[grayscale(1)_contrast(1.15)] md:-bottom-48 md:left-0 md:mask-[radial-gradient(ellipse_90%_84%_at_54%_42%,black_0%,black_46%,rgba(0,0,0,0.56)_64%,transparent_92%)]"
+    class="pointer-events-none absolute inset-x-0 -inset-y-20 z-0 overflow-hidden mask-[linear-gradient(to_bottom,transparent_0%,rgba(0,0,0,0.55)_20%,black_38%,black_62%,rgba(0,0,0,0.55)_80%,transparent_100%)] opacity-45 filter-[grayscale(1)_contrast(1.1)]"
   >
     <ShaderClient v-if="isMounted" class="size-full" />
   </div>

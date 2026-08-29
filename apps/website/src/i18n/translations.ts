@@ -7382,7 +7382,7 @@ const translations = {
     'zh-CN': 'Comfy 开发者平台'
   },
   'platform.hero.subtitle': {
-    en: 'The fastest way from ComfyUI workflow to production endpoint.',
+    en: 'The fastest way from ComfyUI workflow\nto production endpoint.',
     'zh-CN': '从 ComfyUI 工作流到生产端点的最快路径。'
   },
   'platform.hero.getStarted': {

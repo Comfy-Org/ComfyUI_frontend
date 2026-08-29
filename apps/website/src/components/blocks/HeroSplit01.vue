@@ -103,15 +103,17 @@ const {
   >
     <div class="w-full lg:flex-1">
       <div class="flex items-center gap-3">
-        <ProductHeroBadge
-          :text="badgeText"
-          :logo-src="badgeLogoSrc"
-          :logo-alt="badgeLogoAlt"
-          :show-logo="badgeShowLogo"
-        />
-        <Badge v-if="beta" variant="accent" size="xs">
-          {{ t('nav.badgeBeta', locale) }}
-        </Badge>
+        <slot name="badge">
+          <ProductHeroBadge
+            :text="badgeText"
+            :logo-src="badgeLogoSrc"
+            :logo-alt="badgeLogoAlt"
+            :show-logo="badgeShowLogo"
+          />
+          <Badge v-if="beta" variant="accent" size="xs">
+            {{ t('nav.badgeBeta', locale) }}
+          </Badge>
+        </slot>
       </div>
 
       <h1
