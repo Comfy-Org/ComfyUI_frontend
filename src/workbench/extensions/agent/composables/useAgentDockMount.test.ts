@@ -1,9 +1,11 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
+
+vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
 
 describe('useAgentDockMount', () => {
   beforeEach(() => {
@@ -32,7 +34,7 @@ describe('useAgentDockMount', () => {
     expect(docked.value).toBe(false)
     store.isOpen = true
     expect(docked.value).toBe(true)
-    store.close()
+    store.close('close_button')
     expect(docked.value).toBe(false)
   })
 })

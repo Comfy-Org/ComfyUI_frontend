@@ -1,7 +1,7 @@
 import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent } from 'vue'
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
