@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -17,7 +17,8 @@ import {
 } from '@/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture'
 import type {
   RgthreeLifecycleCanvas,
-  RgthreeLifecycleHost
+  RgthreeLifecycleHost,
+  RgthreeLifecycleInstallation
 } from '@/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture'
 
 class ManualScheduler implements CleanExtensionScheduler {
@@ -95,9 +96,22 @@ function createScaleSetup(scale: number): ScaleSetup {
 }
 
 describe('rgthree clean-room lifecycle compatibility fixture', () => {
+  const installations = new Set<RgthreeLifecycleInstallation>()
+  const track = <T extends RgthreeLifecycleInstallation>(
+    installation: T
+  ): T => {
+    installations.add(installation)
+    return installation
+  }
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.onDeprecationWarning = []
+  })
+
+  afterEach(() => {
+    for (const installation of installations) installation.dispose()
+    installations.clear()
   })
 
   it.for([1, 16, 64])(
@@ -106,10 +120,12 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
       const setup = createScaleSetup(scale)
       const before = setup.graph.serialize()
       const originalDrawNode = TestCanvas.prototype.drawNode
-      const installation = installRgthreeLifecycleFixture(
-        TestCanvas.prototype,
-        setup.host,
-        setup.scheduler
+      const installation = track(
+        installRgthreeLifecycleFixture(
+          TestCanvas.prototype,
+          setup.host,
+          setup.scheduler
+        )
       )
 
       const outputs = setup.nodes.map((node) =>
@@ -158,15 +174,15 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
     const reloadedModuleInstaller = createRgthreeLifecycleInstaller()
 
     for (let cycle = 0; cycle < 4; cycle++) {
-      const installation = firstModuleInstaller(
-        TestCanvas.prototype,
-        setup.host,
-        setup.scheduler
+      const installation = track(
+        firstModuleInstaller(TestCanvas.prototype, setup.host, setup.scheduler)
       )
-      const reload = reloadedModuleInstaller(
-        TestCanvas.prototype,
-        setup.host,
-        setup.scheduler
+      const reload = track(
+        reloadedModuleInstaller(
+          TestCanvas.prototype,
+          setup.host,
+          setup.scheduler
+        )
       )
 
       expect(reload).toBe(installation)
@@ -212,10 +228,12 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
 
   it('uses label constructor identity instead of the node type string', () => {
     const setup = createScaleSetup(1)
-    const installation = installRgthreeLifecycleFixture(
-      TestCanvas.prototype,
-      setup.host,
-      setup.scheduler
+    const installation = track(
+      installRgthreeLifecycleFixture(
+        TestCanvas.prototype,
+        setup.host,
+        setup.scheduler
+      )
     )
     const typeOnlyImpostor = new LGraphNode('Type-only impostor')
     typeOnlyImpostor.type = 'fixture/label'
@@ -231,10 +249,12 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
   it('preserves wrappers installed later by another extension', () => {
     const setup = createScaleSetup(1)
     const originalDrawNode = TestCanvas.prototype.drawNode
-    const installation = installRgthreeLifecycleFixture(
-      TestCanvas.prototype,
-      setup.host,
-      setup.scheduler
+    const installation = track(
+      installRgthreeLifecycleFixture(
+        TestCanvas.prototype,
+        setup.host,
+        setup.scheduler
+      )
     )
     const rgthreeWrapper = TestCanvas.prototype.drawNode
     const competingCalls = vi.fn()
