@@ -16,8 +16,22 @@ const distribution = vi.hoisted(() => ({
 
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
 const overflowObservers = vi.hoisted<
-  Array<{ dispose: ReturnType<typeof vi.fn> }>
+  Array<{
+    isOverflowing: { value: boolean }
+    checkOverflow: ReturnType<typeof vi.fn>
+    notifyCheck: () => void
+    dispose: ReturnType<typeof vi.fn>
+  }>
 >(() => [])
+interface WorkflowFixture {
+  path: string
+}
+const workflowStoreHolder = vi.hoisted<{
+  store: {
+    openWorkflows: WorkflowFixture[]
+    activeWorkflow: WorkflowFixture | null
+  } | null
+}>(() => ({ store: null }))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -97,11 +111,16 @@ vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
 vi.mock('@/composables/element/useOverflowObserver', async () => {
   const { ref } = await import('vue')
   return {
-    useOverflowObserver: () => {
+    useOverflowObserver: (
+      _element: unknown,
+      options?: { onCheck?: (isOverflowing: boolean) => void }
+    ) => {
+      const isOverflowing = ref(false)
       const observer = {
-        isOverflowing: ref(false),
+        isOverflowing,
         disposed: ref(false),
         checkOverflow: vi.fn(),
+        notifyCheck: () => options?.onCheck?.(isOverflowing.value),
         dispose: vi.fn()
       }
       overflowObservers.push(observer)
@@ -118,11 +137,17 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () =>
-    reactive({
+  useWorkflowStore: () => {
+    const store = reactive<{
+      openWorkflows: WorkflowFixture[]
+      activeWorkflow: WorkflowFixture | null
+    }>({
       openWorkflows: [],
       activeWorkflow: null
     })
+    workflowStoreHolder.store = store
+    return store
+  }
 }))
 
 vi.mock('@/stores/commandStore', () => ({
@@ -327,7 +352,7 @@ describe('WorkflowTabs scrolling', () => {
   })
 
   it('rebinds scroll listeners when scroll content is replaced', async () => {
-    const { user, unmount } = renderComponent()
+    const { user, unmount, rerender } = renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
     const oldScrollContent = screen.getByTestId('scroll-content')
     const removeOldListener = vi.spyOn(oldScrollContent, 'removeEventListener')
@@ -335,6 +360,7 @@ describe('WorkflowTabs scrolling', () => {
     await user.click(
       screen.getByRole('button', { name: 'Replace scroll content' })
     )
+    await rerender({ class: 'updated' })
 
     await waitFor(() => {
       expect(overflowObservers).toHaveLength(2)
@@ -366,5 +392,28 @@ describe('WorkflowTabs scrolling', () => {
       expect.any(Function),
       expect.any(Object)
     )
+  })
+
+  it('does not reveal the active tab again when overflow remains true', async () => {
+    const workflow = { path: 'active.json' }
+    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+    const { unmount } = renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    if (!workflowStoreHolder.store)
+      throw new Error('Workflow store not mounted')
+    workflowStoreHolder.store.openWorkflows = [workflow]
+    workflowStoreHolder.store.activeWorkflow = workflow
+    await nextTick()
+
+    overflowObservers[0].isOverflowing.value = true
+    await nextTick()
+    await nextTick()
+    scrollIntoView.mockClear()
+
+    overflowObservers[0].notifyCheck()
+    await nextTick()
+
+    expect(scrollIntoView).not.toHaveBeenCalled()
+    unmount()
   })
 })

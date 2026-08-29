@@ -283,16 +283,19 @@ function bindScrollContent() {
       { immediate: true }
     )
 
-    overflowObserver = useOverflowObserver(nextScrollContent, {
-      onCheck: (isOverflowing) => {
+    overflowObserver = useOverflowObserver(nextScrollContent)
+    watch(
+      overflowObserver.isOverflowing,
+      (isOverflowing) => {
         showOverflowArrows.value = isOverflowing
         if (!isOverflowing) return
         void nextTick(() => {
           scrollState.measure()
           void ensureActiveTabVisible({ waitForDom: false })
         })
-      }
-    })
+      },
+      { immediate: true }
+    )
   })
 }
 
