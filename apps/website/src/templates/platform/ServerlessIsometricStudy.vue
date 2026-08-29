@@ -20,6 +20,7 @@ const GRID_STEP_Y = 18.5
 const ORIGIN_X = 235
 const ORIGIN_Y = 60
 const MAX_HEIGHT = 138
+const TOP_PADDING = 18
 const BUILD_DURATION = 1800
 const HOLD_DURATION = 3000
 const RESET_DURATION = 650
@@ -112,8 +113,13 @@ function patternHeight(tile: Tile, pattern: number) {
       0.32
   const variation = 0.72 + seededUnit(pattern * 131 + tile.id * 11) * 0.56
   const height = Math.round(field * edgeTaper * variation * MAX_HEIGHT)
+  const maximumVisibleHeight = Math.min(
+    MAX_HEIGHT,
+    tile.y - TILE_HEIGHT / 2 - TOP_PADDING
+  )
+  const visibleHeight = Math.min(height, maximumVisibleHeight)
 
-  return height < 14 ? 0 : Math.min(MAX_HEIGHT, height)
+  return visibleHeight < 14 ? 0 : visibleHeight
 }
 
 const patternIndex = computed(() =>
