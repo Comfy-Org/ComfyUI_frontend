@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import * as Y from "yjs";
 import { describe, expect, it } from "vitest";
 import { applyOps, mint, project, type Op, type WorkflowJSON, type WorkflowNode } from "../../src/index.js";
-import { loadCatalog } from "../helpers.js";
+import { loadCatalog, loadSession, sessionFiles } from "../helpers.js";
 
 const catalog = loadCatalog();
 const OUT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -54,6 +54,27 @@ const DIVERGENCE_ALLOWLIST: Record<string, string> = {
     "same-input reconnect writes expose the difference between legacy actor fallback and producer Lamport order; this is an explicit register-policy review case.",
   "delete-vs-edit-race":
     "the scalar schemes expose different arrival-sensitive delete/edit outcomes; DQ-11 and explicit product policy must classify this before rollout.",
+  "session-large-build":
+    "real comfy_cli stream, two registers: three same-base_version cfg writes are tiebroken lexicographically by actor under the legacy scheme but by causal-history depth under derived Lamport (winner 6 vs 9.5), and the vector reference resurrects a stale straggler prompt (base_version 40 arriving after the version-81 write) that the scalar schemes both bury; these are corpus instances of the stale-base and true-concurrency review families.",
+  "session-subgraph":
+    "host-path (57) and interior-path (57/27) writes race on the same promoted subgraph register: base_version favors the later-minted host write, while Lamport and the vector reference see the two writes as causally tied/concurrent and the actor tiebreak resurrects the stale interior write against the fixture's authored intent; an explicit register-policy review case on real fixture data.",
+};
+
+/**
+ * Which allowlist entries actually fire on the current corpus. An entry pinned
+ * to `false` is silent slack: it permits a divergence no case produces, and a
+ * regression that re-introduces it would otherwise pass unnoticed.
+ */
+const ALLOWLIST_FIRING: Record<string, boolean> = {
+  "agent-add-human-connect": false,
+  "same-widget-true-concurrency": false,
+  "dependent-producer-edits": true,
+  "reconnect-restart": true,
+  "stale-base-human-edit": true,
+  "reconnect-input-register": true,
+  "delete-vs-edit-race": false,
+  "session-large-build": true,
+  "session-subgraph": true,
 };
 
 function hash(value: unknown): string {
@@ -251,14 +272,60 @@ function generatedCase(family: number, seed: number): MatrixCase {
   return { id: `generated-family-${family}-seed-${seed}`, name: `Generated family ${family + 1} seed ${seed}`, family: `generated-family-${family + 1}`, seed, workflow: base, ops };
 }
 
+/**
+ * Real comfy_cli-generated fixture session streams replayed as matrix cases.
+ *
+ * Fixture ops carry only `base_version`/`stamp`, so the logical clocks are
+ * derived causally rather than from arrival position: an op minted at
+ * `base_version` b observed the document state produced by the first b ops in
+ * stream (arrival) order, plus its own actor's earlier ops. Lamport follows
+ * observe = max / tick = max + 1; the vector merges the observed ops' vectors
+ * and increments the op's own actor. Arrival-position clocks would fabricate a
+ * happened-before edge for the deliberately stale straggler writes these
+ * fixtures contain, and that missing edge is exactly the relation under test.
+ */
+function sessionCases(): MatrixCase[] {
+  return sessionFiles().map((file) => {
+    const session = loadSession(file);
+    const lamports: number[] = [];
+    const vectors: VectorClock[] = [];
+    const ops = session.ops.map((op, index) => {
+      const observed: number[] = [];
+      for (let prior = 0; prior < index; prior++) {
+        if (prior < op.base_version || session.ops[prior]!.actor === op.actor) observed.push(prior);
+      }
+      const lamport = observed.reduce((max, i) => Math.max(max, lamports[i]!), 0) + 1;
+      const vector: VectorClock = {};
+      for (const i of observed) for (const [actor, count] of Object.entries(vectors[i]!)) vector[actor] = Math.max(vector[actor] ?? 0, count);
+      vector[op.actor] = (vector[op.actor] ?? 0) + 1;
+      lamports.push(lamport);
+      vectors.push(vector);
+      return logical(op, "session-corpus", lamport, vector);
+    });
+    return { id: session.header.session, name: `Fixture session ${session.header.session} (${file})`, family: "session-corpus", workflow: session.header.base_workflow, ops };
+  });
+}
+
 function allCases(): MatrixCase[] {
   const cases = namedCases();
   for (let family = 0; family < 4; family++) for (let seed = 0; seed < 100; seed++) cases.push(generatedCase(family, seed));
+  cases.push(...sessionCases());
   return cases;
 }
 
-function renderMarkdown(matrix: { cases: { id: string; name: string; family: string; seed?: number; vector_relations: { ordered_pairs: number; concurrent_pairs: number }; schemes: Record<Scheme, SchemeResult> }[]; summary: Record<string, number> }): string {
-  const lines = ["# Clock ordering matrix", "", "Generated by `npm run test:clock-matrix`; final-state hashes cover canonical projected graph state only. Vector relations are pair counts from the test-only causal reference.", "", `Cases: ${matrix.summary.cases}; rows: ${matrix.summary.rows}; divergent rows: ${matrix.summary.divergent_rows}`, "", "| Case | Family | Seed | Vector ordered/concurrent pairs | Scheme | Application order | Final-state hash | Divergence |", "|---|---|---:|---:|---|---|---|---|"];
+interface SessionCorpusSection {
+  files: string[];
+  ops_total: number;
+  cases: { id: string; ops: number; vector_relations: { ordered_pairs: number; concurrent_pairs: number }; divergent_schemes: Scheme[] }[];
+}
+
+function renderMarkdown(matrix: { cases: { id: string; name: string; family: string; seed?: number; vector_relations: { ordered_pairs: number; concurrent_pairs: number }; schemes: Record<Scheme, SchemeResult> }[]; summary: Record<string, number>; session_corpus: SessionCorpusSection; allowlist_firing: Record<string, boolean> }): string {
+  const lines = ["# Clock ordering matrix", "", "Generated by `npm run test:clock-matrix`; final-state hashes cover canonical projected graph state only. Vector relations are pair counts from the test-only causal reference.", "", `Cases: ${matrix.summary.cases}; rows: ${matrix.summary.rows}; divergent rows: ${matrix.summary.divergent_rows}`, ""];
+  lines.push("## Session corpus", "", "The SHA-pinned comfy_cli-generated fixture sessions replayed through the same three schemes with causally derived logical clocks (see `sessionCases`).", "", "| Session | Ops | Vector ordered/concurrent pairs | Divergent schemes |", "|---|---:|---:|---|");
+  for (const entry of matrix.session_corpus.cases) lines.push(`| ${entry.id} | ${entry.ops} | ${entry.vector_relations.ordered_pairs}/${entry.vector_relations.concurrent_pairs} | ${entry.divergent_schemes.length === 0 ? "none" : entry.divergent_schemes.join(", ")} |`);
+  lines.push("", "## Divergence allowlist firing", "", "An entry that never fires is silent slack: it permits a divergence the corpus no longer produces.", "", "| Allowlist entry | Fires |", "|---|---|");
+  for (const [id, fires] of Object.entries(matrix.allowlist_firing)) lines.push(`| ${id} | ${fires ? "yes" : "no"} |`);
+  lines.push("", "| Case | Family | Seed | Vector ordered/concurrent pairs | Scheme | Application order | Final-state hash | Divergence |", "|---|---|---:|---:|---|---|---|---|");
   for (const row of matrix.cases) for (const scheme of SCHEMES) {
     const result = row.schemes[scheme];
     lines.push(`| ${row.name} | ${row.family} | ${row.seed ?? "-"} | ${row.vector_relations.ordered_pairs}/${row.vector_relations.concurrent_pairs} | ${scheme} | ${result.application_order.join(" → ")} | ${result.final_state_hash} | ${result.divergence_class} |`);
@@ -267,18 +334,29 @@ function renderMarkdown(matrix: { cases: { id: string; name: string; family: str
 }
 
 function runMatrix() {
-  const rows = allCases().map((caseData) => {
+  const cases = allCases();
+  const opCounts = new Map(cases.map((caseData) => [caseData.id, caseData.ops.length]));
+  const rows = cases.map((caseData) => {
     const raw = Object.fromEntries(SCHEMES.map((scheme) => [scheme, replay(caseData, scheme)])) as Record<Scheme, Omit<SchemeResult, "divergence_class">>;
     return { id: caseData.id, name: caseData.name, family: caseData.family, ...(caseData.seed === undefined ? {} : { seed: caseData.seed }), vector_relations: vectorRelations(caseData.ops), schemes: withDivergence(raw) };
   });
   const divergentRows = rows.filter((row) => Object.values(row.schemes).some((result) => result.divergence_class === "DIVERGENT"));
   const unallowlisted = divergentRows.filter((row) => !(row.id in DIVERGENCE_ALLOWLIST));
   if (unallowlisted.length > 0) throw new Error(`unallowlisted clock divergence: ${unallowlisted.map((row) => row.id).join(", ")}`);
+  const sessionRows = rows.filter((row) => row.family === "session-corpus");
+  const session_corpus: SessionCorpusSection = {
+    files: sessionFiles(),
+    ops_total: sessionRows.reduce((total, row) => total + (opCounts.get(row.id) ?? 0), 0),
+    cases: sessionRows.map((row) => ({ id: row.id, ops: opCounts.get(row.id) ?? 0, vector_relations: row.vector_relations, divergent_schemes: SCHEMES.filter((scheme) => row.schemes[scheme].divergence_class === "DIVERGENT") })),
+  };
+  const allowlist_firing = Object.fromEntries(Object.keys(DIVERGENCE_ALLOWLIST).map((id) => [id, divergentRows.some((row) => row.id === id)]));
   const matrix = {
-    schema_version: 1,
+    schema_version: 2,
     schemes: SCHEMES,
     divergence_allowlist: DIVERGENCE_ALLOWLIST,
-    summary: { cases: rows.length, rows: rows.length * SCHEMES.length, divergent_rows: divergentRows.length, divergent_rows_allowlisted: divergentRows.length - unallowlisted.length },
+    allowlist_firing,
+    summary: { cases: rows.length, rows: rows.length * SCHEMES.length, session_cases: sessionRows.length, divergent_rows: divergentRows.length, divergent_rows_allowlisted: divergentRows.length - unallowlisted.length },
+    session_corpus,
     cases: rows,
   };
   mkdirSync(OUT_DIR, { recursive: true });
@@ -290,13 +368,17 @@ function runMatrix() {
 describe("clock shadow-comparison acceptance matrix", () => {
   it("covers named product scenarios and four generator families at 100 seeds each", () => {
     const matrix = runMatrix();
-    expect(matrix.summary.cases).toBe(409);
-    expect(matrix.summary.rows).toBe(409 * 3);
+    expect(matrix.summary.cases).toBe(414);
+    expect(matrix.summary.rows).toBe(414 * 3);
+    expect(matrix.summary.session_cases).toBe(5);
+    expect(matrix.session_corpus.ops_total).toBe(243);
+    expect(matrix.session_corpus.cases.map((entry) => entry.id).sort()).toEqual(["session-edit-heavy", "session-frontend-only-notes", "session-large-build", "session-promoted-host", "session-subgraph"]);
     expect(matrix.cases.filter((row) => row.family.startsWith("generated-family")).length).toBe(400);
     expect(new Set(matrix.cases.filter((row) => row.family.startsWith("generated-family")).map((row) => row.family))).toEqual(new Set(["generated-family-1", "generated-family-2", "generated-family-3", "generated-family-4"]));
     for (const name of ["Agent adds node A, human observes it, then connects B to A", "Dependent producer edit-1 then edit-2 before shared revision advances", "Agent edits, reconnects after restart, observes the doc, and continues monotonically", "Stale-base human edit races after agent changed related state", "Human and agent independently change the same widget", "Human changes the agent value after seeing it", "Delete-versus-edit race on a related node", "Reconnect races on the same input register", "DQ-11 incarnation transition occurs mid-stream"]) expect(matrix.cases.some((row) => row.name === name)).toBe(true);
     expect(matrix.cases.find((row) => row.id === "agent-add-human-connect")?.vector_relations.ordered_pairs).toBe(1);
     expect(matrix.cases.find((row) => row.id === "same-widget-true-concurrency")?.vector_relations.concurrent_pairs).toBe(1);
     expect(matrix.summary.divergent_rows).toBeGreaterThanOrEqual(0);
+    expect(matrix.allowlist_firing).toEqual(ALLOWLIST_FIRING);
   });
 });
