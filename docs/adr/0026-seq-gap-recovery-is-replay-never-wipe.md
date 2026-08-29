@@ -4,7 +4,8 @@ Date: 2026-08-28
 
 ## Status
 
-Accepted
+Proposed. ADR-019 is the freeze exit; it is provisional under the 48-hour
+auto-ratify rule and auto-ratifies on 2026-08-30.
 
 ## Context
 
@@ -37,6 +38,32 @@ resubscribe with the current state vector, receive only the missed delta.
 3. Any implementation that wipes or replaces the follower doc on an ordinary seq gap or
    reconnect is a **defect**, to be flagged in review regardless of author.
 
+### `doc_reset` versus an ordinary sequence gap
+
+A lost or undelivered `doc_reset` and an ordinary sequence gap are not the same event. A
+`doc_reset` declares a lineage break and requires full document replacement after every
+projector and consumer has been notified. A sequence gap only says that transport frames
+were missed; it never authorizes replacement of the existing Y.Doc. The transport-cursor,
+missed-reset precedence, and replacement-completion-barrier contracts remain deferred to
+DQ-24 and are not decided by this ADR.
+
+### Governing ADR-019 tradeoffs
+
+[ADR-019](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-019-crdt-weekend-final-call.md)
+is the governing weekend final call:
+
+- **Bounded scalar-v1:** scalar-v1 is frozen for weekend dogfood as a bounded
+  exception; the Lamport clock remains the committed V1 migration before
+  Local/Desktop.
+- **Reset/remint deferral:** reset/remint semantics are excluded from weekend
+  acceptance, durable lineage remains a pre-public gate before MS21 planning, and
+  remint is disabled while followers are connected.
+- **Deployed-proof bar:** only deployed browser proof establishes dogfood readiness;
+  local-only results remain local-only.
+
+These tradeoffs bound the decision recorded here. They do not settle the deferred
+lineage, cursor, reset-precedence, or replacement-barrier contracts.
+
 ## Consequences
 
 - Reviews of any sync/reconnect code check for doc replacement outside the `doc_reset`
@@ -57,5 +84,9 @@ resubscribe with the current state vector, receive only the missed delta.
 ## References
 
 - [ADR-0003](0003-crdt-based-layout-system.md) — centralized layout management with CRDT.
+- [ADR-019 — CRDT weekend final call](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-019-crdt-weekend-final-call.md)
+  — bounded scalar-v1, reset/remint deferral, and the deployed-proof bar.
+- [DQ-47 resolution](https://github.com/christian-byrne/blocked-on-christian/issues/56#issuecomment-5462261123)
+  — vehicle, status, and deferred-contract disposition.
 - `poc/fe-crdt-follower` → `layoutFollowerBridge.ts` (reference implementation of
   state-vector delta replay).
