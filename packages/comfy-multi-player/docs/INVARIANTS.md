@@ -80,6 +80,19 @@ Two corrections recorded by MUT-GLOB-KA4-1, both measured on this tree rather th
 **Why:** Replay semantics must not drift with a moving vocabulary.  
 **Enforced by:** `test/roundtrip.test.ts`, `test/catalog-sha-binding-integration.test.ts`, [`catalog-pinning`](../.agents/checks/catalog-pinning.md), [ADR-003](decisions/ADR-003-catalog-sha-at-mint.md), and — for the *citations* rather than `meta.catalog_version` itself — `scripts/check-pins.mjs` (`npm run check:pins`) with `docs/upstream-pins.json` and `test/upstream-pins.test.ts`. `test/doc-mint-mutation-survivors.test.ts` additionally pins that an imported workflow cannot forge `catalog_version`/`schema_version` or any `__`-prefixed meta key, and that an unpinned mint records an EMPTY catalog version rather than a plausible-looking default (FC-10). The rule's second clause is narrower than it looks: **`meta.catalog_version` is still UNGUARDED at the write sites — see roadmap.** Neither `mint()` nor `initDoc()` rejects a branch-shaped catalog version; only the citations are linted.
 
+### KA-11 amendment — DQ-11 incarnation namespace (schema v2)
+**Rule:** A node lifetime has a durable `__incarnation` token. Imported nodes use
+`"0"`; a modern winning `add_node` carries its immutable `op_id` as the token
+(legacy adds without the field remain life `"0"`). Node-scoped widget ops
+carry that token, and `__stamps` keys include it. A write for a non-current
+incarnation is a consumed no-op. The v1→v2 migration translates missing tokens
+and legacy widget keys to life `"0"`.
+
+**Why:** A delete followed by same-ID re-add must not let a life-1 widget stamp
+defeat a valid life-2 write (DQ-11, KEEP-ALIVE 4). The package regression is
+`test/incarnation-stamps.test.ts`; the schema and protocol implications are
+recorded in Amendment A16 of `docs/multiplayer-schema.md`.
+
 ## FORECLOSE
 
 ### FC-1 — Never exchange raw Yjs struct updates between independently edited docs

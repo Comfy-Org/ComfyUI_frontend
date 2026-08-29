@@ -94,6 +94,7 @@ import {
   metaMap,
   mset,
   nodesMap,
+  nodeIncarnation,
   resolveDefinition,
   stampsMap,
   widgetStorageOf,
@@ -105,10 +106,11 @@ import {
   MAX_PAYLOAD_DEPTH,
   opBoundsRefusal,
 } from "./limits.js";
-import { codePointCompare, compareStampKeys, stampKey, stampTargetKey } from "./stamps.js";
+import { codePointCompare, compareStampKeys, stampKey, stampTargetKey, widgetTargetKey } from "./stamps.js";
 import {
   DEFERRED_OPS,
   FROZEN_OPS,
+  LEGACY_NODE_INCARNATION,
   OpRejectedError,
   type AddNodeOp,
   type ApplyOutcome,
@@ -124,6 +126,7 @@ import {
   type WidgetCatalog,
   type WireOp,
 } from "./types.js";
+import { NODE_INCARNATION_KEY } from "./types.js";
 
 /**
  * Apply a batch of stamped ops to the doc, one transaction per op.
@@ -454,6 +457,9 @@ function rejectUnprojectableWidgets(
 }
 
 function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): SuccessfulOutcome {
+  if (op.node_incarnation !== undefined && (typeof op.node_incarnation !== "string" || op.node_incarnation.length === 0)) {
+    throw new OpRejectedError("malformed_op", "add_node: node_incarnation must be a non-empty string");
+  }
   if (op.node_id === undefined || typeof op.node !== "object" || op.node === null) {
     throw new OpRejectedError("malformed_op", "add_node: missing node_id or node payload");
   }
@@ -496,6 +502,8 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): Succe
       `add_node(${String(op.node.type)}): ${err instanceof Error ? err.message : String(err)}`,
     );
   }
+  clearObsoleteWidgetStamps(stamps, key);
+  mset(nodeMap, NODE_INCARNATION_KEY, op.node_incarnation ?? LEGACY_NODE_INCARNATION);
   mset(nodes, key, nodeMap);
   mset(stamps, targetKey, stamp);
   // The payload's slot-level link references are mint-time state; the `links`
@@ -515,6 +523,27 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): Succe
     mset(meta, "last_node_id", op.node_id);
   }
   return "applied";
+}
+
+/**
+ * A winning re-add starts a new node lifetime. Remove only the old
+ * top-level-widget namespaces for that id; keeping them would be harmless for
+ * LWW but would make the logical stamp ledger depend on whether an old write
+ * arrived before or after the delete. The add is the deterministic convergence
+ * point, so both arrival orders retain the same current-life ledger.
+ */
+function clearObsoleteWidgetStamps(stamps: Y.Map<unknown>, nodeKey: string): void {
+  for (const targetKey of [...stamps.keys()]) {
+    let target: unknown;
+    try {
+      target = JSON.parse(targetKey);
+    } catch {
+      continue;
+    }
+    if (Array.isArray(target) && target[0] === "widget" && target[1] === nodeKey) {
+      mdel(stamps, targetKey);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -832,6 +861,9 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
   if (interior === null && typeof op.widget !== "string") {
     throw new OpRejectedError("malformed_op", "set_widget: missing widget name");
   }
+  if (op.node_incarnation !== undefined && (typeof op.node_incarnation !== "string" || op.node_incarnation.length === 0)) {
+    throw new OpRejectedError("malformed_op", "set_widget: node_incarnation must be a non-empty string");
+  }
   assertWritableValue(op.value, "set_widget");
   // Op-only, like the checks above it (A6): the payload's shape is settled
   // before any document read, and a host write that also carries an interior
@@ -858,6 +890,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
   if (interior !== null) {
     const target = resolveInteriorNode(doc, interior.path.map(String), catalog);
     if (target === null) return "no-op"; // head instance concurrently deleted → no-op (delete wins)
+    if (nodeIncarnation(target) !== (op.node_incarnation ?? LEGACY_NODE_INCARNATION)) return "no-op";
     const nodeType = String(target.get("type") ?? "");
     const widget = interior.inner_widget;
     rejectIfOpaqueWidgets(target, widget);
@@ -891,6 +924,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
 
   const node = nodesMap(doc).get(String(op.node_id));
   if (!node) return "no-op"; // target concurrently deleted → no-op (delete wins)
+  if (nodeIncarnation(node) !== (op.node_incarnation ?? LEGACY_NODE_INCARNATION)) return "no-op";
   rejectIfOpaqueWidgets(node, op.widget);
   validateWidgetName(catalog, String(node.get("type") ?? ""), op.widget);
   // Top-level writes may extend past the current positional length — comfy-cli
@@ -1058,6 +1092,10 @@ function requireOutputSlot(src: Y.Map<unknown>, op: ConnectOp): Y.Array<unknown>
  */
 function requireOpOnlyValid(op: ConnectOp): void {
   requireOutputSlotDomain(op);
+
+  if (op.node_incarnation !== undefined && (typeof op.node_incarnation !== "string" || op.node_incarnation.length === 0)) {
+    throw new OpRejectedError("malformed_op", "connect: node_incarnation must be a non-empty string");
+  }
 
   // Amendment A14: shape-only validation. Arbitrary string link types remain
   // legal; rejecting non-strings here keeps both destination-delete arrival
@@ -1496,7 +1534,8 @@ function applyInputcountBump(
     throw new OpRejectedError("malformed_op", "connect: grow.inputcount needs a widget name");
   }
   const stamps = stampsMap(doc);
-  const targetKey = JSON.stringify(["widget", String(op.to_node), ic.widget]);
+  if (nodeIncarnation(dst) !== (op.node_incarnation ?? LEGACY_NODE_INCARNATION)) return;
+  const targetKey = widgetTargetKey(op.to_node, op.node_incarnation ?? LEGACY_NODE_INCARNATION, ic.widget);
   const prior = stamps.get(targetKey) as StampKey | undefined;
   const key = stampKey(op);
   if (prior != null && compareStampKeys(key, prior) <= 0) return; // lww-dropped

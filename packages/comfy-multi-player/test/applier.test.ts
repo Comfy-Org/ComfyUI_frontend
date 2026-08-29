@@ -309,7 +309,7 @@ describe("inputcount two-register grow (freeze §8.4)", () => {
     // The count write shares the connect's stamp on the normal widget target.
     // Node ids in a stamp key are String()-normalized (amendment v1.2), so
     // node 1 keys as "1" — see test/stamp-target-identity.test.ts.
-    expect(stampsMap(doc).get(JSON.stringify(["widget", "1", "inputcount"]))).toEqual([3, "alice", op.op_id]);
+    expect(stampsMap(doc).get(JSON.stringify(["widget", "1", "0", "inputcount"]))).toEqual([3, "alice", op.op_id]);
 
     // Idempotent replay: no second slot, no double bump.
     const bytes = Buffer.from(Y.encodeStateAsUpdate(doc));

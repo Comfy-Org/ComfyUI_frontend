@@ -1,5 +1,5 @@
 /**
- * Doc layout helpers (schema v1 — docs/multiplayer-schema.md §1) and the
+ * Doc layout helpers (schema v2 — docs/multiplayer-schema.md §1) and the
  * node ⇄ Y conversion used by mint and the applier.
  *
  *   doc
@@ -22,7 +22,13 @@
 
 import * as Y from "yjs";
 import { assertNever } from "./exhaustive.js";
-import { SCHEMA_VERSION, type WidgetCatalog, type WorkflowNode } from "./types.js";
+import {
+  LEGACY_NODE_INCARNATION,
+  NODE_INCARNATION_KEY,
+  SCHEMA_VERSION,
+  type WidgetCatalog,
+  type WorkflowNode,
+} from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Opaque widgets (schema §1.2 — unknown classes)
@@ -125,6 +131,12 @@ export function widgetStorageFor(
  */
 export function widgetStorageOf(node: Y.Map<unknown>): WidgetStorage {
   return node.has(OPAQUE_WIDGETS_KEY) ? "opaque" : "named";
+}
+
+/** Return a node's durable lifetime, translating a legacy node to life 0. */
+export function nodeIncarnation(node: Y.Map<unknown>): string {
+  const value = node.get(NODE_INCARNATION_KEY);
+  return typeof value === "string" && value.length > 0 ? value : LEGACY_NODE_INCARNATION;
 }
 
 // ---------------------------------------------------------------------------
@@ -740,7 +752,7 @@ function widgetsToYMap(
 export function createNodeMap(node: WorkflowNode, widgetOrder?: readonly string[]): Y.Map<unknown> {
   const m = new Y.Map<unknown>();
   for (const [k, v] of Object.entries(node)) {
-    if (k === OPAQUE_WIDGETS_KEY || k === "widgets") {
+    if (k === OPAQUE_WIDGETS_KEY || k === "widgets" || k === NODE_INCARNATION_KEY) {
       // Both are DOC-INTERNAL storage keys owned by this module (schema §1.2);
       // a workflow node carries `widgets_values`, never either of these. An
       // untrusted payload that sets them directly would shadow the name-keyed
@@ -773,6 +785,7 @@ export function createNodeMap(node: WorkflowNode, widgetOrder?: readonly string[
       m.set(k, cloneForMap(v, k));
     }
   }
+  m.set(NODE_INCARNATION_KEY, LEGACY_NODE_INCARNATION);
   return m;
 }
 

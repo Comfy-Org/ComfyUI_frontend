@@ -6,24 +6,66 @@
  * the struct stream / a new epoch.
  */
 
-import type * as Y from "yjs";
+import * as Y from "yjs";
+import { definitionsMap, nodesMap } from "./doc.js";
 import { readSchemaVersion } from "./schema-version.js";
-import { SCHEMA_VERSION, SchemaVersionError } from "./types.js";
+import {
+  LEGACY_NODE_INCARNATION,
+  NODE_INCARNATION_KEY,
+  SCHEMA_VERSION,
+  SchemaVersionError,
+} from "./types.js";
+
+function migrateNodeMap(node: unknown): void {
+  if (!(node instanceof Y.Map)) return;
+  if (!node.has(NODE_INCARNATION_KEY)) node.set(NODE_INCARNATION_KEY, LEGACY_NODE_INCARNATION);
+}
+
+function migrateStampKey(key: string): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(key);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed) || parsed[0] !== "widget" || parsed.length !== 3) return null;
+  return JSON.stringify([parsed[0], parsed[1], LEGACY_NODE_INCARNATION, parsed[2]]);
+}
+
+/** Apply the v1 → v2 compatibility translation in one host-owned transaction. */
+function migrateV1ToV2(doc: Y.Doc): void {
+  doc.transact(() => {
+    nodesMap(doc).forEach(migrateNodeMap);
+    definitionsMap(doc).forEach((definition) => {
+      if (!(definition instanceof Y.Map)) return;
+      const nodes = definition.get("nodes");
+      if (nodes instanceof Y.Map) nodes.forEach(migrateNodeMap);
+    });
+
+    const stamps = doc.getMap<unknown>("__stamps");
+    for (const oldKey of [...stamps.keys()]) {
+      const newKey = migrateStampKey(oldKey);
+      if (newKey === null || stamps.has(newKey)) continue;
+      const value = stamps.get(oldKey);
+      stamps.set(newKey, value);
+      stamps.delete(oldKey);
+    }
+
+    doc.getMap<unknown>("meta").set("schema_version", SCHEMA_VERSION);
+  });
+}
 
 /**
  * Migrate a doc from schema `fromVersion` to `SCHEMA_VERSION`, in place.
  *
- * v1 is the first layout, so there is nothing to step through yet: the call
- * validates the doc's stored schema and no-ops at
- * `fromVersion === SCHEMA_VERSION`, and rejects everything else fail-closed.
- * When a v2 layout lands, its `v1 → v2` step registers here and this function
- * composes the steps in order.
+ * The v1 → v2 step seeds the legacy incarnation (`"0"`) on imported nodes and
+ * rewrites legacy widget stamp keys into that namespace. New add operations
+ * carry their immutable `op_id` as the incarnation token.
  *
- * Validation runs on EVERY path, including the current-version one (KA-11:
- * schema-version discipline is enforced on read), and it never mutates the
- * document: a rejected call and a current-version no-op both leave
- * `encodeStateAsUpdate(doc)` byte-identical and the `doc.share` key set
- * unchanged — no root is materialized on any path.
+ * Validation runs before the migration step on EVERY path (KA-11: schema-version
+ * discipline is enforced on read). A rejected call and a current-version no-op
+ * leave the `encodeStateAsUpdate` byte-identical and the `doc.share` key set
+ * unchanged; only the explicit v1 → v2 path mutates the document.
  */
 export function migrate(doc: Y.Doc, fromVersion: number): void {
   if (!Number.isInteger(fromVersion) || fromVersion < 1) {
@@ -63,16 +105,11 @@ export function migrate(doc: Y.Doc, fromVersion: number): void {
     );
   }
 
-  // `fromVersion` is now known to equal SCHEMA_VERSION: it is an integer in
-  // [1, SCHEMA_VERSION] and v1 is both the first and the current layout. So
-  // there is nothing to step, and — the point of #20 — no root type is
-  // touched: this is an EXACT no-op, byte-identical under
-  // `encodeStateAsUpdate` and leaving `doc.share` alone. The previous
-  // implementation "validated" the layout here by calling the
-  // `nodes`/`links`/`definitions`/`meta` helpers, and `Y.Doc#getMap` CREATES
-  // an absent root, so it silently repaired an incomplete doc instead of
-  // rejecting it.
-  //
-  // When a v2 layout lands, its `v1 → v2` step runs from here under
-  // `if (fromVersion < SCHEMA_VERSION)`, and the steps compose in order.
+  if (fromVersion === 1) {
+    migrateV1ToV2(doc);
+    return;
+  }
+
+  // The current-version path is an EXACT no-op, byte-identical under
+  // `encodeStateAsUpdate`; validation above must not materialize any root.
 }

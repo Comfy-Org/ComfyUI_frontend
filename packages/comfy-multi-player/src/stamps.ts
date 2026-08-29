@@ -5,7 +5,7 @@
  */
 
 import { checkExhaustive } from "./exhaustive.js";
-import type { StampKey, WireOp } from "./types.js";
+import { LEGACY_NODE_INCARNATION, type StampKey, type WireOp } from "./types.js";
 
 /**
  * Unicode CODE POINT comparison (vocabulary §8.1: Python `str <` semantics).
@@ -82,12 +82,16 @@ export function stampKey(op: WireOp): StampKey {
  * failing to type-check (issue #17). Output is byte-for-byte what it was.
  */
 export function writeTarget(op: WireOp): unknown[] {
+  const incarnation =
+    "node_incarnation" in op && op.node_incarnation !== undefined
+      ? op.node_incarnation
+      : LEGACY_NODE_INCARNATION;
   switch (op.op) {
     case "set_widget":
       if (op.path && op.path.length > 0) {
-        return ["widget", op.path.map(String), op.inner_widget];
+        return ["widget", op.path.map(String), incarnation, op.inner_widget];
       }
-      return ["widget", String(op.node_id), op.widget];
+      return ["widget", String(op.node_id), incarnation, op.widget];
     case "add_node":
     case "delete_node":
       return ["node", String(op.node_id)];
@@ -130,6 +134,11 @@ export function writeTarget(op: WireOp): unknown[] {
       checkExhaustive(op);
       return [(op as WireOp).op];
   }
+}
+
+/** Target key for the inputcount widget write embedded in a grow connect. */
+export function widgetTargetKey(nodeId: unknown, incarnation: string, widget: string): string {
+  return JSON.stringify(["widget", String(nodeId), incarnation, widget]);
 }
 
 /** The `__stamps` map key for an op's write target (stable JSON serialization). */

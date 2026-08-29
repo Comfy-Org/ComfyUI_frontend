@@ -19,7 +19,13 @@
  * Version of the Y.Doc layout. Bump requires FE sign-off + a `migrate` path.
  * The authoritative layout + op-semantics reference is docs/multiplayer-schema.md.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+
+/** Internal per-node lifetime key. It never projects into workflow JSON. */
+export const NODE_INCARNATION_KEY = "__incarnation";
+
+/** Incarnation assigned to nodes imported from a pre-incarnation workflow. */
+export const LEGACY_NODE_INCARNATION = "0";
 
 // ---------------------------------------------------------------------------
 // Machine-readable op-kind projection (mirrors comfy_cli.workflow_ops
@@ -131,6 +137,8 @@ export interface OpBase {
 
 export interface AddNodeOp extends OpBase {
   op: "add_node";
+  /** Creator-carried lifetime token; omitted by legacy v1 op streams (life 0). */
+  node_incarnation?: string;
   node_id: NodeId;
   class_type: string;
   /** Layout decided at mint time so replay stays convergent. */
@@ -213,6 +221,8 @@ interface ConnectOpBase extends OpBase {
   from_slot: number;
   to_node: NodeId;
   link_type: string;
+  /** Lifetime of `to_node` for the optional inputcount widget write. */
+  node_incarnation?: string;
 }
 
 /**
@@ -288,6 +298,8 @@ interface SetWidgetOpBase extends OpBase {
    */
   widget: string;
   value: unknown;
+  /** Creator-carried lifetime of the addressed node; absent means legacy life 0. */
+  node_incarnation?: string;
   /** Previous value at mint time (informational; not used for convergence). */
   old?: unknown;
   /** Non-fatal validation notes attached at mint time. */

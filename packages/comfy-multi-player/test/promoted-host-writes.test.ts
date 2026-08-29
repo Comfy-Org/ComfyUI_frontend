@@ -288,8 +288,9 @@ describe("promoted host write: `set_widget` with `promoted` lands on the instanc
     expect(node(wf, 57).widgets_values).toEqual(expected);
     expect(interior(wf, DEF, 13).widgets_values).toEqual([1024, 1024, 1]);
     // The register is the SAME one a top-level named write on 57.width claims
-    // (comfy-cli `_write_target` → ("widget", "57", "width")).
-    expect(stampTargetKey(op)).toBe(JSON.stringify(["widget", "57", "width"]));
+    // (comfy-cli `_write_target`), incarnation-namespaced per Amendment A16 —
+    // a minted node carries the legacy token "0".
+    expect(stampTargetKey(op)).toBe(JSON.stringify(["widget", "57", "0", "width"]));
     expect(stampsMap(doc).get(stampTargetKey(op))).toEqual([0, "cli", op.op_id]);
   });
 
@@ -458,7 +459,8 @@ describe("promoted host write: nested instance_path resolves like an interior `p
     expect(node(wf, 57).widgets_values).toEqual([]);
     expect(interior(wf, INNER_DEF, 5).widgets_values).toEqual([1024, 1024, 1]);
     // Register: comfy-cli mints node_id as the joined path for a nested host.
-    expect(stampTargetKey(op)).toBe(JSON.stringify(["widget", "57/61", "width"]));
+    // Incarnation-namespaced per Amendment A16 (minted node → legacy token "0").
+    expect(stampTargetKey(op)).toBe(JSON.stringify(["widget", "57/61", "0", "width"]));
   });
 
   it("delete of the HEAD instance wins over a nested host write", () => {

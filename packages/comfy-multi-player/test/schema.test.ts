@@ -9,8 +9,8 @@ import {
 import { OPAQUE_WIDGETS_KEY, SCHEMA_VERSION, linksMap, nodesMap } from "../src/index.js";
 
 describe("schema", () => {
-  it("pins SCHEMA_VERSION at 1", () => {
-    expect(SCHEMA_VERSION).toBe(1);
+  it("pins SCHEMA_VERSION at 2", () => {
+    expect(SCHEMA_VERSION).toBe(2);
   });
 
   it("initDoc creates the v1 layout: nodes/links/definitions/meta + bookkeeping", () => {

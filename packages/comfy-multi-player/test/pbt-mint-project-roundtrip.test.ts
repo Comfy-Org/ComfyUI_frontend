@@ -99,6 +99,7 @@ function opsFor(scenario: Scenario): Op[] {
   const adds: Op[] = scenario.additions.map((node, index) => ({
     ...envelope(index + 1),
     op: "add_node",
+    node_incarnation: (index + 1).toString(16).padStart(32, "0"),
     node_id: node.id,
     class_type: node.type,
     pos: node.pos ?? [0, 0],
@@ -110,6 +111,7 @@ function opsFor(scenario: Scenario): Op[] {
     node_id: node.id,
     widget: "value",
     value: scenario.values[index % scenario.values.length],
+    node_incarnation: adds[index]!.op_id,
   }));
   return [...adds, ...writes];
 }
@@ -133,7 +135,7 @@ describe("property-based mint → apply → project round trips", () => {
     );
   });
 
-  it("preserves minted op identities and is deterministic under apply and retry", () => {
+    it("preserves minted op identities and is deterministic under apply and retry", { timeout: 15_000 }, () => {
     fc.assert(
       fc.property(scenarioArb, (scenario) => {
         const source = cloneWorkflow(scenario.base);

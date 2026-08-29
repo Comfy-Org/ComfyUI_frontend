@@ -83,6 +83,7 @@ import { describe, expect, it } from "vitest";
 import * as Y from "yjs";
 import {
   OPAQUE_WIDGETS_KEY,
+  NODE_INCARNATION_KEY,
   SCHEMA_VERSION,
   applyOps,
   linksMap,
@@ -105,7 +106,7 @@ interface WireLayoutVector {
   format_version: number;
   schema_version: number;
   roots: Record<string, string>;
-  reserved_node_keys: { opaque_widgets: string };
+  reserved_node_keys: { opaque_widgets: string; node_incarnation: string };
 }
 
 const golden = JSON.parse(
@@ -406,6 +407,7 @@ describe("layer 3: the code, the golden vector and the schema documents agree (K
 
   it("exports the reserved node key the golden vector names", () => {
     expect(OPAQUE_WIDGETS_KEY).toBe(golden.reserved_node_keys.opaque_widgets);
+    expect(NODE_INCARNATION_KEY).toBe(golden.reserved_node_keys.node_incarnation);
   });
 
   it("matches the layout diagram in docs/multiplayer-schema.md §1", () => {

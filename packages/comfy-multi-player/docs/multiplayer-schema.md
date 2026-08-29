@@ -1,6 +1,6 @@
-# Multiplayer workflow-document schema — v1
+# Multiplayer workflow-document schema — v2
 
-`SCHEMA_VERSION = 1`
+`SCHEMA_VERSION = 2`
 
 > **State: DRAFT — awaiting FE sign-off (FE-1330).**
 >
@@ -74,6 +74,7 @@ Keyed in `nodes` by `String(node.id)`. Fields:
 | `order`, `mode` | plain | execution order is node state and IS preserved (§7) |
 | `properties` | plain object | passthrough |
 | `widgets` | **name-keyed Y.Map** | widget name → value. See §1.2 — this is the load-bearing decision |
+| `__incarnation` | plain string | internal node lifetime token; never projected. Imported nodes use `"0"`; modern adds carry a creator token (normally their `op_id`), while legacy adds map to `"0"` |
 | `inputs` | Y.Array\<Y.Map\> | slot records `{name, type, link, widget?, grow_id?}`; autogrow appends carry `grow_id` (§8.3) |
 | `outputs` | Y.Array\<Y.Map\> | slot records; `links` is a Y.Array of link ids, or `null` preserved verbatim (§7) |
 | anything else | plain | passthrough, projected back verbatim |
@@ -435,9 +436,9 @@ so a raw key gave `7` and `"7"` two registers for one node.
 
 | Op | Target key | Gated? |
 |---|---|---|
-| `set_widget` (top-level) | `("widget", String(node_id), widget_name)` | yes |
-| `set_widget` (interior) | `("widget", resolved_path, inner_widget)` — all three address forms normalize here (§5.2) | yes |
-| `set_widget` (promoted host write, A15) | `("widget", String(node_id), widget_name)` — `node_id` is the instance id, or the joined `instance_path` (`"57/61"`) for a nested host; the SAME register a top-level named write on that node claims (comfy-cli `_write_target`) | yes |
+| `set_widget` (top-level) | `("widget", String(node_id), node_incarnation, widget_name)` | yes |
+| `set_widget` (interior) | `("widget", resolved_path, node_incarnation, inner_widget)` — all three address forms normalize here (§5.2) | yes |
+| `set_widget` (promoted host write, A15) | `("widget", String(node_id), node_incarnation, widget_name)` — `node_id` is the instance id, or the joined `instance_path` (`"57/61"`) for a nested host; the SAME register a top-level named write on that node claims (comfy-cli `_write_target`) | yes |
 | `connect` (concrete slot) | `("input", String(to_node), to_slot)` | **yes (A1)** |
 | `connect` (autogrow) | `("input", String(to_node), "grow", base_name)` | no — identity only, canonicalized by stamp (A7) |
 | `connect` (promoted input, A15) | `("input", String(to_node), "grow", name)` with the FULL declared name (names may contain dots — `images.image0`), matching comfy-cli `_write_target` at amendment v1.5 (`ba0b0b92abcc86b01e8a6704d07088f92afe7aa7`); only an ordinary autogrow keys by base name | **yes (A15)** — one register named by the definition |
@@ -769,7 +770,7 @@ the epoch; cross-epoch struct updates never merge.
 
 ## 10. Versioning and `migrate()`
 
-- `SCHEMA_VERSION = 1`, stored in `meta.schema_version` at mint.
+- `SCHEMA_VERSION = 2`, stored in `meta.schema_version` at mint.
 - `migrate(doc, fromVersion)` contract: in-place, stepwise `vN → vN+1`
   migrations composed in order; exact no-op when
   `fromVersion === SCHEMA_VERSION`; host-only (followers receive the migrated
@@ -1958,3 +1959,42 @@ then the CLI**, as A1 already requires. comfy-cli's side is the #815 + #818 stac
 gate, the full-name register, and the positional `legacy_primitive` payload;
 the pins above cite that merge commit. §14.4's `promoted.repair` is the one
 piece this package does not yet apply (OPEN above).
+
+## Amendment A16 — 2026-08-28 — DQ-11 incarnation-namespaced widget stamps
+
+**Touches:** §1.1, §3, §4, and §10. This amendment is the enactment of DQ-11
+option (c) and KEEP-ALIVE 4.
+
+Each node map carries the internal `__incarnation` string. Nodes imported by
+`mint()` and v1 documents upgraded by `migrate(doc, 1)` use the deterministic
+legacy token `"0"`. A modern winning `add_node` carries a creator-chosen
+`node_incarnation` (normally that add operation's immutable `op_id`) as the new
+incarnation token. Legacy adds without the field remain life `"0"`. The token
+is never projected into workflow JSON.
+
+The creator carries `node_incarnation` on node-scoped widget writes. A
+top-level or interior `set_widget` whose token does not equal the addressed
+node's current token is a consumed no-op and cannot write a stamp. The same
+rule applies to the widget register embedded in a `connect` with
+`grow.inputcount`. Missing `node_incarnation` is the legacy v1 translation to
+`"0"`; it is retained only so historical ops remain replayable.
+
+Widget target keys now include the incarnation:
+
+```text
+["widget", String(node_id), node_incarnation, widget_name]
+["widget", resolved_path, node_incarnation, inner_widget]
+```
+
+This prevents a life-1 stamp from contending with any life-2 write while
+preserving ordinary same-incarnation LWW. The v1→v2 migration adds the legacy
+node token and inserts `"0"` into existing widget target keys. This is a
+persisted document-layout and semantic-op contract change, so `SCHEMA_VERSION`
+is 2 and old readers fail closed.
+
+The shared package does not own the WebSocket envelope version. Cloud/FE
+integration must treat `node_incarnation` as a protocol-v2 compatibility
+requirement before durable or offline queues are public: v1 transport may be
+translated only with the documented legacy token `"0"`, and mixed readers must
+not silently exchange the new semantics. This amendment does not implement a
+transport `v == 2` decoder.

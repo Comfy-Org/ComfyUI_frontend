@@ -192,18 +192,18 @@ describe("W8 stamp edge goldens (KA-2, KA-4, FC-7)", () => {
       value: 1,
     } as unknown as WireOp;
     expect(stampKey(unstamped)).toEqual([7, "fallback", "a".repeat(32)]);
-    expect(writeTarget(unstamped)).toEqual(["widget", "4", "value"]);
+    expect(writeTarget(unstamped)).toEqual(["widget", "4", "0", "value"]);
     // Both shapes below are ones the `SetWidgetOp` union no longer permits
     // (#17): an EMPTY path with an `inner_widget`, and a path whose segments
     // are not all strings. `writeTarget` is public and hosts feed it wire
     // data, so its tolerant handling of them is pinned unchanged — the cast is
     // what marks them as arriving from outside this repo's types.
     expect(writeTarget({ ...unstamped, path: [], inner_widget: "inner" } as unknown as WireOp)).toEqual([
-      "widget", "4", "value",
+      "widget", "4", "0", "value",
     ]);
     expect(
       writeTarget({ ...unstamped, path: [4, "5"], inner_widget: "inner" } as unknown as WireOp),
-    ).toEqual(["widget", ["4", "5"], "inner"]);
+    ).toEqual(["widget", ["4", "5"], "0", "inner"]);
     expect(writeTarget(connect(40, 1))).toEqual(["input", "3", 0]);
     expect(
       writeTarget(growConnect(41, 1, { name: "images.hero", type: "X" })),

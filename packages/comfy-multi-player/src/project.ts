@@ -34,7 +34,7 @@ import {
 } from "./doc.js";
 import { assertNever } from "./exhaustive.js";
 import { assertReadableSchema } from "./schema-version.js";
-import type { WidgetCatalog, WorkflowJSON, WorkflowNode } from "./types.js";
+import { NODE_INCARNATION_KEY, type WidgetCatalog, type WorkflowJSON, type WorkflowNode } from "./types.js";
 
 /** Sorted-by-id comparator: numeric when both ids are numbers, else string order. */
 function idCompare(a: unknown, b: unknown): number {
@@ -118,7 +118,9 @@ function projectNode(ym: Y.Map<unknown>, catalog: WidgetCatalog): WorkflowNode {
   const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   const nodeType = String(ym.get("type") ?? "");
   ym.forEach((v, k) => {
-    if (k === OPAQUE_WIDGETS_KEY || k === "widgets") {
+    if (k === NODE_INCARNATION_KEY) {
+      return;
+    } else if (k === OPAQUE_WIDGETS_KEY || k === "widgets") {
       // Both storage keys project to the same workflow key; which one is
       // authoritative is `widgetStorageOf`'s decision, not iteration order's.
       out["widgets_values"] = projectWidgets(nodeType, ym, catalog);

@@ -465,7 +465,7 @@ describe("schema §1 doc layout: root-map names and the reserved opaque key are 
     expect(doc.getMap("nodes").has("1")).toBe(true);
     expect(doc.getMap("links").has("7")).toBe(true);
     expect(doc.getMap("definitions").has("d")).toBe(true);
-    expect(doc.getMap("meta").get("schema_version")).toBe(1);
+    expect(doc.getMap("meta").get("schema_version")).toBe(2);
     // The bookkeeping roots are named too — `__applied` is the idempotency
     // gate (§4) and `__stamps` the LWW register file (§3).
     const op = { op: "set_widget", ...env(), node_id: 1, widget: "text", value: "w" } as SetWidgetOp;

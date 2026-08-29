@@ -359,7 +359,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
     expect([...doc.getMap("__stamps").keys()]).toEqual([
       JSON.stringify(["grow", "1", "101", "images"]),
       JSON.stringify(["grow_request", "1", "101", "images"]),
-      JSON.stringify(["widget", "1", "steps"]),
+      JSON.stringify(["widget", "1", "0", "steps"]),
     ]);
   });
 
@@ -431,7 +431,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
     const node1 = project(doc, catalog).nodes.find((n) => n.id === 1)!;
     expect(node1.widgets_values).toEqual([1, 44, 3, "a", "b", 1]);
     expect([...doc.getMap("__stamps").keys()]).toEqual([
-      JSON.stringify(["widget", ["1"], "steps"]),
+      JSON.stringify(["widget", ["1"], "0", "steps"]),
     ]);
   });
 
