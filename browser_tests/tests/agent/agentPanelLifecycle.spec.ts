@@ -134,5 +134,27 @@ test.describe(
         page.getByRole('button', { name: OPEN_AGENT_LABEL })
       ).toHaveAttribute('aria-pressed', 'true')
     })
+
+    test('keeps one Agent panel mounted while switching workflow tabs', async ({
+      page,
+      agentFlagEnabled
+    }) => {
+      await bootAgentApp(page, agentFlagEnabled)
+
+      const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+      await openButton.click()
+
+      const panel = page.getByTestId('docked-agent-panel')
+      const tabs = page.locator('.workflow-tabs .p-togglebutton')
+      await expect(panel).toBeVisible()
+      await expect(tabs).toHaveCount(1)
+
+      await page.locator('.new-blank-workflow-button').click()
+      await expect(tabs).toHaveCount(2)
+      await tabs.first().click()
+
+      await expect(panel).toHaveCount(1)
+      await expect(panel).toBeVisible()
+    })
   }
 )
