@@ -2,7 +2,6 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
-import ExamplesSection from '../../templates/platform/ExamplesSection.vue'
 import ServerlessDeploySection from '../../templates/platform/ServerlessDeploySection.vue'
 import ServerlessHero from '../../templates/platform/ServerlessHero.vue'
 import ServerlessScaleSection from '../../templates/platform/ServerlessScaleSection.vue'
@@ -16,7 +15,6 @@ import { t } from '../../i18n/translations'
   <ServerlessHero locale="en" client:load />
   <ServerlessDeploySection locale="en" client:visible />
   <ServerlessScaleSection locale="en" />
-  <ExamplesSection locale="en" />
   <ClosingCtaSection locale="en" />
   <ProductCardsSection locale="en" label-key="products.labelProducts" />
 </BaseLayout>

@@ -16,6 +16,7 @@ const ctas = platformCtas(locale)
   <HeroSplit01
     :locale="locale"
     compact
+    beta
     :badge-text="t('platform.hero.badge', locale)"
     :title="t('platform.products.models.title', locale)"
     :subtitle="t('platform.products.models.description', locale)"

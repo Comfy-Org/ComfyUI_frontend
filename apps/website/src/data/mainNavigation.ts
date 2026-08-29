@@ -5,7 +5,7 @@ import { t } from '../i18n/translations'
 export type NavColumnItem = {
   label: string
   href: string
-  badge?: 'new'
+  badge?: 'new' | 'beta'
   external?: boolean
 }
 
@@ -66,7 +66,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             {
               label: t('nav.developerPlatform', locale),
               href: routes.platform,
-              badge: 'new'
+              badge: 'beta'
             },
             {
               label: t('nav.comfyEnterprise', locale),
