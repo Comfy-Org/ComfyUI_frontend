@@ -5377,6 +5377,30 @@ const translations = {
     en: 'Read the full tutorial →',
     'zh-CN': '阅读完整教程 →'
   },
+  'models.llms.button': {
+    en: 'LLMs',
+    'zh-CN': 'LLMs'
+  },
+  'models.llms.copy': {
+    en: 'Copy page as Markdown',
+    'zh-CN': '复制本页 Markdown'
+  },
+  'models.llms.view': {
+    en: 'View as Markdown',
+    'zh-CN': '查看 Markdown 版'
+  },
+  'models.llms.catalog': {
+    en: 'llms.txt — model catalog',
+    'zh-CN': 'llms.txt — 模型目录'
+  },
+  'models.llms.openClaude': {
+    en: 'Open in Claude',
+    'zh-CN': '在 Claude 中打开'
+  },
+  'models.llms.openChatgpt': {
+    en: 'Open in ChatGPT',
+    'zh-CN': '在 ChatGPT 中打开'
+  },
   'models.faq.heading': {
     en: 'Frequently Asked Questions',
     'zh-CN': '常见问题'
@@ -5477,6 +5501,26 @@ const translations = {
   'models.dirDescription.audio_encoders': {
     en: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
     'zh-CN': '一个将音频转换为嵌入向量、用于音频条件生成的音频编码器'
+  },
+  'models.dirDescription.geometry_estimation': {
+    en: 'a geometry estimation model that predicts depth, surface normals, or 3D structure from images',
+    'zh-CN': '一个从图像预测深度、表面法线或三维结构的几何估计模型'
+  },
+  'models.dirDescription.background_removal': {
+    en: 'a background removal model that separates subjects from their backgrounds with a clean matte',
+    'zh-CN': '一个将主体从背景中干净分离出来的背景移除模型'
+  },
+  'models.dirDescription.detection': {
+    en: 'a detection model that locates objects, faces, or regions in an image for downstream nodes',
+    'zh-CN': '一个在图像中定位物体、人脸或区域并供下游节点使用的检测模型'
+  },
+  'models.dirDescription.frame_interpolation': {
+    en: 'a frame interpolation model that generates in-between frames for smoother, higher-FPS video',
+    'zh-CN': '一个生成中间帧以获得更流畅、更高帧率视频的插帧模型'
+  },
+  'models.dirDescription.optical_flow': {
+    en: 'an optical flow model that estimates per-pixel motion between frames for video processing',
+    'zh-CN': '一个估计帧间逐像素运动、用于视频处理的光流模型'
   },
   'models.dirDescription.upscale_models': {
     en: 'an upscale model that increases image resolution while preserving or enhancing detail',
