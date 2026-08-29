@@ -20,13 +20,12 @@
           <label for="existing-user-select"
             >{{ $t('userSelect.existingUser') }}:</label
           >
-          <Select
-            v-model="selectedUser"
+          <SingleSelect
+            v-model="selectedUserId"
+            id="existing-user-select"
             class="w-full"
-            input-id="existing-user-select"
-            :options="userStore.users"
-            option-label="username"
-            :placeholder="$t('userSelect.selectUser')"
+            :options="userOptions"
+            :label="$t('userSelect.selectUser')"
             :disabled="createNewUser"
           />
           <Message v-if="error" severity="error">
@@ -42,13 +41,13 @@
 </template>
 
 <script setup lang="ts">
-import Select from 'primevue/select'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Message from '@/components/ui/message/Message.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import type { User } from '@/stores/userStore'
 import { useUserStore } from '@/stores/userStore'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
@@ -56,7 +55,16 @@ import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 const userStore = useUserStore()
 const router = useRouter()
 
-const selectedUser = ref<User | null>(null)
+const selectedUserId = ref<string>()
+const selectedUser = computed<User | undefined>(() =>
+  userStore.users.find((user) => user.userId === selectedUserId.value)
+)
+const userOptions = computed(() =>
+  userStore.users.map(({ userId, username }) => ({
+    name: username,
+    value: userId
+  }))
+)
 const newUsername = ref('')
 const loginError = ref('')
 

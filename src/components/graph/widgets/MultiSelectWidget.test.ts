@@ -1,28 +1,14 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
 
 import MultiSelectWidget from './MultiSelectWidget.vue'
-
-const MultiSelectStub = defineComponent({
-  name: 'MultiSelect',
-  inheritAttrs: false,
-  props: {
-    modelValue: { type: Array, default: () => [] },
-    options: { type: Array, default: () => [] },
-    placeholder: { type: String, default: '' },
-    display: { type: String, default: '' }
-  },
-  template: `<div data-testid="multiselect"
-    :data-options="JSON.stringify(options)"
-    :data-placeholder="placeholder"
-    :data-display="display"
-    :data-model-value="JSON.stringify(modelValue)" />`
-})
 
 function makeWidget(
   inputSpec: Partial<ComboInputSpec>
@@ -41,75 +27,46 @@ function renderWidget(
   inputSpec: Partial<ComboInputSpec>,
   initialValue: string[] = []
 ) {
-  const value = ref<string[]>(initialValue)
+  const value = ref(initialValue)
   const widget = makeWidget(inputSpec)
   const Harness = defineComponent({
     components: { MultiSelectWidget },
     setup: () => ({ value, widget }),
     template: '<MultiSelectWidget v-model="value" :widget="widget" />'
   })
-  const utils = render(Harness, {
-    global: { plugins: [PrimeVue], stubs: { MultiSelect: MultiSelectStub } }
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
   })
-  return { ...utils, value }
+
+  return { ...render(Harness, { global: { plugins: [i18n] } }), value }
 }
 
 describe('MultiSelectWidget', () => {
-  describe('Option list', () => {
-    it('passes inputSpec.options through as MultiSelect options', () => {
-      renderWidget({ options: ['a', 'b', 'c'] })
-      const el = screen.getByTestId('multiselect')
-      expect(JSON.parse(el.dataset.options!)).toEqual(['a', 'b', 'c'])
-    })
+  it('commits selected option values to the widget model', async () => {
+    const user = userEvent.setup()
+    const { value } = renderWidget(
+      {
+        options: ['a', 'b'],
+        multi_select: { placeholder: 'Pick items' }
+      },
+      ['a']
+    )
 
-    it('falls back to an empty list when inputSpec.options is absent', () => {
-      renderWidget({})
-      const el = screen.getByTestId('multiselect')
-      expect(JSON.parse(el.dataset.options!)).toEqual([])
-    })
+    await user.click(screen.getByRole('button', { name: 'Pick items' }))
+    await user.click(screen.getByRole('option', { name: 'b' }))
+
+    expect(value.value).toEqual(['a', 'b'])
   })
 
-  describe('Placeholder', () => {
-    it('reads placeholder from multi_select.placeholder', () => {
-      renderWidget({
-        options: ['a'],
-        multi_select: { placeholder: 'Pick one or more' }
-      })
-      expect(screen.getByTestId('multiselect').dataset.placeholder).toBe(
-        'Pick one or more'
-      )
-    })
+  it('supports keyboard selection', async () => {
+    const user = userEvent.setup()
+    const { value } = renderWidget({ options: ['a', 'b'] })
 
-    it('defaults placeholder to "Select items" when not provided', () => {
-      renderWidget({ options: ['a'] })
-      expect(screen.getByTestId('multiselect').dataset.placeholder).toBe(
-        'Select items'
-      )
-    })
-  })
+    await user.click(screen.getByRole('button', { name: 'Select items' }))
+    await user.keyboard('{ArrowDown}{Enter}')
 
-  describe('Display mode', () => {
-    it('uses "chip" display when multi_select.chip is true', () => {
-      renderWidget({ options: ['a'], multi_select: { chip: true } })
-      expect(screen.getByTestId('multiselect').dataset.display).toBe('chip')
-    })
-
-    it('uses "comma" display when chip is false or missing', () => {
-      renderWidget({ options: ['a'], multi_select: { chip: false } })
-      expect(screen.getByTestId('multiselect').dataset.display).toBe('comma')
-    })
-
-    it('uses "comma" display when multi_select is absent', () => {
-      renderWidget({ options: ['a'] })
-      expect(screen.getByTestId('multiselect').dataset.display).toBe('comma')
-    })
-  })
-
-  describe('Value binding', () => {
-    it('forwards the initial selected items to MultiSelect', () => {
-      renderWidget({ options: ['a', 'b'] }, ['a'])
-      const el = screen.getByTestId('multiselect')
-      expect(JSON.parse(el.dataset.modelValue!)).toEqual(['a'])
-    })
+    expect(value.value).toEqual(['b'])
   })
 })
