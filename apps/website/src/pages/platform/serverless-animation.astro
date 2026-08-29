@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import ServerlessImageHeatmapAnimation from '../../templates/platform/ServerlessImageHeatmapAnimation.vue'
 import ServerlessIsometricStudy from '../../templates/platform/ServerlessIsometricStudy.vue'
 import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorkerAnimation.vue'
 ---
@@ -18,8 +19,8 @@ import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorker
         Serverless animation comparison
       </h1>
       <p class="text-primary-comfy-white/70 max-w-2xl text-lg">
-        Both studies use the same production container, visual assets, and
-        dimensions so the motion can be compared directly.
+        Each study uses the same production container, visual assets, and
+        dimensions so the concepts can be compared directly.
       </p>
     </header>
 
@@ -42,6 +43,16 @@ import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorker
           </span>
         </div>
         <ServerlessIsometricStudy locale="en" />
+      </article>
+
+      <article>
+        <div class="mb-3 flex items-center justify-between gap-4 px-1">
+          <h2 class="text-lg font-medium">Animation C · Image heatmap</h2>
+          <span class="text-primary-comfy-yellow/70 font-mono text-xs uppercase">
+            4 scenes
+          </span>
+        </div>
+        <ServerlessImageHeatmapAnimation locale="en" client:load />
       </article>
     </div>
   </section>
