@@ -186,6 +186,25 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('--cpu')
   })
 
+  it('redacts a credential value that begins with a dash', async () => {
+    getSystemStats.mockResolvedValue({
+      system: {
+        argv: [
+          'main.py',
+          '--api-token',
+          '-argv-leading-dash-do-not-leak',
+          '--cpu'
+        ]
+      },
+      devices: []
+    })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).not.toContain('argv-leading-dash-do-not-leak')
+    expect(report).toContain('--cpu')
+  })
+
   it('renders the report even when /system_stats answers with an unexpected shape', async () => {
     getSystemStats.mockResolvedValue({ system: {}, devices: undefined })
 
@@ -207,6 +226,25 @@ describe('collectCrdtDebugReport', () => {
 
     expect(report).not.toContain('argv-do-not-leak')
     expect(report).toContain('## System')
+  })
+
+  it('does not return a deeply nested settings object past the redaction cutoff', async () => {
+    let nested: Record<string, unknown> = {
+      innocuous: { apiKey: 'deep-do-not-leak' }
+    }
+    for (let depth = 0; depth < 13; depth++) {
+      nested = { innocuous: nested }
+    }
+    getSettings.mockResolvedValue(nested)
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES
+    })
+
+    expect(report).not.toContain('deep-do-not-leak')
+    expect(report).toContain('redacted at depth limit')
   })
 
   it('redacts private paths without eating the argument after them', async () => {

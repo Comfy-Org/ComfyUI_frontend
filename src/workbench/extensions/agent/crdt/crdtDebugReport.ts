@@ -32,6 +32,8 @@ const MAX_LOG_CHARS = 40_000
 const MAX_WORKFLOW_CHARS = 200_000
 /** The event log and the stamp ledger both grow without bound with session length. */
 const MAX_SECTION_CHARS = 60_000
+const MAX_REDACTION_DEPTH = 12
+const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 
 /**
  * Setting keys whose VALUE is replaced before the report leaves the browser.
@@ -58,7 +60,8 @@ const SHARING_WARNING =
  * has to be tested.
  */
 function redactSecrets(value: unknown, depth = 0): unknown {
-  if (depth > 12 || value === null || typeof value !== 'object') return value
+  if (depth > MAX_REDACTION_DEPTH) return DEPTH_LIMIT_REDACTED
+  if (value === null || typeof value !== 'object') return value
   if (Array.isArray(value)) {
     return value.map((item) => redactSecrets(item, depth + 1))
   }
@@ -161,10 +164,20 @@ function redactArgv(argv: readonly string[]): string {
   let flagWantsSecretValue = false
 
   for (const arg of argv) {
-    if (!arg.startsWith('-')) {
-      const secret = flagWantsSecretValue || PRIVATE_VALUE_PATTERN.test(arg)
-      parts.push(secret ? REDACTED : arg)
+    // A single-dash token can be a credential value (`-secret`), while a
+    // conventional double-dash token starts the next long-form flag. This is
+    // the necessary disambiguation for argv's otherwise ambiguous token
+    // boundary; end-of-argv naturally leaves a missing value redacted.
+    if (flagWantsSecretValue && !/^--[A-Za-z0-9]/.test(arg)) {
+      parts.push(REDACTED)
       flagWantsSecretValue = false
+      continue
+    }
+    flagWantsSecretValue = false
+
+    if (!arg.startsWith('-')) {
+      const secret = PRIVATE_VALUE_PATTERN.test(arg)
+      parts.push(secret ? REDACTED : arg)
       continue
     }
     const [flag, inlineValue] = arg.split('=', 2)
