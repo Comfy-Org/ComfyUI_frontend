@@ -273,7 +273,7 @@ export const useWorkflowService = () => {
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {
-        await renameWorkflow(workflow, newPath)
+        if (!(await renameWorkflow(workflow, newPath))) return false
         target = workflow
       } else {
         target = workflowStore.saveAs(workflow, newPath)
@@ -312,9 +312,9 @@ export const useWorkflowService = () => {
           await workflowStore.saveWorkflow(workflow)
           return true
         }
-        await deleteWorkflow(existing, true)
+        if (!(await deleteWorkflow(existing, true))) return false
       }
-      await renameWorkflow(workflow, expectedPath)
+      if (!(await renameWorkflow(workflow, expectedPath))) return false
       toastStore.add({
         severity: 'info',
         summary: t(
@@ -411,8 +411,9 @@ export const useWorkflowService = () => {
     return queueWorkflowLoad(async () => {
       try {
         const loadFromRemote = !workflow.isLoaded
-        if (loadFromRemote) {
-          await workflow.load()
+        if (loadFromRemote && !(await workflow.load())) {
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
         }
 
         const loaded = await app.loadGraphData(
@@ -555,10 +556,11 @@ export const useWorkflowService = () => {
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    await workflowStore.renameWorkflow(workflow, newPath)
+    if (!(await workflowStore.renameWorkflow(workflow, newPath))) return false
     if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
     }
+    return true
   }
 
   /**
@@ -590,7 +592,7 @@ export const useWorkflowService = () => {
       })
       if (!closed) return false
     }
-    await workflowStore.deleteWorkflow(workflow)
+    if (!(await workflowStore.deleteWorkflow(workflow))) return false
     if (!silent) {
       toastStore.add({
         severity: 'info',

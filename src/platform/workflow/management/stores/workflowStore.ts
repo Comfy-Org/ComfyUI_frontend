@@ -75,8 +75,8 @@ interface WorkflowStore {
     path?: string,
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
-  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
-  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<boolean>
+  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<boolean>
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
 
   workflows: ComfyWorkflow[]
@@ -495,7 +495,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const isBusy = ref<boolean>(false)
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
-  const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+  const renameWorkflow = async (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ): Promise<boolean> => {
     isBusy.value = true
     try {
       // Capture all needed values upfront
@@ -504,7 +507,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStoreV2()
 
-      if (!(await workflow.rename(newPath))) return
+      if (!(await workflow.rename(newPath))) return false
       useExecutionStore().rewriteSessionWorkflowPaths(
         workflow.instanceId,
         workflow.path
@@ -529,15 +532,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
         await bookmarkStore.setBookmarked(oldPath, false)
         await bookmarkStore.setBookmarked(newPath, true)
       }
+      return true
     } finally {
       isBusy.value = false
     }
   }
 
-  const deleteWorkflow = async (workflow: ComfyWorkflow) => {
+  const deleteWorkflow = async (workflow: ComfyWorkflow): Promise<boolean> => {
     isBusy.value = true
     try {
-      if (!(await workflow.delete())) return
+      if (!(await workflow.delete())) return false
       useWorkflowDraftStoreV2().removeDraft(workflow.path)
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
@@ -545,6 +549,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
+      return true
     } finally {
       isBusy.value = false
     }
