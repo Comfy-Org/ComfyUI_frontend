@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const registered = vi.hoisted(() => ({
   setup: null as (() => Promise<void> | void) | null
@@ -56,10 +56,6 @@ vi.mock(
   '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
   () => ({ registerWorkflowTabActivityTracker: vi.fn() })
 )
-
-vi.mock('@/workbench/extensions/agent/stores/agentPanelStore', () => ({
-  useAgentPanelStore: () => agentStore
-}))
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({
