@@ -330,7 +330,6 @@ describe('LGraph', () => {
       graph.add(node)
 
       expect(() => graph.add(node)).toThrow(/already present in this graph/)
-      // Only registered once - the aliased add must not have mutated state.
       expect(graph.nodes).toHaveLength(1)
     } finally {
       vi.unstubAllEnvs()
@@ -345,7 +344,6 @@ describe('LGraph', () => {
       graph.add(node)
 
       expect(() => graph.add(node)).not.toThrow()
-      // Reporting instead of throwing must not corrupt graph state.
       expect(graph.nodes).toHaveLength(1)
     } finally {
       vi.unstubAllEnvs()

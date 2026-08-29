@@ -85,7 +85,6 @@ describe('layoutStore CRDT operations', () => {
       vi.unstubAllEnvs()
     }
 
-    // The existing layout must not have been overwritten
     expect(layoutStore.getNodeLayoutRef(GRAPH, nodeId).value).toEqual(layout)
   })
 

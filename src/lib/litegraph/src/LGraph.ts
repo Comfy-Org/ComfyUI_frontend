@@ -1315,18 +1315,6 @@ export class LGraph
       return
     }
 
-    // Catches a duplicate/aliased-node bug class: the exact same node
-    // instance being added to this graph a second time. Without this check
-    // the code below would silently mint it a new id and push it into
-    // `_nodes` again, leaving one node object registered under two ids.
-    // Bail out here (after assert reports/throws) so production users still
-    // get the "refuse to add" behavior instead of the corruption above.
-    // `node.graph === this` alone isn't enough - some callers (e.g.
-    // `SubgraphNode`'s constructor) set `.graph` before the node is ever
-    // registered via `add()`. Pairing it with the `_nodes_by_id` entry - only
-    // populated once `add()` has actually run - gives an O(1) check
-    // equivalent to `this._nodes.includes(node)`, which would otherwise scan
-    // the whole node list on every single `add()` call.
     const isDuplicateNode =
       node.graph === this && this._nodes_by_id[node.id] === node
     assert(
