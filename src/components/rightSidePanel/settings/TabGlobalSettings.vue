@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
-import Select from 'primevue/select'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
@@ -57,9 +57,9 @@ const linkShape = computed({
 })
 
 const linkShapeOptions = computed(() => [
-  { value: LinkMarkerShape.None, label: t('g.none') },
-  { value: LinkMarkerShape.Circle, label: t('shape.circle') },
-  { value: LinkMarkerShape.Arrow, label: t('shape.arrow') }
+  { value: LinkMarkerShape.None, name: t('g.none') },
+  { value: LinkMarkerShape.Circle, name: t('shape.circle') },
+  { value: LinkMarkerShape.Arrow, name: t('shape.arrow') }
 ])
 
 let theOldLinkRenderMode: LinkRenderType = LiteGraph.SPLINE_LINK
@@ -170,21 +170,13 @@ function openFullSettings() {
       </template>
       <div class="space-y-4 px-4 py-3">
         <LayoutField :label="t('rightSidePanel.globalSettings.linkShape')">
-          <Select
+          <SingleSelect
             v-model="linkShape"
             :options="linkShapeOptions"
-            :aria-label="t('rightSidePanel.globalSettings.linkShape')"
+            :label="t('rightSidePanel.globalSettings.linkShape')"
             :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
-            size="small"
-            :pt="{
-              option: 'text-xs',
-              dropdown: 'w-8',
-              label: cn('min-w-[4ch] truncate', $slots.default && 'mr-5'),
-              overlay: 'w-fit min-w-full'
-            }"
+            size="md"
             data-capture-wheel="true"
-            option-label="label"
-            option-value="value"
           />
         </LayoutField>
         <FieldSwitch
