@@ -14,24 +14,43 @@ interface TwinEntry {
   path: string
   title: string
   description: string
+  canonical: string
   body: string
 }
 
 function frontMatterValue(front: string, key: string): string {
   const match = new RegExp(`^${key}: (.*)$`, 'm').exec(front)
   if (!match) return ''
-  const raw = match[1]
-  return raw.startsWith('"') ? (JSON.parse(raw) as string) : raw
+  const raw = match[1].trim()
+  if (!raw.startsWith('"')) return raw
+  try {
+    return JSON.parse(raw) as string
+  } catch {
+    return raw.replace(/^"|"$/g, '')
+  }
 }
 
-async function readTwin(root: string, path: string): Promise<TwinEntry> {
+/** A twin with no usable front matter still gets a stable title: its page path. */
+function pageTitle(front: string, path: string): string {
+  return frontMatterValue(front, 'title') || path.replace(/\.md$/, '')
+}
+
+async function readTwin(
+  root: string,
+  path: string,
+  site: string
+): Promise<TwinEntry> {
   const text = await readFile(join(root, path), 'utf8')
   const match = /^---\n([\s\S]*?)\n---\n\n?([\s\S]*)$/.exec(text)
   const front = match?.[1] ?? ''
   return {
     path,
-    title: frontMatterValue(front, 'title'),
+    title: pageTitle(front, path),
     description: frontMatterValue(front, 'description'),
+    canonical:
+      frontMatterValue(front, 'canonical') ||
+      new URL(path.replace(/\.md$/, '/').replace(/^\/index\/$/, '/'), site)
+        .href,
     body: match?.[2] ?? text
   }
 }
@@ -85,7 +104,9 @@ export async function writeSectionIndexes(
   for (const section of sections) {
     const paths = twinPaths.filter((path) => belongsTo(path, section.prefix))
     if (paths.length === 0) continue
-    const twins = await Promise.all(paths.map((path) => readTwin(root, path)))
+    const twins = await Promise.all(
+      paths.map((path) => readTwin(root, path, site))
+    )
     const target = `${section.prefix}/llms.txt`
     await mkdir(dirname(join(root, target)), { recursive: true })
     await writeFile(
@@ -105,11 +126,19 @@ export async function writeFullText(
   site = 'https://comfy.org'
 ): Promise<string> {
   const english = twinPaths
-    .filter((path) => !path.startsWith('/zh-CN/') && path !== '/404.md')
+    .filter(
+      (path) =>
+        !path.startsWith('/zh-CN/') &&
+        path !== '/404.md' &&
+        path !== '/p/supported-models.md' &&
+        !path.startsWith('/p/supported-models/')
+    )
     .sort((a, b) =>
       a === '/index.md' ? -1 : b === '/index.md' ? 1 : a.localeCompare(b)
     )
-  const twins = await Promise.all(english.map((path) => readTwin(root, path)))
+  const twins = await Promise.all(
+    english.map((path) => readTwin(root, path, site))
+  )
   const header = [
     '# Comfy: full site text',
     '',
@@ -117,7 +146,7 @@ export async function writeFullText(
     ''
   ].join('\n')
   const parts = twins.map((twin) => {
-    const lines = [`<!-- ${twinUrl(twin.path, site)} -->`, `# ${twin.title}`]
+    const lines = [`<!-- ${twin.canonical} -->`, `# ${twin.title}`]
     if (twin.description) lines.push('', `> ${twin.description}`)
     lines.push('', twin.body.replace(/^# .*\n\n?/, '').trim())
     return lines.join('\n')
