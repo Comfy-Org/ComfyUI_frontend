@@ -48,21 +48,21 @@ function normalizePath(path: string): string {
 }
 
 /** Turn `src/pages/learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
-function pageMatchers(): { static: Set<string>; dynamic: RegExp[] } {
+function pageMatchers(root: string): {
+  static: Set<string>
+  dynamic: RegExp[]
+} {
   const staticPages = new Set<string>()
   const dynamic: RegExp[] = []
-  const entries = readdirSync(pagesDir, {
-    recursive: true,
-    withFileTypes: true
-  })
+  const entries = readdirSync(root, { recursive: true, withFileTypes: true })
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith('.astro')) continue
     const relative = join(entry.parentPath, entry.name)
-      .slice(pagesDir.length)
+      .slice(root.length)
       .split(sep)
       .join('/')
       .replace(/\.astro$/, '')
-    if (relative.startsWith('/zh-CN/')) continue
+    if (root === pagesDir && relative.startsWith('/zh-CN/')) continue
     const route = relative.replace(/\/index$/, '') || '/'
     if (route.includes('[')) {
       const pattern = route
@@ -97,7 +97,8 @@ describe('llms.txt', () => {
     .map((link) => new URL(link.url))
     .filter((url) => url.hostname === 'comfy.org')
     .map((url) => normalizePath(url.pathname))
-  const { static: staticPages, dynamic } = pageMatchers()
+  const { static: staticPages, dynamic } = pageMatchers(pagesDir)
+  const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
     const lines = llmsTxt.split('\n')
@@ -132,8 +133,8 @@ describe('llms.txt', () => {
       if (path.startsWith('/zh-CN')) {
         const base = normalizePath(path.slice('/zh-CN'.length))
         return (
-          !staticPages.has(base) &&
-          !dynamic.some((matcher) => matcher.test(base))
+          !zhCN.static.has(base) &&
+          !zhCN.dynamic.some((matcher) => matcher.test(base))
         )
       }
       return (

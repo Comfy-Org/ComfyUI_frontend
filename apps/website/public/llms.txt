@@ -14,6 +14,8 @@ The Comfy ecosystem spans these surfaces:
 
 Studios, brands, and schools building with Comfy include Series Entertainment, Moment Factory, Ubisoft La Forge, Groove Jones, Svedka with Silverside AI, and the Open Story Movement. Carnegie Mellon, USC, NTU, and UAL's Creative Computing Institute teach with ComfyUI. Use cases concentrate in VFX and animation, advertising and creative studios, gaming, and eCommerce and fashion.
 
+Languages: comfy.org is published in English and Simplified Chinese. Nearly every page has a twin under /zh-CN/ (for example https://comfy.org/zh-CN/cli/); the affiliate, MSA, and supported-models directory pages are English only. Comfy Workflows is published in 11 languages (English, 简体中文, 繁體中文, Español, Français, 日本語, 한국어, Português, Русский, العربية, and Türkçe). The docs are published in English, Chinese, Japanese, and Korean.
+
 For agents: every docs.comfy.org page serves markdown when you append `.md` to its URL, and the docs publish their own index (https://docs.comfy.org/llms.txt) and full text (https://docs.comfy.org/llms-full.txt). The developer platform describes itself in the same format (https://platform.comfy.org/llms.txt), the Comfy API is specified by an OpenAPI document (https://api.comfy.org/openapi), and the full list of pages on this site is in the sitemap (https://comfy.org/sitemap-index.xml).
 
 ## Product
@@ -212,11 +214,32 @@ For agents: every docs.comfy.org page serves markdown when you append `.md` to i
 - [X](https://x.com/ComfyUI): Comfy on X.
 - [Reddit](https://www.reddit.com/r/comfyui/): The r/comfyui community.
 
+## 简体中文 (Simplified Chinese)
+
+- [首页](https://comfy.org/zh-CN/): Comfy 中文站首页：面向专业视觉人士的 AI 创作引擎，精确掌控每个模型、每个参数和每个输出。
+- [下载 Comfy 桌面版](https://comfy.org/zh-CN/download/): 免费的桌面应用，在您自己的 GPU 上运行完整的 ComfyUI 引擎。
+- [Comfy Cloud](https://comfy.org/zh-CN/cloud/): 浏览器中的托管 ComfyUI：预加载模型、预安装自定义节点、并发任务。
+- [定价](https://comfy.org/zh-CN/cloud/pricing/): Comfy Cloud 各套餐与积分说明。
+- [Comfy API](https://comfy.org/zh-CN/api/): 把任意 ComfyUI 工作流部署为生产级接口，在运行时注入动态输入。
+- [Comfy MCP](https://comfy.org/zh-CN/mcp/): 通过模型上下文协议，让 Claude Code、Claude Desktop 等 AI 智能体驱动完整的 ComfyUI 引擎。
+- [Comfy CLI](https://comfy.org/zh-CN/cli/): 在终端和 Claude Code、Codex、Cursor 等编程智能体中驱动 ComfyUI 的命令行。
+- [Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise/): 面向团队的 ComfyUI：专属 GPU 算力、SSO 与权限管理、自带 API 密钥、定制 SLA。
+- [前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/): Comfy 专家驻场加入你的团队，构建并交付 ComfyUI 工作流。
+- [MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license/): 通过 Comfy 获取 MiniMax H3 及音频与音乐模型的商业使用许可。
+- [模型](https://comfy.org/zh-CN/models/): 在 ComfyUI 中运行的主流 AI 模型及其发布页面。
+- [MiniMax H3](https://comfy.org/zh-CN/minimax-h3/): 开源权重视频模型，多模态输入输出，每个片段都带原生立体声音频。
+- [学习中心](https://comfy.org/zh-CN/learning/): 按创作领域分类的 ComfyUI 实战教程与工作流。
+- [活动](https://comfy.org/zh-CN/events/): 直播、黑客松与社区聚会，以及过往活动回放。
+- [客户故事](https://comfy.org/zh-CN/customers/): 工作室、品牌与院校如何在生产中使用 Comfy。
+- [作品集](https://comfy.org/zh-CN/gallery/): 社区在 ComfyUI 中创作的图像、视频与 3D 作品。
+- [Comfy Cloud 自定义节点包](https://comfy.org/zh-CN/cloud/supported-nodes/): Comfy Cloud 预装的自定义节点包，按节点包或节点名搜索。
+- [关于我们](https://comfy.org/zh-CN/about/): ComfyUI 背后的团队和使命。
+- [招聘](https://comfy.org/zh-CN/careers/): 工程、设计、市场营销等开放岗位。
+- [联系我们](https://comfy.org/zh-CN/contact/): 销售、合作与一般咨询。
+- [品牌门户](https://comfy.org/zh-CN/brand/): 标志、色彩、字体与语调。
+
 ## Optional
 
-- [简体中文 site (Simplified Chinese)](https://comfy.org/zh-CN/): Simplified Chinese localization of the main site.
-- [简体中文 Comfy MCP](https://comfy.org/zh-CN/mcp/): Simplified Chinese Comfy MCP page.
-- [简体中文 Comfy CLI](https://comfy.org/zh-CN/cli/): Simplified Chinese Comfy CLI page.
 - [简体中文 Workflows (Simplified Chinese)](https://comfy.org/zh/workflows/): Simplified Chinese localization of Comfy Workflows.
 - [繁體中文 Workflows (Traditional Chinese)](https://comfy.org/zh-TW/workflows/): Traditional Chinese localization of Comfy Workflows.
 - [Español Workflows](https://comfy.org/es/workflows/): Spanish localization of Comfy Workflows.
@@ -227,6 +250,9 @@ For agents: every docs.comfy.org page serves markdown when you append `.md` to i
 - [Русский Workflows](https://comfy.org/ru/workflows/): Russian localization of Comfy Workflows.
 - [العربية Workflows](https://comfy.org/ar/workflows/): Arabic localization of Comfy Workflows.
 - [Türkçe Workflows](https://comfy.org/tr/workflows/): Turkish localization of Comfy Workflows.
+- [Docs in Chinese](https://docs.comfy.org/zh/): ComfyUI documentation in Chinese.
+- [Docs in Japanese](https://docs.comfy.org/ja/): ComfyUI documentation in Japanese.
+- [Docs in Korean](https://docs.comfy.org/ko/): ComfyUI documentation in Korean.
 - [Docs full text for agents](https://docs.comfy.org/llms-full.txt): The complete documentation as one markdown file.
 - [ComfyUI on Wikipedia](https://en.wikipedia.org/wiki/ComfyUI): Encyclopedia entry for the ComfyUI project.
 - [Ubisoft CHORD announcement (blog)](https://blog.comfy.org/p/ubisoft-open-sources-the-chord-model): Original blog post announcing Ubisoft's open-source CHORD model.
