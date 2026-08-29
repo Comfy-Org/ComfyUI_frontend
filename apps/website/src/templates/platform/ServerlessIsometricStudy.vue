@@ -129,8 +129,10 @@ const resetProgress = computed(() =>
 const resetIndicatorProgress = computed(() =>
   reducedMotion ? 1 : clamp(frameTime.value / (BUILD_DURATION + HOLD_DURATION))
 )
-const resetIndicatorHeight = computed(
-  () => (1 - resetIndicatorProgress.value) * 150
+const resetIndicatorHeight = computed(() =>
+  frameTime.value < BUILD_DURATION + HOLD_DURATION
+    ? (1 - resetIndicatorProgress.value) * 150
+    : easeOutCubic(resetProgress.value) * 150
 )
 const resetIndicatorLeftFace = computed(() =>
   polygonPoints([
@@ -253,6 +255,7 @@ watch(
     :data-pattern="patternIndex"
     :data-phase="phase"
     :data-reset-indicator-progress="resetIndicatorProgress"
+    :data-reset-indicator-height="resetIndicatorHeight"
     class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink"
   >
     <svg
