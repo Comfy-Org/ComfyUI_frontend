@@ -12,13 +12,13 @@ import type {
   LGraph,
   LGraphGroup,
   LinkNetwork,
-  LLink,
   SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,
   LGraphEventMode,
-  LGraphNode
+  LGraphNode,
+  LLink
 } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
@@ -414,6 +414,33 @@ export function reloadSerializedGraph(
   usePreviewExposureStore().clearGraph(payload.id)
   reloaded.configure(payload)
   return reloaded
+}
+
+/**
+ * Creates a link between two nodes by directly mutating graph state,
+ * bypassing the layout store integration in connect().
+ */
+export function createTestLink(
+  graph: LGraph,
+  sourceNode: LGraphNode,
+  outputSlot: number,
+  targetNode: LGraphNode,
+  inputSlot: number
+): LLink {
+  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+  graph.state.lastLinkId = linkId
+  const link = new LLink(
+    linkId,
+    sourceNode.outputs[outputSlot].type,
+    sourceNode.id,
+    outputSlot,
+    targetNode.id,
+    inputSlot
+  )
+  if (!graph._addLink(link)) {
+    throw new Error('Failed to add test link')
+  }
+  return link
 }
 
 export function createTestCanvas(
