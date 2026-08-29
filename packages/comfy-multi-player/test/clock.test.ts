@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import * as Y from "yjs";
 import { applyOps, DocDerivedLamportClockStore, freezeLamportEnvelope, MAX_LAMPORT_COUNTER,
-  mint, observeLamport, persistLamportTick, tickLamport, type LamportClockStore } from "../src/index.js";
+  mint, observedDocCounter, observeLamport, persistLamportTick, tickLamport, type LamportClockStore } from "../src/index.js";
 import { loadCatalog } from "./helpers.js";
 
 const catalog = loadCatalog();
@@ -47,6 +48,24 @@ describe("creator-owned Lamport counter", () => {
     const identity = { workflow_id: "w", lineage_id: "l", producer_id: "agent:clock" };
     await expect(persistLamportTick(store, identity, [], { requireSeed: true })).resolves.toBe(13);
     expect(await persistLamportTick(new DocDerivedLamportClockStore(mint({ nodes: [], links: [] }, catalog)), identity, [4])).toBe(5);
+  });
+
+  it("serializes concurrent producers and commits the counter to the document", async () => {
+    const doc = mint({ nodes: [], links: [] }, catalog);
+    const store = new DocDerivedLamportClockStore(doc);
+    const producers = [
+      { workflow_id: "w", lineage_id: "l", producer_id: "agent:one" },
+      { workflow_id: "w", lineage_id: "l", producer_id: "agent:two" },
+    ];
+
+    const counters = await Promise.all(producers.map((identity) => persistLamportTick(store, identity, [])));
+
+    expect(counters).toEqual([1, 2]);
+    expect(observedDocCounter(doc)).toBe(2);
+    const persisted = new Y.Doc();
+    Y.applyUpdate(persisted, Y.encodeStateAsUpdate(doc));
+    expect(observedDocCounter(persisted)).toBe(2);
+    expect(await persistLamportTick(new DocDerivedLamportClockStore(persisted), { workflow_id: "w", lineage_id: "l", producer_id: "agent:next" }, [])).toBe(3);
   });
 
   it("fails closed when the document stamp ledger is malformed", async () => {
