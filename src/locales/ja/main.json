@@ -830,13 +830,16 @@
       "insufficientMessage": "このワークフローを実行するのに十分なクレジットがありません。",
       "insufficientTitle": "クレジット不足",
       "insufficientWorkflowMessage": "このワークフローを実行するためのクレジットが足りません。",
+      "manageBillingError": "請求ポータルを開けませんでした。もう一度お試しください。",
       "maxAllowed": "最大{credits}クレジットまで。",
       "maxAmount": "（最大 $1,000 USD）",
       "maximumAmount": "最大：${amount}",
       "minRequired": "最低{credits}クレジット",
       "minimumPurchase": "最低購入額：${amount}（{credits}クレジット）",
       "needMore": "さらに必要ですか？",
+      "noPaymentMethodError": "このワークスペースには支払い方法が保存されていません。［設定］→［プランとクレジット］→［請求を管理］から追加してから、チャージを再試行してください。",
       "payAmount": "{amount} を支払う",
+      "paymentDetailsRequiredNote": "この購入を完了するには、支払い方法の追加を求められます。",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",
       "purchaseSuccess": "クレジットが正常に追加されました！",
@@ -1705,6 +1708,7 @@
     "micPermissionDenied": "マイクの許可が拒否されました",
     "migrate": "移行する",
     "missing": "不足している",
+    "missingNodeTypesInGroup": "不足: {types}",
     "modifyKeybinding": "キーバインドを変更",
     "more": "もっと見る",
     "moreOptions": "その他のオプション",
@@ -3217,15 +3221,26 @@
     "done": "完了",
     "firstRun": {
       "nudge": {
-        "dismiss": "今はしない",
-        "explore": "テンプレートを探す",
-        "noTour": {
-          "body": "テンプレートを見て、作りたいものを選びましょう。",
-          "title": "まだまだたくさんあります"
+        "animate": {
+          "detail": "画像から動画 · 5秒",
+          "title": "アニメーション化"
         },
-        "ran": {
-          "body": "最初の作品ができました。他にもいろいろ作ってみましょう。",
-          "title": "これは何百ものうちのひとつです"
+        "body": "どれも、作成したばかりの画像から始まります。",
+        "explore": "すべてのテンプレートを閲覧",
+        "fallback": {
+          "body": "テンプレートを閲覧して、作成するものを選びましょう。",
+          "title": "さらに数百種類あります"
+        },
+        "loadFailed": "そのテンプレートを読み込めませんでした。もう一度お試しください。",
+        "restyle": {
+          "detail": "パートナーモデル · 有料プランならどれでも利用可能",
+          "title": "Nano Bananaでスタイル変更"
+        },
+        "title": "最初の出力ができました。次はこちらです。",
+        "upscale": {
+          "badge": "4x",
+          "detail": "同じ画像を、より精細に",
+          "title": "高解像度化"
         }
       },
       "prompt": {
@@ -4363,6 +4378,8 @@
     "resubscribeFailed": "サブスクリプションの再有効化に失敗しました",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
+    "salesManagedRunBlockedDetail": "このワークスペースのプランは現在無効です。アクセスを復元するには、Comfyのアカウントマネージャーにお問い合わせください。",
+    "salesManagedRunBlockedTitle": "プランが無効です",
     "saveYearly": "20%お得",
     "saveYearlyUpTo": "最大20%お得",
     "soloUseOnly": "個人利用のみ",
@@ -4441,6 +4458,7 @@
     "title": "サブスクリプション",
     "titleUnsubscribed": "Comfy Cloudにサブスクライブ",
     "totalCredits": "総クレジット",
+    "unknownTierName": "現在のプラン",
     "upgrade": "アップグレード",
     "upgradePlan": "プランをアップグレード",
     "upgradeTo": "{plan}にアップグレード",

@@ -24,8 +24,6 @@ import type {
   OnboardingTourStage,
   OnboardingTourStepMetadata,
   OnboardingTourStepStage,
-  OnboardingTourSuggestionMetadata,
-  OnboardingTourSuggestionStage,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -193,10 +191,6 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   trackOnboardingTour(
     stage: OnboardingTourNudgeStage,
     metadata: OnboardingTourNudgeMetadata
-  ): void
-  trackOnboardingTour(
-    stage: OnboardingTourSuggestionStage,
-    metadata: OnboardingTourSuggestionMetadata
   ): void
   trackOnboardingTour(
     stage: OnboardingTourStage,

@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Google の Gemini Omni Flash モデルを使用して、テキストプロンプトから音声付き動画を生成します。必要に応じて、結果の誘導または編集用に参照画像や動画を指定できます。希望する長さ（3～10秒）はプロンプト内に直接記述してください。",
+    "display_name": "Google Gemini Omni（動画）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "動画の生成に使用する Gemini 動画モデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "トラック長",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "3Dモデルファイル（GLB、GLTF、OBJ、STL）を、メッシュ処理ノード（デシメーション、リメッシュ、UVアンラップ、ベイクなど）で編集可能な MESH に解析します。すべてのシーンノード／プリミティブは変換を適用した状態で1つのメッシュに統合され、テクスチャとマテリアル係数は最初のマテリアルから取得されます。MeshToFile3D の対になるノードです。",
+    "display_name": "3Dコンポーネントを取得",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Load 3D または別の3Dノードからの3Dモデルファイル。FBX/USDZ はサポートされていません。先に GLB へ変換してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
