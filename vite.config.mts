@@ -288,6 +288,16 @@ export default defineConfig({
           }
         : {}),
 
+      // OpenVSCode derives its remote WebSocket authority from Host. Keep the
+      // browser-facing dev-server authority here; the general cloud API proxy
+      // changes Host to its upstream target, which leaves the workbench shell
+      // visible but prevents the remote extension host from connecting.
+      '/api/customnodes/editor': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ws: true,
+        ...(DISTRIBUTION === 'cloud' ? { secure: false } : {})
+      },
+
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
         // VS Code Web hosts its remote extension process over a WebSocket
