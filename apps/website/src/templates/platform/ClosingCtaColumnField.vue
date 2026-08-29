@@ -19,7 +19,7 @@ import IsometricColumnIllustration from './IsometricColumnIllustration.vue'
         "
       />
     </div>
-    <div class="absolute top-8 left-[17%] hidden size-36 lg:block">
+    <div class="absolute bottom-8 left-1/5 hidden size-36 lg:block">
       <IsometricColumnIllustration
         class="animate-platform-builder-float-delayed"
         style="
