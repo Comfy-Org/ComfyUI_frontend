@@ -109,6 +109,15 @@ new state and provenance rather than calling an inactive tracker and returning e
 Whether a remote effect is user-undoable is an explicit source policy, not an accidental
 consequence of canvas focus.
 
+Every committed domain mutation increments the document's monotonic `revision`. A save
+captures `{ revision, serializedBytes }` before starting I/O. Completion advances the
+persistence baseline to that captured revision only; the document becomes clean only if
+its live revision still equals the saved revision. Mutations, including remote frames,
+that commit while the save is in flight therefore leave the document dirty and cannot be
+mistaken for saved bytes. Close and discard decisions are compare-and-set operations over
+an exact revision: if the live revision changes after the decision is presented, the
+decision is stale and must be requested again rather than closing newer state.
+
 ### Activation is a domain-to-view transition
 
 Activation is an explicit operation, for example `activate(document_id, canvas)`, with
