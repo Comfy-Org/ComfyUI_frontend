@@ -285,6 +285,43 @@ describe('parseComfyWorkflow', () => {
     })
   })
 
+  it('rejects non-boolean hidden in the 0.4 presentation sidecar', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.extra = {
+      ...workflow.extra,
+      linkPresentation: { '1': { hidden: 'yes' } }
+    }
+
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+  })
+
+  it('rejects a non-string label on schema 1 link objects', async () => {
+    const workflow = {
+      version: 1,
+      state: {
+        lastGroupId: 0,
+        lastNodeId: 2,
+        lastLinkId: 1,
+        lastRerouteId: 0
+      },
+      nodes: [],
+      groups: [],
+      links: [
+        {
+          id: 1,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'MODEL',
+          label: 42
+        }
+      ]
+    }
+
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+  })
+
   describe('workflow.nodes.properties.aux_id', () => {
     const validAuxIds = [
       'valid/valid',

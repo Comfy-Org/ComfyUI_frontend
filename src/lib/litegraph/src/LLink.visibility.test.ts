@@ -3,7 +3,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -219,6 +219,25 @@ describe('link presentation store integration', () => {
     ).toBeUndefined()
     expect(winner.hidden).toBe(false)
     expect(loser.hidden).toBe(true)
+    error.mockRestore()
+  })
+
+  it('rejects a same-id replacement and keeps the incumbent presentation', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const graph = new LGraph()
+    const incumbent = makeLink()
+    graph._addLink(incumbent)
+    incumbent.hidden = true
+    incumbent.label = 'Kept'
+    const replacement = makeLink()
+
+    expect(replaceLinkTopology(graph, incumbent, replacement)).toBe(false)
+
+    const scope = graphScopeOf(graph)
+    expect(
+      useLinkPresentationStore().getPresentation(scope, incumbent.id)
+    ).toMatchObject({ hidden: true, label: 'Kept' })
+    expect(incumbent.hidden).toBe(true)
     error.mockRestore()
   })
 })
