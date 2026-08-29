@@ -187,8 +187,7 @@ onUnmounted(() => {
           height="491.852"
           rx="65.5036"
           transform="matrix(-0.866025 -0.5 0 -1 620.969 1058.01)"
-          class="fill-primary-comfy-ink"
-          stroke="#4D3762"
+          class="fill-primary-comfy-ink stroke-secondary-mauve"
           stroke-width="3"
           visibility="hidden"
         />
@@ -200,8 +199,7 @@ onUnmounted(() => {
           height="371.888"
           rx="59.4123"
           transform="matrix(-0.866025 -0.5 0 -1 675.746 878.068)"
-          class="fill-primary-comfy-ink"
-          stroke="#4D3762"
+          class="fill-primary-comfy-ink stroke-secondary-mauve"
           stroke-width="3"
         />
         <rect
@@ -212,8 +210,7 @@ onUnmounted(() => {
           height="371.888"
           rx="59.4123"
           transform="matrix(-0.866025 -0.5 0 -1 675.746 878.068)"
-          class="fill-primary-comfy-ink"
-          stroke="#4D3762"
+          class="fill-primary-comfy-ink stroke-secondary-mauve"
           stroke-width="3"
         />
         <rect
@@ -224,13 +221,12 @@ onUnmounted(() => {
           height="371.888"
           rx="59.4123"
           transform="matrix(-0.866025 -0.5 0 -1 675.746 878.068)"
-          class="fill-primary-comfy-ink"
-          stroke="#4D3762"
+          class="fill-primary-comfy-ink stroke-secondary-mauve"
           stroke-width="3"
         />
 
         <!-- Hex nodes -->
-        <g stroke="#4D3762" stroke-width="3">
+        <g class="stroke-secondary-mauve" stroke-width="3">
           <path
             data-hex="5"
             d="M722.595 427.826L722.579 491.728C722.576 500.223 728.536 510.551 735.889 514.796L791.205 546.733C795.862 549.422 804.238 549.298 808.894 546.607L864.227 514.642C871.583 510.392 877.548 500.061 877.55 491.566L877.567 427.664C877.568 422.286 873.487 414.972 868.829 412.283L813.514 380.347C806.16 376.101 794.236 376.104 786.88 380.354L731.548 412.319C726.882 415.015 722.597 422.437 722.595 427.826Z"

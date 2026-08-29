@@ -6,18 +6,21 @@ import { describe, expect, it } from 'vitest'
 import { brandColors } from './brandColors'
 
 const require = createRequire(import.meta.url)
-const paletteCss = readFileSync(
-  require.resolve('@comfyorg/design-system/css/_palette.css'),
-  'utf-8'
-)
+const packageCss = (name: string) =>
+  readFileSync(require.resolve(`@comfyorg/design-system/css/${name}`), 'utf-8')
+const brandCss = packageCss('_brand.css')
+const paletteCss = packageCss('_palette.css')
 
 function token(name: string): string {
+  const declarations = brandCss + paletteCss
   const seen = new Set<string>()
   let current = name
 
   while (!seen.has(current)) {
     seen.add(current)
-    const declaration = new RegExp(`--${current}:\\s*([^;]+);`).exec(paletteCss)
+    const declaration = new RegExp(`--${current}:\\s*([^;]+);`).exec(
+      declarations
+    )
     if (!declaration) {
       throw new Error(`token --${current} not found in the design system`)
     }
@@ -99,8 +102,34 @@ const toHex = ({ r, g, b }: Rgb) =>
 
 const isYellow = ({ r, g, b }: Rgb) => r > 200 && g > 200 && b < 200
 
-const colorsIn = (svg: string) =>
-  svg.replace(/url\([^)]*\)/gi, '').match(COLOR_LITERAL) ?? []
+/*
+ * A bare colour keyword — `yellow`, `gold` — matches no literal pattern, so a
+ * scan for literals alone cannot see one and reports the file as clean. Rather
+ * than enumerate the ~140 CSS names, read the paint attributes directly: what
+ * they carry is a colour unless it is one of the few non-colour keywords, so
+ * anything left that does not parse gets reported as unreadable.
+ */
+const PAINT_ATTR =
+  /\b(?:fill|stroke|stop-color|flood-color|lighting-color)="([^"]*)"/gi
+const NON_COLOR_PAINT =
+  /^(?:none|transparent|currentcolor|inherit|context-(?:fill|stroke)|url\(.*)$/i
+
+const IS_COLOR_LITERAL = new RegExp(`^(?:${COLOR_LITERAL.source})$`, 'i')
+
+const paintKeywordsIn = (svg: string) =>
+  [...svg.matchAll(PAINT_ATTR)]
+    .map((m) => m[1].trim())
+    .filter(
+      (value) =>
+        value !== '' &&
+        !NON_COLOR_PAINT.test(value) &&
+        !IS_COLOR_LITERAL.test(value)
+    )
+
+const colorsIn = (svg: string) => [
+  ...(svg.replace(/url\([^)]*\)/gi, '').match(COLOR_LITERAL) ?? []),
+  ...paintKeywordsIn(svg)
+]
 
 function yellowsIn(svg: string): string[] {
   const yellows = colorsIn(svg)
@@ -236,11 +265,77 @@ describe('yellowsIn', () => {
     )
   })
 
+  it('catches a yellow written as a bare colour keyword', () => {
+    expect(
+      unreadableColorsIn(`<path fill="${yellow}"/><path fill="gold"/>`)
+    ).toEqual(['gold'])
+    expect(unreadableColorsIn('<stop stop-color="yellow"/>')).toEqual([
+      'yellow'
+    ])
+  })
+
+  it('does not report paint keywords that name no colour', () => {
+    expect(
+      unreadableColorsIn(
+        '<path fill="none" stroke="currentColor"/>' +
+          '<path fill="transparent" stroke="inherit"/>' +
+          `<path fill="${yellow}"/>`
+      )
+    ).toEqual([])
+  })
+
+  it('reads paint attributes independently of scan order', () => {
+    const svg = `<path fill="gold"/><path fill="${yellow}"/><path stroke="gold"/>`
+    expect(unreadableColorsIn(svg)).toEqual(unreadableColorsIn(svg))
+    expect(yellowsIn(svg)).toEqual([yellow])
+  })
+
   it('does not mistake a url() reference for a color', () => {
     const gradientRef =
       '<defs><linearGradient id="ffee00"/></defs>' +
       `<path fill="${yellow}"/><path fill="url(#ffee00)"/>`
     expect(yellowsIn(gradientRef)).toEqual([yellow])
     expect(unreadableColorsIn(gradientRef)).toEqual([])
+  })
+})
+
+/*
+ * The brand layer is only a single source of truth while it is the *only*
+ * place these tokens are declared. A second declaration anywhere in the
+ * website's own theme silently wins over the package and is invisible until
+ * the two values disagree — which is exactly how the yellow drifted.
+ */
+describe('the brand layer is declared in exactly one place', () => {
+  const declarationsIn = (css: string) =>
+    new Set(
+      [...css.matchAll(/^\s*(--(?:color|font)-[\w-]+)\s*:/gm)].map((m) => m[1])
+    )
+
+  const brand = declarationsIn(brandCss)
+  const palette = declarationsIn(paletteCss)
+  const website = declarationsIn(read('src/styles/global.css'))
+
+  const overlap = (a: Set<string>, b: Set<string>) =>
+    [...a].filter((name) => b.has(name)).sort()
+
+  it('declares no brand token twice inside the package', () => {
+    expect(overlap(brand, palette)).toEqual([])
+  })
+
+  it('lets the website add site tokens without shadowing the package', () => {
+    expect(overlap(website, brand)).toEqual([])
+    expect(overlap(website, palette)).toEqual([])
+  })
+
+  it('keeps the brand typeface in the brand layer', () => {
+    expect(brand.has('--font-formula')).toBe(true)
+    expect(brand.has('--font-formula-narrow')).toBe(true)
+  })
+
+  it('catches a redeclaration', () => {
+    const shadowed = declarationsIn(
+      '@theme {\n  --color-brand-yellow: #fff;\n}'
+    )
+    expect(overlap(shadowed, brand)).toEqual(['--color-brand-yellow'])
   })
 })
