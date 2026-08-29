@@ -45,10 +45,14 @@ vi.mock('vue-i18n', () => ({
 
 vi.mock('@/types/nodeSource', () => ({
   NodeSourceType: {
+    Blueprint: 'blueprint',
     Core: 'core',
     CustomNodes: 'custom_nodes'
   },
   getNodeSource: vi.fn((pythonModule) => {
+    if (pythonModule?.startsWith('blueprint')) {
+      return { type: 'blueprint' }
+    }
     if (pythonModule?.startsWith('custom_nodes.')) {
       return { type: 'custom_nodes' }
     }
@@ -144,6 +148,19 @@ describe('useNodeHelpContent', () => {
 
     expect(error.value).toBe('nodeHelpPage.notFound')
     expect(renderedHelpHtml.value).toContain(mockCustomNode.description)
+  })
+
+  it('should show the unavailable state for a blueprint without a description', async () => {
+    const nodeRef = ref(
+      createMockNode({ description: '', python_module: 'blueprint' })
+    )
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBe('nodeHelpPage.notFound')
+    expect(renderedHelpHtml.value).toBe('')
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
   it('should show the unavailable state for an invalid custom module', async () => {

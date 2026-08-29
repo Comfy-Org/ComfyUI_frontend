@@ -11,7 +11,7 @@ class NodeHelpService {
     const nodeSource = getNodeSource(node.python_module)
 
     if (nodeSource.type === NodeSourceType.Blueprint) {
-      return node.description || ''
+      return node.description || undefined
     }
 
     if (nodeSource.type === NodeSourceType.CustomNodes) {
