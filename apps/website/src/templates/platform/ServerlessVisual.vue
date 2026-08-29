@@ -52,7 +52,7 @@ const activityCells: ActivityCell[] = Array.from(
       id,
       column,
       row,
-      sequence: (COLS - 1 - column) * ROWS + (ROWS - 1 - row),
+      sequence: column * ROWS + (ROWS - 1 - row),
       opacity: CELL_OPACITIES[id]
     }
   }
