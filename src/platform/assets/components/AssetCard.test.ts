@@ -165,21 +165,22 @@ describe('AssetCard', () => {
   })
 
   it('does not emit deleted when deletion returns false', async () => {
+    vi.useFakeTimers()
     vi.mocked(assetService.deleteAsset).mockResolvedValue(false)
     const asset = createDisplayAsset({ is_immutable: false })
     const result = renderCard(asset)
-    const user = userEvent.setup()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
     await user.click(screen.getByText('g.delete'))
     const dialogOptions = vi.mocked(showConfirmDialog).mock.calls[0][0]
     const onConfirm = dialogOptions?.footerProps?.onConfirm
     expect(onConfirm).toBeTypeOf('function')
     if (typeof onConfirm !== 'function') throw new Error('Missing confirmation')
-    void onConfirm()
+    const confirmation = onConfirm()
 
-    await vi.waitFor(() =>
-      expect(assetService.deleteAsset).toHaveBeenCalledWith(asset.id)
-    )
+    await vi.runAllTimersAsync()
+    await confirmation
+    expect(assetService.deleteAsset).toHaveBeenCalledWith(asset.id)
     expect(result.emitted('deleted')).toBeUndefined()
   })
 })

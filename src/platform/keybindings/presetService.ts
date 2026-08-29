@@ -7,6 +7,7 @@ import UnsavedChangesHeader from '@/components/dialog/content/setting/keybinding
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { uploadFile } from '@/scripts/utils'
@@ -159,7 +160,12 @@ export function useKeybindingPresetService() {
     const resp = await api.deleteUserData(presetFilePath(name))
     if (!resp.ok) {
       const message = t('g.keybindingPresets.deletePresetFailed', { name })
-      console.error(message)
+      const error = new Error(message)
+      console.error(error)
+      reportError(error, {
+        errorType: 'keybinding_preset_deletion_http_failure',
+        tags: { status: resp.status }
+      })
       toast.add({
         severity: 'error',
         summary: t('g.error'),

@@ -12,6 +12,7 @@ vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob: vi.fn() }))
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
+      default_connection_color_byType: {},
       setDirty: vi.fn()
     }
   }
@@ -42,5 +43,28 @@ describe('color palette missing-palette contracts', () => {
     expect(exported).toBe(false)
     expect(downloadBlob).not.toHaveBeenCalled()
     expect(console.warn).toHaveBeenCalledWith('Color palette missing not found')
+  })
+
+  it('applies an existing palette', async () => {
+    const store = useColorPaletteStore()
+    const paletteId = store.palettes[0].id
+
+    await expect(
+      useColorPaletteService().loadColorPalette(paletteId)
+    ).resolves.toBe(true)
+
+    expect(store.activePaletteId).toBe(paletteId)
+    expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+  })
+
+  it('downloads an existing palette', () => {
+    const store = useColorPaletteStore()
+    const paletteId = store.palettes[0].id
+
+    expect(useColorPaletteService().exportColorPalette(paletteId)).toBe(true)
+    expect(downloadBlob).toHaveBeenCalledWith(
+      `${paletteId}.json`,
+      expect.any(Blob)
+    )
   })
 })

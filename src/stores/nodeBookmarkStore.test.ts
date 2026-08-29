@@ -70,6 +70,11 @@ describe('node bookmark folder commands', () => {
         )
     },
     {
+      name: 'unchanged path',
+      command: () =>
+        useNodeBookmarkStore().renameBookmarkFolder(folder('Folder/'), 'Folder')
+    },
+    {
       name: 'non-folder delete',
       command: () => useNodeBookmarkStore().deleteBookmarkFolder(nonFolder)
     }
@@ -78,5 +83,25 @@ describe('node bookmark folder commands', () => {
     await expect(command()).resolves.toBe(false)
     expect(bookmarks).toEqual(originalBookmarks)
     expect(set).not.toHaveBeenCalled()
+  })
+
+  it('persists a successful folder rename', async () => {
+    await expect(
+      useNodeBookmarkStore().renameBookmarkFolder(folder('Folder/'), 'Renamed')
+    ).resolves.toBe(true)
+    expect(set).toHaveBeenNthCalledWith(1, 'Comfy.NodeLibrary.Bookmarks.V2', [
+      'Renamed/',
+      'Renamed/KSampler',
+      'Existing/'
+    ])
+  })
+
+  it('persists a successful folder deletion', async () => {
+    await expect(
+      useNodeBookmarkStore().deleteBookmarkFolder(folder('Folder/'))
+    ).resolves.toBe(true)
+    expect(set).toHaveBeenNthCalledWith(1, 'Comfy.NodeLibrary.Bookmarks.V2', [
+      'Existing/'
+    ])
   })
 })

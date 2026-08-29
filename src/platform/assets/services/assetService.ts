@@ -834,8 +834,8 @@ function createAssetService() {
    * Only available in cloud environment
    *
    * @param id - The asset ID (UUID)
-   * @returns Whether the asset was deleted
-   * @throws Error if the request fails
+   * @returns Whether the server accepted the deletion
+   * @throws Error if the request cannot be completed
    */
   async function deleteAsset(id: AssetId): Promise<boolean> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {

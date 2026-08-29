@@ -18,7 +18,7 @@ import { getNodeHelpBaseUrl } from '@/workbench/utils/nodeHelpUtil'
 export function useNodeHelpContent(
   nodeRef: MaybeRefOrGetter<ComfyNodeDefImpl | null>
 ) {
-  const { locale } = useI18n()
+  const { locale, t } = useI18n()
 
   const helpContent = ref<string>('')
   const isLoading = ref<boolean>(false)
@@ -54,7 +54,7 @@ export function useNodeHelpContent(
           const content = await request
           if (currentRequest !== request) return
           if (content === undefined) {
-            error.value = 'Help not found'
+            error.value = t('nodeHelpPage.notFound')
             helpContent.value = node.description || ''
           } else {
             helpContent.value = content

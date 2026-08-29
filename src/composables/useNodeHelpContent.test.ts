@@ -38,7 +38,8 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    locale: ref('en')
+    locale: ref('en'),
+    t: (key: string) => key
   })
 }))
 
@@ -126,7 +127,7 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('Help not found')
+    expect(error.value).toBe('nodeHelpPage.notFound')
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
@@ -141,7 +142,7 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('Help not found')
+    expect(error.value).toBe('nodeHelpPage.notFound')
     expect(renderedHelpHtml.value).toContain(mockCustomNode.description)
   })
 
@@ -157,13 +158,28 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('Help not found')
+    expect(error.value).toBe('nodeHelpPage.notFound')
     expect(renderedHelpHtml.value).toContain('Malformed custom node')
     expect(warning).toHaveBeenCalledWith(
       'Invalid custom node module:',
       'custom_nodes.'
     )
     expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('should show the unavailable state for HTML fallback responses', async () => {
+    const nodeRef = ref(mockCoreNode)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-type': 'text/html' }),
+      text: async () => '<html>SPA fallback</html>'
+    })
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBe('nodeHelpPage.notFound')
+    expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
   it('should expose infrastructure failures', async () => {

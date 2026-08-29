@@ -29,6 +29,7 @@ const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockPersistUserKeybindings = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
+const mockReportError = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/api', () => ({
   api: mockApi
@@ -61,6 +62,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({
     add: mockToastAdd
   })
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 vi.mock('@/composables/useErrorHandling', () => ({
@@ -216,6 +221,10 @@ describe('useKeybindingPresetService', () => {
         severity: 'error',
         summary: 'g.error',
         detail: 'g.keybindingPresets.deletePresetFailed'
+      })
+      expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'keybinding_preset_deletion_http_failure',
+        tags: { status: 500 }
       })
     })
 
