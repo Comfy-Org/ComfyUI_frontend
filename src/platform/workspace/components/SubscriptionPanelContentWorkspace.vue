@@ -530,7 +530,8 @@ const showTeamSubscribePrompt = computed(
 
 const showInactiveTeamSubscription = computed(
   () =>
-    showTeamSubscribePrompt.value &&
+    permissions.value.canManageSubscription &&
+    !isInPersonalWorkspace.value &&
     isSubscriptionEnded.value &&
     isTeamPlan.value
 )
