@@ -43,18 +43,12 @@ const elapsed = ref(0)
 const reducedMotion = prefersReducedMotion()
 
 const frameTime = computed(() => elapsed.value % CYCLE_DURATION)
-const activeSequence = computed(() =>
-  Math.floor(frameTime.value / CELL_STEP_DURATION)
-)
-const serverlessLetters = computed(() =>
-  [...SERVERLESS_LABEL].map((letter, index, letters) => ({
-    letter,
-    revealed:
-      reducedMotion ||
-      activeSequence.value >=
-        Math.round((index * (COLS - 1)) / (letters.length - 1))
-  }))
-)
+const marqueePosition = computed(() => {
+  if (reducedMotion) return 50
+
+  const travelDuration = COLS * CELL_STEP_DURATION
+  return Math.min(frameTime.value / travelDuration, 1) * 120 - 10
+})
 
 const activityCells: ActivityCell[] = Array.from(
   { length: CELL_COUNT },
@@ -184,16 +178,14 @@ watch(
     </div>
 
     <div
-      class="text-primary-comfy-yellow pointer-events-none absolute top-[13%] right-[5%] bottom-[14%] left-3/10 z-10 grid grid-cols-10 items-center font-bold tracking-wider"
+      class="pointer-events-none absolute top-[13%] right-[5%] bottom-[14%] left-3/10 z-10 overflow-hidden"
       aria-hidden="true"
     >
       <span
-        v-for="({ letter, revealed }, index) in serverlessLetters"
-        :key="`${letter}-${index}`"
-        class="text-center text-[clamp(0.6rem,1.1vw,0.9rem)] transition-opacity duration-150"
-        :style="{ opacity: revealed ? 1 : 0.08 }"
+        class="text-primary-comfy-yellow shadow-primary-comfy-yellow/40 absolute top-1/2 -translate-1/2 font-bold tracking-[0.28em] whitespace-nowrap drop-shadow-sm"
+        :style="{ left: `${marqueePosition}%` }"
       >
-        {{ letter }}
+        {{ SERVERLESS_LABEL }}
       </span>
     </div>
 
