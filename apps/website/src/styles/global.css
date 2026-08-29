@@ -281,6 +281,25 @@
   }
 }
 
+@keyframes platform-closing-column-grow {
+  0%,
+  100% {
+    transform: scaleY(0.72);
+  }
+
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@utility animate-platform-closing-column-grow {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-closing-column-grow
+      var(--platform-column-grow-duration, 6s) ease-in-out
+      var(--platform-column-grow-delay, 0s) infinite;
+  }
+}
+
 @keyframes label-flash {
   0%,
   22% {
