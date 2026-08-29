@@ -223,7 +223,8 @@ function runOrder(base: WorkflowJSON, ops: Op[]): { json: string; wf: WorkflowJS
   const doc = new Y.Doc();
   Y.applyUpdate(doc, Y.encodeStateAsUpdate(minted));
   const res = applyOps(doc, ops, catalog);
-  expect(res.failed, `a legal interleaving must never abort the batch: ${JSON.stringify(res.failed)}`).toBeNull();
+  const failed = res.outcomes.find((outcome) => outcome.outcome === "rejected");
+  expect(failed, `a legal interleaving must never abort the batch: ${JSON.stringify(failed)}`).toBeUndefined();
   const wf = project(doc, catalog);
   return { json: comparable(wf), wf };
 }
@@ -501,7 +502,7 @@ describe("KNOWN GAP amendment v1.2 does NOT close", () => {
       const minted = mint(baseWorkflow(), catalog);
       const doc = new Y.Doc();
       Y.applyUpdate(doc, Y.encodeStateAsUpdate(minted));
-      expect(applyOps(doc, ops, catalog).failed).toBeNull();
+      expect(applyOps(doc, ops, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
       const wf = project(doc, catalog);
       const src = wf.nodes.find((n) => String(n.id) === String(ENCODER))!;
       return (src.outputs as { links: unknown[] }[])[0]!.links;

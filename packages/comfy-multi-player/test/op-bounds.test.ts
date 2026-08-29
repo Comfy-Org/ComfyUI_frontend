@@ -8,6 +8,7 @@
  */
 import * as Y from "yjs";
 import { describe, expect, it } from "vitest";
+import { appliedCount, appliedOpIds, noOpIds, rejectedOutcome } from "./apply-result-helpers.js";
 import {
   applyOps,
   MAX_COLLECTION_ENTRIES,
@@ -95,9 +96,9 @@ describe("applyOps enforces the budget before any mutation", () => {
     const doc = mint(base, catalog);
     const before = bytes(doc);
     const result = applyOps(doc, [setWidget("b".repeat(32), "x".repeat(MAX_OP_COST))], catalog);
-    expect(result.failed?.code).toBe("malformed_op");
-    expect(result.failed?.message).toMatch(/cost budget/);
-    expect(result.applied).toEqual([]);
+    expect(rejectedOutcome(result)?.reason.code).toBe("malformed_op");
+    expect(rejectedOutcome(result)?.reason.message).toMatch(/cost budget/);
+    expect(appliedOpIds(result)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
     expect(() => project(doc, catalog)).not.toThrow();
   });
@@ -105,8 +106,8 @@ describe("applyOps enforces the budget before any mutation", () => {
   it("accepts a deep-but-legal value (the bound is above real payloads)", () => {
     const doc = mint(base, catalog);
     const result = applyOps(doc, [setWidget("c".repeat(32), wrap(30))], catalog);
-    expect(result.failed).toBeNull();
-    expect(result.applied_count).toBe(1);
+    expect(rejectedOutcome(result)).toBeUndefined();
+    expect(appliedCount(result)).toBe(1);
   });
 
   it(`rejects a batch of ${MAX_OPS_PER_BATCH + 1} ops before processing any`, () => {
@@ -116,10 +117,10 @@ describe("applyOps enforces the budget before any mutation", () => {
       setWidget(String(i).padStart(32, "0"), i),
     );
     const result = applyOps(doc, ops, catalog);
-    expect(result.failed?.code).toBe("malformed_op");
-    expect(result.failed?.message).toMatch(/op limit/);
-    expect(result.applied).toEqual([]);
-    expect(result.skipped).toEqual([]);
+    expect(rejectedOutcome(result)?.reason.code).toBe("malformed_op");
+    expect(rejectedOutcome(result)?.reason.message).toMatch(/op limit/);
+    expect(appliedOpIds(result)).toEqual([]);
+    expect(noOpIds(result)).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
@@ -129,7 +130,7 @@ describe("applyOps enforces the budget before any mutation", () => {
       setWidget(String(i).padStart(32, "0"), i),
     );
     const result = applyOps(doc, ops, catalog);
-    expect(result.failed).toBeNull();
-    expect(result.applied_count).toBe(MAX_OPS_PER_BATCH);
+    expect(rejectedOutcome(result)).toBeUndefined();
+    expect(appliedCount(result)).toBe(MAX_OPS_PER_BATCH);
   });
 });

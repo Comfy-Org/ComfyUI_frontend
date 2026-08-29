@@ -133,7 +133,7 @@ function applyInBatches(doc: Y.Doc, ops: Op[], sizes: number[]): void {
   while (cursor < ops.length) {
     const size = sizes[batch++ % sizes.length]!;
     const result = applyOps(doc, ops.slice(cursor, cursor + size), catalog);
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
     cursor += size;
   }
 }
@@ -171,14 +171,16 @@ describe("property-based convergence and idempotency", () => {
     fc.assert(
       fc.property(scenarioArb, (scenario) => {
         const doc = mint({ nodes: [], links: [] }, catalog);
-        expect(applyOps(doc, phases(scenario).flat(), catalog).failed).toBeNull();
+        expect(
+          applyOps(doc, phases(scenario).flat(), catalog).outcomes.find((outcome) => outcome.outcome === "rejected"),
+        ).toBeUndefined();
         const before = Y.encodeStateAsUpdate(doc);
 
         const reset = { ...envelope(9999, scenario), op: "reset_doc" } as unknown as Op;
         const result = applyOps(doc, [reset], catalog);
 
-        expect(result.failed).not.toBeNull();
-        expect(result.applied).toEqual([]);
+        expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeDefined();
+        expect(result.outcomes.filter((outcome) => outcome.outcome === "applied")).toEqual([]);
         expect(Y.encodeStateAsUpdate(doc)).toEqual(before);
       }),
       FC_OPTIONS,
@@ -190,14 +192,14 @@ describe("property-based convergence and idempotency", () => {
       fc.property(scenarioArb, (scenario) => {
         const ops = phases(scenario).flat();
         const doc = mint({ nodes: [], links: [] }, catalog);
-        expect(applyOps(doc, ops, catalog).failed).toBeNull();
+        expect(applyOps(doc, ops, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
         const projection = JSON.stringify(project(doc, catalog));
         const update = Y.encodeStateAsUpdate(doc);
 
         const retry = applyOps(doc, ops, catalog);
-        expect(retry.failed).toBeNull();
-        expect(retry.applied).toEqual([]);
-        expect(retry.skipped).toHaveLength(ops.length);
+        expect(retry.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
+        expect(retry.outcomes.filter((outcome) => outcome.outcome === "applied")).toEqual([]);
+        expect(retry.outcomes.filter((outcome) => outcome.outcome === "no-op").map((outcome) => outcome.op_id)).toHaveLength(ops.length);
         expect(JSON.stringify(project(doc, catalog))).toBe(projection);
         expect(Y.encodeStateAsUpdate(doc)).toEqual(update);
       }),

@@ -1998,3 +1998,22 @@ requirement before durable or offline queues are public: v1 transport may be
 translated only with the documented legacy token `"0"`, and mixed readers must
 not silently exchange the new semantics. This amendment does not implement a
 transport `v == 2` decoder.
+
+---
+
+## Amendment A17 — 2026-08-29 — DQ-10 direct Lamport counter semantics
+
+Private alpha keeps one op format and assigns Lamport semantics directly to its counter:
+
+```text
+winner   = [counter, actor, op_id]
+counter  = op.base_version, creator-owned and durably advanced
+```
+
+The existing tuple comparator is reused unchanged; no second comparison
+implementation is introduced.
+
+This is a direct private-alpha semantic change, not a v2→v3 migration.
+Amendment A16's incarnation-qualified target keys remain byte-for-byte the
+register namespace, including legacy incarnation token `"0"`. Same-lineage
+reconnect continues to use state-vector delta replay.

@@ -119,8 +119,8 @@ describe("LWW vector application (both orders)", () => {
 
       const forward = fork();
       const reverse = fork();
-      expect(applyOps(forward, v.ops, catalog).failed).toBeNull();
-      expect(applyOps(reverse, [...v.ops].reverse(), catalog).failed).toBeNull();
+      expect(applyOps(forward, v.ops, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
+      expect(applyOps(reverse, [...v.ops].reverse(), catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
 
       const pf = project(forward, catalog);
       const pr = project(reverse, catalog);

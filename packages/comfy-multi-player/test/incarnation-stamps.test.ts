@@ -10,8 +10,10 @@ import {
   readStamps,
   type Op,
   type WorkflowJSON,
+  type WorkflowNode,
 } from "../src/index.js";
 import { loadCatalog } from "./helpers.js";
+import { rejectedOutcome } from "./apply-result-helpers.js";
 
 const catalog = loadCatalog();
 const id = (tag: string) => (tag + "0".repeat(32)).slice(0, 32);
@@ -52,7 +54,7 @@ function readd(): Op {
     node_id: 1,
     class_type: "CLIPTextEncode",
     pos: [0, 0],
-    node: { ...base().nodes[0], widgets_values: ["life-2"] },
+    node: { ...base().nodes[0], widgets_values: ["life-2"] } as WorkflowNode,
   };
 }
 
@@ -72,8 +74,8 @@ describe("incarnation-namespaced widget stamps (DQ-11)", () => {
     const first = fork();
     const second = fork();
 
-    expect(applyOps(first, [stale, remove(), replacement, fresh], catalog).failed).toBeNull();
-    expect(applyOps(second, [remove(), stale, replacement, fresh], catalog).failed).toBeNull();
+    expect(rejectedOutcome(applyOps(first, [stale, remove(), replacement, fresh], catalog))).toBeUndefined();
+    expect(rejectedOutcome(applyOps(second, [remove(), stale, replacement, fresh], catalog))).toBeUndefined();
     expect(project(first, catalog)).toEqual(project(second, catalog));
     expect(project(first, catalog).nodes[0]?.widgets_values).toEqual(["fresh"]);
     expect(readStamps(first)[JSON.stringify(["widget", "1", replacement.op_id, "text"])])

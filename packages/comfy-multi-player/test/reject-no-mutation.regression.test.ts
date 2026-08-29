@@ -23,6 +23,14 @@ const countingCatalog: WidgetCatalog = {
 };
 const opId = (tag: string) => (tag + "0".repeat(32)).slice(0, 32);
 
+function rejected(result: ReturnType<typeof applyOps>) {
+  const index = result.outcomes.findIndex((outcome) => outcome.outcome === "rejected");
+  const outcome = result.outcomes[index];
+  return outcome?.outcome === "rejected"
+    ? { index, code: outcome.reason.code, message: outcome.reason.message, op_id: outcome.op_id }
+    : null;
+}
+
 /**
  * D4: a rejected op leaves the document BYTE-identical, not merely
  * projection-identical. The rejected op also never records its `op_id`, so
@@ -37,11 +45,11 @@ function assertRejectedWithoutMutation(
 ): void {
   const doc = mint(workflow, withCatalog);
   const before = Buffer.from(Y.encodeStateAsUpdate(doc));
-  expect(applyOps(doc, [op], withCatalog).failed).toMatchObject({ code });
+  expect(rejected(applyOps(doc, [op], withCatalog))).toMatchObject({ code });
   expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
 
   const retry = applyOps(doc, [op], withCatalog);
-  expect(retry.failed).toMatchObject({ code });
+  expect(rejected(retry)).toMatchObject({ code });
   expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
 }
 
@@ -84,8 +92,8 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
           const before = Buffer.from(Y.encodeStateAsUpdate(doc));
           const result = applyOps(doc, [op], catalog);
           if (op === bad) {
-            expect(result.failed).toMatchObject({ code: "malformed_op", op: bad });
-            expect(result.failed?.message).toContain("link_type must be a string");
+            expect(rejected(result)).toMatchObject({ code: "malformed_op", op_id: bad.op_id });
+            expect(rejected(result)?.message).toContain("link_type must be a string");
             expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
             expect(appliedMap(doc).has(bad.op_id)).toBe(false);
           }
@@ -103,8 +111,8 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     const doc = mint(workflow, catalog);
     const result = applyOps(doc, [op], catalog);
 
-    expect(result.failed).toBeNull();
-    expect(result.applied).toEqual([op.op_id]);
+    expect(rejected(result)).toBeNull();
+    expect(result.outcomes).toEqual([{ op_id: op.op_id, outcome: "applied" }]);
     expect(project(doc, catalog).links).toContainEqual([
       op.link_id, op.from_node, op.from_slot, op.to_node, op.to_slot, op.link_type,
     ]);
@@ -342,7 +350,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
       let connectFailure: string | null = null;
       for (const op of order) {
         const result = applyOps(doc, [op], catalog);
-        if (op === badOp) connectFailure = result.failed?.code ?? null;
+        if (op === badOp) connectFailure = rejected(result)?.code ?? null;
       }
       return connectFailure;
     });
@@ -380,9 +388,9 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
         stamp: [9, "human:z"], link_id: 9702, from_node: 300, from_slot: fromSlot,
         to_node: 700, to_slot: 0, link_type: "IMAGE",
       } as unknown as Op], catalog);
-      expect(result.failed?.code).toBe("output_slot_missing");
-      expect(result.failed?.code).not.toBe("apply_failed");
-      expect(result.failed?.message).not.toMatch(/properties of undefined/);
+      expect(rejected(result)?.code).toBe("output_slot_missing");
+      expect(rejected(result)?.code).not.toBe("apply_failed");
+      expect(rejected(result)?.message).not.toMatch(/properties of undefined/);
     },
   );
 
@@ -429,8 +437,8 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     // passes against `main` too, because the raw `TypeError` was always caught
     // and reported in band. Written down so nobody later reads it as evidence
     // that the TypeError escaped, which it never did.
-    expect(result.failed?.index).toBe(0);
-    expect(result.applied_count).toBe(0);
+    expect(rejected(result)?.index).toBe(0);
+    expect(result.outcomes.filter((outcome) => outcome.outcome !== "rejected")).toHaveLength(0);
   });
 
   it("reports from_slot's code when BOTH slot axes are invalid (precedence pinned)", () => {
@@ -472,7 +480,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
         base_version: 9, stamp: [9, "human:z"], link_id: 9705, from_node: 300,
         from_slot: fromSlot, to_node: 700, to_slot: toSlot, link_type: "IMAGE",
       } as unknown as Op], catalog);
-      expect(result.failed?.code).toBe(expected);
+      expect(rejected(result)?.code).toBe(expected);
     }
   });
 
@@ -504,7 +512,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
         let code: string | null = null;
         for (const op of order) {
           const result = applyOps(doc, [op], catalog);
-          if (op === badOp) code = result.failed?.code ?? null;
+          if (op === badOp) code = rejected(result)?.code ?? null;
         }
         return code;
       });
@@ -534,7 +542,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
         to_slot: null, link_type: "IMAGE",
         grow: { name: "images.image1", type: "IMAGE", inputcount: { widget: "inputcount", value: 2 } },
       } as unknown as Op], countingCatalog);
-      expect(result.failed).not.toBeNull();
+      expect(rejected(result)).not.toBeNull();
       expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
     },
   );
@@ -703,7 +711,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
       stamp: [9, "human:z"], link_id: 9700, from_node: 300, from_slot: 1,
       to_node: 700, to_slot: 0, link_type: "IMAGE",
     } as unknown as Op], catalog);
-    expect(result.failed).toMatchObject({ code: "output_slot_missing" });
+    expect(rejected(result)).toMatchObject({ code: "output_slot_missing" });
     expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
   });
 
@@ -722,8 +730,8 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
       to_node: 700, to_slot: null, link_type: "IMAGE",
       grow: { name: 5 as unknown as string, type: "IMAGE" },
     } as unknown as Op], catalog);
-    expect(result.failed).toMatchObject({ code: "malformed_op" });
-    expect(result.applied_count).toBe(0);
+    expect(rejected(result)).toMatchObject({ code: "malformed_op" });
+    expect(result.outcomes.filter((outcome) => outcome.outcome !== "rejected")).toHaveLength(0);
     expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
   });
 
@@ -768,7 +776,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
         let code: string | null = null;
         for (const op of order) {
           const result = applyOps(doc, [op], catalog);
-          if (op === badOp) code = result.failed?.code ?? null;
+          if (op === badOp) code = rejected(result)?.code ?? null;
         }
         return code;
       });
@@ -825,7 +833,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
       stamp: [9, "human:z"], node_id: 700, widget: "inputcount",
       value: (() => undefined) as unknown,
     } as unknown as ConnectOp;
-    expect(applyOps(doc, [op], catalog).failed).toMatchObject({ code: "malformed_op" });
+    expect(rejected(applyOps(doc, [op], catalog))).toMatchObject({ code: "malformed_op" });
     expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
   });
 });

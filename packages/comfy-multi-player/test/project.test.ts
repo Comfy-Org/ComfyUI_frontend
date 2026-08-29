@@ -100,8 +100,8 @@ describe("project invalid node input", () => {
       [op({ op: "add_node", node_id: 5, node: { id: 99, type: "KSampler", widgets_values: [] } })],
       catalog,
     );
-    expect(result.failed).toBeNull();
-    expect(result.applied).toHaveLength(1);
+    expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
+    expect(result.outcomes.filter((outcome) => outcome.outcome === "applied")).toHaveLength(1);
     // Reported applied => visible on read. Anything else is data loss with a
     // success return, and it also burns node id 5 (add_node's structural
     // idempotency makes the honest retry a silent no-op).
@@ -118,7 +118,10 @@ describe("project invalid node input", () => {
     ];
     for (const node of payloads) {
       const r = applyOps(doc, [op({ op: "add_node", node_id: node["id"], node })], catalog);
-      expect(r.failed, `add_node(${String(node["id"])}) was rejected`).toBeNull();
+      expect(
+        r.outcomes.find((outcome) => outcome.outcome === "rejected"),
+        `add_node(${String(node["id"])}) was rejected`,
+      ).toBeUndefined();
     }
     expect(project(doc, catalog).nodes).toHaveLength(1 + payloads.length);
   });
@@ -208,7 +211,7 @@ describe("set_widget applies the same catalog rules as add_node (#13)", () => {
   function writeTo(nodeType: string, widget: string) {
     const doc = mint(base, catalog);
     const added = applyOps(doc, [op({ op: "add_node", node_id: 5, node: { id: 5, type: nodeType } })], catalog);
-    expect(added.failed).toBeNull();
+    expect(added.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
     const before = bytes(doc);
     const result = applyOps(doc, [op({ op: "set_widget", node_id: 5, widget, value: 7 })], catalog);
     let projects = true;
@@ -217,7 +220,11 @@ describe("set_widget applies the same catalog rules as add_node (#13)", () => {
     } catch {
       projects = false;
     }
-    return { code: result.failed?.code ?? "(accepted)", unchanged: bytes(doc).equals(before), projects };
+    return {
+      code: result.outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code ?? "(accepted)",
+      unchanged: bytes(doc).equals(before),
+      projects,
+    };
   }
 
   it("refuses a named widget write to a class absent from the pinned catalog", () => {
@@ -258,7 +265,9 @@ describe("set_widget applies the same catalog rules as add_node (#13)", () => {
       [op({ op: "connect", from_node: 1, from_slot: 0, to_node: 5, link_id: 9, link_type: "LATENT", grow: { name: "image_1", type: "LATENT", inputcount: { widget: "inputcount", value: 2 } } })],
       catalog,
     );
-    expect(result.failed?.code).toBe("uncatalogued_widget_write");
+    expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code).toBe(
+      "uncatalogued_widget_write",
+    );
     // Byte-identity IS asserted now. This comment used to say the opposite:
     // `applyConnect` appended the grown slot before reaching the inputcount
     // bump, so the op mutated and then failed, and #31 correctly declined to
@@ -292,7 +301,9 @@ describe("set_widget applies the same catalog rules as add_node (#13)", () => {
       [op({ op: "set_widget", node_id: 1, path: [1, "a"], inner_widget: "anything", value: 3 })],
       catalog,
     );
-    expect(result.failed?.code).toBe("uncatalogued_widget_write");
+    expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code).toBe(
+      "uncatalogued_widget_write",
+    );
     expect(bytes(doc).equals(before)).toBe(true);
     expect(() => project(doc, catalog)).not.toThrow();
   });
@@ -300,7 +311,7 @@ describe("set_widget applies the same catalog rules as add_node (#13)", () => {
   it("still accepts a widget write to a catalogued class", () => {
     const doc = mint(base, catalog);
     const result = applyOps(doc, [op({ op: "set_widget", node_id: 1, widget: ksamplerOrder[0]!, value: 42 })], catalog);
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
     expect(project(doc, catalog).nodes[0]!.widgets_values).toEqual([42]);
   });
 
@@ -310,7 +321,7 @@ describe("set_widget applies the same catalog rules as add_node (#13)", () => {
     // positional payload it would have to decompose).
     const doc = mint(base, catalog);
     const result = applyOps(doc, [op({ op: "set_widget", node_id: 1, widget: "whatever", value: 1 })]);
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
   });
 });
 
@@ -332,7 +343,7 @@ describe("applyOps rejects untrusted node payloads before mutation (#13)", () =>
       node,
     } as unknown as Op;
     const result = applyOps(doc, [op], catalog);
-    expect(result.applied).toEqual([]);
+    expect(result.outcomes.filter((outcome) => outcome.outcome === "applied")).toEqual([]);
     let projects = true;
     try {
       project(doc, catalog);
@@ -340,7 +351,7 @@ describe("applyOps rejects untrusted node payloads before mutation (#13)", () =>
       projects = false;
     }
     return {
-      code: result.failed?.code ?? "(accepted)",
+      code: result.outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code ?? "(accepted)",
       unchanged: bytes(doc).equals(before),
       projects,
     };
@@ -392,7 +403,9 @@ describe("applyOps rejects untrusted node payloads before mutation (#13)", () =>
       node: { id: 16, type: "Note", widgets_values: ["verbatim", null] },
     } as unknown as Op;
 
-    expect(applyOps(doc, [op], catalog).failed).toBeNull();
+    expect(
+      applyOps(doc, [op], catalog).outcomes.find((outcome) => outcome.outcome === "rejected"),
+    ).toBeUndefined();
     expect(project(doc, catalog).nodes.find((n) => n.id === 16)).toEqual({
       id: 16,
       type: "Note",

@@ -44,7 +44,7 @@ function unfold(yamlText: string): Map<string, string> {
     const pathMatch = /^ {4}- path: "(.*)"$/.exec(line);
     if (pathMatch) {
       flush();
-      path = pathMatch[1];
+      path = pathMatch[1] ?? null;
       continue;
     }
     if (line === "      instructions: >-") {

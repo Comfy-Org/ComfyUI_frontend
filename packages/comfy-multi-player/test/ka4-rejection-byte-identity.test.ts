@@ -105,7 +105,7 @@ interface Row {
   kind: string;
   /** What makes this op illegal. */
   why: string;
-  /** The `ApplyResult.failed.code` the applier must return. */
+  /** The rejected outcome code the applier must return. */
   code: string;
   build: () => Op;
 }
@@ -476,8 +476,8 @@ describe("KA-4: a rejected op leaves the doc byte-identical and does not consume
 
     const res = applyOps(doc, [op], catalog);
 
-    expect(res.failed?.code).toBe(row.code);
-    expect(res.failed?.index).toBe(0);
+    expect(res.outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code).toBe(row.code);
+    expect(res.outcomes.findIndex((outcome) => outcome.outcome === "rejected")).toBe(0);
     expect(bytes(doc).equals(before), "encodeStateAsUpdate must be byte-identical").toBe(true);
     expect(project(doc, catalog)).toEqual(beforeProjection);
     // A rejected op is not an applied op: it must be retryable, so its op_id
@@ -486,8 +486,8 @@ describe("KA-4: a rejected op leaves the doc byte-identical and does not consume
     if (typeof opId === "string" && opId.length > 0) {
       expect(appliedMap(doc).has(opId), "a rejected op must not consume its op_id").toBe(false);
     }
-    expect(res.applied).toEqual([]);
-    expect(res.applied_count).toBe(0);
+    expect(res.outcomes.filter((outcome) => outcome.outcome === "applied")).toEqual([]);
+    expect(res.outcomes.filter((outcome) => outcome.outcome !== "rejected")).toHaveLength(0);
   });
 
   it("covers every kind the follow-up named, and records that issue #10 leaves none of them broken", () => {
@@ -516,7 +516,6 @@ function catalogRequiredCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCatalog; c
       node_id: 40,
       node: { id: 40, type: "KSampler", inputs: [], outputs: [], widgets_values: [1, 2] },
     } as unknown as Op,
-    catalog: undefined,
     code: "catalog_required",
   };
 }
@@ -533,7 +532,6 @@ function promotedCatalogRequiredCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCa
       value: "v",
       promoted: { value_index: 0, instance_path: ["6"], host_widgets_values: ["v"] },
     } as unknown as Op,
-    catalog: undefined,
     code: "catalog_required",
   };
 }
@@ -609,13 +607,13 @@ describe("KA-4: the rejection codes that need their own fixture", () => {
 
     const res = applyOps(doc, [op], cat as WidgetCatalog);
 
-    expect(res.failed?.code).toBe(code);
+    expect(res.outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code).toBe(code);
     expect(bytes(doc).equals(before), "encodeStateAsUpdate must be byte-identical").toBe(true);
     expect(project(doc, cat ?? catalog)).toEqual(beforeProjection);
     const opId = (op as { op_id?: unknown })?.op_id;
     expect(appliedMap(doc).has(String(opId)), "a rejected op must not consume its op_id").toBe(false);
-    expect(res.applied).toEqual([]);
-    expect(res.applied_count).toBe(0);
+    expect(res.outcomes.filter((outcome) => outcome.outcome === "applied")).toEqual([]);
+    expect(res.outcomes.filter((outcome) => outcome.outcome !== "rejected")).toHaveLength(0);
   });
 });
 
@@ -689,14 +687,15 @@ describe("KA-4 abort-remainder: a rejection mid-batch leaves exactly the applied
     // the prefix, snapshot, then apply the same batch again — the prefix is now
     // an idempotent skip, so anything the bytes gain came from the rejected op.
     const doc = mint(baseWorkflow(), catalog);
-    expect(applyOps(doc, [prefixOp], catalog).failed).toBeNull();
+    expect(applyOps(doc, [prefixOp], catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
     const afterPrefix = bytes(doc);
 
     const res = applyOps(doc, [prefixOp, failOp], catalog);
 
-    expect(res.failed?.index).toBe(1);
-    expect(res.skipped).toEqual([(prefixOp as { op_id: string }).op_id]);
-    expect(res.applied).toEqual([]);
+    expect(res.outcomes.findIndex((outcome) => outcome.outcome === "rejected")).toBe(1);
+    expect(res.outcomes.filter((outcome) => outcome.outcome === "no-op").map((outcome) => outcome.op_id))
+      .toEqual([(prefixOp as { op_id: string }).op_id]);
+    expect(res.outcomes.filter((outcome) => outcome.outcome === "applied")).toEqual([]);
     // The whole point: the failure adds nothing on top of the prefix.
     expect(bytes(doc).equals(afterPrefix)).toBe(true);
     expect(appliedMap(doc).has((failOp as { op_id: string }).op_id)).toBe(false);
@@ -705,11 +704,13 @@ describe("KA-4 abort-remainder: a rejection mid-batch leaves exactly the applied
   it("a rejected op is retryable: re-applying it after the fix path succeeds normally", () => {
     const doc = mint(baseWorkflow(), catalog);
     const bad = { op: "delete_node", ...env(), removed_links: [] } as unknown as Op;
-    expect(applyOps(doc, [bad], catalog).failed?.code).toBe("malformed_op");
+    expect(
+      applyOps(doc, [bad], catalog).outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code,
+    ).toBe("malformed_op");
     // Same op_id, now well-formed — it must still be applyable, which is only
     // true because the rejection did not burn the id.
     const fixed = { ...(bad as object), node_id: 1 } as unknown as Op;
-    expect(applyOps(doc, [fixed], catalog).failed).toBeNull();
+    expect(applyOps(doc, [fixed], catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
     expect(project(doc, catalog).nodes.some((n) => n.id === 1)).toBe(false);
   });
 });

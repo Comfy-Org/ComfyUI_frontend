@@ -7,6 +7,7 @@
  * property).
  */
 import { describe, expect, it } from "vitest";
+import { rejectedOutcome } from "./apply-result-helpers.js";
 import * as Y from "yjs";
 import {
   OPAQUE_WIDGETS_KEY,
@@ -62,7 +63,7 @@ function baseDoc(): Y.Doc {
   return mint(wf, catalog);
 }
 
-const codeOf = (r: ReturnType<typeof applyOps>) => r.failed?.code;
+const codeOf = (r: ReturnType<typeof applyOps>) => rejectedOutcome(r)?.reason.code;
 
 /** Deterministic workflow projection; excludes op_id / `__`-prefixed metadata. */
 const snap = (doc: Y.Doc) => project(doc, catalog);
@@ -83,6 +84,8 @@ describe("applier rejections — add_node", () => {
       op: "add_node",
       ...env("a", 1),
       node_id: 9,
+      class_type: "Note",
+      pos: [0, 0],
       node: { id: 9, type: "Note", [OPAQUE_WIDGETS_KEY]: [1, 2] } as never,
     };
     expect(codeOf(applyOps(doc, [op], catalog))).toBe("invalid_node_payload");
@@ -92,9 +95,16 @@ describe("applier rejections — add_node", () => {
   it("is not a failure when the id already exists, and the winning payload is authoritative (#11)", () => {
     const doc = baseDoc();
     const before = snap(doc);
-    const op: AddNodeOp = { op: "add_node", ...env("a", 1), node_id: 1, node: { id: 1, type: "KSampler" } as never };
+    const op: AddNodeOp = {
+      op: "add_node",
+      ...env("a", 1),
+      node_id: 1,
+      class_type: "KSampler",
+      pos: [0, 0],
+      node: { id: 1, type: "KSampler" } as never,
+    };
     const r = applyOps(doc, [op], catalog);
-    expect(r.failed).toBeNull();
+    expect(rejectedOutcome(r)).toBeUndefined();
     // Node presence is resolved through the `["node", id]` stamp register, not
     // by arrival order (#11). The base doc's node 1 carries no stamp, so the
     // op wins and its payload replaces it verbatim (FC-8). The old
@@ -109,20 +119,24 @@ describe("applier rejections — add_node", () => {
       op: "add_node",
       ...env("z", 9),
       node_id: 5,
+      class_type: "Note",
+      pos: [0, 0],
       node: { id: 5, type: "Note" } as never,
     };
-    expect(applyOps(doc, [winner], catalog).failed).toBeNull();
+    expect(rejectedOutcome(applyOps(doc, [winner], catalog))).toBeUndefined();
     const before = snap(doc);
     const loser: AddNodeOp = {
       op: "add_node",
       ...env("a", 1),
       node_id: 5,
+      class_type: "KSampler",
+      pos: [0, 0],
       node: { id: 5, type: "KSampler" } as never,
     };
     // An LWW-dropped op is an accepted no-op that still consumes its op_id, so
     // it is projection-identical rather than byte-identical.
     const r = applyOps(doc, [loser], catalog);
-    expect(r.failed).toBeNull();
+    expect(rejectedOutcome(r)).toBeUndefined();
     expect(snap(doc)).toEqual(before);
   });
 
@@ -130,7 +144,14 @@ describe("applier rejections — add_node", () => {
     const doc = baseDoc();
     const before = snap(doc);
     const bad = { op: "add_node", ...env("a", 1) } as unknown as Op; // malformed, rejected first
-    const good: AddNodeOp = { op: "add_node", ...env("a", 1), node_id: 9, node: { id: 9, type: "Note" } as never };
+    const good: AddNodeOp = {
+      op: "add_node",
+      ...env("a", 1),
+      node_id: 9,
+      class_type: "Note",
+      pos: [0, 0],
+      node: { id: 9, type: "Note" } as never,
+    };
     expect(codeOf(applyOps(doc, [bad, good], catalog))).toBe("malformed_op");
     // The trailing valid op must not have been applied.
     expect(snap(doc)).toEqual(before);
@@ -226,7 +247,7 @@ describe("applier rejections — connect", () => {
     const doc = baseDoc();
     const before = snap(doc);
     const r = applyOps(doc, [connect({ to_node: 987654321 })], catalog);
-    expect(r.failed).toBeNull();
+    expect(rejectedOutcome(r)).toBeUndefined();
     // Projection excludes the recorded op_id, so nodes/links must be identical.
     const after = snap(doc);
     expect(after.nodes).toEqual(before.nodes);

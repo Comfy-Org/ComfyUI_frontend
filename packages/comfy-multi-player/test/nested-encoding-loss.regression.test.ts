@@ -234,8 +234,8 @@ describe("KA-1: the gap is depth-independent and the same in both containers", (
       const result = applyOps(a, [setWidget(place(new Map([["k", "v"]])))], catalog);
 
       // Nothing anywhere reports it.
-      expect(result.failed).toBeNull();
-      expect(result.applied).toHaveLength(1);
+      expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
+      expect(result.outcomes.filter((outcome) => outcome.outcome === "applied")).toHaveLength(1);
 
       Y.applyUpdate(b, Y.encodeStateAsUpdate(a));
       const read = (doc: Y.Doc) =>
@@ -246,9 +246,11 @@ describe("KA-1: the gap is depth-independent and the same in both containers", (
 
   it("the same value at depth 0 is refused, which is the whole asymmetry", () => {
     const [a] = forkedPair();
-    expect(applyOps(a, [setWidget(new Map([["k", "v"]]))], catalog).failed).toMatchObject({
-      code: "malformed_op",
-    });
+    expect(
+      applyOps(a, [setWidget(new Map([["k", "v"]]))], catalog).outcomes.find(
+        (outcome) => outcome.outcome === "rejected",
+      )?.reason,
+    ).toMatchObject({ code: "malformed_op" });
   });
 });
 
@@ -265,6 +267,8 @@ describe("KA-1: two replicas disagree about document contents, end to end", () =
           base_version: 1,
           stamp: [1, "human:z"],
           node_id: 400,
+          class_type: "LoadImage",
+          pos: [0, 0],
           node: {
             id: 400,
             type: "LoadImage",
@@ -277,7 +281,7 @@ describe("KA-1: two replicas disagree about document contents, end to end", () =
       ],
       catalog,
     );
-    expect(result.failed).toBeNull();
+    expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
     Y.applyUpdate(b, Y.encodeStateAsUpdate(a));
 
     const props = (doc: Y.Doc) =>
@@ -299,9 +303,17 @@ describe("KA-1: two replicas disagree about document contents, end to end", () =
   it("op over a JSON wire (KA-1 replication unit): the receiver applies a different value", () => {
     const [a, b] = forkedPair();
     const op = setWidget({ a: new Map([["k", "v"]]) }, "wire");
-    expect(applyOps(a, [structuredClone(op)], catalog).failed).toBeNull();
+    expect(
+      applyOps(a, [structuredClone(op)], catalog).outcomes.find(
+        (outcome) => outcome.outcome === "rejected",
+      ),
+    ).toBeUndefined();
     // What the peer actually receives — the op crossed the wire as JSON.
-    expect(applyOps(b, [JSON.parse(JSON.stringify(op)) as Op], catalog).failed).toBeNull();
+    expect(
+      applyOps(b, [JSON.parse(JSON.stringify(op)) as Op], catalog).outcomes.find(
+        (outcome) => outcome.outcome === "rejected",
+      ),
+    ).toBeUndefined();
 
     const read = (doc: Y.Doc) =>
       ((doc.getMap("nodes").get("300") as Y.Map<unknown>).get("widgets") as Y.Map<unknown>).get(
@@ -319,7 +331,11 @@ describe("KA-1: two replicas disagree about document contents, end to end", () =
     // workflow JSON with nothing anywhere reporting a failure. This is the
     // sharpest evidence for decision D4 and must keep working until D4 is taken.
     const [a, b] = forkedPair();
-    expect(applyOps(a, [setWidget({ at: new Date(0) }, "date")], catalog).failed).toBeNull();
+    expect(
+      applyOps(a, [setWidget({ at: new Date(0) }, "date")], catalog).outcomes.find(
+        (outcome) => outcome.outcome === "rejected",
+      ),
+    ).toBeUndefined();
     Y.applyUpdate(b, Y.encodeStateAsUpdate(a));
     const wv = (doc: Y.Doc) => JSON.stringify(project(doc, catalog).nodes[0]!["widgets_values"]);
     expect(wv(a)).toBe(`[{"at":"1970-01-01T00:00:00.000Z"}]`);
@@ -332,7 +348,11 @@ describe("KA-1: two replicas disagree about document contents, end to end", () =
 
   it("a live replica also disagrees with its own snapshot", () => {
     const a = mint(workflow, catalog);
-    expect(applyOps(a, [setWidget({ a: new Map() }, "reload")], catalog).failed).toBeNull();
+    expect(
+      applyOps(a, [setWidget({ a: new Map() }, "reload")], catalog).outcomes.find(
+        (outcome) => outcome.outcome === "rejected",
+      ),
+    ).toBeUndefined();
     const reloaded = new Y.Doc();
     Y.applyUpdate(reloaded, Y.encodeStateAsUpdate(a));
     const read = (doc: Y.Doc) =>
@@ -349,9 +369,11 @@ describe("KA-1: a reference cycle is detected even though A8 rejects it before t
     const doc = mint(workflow, catalog);
     const cyclic: Record<string, unknown> = {};
     cyclic["self"] = cyclic;
-    expect(applyOps(doc, [setWidget({ a: cyclic }, "cycle")], catalog).failed).toMatchObject({
-      code: "payload_too_deep",
-    });
+    expect(
+      applyOps(doc, [setWidget({ a: cyclic }, "cycle")], catalog).outcomes.find(
+        (outcome) => outcome.outcome === "rejected",
+      )?.reason,
+    ).toMatchObject({ code: "payload_too_deep" });
     expect(() => Y.encodeStateAsUpdate(doc)).not.toThrow();
     // Still detectable independently of the whole-op depth gate, for hosts
     // inspecting values before they construct an op.
@@ -361,10 +383,10 @@ describe("KA-1: a reference cycle is detected even though A8 rejects it before t
 
 describe("mint and the applier gate the same values, and now say so the same way", () => {
   it("mint names the workflow key rather than surfacing yjs's bare `Unexpected content type`", () => {
-    expect(() => mint({ ...workflow, extra: new Map() as unknown as object }, catalog)).toThrow(
+    expect(() => mint({ ...workflow, extra: new Map() as unknown as Record<string, unknown> }, catalog)).toThrow(
       /workflow\.extra: a Map cannot be stored in a Y\.Doc/,
     );
-    expect(() => mint({ ...workflow, extra: new Map() as unknown as object }, catalog)).toThrow(
+    expect(() => mint({ ...workflow, extra: new Map() as unknown as Record<string, unknown> }, catalog)).toThrow(
       TypeError,
     );
     expect(() =>
@@ -391,11 +413,15 @@ describe("mint and the applier gate the same values, and now say so the same way
     const cyclic: Record<string, unknown> = {};
     cyclic["self"] = cyclic;
     for (const value of [new Date(0), 2n ** 70n, cyclic]) {
-      expect(() => mint({ ...workflow, extra: value as object }, catalog)).toThrow(TypeError);
+      expect(() =>
+        mint({ ...workflow, extra: value as unknown as Record<string, unknown> }, catalog),
+      ).toThrow(TypeError);
     }
     // Everything else the node builders accept still mints unchanged.
     for (const value of [10n, undefined, new Uint8Array([1]), { a: 1 }, [1, 2], null]) {
-      expect(() => mint({ ...workflow, extra: value as object }, catalog)).not.toThrow();
+      expect(() =>
+        mint({ ...workflow, extra: value as unknown as Record<string, unknown> }, catalog),
+      ).not.toThrow();
     }
     // …and a nested unstorable or lossy value still mints, which is exactly
     // the gap decision D4 owns and this change deliberately does not close.

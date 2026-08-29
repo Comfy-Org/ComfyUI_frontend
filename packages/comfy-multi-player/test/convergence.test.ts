@@ -115,14 +115,14 @@ describe("two-doc convergence through the single-applier discipline", () => {
       };
 
       const recorded = fork();
-      expect(applyOps(recorded, ops, catalog).failed).toBeNull();
+      expect(applyOps(recorded, ops, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
       const want = JSON.stringify(canonicalize(project(recorded, catalog)));
 
       for (const variant of ["reverse", "rotate"] as const) {
         const other = fork();
         const reordered = permuted(variant);
         expect(reordered.length).toBe(ops.length);
-        expect(applyOps(other, reordered, catalog).failed).toBeNull();
+        expect(applyOps(other, reordered, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
         expect(
           JSON.stringify(canonicalize(project(other, catalog))),
           `${variant} order diverged`,

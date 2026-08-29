@@ -134,7 +134,7 @@ function connectTo(
 function run(ops: Op[]): WorkflowJSON {
   const doc = new Y.Doc();
   Y.applyUpdate(doc, Y.encodeStateAsUpdate(mint(base(), catalog)));
-  expect(applyOps(doc, ops, catalog).failed).toBeNull();
+  expect(applyOps(doc, ops, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
   return project(doc, catalog);
 }
 

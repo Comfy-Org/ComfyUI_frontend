@@ -189,7 +189,9 @@ function collisionFreeDoc(): Y.Doc {
 function minted(wf: WorkflowJSON): Y.Doc {
   const doc = mint(wf, catalog);
   const op = { op: "set_widget", ...env(), node_id: 1, widget: "text", value: "w" } as SetWidgetOp;
-  expect(applyOps(doc, [op], catalog).failed).toBeNull();
+  expect(
+    applyOps(doc, [op], catalog).outcomes.find((outcome) => outcome.outcome === "rejected"),
+  ).toBeUndefined();
   return doc;
 }
 

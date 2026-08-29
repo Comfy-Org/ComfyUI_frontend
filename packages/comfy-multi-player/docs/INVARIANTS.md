@@ -93,6 +93,16 @@ defeat a valid life-2 write (DQ-11, KEEP-ALIVE 4). The package regression is
 `test/incarnation-stamps.test.ts`; the schema and protocol implications are
 recorded in Amendment A16 of `docs/multiplayer-schema.md`.
 
+### KA-2 amendment — DQ-10 direct Lamport counter semantics
+**Rule:** In the single private-alpha op format, `base_version` is minted as a
+creator-owned Lamport counter. The winner remains the tuple-generic
+`[counter, actor, op_id]`; DQ-11's A16 incarnation-qualified target keys and
+the already-shipped legacy incarnation token `"0"` remain unchanged. There is
+no schema-v3, migration, legacy shim, or dual-format reader.
+
+**Enforced by:** `test/clock.test.ts`, the existing LWW/convergence suites, the
+four-family merge harness, and [`ADR-0005`](adr/0005-lamport-ordering-v1-migration.md).
+
 ## FORECLOSE
 
 ### FC-1 — Never exchange raw Yjs struct updates between independently edited docs

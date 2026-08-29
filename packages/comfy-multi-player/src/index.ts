@@ -46,6 +46,7 @@
 export * from "./types.js";
 export * from "./stamps.js";
 export * from "./limits.js";
+export * from "./clock.js";
 /**
  * ADR-004 follower read-surface. These helpers expose the established wire
  * layout only so the frontend follower can consume host updates. They are

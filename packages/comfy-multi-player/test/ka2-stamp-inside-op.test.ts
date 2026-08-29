@@ -84,8 +84,8 @@ function bothOrders(base: WorkflowJSON, ops: Op[]): [WorkflowJSON, WorkflowJSON]
   };
   const forward = fork();
   const reverse = fork();
-  expect(applyOps(forward, ops, catalog).failed).toBeNull();
-  expect(applyOps(reverse, [...ops].reverse(), catalog).failed).toBeNull();
+  expect(applyOps(forward, ops, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
+  expect(applyOps(reverse, [...ops].reverse(), catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
   return [project(forward, catalog), project(reverse, catalog)];
 }
 
@@ -187,7 +187,7 @@ describe("KA-2 / FC-2: the in-op stamp governs every LWW register, not just top-
     ...setText(opId, envelope, stamp, value),
     path: ["100", "27"],
     inner_widget: "text",
-  });
+  }) as unknown as SetWidgetOp;
 
   it("interior subgraph writes resolve by the in-op stamp", () => {
     const winner = interiorWrite("w", { actor: "a", base_version: 1 }, [50, "a"], "stamp-wins");

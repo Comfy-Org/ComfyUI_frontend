@@ -38,14 +38,14 @@ function assertRejectedWithoutMutation(
 ): void {
   const doc = mint(workflow, withCatalog);
   const before = Buffer.from(Y.encodeStateAsUpdate(doc));
-  expect(applyOps(doc, [op], withCatalog).failed).toMatchObject({ code });
+  expect(applyOps(doc, [op], withCatalog).outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code).toBe(code);
   expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
   // A rejected op is retryable, so it must not have burned its op_id — and if
-  // it had, the retry below would report `skipped`, not `failed`.
+  // it had, the retry below would report `no-op`, not `rejected`.
   expect(appliedMap(doc).has(op.op_id)).toBe(false);
 
   const retry = applyOps(doc, [op], withCatalog);
-  expect(retry.failed).toMatchObject({ code });
+  expect(retry.outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code).toBe(code);
   expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
 }
 
@@ -90,7 +90,7 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     // and `applyInputcountBump` then threw `malformed_op` on a non-string
     // `grow.inputcount.widget`. Yjs does not roll a transact body back on
     // throw and `mset(op_id)` never ran, so the doc gained an input slot
-    // (inputs 1 -> 2) while `ApplyResult.failed` reported nothing had
+    // (inputs 1 -> 2) while the rejected outcome reported nothing had
     // happened, and a retry appended a second slot.
     assertRejectedWithoutMutation(workflow, {
       op: "connect", op_id: opId("nonstr-count"), actor: "human:z", base_version: 9,
@@ -218,7 +218,8 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
       stamp: [9, "human:z"], node_id: 700, widget: "inputcount",
       value: (() => undefined) as unknown,
     } as unknown as ConnectOp;
-    expect(applyOps(doc, [op], catalog).failed).toMatchObject({ code: "malformed_op" });
+    expect(applyOps(doc, [op], catalog).outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code)
+      .toBe("malformed_op");
     expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
   });
 });
@@ -571,7 +572,7 @@ describe("KA-4 / D4 as a property, not a list of instances", () => {
         const projected = JSON.stringify(project(doc, countingCatalog));
 
         const res = applyOps(doc, [op], countingCatalog);
-        if (res.failed === null) return; // an accepted op is allowed to mutate
+        if (!res.outcomes.some((outcome) => outcome.outcome === "rejected")) return; // an accepted op is allowed to mutate
         rejected += 1;
 
         expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);

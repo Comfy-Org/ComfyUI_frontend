@@ -43,9 +43,9 @@ describe("session replay", () => {
 
       const doc = mint(header.base_workflow, catalog);
       const result = applyOps(doc, ops, catalog);
-      expect(result.failed).toBeNull();
-      expect(result.skipped).toEqual([]);
-      expect(result.applied_count).toBe(ops.length);
+      expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
+      expect(result.outcomes.filter((outcome) => outcome.outcome === "no-op")).toEqual([]);
+      expect(result.outcomes.filter((outcome) => outcome.outcome !== "rejected")).toHaveLength(ops.length);
 
       expect(canonicalize(project(doc, catalog))).toEqual(canonicalize(header.workflow_final));
     });

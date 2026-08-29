@@ -110,7 +110,9 @@ function fixtureDoc(): Y.Doc {
   const doc = mint(fixtureWorkflow(), catalog, CATALOG_SHA);
   const result = applyOps(doc, [setWidgetOp], catalog);
   // The fixture is only useful if the op really landed.
-  expect(result.applied).toContain(SET_WIDGET_OP_ID);
+  expect(
+    result.outcomes.filter((outcome) => outcome.outcome === "applied").map((outcome) => outcome.op_id),
+  ).toContain(SET_WIDGET_OP_ID);
   return doc;
 }
 
@@ -268,7 +270,7 @@ describe("read-only surface — a caller cannot mutate the document through it",
     const node = graph.nodes[String(KSAMPLER_ID)]! as Record<string, unknown>;
 
     const attempts: [string, () => void][] = [
-      ["replace the nodes record", () => ((graph as Record<string, unknown>)["nodes"] = {})],
+      ["replace the nodes record", () => ((graph as unknown as Record<string, unknown>)["nodes"] = {})],
       ["add a node", () => ((graph.nodes as Record<string, unknown>)["999"] = {})],
       ["delete a node", () => delete (graph.nodes as Record<string, unknown>)[String(NOTE_ID)]],
       ["overwrite a node field", () => (node["type"] = "EvilNode")],
@@ -714,6 +716,12 @@ describe("read-only surface — classification", () => {
     "NODE_INCARNATION_KEY",
     "LEGACY_NODE_INCARNATION",
     "widgetTargetKey",
+    "MAX_LAMPORT_COUNTER",
+    "validateLamportCounter",
+    "observeLamport",
+    "tickLamport",
+    "persistLamportTick",
+    "freezeLamportEnvelope",
   ];
   const READ_SURFACE: readonly string[] = [
     "readGraph",

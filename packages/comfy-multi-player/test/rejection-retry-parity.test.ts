@@ -42,14 +42,19 @@ function bytes(doc: Y.Doc): number[] {
 }
 
 function observableResult(result: ReturnType<typeof applyOps>): Omit<ExpectedResult, "document_unchanged"> {
+  const failed = result.outcomes.find((outcome) => outcome.outcome === "rejected");
   return {
-    applied: result.applied,
-    skipped: result.skipped,
-    failed: result.failed
-      ? { index: result.failed.index, code: result.failed.code, op_id: result.failed.op.op_id }
+    applied: result.outcomes
+      .filter((outcome) => outcome.outcome === "applied" || outcome.outcome === "lww-dropped")
+      .map((outcome) => outcome.op_id),
+    skipped: result.outcomes.filter((outcome) => outcome.outcome === "no-op").map((outcome) => outcome.op_id),
+    failed: failed?.outcome === "rejected"
+      ? { index: result.outcomes.indexOf(failed), code: failed.reason.code, op_id: failed.op_id }
       : null,
-    applied_count: result.applied_count,
-    version: result.version,
+    applied_count: result.outcomes.filter(
+      (outcome) => outcome.outcome === "applied" || outcome.outcome === "lww-dropped",
+    ).length,
+    version: result.ops_seen,
   };
 }
 
@@ -97,9 +102,9 @@ describe("rejection/retry golden-vector parity (KA-3, KA-4, FC-7)", () => {
 
 describe("rejection and retry arrival-order parity", () => {
   const valid = vectors.cases.find((vector) => vector.name === "same-op-id-retry-cross-batch")!
-    .batches[0]![0]!;
+    .batches[0]![0]! as Op;
   const rejected = vectors.cases.find((vector) => vector.name === "rejection-cross-batch-does-not-poison-retry")!
-    .batches[0]![0]!;
+    .batches[0]![0]! as Op;
 
   it("a same-op_id retry is byte-identical whether duplicated in one batch or a later batch", () => {
     const catalog = loadCatalog();
@@ -139,7 +144,9 @@ describe("rejection and retry arrival-order parity", () => {
     expect(bytes(inOrder)).toEqual(inOrderBefore);
     expect(bytes(crossBatch)).toEqual(crossBefore);
 
-    expect(applyOps(crossBatch, [valid], catalog).applied).toEqual([valid.op_id]);
+    expect(applyOps(crossBatch, [valid], catalog).outcomes).toEqual([
+      { op_id: valid.op_id, outcome: "applied" },
+    ]);
     expect(project(inOrder, catalog).nodes).toEqual([]);
     expect(project(crossBatch, catalog).nodes.map((node) => node.id)).toEqual([4]);
   });

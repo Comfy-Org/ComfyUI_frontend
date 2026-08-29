@@ -83,7 +83,7 @@ describe("W8 applier edge goldens (KA-4)", () => {
     const grows = [10, 11, 12].map((id) =>
       growConnect(id, 1, { name: "images.hero", type: "X" }),
     );
-    expect(applyOps(doc, grows, catalog).failed).toBeNull();
+    expect(applyOps(doc, grows, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
 
     const sink = project(doc, catalog).nodes.find((node) => node.id === 3)!;
     expect(sink.inputs).toEqual([
@@ -103,7 +103,7 @@ describe("W8 applier edge goldens (KA-4)", () => {
       node_id: 1,
       removed_links: [20],
     };
-    expect(applyOps(doc, [link, del], catalog).failed).toBeNull();
+    expect(applyOps(doc, [link, del], catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
     expect(project(doc, catalog)).toMatchObject({
       links: [],
       nodes: [
@@ -127,10 +127,14 @@ describe("W8 applier edge goldens (KA-4)", () => {
       [oldLink, del, replacement],
     ].map((ops) => {
       const doc = mint(base(), catalog);
-      expect(applyOps(doc, ops, catalog).failed).toBeNull();
+      expect(applyOps(doc, ops, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
 
       const beforeRetry = Buffer.from(Y.encodeStateAsUpdate(doc));
-      expect(applyOps(doc, [replacement], catalog).skipped).toEqual([replacement.op_id]);
+      expect(
+        applyOps(doc, [replacement], catalog).outcomes
+          .filter((outcome) => outcome.outcome === "no-op")
+          .map((outcome) => outcome.op_id),
+      ).toEqual([replacement.op_id]);
       expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(beforeRetry)).toBe(true);
       return project(doc, catalog);
     });
@@ -157,8 +161,9 @@ describe("W8 applier edge goldens (KA-4)", () => {
     const trailing = connect(51, 2);
 
     const result = applyOps(doc, [malformed, trailing], catalog);
-    expect(result.failed).toMatchObject({ index: 0, code: "input_slot_missing" });
-    expect(result.applied).toEqual([]);
+    expect(result.outcomes.findIndex((outcome) => outcome.outcome === "rejected")).toBe(0);
+    expect(result.outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code).toBe("input_slot_missing");
+    expect(result.outcomes.filter((outcome) => outcome.outcome === "applied")).toEqual([]);
     expect(
       Buffer.from(Y.encodeStateAsUpdate(doc)).equals(beforeBytes),
       "encodeStateAsUpdate must be byte-identical",

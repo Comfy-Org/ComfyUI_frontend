@@ -24,7 +24,7 @@ function run(workflow: WorkflowJSON, ops: Op[]): WorkflowJSON {
   const seeded = mint(workflow, catalog);
   const doc = new Y.Doc();
   Y.applyUpdate(doc, Y.encodeStateAsUpdate(seeded));
-  expect(applyOps(doc, ops, catalog).failed).toBeNull();
+  expect(applyOps(doc, ops, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
   return canonicalize(project(doc, catalog));
 }
 
@@ -113,8 +113,8 @@ describe("regression: structural operations resolve by stamp, not arrival order 
     const settled = run(wired, [add, del]);
     expect(settled.links).toEqual([]);
     // No dangling reference survives on either side of the severed link.
-    expect((settled.nodes.find((n) => n.id === 500) as WorkflowNode).outputs?.[0]?.links).toEqual([]);
-    expect((settled.nodes.find((n) => n.id === 600) as WorkflowNode).inputs?.[0]?.link).toBeNull();
+    expect(((settled.nodes.find((n) => n.id === 500) as WorkflowNode).outputs?.[0] as { links?: number[] } | undefined)?.links).toEqual([]);
+    expect(((settled.nodes.find((n) => n.id === 600) as WorkflowNode).inputs?.[0] as { link?: number | null } | undefined)?.link).toBeNull();
   });
 
   it("a winning add_node re-derives its link references instead of orphaning them", () => {
@@ -142,8 +142,8 @@ describe("regression: structural operations resolve by stamp, not arrival order 
 
     const after = run(wired, [add]);
     expect(after.links).toEqual([[9000, 500, 0, 600, 0, "IMAGE"]]);
-    expect((after.nodes.find((n) => n.id === 500) as WorkflowNode).outputs?.[0]?.links).toEqual([9000]);
-    expect((after.nodes.find((n) => n.id === 600) as WorkflowNode).inputs?.[0]?.link).toBe(9000);
+    expect(((after.nodes.find((n) => n.id === 500) as WorkflowNode).outputs?.[0] as { links?: number[] } | undefined)?.links).toEqual([9000]);
+    expect(((after.nodes.find((n) => n.id === 600) as WorkflowNode).inputs?.[0] as { link?: number | null } | undefined)?.link).toBe(9000);
   });
 
   it("concurrent autogrows that request DIFFERENT names still converge", () => {
@@ -169,7 +169,7 @@ describe("regression: structural operations resolve by stamp, not arrival order 
     expect(run(workflow, [low, high])).toEqual(run(workflow, [high, low]));
     expect(
       (run(workflow, [high, low]).nodes.find((n) => n.id === 700) as WorkflowNode).inputs?.map(
-        (slot) => slot["name"],
+        (slot) => (slot as { name?: string }).name,
       ),
     ).toEqual(["images.image0", "images.image1", "images.image7"]);
   });
@@ -221,6 +221,6 @@ describe("regression: structural operations resolve by stamp, not arrival order 
     const workflow = base([source(500), source(510), destination]);
 
     expect(run(workflow, [clear, connect])).toEqual(run(workflow, [connect, clear]));
-    expect(run(workflow, [connect, clear]).links.map((link) => link[0])).toEqual([9800]);
+    expect(run(workflow, [connect, clear]).links.map((link) => (link as unknown[])[0])).toEqual([9800]);
   });
 });
