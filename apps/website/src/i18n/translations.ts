@@ -7470,9 +7470,9 @@ const translations = {
       '在 Comfy 无服务器引擎上从 0 扩展到数百万次生成。无需配置 GPU，没有冷启动——只为实际用量付费。'
   },
   'platform.serverlessVisual.ariaLabel': {
-    en: 'Animated diagram showing serverless activity moving through RTX 6000 PRO, H100, and B200 GPU workers.',
+    en: 'Animated diagram of a request lighting up RTX 6000 PRO, H100, and B200 GPU workers, with COMFYUI scrolling across the grid.',
     'zh-CN':
-      '动画图示：无服务器活动在 RTX 6000 PRO、H100 和 B200 GPU 工作节点之间移动。'
+      '动画图示：请求点亮 RTX 6000 PRO、H100 和 B200 GPU 工作节点，COMFYUI 字样在网格中滚动。'
   },
   'platform.products.builder.title': {
     en: 'Builder',

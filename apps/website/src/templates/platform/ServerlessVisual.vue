@@ -18,17 +18,15 @@ const CELL_COUNT = COLS * ROWS
 const CELL_STEP_DURATION = 140
 const REST_DURATION = 0
 const LINE_PULSE_DURATION = 1800
+// 3x5 pixel glyphs spelling COMFYUI, scrolled across the worker grid.
 const LETTER_PATTERNS = [
-  ['111', '100', '111', '001', '111'],
-  ['111', '100', '110', '100', '111'],
-  ['110', '101', '110', '101', '101'],
-  ['101', '101', '101', '101', '010'],
-  ['111', '100', '110', '100', '111'],
-  ['110', '101', '110', '101', '101'],
-  ['100', '100', '100', '100', '111'],
-  ['111', '100', '110', '100', '111'],
-  ['111', '100', '111', '001', '111'],
-  ['111', '100', '111', '001', '111']
+  ['111', '100', '100', '100', '111'],
+  ['111', '101', '101', '101', '111'],
+  ['101', '111', '111', '101', '101'],
+  ['111', '100', '110', '100', '100'],
+  ['101', '101', '010', '010', '010'],
+  ['101', '101', '101', '101', '111'],
+  ['111', '010', '010', '010', '111']
 ]
 const WORD_WIDTH = LETTER_PATTERNS.length * 4 - 1
 const MARQUEE_STEPS = WORD_WIDTH + COLS
@@ -162,15 +160,9 @@ watch(
       <span
         v-for="cell in visualCells"
         :key="cell.id"
-        :class="
-          cn(
-            'bg-primary-comfy-yellow rounded-sm transition-[opacity,box-shadow] duration-150',
-            cell.state === 'hot' &&
-              'bg-primary-comfy-yellow shadow-primary-comfy-yellow/35 shadow-md'
-          )
-        "
+        class="bg-primary-comfy-yellow rounded-sm transition-opacity duration-300"
         :style="{
-          opacity: cell.state === 'idle' ? 0.18 + cell.opacity * 0.22 : 1
+          opacity: cell.state === 'idle' ? 0.14 + cell.opacity * 0.16 : 0.62
         }"
       />
     </div>
