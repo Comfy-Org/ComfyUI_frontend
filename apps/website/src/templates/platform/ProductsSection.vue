@@ -43,7 +43,7 @@ const modelsTabs = modelsApiCodeTabs
       <ServerlessIsometricStudy :locale />
     </article>
 
-    <!-- Models API and Builder, side by side -->
+    <!-- Comfy Router and Builder, side by side -->
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
       <article
         id="models"
