@@ -22,6 +22,7 @@ import {
   materializeRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -1583,7 +1584,7 @@ export class LGraph
     y: number,
     nodeList?: LGraphNode[]
   ): LGraphNode | null {
-    const nodes = nodeList || this._nodes
+    const nodes = nodeList || nodesInRenderOrder(this)
     let i = nodes.length
     while (--i >= 0) {
       const node = nodes[i]
@@ -3292,7 +3293,10 @@ export class Subgraph
    */
   renameInput(input: SubgraphInput, name: string): void {
     const index = this.inputs.indexOf(input)
-    if (index === -1) throw new Error('Input not found')
+    if (index === -1) {
+      console.error('Input not found')
+      return
+    }
 
     const oldName = input.displayName
     this.events.dispatch('renaming-input', {
@@ -3312,7 +3316,10 @@ export class Subgraph
    */
   renameOutput(output: SubgraphOutput, name: string): void {
     const index = this.outputs.indexOf(output)
-    if (index === -1) throw new Error('Output not found')
+    if (index === -1) {
+      console.error('Output not found')
+      return
+    }
 
     const oldName = output.displayName
     this.events.dispatch('renaming-output', {
@@ -3331,7 +3338,10 @@ export class Subgraph
    */
   removeInput(input: SubgraphInput): void {
     const index = this.inputs.indexOf(input)
-    if (index === -1) throw new Error('Input not found')
+    if (index === -1) {
+      console.error('Input not found')
+      return
+    }
 
     const mayContinue = this.events.dispatch('removing-input', { input, index })
     if (!mayContinue) return
@@ -3352,7 +3362,10 @@ export class Subgraph
    */
   removeOutput(output: SubgraphOutput): void {
     const index = this.outputs.indexOf(output)
-    if (index === -1) throw new Error('Output not found')
+    if (index === -1) {
+      console.error('Output not found')
+      return
+    }
 
     const mayContinue = this.events.dispatch('removing-output', {
       output,

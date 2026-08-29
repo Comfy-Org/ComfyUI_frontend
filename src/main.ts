@@ -23,6 +23,7 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import {
   markStoresPending,
   markStoresReady
@@ -121,6 +122,9 @@ flushErrorReports()
 setAssertReporter((message) => {
   if (isDesktop) {
     captureMessage(message, { level: 'warning' })
+  }
+  if (isCloud) {
+    reportAssertFailure(message)
   }
   if (isNightly) {
     useToastStore(pinia).add({
