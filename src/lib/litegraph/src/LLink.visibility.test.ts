@@ -16,7 +16,7 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 
-function makeLink(id: number = 1): LLink {
+function makeLink(id = 1): LLink {
   return new LLink(toLinkId(id), 'MODEL', 4, 0, 5, 0)
 }
 
@@ -54,6 +54,15 @@ describe('LLink visibility serialization', () => {
 
     expect(target.hidden).toBe(true)
     expect(target.label).toBe('Latent')
+  })
+
+  it('clears the label when set to an empty string', () => {
+    const link = makeLink()
+    link.label = 'Named'
+
+    link.label = ''
+
+    expect(link.label).toBeUndefined()
   })
 
   it('clears stale visibility fields when configured from a 0.4 array', () => {
@@ -158,9 +167,10 @@ describe('link presentation store integration', () => {
     graph._addLink(link)
 
     const scope = graphScopeOf(graph)
-    expect(
-      useLinkPresentationStore().getPresentation(scope, link.id)
-    ).toMatchObject({ hidden: true, label: 'Buffered' })
+    expect(useLinkPresentationStore().getPresentation(scope, link.id)).toEqual({
+      hidden: true,
+      label: 'Buffered'
+    })
     expect(link.hidden).toBe(true)
   })
 
@@ -182,6 +192,25 @@ describe('link presentation store integration', () => {
     expect(store.getPresentation(scope, link.id)?.hidden).toBe(true)
   })
 
+  it('carries presentation when a link moves to another root graph', () => {
+    const graphA = new LGraph()
+    const graphB = new LGraph()
+    const link = makeLink()
+    graphA._addLink(link)
+    link.hidden = true
+    link.label = 'Moved'
+    graphA._removeLink(link.id)
+
+    graphB._addLink(link)
+
+    const store = useLinkPresentationStore()
+    expect(store.getPresentation(graphScopeOf(graphA), link.id)).toBeUndefined()
+    expect(store.getPresentation(graphScopeOf(graphB), link.id)).toEqual({
+      hidden: true,
+      label: 'Moved'
+    })
+  })
+
   it('a registration loser cannot plant presentation over the incumbent', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
@@ -198,6 +227,7 @@ describe('link presentation store integration', () => {
     ).toBeUndefined()
     expect(winner.hidden).toBe(false)
     expect(loser.hidden).toBe(true)
+    expect(error).toHaveBeenCalledOnce()
     error.mockRestore()
   })
 
@@ -215,8 +245,9 @@ describe('link presentation store integration', () => {
     const scope = graphScopeOf(graph)
     expect(
       useLinkPresentationStore().getPresentation(scope, incumbent.id)
-    ).toMatchObject({ hidden: true, label: 'Kept' })
+    ).toEqual({ hidden: true, label: 'Kept' })
     expect(incumbent.hidden).toBe(true)
+    expect(error).toHaveBeenCalledOnce()
     error.mockRestore()
   })
 })

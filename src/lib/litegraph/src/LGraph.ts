@@ -362,8 +362,7 @@ function serialiseOwnedTopology(owner: LGraph) {
       target_slot: link.targetSlot,
       type: link.type,
       ...(link.parentId !== undefined && { parentId: link.parentId }),
-      ...(presentation &&
-        compactLinkPresentation(presentation.hidden, presentation.label))
+      ...presentation
     }
   }
   const links = topologies.filter((link) => !isFloatingTopology(link))
@@ -2647,12 +2646,10 @@ export class LGraph
     }
 
     const linkPresentation = Object.fromEntries(
-      linkArray
-        .filter((link) => link.hidden || link.label !== undefined)
-        .map((link) => [
-          String(link.id),
-          compactLinkPresentation(link.hidden, link.label)
-        ])
+      linkArray.flatMap((link) => {
+        const compacted = compactLinkPresentation(link.hidden, link.label)
+        return compacted ? [[String(link.id), compacted] as const] : []
+      })
     )
     if (Object.keys(linkPresentation).length) {
       extra.linkPresentation = linkPresentation

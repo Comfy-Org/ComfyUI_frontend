@@ -54,8 +54,10 @@ over the link topology store. Several homes were considered and rejected:
    endpoint moves, subgraph convert/unpack, workflow insertion, duplicate-link
    normalization) must carry presentation across the old→new link mapping via
    `transferLinkPresentation`. Fan-out merges move presentation onto a merged
-   boundary link only when every grouped link agrees.
-6. Mutations are validated store actions bracketed by the existing
+   boundary link only when every grouped link agrees. (The transfer wiring and
+   its regression tests land in the transfer slice of this stack.)
+6. Mutations are validated store actions; the first-party mutation helpers
+   that arrive with the canvas slice bracket them with the existing
    before/after-change lifecycle. Wrapping them in a serializable
    `setLinkPresentation` command is deferred until a command executor exists
    (per the ECS migration plan, commands are outside the current phase).
@@ -74,8 +76,8 @@ over the link topology store. Several homes were considered and rejected:
 **Negative**
 
 - Every future link-recreation path must remember the transfer helper; a
-  missed path silently resets presentation to defaults. Regression tests pin
-  the known flows.
+  missed path silently resets presentation to defaults. Regression tests in
+  the transfer slice pin the known flows.
 - A visible link's canonical state is _no entry_ (`hidden` reads `false`, and
   `hidden: false` is never stored or serialized).
 - `hidden`/`label` become live prototype accessors on `LLink`: an extension

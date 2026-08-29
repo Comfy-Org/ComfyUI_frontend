@@ -252,8 +252,8 @@ describe('parseComfyWorkflow', () => {
     })
   })
 
-  it('validates visibility fields on schema 1 link objects', async () => {
-    const workflow = {
+  function schema1WorkflowWithLink(fields: Record<string, unknown>) {
+    return {
       version: 1,
       state: {
         lastGroupId: 0,
@@ -271,11 +271,14 @@ describe('parseComfyWorkflow', () => {
           target_id: 2,
           target_slot: 0,
           type: 'MODEL',
-          hidden: true,
-          label: 'Preview'
+          ...fields
         }
       ]
     }
+  }
+
+  it('validates visibility fields on schema 1 link objects', async () => {
+    const workflow = schema1WorkflowWithLink({ hidden: true, label: 'Preview' })
 
     const validated = await validateComfyWorkflow(workflow)
 
@@ -296,28 +299,7 @@ describe('parseComfyWorkflow', () => {
   })
 
   it('rejects a non-string label on schema 1 link objects', async () => {
-    const workflow = {
-      version: 1,
-      state: {
-        lastGroupId: 0,
-        lastNodeId: 2,
-        lastLinkId: 1,
-        lastRerouteId: 0
-      },
-      nodes: [],
-      groups: [],
-      links: [
-        {
-          id: 1,
-          origin_id: 1,
-          origin_slot: 0,
-          target_id: 2,
-          target_slot: 0,
-          type: 'MODEL',
-          label: 42
-        }
-      ]
-    }
+    const workflow = schema1WorkflowWithLink({ label: 42 })
 
     await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
   })

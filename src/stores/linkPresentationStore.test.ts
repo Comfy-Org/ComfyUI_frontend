@@ -32,7 +32,7 @@ describe('useLinkPresentationStore', () => {
     store.patch(graphA, LINK, { hidden: true })
     store.patch(graphA, LINK, { label: 'Checkpoint' })
 
-    expect(store.getPresentation(graphA, LINK)).toMatchObject({
+    expect(store.getPresentation(graphA, LINK)).toEqual({
       hidden: true,
       label: 'Checkpoint'
     })
@@ -60,7 +60,7 @@ describe('useLinkPresentationStore', () => {
 
     store.patch(graphASibling, LINK, { label: 'Stolen' })
 
-    expect(store.getPresentation(graphA, LINK)).toMatchObject({
+    expect(store.getPresentation(graphA, LINK)).toEqual({
       label: 'Owned'
     })
     expect(error).toHaveBeenCalledOnce()
@@ -72,12 +72,21 @@ describe('useLinkPresentationStore', () => {
     store.patch(graphA, LINK, { hidden: true })
 
     expect(store.take(graphASibling, LINK)).toBeUndefined()
-    expect(store.getPresentation(graphA, LINK)).toMatchObject({
+    expect(store.getPresentation(graphA, LINK)).toEqual({
       hidden: true
     })
 
     expect(store.take(graphA, LINK)).toEqual({ hidden: true })
     expect(store.getPresentation(graphA, LINK)).toBeUndefined()
+  })
+
+  it('indexes only the hidden links the scope owns', () => {
+    const store = useLinkPresentationStore()
+    store.patch(graphA, toLinkId(1), { hidden: true })
+    store.patch(graphA, toLinkId(2), { label: 'Visible' })
+    store.patch(graphASibling, toLinkId(3), { hidden: true })
+
+    expect(store.graphHiddenLinkIds(graphA)).toEqual([toLinkId(1)])
   })
 
   it('clearOwner leaves sibling owners intact and clearGraph wipes one root', () => {
@@ -94,7 +103,7 @@ describe('useLinkPresentationStore', () => {
     store.clearGraph(graphA.rootGraphId)
 
     expect(store.getPresentation(graphA, toLinkId(1))).toBeUndefined()
-    expect(store.getPresentation(graphB, toLinkId(3))).toMatchObject({
+    expect(store.getPresentation(graphB, toLinkId(3))).toEqual({
       hidden: true
     })
   })

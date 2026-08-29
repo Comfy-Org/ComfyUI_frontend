@@ -6,7 +6,10 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import type { LinkPresentation } from '@/stores/linkPresentationStore'
+import type {
+  LinkPresentation,
+  LinkPresentationPatch
+} from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -229,12 +232,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   /** @inheritdoc */
   _dragging?: boolean
 
-  /**
-   * Presentation (endpoint-badge visibility and custom label) is store-backed
-   * once the link is registered; a detached link buffers writes here until
-   * adoption, and unregistration stashes the store entry back so presentation
-   * follows the link across ownership transfers.
-   */
+  /** Buffered presentation writes for a link not registered in a graph scope. */
   _pendingPresentation?: LinkPresentation
 
   get hidden(): boolean {
@@ -259,7 +257,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     return useLinkPresentationStore().getPresentation(scope, this.id)
   }
 
-  private writePresentation(partial: LinkPresentation): void {
+  private writePresentation(partial: LinkPresentationPatch): void {
     const scope = this._graphScope
     if (scope) {
       useLinkPresentationStore().patch(scope, this.id, partial)
@@ -737,11 +735,11 @@ export function replaceLinkTopology(
   if (!registered) return false
   if (incumbent) {
     if (incumbent._graphScope) {
-      const stashed = useLinkPresentationStore().take(
+      const pending = useLinkPresentationStore().take(
         incumbent._graphScope,
         incumbent.id
       )
-      if (stashed) incumbent._pendingPresentation = stashed
+      if (pending) incumbent._pendingPresentation = pending
     }
     linkByTopology.delete(toRaw(incumbent._state))
     incumbent._graphScope = undefined
@@ -773,11 +771,11 @@ function adoptLinkTopology(
  */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
-  const stashed = useLinkPresentationStore().take(link._graphScope, link.id)
+  const pending = useLinkPresentationStore().take(link._graphScope, link.id)
   useLinkStore().deleteLink(link._graphScope, link._state)
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
-  if (stashed) link._pendingPresentation = stashed
+  if (pending) link._pendingPresentation = pending
 }
 
 /**

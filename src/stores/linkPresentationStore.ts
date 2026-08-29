@@ -20,19 +20,24 @@ export interface LinkPresentation {
  */
 export type LinkPresentationPatch = LinkPresentation
 
-/** Builds the canonical compact record: `hidden` only when true, `label` only when defined. */
+/**
+ * Builds the canonical compact record — `hidden` only when true, `label` only
+ * when defined — or `undefined` for the default (empty) presentation.
+ */
 export function compactLinkPresentation(
   hidden: boolean | undefined,
   label: string | undefined
-): LinkPresentation {
+): LinkPresentation | undefined {
+  if (!hidden && label === undefined) return undefined
   return {
     ...(hidden && { hidden: true }),
     ...(label !== undefined && { label })
   }
 }
 
-interface OwnedLinkPresentation extends LinkPresentation {
+interface OwnedLinkPresentation {
   graphId: OwningGraphId
+  presentation: LinkPresentation
 }
 
 /**
@@ -73,9 +78,12 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
       )
       return
     }
-    const hidden = 'hidden' in partial ? partial.hidden : incumbent?.hidden
-    const label = 'label' in partial ? partial.label : incumbent?.label
-    if (!hidden && label === undefined) {
+    const hidden =
+      'hidden' in partial ? partial.hidden : incumbent?.presentation.hidden
+    const label =
+      'label' in partial ? partial.label : incumbent?.presentation.label
+    const compacted = compactLinkPresentation(hidden, label)
+    if (!compacted) {
       if (bucket?.delete(linkId) && bucket.size === 0) {
         roots.delete(scope.rootGraphId)
       }
@@ -84,7 +92,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     const target = bucket ?? createRootBucket(scope.rootGraphId)
     target.set(linkId, {
       graphId: scope.owningGraphId,
-      ...compactLinkPresentation(hidden, label)
+      presentation: compacted
     })
   }
 
@@ -98,29 +106,30 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     if (!bucket || !entry || entry.graphId !== scope.owningGraphId) return
     bucket.delete(linkId)
     if (bucket.size === 0) roots.delete(scope.rootGraphId)
-    return compactLinkPresentation(entry.hidden, entry.label)
+    return entry.presentation
   }
 
-  /** Returns the live store record for a link `scope` owns. */
+  /** Returns the live presentation record for a link `scope` owns. */
   function getPresentation(
     scope: GraphScope,
     linkId: LinkId
   ): Readonly<LinkPresentation> | undefined {
     const entry = roots.get(scope.rootGraphId)?.get(linkId)
-    return entry?.graphId === scope.owningGraphId ? entry : undefined
+    return entry?.graphId === scope.owningGraphId
+      ? entry.presentation
+      : undefined
   }
 
-  /** Ids of a graph's hidden links — the render index; empty cost when nothing is hidden. */
+  /** Ids of the hidden links `scope` owns. */
   function graphHiddenLinkIds(scope: GraphScope): LinkId[] {
     const bucket = roots.get(scope.rootGraphId)
     if (!bucket) return []
-    const ids: LinkId[] = []
-    for (const [linkId, entry] of bucket) {
-      if (entry.graphId === scope.owningGraphId && entry.hidden) {
-        ids.push(linkId)
-      }
-    }
-    return ids
+    return [...bucket]
+      .filter(
+        ([, entry]) =>
+          entry.graphId === scope.owningGraphId && entry.presentation.hidden
+      )
+      .map(([linkId]) => linkId)
   }
 
   function clearGraph(rootGraphId: RootGraphId): void {
