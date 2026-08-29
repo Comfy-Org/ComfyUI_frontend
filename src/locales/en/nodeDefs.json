@@ -6190,6 +6190,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "display_name": "Google Gemini Omni (Video)",
+    "description": "Generate a video with audio from a text prompt using Google's Gemini Omni Flash models. Optionally provide reference images and/or videos to guide or edit the result. Describe the desired length (3-10s) directly in the prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The Gemini video model used to generate the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "Generate Video Tracks",
     "inputs": {
@@ -6252,6 +6288,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "display_name": "Get 3D Components",
+    "description": "Parse a 3D model file (GLB, GLTF, OBJ, STL) into an editable MESH for the mesh-processing nodes (decimate, remesh, UV unwrap, bake, ...). All scene nodes/primitives are merged into one mesh with their transforms applied; textures and material factors come from the first material. Counterpart of MeshToFile3D.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model file from Load 3D or another 3D node. FBX/USDZ are not supported - convert to GLB first."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }

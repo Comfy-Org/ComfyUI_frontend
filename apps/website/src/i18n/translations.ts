@@ -7221,18 +7221,26 @@ const translations = {
   },
 
   // ── Managed Builds (/enterprise + /enterprise/managed-builds) ──
-  'enterprise.platformBand.label': {
-    en: 'DEVELOPER PLATFORM',
+  'home.platform.eyebrow': {
+    en: 'Developer Platform',
     'zh-CN': '开发者平台'
   },
-  'enterprise.platformBand.text': {
-    en: 'Deploy and scale ComfyUI workflows — Serverless API, Models API, and Builder behind one API key. Now in limited beta.',
-    'zh-CN':
-      '部署并扩展 ComfyUI 工作流——Serverless API、Models API 和 Builder 共用一个 API 密钥。现已开启有限测试。'
+  'home.platform.heading': {
+    en: 'Deploy and scale ComfyUI workflows',
+    'zh-CN': '部署并扩展 ComfyUI 工作流'
   },
-  'enterprise.platformBand.cta': {
+  'home.platform.body': {
+    en: 'Package your workflow, deploy it to Serverless, and call every frontier model — behind one API key. The fastest way from ComfyUI workflow to production endpoint.',
+    'zh-CN':
+      '打包你的工作流，部署到 Serverless，并调用所有前沿模型——共用一个 API 密钥。从 ComfyUI 工作流到生产端点的最快路径。'
+  },
+  'home.platform.cta': {
     en: 'Explore the Developer Platform',
     'zh-CN': '了解开发者平台'
+  },
+  'home.platform.docs': {
+    en: 'Read the docs',
+    'zh-CN': '阅读文档'
   },
   'enterprise.managedBuilds.heading': {
     en: 'Managed Builds',

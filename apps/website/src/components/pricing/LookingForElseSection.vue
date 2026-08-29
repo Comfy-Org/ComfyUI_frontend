@@ -2,6 +2,7 @@
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import FeatureCard from '../../templates/platform/FeatureCard.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -13,15 +14,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('pricing.lookingForElse.heading', locale) }}
     </SectionHeader>
 
-    <div
-      class="mx-auto mt-8 max-w-md rounded-3xl border border-white/10 bg-transparency-white-t4 p-6"
+    <FeatureCard
+      class="mx-auto mt-8 max-w-md"
+      :title="t('pricing.lookingForElse.community.title', locale)"
+      :description="t('pricing.lookingForElse.community.description', locale)"
     >
-      <h3 class="text-base font-normal text-primary-warm-white">
-        {{ t('pricing.lookingForElse.community.title', locale) }}
-      </h3>
-      <p class="mt-2 text-sm/relaxed font-light text-primary-comfy-canvas">
-        {{ t('pricing.lookingForElse.community.description', locale) }}
-      </p>
       <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2">
         <a
           :href="externalLinks.github"
@@ -40,6 +37,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           {{ t('pricing.lookingForElse.community.docs', locale) }}
         </a>
       </div>
-    </div>
+    </FeatureCard>
   </section>
 </template>

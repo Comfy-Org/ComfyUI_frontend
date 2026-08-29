@@ -2,6 +2,9 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -131,8 +134,15 @@ describe('useMaskEditorSaver', () => {
       ],
       widgets_values: ['original.png [input]'],
       properties: { image: 'original.png [input]' },
-      graph: { setDirtyCanvas: vi.fn() }
+      graph: {
+        setDirtyCanvas: vi.fn(),
+        rootGraph: { id: 'maskeditor-saver-test' }
+      }
     })
+    useWidgetValueStore().registerWidget(
+      widgetId('maskeditor-saver-test', toNodeId(42), 'image'),
+      { type: 'string', value: 'original.png [input]', options: {} }
+    )
 
     mockDataStore.sourceNode = mockNode
     mockDataStore.inputData = {
@@ -200,6 +210,14 @@ describe('useMaskEditorSaver', () => {
     // when there are no pre-existing outputs for the node.
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId('maskeditor-saver-test', toNodeId(42), 'image')
+      )?.value
+    ).toBe('clipspace-painted-masked-123.png [input]')
+    expect(mockNode.properties['image']).toBe(
+      'clipspace-painted-masked-123.png [input]'
+    )
   })
 
   it('omits subfolder from the upload FormData under the unified contract', async () => {

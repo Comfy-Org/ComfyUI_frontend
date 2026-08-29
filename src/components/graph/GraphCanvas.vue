@@ -38,6 +38,9 @@
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
+    <template v-if="showUI" #agent-panel>
+      <component :is="DockedAgentPanel" v-if="agentDocked && !linearMode" />
+    </template>
     <template #graph-canvas-panel>
       <div
         ref="canvasPanelBoundsRef"
@@ -145,6 +148,7 @@ import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
@@ -221,6 +225,7 @@ const { isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const { linearMode } = storeToRefs(canvasStore)
+const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()

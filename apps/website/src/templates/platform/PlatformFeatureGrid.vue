@@ -2,23 +2,29 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import type { FeatureCardLink } from './FeatureCard.vue'
+import FeatureCard from './FeatureCard.vue'
 
-interface FeatureCard {
+interface FeatureCardData {
   title: string
   description: string
-  link?: { label: string; href: string; suffix?: string }
+  link?: FeatureCardLink
 }
 
 const { columns = 3 } = defineProps<{
+  id?: string
   heading: string
   subtitle?: string
-  cards: readonly FeatureCard[]
+  cards: readonly FeatureCardData[]
   columns?: 3 | 4
 }>()
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
+  <section
+    :id
+    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
+  >
     <SectionHeader max-width="xl" heading-size="compact">
       {{ heading }}
       <template v-if="subtitle" #subtitle>
@@ -36,25 +42,15 @@ const { columns = 3 } = defineProps<{
         )
       "
     >
-      <article
+      <FeatureCard
         v-for="card in cards"
         :key="card.title"
-        class="rounded-3xl border border-white/10 bg-transparency-white-t4 p-5 lg:p-6"
-      >
-        <h3 class="text-base font-normal text-primary-warm-white">
-          {{ card.title }}
-        </h3>
-        <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
-          {{ card.description
-          }}<template v-if="card.link"
-            ><a
-              :href="card.link.href"
-              class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
-              >{{ card.link.label }}</a
-            >{{ card.link.suffix }}</template
-          >
-        </p>
-      </article>
+        :title="card.title"
+        :description="card.description"
+        :link="card.link"
+      />
     </div>
+
+    <slot name="footer" />
   </section>
 </template>
