@@ -10,7 +10,7 @@ interface TerminalLine {
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const lines: TerminalLine[] = [
-  { kind: 'command', text: 'comfy deploy ./workflow_api.json' },
+  { kind: 'command', text: 'comfy deploy reference2video.json' },
   { kind: 'success', text: t('platform.terminal.buildResolved', locale) },
   { kind: 'success', text: t('platform.terminal.deployed', locale) }
 ]
