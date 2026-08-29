@@ -73,6 +73,13 @@ const LOCALE_INVARIANT_PATHS = new Set<string>(
  * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
  * URLs and locale-invariant routes pass through unchanged.
  */
+/** True for a locale-invariant route or anything nested under one. */
+export function isLocaleInvariantPath(pathname: string): boolean {
+  return [...LOCALE_INVARIANT_PATHS].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  )
+}
+
 export function localizeHref(href: string, locale: Locale = 'en'): string {
   if (locale === 'en' || !href.startsWith('/')) return href
   if (LOCALE_INVARIANT_PATHS.has(href)) return href
