@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { z } from 'zod'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateGroup,
@@ -168,7 +169,7 @@ export function useTemplateWorkflows() {
 
       return true
     } catch (error) {
-      console.error('Error loading workflow template:', error)
+      reportError(error, { errorType: 'workflow_template_open_failed' })
       return false
     }
   }
@@ -186,7 +187,7 @@ export function useTemplateWorkflows() {
       if (!prepared) return false
       return await openPreparedWorkflowTemplate(prepared)
     } catch (error) {
-      console.error('Error loading workflow template:', error)
+      reportError(error, { errorType: 'workflow_template_prepare_failed' })
       return false
     } finally {
       loadingTemplateId.value = null
