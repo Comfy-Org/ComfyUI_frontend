@@ -8,7 +8,7 @@ import IsometricColumnIllustration from './IsometricColumnIllustration.vue'
     aria-hidden="true"
   >
     <div
-      class="absolute top-1/2 -left-20 size-52 -translate-y-1/2 sm:-left-8 sm:size-60 lg:left-0"
+      class="absolute top-1/2 -left-20 size-52 -translate-y-1/2 sm:-left-8 sm:size-60 lg:left-6"
     >
       <IsometricColumnIllustration
         class="animate-platform-builder-float"
@@ -19,7 +19,7 @@ import IsometricColumnIllustration from './IsometricColumnIllustration.vue'
         "
       />
     </div>
-    <div class="absolute top-1 left-[17%] hidden size-36 lg:block">
+    <div class="absolute top-8 left-[17%] hidden size-36 lg:block">
       <IsometricColumnIllustration
         class="animate-platform-builder-float-delayed"
         style="
@@ -30,7 +30,7 @@ import IsometricColumnIllustration from './IsometricColumnIllustration.vue'
       />
     </div>
     <div
-      class="absolute top-1/2 -right-16 hidden size-48 -translate-y-1/2 sm:block lg:right-0 lg:size-52"
+      class="absolute top-1/2 -right-16 hidden size-48 -translate-y-1/2 sm:block lg:right-6 lg:size-52"
     >
       <IsometricColumnIllustration
         class="animate-platform-builder-float-delayed"
@@ -41,7 +41,7 @@ import IsometricColumnIllustration from './IsometricColumnIllustration.vue'
         "
       />
     </div>
-    <div class="absolute right-[17%] bottom-0 hidden size-36 lg:block">
+    <div class="absolute right-[17%] bottom-6 hidden size-36 lg:block">
       <IsometricColumnIllustration
         class="animate-platform-builder-float-slow"
         style="

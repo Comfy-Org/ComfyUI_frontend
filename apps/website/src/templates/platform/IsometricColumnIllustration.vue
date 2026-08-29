@@ -1,6 +1,6 @@
 <template>
-  <div class="relative aspect-square">
-    <div class="absolute top-[35.5%] left-[17.91%] h-[37.05%] w-[64.18%]">
+  <div class="relative isolate aspect-square">
+    <div class="absolute top-[35.5%] left-[17.91%] z-0 h-[37.05%] w-[64.18%]">
       <img
         src="/assets/platform/closing-cta/platform-ring-front.svg"
         alt=""
@@ -21,10 +21,10 @@
       <img
         src="/assets/platform/closing-cta/platform-ring-front.svg"
         alt=""
-        class="absolute inset-0 size-full"
+        class="absolute inset-0 z-10 size-full"
       />
     </div>
-    <div class="absolute top-[16.97%] left-[33.96%] h-[45.96%] w-[32.09%]">
+    <div class="absolute top-[16.97%] left-[33.96%] z-20 h-[45.96%] w-[32.09%]">
       <img
         src="/assets/platform/closing-cta/isometric-column-texture.png"
         alt=""
