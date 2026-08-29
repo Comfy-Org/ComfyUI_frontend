@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import ServerlessVisual from '../../templates/platform/ServerlessVisual.vue'
+import ServerlessIsometricStudy from '../../templates/platform/ServerlessIsometricStudy.vue'
 import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorkerAnimation.vue'
 ---
 
@@ -36,12 +36,12 @@ import ServerlessWorkerAnimation from '../../templates/platform/ServerlessWorker
 
       <article>
         <div class="mb-3 flex items-center justify-between gap-4 px-1">
-          <h2 class="text-lg font-medium">Animation B · Current marquee</h2>
+          <h2 class="text-lg font-medium">Animation B · Isometric heatmap</h2>
           <span class="text-primary-comfy-yellow/70 font-mono text-xs uppercase">
-            Baseline
+            Static study
           </span>
         </div>
-        <ServerlessVisual locale="en" client:load />
+        <ServerlessIsometricStudy locale="en" />
       </article>
     </div>
   </section>
