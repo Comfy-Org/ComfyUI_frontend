@@ -12,7 +12,7 @@ export interface LamportProducerClock {
 }
 
 export interface LamportClockStore {
-  /** Serialize the callback for this exact producer identity and commit on success. */
+  /** Serialize the callback for this document admission scope and commit on success. */
   transaction<T>(
     identity: Omit<LamportProducerClock, "counter">,
     update: (stored: number | undefined) => Promise<{ counter: number; value: T }>,
@@ -22,28 +22,48 @@ export interface LamportClockStore {
 /**
  * A caller-owned Lamport store whose floor is derived from this document's
  * winning stamp ledger on every transaction. The package keeps no producer
- * counter: the Y.Doc is the caller-owned lineage snapshot and `transaction`
- * remains the caller's serialization boundary.
+ * counter: the Y.Doc is the caller-owned lineage snapshot and this store's
+ * transaction queue is the serialization boundary.
  *
  * Stamp values are validated rather than silently skipped. A malformed
  * `__stamps` entry must fail closed before a producer mints an unsafe counter.
  * Incarnation-qualified target keys all belong to this document lineage, so
- * old node lives remain part of the observed floor (DQ-11 / ADR-021).
+ * old node lives remain part of the observed floor (DQ-11 / ADR-021). A
+ * successful transaction reserves its counter in the same ledger so the next
+ * transaction observes it even before the producer's semantic op is applied.
  */
 export class DocDerivedLamportClockStore implements LamportClockStore {
+  private transactionTail: Promise<void> = Promise.resolve();
+
   public constructor(private readonly doc: Y.Doc) {}
 
   public async transaction<T>(
-    _identity: Omit<LamportProducerClock, "counter">,
+    identity: Omit<LamportProducerClock, "counter">,
     update: (stored: number | undefined) => Promise<{ counter: number; value: T }>,
   ): Promise<T> {
-    const floor = observedDocCounter(this.doc);
-    const result = await update(floor);
-    validateLamportCounter(result.counter);
-    if (floor !== undefined && result.counter <= floor) {
-      throw new RangeError(`Lamport counter ${result.counter} did not advance beyond document floor ${floor}`);
-    }
-    return result.value;
+    const transaction = this.transactionTail.then(async () => {
+      const floor = observedDocCounter(this.doc);
+      const result = await update(floor);
+      validateLamportCounter(result.counter);
+      if (floor !== undefined && result.counter <= floor) {
+        throw new RangeError(`Lamport counter ${result.counter} did not advance beyond document floor ${floor}`);
+      }
+      this.commitCounter(identity, result.counter);
+      return result.value;
+    });
+    this.transactionTail = transaction.then(() => undefined, () => undefined);
+    return transaction;
+  }
+
+  private commitCounter(identity: Omit<LamportProducerClock, "counter">, counter: number): void {
+    const reservationKey = JSON.stringify([
+      "__lamport_clock",
+      identity.workflow_id,
+      identity.lineage_id,
+      identity.producer_id,
+    ]);
+    const stamps = this.doc.getMap<unknown>(ROOT_STAMPS);
+    this.doc.transact(() => stamps.set(reservationKey, [counter, identity.producer_id, reservationKey]));
   }
 }
 

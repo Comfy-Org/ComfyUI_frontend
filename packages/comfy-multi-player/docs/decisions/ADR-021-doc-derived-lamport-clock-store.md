@@ -23,10 +23,13 @@ caller Y.Doc / __stamps -> max observed counter -> producer tick -> op stamp
           (no package-owned counter or database)
 ```
 
-The store validates every ledger entry and fails closed on malformed counters. It performs no Yjs
-write. The caller's `LamportClockStore.transaction` remains the serialization boundary, and the
-producer dispatches only after the tick resolves. A caller that has not observed any authoritative
-stamp may require a seed with `persistLamportTick(..., { requireSeed: true })`.
+The store validates every ledger entry and fails closed on malformed counters. Calls submitted to
+the same store instance are serialized. After a successful callback and counter validation, the
+store writes a reserved clock row to `__stamps` before returning; this makes the advanced floor
+visible to the next transaction and durable in a Yjs snapshot. The row is not a semantic graph
+operation. Independently constructed stores wrapping one Y.Doc do not share this queue and are not
+a coordinated admission path. A caller that has not observed any authoritative stamp may require
+a seed with `persistLamportTick(..., { requireSeed: true })`.
 
 ## Acceptance gate
 
@@ -41,9 +44,9 @@ and is not exported or used by the applier.
 
 - Restart/reconnect can reseed from committed document state without package-owned persistence.
 - DQ-11 remains load-bearing: old-incarnation stamps cannot compete with a new-incarnation write.
-- Two ticks require the caller's transaction/admission path to serialize the producer and make the
-  prior operation observable before the next doc-derived tick; an unapplied operation is a caller
-  recovery concern, not hidden package state.
+- Calls that must share a counter sequence must use one store instance. A successful tick reserves
+  its counter in `__stamps` even before the semantic operation is applied; an unapplied operation
+  remains a caller recovery concern.
 - Cross-document monotonicity is not promised. The floor is scoped to one document lineage.
 - Vector clocks remain available as a comparison oracle if product policy later needs explicit
   concurrency detection.
@@ -65,3 +68,13 @@ no caller-independent merge or durable state (KA-13).
 - **Vector clock:** a test reference mapping each actor to its observed counter, able to distinguish
   ordered pairs from true concurrency.
 - **KA-13:** the package statelessness invariant guarded by `check:stateless`.
+
+## Amendment: CLK-1 transaction serialization and commit
+
+The adversarial CLK-1 finding was fixed in comfy-multi-player commit
+[`0ecab83f`](https://github.com/Comfy-Org/comfy-multi-player/commit/0ecab83feb2ffa6006d56e58e95207b6f5074056).
+The regression test exercises two concurrent `persistLamportTick` admissions through one
+`DocDerivedLamportClockStore`, verifies counters `1` and `2`, checks the two committed reservation
+rows and document floor, and verifies the next admission receives `3`. The shipped guarantee is
+limited to that shared-store admission boundary; it does not coordinate separately constructed
+stores.
