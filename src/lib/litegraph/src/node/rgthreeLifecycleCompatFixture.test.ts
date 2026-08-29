@@ -9,10 +9,10 @@ import type {
 } from '@/lib/litegraph/test/fixtures/cleanExtensionCompatFixture'
 import {
   createRgthreeLifecycleInstaller,
+  disposeRgthreeLifecycleDrawNodeWrapper,
   getRgthreePrototypeWrapperDepth,
   installRgthreeLifecycleFixture,
   RGTHREE_LIFECYCLE_FIXTURE_IDENTITY,
-  resolveRgthreeLifecycleDrawNode,
   RgthreeLabelFixtureNode
 } from '@/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture'
 import type {
@@ -264,8 +264,11 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
     }
     const competingWrapper = TestCanvas.prototype.drawNode
     const disposeCompetingWrapper = () => {
-      TestCanvas.prototype.drawNode =
-        resolveRgthreeLifecycleDrawNode(rgthreeWrapper)
+      disposeRgthreeLifecycleDrawNodeWrapper(
+        TestCanvas.prototype,
+        competingWrapper,
+        rgthreeWrapper
+      )
     }
 
     installation.dispose()
@@ -277,6 +280,54 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
     expect(installation.counters.wrapperCalls).toBe(0)
     expect(setup.canvas.coreDraws).toHaveBeenCalledOnce()
     disposeCompetingWrapper()
+    expect(TestCanvas.prototype.drawNode).toBe(originalDrawNode)
+  })
+
+  it('preserves a reinstalled wrapper when a competing wrapper is disposed', () => {
+    const setup = createScaleSetup(1)
+    const originalDrawNode = TestCanvas.prototype.drawNode
+    const firstInstallation = track(
+      installRgthreeLifecycleFixture(
+        TestCanvas.prototype,
+        setup.host,
+        setup.scheduler
+      )
+    )
+    const firstRgthreeWrapper = TestCanvas.prototype.drawNode
+    const competingCalls = vi.fn()
+    TestCanvas.prototype.drawNode = function competingWrapper(node, context) {
+      competingCalls(node)
+      return firstRgthreeWrapper.call(this, node, context)
+    }
+    const competingWrapper = TestCanvas.prototype.drawNode
+    const disposeCompetingWrapper = () => {
+      disposeRgthreeLifecycleDrawNodeWrapper(
+        TestCanvas.prototype,
+        competingWrapper,
+        firstRgthreeWrapper
+      )
+    }
+
+    firstInstallation.dispose()
+    const secondInstallation = track(
+      installRgthreeLifecycleFixture(
+        TestCanvas.prototype,
+        setup.host,
+        setup.scheduler
+      )
+    )
+    const secondRgthreeWrapper = TestCanvas.prototype.drawNode
+    disposeCompetingWrapper()
+
+    expect(TestCanvas.prototype.drawNode).toBe(secondRgthreeWrapper)
+    expect(getRgthreePrototypeWrapperDepth(TestCanvas.prototype)).toBe(1)
+    expect(setup.canvas.drawNode(setup.nodes[1], setup.context)).toBe(
+      `${setup.nodes[1].id}:${setup.nodes[1].title}`
+    )
+    expect(secondInstallation.counters.wrapperCalls).toBe(1)
+    expect(competingCalls).not.toHaveBeenCalled()
+
+    secondInstallation.dispose()
     expect(TestCanvas.prototype.drawNode).toBe(originalDrawNode)
   })
 })
