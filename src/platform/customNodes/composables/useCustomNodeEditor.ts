@@ -22,6 +22,16 @@ export interface CustomNodeEditorSession {
   updatedAt: string
 }
 
+export class CustomNodeEditorRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message)
+    this.name = 'CustomNodeEditorRequestError'
+  }
+}
+
 interface CustomNodeEditorSessionDto {
   id: string
   mode: CustomNodeEditorMode
@@ -54,19 +64,28 @@ const toSession = (
   updatedAt: session.updated_at
 })
 
-const readError = async (response: Response): Promise<string> => {
+const readError = async (
+  response: Response
+): Promise<CustomNodeEditorRequestError> => {
   const data = (await response.json().catch(() => null)) as {
     error?: unknown
   } | null
-  return typeof data?.error === 'string'
-    ? data.error
-    : `Request failed (${response.status})`
+  const message =
+    typeof data?.error === 'string'
+      ? data.error
+      : typeof data?.error === 'object' &&
+          data.error !== null &&
+          'message' in data.error &&
+          typeof data.error.message === 'string'
+        ? data.error.message
+        : `Request failed (${response.status})`
+  return new CustomNodeEditorRequestError(message, response.status)
 }
 
 const readSession = async (
   response: Response
 ): Promise<CustomNodeEditorSession> => {
-  if (!response.ok) throw new Error(await readError(response))
+  if (!response.ok) throw await readError(response)
   return toSession((await response.json()) as CustomNodeEditorSessionDto)
 }
 
@@ -109,7 +128,7 @@ export function useCustomNodeEditor() {
       `/customnodes/editor/sessions/${encodeURIComponent(id)}/refresh`,
       { method: 'POST' }
     )
-    if (!response.ok) throw new Error(await readError(response))
+    if (!response.ok) throw await readError(response)
     await app.reloadNodeDefs()
   }
 

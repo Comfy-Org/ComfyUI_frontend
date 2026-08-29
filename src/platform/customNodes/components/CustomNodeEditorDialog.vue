@@ -86,7 +86,10 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 
-import { useCustomNodeEditor } from '../composables/useCustomNodeEditor'
+import {
+  CustomNodeEditorRequestError,
+  useCustomNodeEditor
+} from '../composables/useCustomNodeEditor'
 import type {
   CustomNodeEditorSession,
   CustomNodeEditorStatus
@@ -124,6 +127,19 @@ const isEditorVisible = computed(
   () =>
     session.value.status === 'ready' || session.value.status === 'submitting'
 )
+
+const closeExpiredSession = () => {
+  if (terminalHandled.value) return
+  terminalHandled.value = true
+  pause()
+  toast.add({
+    severity: 'warn',
+    summary: t('customNodePacks.editor.sessionEnded'),
+    detail: t('customNodePacks.editor.sessionEndedDetail'),
+    life: 8000
+  })
+  props.onClose()
+}
 
 const finishTerminalState = async () => {
   if (terminalHandled.value) return
@@ -167,6 +183,10 @@ const poll = async () => {
     await finishTerminalState()
     if (session.value.status === 'failed') pause()
   } catch (error) {
+    if (error instanceof CustomNodeEditorRequestError && error.status === 404) {
+      closeExpiredSession()
+      return
+    }
     if (!pollError.value) {
       reportError(error, { errorType: 'custom_node_editor_poll_failed' })
     }
@@ -194,6 +214,10 @@ const onAbandon = async () => {
     session.value = await abandonSession(session.value.id)
     await finishTerminalState()
   } catch (error) {
+    if (error instanceof CustomNodeEditorRequestError && error.status === 404) {
+      closeExpiredSession()
+      return
+    }
     reportError(error, { errorType: 'custom_node_editor_abandon_failed' })
     toast.add({
       severity: 'error',

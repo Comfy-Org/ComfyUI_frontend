@@ -107,4 +107,16 @@ describe('useCustomNodeEditor', () => {
       createSession({ mode: 'edit', name: 'Echo Pack', revisionId: 'old' })
     ).rejects.toThrow('the pack changed; refresh and edit its current revision')
   })
+
+  it('preserves the response status when an editor session has ended', async () => {
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse({ error: 'editor session was not found' }, false, 404)
+    )
+
+    const { getSession } = useCustomNodeEditor()
+    await expect(getSession('expired-session')).rejects.toMatchObject({
+      message: 'editor session was not found',
+      status: 404
+    })
+  })
 })

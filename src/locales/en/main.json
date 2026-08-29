@@ -36,6 +36,8 @@
       "abandonFailed": "Could not abandon editor",
       "starterName": "Checkerboard Mask",
       "openFailed": "Could not open code editor",
+      "sessionEnded": "Editor session ended",
+      "sessionEndedDetail": "This editor is no longer running. Open Create or Edit again to start a fresh session.",
       "submitted": "Custom node submitted",
       "submittedDetail": "The new revision is stored and ready to use.",
       "refreshFailed": "The node was stored, but the node library could not refresh. Reload the app to see it.",
