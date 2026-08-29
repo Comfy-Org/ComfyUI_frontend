@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
+import type { GraphMutations } from '@/core/graph/graphMutations'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -98,7 +99,7 @@ describe('EcsFollowerAdapter integration', () => {
     )
     const follower = new FollowerDoc()
     const adapter = new EcsFollowerAdapter(mutations)
-    adapter.bind(follower)
+    adapter.bind('wf', follower)
     const update = Y.encodeStateAsUpdate(host)
     follower.applyRemoteUpdate(update)
 
@@ -146,7 +147,7 @@ describe('EcsFollowerAdapter integration', () => {
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
     const adapter = new EcsFollowerAdapter(mutations)
-    adapter.bind(follower)
+    adapter.bind('wf', follower)
 
     const result = applyOps(
       host,
@@ -217,7 +218,7 @@ describe('EcsFollowerAdapter integration', () => {
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
     })
     const adapter = new EcsFollowerAdapter(mutations)
-    adapter.bind(follower)
+    adapter.bind('wf', follower)
 
     let seq = 0
     let first = true
@@ -319,7 +320,7 @@ describe('EcsFollowerAdapter integration', () => {
       layout: { createNode: createLayout, deleteNodes: deleteLayouts }
     })
     const adapter = new EcsFollowerAdapter(mutations)
-    adapter.bind(follower)
+    adapter.bind('wf', follower)
 
     let seq = 0
     let first = true
@@ -489,5 +490,88 @@ describe('EcsFollowerAdapter integration', () => {
     adapter.destroy()
     follower.destroy()
     host.destroy()
+  })
+
+  it('keeps follower docs and apply queues isolated by workflow target', () => {
+    const followerA = new FollowerDoc()
+    const followerB = new FollowerDoc()
+    const updateA = Y.encodeStateAsUpdate(
+      mint(
+        {
+          nodes: [
+            { id: 101, type: 'Source', pos: [0, 0], inputs: [], outputs: [] }
+          ],
+          links: []
+        },
+        catalog
+      )
+    )
+    const updateB = Y.encodeStateAsUpdate(
+      mint(
+        {
+          nodes: [
+            { id: 202, type: 'Sink', pos: [100, 0], inputs: [], outputs: [] }
+          ],
+          links: []
+        },
+        catalog
+      )
+    )
+    const frameA: DocUpdate = {
+      workflowId: 'wf-a',
+      seq: 1,
+      update: updateA,
+      actor: 'agent:test',
+      opIds: ['a']
+    }
+    const frameB: DocUpdate = {
+      workflowId: 'wf-b',
+      seq: 1,
+      update: updateB,
+      actor: 'agent:test',
+      opIds: ['b']
+    }
+    const events: string[] = []
+    const createTargetMutations = (workflowId: string): GraphMutations => {
+      const noopBatch = {
+        addNode: () => undefined,
+        reconcileNode: () => undefined,
+        setWidget: () => undefined,
+        connect: () => undefined,
+        removeLinks: () => undefined,
+        deleteNode: () => undefined,
+        clearSemanticGraph: () => undefined
+      }
+      return {
+        batch: (_context, define) => {
+          events.push(`${workflowId}:start`)
+          define(noopBatch)
+          if (workflowId === 'wf-a') adapter.applyFrame(frameB)
+          events.push(`${workflowId}:end`)
+          return true
+        },
+        addNode: () => true,
+        setWidget: () => true,
+        connect: () => true,
+        deleteNode: () => true,
+        clearSemanticGraph: () => true
+      }
+    }
+    const adapter = new EcsFollowerAdapter(createTargetMutations)
+    adapter.bind('wf-a', followerA)
+    adapter.bind('wf-b', followerB)
+    followerA.applyRemoteUpdate(updateA)
+    followerB.applyRemoteUpdate(updateB)
+
+    expect(adapter.applyFrame(frameA)).toBe(true)
+    expect(events).toEqual(['wf-a:start', 'wf-b:start', 'wf-b:end', 'wf-a:end'])
+    expect(followerA.doc.getMap('nodes').has('101')).toBe(true)
+    expect(followerA.doc.getMap('nodes').has('202')).toBe(false)
+    expect(followerB.doc.getMap('nodes').has('202')).toBe(true)
+    expect(followerB.doc.getMap('nodes').has('101')).toBe(false)
+
+    adapter.destroy()
+    followerA.destroy()
+    followerB.destroy()
   })
 })

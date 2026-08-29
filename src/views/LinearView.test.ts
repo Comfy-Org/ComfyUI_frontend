@@ -107,7 +107,6 @@ const baseStubs = {
   TopbarBadges: leafStub('topbar-badges'),
   TopbarSubscribeButton: leafStub('topbar-subscribe-button'),
   WorkflowTabs: leafStub('workflow-tabs'),
-  DockedAgentPanel: leafStub('docked-agent-panel'),
   LinearControls: leafStub('linear-controls'),
   LinearPreview: leafStub('linear-preview'),
   LinearProgressBar: leafStub('linear-progress-bar')

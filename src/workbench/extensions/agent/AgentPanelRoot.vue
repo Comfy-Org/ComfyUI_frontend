@@ -396,7 +396,7 @@ function surfaceAgentError(type: 'agent_api_failed', details: string): void {
     type,
     message: t(`errorCatalog.promptErrors.${type}.desc`),
     details
-  }
+  })
   executionErrorStore.showErrorOverlay()
 }
 

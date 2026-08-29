@@ -23,6 +23,7 @@ const bridgeState = vi.hoisted(() => {
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
+    subscribedWorkflowId: string | null = 'wf-1'
     follower = {
       updatesApplied: 0,
       doc: {
@@ -39,6 +40,7 @@ const clientState = vi.hoisted(() => ({
 
 const adapterState = vi.hoisted(() => ({
   bind: vi.fn(),
+  unbind: vi.fn(),
   applyFrame: vi.fn(),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
@@ -81,6 +83,7 @@ vi.mock('./docFrameClient', () => ({
 vi.mock('./ecsFollowerAdapter', () => ({
   EcsFollowerAdapter: class {
     bind = adapterState.bind
+    unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
@@ -255,8 +258,12 @@ describe('useAgentCrdtFollower', () => {
     const { unmount } = mountFollower('wf-1')
     expect(adapterState.bind).toHaveBeenCalledTimes(1)
 
-    dispatchFrame('doc_reset', { actor: 'agent:turn', seq: 43 })
-    expect(adapterState.clearForReset).toHaveBeenCalledWith({
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      actor: 'agent:turn',
+      seq: 43
+    })
+    expect(adapterState.clearForReset).toHaveBeenCalledWith('wf-1', {
       source: 'agent-remote',
       actor: 'agent:turn',
       opId: 'doc-reset:43'
@@ -264,7 +271,10 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('follower_replaced', { seq: 43 })
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
-    expect(adapterState.bind).toHaveBeenLastCalledWith(bridge().follower)
+    expect(adapterState.bind).toHaveBeenLastCalledWith(
+      'wf-1',
+      bridge().follower
+    )
     unmount()
   })
 
@@ -281,11 +291,11 @@ describe('useAgentCrdtFollower', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
 
-    dispatchFrame('schema_error', { code: 'unreadable' })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
 
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
-    expect(adapterState.discardPending).toHaveBeenCalled()
+    expect(adapterState.discardPending).toHaveBeenCalledWith('wf-1')
     unmount()
   })
 

@@ -284,13 +284,17 @@ describe('Composer', () => {
         hash: 'sunset-hash.png',
         tags: ['input'],
         display_name: 'Sunset.png',
-        thumbnail_url: '/api/assets/asset-1/thumbnail'
+        thumbnail_url: '/api/assets/asset-1/thumbnail',
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z'
       },
       {
         id: 'asset-2',
         name: 'forest.png',
         tags: ['input'],
-        user_metadata: { name: 'Forest reference' }
+        user_metadata: { name: 'Forest reference' },
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z'
       }
     ]
 
@@ -556,7 +560,9 @@ describe('Composer', () => {
       selectionTags: [{ id: '5', title: 'KSampler' }]
     })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
+    )
 
     expect(emitted().removeTag).toEqual([['5']])
   })
@@ -564,7 +570,9 @@ describe('Composer', () => {
   it('shows the remove tooltip for a selection chip', async () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    await userEvent.hover(screen.getByRole('button', { name: 'Remove' }))
+    await userEvent.hover(
+      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
+    )
 
     expect(
       await screen.findByRole('tooltip', { hidden: true })

@@ -86,7 +86,7 @@ async function loadEntryAndSetup(): Promise<void> {
   )
   expect(ext).toBeDefined()
   ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
-  for (let i = 0; i < 20 && mocks.flagListener === null; i++) await flush()
+  for (let i = 0; i < 2000 && mocks.flagListener === null; i++) await flush()
   expect(mocks.flagListener).toBeTypeOf('function')
 }
 

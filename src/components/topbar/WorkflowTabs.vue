@@ -84,7 +84,6 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
-      :data-agent-gate-settled="agentPanelStore?.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
@@ -141,7 +140,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import ScrollPanel from 'primevue/scrollpanel'
@@ -162,7 +160,6 @@ import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -174,6 +171,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
@@ -195,6 +193,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
+const tabActivity = useWorkflowTabActivityStore()
 const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
   storeToRefs(agentPanelStore)
 
@@ -205,10 +204,6 @@ function onAgentEntryClick(): void {
   agentPanelStore.toggle()
 }
 const { isLoggedIn } = useCurrentUser()
-// The literal keeps the agent store out of OSS builds entirely.
-const agentPanelStore =
-  __DISTRIBUTION__ === 'cloud' ? useAgentPanelStore() : null
-
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
 
