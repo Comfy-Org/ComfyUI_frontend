@@ -236,6 +236,55 @@ describe('parseComfyWorkflow', () => {
     await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
   })
 
+  it('validates 0.4 link presentation without a reroute', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.extra = {
+      ...workflow.extra,
+      linkPresentation: {
+        '1': { hidden: true, label: 'Preview' }
+      }
+    }
+
+    const validated = await validateComfyWorkflow(workflow)
+
+    expect(validated?.extra?.linkPresentation).toEqual({
+      '1': { hidden: true, label: 'Preview' }
+    })
+  })
+
+  it('validates visibility fields on schema 1 link objects', async () => {
+    const workflow = {
+      version: 1,
+      state: {
+        lastGroupId: 0,
+        lastNodeId: 2,
+        lastLinkId: 1,
+        lastRerouteId: 0
+      },
+      nodes: [],
+      groups: [],
+      links: [
+        {
+          id: 1,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'MODEL',
+          hidden: true,
+          label: 'Preview'
+        }
+      ]
+    }
+
+    const validated = await validateComfyWorkflow(workflow)
+
+    expect(validated?.links?.[0]).toMatchObject({
+      hidden: true,
+      label: 'Preview'
+    })
+  })
+
   describe('workflow.nodes.properties.aux_id', () => {
     const validAuxIds = [
       'valid/valid',

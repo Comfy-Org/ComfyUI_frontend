@@ -5,6 +5,8 @@ import {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import type { LinkPresentation } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -227,6 +229,47 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   /** @inheritdoc */
   _dragging?: boolean
 
+  /**
+   * Presentation (endpoint-badge visibility and custom label) is store-backed
+   * once the link is registered; a detached link buffers writes here until
+   * adoption, and unregistration stashes the store entry back so presentation
+   * follows the link across ownership transfers.
+   */
+  _pendingPresentation?: LinkPresentation
+
+  get hidden(): boolean {
+    return this.presentation?.hidden ?? false
+  }
+
+  set hidden(value: boolean | undefined) {
+    this.writePresentation({ hidden: value || undefined })
+  }
+
+  get label(): string | undefined {
+    return this.presentation?.label
+  }
+
+  set label(value: string | undefined) {
+    this.writePresentation({ label: value || undefined })
+  }
+
+  private get presentation(): Readonly<LinkPresentation> | undefined {
+    const scope = this._graphScope
+    if (!scope) return this._pendingPresentation
+    return useLinkPresentationStore().getPresentation(scope, this.id)
+  }
+
+  private writePresentation(partial: LinkPresentation): void {
+    const scope = this._graphScope
+    if (scope) {
+      useLinkPresentationStore().patch(scope, this.id, partial)
+      return
+    }
+    const pending = { ...this._pendingPresentation, ...partial }
+    this._pendingPresentation =
+      !pending.hidden && pending.label === undefined ? undefined : pending
+  }
+
   private _color?: CanvasColour | null
   /** Custom colour for this link only */
   public get color(): CanvasColour | null | undefined {
@@ -301,7 +344,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @returns A new LLink
    */
   static create(data: SerialisableLLink): LLink {
-    return new LLink(
+    const link = new LLink(
       toLinkId(data.id),
       data.type,
       data.origin_id,
@@ -310,6 +353,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       data.target_slot,
       data.parentId === undefined ? undefined : toRerouteId(data.parentId)
     )
+    link.hidden = data.hidden
+    link.label = data.label
+    return link
   }
 
   /**
@@ -465,7 +511,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     }
   }
 
-  configure(o: LLink | SerialisedLLinkArray) {
+  configure(o: LLink | SerialisableLLink | SerialisedLLinkArray): void {
     if (Array.isArray(o)) {
       this.id = toLinkId(o[0])
       this.origin_id = toNodeId(o[1])
@@ -473,14 +519,20 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       this.target_id = toNodeId(o[3])
       this.target_slot = o[4]
       this.type = o[5]
+      this.hidden = undefined
+      this.label = undefined
     } else {
-      this.id = o.id
-      this.type = o.type
-      this.origin_id = o.origin_id
-      this.origin_slot = o.origin_slot
-      this.target_id = o.target_id
-      this.target_slot = o.target_slot
-      this.parentId = o.parentId
+      const link = o instanceof LLink ? o : LLink.create(o)
+      this.id = link.id
+      this.type = link.type
+      this.origin_id = link.origin_id
+      this.origin_slot = link.origin_slot
+      this.target_id = link.target_id
+      this.target_slot = link.target_slot
+      this.parentId =
+        link.parentId === undefined ? undefined : toRerouteId(link.parentId)
+      this.hidden = link.hidden
+      this.label = link.label
     }
   }
 
@@ -605,6 +657,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       type: this.type
     }
     if (this.parentId !== undefined) copy.parentId = this.parentId
+    if (this.hidden) copy.hidden = true
+    if (this.label !== undefined) copy.label = this.label
     return copy
   }
 }
@@ -673,6 +727,13 @@ export function replaceLinkTopology(
   )
   if (!registered) return false
   if (incumbent) {
+    if (incumbent._graphScope) {
+      const stashed = useLinkPresentationStore().take(
+        incumbent._graphScope,
+        incumbent.id
+      )
+      if (stashed) incumbent._pendingPresentation = stashed
+    }
     linkByTopology.delete(toRaw(incumbent._state))
     incumbent._graphScope = undefined
   }
@@ -688,6 +749,26 @@ function adoptLinkTopology(
   link._state = registered
   link._graphScope = scope
   linkByTopology.set(toRaw(registered), link)
+  const pending = link._pendingPresentation
+  if (pending) {
+    link._pendingPresentation = undefined
+    useLinkPresentationStore().patch(scope, link.id, pending)
+  }
+}
+
+/**
+ * Copies presentation from a source (a serialized link, a disconnected link
+ * holding its stashed presentation, or a plain record) onto a newly created
+ * link. Used by every flow that recreates links instead of transferring them:
+ * paste, endpoint reconnect, subgraph pack/unpack boundaries.
+ */
+export function transferLinkPresentation(
+  source: LinkPresentation,
+  target: LLink | null | undefined
+): void {
+  if (!target) return
+  if (source.hidden) target.hidden = true
+  if (source.label !== undefined) target.label = source.label
 }
 
 /**
@@ -698,9 +779,11 @@ function adoptLinkTopology(
  */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
+  const stashed = useLinkPresentationStore().take(link._graphScope, link.id)
   useLinkStore().deleteLink(link._graphScope, link._state)
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
+  if (stashed) link._pendingPresentation = stashed
 }
 
 /**

@@ -10,13 +10,16 @@ import type {
   CanvasPointerEvent,
   ISerialisedGraph,
   LGraph,
-  LGraphCanvas,
   LGraphGroup,
   LinkNetwork,
-  LLink,
   SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -44,6 +47,30 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
     type: 'TestNode',
     ...overrides,
     properties: overrides.properties ?? {}
+  }
+}
+
+export class StubPath2D {
+  calls: Array<{ method: string; args: unknown[] }> = []
+
+  moveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'moveTo', args })
+  }
+
+  lineTo(...args: unknown[]): void {
+    this.calls.push({ method: 'lineTo', args })
+  }
+
+  bezierCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'bezierCurveTo', args })
+  }
+
+  quadraticCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'quadraticCurveTo', args })
+  }
+
+  arc(...args: unknown[]): void {
+    this.calls.push({ method: 'arc', args })
   }
 }
 
@@ -411,4 +438,46 @@ export function reloadSerializedGraph(
   usePreviewExposureStore().clearGraph(payload.id)
   reloaded.configure(payload)
   return reloaded
+}
+
+/**
+ * Creates a link between two nodes by directly mutating graph state,
+ * bypassing the layout store integration in connect().
+ */
+export function createTestLink(
+  graph: LGraph,
+  sourceNode: LGraphNode,
+  outputSlot: number,
+  targetNode: LGraphNode,
+  inputSlot: number
+): LLink {
+  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+  graph.state.lastLinkId = linkId
+  const link = new LLink(
+    linkId,
+    sourceNode.outputs[outputSlot].type,
+    sourceNode.id,
+    outputSlot,
+    targetNode.id,
+    inputSlot
+  )
+  graph._addLink(link)
+  return link
+}
+
+export function createTestCanvas(
+  graph: LGraph,
+  ctx: CanvasRenderingContext2D
+): LGraphCanvas {
+  const element = document.createElement('canvas')
+  element.width = 800
+  element.height = 600
+  element.getContext = vi.fn().mockReturnValue(ctx)
+  element.getBoundingClientRect = vi.fn().mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 800,
+    height: 600
+  })
+  return new LGraphCanvas(element, graph, { skip_render: true })
 }
