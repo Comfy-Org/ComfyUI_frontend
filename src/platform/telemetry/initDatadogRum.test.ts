@@ -23,10 +23,7 @@ vi.mock('./manualRefreshTracker', () => ({
 }))
 
 import { rumBeforeSend } from './datadogRumBeforeSend'
-import {
-  initDatadogRum,
-  reportAssertionFailureToDatadog
-} from './initDatadogRum'
+import { initDatadogRum } from './initDatadogRum'
 import { trackUserManualRefresh } from './manualRefreshTracker'
 
 describe('initDatadogRum', () => {
@@ -251,27 +248,5 @@ describe('initDatadogRum', () => {
     await initDatadogRum('cloud.comfy.org')
 
     expect(vi.mocked(trackUserManualRefresh)).toHaveBeenCalledOnce()
-  })
-})
-
-describe('reportAssertionFailureToDatadog', () => {
-  it('does nothing when RUM has not been initialized', () => {
-    hoisted.getInitConfiguration.mockReturnValue(undefined)
-
-    reportAssertionFailureToDatadog('[Assertion failed]: whatever')
-
-    expect(hoisted.addError).not.toHaveBeenCalled()
-  })
-
-  it('reports the failure as a RUM error when RUM is initialized', () => {
-    hoisted.getInitConfiguration.mockReturnValue({})
-
-    reportAssertionFailureToDatadog('[Assertion failed]: invariant broke')
-
-    expect(hoisted.addError).toHaveBeenCalledOnce()
-    const [error, context] = hoisted.addError.mock.calls[0]
-    expect(error).toBeInstanceOf(Error)
-    expect((error as Error).message).toBe('[Assertion failed]: invariant broke')
-    expect(context).toEqual({ source: 'assert' })
   })
 })

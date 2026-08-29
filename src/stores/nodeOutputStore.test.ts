@@ -230,6 +230,32 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   })
 })
 
+describe('nodeOutputStore legacy entry synchronization', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+  })
+
+  it('updates one mapped output without replacing unrelated records', () => {
+    const store = useNodeOutputStore()
+    const untouched = createMockOutputs([{ filename: 'untouched.png' }])
+    store.replaceOutputsFromLegacy({ untouched })
+    const untouchedRecord = store.nodeOutputs.untouched
+
+    store.setOutputFromLegacy(
+      'changed',
+      createMockOutputs([{ filename: 'changed.png' }])
+    )
+
+    expect(store.nodeOutputs.untouched).toBe(untouchedRecord)
+    expect(store.nodeOutputs.changed?.images?.[0]?.filename).toBe('changed.png')
+
+    store.removeOutputFromLegacy('changed')
+
+    expect(store.nodeOutputs.changed).toBeUndefined()
+    expect(store.nodeOutputs.untouched).toBe(untouchedRecord)
+  })
+})
+
 describe('nodeOutputStore restoreOutputs', () => {
   beforeEach(() => {
     app.nodeOutputs = {}

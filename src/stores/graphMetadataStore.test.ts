@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
@@ -42,5 +43,18 @@ describe(useGraphMetadataStore, () => {
     const subgraphId = '00000000-0000-4000-8000-000000000003' as UUID
 
     expect(store.get(first, subgraphId)).not.toBe(store.get(second, subgraphId))
+  })
+
+  it('reacts to in-place map mutations', () => {
+    const store = useGraphMetadataStore()
+    const subgraphId = '00000000-0000-4000-8000-000000000003' as UUID
+    store.get(first)
+    const hasSubgraph = computed(() => store.has(first, subgraphId))
+
+    expect(hasSubgraph.value).toBe(false)
+    store.get(first, subgraphId)
+    expect(hasSubgraph.value).toBe(true)
+    store.clear(first, subgraphId)
+    expect(hasSubgraph.value).toBe(false)
   })
 })

@@ -5,8 +5,6 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -250,21 +248,43 @@ export interface QueuePromptOptions {
 
 function createNodeOutputsMutationView(
   outputs: Record<string, NodeExecutionOutput>,
-  commit: () => void
+  commit: (id: string, output: NodeExecutionOutput | undefined) => void
 ): Record<string, NodeExecutionOutput> {
-  const views = new WeakMap<object, object>()
-  const mapNestedValue = (_property: PropertyKey, value: unknown): unknown => {
+  const views = new WeakMap<object, Map<string, object>>()
+  const wrapNestedValue = (id: string, value: unknown): unknown => {
     if (value === null || typeof value !== 'object') return value
-    const existing = views.get(value)
+    const existing = views.get(value)?.get(id)
     if (existing) return existing
     const view = createMutationView(value, {
-      commit,
-      mapValue: mapNestedValue
+      commit: () => commit(id, outputs[id]),
+      mapValue: (_property, nestedValue) => wrapNestedValue(id, nestedValue)
     })
-    views.set(value, view)
+    const viewsById = views.get(value) ?? new Map<string, object>()
+    viewsById.set(id, view)
+    views.set(value, viewsById)
     return view
   }
-  return createMutationView(outputs, { commit, mapValue: mapNestedValue })
+  return new Proxy(outputs, {
+    get(target, property) {
+      const value = Reflect.get(target, property, target)
+      if (typeof value === 'function') return value.bind(target)
+      return wrapNestedValue(String(property), value)
+    },
+    set(target, property, value) {
+      const previous = Reflect.get(target, property, target)
+      const updated = Reflect.set(target, property, value, target)
+      if (updated && previous !== value) {
+        commit(String(property), value as NodeExecutionOutput)
+      }
+      return updated
+    },
+    deleteProperty(target, property) {
+      const existed = Reflect.has(target, property)
+      const deleted = Reflect.deleteProperty(target, property)
+      if (deleted && existed) commit(String(property), undefined)
+      return deleted
+    }
+  })
 }
 
 export class ComfyApp {
@@ -301,9 +321,11 @@ export class ComfyApp {
   private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
   private readonly _nodeOutputs = createNodeOutputsMutationView(
     this.nodeOutputsData,
-    () => {
-      if (this.vueAppReady)
-        useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
+    (id, output) => {
+      if (!this.vueAppReady) return
+      const store = useNodeOutputStore()
+      if (output === undefined) store.removeOutputFromLegacy(id)
+      else store.setOutputFromLegacy(id, output)
     }
   )
   nodePreviewImages: Record<string, string[]>
@@ -914,29 +936,15 @@ export class ComfyApp {
   private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
-      // Set pending sync flag to suppress link rendering until slots are synced
-      if (LiteGraph.vueNodesMode) {
-        layoutStore.setPendingSlotSync(true)
-      }
+      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
+      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      try {
-        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
+      const r = onConfigure?.apply(this, args)
 
-        const r = onConfigure?.apply(this, args)
+      // Fire after onConfigure, used by primitives to generate widget using input nodes config
+      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 
-        // Fire after onConfigure, used by primitives to generate widget using input nodes config
-        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
-
-        return r
-      } finally {
-        // Flush pending slot layout syncs to fix link alignment after undo/redo
-        // Using finally ensures links aren't permanently suppressed if an error occurs
-        if (LiteGraph.vueNodesMode) {
-          flushScheduledSlotLayoutSync()
-          app.canvas?.setDirty(true, true)
-        }
-      }
+      return r
     }
   }
 
@@ -1742,9 +1750,7 @@ export class ComfyApp {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
-            applyPromotedWidgetControl(node, 'beforeQueued', {
-              isPartialExecution
-            })
+            applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
           // Capture workflow before await — activeWorkflow may change if the
@@ -1948,9 +1954,7 @@ export class ComfyApp {
             isPartialExecution
           })
           for (const node of queuedNodes) {
-            applyPromotedWidgetControl(node, 'afterQueued', {
-              isPartialExecution
-            })
+            applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)

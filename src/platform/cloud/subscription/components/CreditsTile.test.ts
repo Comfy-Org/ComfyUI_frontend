@@ -353,8 +353,11 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('shows disabled credit details for an inactive plan', () => {
+  it('shows disabled credit details for an inactive plan even while top-up reads open', () => {
     activeProSubscription()
+    // canTopUp fails open for owners on an unreadable snapshot, so a lapsed
+    // self-serve plan must keep this state on tier alone.
+    state.canTopUp = true
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
@@ -363,6 +366,52 @@ describe('CreditsTile', () => {
       'Reactivate your plan to use these credits'
     )
     expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('keeps Add credits and the real balance on an inactive sales-managed plan', () => {
+    activeProSubscription()
+    // A sales-managed plan has no self-serve reactivation to sell, so the
+    // reactivate-to-use-credits treatment must not apply.
+    state.canTopUp = true
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).not.toContain(
+      'Reactivate your plan to use these credits'
+    )
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+  })
+
+  it('does not borrow a catalog monthly pool for an Enterprise plan', () => {
+    activeProSubscription()
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
+  })
+
+  it('does not borrow a catalog monthly pool for an unrecognized tier', () => {
+    activeProSubscription()
+    const galactic = 'GALACTIC' as unknown as SubscriptionInfo['tier']
+    state.tier = galactic
+    state.subscription = {
+      tier: galactic,
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
   })
 
   it('keeps top-up available without an active subscription', () => {

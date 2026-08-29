@@ -23,6 +23,7 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
@@ -48,17 +49,9 @@ const { refreshRemoteConfig } =
   await import('@/platform/remoteConfig/refreshRemoteConfig')
 await refreshRemoteConfig({ useAuth: false })
 
-// Only assigned in cloud builds - see `setAssertReporter` below. Left
-// dynamically imported (rather than a static top-level import) so the
-// `@datadog/browser-rum` dependency it pulls in is tree-shaken out of
-// OSS/desktop bundles, matching the rest of `@/platform/telemetry`.
-let reportAssertionFailureToDatadog: ((message: string) => void) | undefined
-
 if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
-  ;({ reportAssertionFailureToDatadog } =
-    await import('@/platform/telemetry/initDatadogRum'))
 }
 
 if (hasHostTelemetryBridge) {
@@ -124,7 +117,9 @@ setAssertReporter((message) => {
   if (isDesktop) {
     captureMessage(message, { level: 'warning' })
   }
-  reportAssertionFailureToDatadog?.(message)
+  if (isCloud) {
+    reportAssertFailure(message)
+  }
   if (isNightly) {
     useToastStore(pinia).add({
       severity: 'warn',
