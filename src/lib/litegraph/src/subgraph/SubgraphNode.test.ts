@@ -249,6 +249,46 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
+  it('does not rebuild promoted widget bindings when added to a graph', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const rebuild = vi.spyOn(subgraphNode, 'rebuildInputWidgetBindings')
+
+    subgraph.rootGraph.add(subgraphNode)
+
+    expect(rebuild).not.toHaveBeenCalled()
+  })
+
+  it('preserves a promoted widget when re-resolution fails', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    const link = subgraph.inputNode.slots[0].connect(input, interiorNode)
+    if (!link) throw new Error('Missing promoted widget link')
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const previousWidget = promotedInput._widget
+    const previousWidgetId = promotedInput.widgetId
+    if (!previousWidgetId) throw new Error('Missing widgetId')
+    useWidgetValueStore().setValue(previousWidgetId, 'edited')
+
+    subgraph.links.delete(link.id)
+    subgraphNode.rebuildInputWidgetBindings()
+
+    expect(promotedInput.widgetId).toBe(previousWidgetId)
+    expect(promotedInput._widget).toBe(previousWidget)
+    expect(useWidgetValueStore().getWidget(previousWidgetId)?.value).toBe(
+      'edited'
+    )
+  })
+
   it('declines promotion when an empty widget name cannot be registered', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
