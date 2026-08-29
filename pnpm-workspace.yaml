@@ -13,41 +13,41 @@ publicHoistPattern:
 catalog:
   '@alloc/quick-lru': ^5.2.0
   '@astrojs/check': ^0.9.10
-  '@astrojs/mdx': ^7.0.5
+  '@astrojs/mdx': ^7.0.8
   '@astrojs/sitemap': ^3.7.3
   '@astrojs/vue': ^7.0.2
   '@comfyorg/comfyui-desktop-bridge-types': 0.2.0
-  '@comfyorg/comfyui-electron-types': 0.6.2
-  '@customerio/cdp-analytics-browser': ^0.5.3
+  '@comfyorg/comfyui-electron-types': 0.7.0
+  '@customerio/cdp-analytics-browser': ^0.5.9
   '@datadog/browser-rum': ^6.33.0
   '@eslint/js': ^10.0.1
   '@floating-ui/vue': ^1.1.11
-  '@formkit/auto-animate': ^0.9.0
-  '@iconify-json/lucide': ^1.1.178
-  '@iconify/json': ^2.2.380
+  '@formkit/auto-animate': ^0.10.0
+  '@iconify-json/lucide': ^1.2.126
+  '@iconify/json': ^2.2.520
   '@iconify/tailwind4': ^1.2.3
-  '@iconify/tools': ^5.0.3
+  '@iconify/tools': ^5.0.14
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.5.1
-  '@lucide/vue': ^1.17.0
+  '@lucide/vue': ^1.34.0
   '@pinia/testing': ^2.0.1
-  '@playwright/test': ^1.61.1
-  '@primeuix/utils': ^0.3.2
+  '@playwright/test': ^1.62.1
+  '@primeuix/utils': ^0.8.1
   '@primevue/core': 4.2.5
   '@primevue/forms': 4.2.5
-  '@primevue/themes': 4.2.5
+  '@primevue/themes': 4.5.4
   '@sentry/vite-plugin': ^4.6.0
-  '@sentry/vue': ^10.32.1
+  '@sentry/vue': ^10.71.0
   '@sparkjsdev/spark': ^2.1.0
   '@storybook/addon-docs': ^10.5.6
   '@storybook/addon-mcp': 0.7.0
   '@storybook/vue3': ^10.5.6
   '@storybook/vue3-vite': ^10.5.6
-  '@stripe/stripe-js': ^9.12.0
-  '@tailwindcss/vite': ^4.3.2
-  '@tanstack/vue-virtual': ^3.13.12
+  '@stripe/stripe-js': ^9.14.0
+  '@tailwindcss/vite': ^4.3.3
+  '@tanstack/vue-virtual': ^3.13.36
   '@testing-library/jest-dom': ^6.9.1
-  '@testing-library/user-event': ^14.6.1
+  '@testing-library/user-event': ^14.6.6
   '@testing-library/vue': ^8.1.0
   '@tiptap/core': ^2.27.2
   '@tiptap/extension-link': ^2.27.2
@@ -70,15 +70,15 @@ catalog:
   '@vitest/ui': ^4.1.10
   '@vueuse/core': ^14.4.0
   '@vueuse/integrations': ^14.4.0
-  '@webgpu/types': ^0.1.66
+  '@webgpu/types': ^0.1.72
   ag-psd: ^31.0.2
-  algoliasearch: ^5.21.0
-  astro: ^7.2.1
-  axios: ^1.15.2
+  algoliasearch: ^5.57.0
+  astro: ^7.2.7
+  axios: ^1.20.0
   class-variance-authority: ^0.7.1
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
-  dompurify: 3.4.13
+  dompurify: 3.4.14
   dotenv: ^16.4.5
   eslint: ^10.8.1
   eslint-config-prettier: ^10.1.8
@@ -100,43 +100,43 @@ catalog:
   happy-dom: 20.9.0
   husky: ^9.1.7
   jsdom: ^29.1.1
-  jsonata: ^2.1.0
+  jsonata: ^2.2.2
   jsonc-parser: 3.3.1
-  knip: ^6.27.0
-  lenis: ^1.3.21
+  knip: ^6.32.3
+  lenis: ^1.3.26
   lint-staged: ^16.2.7
   lottie-web: ^5.13.0
   markdown-table: ^3.0.4
-  mediabunny: ^1.53.1
+  mediabunny: ^1.55.3
   minisearch: ^7.2.0
-  mixpanel-browser: ^2.71.0
-  monocart-coverage-reports: ^2.12.9
-  openai: ^7.4.0
-  oxfmt: ^0.59.0
-  oxlint: ^1.77.0
+  mixpanel-browser: ^2.82.1
+  monocart-coverage-reports: ^2.13.0
+  openai: ^7.5.0
+  oxfmt: ^0.65.0
+  oxlint: ^1.80.0
   oxlint-tsgolint: ^7.0.2001
   picocolors: ^1.1.1
-  pinia: ^4.0.2
+  pinia: ^4.0.3
   postcss-html: ^1.8.0
-  posthog-js: ^1.358.1
+  posthog-js: ^1.421.0
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: 4.2.5
-  reka-ui: 2.6.2
+  reka-ui: 2.10.4
   rollup-plugin-visualizer: ^6.0.4
   start-server-and-test: ^3.0.11
   storybook: ^10.5.6
-  stylelint: ^17.14.0
-  tailwindcss: ^4.3.2
+  stylelint: ^17.14.1
+  tailwindcss: ^4.3.3
   tailwindcss-primeui: ^0.6.1
-  three: ^0.184.0
-  tsx: ^4.15.6
+  three: ^0.185.1
+  tsx: ^4.23.12
   tw-animate-css: ^1.3.8
-  typegpu: ^0.8.2
+  typegpu: ^0.12.3
   typescript: ^6.0.3
   typescript-eslint: ^8.67.0
   unplugin-icons: ^23.0.1
-  unplugin-typegpu: 0.8.0
+  unplugin-typegpu: 0.12.2
   unplugin-vue-components: ^32.1.0
   uuid: ^11.1.1
   vee-validate: ^4.15.1
@@ -153,7 +153,7 @@ catalog:
   vue-tsc: ^3.3.9
   vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
-  yjs: ^13.6.27
+  yjs: ^13.6.32
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
