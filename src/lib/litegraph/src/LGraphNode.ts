@@ -1177,6 +1177,7 @@ export class LGraphNode
         if (restored) widget.value = restored.value
       }
     }
+    useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
 
     // Sync the state of this.resizable.
     if (this.pinned) this.resizable = false
@@ -2257,19 +2258,6 @@ export class LGraphNode
     if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
-
-    if (widget.serialize === false) return widget
-
-    const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
-    const restored = useWidgetValueStore().getRestoredWidgetValue(
-      this.graph?.rootGraph.id ?? zeroUuid,
-      this.id,
-      widget.name,
-      positionalIndex
-    )
-    if (restored) widget.value = restored.value
 
     return widget
   }
@@ -3372,12 +3360,14 @@ export class LGraphNode
         ? graph.getNodeById(target_node)
         : target_node
     if (target_node && !onlyTarget) throw 'Target Node not found'
-    if (output instanceof NodeOutputSlot) {
-      output._setLegacyLinksPresent(Boolean(onlyTarget))
-    }
-
+    let disconnected = false
     for (const link_info of outputLinks(graph, this.id, slot)) {
       if (onlyTarget && link_info.target_id != onlyTarget.id) continue
+
+      if (!disconnected && output instanceof NodeOutputSlot) {
+        output._setLegacyLinksPresent(Boolean(onlyTarget))
+      }
+      disconnected = true
 
       if (
         link_info.target_id === SUBGRAPH_OUTPUT_ID &&
@@ -3416,6 +3406,8 @@ export class LGraphNode
 
       if (onlyTarget) break
     }
+
+    if (!disconnected) return false
 
     this.setDirtyCanvas(false, true)
     return true

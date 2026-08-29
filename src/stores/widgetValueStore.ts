@@ -68,6 +68,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       : undefined
   }
 
+  function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
+    const restorations = graphWidgetRestorations.get(graphId)
+    if (!restorations) return
+    restorations.delete(nodeId)
+    if (restorations.size === 0) graphWidgetRestorations.delete(graphId)
+  }
+
   function getPositionalRestoredWidgetValue(
     graphId: UUID,
     nodeId: NodeId,
@@ -411,6 +418,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   return {
     registerWidget,
     setNodeWidgetRestoration,
+    clearNodeWidgetRestoration,
     getRestoredWidgetValue,
     getPositionalRestoredWidgetValue,
     getWidget,

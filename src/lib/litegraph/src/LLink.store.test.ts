@@ -533,6 +533,35 @@ describe('LLink ↔ linkStore integration', () => {
     expect(first.target_slot).toBe(0)
   })
 
+  it('applies split endpoint writes atomically once they form a valid target', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    const firstTarget = new LGraphNode('First target')
+    const secondTarget = new LGraphNode('Second target')
+    source.addOutput('out', 'INT')
+    firstTarget.addInput('in', 'INT')
+    secondTarget.addInput('occupied', 'INT')
+    secondTarget.addInput('destination', 'INT')
+    graph.add(source)
+    graph.add(firstTarget)
+    graph.add(secondTarget)
+    const moving = source.connect(0, firstTarget, 0)!
+    const blocker = new LGraphNode('Blocker')
+    blocker.addOutput('out', 'INT')
+    graph.add(blocker)
+    blocker.connect(0, secondTarget, 0)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    moving.target_id = secondTarget.id
+    expect(moving.target_id).toBe(firstTarget.id)
+    moving.target_slot = 1
+
+    expect(moving.target_id).toBe(secondTarget.id)
+    expect(moving.target_slot).toBe(1)
+    expect(firstTarget.inputs[0].link).toBeNull()
+    expect(secondTarget.inputs[1].link).toBe(moving.id)
+  })
+
   it('updates regular and floating views after endpoint changes', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')

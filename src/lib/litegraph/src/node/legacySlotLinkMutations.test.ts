@@ -37,20 +37,20 @@ function fanOut(count: number) {
   return { graph, source, targets }
 }
 
-describe('legacy slot link removal', () => {
+describe('legacy slot link compatibility', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('propagates input.link = null to the far end of the link', () => {
-    const { source, target } = connectedPair()
+  it('treats input.link = null as a read-only compatibility write', () => {
+    const { source, target, link } = connectedPair()
 
     target.inputs[0].link = null
 
-    expect(target.isInputConnected(0)).toBe(false)
-    expect(source.isOutputConnected(0)).toBe(false)
-    expect(source.outputs[0].links).toBeNull()
-    expect(source.getOutputNodes(0) ?? []).toHaveLength(0)
+    expect(target.isInputConnected(0)).toBe(true)
+    expect(source.isOutputConnected(0)).toBe(true)
+    expect(source.outputs[0].links).toEqual([link.id])
+    expect(source.getOutputNodes(0)).toEqual([target])
   })
 
   it('disconnects the links a filter-and-reassign drops', () => {
@@ -116,8 +116,8 @@ describe('legacy slot link additions', () => {
     target.inputs[0].link = null
     target.inputs[0].link = saved
 
-    expect(target.inputs[0].link).toBeNull()
-    expect(source.isOutputConnected(0)).toBe(false)
+    expect(target.inputs[0].link).toBe(saved)
+    expect(source.isOutputConnected(0)).toBe(true)
   })
 
   it('ignores adding a disconnected id to an output view', () => {
@@ -133,13 +133,13 @@ describe('legacy slot link additions', () => {
     expect(output.links).toEqual([])
   })
 
-  it('disconnects through a plain-object input slot', () => {
+  it('does not let a plain-object input mirror mutate topology', () => {
     const { source, target } = connectedPair()
     target.inputs[0] = { ...target.inputs[0] }
 
     target.inputs[0].link = null
 
-    expect(source.isOutputConnected(0)).toBe(false)
+    expect(source.isOutputConnected(0)).toBe(true)
   })
 })
 

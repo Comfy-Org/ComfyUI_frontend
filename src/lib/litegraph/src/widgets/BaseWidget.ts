@@ -20,7 +20,7 @@ import type {
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
-import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 
 export interface DrawWidgetOptions {
@@ -45,6 +45,33 @@ export interface WidgetEventOptions {
   e: CanvasPointerEvent
   node: LGraphNode
   canvas: LGraphCanvas
+}
+
+const widgetStorageNames = new WeakMap<object, string>()
+
+function assignWidgetStorageNames(widgets: readonly IBaseWidget[]): void {
+  const reserved = new Set(widgets.map(({ name }) => name))
+  const used = new Set<string>()
+  const seen = new Set<IBaseWidget>()
+
+  for (const widget of widgets) {
+    if (seen.has(widget)) continue
+    seen.add(widget)
+    const assigned = widgetStorageNames.get(widget)
+    if (assigned) {
+      used.add(assigned)
+      continue
+    }
+
+    let storageName = widget.name
+    let index = 1
+    while (used.has(storageName)) {
+      do storageName = `${widget.name}#${index++}`
+      while (used.has(storageName) || reserved.has(storageName))
+    }
+    widgetStorageNames.set(widget, storageName)
+    used.add(storageName)
+  }
 }
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
@@ -96,13 +123,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       return
     }
 
+    const previousStorageName = widgetStorageNames.get(this) ?? previous
     const moved = useWidgetValueStore().renameWidget(
-      widgetId(graphId, nodeId, previous),
+      widgetId(graphId, nodeId, previousStorageName),
       widgetId(graphId, nodeId, value)
     )
     if (!moved) return
 
     this._name = value
+    widgetStorageNames.set(this, value)
     this._state = moved
   }
 
@@ -165,8 +194,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return undefined
-    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return undefined
-    return widgetId(graphId, nodeId, this.name)
+    assignWidgetStorageNames(this.node.widgets ?? [this])
+    return widgetId(graphId, nodeId, widgetStorageNames.get(this) ?? this.name)
   }
 
   /**
@@ -176,10 +205,11 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   setNodeId(nodeId: NodeId): void {
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
-    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
+    assignWidgetStorageNames(this.node.widgets ?? [this])
+    const storageName = widgetStorageNames.get(this) ?? this.name
 
     const registered = useWidgetValueStore().registerWidget(
-      widgetId(graphId, nodeId, this.name),
+      widgetId(graphId, nodeId, storageName),
       {
         disabled: this.disabled,
         label: this.label,

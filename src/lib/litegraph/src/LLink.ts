@@ -45,22 +45,31 @@ export type SerialisedLLinkArray = [
 ]
 
 const linkByTopology = new WeakMap<LinkTopology, LLink>()
+const pendingEndpointPatches = new WeakMap<LLink, EndpointPatch>()
+
+let topologyFacadeDescriptors: PropertyDescriptorMap | undefined
 
 export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
 }
 
 function defineEnumerableTopologyFacade(link: LLink): void {
-  const descriptors = Object.getOwnPropertyDescriptors(LLink.prototype)
-  Object.defineProperties(link, {
-    id: { ...descriptors.id, enumerable: true },
-    type: { ...descriptors.type, enumerable: true },
-    origin_id: { ...descriptors.origin_id, enumerable: true },
-    origin_slot: { ...descriptors.origin_slot, enumerable: true },
-    target_id: { ...descriptors.target_id, enumerable: true },
-    target_slot: { ...descriptors.target_slot, enumerable: true },
-    parentId: { ...descriptors.parentId, enumerable: true }
-  })
+  topologyFacadeDescriptors ??= Object.fromEntries(
+    [
+      'id',
+      'type',
+      'origin_id',
+      'origin_slot',
+      'target_id',
+      'target_slot',
+      'parentId'
+    ].map((key) => {
+      const descriptor = Object.getOwnPropertyDescriptor(LLink.prototype, key)
+      if (!descriptor) throw new Error(`Missing LLink descriptor: ${key}`)
+      return [key, { ...descriptor, enumerable: true }]
+    })
+  )
+  Object.defineProperties(link, topologyFacadeDescriptors)
 }
 
 // Resolved connection union; eliminates subgraph in/out as a possibility
@@ -120,13 +129,17 @@ type BasicReadonlyNetwork = Pick<
 /** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
 function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
   if (link._graphScope) {
+    const combinedPatch = { ...pendingEndpointPatches.get(link), ...patch }
     const result = useLinkStore().updateEndpoint(
       link._graphScope,
       link._state,
-      patch
+      combinedPatch
     )
     if (!result.ok) {
+      pendingEndpointPatches.set(link, combinedPatch)
       console.error('Failed to update link endpoints', result.error)
+    } else {
+      pendingEndpointPatches.delete(link)
     }
   } else {
     Object.assign(link._state, patch)
