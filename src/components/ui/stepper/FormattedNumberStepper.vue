@@ -26,7 +26,8 @@
         ref="inputRef"
         v-model="inputValue"
         type="text"
-        inputmode="numeric"
+        inputmode="decimal"
+        :aria-label="ariaLabel"
         :style="{ width: `${inputWidth}ch` }"
         class="min-w-0 rounded-sm border-none bg-transparent text-center text-lg font-medium text-base-foreground focus-visible:outline-none"
         :disabled="disabled"
@@ -34,6 +35,7 @@
         @blur="handleInputBlur"
         @focus="handleInputFocus"
       />
+      <span v-if="suffix">{{ suffix }}</span>
       <slot name="suffix" />
     </div>
     <button
@@ -58,12 +60,18 @@ const {
   max = Infinity,
   step = 1,
   formatOptions = { useGrouping: true },
+  suffix,
+  ariaLabel,
+  clampOnInput = true,
   disabled = false
 } = defineProps<{
   min?: number
   max?: number
   step?: number | ((value: number) => number)
   formatOptions?: Intl.NumberFormatOptions
+  suffix?: string
+  ariaLabel?: string
+  clampOnInput?: boolean
   disabled?: boolean
 }>()
 
@@ -92,8 +100,9 @@ function formatNumber(num: number): string {
 }
 
 function parseFormattedNumber(str: string): number {
-  const cleaned = str.replace(/[^0-9]/g, '')
-  return cleaned === '' ? 0 : parseInt(cleaned, 10)
+  const cleaned = str.replace(/,/g, '').replace(/[^0-9.-]/g, '')
+  const parsed = Number(cleaned)
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
 function clamp(value: number, minVal: number, maxVal: number): number {
@@ -140,7 +149,7 @@ function handleInputChange(e: Event) {
   const cursorPos = input.selectionStart ?? raw.length
   const num = parseFormattedNumber(raw)
 
-  const clamped = Math.min(num, max)
+  const clamped = clampOnInput ? Math.min(num, max) : num
   const wasClamped = num > max
 
   if (wasClamped) {
@@ -148,6 +157,11 @@ function handleInputChange(e: Event) {
   }
 
   modelValue.value = clamped
+
+  if (!wasClamped && (raw.startsWith('-') || raw.includes('.'))) {
+    inputValue.value = raw
+    return
+  }
 
   const { formatted, newCursor } = formatWithCursor(
     wasClamped ? formatNumber(clamped) : raw,
@@ -161,7 +175,7 @@ function handleInputChange(e: Event) {
 }
 
 function handleInputBlur() {
-  const clamped = clamp(modelValue.value, min, max)
+  const clamped = clamp(parseFormattedNumber(inputValue.value), min, max)
   modelValue.value = clamped
   inputValue.value = formatNumber(clamped)
 }
