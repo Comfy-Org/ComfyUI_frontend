@@ -11,7 +11,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const COLS = 36
 const ROWS = 14
 const CELL_COUNT = COLS * ROWS
-const SEND_DURATION = 650
+const SEND_DURATION = 850
 const BUILD_DURATION = 2200
 const HOLD_DURATION = 1300
 const CLEAR_DURATION = 500
@@ -291,6 +291,7 @@ watch(
     :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
     :data-artwork="currentArtwork.id"
     :data-phase="phase"
+    :data-connection-progress="connectionProgress"
     class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink font-mono"
   >
     <div
@@ -309,8 +310,8 @@ watch(
       aria-hidden="true"
     >
       <span
-        class="bg-primary-comfy-yellow absolute inset-0 origin-left"
-        :style="{ transform: `scaleX(${connectionProgress})` }"
+        class="bg-primary-comfy-yellow absolute inset-y-0 left-0"
+        :style="{ width: `${connectionProgress * 100}%` }"
       />
     </div>
 
