@@ -91,6 +91,11 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
       comfyPage,
       await firstBadgeCenter(comfyPage)
     )
+    await comfyPage.page.mouse.move(badgeCenter.x, badgeCenter.y)
+    await comfyPage.nextFrame()
+
+    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden-revealed.png')
+
     await comfyPage.page.mouse.click(badgeCenter.x, badgeCenter.y, {
       button: 'right'
     })
@@ -125,3 +130,86 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     )
   })
 })
+
+test.describe(
+  'Hidden link Vue slot reveal',
+  { tag: ['@canvas', '@vue-nodes', '@screenshot'] },
+  () => {
+    test('reveals the link while connected input and output slots are hovered', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
+
+      const sourceNode =
+        await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+      const targetNode =
+        await comfyPage.vueNodes.getFixtureByTitle('VAE Decode')
+      const inputSlot = targetNode.getSlot('vae')
+      const outputSlot = sourceNode.getSlot('VAE')
+      await expect(inputSlot).toBeVisible()
+      await expect(outputSlot).toBeVisible()
+
+      const midpointHandle = await comfyPage.page.waitForFunction(() => {
+        const graph = window.app!.graph!
+        const source = graph.nodes.find(
+          (node) => node.title === 'Load Checkpoint'
+        )
+        const target = graph.nodes.find((node) => node.title === 'VAE Decode')
+        if (!source || !target) return null
+        const outputIndex = source.outputs.findIndex(
+          (slot) => slot.name === 'VAE'
+        )
+        const inputIndex = target.inputs.findIndex(
+          (slot) => slot.name === 'vae'
+        )
+        const link = [...graph.links.values()].find(
+          (candidate) =>
+            candidate.origin_id === source.id &&
+            candidate.origin_slot === outputIndex &&
+            candidate.target_id === target.id &&
+            candidate.target_slot === inputIndex
+        )
+        const pos = link?._pos
+        return pos ? { x: pos[0], y: pos[1] } : null
+      })
+      const midpoint = await midpointHandle.jsonValue()
+      if (!midpoint) throw new Error('Workflow link was not found')
+
+      await hideLinkViaMenu(comfyPage, midpoint)
+
+      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+
+      const inputBounds = await inputSlot.boundingBox()
+      if (!inputBounds) throw new Error('Input slot has no bounding box')
+      await comfyPage.page.mouse.move(
+        inputBounds.x + inputBounds.width / 2,
+        inputBounds.y + inputBounds.height / 2
+      )
+      await comfyPage.nextFrame()
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-link-revealed-from-input.png'
+      )
+
+      await parkPointer(comfyPage)
+
+      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+
+      const outputBounds = await outputSlot.boundingBox()
+      if (!outputBounds) throw new Error('Output slot has no bounding box')
+      await comfyPage.page.mouse.move(
+        outputBounds.x + outputBounds.width / 2,
+        outputBounds.y + outputBounds.height / 2
+      )
+      await comfyPage.nextFrame()
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-link-revealed-from-output.png'
+      )
+
+      await parkPointer(comfyPage)
+
+      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+    })
+  }
+)

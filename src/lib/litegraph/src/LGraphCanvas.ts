@@ -13,6 +13,11 @@ import {
   getSlotLayoutAtPoint,
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import {
+  clearRevealedLinks,
+  isLinkRevealed,
+  setRevealedLinks
+} from '@/renderer/core/canvas/links/linkRevealState'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -1964,6 +1969,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   setGraph(newGraph: LGraph | Subgraph): void {
     const { graph } = this
     if (newGraph === graph) return
+    clearRevealedLinks(this)
     clearLinkBadgeFrameState(getLinkBadgeFrameState(this))
 
     // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
@@ -2138,6 +2144,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * unbinds mouse events from the canvas
    */
   unbindEvents(): void {
+    clearRevealedLinks(this)
     if (!this._events_binded) {
       console.warn('LGraphCanvas: no events bound')
       return
@@ -3375,7 +3382,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.graph_mouse[0] = x
     this.graph_mouse[1] = y
 
-    const nodeAtPoint: LGraphNode | null = null
+    const badgeFrameState = getLinkBadgeFrameState(this)
+    const hasBadgeHitAreas = badgeFrameState.hitAreas.length > 0
+    let nodeAtPoint: LGraphNode | null = null
+    if (hasBadgeHitAreas) {
+      nodeAtPoint = graph.getNodeOnPos(x, y, this.visible_nodes)
+      const hoveredBadge = nodeAtPoint
+        ? undefined
+        : queryLinkBadgeAtPoint(badgeFrameState, x, y)
+      const revealed = hoveredBadge === undefined ? [] : [hoveredBadge]
+      if (setRevealedLinks(graph.rootGraph.id, revealed, this)) {
+        this.dirty_bgcanvas = true
+      }
+    } else if (clearRevealedLinks(this)) {
+      this.dirty_bgcanvas = true
+    }
 
     if (e.isPrimary) pointer.move(e)
 
@@ -3412,7 +3433,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const node =
       LiteGraph.vueNodesMode && !isSubgraphIOLink
         ? null
-        : getLinkBadgeFrameState(this).hitAreas.length > 0
+        : hasBadgeHitAreas
           ? nodeAtPoint
           : graph.getNodeOnPos(x, y, this.visible_nodes)
 
@@ -4008,11 +4029,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // TODO: Check if document.contains(e.relatedTarget) - handle mouseover node textarea etc.
     this.adjustMouseEvent(e)
     this.updateMouseOverNodes(null, e)
+    if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
   }
 
   processMouseCancel(): void {
     console.warn('Pointer cancel!')
     this.pointer.reset()
+    if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
   }
 
   /**
@@ -6291,13 +6314,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       startDirection?: LinkDirection,
       endDirection?: LinkDirection
     ): void => {
-      if (hiddenIdSet.has(link.id)) return
+      let renderedStart = startPos
+      let renderedEnd = endPos
+      if (hiddenIdSet.has(link.id)) {
+        const tips = hiddenLinkTips.get(link.id)
+        if (!tips || !isLinkRevealed(graphScope.rootGraphId, link.id)) return
+        renderedStart = tips.outputTip
+        renderedEnd = tips.inputTip
+      }
 
       this._renderAllLinkSegments(
         ctx,
         link,
-        startPos,
-        endPos,
+        renderedStart,
+        renderedEnd,
         visibleReroutes,
         now,
         startDirection,
