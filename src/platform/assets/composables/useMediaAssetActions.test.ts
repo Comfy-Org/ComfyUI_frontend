@@ -1673,6 +1673,61 @@ describe('useMediaAssetActions', () => {
       expect(keptSetDirty).not.toHaveBeenCalled()
     })
 
+    it('cleans every shared reference only for successful assets after a partial deletion', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDeleteAsset.mockImplementation(async (id: string) => {
+        if (id === 'asset-failed') throw new Error('503 Service Unavailable')
+      })
+      const successfulCallbacks = [vi.fn(), vi.fn()]
+      const successfulNodes = successfulCallbacks.map((callback, index) =>
+        fromAny<LGraphNode, unknown>({
+          id: index + 10,
+          widgets: [{ name: 'image', value: 'shared.png', callback }],
+          imgs: [{ src: `blob:shared-preview-${index}` }],
+          graph: { setDirtyCanvas: vi.fn() }
+        })
+      )
+      const failedCallback = vi.fn()
+      const failedNode = fromAny<LGraphNode, unknown>({
+        id: 12,
+        widgets: [
+          { name: 'image', value: 'failed.png', callback: failedCallback }
+        ],
+        imgs: [{ src: 'blob:failed-preview' }],
+        graph: { setDirtyCanvas: vi.fn() }
+      })
+      mockAppGraph.value = {
+        _nodes: [...successfulNodes, failedNode],
+        nodes: [...successfulNodes, failedNode]
+      }
+      const actions = useMediaAssetActions()
+
+      await actions.deleteAssets([
+        createMockAsset({ id: 'asset-success', name: 'shared.png' }),
+        createMockAsset({ id: 'asset-failed', name: 'failed.png' })
+      ])
+
+      expect(mockMarkMissingMedia).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        new Set(['shared.png', 'shared.png [input]'])
+      )
+      for (const [index, node] of successfulNodes.entries()) {
+        expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(node)
+        expect(node.imgs).toBeUndefined()
+        expect(node.widgets?.[0].value).toBe('')
+        expect(successfulCallbacks[index]).toHaveBeenCalledWith('')
+        expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
+      }
+      expect(mockRemoveNodeOutputsForNode).not.toHaveBeenCalledWith(failedNode)
+      expect(failedNode.imgs).toEqual([{ src: 'blob:failed-preview' }])
+      expect(failedNode.widgets?.[0].value).toBe('failed.png')
+      expect(failedCallback).not.toHaveBeenCalled()
+      expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
+      expect(mockCaptureCanvasState).toHaveBeenCalledAfter(
+        mockClearWidgetValues
+      )
+    })
+
     it('invokes clearNodePreviewCacheForValues with canonical widget-value variants', async () => {
       mockDeleteAsset.mockResolvedValue(undefined)
       const actions = useMediaAssetActions()
