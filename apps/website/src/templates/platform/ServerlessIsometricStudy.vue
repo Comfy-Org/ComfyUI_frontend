@@ -26,6 +26,7 @@ const RESET_DURATION = 650
 const CYCLE_DURATION = BUILD_DURATION + HOLD_DURATION + RESET_DURATION
 const BUILD_STAGGER = 0.62
 const PEAK_COUNT = 4
+const MIN_TEXTURE_OPACITY = 0.2
 
 interface Tile {
   id: number
@@ -38,6 +39,7 @@ interface Tile {
 
 interface VisualTile extends Tile {
   height: number
+  textureOpacity: number
   topFill: string
 }
 
@@ -156,6 +158,9 @@ const visualTiles = computed<VisualTile[]>(() =>
     return {
       ...tile,
       height,
+      textureOpacity:
+        MIN_TEXTURE_OPACITY +
+        clamp(height / MAX_HEIGHT) * (1 - MIN_TEXTURE_OPACITY),
       topFill:
         height > 0.5
           ? mixedColor('--color-primary-comfy-yellow', 76 + level * 24)
@@ -254,6 +259,7 @@ watch(
           :width="TILE_WIDTH"
           :height="tile.height + TILE_HEIGHT / 2"
           :clip-path="`url(#isometric-body-${tile.id})`"
+          :opacity="tile.textureOpacity"
           preserveAspectRatio="none"
         />
         <template v-if="tile.height > 0.5">
