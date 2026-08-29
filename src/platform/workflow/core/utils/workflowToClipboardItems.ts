@@ -52,7 +52,10 @@ function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
       target_slot,
       type,
       parentId: parentIds.get(id),
-      ...presentation?.[String(id)]
+      ...(presentation?.[String(id)]?.hidden && { hidden: true }),
+      ...(presentation?.[String(id)]?.label !== undefined && {
+        label: presentation[String(id)].label
+      })
     })
   )
 }
