@@ -1,4 +1,5 @@
 import {
+  cachedAgentPanelEnabled,
   cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
@@ -33,6 +34,7 @@ export function invalidateRemoteConfig(): void {
   remoteConfigErrorStatus.value = null
   remoteConfigState.value = 'unloaded'
   cachedLegacyBillingMigrationEnabled.value = undefined
+  cachedAgentPanelEnabled.value = undefined
 }
 
 async function fetchRemoteConfig(
@@ -92,6 +94,9 @@ export async function refreshRemoteConfig(
           config.legacy_billing_migration_enabled
         )
         cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
+        cachedAgentPanelEnabled.value = Boolean(
+          config['agent-in-app-experience']
+        )
       }
       return
     }

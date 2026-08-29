@@ -20,9 +20,10 @@ test.describe('In-App Agent panel shell', { tag: '@cloud' }, () => {
       await bootAgentApp(page, agentFlagEnabled)
 
       // Positive anchor: the button's own container rendered, so absence
-      // below means gated off, not a missing tab bar. The gate is settled
-      // by construction here: the auth gate awaits the authenticated
-      // /features refresh before the app (and this container) can render.
+      // below means gated off, not a missing tab bar. The gate's INPUTS are
+      // settled by construction (the auth gate awaits the authenticated
+      // /features refresh before the app can render); the flag-on sibling
+      // test is the witness that the gate itself ran and can enable.
       await expect(page.getByTestId('integrated-tab-bar-actions')).toBeVisible()
 
       await expect(

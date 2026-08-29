@@ -7,6 +7,7 @@ import {
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
+  cachedAgentPanelEnabled,
   cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
@@ -461,6 +462,7 @@ describe('useFeatureFlags', () => {
       cachedBillingControlEnabled.value = undefined
       cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
+      cachedAgentPanelEnabled.value = undefined
     })
 
     afterEach(() => {
@@ -470,17 +472,20 @@ describe('useFeatureFlags', () => {
       cachedBillingControlEnabled.value = undefined
       cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
+      cachedAgentPanelEnabled.value = undefined
     })
 
     it('returns the cached session value during the auth window', () => {
       cachedBillingControlEnabled.value = true
       cachedLegacyBillingMigrationEnabled.value = true
       cachedV1PaymentRecovery.value = true
+      cachedAgentPanelEnabled.value = true
 
       const { flags } = useFeatureFlags()
       expect(flags.billingControlEnabled).toBe(true)
       expect(flags.legacyBillingMigrationEnabled).toBe(true)
       expect(flags.v1PaymentRecovery).toBe(true)
+      expect(flags.agentPanelEnabled).toBe(true)
     })
 
     it('defaults to false during the auth window when nothing is cached', () => {
@@ -488,6 +493,16 @@ describe('useFeatureFlags', () => {
       expect(flags.billingControlEnabled).toBe(false)
       expect(flags.legacyBillingMigrationEnabled).toBe(false)
       expect(flags.v1PaymentRecovery).toBe(false)
+      expect(flags.agentPanelEnabled).toBe(false)
+    })
+
+    it('agentPanelEnabled never reads persisted storage: a seeded key leaves the anonymous window dark', () => {
+      localStorage.setItem('agent-in-app-experience', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.agentPanelEnabled).toBe(false)
+
+      localStorage.removeItem('agent-in-app-experience')
     })
 
     it('prefers authenticated remoteConfig over the server feature fallback', () => {

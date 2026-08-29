@@ -31,7 +31,7 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     reportErrorMock.mockClear()
   })
 
-  it('fails closed, reports, and resolves the setup promise', async () => {
+  it('reports the chunk failure and resolves the setup promise', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.resetModules()
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})

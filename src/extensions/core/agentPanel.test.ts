@@ -88,6 +88,15 @@ describe('the agent panel flag gate', () => {
     expect(gate.store.enabled).toBe(true)
   })
 
+  it('registers nothing off-cloud', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
+    vi.resetModules()
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+
+    expect(registered.setup).toBeNull()
+  })
+
   it('the ff: localStorage override wins in both directions', async () => {
     localStorage.setItem('ff:agent-in-app-experience', 'true')
     const enabledGate = await bootGate()
