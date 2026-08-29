@@ -31,7 +31,6 @@
 
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
-import Select from 'primevue/select'
 import { markRaw } from 'vue'
 import type { Component } from 'vue'
 
@@ -44,6 +43,7 @@ import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
 import Input from '@/components/ui/input/Input.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import type { FormItem } from '@/platform/settings/types'
 
@@ -69,17 +69,18 @@ function getFormAttrs(item: FormItem) {
   switch (item.type) {
     case 'combo':
     case 'radio':
-      attrs['options'] =
+      attrs['options'] = (
         typeof item.options === 'function'
           ? // @ts-expect-error: Audit and deprecate usage of legacy options type:
             // (value) => [string | {text: string, value: string}]
             item.options(formValue.value)
           : item.options
-
-      if (typeof item.options?.[0] !== 'string') {
-        attrs['optionLabel'] = 'text'
-        attrs['optionValue'] = 'value'
-      }
+      )?.map((option: string | { text: string; value?: string | number }) =>
+        typeof option === 'string'
+          ? { name: option, value: option }
+          : { name: option.text, value: option.value ?? option.text }
+      )
+      attrs['class'] = 'w-44'
       break
   }
   return attrs
@@ -99,7 +100,7 @@ function getFormComponent(item: FormItem): Component {
     case 'knob':
       return InputKnob
     case 'combo':
-      return Select
+      return SingleSelect
     case 'radio':
       return FormRadioGroup
     case 'image':

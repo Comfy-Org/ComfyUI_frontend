@@ -1,23 +1,20 @@
 <template>
   <div>
     <MultiSelect
-      v-model="selectedItems"
+      v-model="selectedOptions"
       :options="options"
-      filter
-      :placeholder="placeholder"
-      :max-selected-labels="3"
-      :display="display"
+      show-search-box
+      :label="placeholder"
       class="w-full"
-      :pt="{
-        dropdownIcon: 'text-button-icon'
-      }"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import MultiSelect from 'primevue/multiselect'
+import { computed } from 'vue'
 
+import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import type { SelectOption } from '@/components/ui/select/types'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/scripts/domWidget'
 
@@ -27,7 +24,20 @@ const { widget } = defineProps<{
 }>()
 
 const inputSpec = widget.inputSpec as ComboInputSpec
-const options = inputSpec.options ?? []
+const options = computed<SelectOption[]>(() =>
+  (inputSpec.options ?? []).map((value) => ({
+    name: String(value),
+    value: String(value)
+  }))
+)
+const selectedOptions = computed({
+  get: () =>
+    options.value.filter(({ value }) =>
+      selectedItems.value.includes(String(value))
+    ),
+  set: (value: SelectOption[]) => {
+    selectedItems.value = value.map(({ value }) => String(value))
+  }
+})
 const placeholder = inputSpec.multi_select?.placeholder ?? 'Select items'
-const display = inputSpec.multi_select?.chip ? 'chip' : 'comma'
 </script>
