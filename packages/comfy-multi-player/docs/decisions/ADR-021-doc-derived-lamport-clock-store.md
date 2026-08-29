@@ -74,6 +74,7 @@ no caller-independent merge or durable state (KA-13).
 The adversarial CLK-1 finding was fixed in comfy-multi-player commit
 [`0ecab83f`](https://github.com/Comfy-Org/comfy-multi-player/commit/0ecab83feb2ffa6006d56e58e95207b6f5074056).
 The regression test exercises two concurrent `persistLamportTick` admissions through one
-`DocDerivedLamportClockStore`, verifies counters `1` and `2`, round-trips the document through a
-Yjs snapshot, and verifies the next admission receives `3`. The shipped guarantee is limited to
-that shared-store admission boundary; it does not coordinate separately constructed stores.
+`DocDerivedLamportClockStore`, verifies counters `1` and `2`, checks the two committed reservation
+rows and document floor, and verifies the next admission receives `3`. The shipped guarantee is
+limited to that shared-store admission boundary; it does not coordinate separately constructed
+stores.

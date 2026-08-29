@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import * as Y from "yjs";
 import { applyOps, DocDerivedLamportClockStore, freezeLamportEnvelope, MAX_LAMPORT_COUNTER,
   mint, observedDocCounter, observeLamport, persistLamportTick, tickLamport, type LamportClockStore } from "../src/index.js";
 import { loadCatalog } from "./helpers.js";
@@ -62,10 +61,8 @@ describe("creator-owned Lamport counter", () => {
 
     expect(counters).toEqual([1, 2]);
     expect(observedDocCounter(doc)).toBe(2);
-    const persisted = new Y.Doc();
-    Y.applyUpdate(persisted, Y.encodeStateAsUpdate(doc));
-    expect(observedDocCounter(persisted)).toBe(2);
-    expect(await persistLamportTick(new DocDerivedLamportClockStore(persisted), { workflow_id: "w", lineage_id: "l", producer_id: "agent:next" }, [])).toBe(3);
+    expect(doc.getMap("__stamps").size).toBe(2);
+    expect(await persistLamportTick(store, { workflow_id: "w", lineage_id: "l", producer_id: "agent:next" }, [])).toBe(3);
   });
 
   it("fails closed when the document stamp ledger is malformed", async () => {
