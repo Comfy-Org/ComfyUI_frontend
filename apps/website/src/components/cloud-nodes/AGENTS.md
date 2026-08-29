@@ -9,8 +9,8 @@ Build-time catalog of custom-node packs preinstalled on Comfy Cloud. Index at `/
 
 The registry is the same one the in-app Manager dialog reads from. For reference and additional reading, see the existing client wrappers in `src/`:
 
-- [`src/services/comfyRegistryService.ts`](../../services/comfyRegistryService.ts) — typed wrappers around `/nodes`, `/nodes/search`, `/nodes/{id}`, `/nodes/{id}/versions/{version}/comfy-nodes`, etc.
-- [`src/stores/comfyRegistryStore.ts`](../../stores/comfyRegistryStore.ts) — cached store + `getPacksByIds` batch helper
+- [`src/services/comfyRegistryService.ts`](../../../../../src/services/comfyRegistryService.ts) — typed wrappers around `/nodes`, `/nodes/search`, `/nodes/{id}`, `/nodes/{id}/versions/{version}/comfy-nodes`, etc.
+- [`src/stores/comfyRegistryStore.ts`](../../../../../src/stores/comfyRegistryStore.ts) — cached store + `getPacksByIds` batch helper
 - [`packages/registry-types/src/comfyRegistryTypes.ts`](../../../../../packages/registry-types/src/comfyRegistryTypes.ts) — generated OpenAPI types
 - Public docs: <https://docs.comfy.org/registry>
 
