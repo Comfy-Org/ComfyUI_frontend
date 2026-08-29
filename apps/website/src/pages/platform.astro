@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import BrandBackground from '../templates/brand/BrandBackground.vue'
 import ProductCardsSection from '../components/common/ProductCardsSection.vue'
 import SocialProofBarSection from '../components/common/SocialProofBarSection.vue'
 import ClosingCtaSection from '../templates/platform/ClosingCtaSection.vue'
@@ -13,8 +14,11 @@ import { t } from '../i18n/translations'
   title={t('platform.meta.title', 'en')}
   description={t('platform.meta.description', 'en')}
 >
-  <HeroSection locale="en" client:load />
-  <ProductsSection locale="en" client:visible />
+  <div class="relative isolate">
+    <BrandBackground client:idle />
+    <HeroSection locale="en" client:load />
+    <ProductsSection locale="en" client:visible />
+  </div>
   <SocialProofBarSection />
   <PricingSection locale="en" />
   <ClosingCtaSection locale="en" />

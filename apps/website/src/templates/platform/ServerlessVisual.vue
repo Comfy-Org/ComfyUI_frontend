@@ -14,6 +14,7 @@ const ROWS = 5
 const CELL_COUNT = COLS * ROWS
 const CELL_STEP_DURATION = 140
 const REST_DURATION = 0
+const LINE_PULSE_DURATION = 1800
 const LETTER_PATTERNS = [
   ['111', '100', '111', '001', '111'],
   ['111', '100', '110', '100', '111'],
@@ -65,6 +66,11 @@ const elapsed = ref(0)
 const reducedMotion = prefersReducedMotion()
 
 const frameTime = computed(() => elapsed.value % CYCLE_DURATION)
+const linePulseProgress = computed(() =>
+  reducedMotion
+    ? 1
+    : (elapsed.value % LINE_PULSE_DURATION) / LINE_PULSE_DURATION
+)
 const activityCells: ActivityCell[] = Array.from(
   { length: CELL_COUNT },
   (_, id) => {
@@ -126,32 +132,6 @@ watch(
       class="absolute top-1/2 left-[max(9%,3.75rem)] z-10 size-24 -translate-1/2 sm:size-28"
       aria-hidden="true"
     >
-      <span
-        :class="
-          cn(
-            'border-primary-comfy-yellow/25 absolute top-1/2 left-1/2 z-20 size-8 -translate-1/2 rotate-45 rounded-md border',
-            !reducedMotion &&
-              'animate-ping animate-delay-[-1.6s] animate-duration-[2.4s]'
-          )
-        "
-      />
-      <span
-        :class="
-          cn(
-            'border-primary-comfy-plum absolute top-1/2 left-1/2 z-20 size-8 -translate-1/2 rotate-45 rounded-md border',
-            !reducedMotion &&
-              'animate-ping animate-delay-[-0.8s] animate-duration-[2.4s]'
-          )
-        "
-      />
-      <span
-        :class="
-          cn(
-            'border-secondary-mauve/70 absolute top-1/2 left-1/2 z-20 size-8 -translate-1/2 rotate-45 rounded-md border',
-            !reducedMotion && 'animate-ping animate-duration-[2.4s]'
-          )
-        "
-      />
       <img
         src="/assets/platform/serverless/local-node.svg"
         alt=""
@@ -159,12 +139,18 @@ watch(
       />
     </div>
 
-    <img
-      src="/assets/platform/serverless/input-line.svg"
-      alt=""
-      class="absolute top-1/2 left-1/8 h-px w-1/6 -translate-y-1/2"
+    <div
+      class="bg-primary-comfy-plum absolute top-1/2 left-[14%] h-px w-[16%] -translate-y-1/2"
       aria-hidden="true"
-    />
+    >
+      <span
+        class="bg-primary-comfy-yellow absolute top-1/2 size-2 -translate-1/2 rounded-full"
+        :style="{
+          left: `${linePulseProgress * 100}%`,
+          opacity: linePulseProgress < 0.08 || linePulseProgress > 0.92 ? 0 : 1
+        }"
+      />
+    </div>
 
     <div
       class="absolute inset-y-[18%] right-[5%] left-3/10 grid grid-cols-12 grid-rows-5 gap-1.5 sm:gap-2"
