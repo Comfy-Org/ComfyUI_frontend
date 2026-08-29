@@ -35,6 +35,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Type-check gate
+        run: npm run typecheck
+
       - name: Purity gate
         run: npm run check:purity
 
