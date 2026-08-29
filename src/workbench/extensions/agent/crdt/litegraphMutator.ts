@@ -25,15 +25,25 @@ export interface LitegraphMutatorDeps {
   /** Node factory; defaults at the wiring site to `LiteGraph.createNode`. */
   createNode: (type: string) => LGraphNode | null
   /**
-   * Runs `apply` inside a scope that marks the resulting graph→layout sync as a
-   * remote/agent edit, so it is never echoed back into the shared doc (ADR-009
-   * invariant: remote follower mutations must be tagged external and must not
-   * round-trip). Defaults to running `apply` directly. The composition root
-   * injects the concrete `layoutStore` source scope; keeping it a callback is
-   * what lets this mutator stay free of `renderer/` imports (workbench must not
-   * import renderer).
+   * Renderer-owned, call-carried layout seam. The composition root binds each
+   * callback to `LayoutSource.Remote`; this mutator never uses ambient source
+   * state and remains independent of renderer imports.
    */
-  runRemoteScope?: (apply: () => void) => void
+  layout: LitegraphRemoteLayout
+}
+
+interface LitegraphRemoteLayout {
+  prepareNode: (
+    graph: LGraph,
+    node: LGraphNode,
+    position: readonly [number, number]
+  ) => void
+  moveNode: (
+    graph: LGraph,
+    node: LGraphNode,
+    position: readonly [number, number]
+  ) => void
+  detachNode: (node: LGraphNode) => void
 }
 
 export class LitegraphMutator implements GraphMutator {
@@ -43,12 +53,8 @@ export class LitegraphMutator implements GraphMutator {
     const graph = this.deps.getGraph()
     if (!graph) return
 
-    const apply = () => {
-      for (const mutation of batch.mutations) this.applyOne(graph, mutation)
-      graph.setDirtyCanvas(true, true)
-    }
-    if (this.deps.runRemoteScope) this.deps.runRemoteScope(apply)
-    else apply()
+    for (const mutation of batch.mutations) this.applyOne(graph, mutation)
+    graph.setDirtyCanvas(true, true)
   }
 
   private applyOne(graph: LGraph, mutation: GraphMutation): void {
@@ -58,12 +64,20 @@ export class LitegraphMutator implements GraphMutator {
         return
       case 'remove_node': {
         const node = graph.getNodeById(mutation.id)
-        if (node) graph.remove(node)
+        if (node) {
+          // LGraph.remove() performs its own detach. Detach first so its
+          // delete operation carries Remote; the internal second detach is a
+          // no-op because the attachment has already been removed.
+          this.deps.layout.detachNode(node)
+          graph.remove(node)
+        }
         return
       }
       case 'move_node': {
         const node = graph.getNodeById(mutation.id)
-        if (node) node.pos = [mutation.pos[0], mutation.pos[1]]
+        if (node) {
+          this.deps.layout.moveNode(graph, node, mutation.pos)
+        }
         return
       }
       case 'set_widget': {
@@ -95,7 +109,12 @@ export class LitegraphMutator implements GraphMutator {
     const node = this.deps.createNode(spec.type)
     if (!node) return
     node.id = spec.id
-    node.pos = [spec.pos[0], spec.pos[1]]
+
+    // Seed the layout store before graph.add(). LGraph.add() attaches the node
+    // and adopts an existing layout silently, so no Canvas-sourced create op
+    // can echo this remote addition. The source is bound by the composition
+    // root and carried by this call, never inferred from ambient state.
+    this.deps.layout.prepareNode(graph, node, spec.pos)
     graph.add(node)
     for (const [name, value] of Object.entries(spec.widgets)) {
       const widget = node.widgets?.find((w) => w.name === name)

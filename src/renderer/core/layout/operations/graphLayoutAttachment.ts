@@ -343,7 +343,10 @@ export function transferLayoutAttachment(
   return true
 }
 
-export function detachNodeLayout(node: LGraphNode): void {
+export function detachNodeLayout(
+  node: LGraphNode,
+  { source = LayoutSource.Canvas }: { source?: LayoutSource } = {}
+): void {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
   const { graphId, id: nodeId } = attachment
@@ -354,7 +357,8 @@ export function detachNodeLayout(node: LGraphNode): void {
   nodeAttachments.delete(node)
   if (!deleteNodeAttachmentOwner(graphId, node)) return
   layoutStore.applyOperation({
-    ...canvasOperationMeta(),
+    source,
+    timestamp: Date.now(),
     graphId,
     nodeId,
     type: 'deleteNode'

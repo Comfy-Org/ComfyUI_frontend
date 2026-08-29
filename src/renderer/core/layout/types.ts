@@ -14,7 +14,9 @@ import type { UUID } from '@/utils/uuid'
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
-  Vue = 'vue'
+  Vue = 'vue',
+  /** A host/follower projection, never a local user intent. */
+  Remote = 'remote'
 }
 
 // Basic geometric types

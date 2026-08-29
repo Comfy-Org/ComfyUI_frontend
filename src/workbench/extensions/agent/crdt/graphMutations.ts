@@ -7,10 +7,11 @@
  * core to add-node / delete-node / connect; `move_node` / `set_widget` /
  * `disconnect` exist only for render fidelity.
  *
- * A follower NEVER writes the shared doc (KA-#6). Every batch is tagged
- * `source: 'agent-remote'`; the mutator applies it inside a remote scope
- * (mapped to `LayoutSource.External` at the composition root) which the future
- * human-op sender uses to suppress echoes.
+ * A follower NEVER writes the shared doc (KA-#6). Every batch carries its
+ * source and actor at the call site. The mutator propagates the remote source
+ * into layout operations, while the future semantic capture seam for connect,
+ * disconnect, and widget changes must accept this same source-carried context
+ * directly. No ambient source scope is part of this contract.
  */
 import type { NodeId } from '@/types/nodeId'
 
@@ -59,9 +60,14 @@ export type GraphMutation =
  */
 type MutationSource = 'agent-remote'
 
-export interface MutationBatch {
+interface MutationContext {
+  /** Provenance for every mutation in the call, including semantic ops. */
   readonly source: MutationSource
+  /** CRDT actor carried alongside provenance for downstream capture. */
   readonly actor: string
+}
+
+export interface MutationBatch extends MutationContext {
   readonly mutations: readonly GraphMutation[]
 }
 

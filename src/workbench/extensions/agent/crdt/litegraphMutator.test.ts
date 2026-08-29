@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import type { GraphMutation } from './graphMutations'
 import { LitegraphMutator } from './litegraphMutator'
@@ -17,6 +18,7 @@ import type { LitegraphMutatorDeps } from './litegraphMutator'
 class FakeNode {
   id: NodeId = toNodeId(-1)
   pos: [number, number] = [0, 0]
+  readonly _size: [number, number] = [100, 80]
   readonly widgets: { name: string; value: unknown }[]
   readonly connectCalls: {
     originSlot: number
@@ -44,6 +46,7 @@ class FakeNode {
 }
 
 class FakeGraph {
+  readonly rootGraph = { id: createUuidv4() }
   readonly nodes = new Map<NodeId, FakeNode>()
   dirtyCanvas: [boolean, boolean] | null = null
 
@@ -74,9 +77,11 @@ function makeMutator(overrides: Partial<LitegraphMutatorDeps> = {}): {
   mutator: LitegraphMutator
   graph: FakeGraph
   created: FakeNode[]
+  positions: Map<NodeId, [number, number]>
 } {
   const graph = new FakeGraph()
   const created: FakeNode[] = []
+  const positions = new Map<NodeId, [number, number]>()
   const deps: LitegraphMutatorDeps = {
     getGraph: () => graph as unknown as LGraph,
     createNode: (type: string) => {
@@ -84,9 +89,20 @@ function makeMutator(overrides: Partial<LitegraphMutatorDeps> = {}): {
       created.push(node)
       return node as unknown as LGraphNode
     },
+    layout: {
+      prepareNode: (_graph, node, position) => {
+        positions.set(node.id, [position[0], position[1]])
+      },
+      moveNode: (_graph, node, position) => {
+        positions.set(node.id, [position[0], position[1]])
+      },
+      detachNode: (node) => {
+        positions.delete(node.id)
+      }
+    },
     ...overrides
   }
-  return { mutator: new LitegraphMutator(deps), graph, created }
+  return { mutator: new LitegraphMutator(deps), graph, created, positions }
 }
 
 function batch(...mutations: GraphMutation[]) {
@@ -95,7 +111,7 @@ function batch(...mutations: GraphMutation[]) {
 
 describe('LitegraphMutator', () => {
   it('adds a node with a coerced numeric id, position, and widget values', () => {
-    const { mutator, graph, created } = makeMutator()
+    const { mutator, graph, created, positions } = makeMutator()
     mutator.applyBatch(
       batch({
         kind: 'add_node',
@@ -111,7 +127,7 @@ describe('LitegraphMutator', () => {
     const node = graph.getNodeById(toNodeId('7'))
     expect(node).not.toBeNull()
     expect(node?.type).toBe('KSampler')
-    expect(node?.pos).toEqual([10, 20])
+    expect(positions.get(toNodeId('7'))).toEqual([10, 20])
     expect(node?.widgets.find((w) => w.name === 'seed')?.value).toBe(42)
     // Untouched widget stays at its default.
     expect(node?.widgets.find((w) => w.name === 'steps')?.value).toBeUndefined()
@@ -161,15 +177,15 @@ describe('LitegraphMutator', () => {
     expect(graph.getNodeById(toNodeId('3'))).toBeNull()
   })
 
-  it('moves an existing node', () => {
-    const { mutator, graph } = makeMutator()
+  it('delegates move to the source-bound layout seam', () => {
+    const { mutator, graph, positions } = makeMutator()
     const node = new FakeNode('KSampler')
     node.id = toNodeId('5')
     graph.add(node)
     mutator.applyBatch(
       batch({ kind: 'move_node', id: toNodeId('5'), pos: [100, 200] })
     )
-    expect(node.pos).toEqual([100, 200])
+    expect(positions.get(node.id)).toEqual([100, 200])
   })
 
   it('sets a matching widget and ignores an unknown widget name', () => {
@@ -217,11 +233,14 @@ describe('LitegraphMutator', () => {
   })
 
   it('does nothing when there is no active graph', () => {
-    const scope = vi.fn()
     const mutator = new LitegraphMutator({
       getGraph: () => null,
       createNode: () => null,
-      runRemoteScope: scope
+      layout: {
+        prepareNode: () => undefined,
+        moveNode: () => undefined,
+        detachNode: () => undefined
+      }
     })
     expect(() =>
       mutator.applyBatch(
@@ -231,28 +250,5 @@ describe('LitegraphMutator', () => {
         })
       )
     ).not.toThrow()
-    expect(scope).not.toHaveBeenCalled()
-  })
-
-  it('applies every mutation inside the injected remote scope', () => {
-    const events: string[] = []
-    const { mutator, graph } = makeMutator({
-      runRemoteScope: (apply) => {
-        events.push('enter')
-        apply()
-        events.push('exit')
-      }
-    })
-    mutator.applyBatch(
-      batch({
-        kind: 'add_node',
-        node: { id: toNodeId('1'), type: 'LoadVideo', pos: [0, 0], widgets: {} }
-      })
-    )
-    // The graph mutation and the dirty-canvas flush both land between the
-    // scope's enter and exit — proving remote edits are tagged, never echoed.
-    expect(events).toEqual(['enter', 'exit'])
-    expect(graph.getNodeById(toNodeId('1'))).not.toBeNull()
-    expect(graph.dirtyCanvas).toEqual([true, true])
   })
 })

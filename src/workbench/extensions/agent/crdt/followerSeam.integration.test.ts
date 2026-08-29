@@ -23,13 +23,24 @@
  * layoutStore, whose root `nodes` map collided, so no node rendered). The
  * browser-observable E2E invariant in AGENTS.md is satisfied separately.
  */
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 import { applyOps, initDoc, nodesMap } from '@comfyorg/comfy-multi-player'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+// This integration test intentionally crosses the composition-root boundary
+// to prove source attribution at the real layout-store sender seam.
+// eslint-disable-next-line import-x/no-restricted-paths
+import { detachNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import type { DocFrameTransport } from './docFrameClient'
@@ -66,6 +77,48 @@ class FollowerSeamE2eNode extends LGraphNode {
   static override title = 'Follower Seam E2E Node'
   constructor(title?: string) {
     super(title ?? FollowerSeamE2eNode.title)
+  }
+}
+
+function remoteLayout() {
+  const mutations = useLayoutMutations(LayoutSource.Remote)
+  return {
+    moveNode(
+      graph: LGraph,
+      node: LGraphNode,
+      position: readonly [number, number]
+    ) {
+      mutations.moveNode(graph.rootGraph.id, node.id, {
+        x: position[0],
+        y: position[1]
+      })
+    },
+    prepareNode(
+      graph: LGraph,
+      node: LGraphNode,
+      position: readonly [number, number]
+    ) {
+      const point = { x: position[0], y: position[1] }
+      const size = { width: node._size[0], height: node._size[1] }
+      layoutStore.applyOperation({
+        type: 'createNode',
+        graphId: graph.rootGraph.id,
+        nodeId: node.id,
+        layout: {
+          id: node.id,
+          position: point,
+          size,
+          bounds: { ...point, ...size },
+          zIndex: layoutStore.allocateZIndex(),
+          visible: true
+        },
+        timestamp: Date.now(),
+        source: LayoutSource.Remote
+      })
+    },
+    detachNode(node: LGraphNode) {
+      detachNodeLayout(node, { source: LayoutSource.Remote })
+    }
   }
 }
 
@@ -120,7 +173,8 @@ describe('follower seam integration (real applier → real seam → real LGraph)
     const bridge = new LayoutFollowerBridge(client)
     const mutator = new LitegraphMutator({
       getGraph: () => graph,
-      createNode: (type) => LiteGraph.createNode(type)
+      createNode: (type) => LiteGraph.createNode(type),
+      layout: remoteLayout()
     })
     const projector = new SemanticProjector(mutator, { actor: 'test-follower' })
 
@@ -166,7 +220,8 @@ describe('follower seam integration (real applier → real seam → real LGraph)
     const bridge = new LayoutFollowerBridge(client)
     const mutator = new LitegraphMutator({
       getGraph: () => graph,
-      createNode: (type) => LiteGraph.createNode(type)
+      createNode: (type) => LiteGraph.createNode(type),
+      layout: remoteLayout()
     })
     const projector = new SemanticProjector(mutator, { actor: 'test-follower' })
     bridge.addEventListener('doc_update', () => {
@@ -195,7 +250,8 @@ describe('follower seam integration (real applier → real seam → real LGraph)
     const bridge = new LayoutFollowerBridge(client)
     const mutator = new LitegraphMutator({
       getGraph: () => graph,
-      createNode: (type) => LiteGraph.createNode(type)
+      createNode: (type) => LiteGraph.createNode(type),
+      layout: remoteLayout()
     })
     const projector = new SemanticProjector(mutator, { actor: 'test-follower' })
     bridge.addEventListener('doc_update', () => {
@@ -217,5 +273,55 @@ describe('follower seam integration (real applier → real seam → real LGraph)
 
     bridge.destroy()
     client.destroy()
+  })
+
+  it('does not echo any layout operation from a complete remote batch', async () => {
+    const graph = new LGraph()
+    graph.id = createUuidv4()
+    const existing = new FollowerSeamE2eNode()
+    existing.id = toNodeId(1)
+    graph.add(existing)
+
+    const changes: string[] = []
+    const sender = vi.fn()
+    const stop = layoutStore.onChange((change) => {
+      changes.push(`${change.operation.type}:${change.source}`)
+      if (change.source === LayoutSource.Remote) return
+      sender(change)
+    })
+
+    const mutator = new LitegraphMutator({
+      getGraph: () => graph,
+      createNode: (type) => LiteGraph.createNode(type),
+      layout: remoteLayout()
+    })
+    mutator.applyBatch({
+      source: 'agent-remote',
+      actor: 'test-follower',
+      mutations: [
+        {
+          kind: 'add_node',
+          node: {
+            id: toNodeId(2),
+            type: TEST_NODE_TYPE,
+            pos: [128, 96],
+            widgets: {}
+          }
+        },
+        { kind: 'move_node', id: toNodeId(1), pos: [256, 192] },
+        { kind: 'remove_node', id: toNodeId(2) }
+      ]
+    })
+
+    await Promise.resolve()
+    stop()
+    graph.clear()
+
+    expect(changes).toEqual([
+      'createNode:remote',
+      'moveNode:remote',
+      'deleteNode:remote'
+    ])
+    expect(sender).not.toHaveBeenCalled()
   })
 })

@@ -6,6 +6,10 @@ import type { Ref } from 'vue'
 // is the single, documented workbench→renderer boundary crossing (ADR-009);
 // the mutator/projector/diff themselves stay free of renderer imports.
 // eslint-disable-next-line import-x/no-restricted-paths
+import { detachNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -147,26 +151,44 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
   const tabId = crypto.randomUUID()
+  const remoteLayout = useLayoutMutations(LayoutSource.Remote)
   // Highest doc_update seq seen — used as base_version for human-minted ops.
   // The ws path has no ceiling gate; this only feeds LWW stamps, so a slightly
   // stale value is safe (ties break by [base_version, actor, op_id]).
   let lastSeq = 0
   let lastOpsResult: unknown = null
-  // Post-ECS main removed the global layout source scope
-  // (`LayoutSource.External` / `layoutStore.setSource`), so remote batches
-  // apply directly. Echo suppression becomes load-bearing only when the
-  // human-op sender lands (KA-6: the follower itself never writes); it must
-  // then be rebuilt against per-mutation ECS command sources.
   const mutator = new LitegraphMutator({
     getGraph: () => app.graph ?? null,
     createNode: (type) => LiteGraph.createNode(type),
-    runRemoteScope: (apply) => {
-      const previousSource = layoutStore.getCurrentSource()
-      layoutStore.setSource(LayoutSource.External)
-      try {
-        apply()
-      } finally {
-        layoutStore.setSource(previousSource)
+    layout: {
+      moveNode(graph, node, position) {
+        remoteLayout.moveNode(graph.rootGraph.id, node.id, {
+          x: position[0],
+          y: position[1]
+        })
+      },
+      prepareNode(graph, node, position) {
+        const graphId = graph.rootGraph.id
+        const size = { width: node._size[0], height: node._size[1] }
+        const point = { x: position[0], y: position[1] }
+        layoutStore.applyOperation({
+          type: 'createNode',
+          graphId,
+          nodeId: node.id,
+          layout: {
+            id: node.id,
+            position: point,
+            size,
+            bounds: { ...point, ...size },
+            zIndex: layoutStore.allocateZIndex(),
+            visible: true
+          },
+          timestamp: Date.now(),
+          source: LayoutSource.Remote
+        })
+      },
+      detachNode(node) {
+        detachNodeLayout(node, { source: LayoutSource.Remote })
       }
     }
   })
