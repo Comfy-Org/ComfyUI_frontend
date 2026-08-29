@@ -29,6 +29,7 @@ export function workflowToClipboardItems(
 function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
   if (graph.version !== 0.4) return graph.links ?? []
 
+  const presentation = graph.extra?.linkPresentation
   const parentIds = new Map<number, number | undefined>(
     graph.extra?.linkExtensions?.map(({ id, parentId }) => [
       Number(id),
@@ -50,7 +51,11 @@ function getLinks(graph: WorkflowGraph): SerialisableLLink[] {
       target_id,
       target_slot,
       type,
-      parentId: parentIds.get(id)
+      parentId: parentIds.get(id),
+      ...(presentation?.[String(id)]?.hidden && { hidden: true }),
+      ...(presentation?.[String(id)]?.label !== undefined && {
+        label: presentation[String(id)].label
+      })
     })
   )
 }

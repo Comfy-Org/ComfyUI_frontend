@@ -780,6 +780,21 @@ function adoptLinkTopology(
 }
 
 /**
+ * Copies presentation from a source (a serialized link, a disconnected link
+ * holding its stashed presentation, or a plain record) onto a newly created
+ * link. Used by every flow that recreates links instead of transferring them:
+ * paste, endpoint reconnect, subgraph pack/unpack boundaries.
+ */
+export function transferLinkPresentation(
+  source: LinkPresentation,
+  target: LLink | null | undefined
+): void {
+  if (!target) return
+  if (source.hidden) target.hidden = true
+  if (source.label !== undefined) target.label = source.label
+}
+
+/**
  * Removes a link's topology from {@link useLinkStore} and detaches the link.
  * No-op for links that never won registration ({@link LLink._graphScope} unset),
  * so a first-wins collision loser cannot remove the winner's entry.
