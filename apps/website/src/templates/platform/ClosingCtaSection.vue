@@ -5,6 +5,7 @@ import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { platformCtas } from './ctas'
+import PlatformHeroBadge from './PlatformHeroBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -33,6 +34,13 @@ onMounted(() => {
       :heading="t('platform.closing.heading', locale)"
       :primary-cta="ctas.getStarted"
       :secondary-cta="ctas.docs"
-    />
+    >
+      <template #heading>
+        <span class="block">
+          {{ t('platform.closing.headingLead', locale) }}
+        </span>
+        <PlatformHeroBadge :locale class="mt-2 justify-center" />
+      </template>
+    </CtaCenter01>
   </div>
 </template>

@@ -6,7 +6,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <div
+  <span
     class="font-formula-narrow flex h-10 items-center font-semibold text-primary-comfy-ink md:h-15.75"
   >
     <img
@@ -41,5 +41,5 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       class="h-6.25 w-auto shrink-0 rotate-180 md:h-9.75"
       aria-hidden="true"
     />
-  </div>
+  </span>
 </template>

@@ -8048,6 +8048,10 @@ const translations = {
   'platform.closing.heading': {
     en: 'Maximize scale and control on Developer Platform',
     'zh-CN': '在开发者平台上将规模与控制力最大化'
+  },
+  'platform.closing.headingLead': {
+    en: 'Maximize scale and control on',
+    'zh-CN': '将规模与控制力最大化'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

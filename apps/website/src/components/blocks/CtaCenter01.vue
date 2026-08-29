@@ -40,6 +40,7 @@ const {
     class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
   >
     <h2
+      :aria-label="heading"
       :class="
         cn(
           'max-w-3xl font-light tracking-tight text-pretty whitespace-pre-line text-primary-comfy-canvas',
@@ -49,7 +50,7 @@ const {
         )
       "
     >
-      {{ heading }}
+      <slot name="heading">{{ heading }}</slot>
     </h2>
 
     <p
