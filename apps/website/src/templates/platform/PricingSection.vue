@@ -78,7 +78,9 @@ const storageRates = [
           <div class="scrollbar-none overflow-x-auto">
             <table class="w-full min-w-130 text-left text-xs">
               <thead>
-                <tr class="text-[10px] tracking-wider uppercase">
+                <tr
+                  class="border-b border-white/8 text-[10px] tracking-wider uppercase"
+                >
                   <th
                     class="px-5 py-4 font-bold text-primary-comfy-canvas"
                     scope="col"
@@ -86,13 +88,13 @@ const storageRates = [
                     {{ t('platform.pricing.gpuColumn', locale) }}
                   </th>
                   <th
-                    class="px-4 py-4 font-bold text-primary-comfy-canvas"
+                    class="p-4 font-bold text-primary-comfy-canvas"
                     scope="col"
                   >
                     {{ t('platform.pricing.vramColumn', locale) }}
                   </th>
                   <th
-                    class="px-4 py-4 text-right font-bold text-primary-comfy-canvas"
+                    class="p-4 text-right font-bold text-primary-comfy-canvas"
                     scope="col"
                   >
                     {{ t('platform.pricing.priceColumn', locale) }}
@@ -106,11 +108,7 @@ const storageRates = [
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="rate in gpuRates"
-                  :key="rate.gpu"
-                  class="border-t border-white/8"
-                >
+                <tr v-for="rate in gpuRates" :key="rate.gpu">
                   <td class="px-5 py-3.5 text-primary-warm-white">
                     {{ rate.gpu }}
                   </td>
@@ -129,9 +127,7 @@ const storageRates = [
               </tbody>
             </table>
           </div>
-          <p
-            class="mt-auto border-t border-white/8 px-5 py-3 text-xs text-smoke-700"
-          >
+          <p class="mt-auto px-5 py-3 text-2xs text-primary-warm-gray">
             {{ t('platform.pricing.billedPerSecond', locale) }}
           </p>
         </article>
@@ -142,7 +138,9 @@ const storageRates = [
           <div class="scrollbar-none overflow-x-auto">
             <table class="w-full min-w-130 text-left text-xs">
               <thead>
-                <tr class="text-[10px] tracking-wider uppercase">
+                <tr
+                  class="border-b border-white/8 text-[10px] tracking-wider uppercase"
+                >
                   <th
                     class="px-5 py-4 font-bold text-primary-comfy-canvas"
                     scope="col"
@@ -150,7 +148,7 @@ const storageRates = [
                     {{ t('platform.pricing.storageColumn', locale) }}
                   </th>
                   <th
-                    class="px-4 py-4 text-right font-bold text-primary-comfy-canvas"
+                    class="p-4 text-right font-bold text-primary-comfy-canvas"
                     scope="col"
                   >
                     {{ t('platform.pricing.priceColumn', locale) }}
@@ -164,11 +162,7 @@ const storageRates = [
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="rate in storageRates"
-                  :key="rate.key"
-                  class="border-t border-white/8"
-                >
+                <tr v-for="rate in storageRates" :key="rate.key">
                   <td class="px-5 py-3.5 text-primary-warm-white">
                     {{ t(`platform.pricing.storage.${rate.key}`, locale) }}
                   </td>
@@ -184,9 +178,7 @@ const storageRates = [
               </tbody>
             </table>
           </div>
-          <p
-            class="mt-auto border-t border-white/8 px-5 py-3 text-xs/relaxed text-smoke-700"
-          >
+          <p class="mt-auto px-5 py-3 text-2xs/relaxed text-primary-warm-gray">
             {{ t('platform.pricing.storageNote', locale) }}
           </p>
         </article>
