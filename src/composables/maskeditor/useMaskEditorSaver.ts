@@ -1,7 +1,5 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
-import { writeImageWidgetValue } from '@/composables/maskeditor/imageWidgetAdapter'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -15,6 +13,7 @@ import { app } from '@/scripts/app'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 // Private layer filename functions
 interface ImageLayerFilenames {
@@ -41,7 +40,7 @@ export function useMaskEditorSaver() {
   const nodeOutputStore = useNodeOutputStore()
 
   const save = async (): Promise<void> => {
-    const sourceNode = dataStore.sourceNode
+    const sourceNode = dataStore.sourceNode as LGraphNode
     if (!sourceNode || !dataStore.inputData) {
       throw new Error('No source node or input data')
     }
@@ -280,10 +279,24 @@ export function useMaskEditorSaver() {
   ): void {
     const mainRef = outputData.paintedMaskedImage.ref
 
-    writeImageWidgetValue(
-      node,
-      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
-    )
+    const imageWidget = node.widgets?.find((w) => w.name === 'image')
+    if (imageWidget) {
+      const widgetValue =
+        mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+
+      imageWidget.value = widgetValue
+
+      if (node.properties) {
+        node.properties['image'] = widgetValue
+      }
+
+      if (node.widgets_values && node.widgets) {
+        const widgetIndex = node.widgets.indexOf(imageWidget)
+        if (widgetIndex >= 0) {
+          node.widgets_values[widgetIndex] = widgetValue
+        }
+      }
+    }
 
     node.imgs = undefined
     const annotatedPath = createAnnotatedPath(mainRef.filename, {
