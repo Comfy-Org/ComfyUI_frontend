@@ -23,7 +23,7 @@ const ctas = platformCtas(locale)
     :secondary-cta="ctas.docs"
   >
     <template #media>
-      <DeployTerminal />
+      <DeployTerminal :locale="locale" />
     </template>
   </HeroSplit01>
 </template>

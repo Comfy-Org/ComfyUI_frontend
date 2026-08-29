@@ -235,6 +235,10 @@
 @utility animate-label-flash {
   opacity: 0;
   animation: label-flash 7.2s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .card-slide-enter-active {

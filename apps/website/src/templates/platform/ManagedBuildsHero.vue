@@ -14,7 +14,7 @@ const routes = getRoutes(locale)
   <HeroSplit01
     :locale="locale"
     compact
-    badge-text="Enterprise"
+    :badge-text="t('enterprise.managedBuilds.badge', locale)"
     :title="t('enterprise.managedBuilds.heading', locale)"
     :subtitle="t('enterprise.managedBuilds.hero.subtitle', locale)"
     :primary-cta="{
