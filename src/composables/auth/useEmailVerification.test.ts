@@ -324,6 +324,18 @@ describe('useEmailVerification', () => {
       expect(user.getIdToken).toHaveBeenCalledWith(true)
     })
 
+    it('does not reload the user on focus while the feature is disabled', async () => {
+      const user = makeUser()
+      mocks.authStore.currentUser = user
+      mocks.flags.emailVerificationNudgeEnabled = false
+      await loadComposable()
+
+      window.dispatchEvent(new Event('focus'))
+      await Promise.resolve()
+
+      expect(user.reload).not.toHaveBeenCalled()
+    })
+
     it('reports a reload failure to telemetry instead of surfacing it', async () => {
       const reloadFailure = new Error('offline')
       mocks.authStore.currentUser = makeUser({

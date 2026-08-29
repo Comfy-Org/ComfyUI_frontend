@@ -94,8 +94,12 @@ function useEmailVerificationInternal() {
     () => dismissedAt.value >= SESSION_START_MS
   )
 
+  const isNudgeEnabled = computed(
+    () => isCloud && flags.emailVerificationNudgeEnabled
+  )
+
   const nudgeVariant = computed<EmailVerificationNudgeVariant | null>(() => {
-    if (!isCloud || !flags.emailVerificationNudgeEnabled) return null
+    if (!isNudgeEnabled.value) return null
     if (!needsEmailVerification.value) return null
     // The credit-specific state is more important than a prior dismissal, so it
     // stays visible until verification clears it.
@@ -182,9 +186,9 @@ function useEmailVerificationInternal() {
   }
 
   useEventListener(window, 'focus', () => {
-    // Gate on the underlying need, not the nudge's visibility: a dismissed
-    // generic nudge still needs to pick up a verification done in another tab.
-    if (needsEmailVerification.value) void refresh()
+    // Deliberately not gated on `nudgeVariant`: a dismissed generic nudge still
+    // needs to pick up a verification done in another tab.
+    if (isNudgeEnabled.value && needsEmailVerification.value) void refresh()
   })
 
   return {
