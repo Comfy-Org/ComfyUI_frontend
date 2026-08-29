@@ -830,13 +830,16 @@
       "insufficientMessage": "您的积分不足，无法运行此工作流。",
       "insufficientTitle": "积分不足",
       "insufficientWorkflowMessage": "您的积分不足以运行该工作流。",
+      "manageBillingError": "无法打开账单门户。请重试。",
       "maxAllowed": "最多{credits}积分。",
       "maxAmount": "（最高 $1,000 美元）",
       "maximumAmount": "最多${amount}",
       "minRequired": "最少{credits}积分",
       "minimumPurchase": "最低${amount}（{credits}积分）",
       "needMore": "需要更多？",
+      "noPaymentMethodError": "此工作区未保存付款方式。请通过“设置 → 套餐与积分 → 管理账单”添加付款方式，然后重试充值。",
       "payAmount": "支付 {amount}",
+      "paymentDetailsRequiredNote": "系统将要求您添加付款方式以完成此次购买。",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",
       "purchaseSuccess": "积分添加成功！",
@@ -1705,6 +1708,7 @@
     "micPermissionDenied": "麦克风权限被拒绝",
     "migrate": "迁移",
     "missing": "缺失",
+    "missingNodeTypesInGroup": "缺少：{types}",
     "modifyKeybinding": "修改快捷键",
     "more": "更多",
     "moreOptions": "更多选项",
@@ -3217,15 +3221,26 @@
     "done": "完成",
     "firstRun": {
       "nudge": {
-        "dismiss": "暂不需要",
-        "explore": "探索模板",
-        "noTour": {
-          "body": "浏览模板，选择一个开始构建。",
-          "title": "还有更多模板等你探索"
+        "animate": {
+          "detail": "图像转视频 · 5 秒",
+          "title": "将其制作成动画"
         },
-        "ran": {
-          "body": "您刚刚完成了第一次。探索还能构建什么。",
-          "title": "这只是数百次中的第一次"
+        "body": "每项都以您刚刚创建的图像为起点。",
+        "explore": "浏览所有模板",
+        "fallback": {
+          "body": "浏览模板并选择要创建的内容。",
+          "title": "还有数百个类似模板"
+        },
+        "loadFailed": "无法加载该模板。请重试。",
+        "restyle": {
+          "detail": "合作伙伴模型 · 任意付费套餐",
+          "title": "使用 Nano Banana 重新设计风格"
+        },
+        "title": "您的第一个输出。接下来是这些。",
+        "upscale": {
+          "badge": "4x",
+          "detail": "同一图像，更多细节",
+          "title": "放大图像"
         }
       },
       "prompt": {
@@ -4363,6 +4378,8 @@
     "resubscribeFailed": "重新激活订阅失败",
     "resubscribeSuccess": "订阅已成功重新激活",
     "resubscribeTo": "重新订阅 {plan}",
+    "salesManagedRunBlockedDetail": "此工作区的套餐已不再有效。请联系您的 Comfy 客户经理以恢复访问权限。",
+    "salesManagedRunBlockedTitle": "套餐未激活",
     "saveYearly": "立省 20%",
     "saveYearlyUpTo": "最高可节省 20%",
     "soloUseOnly": "仅限个人使用",
@@ -4441,6 +4458,7 @@
     "title": "订阅",
     "titleUnsubscribed": "订阅 Comfy Cloud",
     "totalCredits": "总积分",
+    "unknownTierName": "当前套餐",
     "upgrade": "升级",
     "upgradePlan": "升级订阅",
     "upgradeTo": "升级到 {plan}",

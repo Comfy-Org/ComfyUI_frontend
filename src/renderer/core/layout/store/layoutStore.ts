@@ -176,6 +176,7 @@ class LayoutStoreImpl {
   // Vue reactivity layer
   private version = ref(0)
   private _nodeGeometryVersion = 0
+  private _contentSizeVersion = 0
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
     .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
@@ -255,6 +256,11 @@ class LayoutStoreImpl {
    */
   get nodeGeometryVersion(): number {
     return this._nodeGeometryVersion
+  }
+
+  /** Non-reactive revision for measured Vue content dimensions. */
+  get contentSizeVersion(): number {
+    return this._contentSizeVersion
   }
 
   constructor() {
@@ -392,7 +398,12 @@ class LayoutStoreImpl {
   }
 
   reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
-    this.contentSizes.set(makeScopedLayoutKey(rootGraphId, nodeId), size)
+    const key = makeScopedLayoutKey(rootGraphId, nodeId)
+    const previous = this.contentSizes.get(key)
+    if (previous?.width === size.width && previous.height === size.height)
+      return
+    this.contentSizes.set(key, size)
+    this._contentSizeVersion++
   }
 
   /**
@@ -802,7 +813,9 @@ class LayoutStoreImpl {
       deleted = true
     }
     for (const key of this.contentSizes.keys()) {
-      if (key.startsWith(prefix)) this.contentSizes.delete(key)
+      if (!key.startsWith(prefix)) continue
+      this.contentSizes.delete(key)
+      this._contentSizeVersion++
     }
     for (const key of this.slotOffsets.keys()) {
       if (key.startsWith(prefix)) this.slotOffsets.delete(key)
@@ -920,7 +933,11 @@ class LayoutStoreImpl {
       this.linkSegmentSpatialIndex.clear()
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
-      this.contentSizes.clear()
+      if (this.contentSizes.size > 0) {
+        this.contentSizes.clear()
+        this._contentSizeVersion++
+      }
+      this.slotOffsets.clear()
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false
@@ -1031,7 +1048,7 @@ class LayoutStoreImpl {
     if (!this.ynodes.has(nodeKey)) return false
 
     this.ynodes.delete(nodeKey)
-    this.contentSizes.delete(nodeKey)
+    if (this.contentSizes.delete(nodeKey)) this._contentSizeVersion++
     this.slotOffsets.delete(nodeKey)
     // Link geometry is cleaned up per-link by LLink.disconnect as the node's
     // connections are severed, so nothing to do here.
