@@ -81,10 +81,10 @@ const activityCells: ActivityCell[] = Array.from(
 )
 
 function cellState(cell: ActivityCell, now: number): CellState {
-  const currentSequence = reducedMotion
-    ? COLS
-    : Math.floor(now / CELL_STEP_DURATION)
-  const sourceColumn = cell.column + currentSequence - COLS
+  const marqueeOffset = reducedMotion
+    ? 0
+    : Math.floor(now / CELL_STEP_DURATION) - WORD_WIDTH
+  const sourceColumn = cell.column - marqueeOffset
 
   if (sourceColumn < 0 || sourceColumn >= WORD_WIDTH) return 'idle'
 
