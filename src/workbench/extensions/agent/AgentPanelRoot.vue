@@ -41,6 +41,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -81,13 +83,15 @@ import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
+import { registerMintLifecycle } from './crdt/mintLifecycle'
 
 const { t } = useI18n()
 const toast = useToastStore()
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
-const { userDisplayName } = useCurrentUser()
+const { userDisplayName, resolvedUserInfo } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -357,10 +361,28 @@ const {
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow and projects doc updates onto the canvas.
-const { status: crdtStatus } = useAgentCrdtFollower(
+const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
   boundWorkflowId,
-  graphMutations
+  graphMutations,
+  { userId: () => resolvedUserInfo.value?.id ?? null }
 )
+const mintWiring = attachMintPortWiring({
+  isEnabled: () => agentPanelStore.enabled,
+  isDocBound: () => crdtStatus.value.workflowId !== null,
+  enqueue: enqueueHumanOperations,
+  layoutChanges: (listener) => layoutStore.onChange(listener),
+  withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
+  localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
+  getGraph: () => app.rootGraph
+})
+const unregisterMintLifecycle = registerMintLifecycle({
+  beforeLoad: mintWiring.onBeforeGraphLoad,
+  afterConfigure: mintWiring.onAfterGraphConfigure
+})
+onBeforeUnmount(() => {
+  unregisterMintLifecycle()
+  mintWiring.detach()
+})
 // Dev instrument only (slice-02 classification): never ships to users.
 const isCrdtDevPanelEnabled = import.meta.env.DEV
 

@@ -31,7 +31,7 @@ import type { MintSession } from './mintSession'
 export interface MintableGraph {
   id: string
   rootGraph?: { id: string }
-  getNodeById(id: NodeId | string): LGraphNode | null
+  getNodeById(id: NodeId | null | undefined): LGraphNode | null
   _nodes: LGraphNode[]
 }
 
@@ -136,7 +136,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     isDocBound: deps.isDocBound,
     source: {
       serializeNode(id) {
-        const node = deps.getGraph()?.getNodeById(id)
+        const node = deps.getGraph()?.getNodeById(id as NodeId)
         return node ? serializeForMint(node) : null
       },
       nodeIds() {

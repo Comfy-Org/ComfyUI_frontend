@@ -87,6 +87,11 @@ export class LayoutFollowerBridge extends EventTarget {
     return this.sentWorkflowId
   }
 
+  /** Highest authoritative document sequence observed for the active binding. */
+  get baseVersion(): number {
+    return this.lastSeq ?? 0
+  }
+
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
   get lastSchemaError(): FollowerSchemaError | null {
     return this.schemaError

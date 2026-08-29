@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
+import type { GraphOperation } from './graphOperations'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import { api } from '@/scripts/api'
@@ -10,6 +11,8 @@ import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { createOpSender } from './opSender'
+import { PendingEffects } from './pendingEffects'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount / page reload loses the binding until the NEXT turn ack.
@@ -84,7 +87,8 @@ export const apiTransport: DocFrameTransport = {
 
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
-  graphMutations: GraphMutations
+  graphMutations: GraphMutations,
+  options: { userId?: () => string | null } = {}
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -117,6 +121,37 @@ export function useAgentCrdtFollower(
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = crypto.randomUUID()
+  const actor = (): string =>
+    `human:${options.userId?.() ?? 'unknown'}:${tabId}`
+  const pendingEffects = new PendingEffects()
+  const sender = createOpSender({
+    sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
+    onOpsResult(listener) {
+      const handler: EventListener = (event) => {
+        if (!(event instanceof CustomEvent)) return
+        const detail = event.detail as {
+          ok: boolean
+          applied: string[]
+          skipped: string[]
+          failed?: { op_id?: string }
+        }
+        listener({
+          ok: detail.ok,
+          applied: detail.applied,
+          skipped: detail.skipped,
+          ...(detail.failed && { failure: detail.failed })
+        })
+      }
+      bridge.addEventListener('doc_ops_result', handler)
+      return () => bridge.removeEventListener('doc_ops_result', handler)
+    },
+    workflowId: () => bridge.subscribedWorkflowId,
+    tab: tabId,
+    actor,
+    baseVersion: () => bridge.baseVersion,
+    onMinted: (ops) => pendingEffects.add(ops),
+    onBatchSettled: (outcome) => recordDevEvent('doc_ops_settled', outcome)
+  })
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -219,7 +254,14 @@ export function useAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     if (event instanceof CustomEvent) {
-      adapter.applyFrame(event.detail as DocUpdate)
+      const update = event.detail as DocUpdate
+      if (pendingEffects.observe(update, actor())) {
+        // FE-KA6-GUARD-1: the local canvas already presents this effect. Drop
+        // the observer delta so it cannot re-project or feed the mint ports.
+        adapter.discardPending(update.workflowId)
+      } else {
+        adapter.applyFrame(update)
+      }
     }
     if (event instanceof CustomEvent) {
       const detail = event.detail as {
@@ -392,6 +434,8 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('follower_replaced', onFollowerReplaced)
       bridge.removeEventListener('schema_error', onSchemaError)
       adapter.destroy()
+      sender.detach()
+      pendingEffects.clear()
       bridge.destroy()
     } finally {
       client.destroy()
@@ -410,6 +454,8 @@ export function useAgentCrdtFollower(
     status: readonly(status),
     // The semantic canvas-command adapter will call this after it moves to
     // @comfyorg/comfy-multi-player. Raw Yjs client updates are never sent.
-    sendHumanOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops)
+    sendHumanOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops),
+    enqueueHumanOperations: (ops: GraphOperation[]) => sender.enqueue(ops),
+    pendingHumanEffects: () => pendingEffects.size
   }
 }

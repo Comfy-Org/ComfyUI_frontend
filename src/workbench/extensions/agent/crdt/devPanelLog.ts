@@ -12,6 +12,7 @@ export type DevEventKind =
   | 'doc_subscribed'
   | 'doc_update'
   | 'doc_ops_result'
+  | 'doc_ops_settled'
   | 'doc_reset'
   | 'schema_error'
   | 'reconnected'

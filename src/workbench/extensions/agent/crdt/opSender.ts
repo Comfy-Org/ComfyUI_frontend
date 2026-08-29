@@ -44,6 +44,8 @@ export interface OpSenderDeps {
   actor(): string
   /** The follower's last observed doc sequence (stamps `base_version`). */
   baseVersion(): number
+  /** Called once, immediately after identities are minted (never on retry). */
+  onMinted?(ops: Op[]): void
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
@@ -175,6 +177,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         actor: deps.actor(),
         baseVersion: deps.baseVersion()
       })
+      deps.onMinted?.(minted)
       queue.push(...chunkWireOps(minted))
       pump()
     },

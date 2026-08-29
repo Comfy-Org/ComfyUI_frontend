@@ -7,6 +7,10 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { reportError } from '@/platform/telemetry/reportError'
+import {
+  notifyMintAfterConfigure,
+  notifyMintBeforeLoad
+} from '@/workbench/extensions/agent/crdt/mintLifecycle'
 
 let registered = false
 
@@ -17,6 +21,7 @@ export function registerAgentPanelExtension(): void {
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
+      notifyMintBeforeLoad()
       const agentPanelStore = useAgentPanelStore()
       if (!agentPanelStore.isOpen) return
 
@@ -44,6 +49,9 @@ export function registerAgentPanelExtension(): void {
       )
       canvas?.selectItems(nodes)
       useCanvasStore().updateSelectedItems()
+    },
+    afterConfigureGraph() {
+      notifyMintAfterConfigure()
     },
     setup() {
       registerWorkflowTabActivityTracker()

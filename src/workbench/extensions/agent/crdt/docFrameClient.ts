@@ -3,7 +3,6 @@ const DOC_PROTOCOL_VERSION = 1
 export interface DocOp {
   op_id: string
   actor: string
-  [key: string]: unknown
 }
 
 export interface DocUpdate {
@@ -260,7 +259,7 @@ export class DocFrameClient extends EventTarget {
   }
 
   /** @returns whether the ops frame actually left the transport. */
-  sendOps(workflowId: string, tab: string, ops: DocOp[]): boolean {
+  sendOps<T extends DocOp>(workflowId: string, tab: string, ops: T[]): boolean {
     return this.send('doc_ops', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
