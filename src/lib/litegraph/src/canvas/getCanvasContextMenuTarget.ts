@@ -5,7 +5,8 @@ import { Reroute } from '../Reroute'
 import { LinkRenderType } from '../types/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-import { queryLinkBadgeAtPoint } from './linkBadges'
+import { findRerouteAtPoint } from './findRerouteAtPoint'
+import { getLinkBadgeFrameState, queryLinkBadgeAtPoint } from './linkBadges'
 
 interface CanvasContextMenuTarget {
   reroute?: Reroute
@@ -66,19 +67,17 @@ export function getCanvasContextMenuTarget(
   let reroute: Reroute | undefined
   let link: LLink | undefined
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-    const layoutHit = layoutStore.queryRerouteAtPoint(graph.rootGraph.id, {
+    reroute = findRerouteAtPoint(
+      graph,
       x,
-      y
-    })
-    const layoutReroute = layoutHit ? graph.getReroute(layoutHit.id) : undefined
-    reroute =
-      layoutReroute && canvas.renderedPaths.has(layoutReroute)
-        ? layoutReroute
-        : graph.getRerouteOnPos(x, y, canvas._visibleReroutes)
+      y,
+      canvas._visibleReroutes,
+      canvas.renderedPaths
+    )
 
     if (!reroute) {
       const badgeLinkId = queryLinkBadgeAtPoint(
-        canvas.linkBadgeFrameState,
+        getLinkBadgeFrameState(canvas),
         x,
         y
       )

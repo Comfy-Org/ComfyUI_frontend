@@ -53,6 +53,17 @@ export function remapLinkReferences(
   for (const extension of data.extra?.linkExtensions ?? []) {
     extension.id = toLinkId(remap(extension.id))
   }
+
+  const presentation = data.extra?.linkPresentation
+  if (presentation) {
+    for (const [key, value] of Object.entries(presentation)) {
+      const remappedKey = String(remap(Number(key)))
+      if (remappedKey === key) continue
+      // First entry wins when a survivor already carries presentation.
+      presentation[remappedKey] ??= value
+      delete presentation[key]
+    }
+  }
 }
 
 export function normalizeConfiguredTopology<T extends ConfiguredGraph>(

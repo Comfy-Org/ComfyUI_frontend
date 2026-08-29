@@ -32,14 +32,14 @@ describe('useLinkPresentationStore', () => {
     store.patch(graphA, LINK, { hidden: true })
     store.patch(graphA, LINK, { label: 'Checkpoint' })
 
-    expect(store.getPresentation(graphA.rootGraphId, LINK)).toMatchObject({
+    expect(store.getPresentation(graphA, LINK)).toMatchObject({
       hidden: true,
       label: 'Checkpoint'
     })
 
     store.patch(graphA, LINK, { hidden: undefined })
 
-    const presentation = store.getPresentation(graphA.rootGraphId, LINK)
+    const presentation = store.getPresentation(graphA, LINK)
     expect(presentation?.hidden).toBeUndefined()
     expect(presentation?.label).toBe('Checkpoint')
   })
@@ -50,7 +50,7 @@ describe('useLinkPresentationStore', () => {
 
     store.patch(graphA, LINK, { hidden: false, label: undefined })
 
-    expect(store.getPresentation(graphA.rootGraphId, LINK)).toBeUndefined()
+    expect(store.getPresentation(graphA, LINK)).toBeUndefined()
   })
 
   it('rejects a patch from a different owning graph', () => {
@@ -60,7 +60,7 @@ describe('useLinkPresentationStore', () => {
 
     store.patch(graphASibling, LINK, { label: 'Stolen' })
 
-    expect(store.getPresentation(graphA.rootGraphId, LINK)).toMatchObject({
+    expect(store.getPresentation(graphA, LINK)).toMatchObject({
       label: 'Owned'
     })
     expect(error).toHaveBeenCalledOnce()
@@ -72,12 +72,12 @@ describe('useLinkPresentationStore', () => {
     store.patch(graphA, LINK, { hidden: true })
 
     expect(store.take(graphASibling, LINK)).toBeUndefined()
-    expect(store.getPresentation(graphA.rootGraphId, LINK)).toMatchObject({
+    expect(store.getPresentation(graphA, LINK)).toMatchObject({
       hidden: true
     })
 
     expect(store.take(graphA, LINK)).toEqual({ hidden: true })
-    expect(store.getPresentation(graphA.rootGraphId, LINK)).toBeUndefined()
+    expect(store.getPresentation(graphA, LINK)).toBeUndefined()
   })
 
   it('clearOwner leaves sibling owners intact and clearGraph wipes one root', () => {
@@ -88,18 +88,14 @@ describe('useLinkPresentationStore', () => {
 
     store.clearOwner(graphASibling)
 
-    expect(store.getPresentation(graphA.rootGraphId, toLinkId(1))).toBeDefined()
-    expect(
-      store.getPresentation(graphA.rootGraphId, toLinkId(2))
-    ).toBeUndefined()
+    expect(store.getPresentation(graphA, toLinkId(1))).toBeDefined()
+    expect(store.getPresentation(graphA, toLinkId(2))).toBeUndefined()
 
     store.clearGraph(graphA.rootGraphId)
 
-    expect(
-      store.getPresentation(graphA.rootGraphId, toLinkId(1))
-    ).toBeUndefined()
-    expect(
-      store.getPresentation(graphB.rootGraphId, toLinkId(3))
-    ).toMatchObject({ hidden: true })
+    expect(store.getPresentation(graphA, toLinkId(1))).toBeUndefined()
+    expect(store.getPresentation(graphB, toLinkId(3))).toMatchObject({
+      hidden: true
+    })
   })
 })

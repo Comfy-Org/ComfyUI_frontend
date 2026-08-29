@@ -22,7 +22,11 @@ import {
   materializeRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import {
+  compactLinkPresentation,
+  useLinkPresentationStore
+} from '@/stores/linkPresentationStore'
+import type { LinkPresentation } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -158,7 +162,6 @@ import type {
   ISerialisedNode,
   Serialisable,
   SerialisableGraph,
-  SerialisableLLink,
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
@@ -225,7 +228,7 @@ export interface GraphAddOptions {
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
-  linkPresentation?: Record<string, Pick<SerialisableLLink, 'hidden' | 'label'>>
+  linkPresentation?: Record<string, LinkPresentation>
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }
@@ -350,10 +353,7 @@ function serialiseOwnedTopology(owner: LGraph) {
   const topologies = [...useLinkStore().graphTopologies(scope)]
   const presentationStore = useLinkPresentationStore()
   const serialiseLink = (link: (typeof topologies)[number]) => {
-    const presentation = presentationStore.getPresentation(
-      scope.rootGraphId,
-      link.id
-    )
+    const presentation = presentationStore.getPresentation(scope, link.id)
     return {
       id: link.id,
       origin_id: serializeNodeId(link.originNodeId),
@@ -362,8 +362,8 @@ function serialiseOwnedTopology(owner: LGraph) {
       target_slot: link.targetSlot,
       type: link.type,
       ...(link.parentId !== undefined && { parentId: link.parentId }),
-      ...(presentation?.hidden && { hidden: true }),
-      ...(presentation?.label !== undefined && { label: presentation.label })
+      ...(presentation &&
+        compactLinkPresentation(presentation.hidden, presentation.label))
     }
   }
   const links = topologies.filter((link) => !isFloatingTopology(link))
@@ -2258,7 +2258,16 @@ export class LGraph
         input,
         link.parentId
       )
-      transferLinkPresentation(link, boundaryLink)
+      const grouped = connections.map(({ link: groupedLink }) =>
+        compactLinkPresentation(groupedLink.hidden, groupedLink.label)
+      )
+      const unambiguous = grouped.every(
+        (candidate) =>
+          candidate.hidden === grouped[0].hidden &&
+          candidate.label === grouped[0].label
+      )
+      // Presentation moves onto the merged boundary only when unambiguous.
+      transferLinkPresentation(unambiguous ? grouped[0] : {}, boundaryLink)
     }
 
     // Group matching links
@@ -2449,7 +2458,7 @@ export class LGraph
             iparent: link.parentId,
             eparent: sublink.parentId,
             externalFirst: true,
-            hidden: link.hidden ?? sublink.hidden,
+            hidden: link.hidden || sublink.hidden || undefined,
             label: link.label ?? sublink.label
           })
           sublink.parentId = undefined
@@ -2473,7 +2482,7 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
-        hidden: link.hidden ?? outerLink?.hidden,
+        hidden: link.hidden || outerLink?.hidden || undefined,
         label: link.label ?? outerLink?.label
       })
     }
@@ -2659,6 +2668,7 @@ export class LGraph
     const links = linkArray.map((x) => x.serialize())
 
     if (reroutes?.length) {
+      // Link parent IDs cannot go in 0.4 schema arrays
       extra.linkExtensions = linkArray
         .filter((link) => link.parentId !== undefined)
         .map((link) => ({ id: link.id, parentId: link.parentId }))
@@ -2669,10 +2679,7 @@ export class LGraph
         .filter((link) => link.hidden || link.label !== undefined)
         .map((link) => [
           String(link.id),
-          {
-            ...(link.hidden && { hidden: true }),
-            ...(link.label !== undefined && { label: link.label })
-          }
+          compactLinkPresentation(link.hidden, link.label)
         ])
     )
     if (Object.keys(linkPresentation).length) {
@@ -2869,10 +2876,13 @@ export class LGraph
           }
         }
 
-        for (const link of this.links.values()) {
-          const presentation = extra?.linkPresentation?.[String(link.id)]
-          link.hidden = presentation?.hidden
-          link.label = presentation?.label
+        for (const [linkId, presentation] of Object.entries(
+          extra?.linkPresentation ?? {}
+        )) {
+          const link = this.links.get(toLinkId(Number(linkId)))
+          if (!link) continue
+          link.hidden = presentation.hidden
+          link.label = presentation.label
         }
 
         // Reroutes

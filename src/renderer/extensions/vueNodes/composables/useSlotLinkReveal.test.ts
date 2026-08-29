@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { effectScope } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,7 +13,15 @@ import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+
 import { useSlotLinkReveal } from './useSlotLinkReveal'
+
+const SCOPE = {
+  rootGraphId: toRootGraphId('root-a'),
+  owningGraphId: toOwningGraphId('root-a')
+}
 
 const mocks = vi.hoisted(() => ({
   links: new Map<LinkId, LLink>(),
@@ -21,7 +31,12 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
-      graph: { links: mocks.links, rootGraph: { id: 'root-a' } },
+      graph: {
+        id: 'root-a',
+        rootGraph: { id: 'root-a' },
+        links: mocks.links,
+        getLink: (id: LinkId) => mocks.links.get(id)
+      },
       setDirty: mocks.setDirty
     }
   }
@@ -43,8 +58,10 @@ function addLink(
     targetNode,
     targetSlot
   )
-  link.hidden = hidden
   mocks.links.set(link.id, link)
+  if (hidden) {
+    useLinkPresentationStore().patch(SCOPE, link.id, { hidden: true })
+  }
 }
 
 function createReveal(options: Parameters<typeof useSlotLinkReveal>[0]) {
@@ -55,6 +72,7 @@ function createReveal(options: Parameters<typeof useSlotLinkReveal>[0]) {
 }
 
 beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
   mocks.links.clear()
   mocks.setDirty.mockClear()
   resetLinkReveals()

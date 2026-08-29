@@ -14,15 +14,29 @@ export interface LinkPresentation {
   label?: string
 }
 
+/**
+ * Patch semantics: a key present with value `undefined` clears that field; an
+ * absent key leaves the field unchanged.
+ */
+export type LinkPresentationPatch = LinkPresentation
+
+/** Builds the canonical compact record: `hidden` only when true, `label` only when defined. */
+export function compactLinkPresentation(
+  hidden: boolean | undefined,
+  label: string | undefined
+): LinkPresentation {
+  return {
+    ...(hidden && { hidden: true }),
+    ...(label !== undefined && { label })
+  }
+}
+
 interface OwnedLinkPresentation extends LinkPresentation {
   graphId: OwningGraphId
 }
 
 function toPresentation(entry: OwnedLinkPresentation): LinkPresentation {
-  return {
-    ...(entry.hidden && { hidden: true }),
-    ...(entry.label !== undefined && { label: entry.label })
-  }
+  return compactLinkPresentation(entry.hidden, entry.label)
 }
 
 /**
@@ -54,7 +68,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
   function patch(
     scope: GraphScope,
     linkId: LinkId,
-    partial: LinkPresentation
+    partial: LinkPresentationPatch
   ): void {
     const bucket = roots.get(scope.rootGraphId)
     const incumbent = bucket?.get(linkId)
@@ -75,8 +89,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     const target = bucket ?? createRootBucket(scope.rootGraphId)
     target.set(linkId, {
       graphId: scope.owningGraphId,
-      ...(hidden && { hidden: true }),
-      ...(label !== undefined && { label })
+      ...compactLinkPresentation(hidden, label)
     })
   }
 
@@ -93,11 +106,13 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     return toPresentation(entry)
   }
 
+  /** Returns the live store record for a link `scope` owns. */
   function getPresentation(
-    rootGraphId: RootGraphId,
+    scope: GraphScope,
     linkId: LinkId
   ): Readonly<LinkPresentation> | undefined {
-    return roots.get(rootGraphId)?.get(linkId)
+    const entry = roots.get(scope.rootGraphId)?.get(linkId)
+    return entry?.graphId === scope.owningGraphId ? entry : undefined
   }
 
   /** Ids of a graph's hidden links — the render index; empty cost when nothing is hidden. */

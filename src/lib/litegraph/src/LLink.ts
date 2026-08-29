@@ -237,8 +237,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    */
   _pendingPresentation?: LinkPresentation
 
-  get hidden(): boolean | undefined {
-    return this.presentation?.hidden
+  get hidden(): boolean {
+    return this.presentation?.hidden ?? false
   }
 
   set hidden(value: boolean | undefined) {
@@ -250,16 +250,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set label(value: string | undefined) {
-    this.writePresentation({ label: value })
+    this.writePresentation({ label: value || undefined })
   }
 
   private get presentation(): Readonly<LinkPresentation> | undefined {
     const scope = this._graphScope
     if (!scope) return this._pendingPresentation
-    return useLinkPresentationStore().getPresentation(
-      scope.rootGraphId,
-      this.id
-    )
+    return useLinkPresentationStore().getPresentation(scope, this.id)
   }
 
   private writePresentation(partial: LinkPresentation): void {
@@ -760,12 +757,6 @@ function adoptLinkTopology(
 }
 
 /**
- * Removes a link's topology from {@link useLinkStore} and detaches the link.
- * No-op for links that never won registration ({@link LLink._graphScope} unset),
- * so a first-wins collision loser cannot remove the winner's entry.
- * @param link The link to unregister
- */
-/**
  * Copies presentation from a source (a serialized link, a disconnected link
  * holding its stashed presentation, or a plain record) onto a newly created
  * link. Used by every flow that recreates links instead of transferring them:
@@ -780,6 +771,12 @@ export function transferLinkPresentation(
   if (source.label !== undefined) target.label = source.label
 }
 
+/**
+ * Removes a link's topology from {@link useLinkStore} and detaches the link.
+ * No-op for links that never won registration ({@link LLink._graphScope} unset),
+ * so a first-wins collision loser cannot remove the winner's entry.
+ * @param link The link to unregister
+ */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
   const stashed = useLinkPresentationStore().take(link._graphScope, link.id)

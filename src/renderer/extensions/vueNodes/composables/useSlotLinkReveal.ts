@@ -5,6 +5,8 @@ import {
   setRevealedLinks
 } from '@/renderer/core/canvas/links/linkRevealState'
 import { app } from '@/scripts/app'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 
 interface SlotLinkRevealOptions {
@@ -20,16 +22,17 @@ export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
     const graph = app.canvas?.graph
     if (!graph || options.nodeId === undefined) return []
 
-    return [...graph.links.values()]
-      .filter((link) => link.hidden)
-      .filter((link) =>
-        options.type === 'output'
+    return useLinkPresentationStore()
+      .graphHiddenLinkIds(graphScopeOf(graph))
+      .filter((linkId) => {
+        const link = graph.getLink(linkId)
+        if (!link) return false
+        return options.type === 'output'
           ? link.origin_id === options.nodeId &&
-            link.origin_slot === options.index
+              link.origin_slot === options.index
           : link.target_id === options.nodeId &&
-            link.target_slot === options.index
-      )
-      .map((link) => link.id)
+              link.target_slot === options.index
+      })
   }
 
   function revealLinks(): void {

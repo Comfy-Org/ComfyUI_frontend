@@ -2,6 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
+import { getLinkBadgeFrameState } from '@/lib/litegraph/src/canvas/linkBadges'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { toLinkId } from '@/types/linkId'
@@ -35,16 +36,6 @@ interface StubGraph {
 interface StubCanvas {
   graph: StubGraph | null
   ctx: CanvasRenderingContext2D
-  linkBadgeFrameState: {
-    hitAreas: Array<{
-      linkId: ReturnType<typeof toLinkId>
-      x: number
-      y: number
-      width: number
-      height: number
-    }>
-    pendingBadges: []
-  }
   connections_width: number
   links_render_mode: number
   renderedPaths: Set<unknown>
@@ -73,7 +64,6 @@ describe('getCanvasContextMenuTarget', () => {
         lineWidth: 3,
         isPointInStroke
       }),
-      linkBadgeFrameState: { hitAreas: [], pendingBadges: [] },
       connections_width: 3,
       links_render_mode: LinkRenderType.SPLINE_LINK,
       renderedPaths: new Set(),
@@ -170,7 +160,7 @@ describe('getCanvasContextMenuTarget', () => {
 
   it('returns a hidden link hit on its badge', () => {
     const link = { id: toLinkId(5), hidden: true }
-    canvas.linkBadgeFrameState.hitAreas.push({
+    getLinkBadgeFrameState(canvas).hitAreas.push({
       linkId: link.id,
       x: 5,
       y: 15,
@@ -236,7 +226,7 @@ describe('getCanvasContextMenuTarget', () => {
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
     graph.getReroute.mockReturnValue(reroute)
     graph.getLink.mockReturnValue(link)
-    canvas.linkBadgeFrameState.hitAreas.push({
+    getLinkBadgeFrameState(canvas).hitAreas.push({
       linkId: link.id,
       x: 5,
       y: 15,

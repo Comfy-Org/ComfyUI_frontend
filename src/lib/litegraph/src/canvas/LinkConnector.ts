@@ -1,7 +1,11 @@
 import { remove } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import {
+  LLink,
+  slotFloatingLinks,
+  transferLinkPresentation
+} from '@/lib/litegraph/src/LLink'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
@@ -1026,12 +1030,13 @@ export class LinkConnector {
           link.link.parentId !== undefined
         ) {
           // Reconnect link without reroutes
-          link.outputNode.connectSlots(
+          const reconnected = link.outputNode.connectSlots(
             link.outputSlot,
             link.inputNode,
             link.inputSlot,
             undefined!
           )
+          transferLinkPresentation(link.link, reconnected)
         }
         continue
       }

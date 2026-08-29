@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -115,6 +116,90 @@ describe('link presentation transfer across recreation flows', () => {
     expect(pasted.id).not.toBe(link.id)
     expect(pasted.hidden).toBe(true)
     expect(pasted.label).toBe('Copied')
+  })
+
+  it('keeps presentation when a subgraph-input boundary link is retargeted', () => {
+    const rootGraph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+    const exterior = createTestNode(rootGraph, [], ['number'])
+    const origin = createTestNode(rootGraph, ['number'], ['number'])
+    const target = createTestNode(rootGraph, ['number'])
+    exterior.connect(0, origin, 0)
+    origin.connect(0, target, 0)
+
+    const { subgraph } = rootGraph.convertToSubgraph(
+      new Set<Positionable>([origin, target])
+    )
+    const boundary = [...subgraph.links.values()].find(
+      (candidate) => candidate.origin_id === SUBGRAPH_INPUT_ID
+    )
+    if (!boundary) throw new Error('Interior boundary link was not found')
+    boundary.hidden = true
+    boundary.label = 'Boundary'
+    const other = createTestNode(subgraph, ['number'])
+
+    const moving = new ToInputFromIoNodeLink(
+      subgraph,
+      subgraph.inputNode,
+      subgraph.inputs[0],
+      undefined,
+      undefined,
+      boundary
+    )
+    const events = new CustomEventTarget<LinkConnectorEventMap>()
+    moving.connectToInput(other, other.inputs[0], events)
+
+    const retargeted = [...subgraph.links.values()].find(
+      (candidate) =>
+        candidate.origin_id === SUBGRAPH_INPUT_ID &&
+        candidate.target_id === other.id
+    )
+    expect(retargeted?.hidden).toBe(true)
+    expect(retargeted?.label).toBe('Boundary')
+  })
+
+  it('moves fan-out presentation onto the merged boundary only when unambiguous', () => {
+    const rootGraph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+    const exterior = createTestNode(rootGraph, [], ['number'])
+    const first = createTestNode(rootGraph, ['number'])
+    const second = createTestNode(rootGraph, ['number'])
+    const hiddenLink = exterior.connect(0, first, 0)
+    if (!hiddenLink) throw new Error('Failed to connect fan-out test link')
+    exterior.connect(0, second, 0)
+    hiddenLink.hidden = true
+
+    rootGraph.convertToSubgraph(new Set<Positionable>([first, second]))
+
+    const boundary = [...rootGraph.links.values()].find(
+      (candidate) => candidate.origin_id === exterior.id
+    )
+    expect(boundary?.hidden).toBe(false)
+  })
+
+  it('moves uniform fan-out presentation onto the merged boundary', () => {
+    const rootGraph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+    const exterior = createTestNode(rootGraph, [], ['number'])
+    const first = createTestNode(rootGraph, ['number'])
+    const second = createTestNode(rootGraph, ['number'])
+    const firstLink = exterior.connect(0, first, 0)
+    const secondLink = exterior.connect(0, second, 0)
+    if (!firstLink || !secondLink) {
+      throw new Error('Failed to connect fan-out test links')
+    }
+    firstLink.hidden = true
+    firstLink.label = 'Shared'
+    secondLink.hidden = true
+    secondLink.label = 'Shared'
+
+    rootGraph.convertToSubgraph(new Set<Positionable>([first, second]))
+
+    const boundary = [...rootGraph.links.values()].find(
+      (candidate) => candidate.origin_id === exterior.id
+    )
+    expect(boundary?.hidden).toBe(true)
+    expect(boundary?.label).toBe('Shared')
   })
 
   it('keeps presentation when the input end is moved to another node', () => {

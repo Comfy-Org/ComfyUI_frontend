@@ -468,6 +468,33 @@ describe('drawConnections hidden links', () => {
     expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
   })
 
+  it('releases the badge-hover reveal after the last badge disappears', () => {
+    vi.stubGlobal('Path2D', StubPath2D)
+    const link = createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    const badge = canvas.linkBadgeFrameState.hitAreas[0]
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX: badge.x + badge.width / 2,
+        clientY: badge.y + badge.height / 2,
+        isPrimary: false
+      })
+    )
+    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(true)
+
+    link.hidden = false
+    canvas.drawConnections(createMockCtx())
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX: 500,
+        clientY: 500,
+        isPrimary: false
+      })
+    )
+
+    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
+  })
+
   it('does not reveal an occluded badge', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())

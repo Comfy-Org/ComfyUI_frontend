@@ -84,7 +84,7 @@ describe('LLink visibility serialization', () => {
 
     link.configure(makeLink(2).serialize())
 
-    expect(link.hidden).toBeUndefined()
+    expect(link.hidden).toBe(false)
     expect(link.label).toBeUndefined()
   })
 
@@ -119,7 +119,7 @@ describe('LLink visibility serialization', () => {
     const restored = new LGraph()
 
     expect(() => restored.configure(structuredClone(serialized))).not.toThrow()
-    expect(restored.getLink(link.id)?.hidden).toBeUndefined()
+    expect(restored.getLink(link.id)?.hidden).toBe(false)
     expect(restored.getLink(link.id)?.label).toBeUndefined()
   })
 
@@ -135,7 +135,7 @@ describe('LLink visibility serialization', () => {
 
     graph.configure(structuredClone(serialized))
 
-    expect(graph.getLink(link.id)?.hidden).toBeUndefined()
+    expect(graph.getLink(link.id)?.hidden).toBe(false)
     expect(graph.getLink(link.id)?.label).toBeUndefined()
   })
 
@@ -180,7 +180,7 @@ describe('link presentation store integration', () => {
 
     const scope = graphScopeOf(graph)
     expect(
-      useLinkPresentationStore().getPresentation(scope.rootGraphId, link.id)
+      useLinkPresentationStore().getPresentation(scope, link.id)
     ).toMatchObject({ hidden: true, label: 'Buffered' })
     expect(link.hidden).toBe(true)
   })
@@ -195,12 +195,12 @@ describe('link presentation store integration', () => {
 
     const scope = graphScopeOf(graph)
     const store = useLinkPresentationStore()
-    expect(store.getPresentation(scope.rootGraphId, link.id)).toBeUndefined()
+    expect(store.getPresentation(scope, link.id)).toBeUndefined()
     expect(link.hidden).toBe(true)
 
     graph._addLink(link)
 
-    expect(store.getPresentation(scope.rootGraphId, link.id)?.hidden).toBe(true)
+    expect(store.getPresentation(scope, link.id)?.hidden).toBe(true)
   })
 
   it('a registration loser cannot plant presentation over the incumbent', () => {
@@ -215,9 +215,9 @@ describe('link presentation store integration', () => {
 
     const scope = graphScopeOf(graph)
     expect(
-      useLinkPresentationStore().getPresentation(scope.rootGraphId, winner.id)
+      useLinkPresentationStore().getPresentation(scope, winner.id)
     ).toBeUndefined()
-    expect(winner.hidden).toBeUndefined()
+    expect(winner.hidden).toBe(false)
     expect(loser.hidden).toBe(true)
     error.mockRestore()
   })

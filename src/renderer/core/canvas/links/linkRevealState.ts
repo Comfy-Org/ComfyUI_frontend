@@ -1,5 +1,3 @@
-import type { LinkId } from '@/lib/litegraph/src/LLink'
-
 /**
  * Transient hidden-link reveal state, scoped by root graph and reference-
  * counted per owner token. Each reveal source (a canvas, a Vue slot scope)
@@ -7,6 +5,8 @@ import type { LinkId } from '@/lib/litegraph/src/LLink'
  * holds it, so one source releasing cannot clear another source's reveal, and
  * equal link ids in different workflows never collide.
  */
+import type { LinkId } from '@/lib/litegraph/src/LLink'
+
 type OwnerToken = object
 
 const EMPTY: ReadonlySet<LinkId> = new Set()

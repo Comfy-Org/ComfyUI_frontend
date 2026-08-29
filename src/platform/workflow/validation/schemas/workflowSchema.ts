@@ -81,12 +81,12 @@ const zComfyLinkExtension = z
   })
   .passthrough()
 
-const zComfyLinkPresentation = z
-  .object({
-    hidden: z.boolean().optional(),
-    label: z.string().optional()
-  })
-  .passthrough()
+const zLinkPresentationFields = {
+  hidden: z.boolean().optional(),
+  label: z.string().optional()
+}
+
+const zComfyLinkPresentation = z.object(zLinkPresentationFields).passthrough()
 
 const zComfyLinkObject = z
   .object({
@@ -97,8 +97,7 @@ const zComfyLinkObject = z
     target_slot: zSlotIndex,
     type: zDataType,
     parentId: z.number().optional(),
-    hidden: z.boolean().optional(),
-    label: z.string().optional()
+    ...zLinkPresentationFields
   })
   .passthrough()
 
