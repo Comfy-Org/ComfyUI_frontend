@@ -19,9 +19,9 @@ const blobShape = {
     <Ascii characters="@#8960543271">
       <ThinFilm
         mode="custom"
-        color-a="#3bff88"
-        color-b="#004821"
-        color-c="#2caf82"
+        color-a="#f2ff59"
+        color-b="#49378b"
+        color-c="#fabc25"
         :center="blobCenter"
         :scale="1.5"
         :shape="blobShape"
