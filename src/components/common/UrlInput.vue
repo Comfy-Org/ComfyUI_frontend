@@ -1,10 +1,10 @@
 <template>
   <IconField class="w-full">
-    <InputText
+    <Input
       v-bind="$attrs"
       :model-value="internalValue"
       class="w-full"
-      :invalid="validationState === ValidationState.INVALID"
+      :aria-invalid="validationState === ValidationState.INVALID"
       @update:model-value="handleInput"
       @blur="handleBlur"
     />
@@ -25,9 +25,9 @@
 <script setup lang="ts">
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
-import InputText from 'primevue/inputtext'
 import { onMounted, ref, watch } from 'vue'
 
+import Input from '@/components/ui/input/Input.vue'
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
@@ -68,9 +68,9 @@ onMounted(async () => {
   await validateUrl(props.modelValue)
 })
 
-const handleInput = (value: string | undefined) => {
+const handleInput = (value: string | number | undefined) => {
   // Update internal value without emitting
-  internalValue.value = cleanInput(value ?? '')
+  internalValue.value = cleanInput(String(value ?? ''))
   // Reset validation state when user types
   validationState.value = ValidationState.IDLE
 }

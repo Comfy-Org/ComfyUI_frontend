@@ -29,9 +29,6 @@ vi.mock('../composables/useSecretForm', () => ({
   })
 }))
 
-vi.mock('primevue/inputtext', () => ({
-  default: { name: 'InputText', template: '<input />' }
-}))
 vi.mock('primevue/password', () => ({
   default: { name: 'Password', template: '<input type="password" />' }
 }))

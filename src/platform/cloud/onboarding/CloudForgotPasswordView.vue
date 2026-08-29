@@ -23,13 +23,13 @@
         >
           {{ t('cloudForgotPassword_emailLabel') }}
         </label>
-        <InputText
+        <Input
           id="reset-email"
           v-model="email"
           type="email"
           :placeholder="t('cloudForgotPassword_emailPlaceholder')"
           :class="CLOUD_AUTH_FIELD_CLASS"
-          :invalid="!!errorMessage && !email"
+          :aria-invalid="!!errorMessage && !email"
           autocomplete="email"
           required
         />
@@ -69,12 +69,12 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import Message from '@/components/ui/message/Message.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import {

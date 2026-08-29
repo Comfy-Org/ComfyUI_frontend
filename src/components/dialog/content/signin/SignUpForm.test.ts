@@ -1,14 +1,14 @@
 import { Form, FormField } from '@primevue/forms'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import Button from '@/components/ui/button/Button.vue'
-import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import SignUpForm from './SignUpForm.vue'
@@ -92,7 +92,7 @@ function globalOptions() {
       Form,
       FormField,
       Button,
-      InputText,
+      Input,
       Password
     }
   }

@@ -82,11 +82,11 @@
             <label for="secret-name" class="text-sm font-medium">
               {{ $t('secrets.name') }}
             </label>
-            <InputText
+            <Input
               id="secret-name"
               v-model="form.name"
               :placeholder="$t('secrets.namePlaceholder')"
-              :class="{ 'p-invalid': errors.name }"
+              :aria-invalid="!!errors.name"
             />
             <small v-if="errors.name" class="text-red-500">
               {{ errors.name }}
@@ -172,12 +172,12 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import { computed, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogClose from '@/components/ui/dialog/DialogClose.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
