@@ -7,6 +7,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -131,7 +132,9 @@ function useEmailVerificationInternal() {
         await user.getIdToken(true)
       }
     } catch (error) {
-      console.error('Failed to refresh email verification status:', error)
+      reportError(error, {
+        errorType: 'email_verification_refresh_failure'
+      })
     } finally {
       isRefreshing = false
     }

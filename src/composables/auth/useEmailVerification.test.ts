@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   flags: { emailVerificationNudgeEnabled: true },
   isCloud: { current: true },
   toast: { add: vi.fn() },
-  sendEmailVerification: vi.fn()
+  sendEmailVerification: vi.fn(),
+  reportError: vi.fn()
 }))
 
 vi.mock('@/stores/authStore', () => ({
@@ -31,6 +32,9 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 vi.mock('firebase/auth', () => ({
   sendEmailVerification: mocks.sendEmailVerification
+}))
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mocks.reportError
 }))
 
 interface FakeUser {
@@ -67,6 +71,7 @@ beforeEach(() => {
   mocks.isCloud.current = true
   mocks.toast.add.mockReset()
   mocks.sendEmailVerification.mockReset()
+  mocks.reportError.mockReset()
 })
 
 afterEach(() => {
@@ -317,6 +322,20 @@ describe('useEmailVerification', () => {
 
       await vi.waitFor(() => expect(needsEmailVerification.value).toBe(false))
       expect(user.getIdToken).toHaveBeenCalledWith(true)
+    })
+
+    it('reports a reload failure to telemetry instead of surfacing it', async () => {
+      const reloadFailure = new Error('offline')
+      mocks.authStore.currentUser = makeUser({
+        reload: vi.fn().mockRejectedValue(reloadFailure)
+      })
+      const { refresh } = await loadComposable()
+
+      await expect(refresh()).resolves.toBeUndefined()
+
+      expect(mocks.reportError).toHaveBeenCalledWith(reloadFailure, {
+        errorType: 'email_verification_refresh_failure'
+      })
     })
 
     it('collapses overlapping refreshes into a single reload', async () => {
