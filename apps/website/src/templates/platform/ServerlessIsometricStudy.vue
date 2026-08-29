@@ -41,6 +41,8 @@ interface VisualTile extends Tile {
   topFill: string
 }
 
+type Point = readonly [number, number]
+
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
 const onScreen = useElementVisibility(stageRef)
 const elapsed = ref(0)
@@ -169,6 +171,37 @@ function tileTransform(tile: VisualTile) {
   return `matrix(${ISO_X} ${-ISO_Y} ${ISO_X} ${ISO_Y} ${tile.x} ${tile.y - tile.height})`
 }
 
+function tileCorners(tile: VisualTile, elevation: number): readonly Point[] {
+  const topY = tile.y - elevation
+  const halfWidth = TILE_WIDTH / 2
+  const halfHeight = TILE_HEIGHT / 2
+
+  return [
+    [tile.x, topY],
+    [tile.x + halfWidth, topY - halfHeight],
+    [tile.x + TILE_WIDTH, topY],
+    [tile.x + halfWidth, topY + halfHeight]
+  ]
+}
+
+function polygonPoints(points: readonly Point[]) {
+  return points.map(([x, y]) => `${x},${y}`).join(' ')
+}
+
+function leftFace(tile: VisualTile) {
+  const top = tileCorners(tile, tile.height)
+  const base = tileCorners(tile, 0)
+
+  return polygonPoints([top[0], top[3], base[3], base[0]])
+}
+
+function rightFace(tile: VisualTile) {
+  const top = tileCorners(tile, tile.height)
+  const base = tileCorners(tile, 0)
+
+  return polygonPoints([top[3], top[2], base[2], base[3]])
+}
+
 const { pause, resume } = useRafFn(
   ({ delta }) => {
     elapsed.value += delta
@@ -200,16 +233,41 @@ watch(
       class="absolute inset-0 size-full"
       aria-hidden="true"
     >
+      <defs>
+        <clipPath
+          v-for="tile in visualTiles"
+          :id="`isometric-body-${tile.id}`"
+          :key="tile.id"
+          clipPathUnits="userSpaceOnUse"
+        >
+          <polygon :points="leftFace(tile)" />
+          <polygon :points="rightFace(tile)" />
+        </clipPath>
+      </defs>
+
       <g v-for="tile in visualTiles" :key="tile.id">
         <image
           v-if="tile.height > 0.5"
-          href="/assets/platform/serverless/isometric-column.webp"
+          href="/assets/platform/serverless/isometric-texture.webp"
           :x="tile.x"
-          :y="tile.y - tile.height - TILE_HEIGHT / 2"
+          :y="tile.y - tile.height"
           :width="TILE_WIDTH"
-          :height="tile.height + TILE_HEIGHT"
+          :height="tile.height + TILE_HEIGHT / 2"
+          :clip-path="`url(#isometric-body-${tile.id})`"
           preserveAspectRatio="none"
         />
+        <template v-if="tile.height > 0.5">
+          <polygon
+            :points="leftFace(tile)"
+            fill="var(--color-primary-comfy-ink)"
+            fill-opacity="0.12"
+          />
+          <polygon
+            :points="rightFace(tile)"
+            fill="var(--color-primary-comfy-plum)"
+            fill-opacity="0.06"
+          />
+        </template>
         <rect
           :width="TILE_SIZE"
           :height="TILE_SIZE"
