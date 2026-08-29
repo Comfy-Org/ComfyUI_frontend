@@ -224,4 +224,40 @@ describe('QueueProgressOverlay', () => {
 
     expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
   })
+
+  it('keeps the latest sidebar focus after switching tabs during an older request', async () => {
+    let resolveFirst!: (found: boolean) => void
+    const firstLoad = new Promise<boolean>((resolve) => {
+      resolveFirst = resolve
+    })
+    loadOutputAssetMock
+      .mockImplementationOnce(() => firstLoad)
+      .mockResolvedValueOnce(true)
+    itemToView = createCompletedJobView('older-request')
+    const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
+      [],
+      []
+    )
+
+    await user.click(screen.getByTestId('view-item-button'))
+    await waitFor(() =>
+      expect(loadOutputAssetMock).toHaveBeenCalledWith('older-request')
+    )
+
+    sidebarTabStore.activeSidebarTabId = 'queue'
+    itemToView = createCompletedJobView('latest-request')
+    await user.click(screen.getByTestId('view-item-button'))
+    await waitFor(() =>
+      expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
+    )
+    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+
+    sidebarTabStore.activeSidebarTabId = 'queue'
+    resolveFirst(true)
+    await firstLoad
+    await Promise.resolve()
+
+    expect(sidebarTabStore.activeSidebarTabId).toBe('queue')
+    expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
+  })
 })
