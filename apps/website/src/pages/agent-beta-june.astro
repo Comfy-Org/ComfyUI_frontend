@@ -1,0 +1,404 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+
+const cards = [
+  {
+    tag: 'Creative knowledge',
+    title: 'Fpo title here',
+    body: 'Lorem ipsumd'
+  },
+  {
+    tag: 'Multi payer and canvas-aware',
+    title: 'It builds on your canvas',
+    body: 'Watch the graph assemble. Mention a node or a workflow and it pulls it in. Click an error and it fixes it.'
+  },
+  {
+    tag: 'Control',
+    title: 'The craft stays yours',
+    body: 'You review the graph and you keep the controls. Newcomers never open a node view; power users get a pair-builder.'
+  },
+  {
+    tag: 'Multi-environemnt',
+    title: 'It runs where you run',
+    body: 'Same agent, same memory, on your machine and in Comfy Cloud. It reads your hardware and picks a pipeline that fits.'
+  }
+]
+---
+
+<BaseLayout
+  title="The first agent for craft"
+  description="The Comfy Agent lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas, runs it, and hands back the result."
+  noindex
+>
+  <!-- ============ HERO ============ -->
+  <section class="agent-hero">
+    <div class="wash" aria-hidden="true"></div>
+    <div class="dot-grid" aria-hidden="true"></div>
+    <div class="cloud" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <div class="inner">
+      <div class="mark">
+        <video
+          autoplay
+          loop
+          muted
+          playsinline
+          disablepictureinpicture
+          poster="/assets/agent-beta/comfy-mark_156x156.png"
+          aria-label="Comfy"
+        >
+          <source src="/assets/agent-beta/comfy-mark.webm" type="video/webm" />
+          <img src="/assets/agent-beta/comfy-mark_156x156.png" alt="Comfy" />
+        </video>
+      </div>
+
+      <h1>The first agent for craft</h1>
+
+      <p class="sub">
+        The Comfy Agent lives inside ComfyUI, local and cloud. Describe what you
+        want: it builds the workflow on your canvas, runs it, and hands back the
+        result.
+      </p>
+
+      <form class="waitlist-form" action="#" method="post">
+        <label for="email" class="sr-only">Email address</label>
+        <input
+          id="email"
+          type="email"
+          name="email"
+          placeholder="Type your email"
+          required
+        />
+        <button type="submit">Join the waitlist</button>
+      </form>
+
+      <p class="note">
+        We'll prepare your account and email when it's ready.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ CARDS ============ -->
+  <section class="agent-section">
+    <div class="section-head">
+      <h2>It fits the way you already work</h2>
+    </div>
+
+    <div class="cards">
+      {
+        cards.map((card) => (
+          <div class="card">
+            <p class="tag">{card.tag}</p>
+            <h3>{card.title}</h3>
+            <p>{card.body}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .agent-hero {
+    --ink: #211927;
+    --lime: #d6f24e;
+    --paper: #f5f5f5;
+    --dot: 5px;
+    position: relative;
+    min-height: 78vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    isolation: isolate;
+    padding: 100px 24px 60px;
+    color: var(--paper);
+  }
+
+  .wash {
+    position: absolute;
+    inset: -20%;
+    z-index: -4;
+    background:
+      radial-gradient(
+        ellipse 50% 40% at 30% 35%,
+        rgba(73, 55, 139, 0.55),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 45% 45% at 72% 62%,
+        rgba(73, 55, 139, 0.38),
+        transparent 70%
+      );
+    filter: blur(40px);
+    animation: sway 40s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  .dot-grid {
+    position: absolute;
+    inset: 0;
+    z-index: -3;
+    background-image: radial-gradient(
+      circle,
+      rgba(245, 245, 245, 0.16) 1px,
+      transparent 1.1px
+    );
+    background-size: var(--dot) var(--dot);
+  }
+
+  .cloud {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background-image: radial-gradient(
+      circle,
+      rgba(245, 245, 245, 0.42) 1.15px,
+      transparent 1.25px
+    );
+    background-size: var(--dot) var(--dot);
+    mask-image:
+      radial-gradient(circle, #000 0%, transparent 62%),
+      radial-gradient(circle, #000 0%, transparent 58%),
+      radial-gradient(circle, #000 0%, transparent 66%);
+    mask-size:
+      1100px 900px,
+      800px 700px,
+      1300px 1000px;
+    mask-repeat: no-repeat;
+    animation: shift 48s ease-in-out infinite alternate;
+    will-change: mask-position;
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(
+      ellipse 65% 50% at 50% 50%,
+      rgba(33, 25, 39, 0.72) 0%,
+      rgba(33, 25, 39, 0.9) 65%,
+      rgba(33, 25, 39, 0.98) 100%
+    );
+  }
+
+  @keyframes shift {
+    0% {
+      mask-position:
+        8% 22%,
+        78% 70%,
+        45% 12%;
+    }
+    100% {
+      mask-position:
+        34% 58%,
+        52% 30%,
+        68% 74%;
+    }
+  }
+  @keyframes sway {
+    from {
+      transform: translate3d(-2%, -1%, 0) scale(1);
+    }
+    to {
+      transform: translate3d(3%, 2%, 0) scale(1.08);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cloud,
+    .wash {
+      animation: none;
+    }
+  }
+
+  .inner {
+    position: relative;
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .mark {
+    width: 68px;
+    aspect-ratio: 880 / 912;
+    margin: 0 auto 28px auto;
+    display: block;
+  }
+  .mark video,
+  .mark img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+  }
+
+  .eyebrow {
+    margin: 0 0 18px 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #d6f24e;
+  }
+
+  h1 {
+    margin: 0 0 28px 0;
+    font-size: clamp(36px, 6vw, 64px);
+    line-height: 1.22;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    color: var(--color-primary-warm-white);
+  }
+
+  .sub {
+    margin: 0 auto 40px auto;
+    max-width: 560px;
+    font-size: clamp(16px, 2vw, 19px);
+    line-height: 1.6;
+    color: rgba(245, 245, 245, 0.82);
+  }
+
+  .waitlist-form {
+    display: flex;
+    align-items: center;
+    max-width: 520px;
+    margin: 0 auto;
+    background: #2a2230;
+    border: 1px solid rgba(245, 245, 245, 0.25);
+    border-radius: 24px;
+    padding: 8px;
+  }
+  .waitlist-form input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    padding: 14px 20px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--color-primary-comfy-canvas);
+  }
+  .waitlist-form input::placeholder {
+    color: rgba(194, 191, 185, 0.7);
+  }
+  .waitlist-form button {
+    flex: 0 0 auto;
+    border: 0;
+    cursor: pointer;
+    background: var(--color-primary-comfy-yellow);
+    color: var(--color-primary-comfy-ink);
+    border-radius: 16px;
+    padding: 15px 28px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition:
+      filter 0.18s ease,
+      transform 0.18s ease;
+  }
+  .waitlist-form button:hover {
+    filter: brightness(1.06);
+  }
+  .waitlist-form button:active {
+    transform: scale(0.98);
+  }
+
+  .note {
+    margin: 20px auto 0 auto;
+    font-size: 11px;
+    line-height: 1.5;
+    color: rgba(245, 245, 245, 0.55);
+  }
+
+  @media (max-width: 560px) {
+    .waitlist-form {
+      flex-direction: column;
+      background: transparent;
+      padding: 0;
+      gap: 12px;
+    }
+    .waitlist-form input {
+      width: 100%;
+      background: #2a2230;
+      border: 1px solid rgba(245, 245, 245, 0.25);
+      border-radius: 24px;
+      padding: 16px 22px;
+    }
+    .waitlist-form button {
+      width: 100%;
+      padding: 17px 26px;
+    }
+  }
+
+  .agent-section {
+    padding: 72px 24px 140px 24px;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .section-head {
+    text-align: center;
+    margin: 0 auto 64px auto;
+    max-width: 720px;
+  }
+  .section-head .eyebrow {
+    margin-bottom: 14px;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: clamp(28px, 4.2vw, 48px);
+    line-height: 1.12;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    color: var(--color-primary-comfy-canvas);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .card {
+    background: #2a2233;
+    border-radius: 24px;
+    padding: 34px 34px 38px 34px;
+  }
+
+  .card .tag {
+    margin: 0 0 16px 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-primary-comfy-yellow);
+  }
+
+  .card h3 {
+    margin: 0 0 12px 0;
+    font-size: 23px;
+    line-height: 1.25;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+  }
+
+  .card p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.62;
+    color: rgba(245, 245, 245, 0.66);
+  }
+
+  @media (max-width: 820px) {
+    .cards {
+      grid-template-columns: 1fr;
+    }
+    .agent-section {
+      padding: 80px 24px 96px 24px;
+    }
+  }
+</style>
