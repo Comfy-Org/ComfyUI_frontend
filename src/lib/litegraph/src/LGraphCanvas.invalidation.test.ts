@@ -47,10 +47,10 @@ class InvalidationProbe {
 
     const drawBackground = canvas.drawBackCanvas.bind(canvas)
     vi.spyOn(canvas, 'drawBackCanvas').mockImplementation(
-      (nodesInFrameOrder, nodesGraph, redrawFrontCanvas) => {
+      (redrawFrontCanvas, nodesInFrameOrder, nodesGraph) => {
         this.backgroundDraw()
         this.drawSequence.push('background')
-        drawBackground(nodesInFrameOrder, nodesGraph, redrawFrontCanvas)
+        drawBackground(redrawFrontCanvas, nodesInFrameOrder, nodesGraph)
       }
     )
   }
@@ -334,5 +334,15 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     expect(probe.backgroundDraw).toHaveBeenCalledTimes(2)
     expect(canvas.dirty_canvas).toBe(false)
     expect(canvas.dirty_bgcanvas).toBe(false)
+  })
+
+  it('preserves the public drawBackCanvas redraw boolean', () => {
+    canvas.dirty_canvas = false
+
+    canvas.drawBackCanvas(false)
+    expect(canvas.dirty_canvas).toBe(false)
+
+    canvas.drawBackCanvas(true)
+    expect(canvas.dirty_canvas).toBe(true)
   })
 })

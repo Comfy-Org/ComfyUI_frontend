@@ -5098,7 +5098,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (shouldDrawBackground && !sharesCanvas) {
-      this.drawBackCanvas(getCurrentGraphNodesInFrameOrder(), graphAtFrameStart)
+      this.drawBackCanvas(
+        true,
+        getCurrentGraphNodesInFrameOrder(),
+        graphAtFrameStart
+      )
     }
 
     const graphForFrontPass =
@@ -5172,7 +5176,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodesInFrameOrder ??= nodesGraph
         ? nodesInRenderOrder(nodesGraph)
         : undefined
-      this.drawBackCanvas(nodesInFrameOrder, nodesGraph, false)
+      this.drawBackCanvas(false, nodesInFrameOrder, nodesGraph)
     } else {
       const scale = window.devicePixelRatio
       ctx.drawImage(
@@ -5556,9 +5560,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * draws the back canvas (the one containing the background and the connections)
    */
   drawBackCanvas(
+    redrawFrontCanvas = true,
     nodesInFrameOrder?: LGraphNode[],
-    nodesGraph: LGraph | Subgraph | null = this.graph,
-    redrawFrontCanvas = true
+    nodesGraph: LGraph | Subgraph | null = this.graph
   ): void {
     const canvas = this.bgcanvas
     if (
