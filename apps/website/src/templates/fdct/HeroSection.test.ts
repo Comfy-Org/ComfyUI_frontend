@@ -9,10 +9,12 @@ describe('fdct HeroSection', () => {
   it('renders the split hero with an autoplaying, looping hero video', () => {
     render(HeroSection)
 
-    const video = screen.getByLabelText(t('fdct.hero.title', 'en'))
+    const video = screen.getByLabelText<HTMLVideoElement>(
+      t('fdct.hero.title', 'en')
+    )
     expect(video.hasAttribute('autoplay')).toBe(true)
     expect(video.hasAttribute('loop')).toBe(true)
-    expect(video.hasAttribute('muted')).toBe(true)
+    expect(video.muted).toBe(true)
     expect(video.getAttribute('poster')).toContain('FDCT_V4_thumb')
   })
 
