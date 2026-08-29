@@ -272,6 +272,65 @@ const CASES: Row[] = [
         value: 1,
       }) as unknown as Op,
   },
+  // ---- set_widget, promoted host write (Amendment A15) ---------------------
+  {
+    kind: "set_widget",
+    why: "promoted host write whose value_index is not a non-negative integer",
+    code: "malformed_op",
+    build: () =>
+      ({
+        op: "set_widget",
+        ...env(),
+        node_id: 6,
+        widget: "text",
+        value: "v",
+        promoted: { value_index: -1, instance_path: ["6"], host_widgets_values: ["v"] },
+      }) as unknown as Op,
+  },
+  {
+    kind: "set_widget",
+    why: "promoted host write whose host_widgets_values does not cover value_index",
+    code: "malformed_op",
+    build: () =>
+      ({
+        op: "set_widget",
+        ...env(),
+        node_id: 6,
+        widget: "text",
+        value: "v",
+        promoted: { value_index: 3, instance_path: ["6"], host_widgets_values: ["v"] },
+      }) as unknown as Op,
+  },
+  {
+    kind: "set_widget",
+    why: "promoted host write that also carries an interior path (two destinations)",
+    code: "malformed_op",
+    build: () =>
+      ({
+        op: "set_widget",
+        ...env(),
+        node_id: 6,
+        widget: "text",
+        value: "v",
+        path: ["6", "27"],
+        inner_widget: "text",
+        promoted: { value_index: 0, instance_path: ["6"], host_widgets_values: ["v"] },
+      }) as unknown as Op,
+  },
+  {
+    kind: "set_widget",
+    why: "promoted host write descending into an interior node the definition does not hold",
+    code: "interior_node_not_found",
+    build: () =>
+      ({
+        op: "set_widget",
+        ...env(),
+        node_id: "6/99",
+        widget: "text",
+        value: "v",
+        promoted: { value_index: 0, instance_path: ["6", "99"], host_widgets_values: ["v"] },
+      }) as unknown as Op,
+  },
 
   // ---- connect (the rows that DO hold on this branch) ----------------------
   {
@@ -462,6 +521,23 @@ function catalogRequiredCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCatalog; c
   };
 }
 
+/** `catalog_required`, promoted form (Amendment A15): a host write onto a name-keyed instance with no catalog to tell it from an unseen class. */
+function promotedCatalogRequiredCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCatalog; code: string } {
+  return {
+    doc: mint(baseWorkflow(), catalog),
+    op: {
+      op: "set_widget",
+      ...env(),
+      node_id: 6,
+      widget: "text",
+      value: "v",
+      promoted: { value_index: 0, instance_path: ["6"], host_widgets_values: ["v"] },
+    } as unknown as Op,
+    catalog: undefined,
+    code: "catalog_required",
+  };
+}
+
 /** `widget_out_of_range`: an interior write past the node's current positional length. */
 function widgetOutOfRangeCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCatalog; code: string } {
   // `Inner` declares two widgets but the fixture node carries one value, so
@@ -520,6 +596,7 @@ function sharedDefinitionCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCatalog; 
 
 const FIXTURE_CASES = [
   ["add_node without a catalog", catalogRequiredCase],
+  ["promoted host write without a catalog", promotedCatalogRequiredCase],
   ["interior set_widget past the positional length", widgetOutOfRangeCase],
   ["interior set_widget into a definition two nodes instantiate", sharedDefinitionCase],
 ] as const;

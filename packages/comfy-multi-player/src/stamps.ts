@@ -93,6 +93,16 @@ export function writeTarget(op: WireOp): unknown[] {
       return ["node", String(op.node_id)];
     case "connect":
       if (op.grow != null) {
+        // A promoted subgraph input (schema Amendment A15) is one register per
+        // DECLARED NAME, and declared names may contain dots (`images.image0`
+        // is a legal subgraph input name), so the full name is the key —
+        // comfy-cli `_write_target` at amendment v1.5 (PR #818,
+        // `ba0b0b92abcc86b01e8a6704d07088f92afe7aa7`). Truncating at the first
+        // dot made `foo.bar` and `foo.baz` contend for one slot. An ordinary
+        // autogrow keeps the base-name key: its family IS the register.
+        if (op.grow.promoted === true) {
+          return ["input", String(op.to_node), "grow", String(op.grow.name)];
+        }
         return ["input", String(op.to_node), "grow", String(op.grow.name).split(".", 1)[0]];
       }
       return ["input", String(op.to_node), op.to_slot];

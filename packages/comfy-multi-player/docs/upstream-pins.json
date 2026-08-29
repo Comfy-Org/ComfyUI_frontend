@@ -121,6 +121,71 @@
       },
       "former_branch_citation": null,
       "branch_status": "NEVER BRANCH-CITED. Registered directly at a SHA by #38, so there is no branch citation to retire — unlike the three comfy-cli pins, which were retrofits of citations that had named a branch and whose branches were later DELETED upstream. Recorded explicitly rather than omitted, so a future reader can tell 'pinned from the start' from 'provenance lost'."
+    },
+    "comfy-cli/workflow_ops@promoted-host-writes": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "comfy_cli/workflow_ops.py",
+      "commit": "ba0b0b92abcc86b01e8a6704d07088f92afe7aa7",
+      "blob_sha1": "36ab4d857a0952b8f7a4f79f5b056a0a74cef398",
+      "content_sha256": "116fc84769774f9d3731b2ef3ce407efbc395c2ad043f4ecd6bacf132f89704a",
+      "sections_cited": [
+        "_set_widget_impl",
+        "_apply_set_widget",
+        "_apply_connect",
+        "_resolve_input_target",
+        "_resolve_promoted_target",
+        "_write_target",
+        "_lww_gate"
+      ],
+      "established_by": "First registered at the head of comfy-cli PR #815 (6ebc3032, `fix(subgraph): edit promoted widgets where the frontend reads them (BE-10305)`), read directly on 2026-08-27: `_set_widget_impl` mints the host write with `promoted={value_index, instance_path}` and appends `host_widgets_values` after apply; `_apply_set_widget` resolves `instance_path` through `_resolve_node_path` and writes `cql.promoted.set_host_value`; `_resolve_input_target`/`_resolve_promoted_target` mint `grow={name, type, promoted: True, widget?}` for a declared subgraph input; `_apply_connect` reuses the entry by name for a promoted grow and otherwise appends `{name, type, link, grow_id, widget?}`. RE-PINNED 2026-08-28 to comfy-cli main ba0b0b92abcc86b01e8a6704d07088f92afe7aa7 after the #815/#818 stack was rebase-merged (the PR-head commits are unreachable upstream). Re-read at main: every symbol above still defines at the same module (`_lww_gate` :384, `_set_widget_impl` :629, `_apply_set_widget` :1836, `_apply_connect` :1972, `_write_target` :2217 — now spelling a promoted grow as (\"input\", str(to_node), \"grow\", str(grow[\"name\"])) at :2248 — `_resolve_input_target` :2621, `_resolve_promoted_target` :2757). The companion `comfy_cli/cql/promoted.py` at main is blob 0dd8287c63ba5ff2867654a890fe50542f8df53d (sha256 0d7177849e1756016b6830d8acfc9edc701d19fff28099db0c4a2b670e875b5f). fixtures/session-promoted-host.session.jsonl was regenerated at this exact revision.",
+      "cited_by": [
+        "src/types.ts",
+        "src/applier.ts",
+        "docs/multiplayer-schema.md",
+        "test/promoted-host-writes.test.ts",
+        "fixtures/README.md",
+        "fixtures/MANIFEST.json"
+      ],
+      "upstream_head_observed": {
+        "date": "2026-08-28",
+        "ref": "main",
+        "commit": "ba0b0b92abcc86b01e8a6704d07088f92afe7aa7",
+        "content_sha256": "116fc84769774f9d3731b2ef3ce407efbc395c2ad043f4ecd6bacf132f89704a",
+        "drift": "None: the pin IS main. Content moved past the original PR-#815 head by the #818 amendment (promoted grows are `_lww_gate`d on the full-name register and `grow_id` follows the winner — both already matched here) and by op-vocabulary §14.4: a host write whose instance carries a legacy `properties.proxyWidgets` entry the definition does not back additionally carries `promoted.repair = {entry, ids}` and comfy-cli's apply mutates the DEFINITION (mints subgraph inputs + boundary links). This applier reads only `value_index`/`instance_path`/`host_widgets_values` and does not perform the repair — recorded as OPEN in schema Amendment A15; the corpus session carries no `repair` (the z-image template has no legacy proxyWidgets entry)."
+      },
+      "former_branch_citation": null,
+      "branch_status": "NEVER BRANCH-CITED. Registered directly at the PR head SHA; the PR's branch name is recorded only in the drift note as provenance, never as the citation."
+    },
+    "comfy-cli/op-vocabulary-v1@amendment-v1.5": {
+      "repo": "https://github.com/Comfy-Org/comfy-cli.git",
+      "path": "docs/op-vocabulary-v1.md",
+      "commit": "ba0b0b92abcc86b01e8a6704d07088f92afe7aa7",
+      "blob_sha1": "69edcf4a0929e1270c83cedc7af73c5dce3b1ca4",
+      "content_sha256": "3b337423127cae6969c5dd48e8bdcce3940de79c478c1797600917f275234fee",
+      "sections_cited": [
+        "8.7",
+        "14",
+        "14.1",
+        "14.2",
+        "14.3",
+        "14.4"
+      ],
+      "established_by": "Registered when comfy-multi-player PR #104 (schema Amendment A15) adopted comfy-cli's follow-up to PR #815: PR #818 `fix(ops): gate promoted connect grows as one register; positional payload for PrimitiveNode writes (amendment v1.5)`, head observed via `gh pr view 818` on 2026-08-28 and fetched as refs/pull/818/head (8f83af6d). RE-PINNED the same day to comfy-cli main ba0b0b92abcc86b01e8a6704d07088f92afe7aa7 after the stack was rebase-merged and its branches deleted. Re-read at main: §14 `Amendment v1.5` now has sub-sections 14.1-14.4 (14.4 is new: legacy proxyWidgets repair, `promoted.repair`), and §8.7 `Subgraph scope` gained the promoted-widgets-are-HOST-writes bullets; §11/§11.1/§11.2 (the v1.2 pin) are unchanged at :509/:516/:600. Read directly: §14.2 spells the promoted-grow register as (\"input\", str(to_node), \"grow\", str(grow[\"name\"])) — the FULL declared name, because subgraph input names may contain dots — and gates it with _lww_gate, moving grow_id to the winner; §14.3 gives the legacy_primitive PrimitiveNode write a positional payload (promoted.value_index + host_widgets_values). comfy_cli/workflow_ops.py at main is blob 36ab4d857a0952b8f7a4f79f5b056a0a74cef398 (sha256 116fc84769774f9d3731b2ef3ce407efbc395c2ad043f4ecd6bacf132f89704a), the comfy-cli/workflow_ops@promoted-host-writes pin. src/stamps.ts writeTarget was changed to match in the same comfy-multi-player change.",
+      "cited_by": [
+        "src/stamps.ts",
+        "src/types.ts",
+        "docs/multiplayer-schema.md",
+        "docs/decisions/EXCEPTIONS.md"
+      ],
+      "upstream_head_observed": {
+        "date": "2026-08-28",
+        "ref": "main",
+        "commit": "ba0b0b92abcc86b01e8a6704d07088f92afe7aa7",
+        "content_sha256": "3b337423127cae6969c5dd48e8bdcce3940de79c478c1797600917f275234fee",
+        "drift": "None: the pin IS main. Relative to the PR-#818 head first cited, §14.4 (`promoted.repair`) is new and §8.7 gained promoted text; neither changes the two op shapes this package applies, but §14.4's definition repair is NOT implemented here (schema Amendment A15, OPEN)."
+      },
+      "former_branch_citation": null,
+      "branch_status": "NEVER BRANCH-CITED. Registered directly at the PR head SHA; the PR's branch name is recorded only in the drift note as provenance, never as the citation."
     }
   }
 }

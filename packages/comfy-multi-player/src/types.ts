@@ -148,7 +148,60 @@ export interface GrowSpec {
   widget?: string;
   /** inputcount-family two-register grow (§8.4): also LWW-write this widget to the mint-time-planned value. */
   inputcount?: { widget: string; value: unknown };
+  /**
+   * The destination is a subgraph instance and `name` is one of its
+   * definition's DECLARED inputs (schema Amendment A15; comfy-cli
+   * `_resolve_promoted_target`, PR #815 at
+   * `ba0b0b92abcc86b01e8a6704d07088f92afe7aa7`). The input is ONE register
+   * named by the definition: an `inputs[]` entry with that `name` is reused if
+   * the instance already carries one, otherwise `{name, type, link, grow_id,
+   * widget?}` is appended VERBATIM — never a numbered collision rename, never a
+   * family template. `widget` is present exactly when the declared input backs
+   * an interior widget; absent for a socket-only input. Unlike an autogrow,
+   * the register IS stamp-gated — `("input", to_node, "grow", name)` with the
+   * FULL declared name, since names may contain dots (comfy-cli amendment
+   * v1.5, PR #818 at `ba0b0b92abcc86b01e8a6704d07088f92afe7aa7`) — because
+   * two connects into one declared input contend for one slot the way two
+   * concrete connects do.
+   */
+  promoted?: boolean;
   [key: string]: unknown;
+}
+
+/**
+ * A `set_widget` addressed at a promoted subgraph widget's HOST value
+ * (schema Amendment A15; ComfyUI_frontend ADR 0009; comfy-cli PR #815 at
+ * `ba0b0b92abcc86b01e8a6704d07088f92afe7aa7`).
+ *
+ * The frontend keeps a promoted widget's value on the INSTANCE node, as
+ * `widgets_values[value_index]` positional over the definition's widget-backed
+ * inputs, and runs it over the interior default. A subgraph instance's `type`
+ * is a definition UUID and is never in the widget catalog, so this applier
+ * stores its `widgets_values` opaquely (Amendment A2) — a named write cannot
+ * be expressed against it, and a POSITIONAL one is what this payload carries.
+ */
+export interface PromotedHostWrite {
+  /** Position in the instance's positional `widgets_values`; a non-negative integer. */
+  value_index: number;
+  /**
+   * The RESOLVED path to the host instance, one segment per nesting level:
+   * `["57"]` for a top-level instance; `["57", "61"]` when the host is itself
+   * interior to another definition (comfy-cli then mints `node_id` as the
+   * joined path, `"57/61"`). Resolved exactly like an interior `path`
+   * (`resolveInteriorNode`), including the schema §5.3 shared-definition rule.
+   * Defaults to `[String(node_id)]` when absent, and when present MUST join
+   * (with `/`) to `String(node_id)` — the register is named by `node_id`, so a
+   * disagreement is `malformed_op`, never two registers for one node.
+   */
+  instance_path?: Array<string | number>;
+  /**
+   * The FULL host array after the write, as comfy-cli materialized it (missing
+   * entries seeded from the interior defaults so the array stays aligned with
+   * the definition's inputs). Used only to EXTEND a stored array that is
+   * shorter than `value_index + 1`; entries the document already holds win.
+   * Must cover `value_index`.
+   */
+  host_widgets_values: unknown[];
 }
 
 /** Fields every `connect` carries, whichever way its destination slot is addressed. */
@@ -239,6 +292,14 @@ interface SetWidgetOpBase extends OpBase {
   old?: unknown;
   /** Non-fatal validation notes attached at mint time. */
   warnings?: unknown[];
+  /**
+   * The address the writer GAVE when comfy-cli redirected the write elsewhere
+   * (`"57/13.width"` for an interior address that backs a promotion, rewritten
+   * to the host; `"57.width"` for a promoted input fed by a primitive,
+   * rewritten to that primitive). Informational only: the applier never reads
+   * it, and the register is decided by the fields the op actually carries.
+   */
+  redirected_from?: string;
 }
 
 /**
@@ -253,6 +314,15 @@ interface SetWidgetOpBase extends OpBase {
 export interface TopLevelSetWidgetOp extends SetWidgetOpBase {
   path?: null;
   inner_widget?: null;
+  /**
+   * Present on a promoted HOST write (Amendment A15): the value goes to
+   * `widgets_values[value_index]` of the instance at `instance_path`, never to
+   * a named widget. `node_id` + `widget` still name the LWW register —
+   * `("widget", String(node_id), widget)`, the same one a named top-level
+   * write on that node would claim (comfy-cli `_write_target`). A host write
+   * never carries `path`; one that does is rejected `malformed_op`.
+   */
+  promoted?: PromotedHostWrite | null;
 }
 
 /**
@@ -264,10 +334,18 @@ export interface TopLevelSetWidgetOp extends SetWidgetOpBase {
  * non-empty by type, because the applier's interior branch is entered on
  * `path.length > 0` and needs `inner_widget` to know what to write. An empty
  * path with an `inner_widget` is silently treated as a top-level write.
+ *
+ * Since comfy-cli PR #815 an interior address that BACKS a promotion is
+ * redirected to the host at mint time and arrives as a
+ * {@link TopLevelSetWidgetOp} with `promoted`; what still arrives here is a
+ * write to an unpromoted interior widget. The two are DIFFERENT registers —
+ * `("widget", ["57","13"], "width")` vs `("widget", "57", "width")` — and are
+ * deliberately not unified (Amendment A15).
  */
 export interface InteriorSetWidgetOp extends SetWidgetOpBase {
   path: [string, ...string[]];
   inner_widget: string;
+  promoted?: null;
 }
 
 /**

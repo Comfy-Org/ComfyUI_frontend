@@ -81,6 +81,7 @@
 import * as Y from "yjs";
 import { assertNever } from "./exhaustive.js";
 import {
+  OPAQUE_WIDGETS_KEY,
   adel,
   appliedMap,
   apush,
@@ -663,6 +664,166 @@ function assertWritableValue(value: unknown, what: string): void {
   }
 }
 
+/**
+ * The validated, op-only reading of a promoted host write's `promoted` payload
+ * (Amendment A15), or `null` when the op is not one. Every check here reads
+ * NOTHING BUT THE OP, so it runs above the LWW gate and above the delete-wins
+ * return and cannot resolve differently on two replicas (A6).
+ *
+ * The payload shape is comfy-cli's (`_set_widget_impl`, PR #815): a
+ * non-negative integer `value_index`, an optional non-empty `instance_path`
+ * (defaulting to `[String(node_id)]`, and REQUIRED to spell the node
+ * `node_id` names — joined with `/` — so the register and the mutated node
+ * cannot diverge), and `host_widgets_values` — the FULL materialized array —
+ * which must be an array covering `value_index`, because it is what a stored
+ * array shorter than the index is extended FROM.
+ */
+function promotedHostWrite(op: SetWidgetOp): { valueIndex: number; instancePath: string[]; hostValues: unknown[] } | null {
+  const promoted = (op as { promoted?: unknown }).promoted;
+  if (promoted == null) return null;
+  if (typeof promoted !== "object" || Array.isArray(promoted)) {
+    throw new OpRejectedError("malformed_op", "set_widget: promoted must be an object");
+  }
+  const { value_index, instance_path, host_widgets_values } = promoted as Record<string, unknown>;
+  if (!Number.isInteger(value_index) || (value_index as number) < 0) {
+    throw new OpRejectedError(
+      "malformed_op",
+      `set_widget: promoted.value_index must be a non-negative integer, got ${String(value_index)}`,
+    );
+  }
+  if (!Array.isArray(host_widgets_values)) {
+    throw new OpRejectedError("malformed_op", "set_widget: promoted.host_widgets_values must be an array");
+  }
+  if (host_widgets_values.length <= (value_index as number)) {
+    throw new OpRejectedError(
+      "malformed_op",
+      `set_widget: promoted.host_widgets_values has ${host_widgets_values.length} entries and does not cover value_index ${String(value_index)}`,
+    );
+  }
+  if (instance_path !== undefined && (!Array.isArray(instance_path) || instance_path.length === 0)) {
+    throw new OpRejectedError("malformed_op", "set_widget: promoted.instance_path must be a non-empty array when present");
+  }
+  assertWritableValue(host_widgets_values, "set_widget: promoted.host_widgets_values");
+  const instancePath = (instance_path as unknown[] | undefined)?.map(String) ?? [String(op.node_id)];
+  // The LWW register comes from `node_id` (`stampTargetKey`) and the mutated
+  // node from `instance_path`; nothing else ties them together, and two ops
+  // naming one instance under two `node_id`s would claim two registers and
+  // both write it. comfy-cli mints `node_id` as the instance id for a
+  // top-level host and as the joined path (`"57/61"`) for a nested one, so the
+  // two must agree under that spelling. Op-only, hence above the gate (A6).
+  if (instancePath.join("/") !== String(op.node_id)) {
+    throw new OpRejectedError(
+      "malformed_op",
+      `set_widget: promoted.instance_path [${instancePath.join(", ")}] does not name node_id ${String(op.node_id)} (expected node_id "${instancePath.join("/")}")`,
+    );
+  }
+  return { valueIndex: value_index as number, instancePath, hostValues: host_widgets_values };
+}
+
+/** How a promoted host write must land on the instance it resolved to (Amendment A15). */
+type HostWriteStorage = "positional" | "named";
+
+/**
+ * Decide whether a promoted host write is a POSITIONAL write into the opaque
+ * array or falls back to the ordinary NAMED path. Reads the node and the
+ * catalogue, so it sits below the delete-wins return (§2.5 item 6's class).
+ *
+ * - opaque storage → positional. The document already decided this node is
+ *   not name-addressable; no catalogue is needed to honour that.
+ * - a class the catalogue DESCRIBES → named. comfy-cli never mints a host write
+ *   for such a node (a subgraph instance's `type` is a definition UUID), but
+ *   the behaviour is defined rather than left to fall through: the write is
+ *   exactly a top-level named `set_widget`.
+ * - no catalogue at all → `catalog_required`. The same "reject rather than
+ *   guess" boundary `applyAddNode` draws: without a catalogue the host cannot
+ *   tell a subgraph instance from an unseen class, and converting a real
+ *   class's storage to opaque would be a silent layout change for that node.
+ * - the class is absent from the catalogue and the node already holds NAMED
+ *   values → `uncatalogued_widget_write`. That document is unprojectable with
+ *   this catalogue (KA-12 catalog drift); an opaque array laid over the named
+ *   map would shadow it and heal the symptom silently.
+ * - otherwise → positional, converting an empty named map into opaque storage
+ *   on first write (the instance was minted with `widgets_values: []`).
+ */
+function hostWriteStorage(node: Y.Map<unknown>, catalog: WidgetCatalog | undefined): HostWriteStorage {
+  const storage = widgetStorageOf(node);
+  switch (storage) {
+    case "opaque":
+      return "positional";
+    case "named": {
+      const type = String(node.get("type") ?? "");
+      if (catalogEntry(catalog, type)) return "named";
+      if (!catalog) {
+        throw new OpRejectedError(
+          "catalog_required",
+          `set_widget(${type}): a promoted host write needs the pinned catalog to tell a subgraph instance from an unseen class (schema Amendment A15)`,
+        );
+      }
+      const widgets = node.get("widgets");
+      if (widgets instanceof Y.Map && widgets.size > 0) {
+        throw new OpRejectedError(
+          "uncatalogued_widget_write",
+          `set_widget(${type}): node ${String(node.get("id"))} holds named widget values for a class absent from the pinned catalog; a positional host write cannot be laid over them (schema §1.2 / Amendment A15)`,
+        );
+      }
+      return "positional";
+    }
+    default:
+      return assertNever(storage, "applier.hostWriteStorage");
+  }
+}
+
+/**
+ * The promoted HOST write (Amendment A15): `widgets_values[value_index] =
+ * value` on the instance, stored as ONE whole-value opaque array (Amendment
+ * A2 — never merged element-wise, so §1.2's positional corruption cannot
+ * arise; two writes to different indexes each read-modify-write the whole
+ * array and commute). Entries the document already holds win; a stored array
+ * shorter than the index is extended from `host_widgets_values`, comfy-cli's
+ * materialization, so the array stays aligned with the definition's inputs.
+ * `project()` hands the array back verbatim.
+ */
+function applyPromotedHostWrite(
+  doc: Y.Doc,
+  op: SetWidgetOp,
+  promoted: NonNullable<ReturnType<typeof promotedHostWrite>>,
+  stamps: Y.Map<unknown>,
+  targetKey: string,
+  key: StampKey,
+  catalog?: WidgetCatalog,
+): SuccessfulOutcome {
+  const target = resolveInteriorNode(doc, promoted.instancePath, catalog);
+  if (target === null) return "no-op"; // head instance concurrently deleted → no-op (delete wins)
+  const storage = hostWriteStorage(target, catalog);
+  switch (storage) {
+    case "named":
+      validateWidgetName(catalog, String(target.get("type") ?? ""), op.widget);
+      mset(widgetsOf(target), op.widget, structuredClone(op.value));
+      mset(stamps, targetKey, key);
+      return "applied";
+    case "positional": {
+      const current = target.get(OPAQUE_WIDGETS_KEY);
+      const next: unknown[] = Array.isArray(current) ? structuredClone(current) : [];
+      if (next.length <= promoted.valueIndex) {
+        for (let i = next.length; i < promoted.hostValues.length; i++) {
+          next.push(structuredClone(promoted.hostValues[i]));
+        }
+      }
+      next[promoted.valueIndex] = structuredClone(op.value);
+      // First conversion: retire the empty name-keyed map so the node carries
+      // exactly one storage key (`widgetStorageOf` reads the opaque key first
+      // either way; this keeps the layout honest rather than shadowed).
+      const widgets = target.get("widgets");
+      if (widgets instanceof Y.Map && widgets.size === 0) mdel(target, "widgets");
+      mset(target, OPAQUE_WIDGETS_KEY, next);
+      mset(stamps, targetKey, key);
+      return "applied";
+    }
+    default:
+      return assertNever(storage, "applier.applyPromotedHostWrite");
+  }
+}
+
 function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): SuccessfulOutcome {
   const interior: InteriorSetWidgetOp | null = isInteriorWrite(op) ? op : null;
   if (interior !== null && typeof interior.inner_widget !== "string") {
@@ -672,6 +833,13 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
     throw new OpRejectedError("malformed_op", "set_widget: missing widget name");
   }
   assertWritableValue(op.value, "set_widget");
+  // Op-only, like the checks above it (A6): the payload's shape is settled
+  // before any document read, and a host write that also carries an interior
+  // `path` names two destinations — comfy-cli never mints that.
+  const promoted = promotedHostWrite(op);
+  if (promoted !== null && interior !== null) {
+    throw new OpRejectedError("malformed_op", "set_widget: a promoted host write carries no interior path");
+  }
 
   // LWW gate next (comfy-cli `_apply_set_widget`): a lower-or-equal stamp is
   // dropped — a protocol-level apply that still consumes its op_id. It is no
@@ -682,6 +850,10 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
   const prior = stamps.get(targetKey) as StampKey | undefined;
   const key = stampKey(op);
   if (prior != null && compareStampKeys(key, prior) <= 0) return "lww-dropped";
+
+  if (promoted !== null) {
+    return applyPromotedHostWrite(doc, op, promoted, stamps, targetKey, key, catalog);
+  }
 
   if (interior !== null) {
     const target = resolveInteriorNode(doc, interior.path.map(String), catalog);
@@ -980,7 +1152,14 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): Succe
   // says a `grow` op has no numeric `to_slot` and a concrete op has no `grow`;
   // this branch is where a wire op that says otherwise is disposed of — and it
   // is disposed of exactly as before, `grow` winning and `to_slot` unread.
-  if (op.grow != null) {
+  if (op.grow != null && op.grow.promoted === true) {
+    // A promoted subgraph input (Amendment A15) is ONE register named by the
+    // definition, so it is gated and claimed like a concrete input — before the
+    // source is consulted, for the same reason the concrete branch does it.
+    const claimed = claimPromotedInput(doc, dst, op);
+    if (claimed === null) return "lww-dropped";
+    toIdx = claimed;
+  } else if (op.grow != null) {
     // Autogrow is NOT a shared register: every grow mints its own slot keyed by
     // `grow_id`, so two concurrent grows onto one base both survive and there
     // is nothing to gate (vocabulary §1.2 / amendment v1.2's carve-out).
@@ -1061,6 +1240,76 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): Succe
     apush(outLinks as Y.Array<unknown>, op.link_id);
   }
   return "applied";
+}
+
+/**
+ * Promoted input (Amendment A15; comfy-cli `_apply_connect` with
+ * `grow.promoted`, PR #815 at `ba0b0b92abcc86b01e8a6704d07088f92afe7aa7`):
+ * the destination is a subgraph instance and `grow.name` is
+ * one of its definition's declared inputs. The frontend rebuilds those
+ * `inputs[]` entries from the definition on load, so the instance may not
+ * carry one yet — materialize it, or reuse the entry that already carries the
+ * name. Returns the slot index, or `null` when the op lost the LWW gate.
+ *
+ * ONE register, gated. Two connects into one declared input contend for one
+ * slot exactly as two concrete connects do, so the register
+ * `("input", to_node, "grow", <full declared name>)` — comfy-cli's
+ * `_write_target` for a promoted grow since amendment v1.5 (PR #818), which
+ * also gates it — is claimed under the `[base_version, actor, op_id]` order,
+ * the prior occupant retired whole, and the loser dropped. The FULL name, not
+ * the autogrow base: declared names may contain dots.
+ *
+ * The slot is materialized ONCE THE GATE PASSES, whether or not the source
+ * still exists: `[connect, delete src]` and `[delete src, connect]` then both
+ * end with the input present and empty, rather than present in one order and
+ * absent in the other (the autogrow source-delete race, §2.5 item 2, does not
+ * recur here).
+ */
+function claimPromotedInput(doc: Y.Doc, dst: Y.Map<unknown>, op: GrowConnectOp): number | null {
+  const grow = op.grow;
+  if (typeof grow.name !== "string" || typeof grow.type !== "string") {
+    throw new OpRejectedError("malformed_op", "connect: grow payload needs name and type");
+  }
+  const stamps = stampsMap(doc);
+  const targetKey = stampTargetKey(op);
+  const prior = stamps.get(targetKey) as StampKey | undefined;
+  const key = stampKey(op);
+  if (prior != null && compareStampKeys(key, prior) <= 0) return null; // lww-dropped
+  mset(stamps, targetKey, key);
+
+  let ins = dst.get("inputs");
+  if (!(ins instanceof Y.Array)) {
+    ins = new Y.Array<unknown>();
+    mset(dst, "inputs", ins);
+  }
+  const insArr = ins as Y.Array<unknown>;
+  let existing = -1;
+  insArr.forEach((slot: unknown, idx: number) => {
+    if (existing >= 0 || !(slot instanceof Y.Map)) return;
+    if (slot.get("grow_id") === op.link_id || slot.get("name") === grow.name) existing = idx;
+  });
+  if (existing >= 0) {
+    const slot = insArr.get(existing) as Y.Map<unknown>;
+    const prev = slot.get("link");
+    if (prev != null && prev !== op.link_id) removeLink(doc, prev);
+    // A slot this applier materialized carries the `grow_id` of the grow that
+    // won it; the register's winner owns the slot, so the id follows the
+    // winner. Left as the FIRST arrival's id, `[low, high]` and `[high, low]`
+    // projected different `grow_id`s for one converged link. An entry the
+    // instance carried at mint has no `grow_id` and is not given one.
+    if (slot.has("grow_id") && slot.get("grow_id") !== op.link_id) mset(slot, "grow_id", op.link_id);
+    return existing;
+  }
+  // Appended VERBATIM under the declared name — no collision numbering, no
+  // family template (comfy-cli: `name = grow["name"]` for a promoted grow).
+  const slot = new Y.Map<unknown>();
+  slot.set("name", grow.name);
+  slot.set("type", grow.type);
+  slot.set("link", null);
+  slot.set("grow_id", op.link_id);
+  if (grow.widget) slot.set("widget", { name: grow.widget });
+  apush(insArr, slot);
+  return insArr.length - 1;
 }
 
 /**

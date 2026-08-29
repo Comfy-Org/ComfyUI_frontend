@@ -123,6 +123,21 @@ export function mint(workflow: WorkflowJSON, catalog: WidgetCatalog, catalogVers
   return doc;
 }
 
+/**
+ * The `links` map key for one interior link of a definition: the tuple's
+ * `[0]` for the litegraph array form, `id` for the frontend's object form, and
+ * the link's mint position for anything else (so an id-less entry still
+ * occupies its own key rather than colliding on `"undefined"`).
+ */
+function definitionLinkKey(ln: unknown, index: number): string {
+  if (Array.isArray(ln) && ln[0] !== undefined) return String(ln[0]);
+  if (typeof ln === "object" && ln !== null && !Array.isArray(ln)) {
+    const id = (ln as { id?: unknown }).id;
+    if (id !== undefined && id !== null) return String(id);
+  }
+  return `#${String(index)}`;
+}
+
 function mintDefinition(sg: SubgraphDef, catalog: WidgetCatalog): Y.Map<unknown> {
   const dm = new Y.Map<unknown>();
   for (const [k, v] of Object.entries(sg)) {
@@ -139,11 +154,17 @@ function mintDefinition(sg: SubgraphDef, catalog: WidgetCatalog): Y.Map<unknown>
     } else if (k === "links" && Array.isArray(v)) {
       const lm = new Y.Map<unknown>();
       const order: string[] = [];
-      for (const ln of v) {
-        const key = String((ln as unknown[])[0]);
+      v.forEach((ln, i) => {
+        // A definition's interior links are serialized by the frontend as
+        // OBJECTS (`{id, origin_id, origin_slot, target_id, target_slot,
+        // type}`), not top-level tuples. Keying every shape by `ln[0]` read
+        // `undefined` off each object, so every interior link of a real
+        // template collapsed onto one key and the round trip emitted the last
+        // one N times (found by the z-image turbo fixture, Amendment A15).
+        const key = definitionLinkKey(ln, i);
         order.push(key);
         lm.set(key, cloneForMap(ln, `mint: definition link ${key}`));
-      }
+      });
       dm.set("links", lm);
       dm.set("link_order", order);
     } else {
