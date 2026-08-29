@@ -2,6 +2,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
+import { externalLinks } from '../../config/routes'
 import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
@@ -16,9 +17,9 @@ describe('SiteFooter', () => {
   })
 
   it.for([
-    ['en', 'Workflows', 'https://comfy.org/workflows'],
-    ['en', 'Use Cases', 'https://comfy.org/workflows/use-cases/'],
-    ['zh-CN', '工作流', 'https://comfy.org/workflows'],
+    ['en', 'Workflows', externalLinks.workflows],
+    ['en', 'Use Cases', externalLinks.workflowUseCases],
+    ['zh-CN', '工作流', externalLinks.workflows],
     ['zh-CN', '用例', 'https://comfy.org/workflows/use-cases/']
   ] as const)(
     'links the Comfy Workflows hub in the same tab (%s: %s)',
