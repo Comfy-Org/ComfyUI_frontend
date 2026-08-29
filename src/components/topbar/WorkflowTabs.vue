@@ -82,8 +82,27 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
+      :data-agent-gate-settled="agentPanelStore?.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
+      <Button
+        v-if="agentPanelStore?.enabled"
+        variant="link"
+        size="sm"
+        :aria-pressed="agentPanelStore.isOpen"
+        :class="
+          cn(
+            'no-drag shrink-0 border border-solid text-base-foreground',
+            agentPanelStore.isOpen
+              ? 'border-plum-500 bg-plum-600/20'
+              : 'border-plum-600 bg-secondary-background hover:border-plum-500'
+          )
+        "
+        @click="agentPanelStore.toggle()"
+      >
+        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
+        <span>{{ $t('agent.askComfyAgent') }}</span>
+      </Button>
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
@@ -119,7 +138,10 @@ import type { WatchStopHandle } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -150,6 +172,9 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
+// The literal keeps the agent store out of OSS builds entirely.
+const agentPanelStore =
+  __DISTRIBUTION__ === 'cloud' ? useAgentPanelStore() : null
 
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
@@ -202,7 +227,7 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
         warnIfUnsaved: !workspaceStore.shiftDown
       }))
     ) {
-      // User clicked cancel
+      // User cancelled, or the replacement load failed
       break
     }
   }
