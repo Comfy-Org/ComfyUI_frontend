@@ -1248,6 +1248,36 @@ describe('useMediaAssetActions', () => {
     })
   })
 
+  describe('deleteAssets - deletion disabled', () => {
+    it.fails('does not offer or perform deletion', async () => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path: string, defaultValue?: unknown) =>
+          path === 'asset_deletion_enabled' ? false : defaultValue
+      )
+      mockDeleteAsset.mockResolvedValue(undefined)
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: 'disabled-asset' })
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(false)
+
+      expect(mockShowDialog).not.toHaveBeenCalled()
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(mockSetAssetDeleting).not.toHaveBeenCalled()
+      expect(mockInputInvalidate).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'g.warning',
+        detail: 'mediaAsset.deletionUnsupported'
+      })
+    })
+  })
+
   describe('deleteAssets - confirmation dialog item names', () => {
     beforeEach(() => {
       mockIsCloud.value = true
