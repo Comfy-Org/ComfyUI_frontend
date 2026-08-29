@@ -1,0 +1,20 @@
+{
+  "scenario": "no-op-patch",
+  "frames": [
+    {
+      "type": "draft_patch",
+      "data": {
+        "base_version": 80,
+        "version": 81,
+        "workflow_id": "fixture-workflow-native-folders",
+        "message_id": "fixture-message-no-op",
+        "thread_id": "fixture-thread",
+        "content": {
+          "last_node_id": 0,
+          "links": [],
+          "nodes": []
+        }
+      }
+    }
+  ]
+}

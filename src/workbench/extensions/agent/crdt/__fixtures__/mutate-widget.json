@@ -1,0 +1,36 @@
+{
+  "scenario": "mutate-widget",
+  "frames": [
+    {
+      "type": "draft_patch",
+      "data": {
+        "base_version": 20,
+        "version": 21,
+        "workflow_id": "fixture-workflow-widget",
+        "message_id": "fixture-message-mutate-widget",
+        "thread_id": "fixture-thread",
+        "content": {
+          "last_node_id": 1,
+          "links": [],
+          "nodes": [
+            {
+              "id": 1,
+              "type": "KSampler",
+              "pos": [100, 100],
+              "size": [315, 262],
+              "flags": {},
+              "order": 0,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                { "name": "LATENT", "type": "LATENT", "links": [] }
+              ],
+              "properties": {},
+              "widgets_values": [42, "fixed", 12, 6.5, "euler", "normal", 1]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

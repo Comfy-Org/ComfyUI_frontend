@@ -1,0 +1,36 @@
+{
+  "scenario": "mutate-widget-string",
+  "frames": [
+    {
+      "type": "draft_patch",
+      "data": {
+        "base_version": 50,
+        "version": 51,
+        "workflow_id": "fixture-workflow-widget-string",
+        "message_id": "fixture-message-mutate-widget-string",
+        "thread_id": "fixture-thread",
+        "content": {
+          "last_node_id": 1,
+          "links": [],
+          "nodes": [
+            {
+              "id": 1,
+              "type": "CLIPTextEncode",
+              "pos": [100, 100],
+              "size": [400, 200],
+              "flags": {},
+              "order": 0,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                { "name": "CONDITIONING", "type": "CONDITIONING", "links": [] }
+              ],
+              "properties": {},
+              "widgets_values": ["a cinematic photograph of a red bicycle"]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

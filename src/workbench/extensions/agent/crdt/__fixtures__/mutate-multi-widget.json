@@ -1,0 +1,57 @@
+{
+  "scenario": "mutate-multi-widget",
+  "frames": [
+    {
+      "type": "draft_patch",
+      "data": {
+        "base_version": 21,
+        "version": 22,
+        "workflow_id": "fixture-workflow-widget",
+        "message_id": "fixture-message-mutate-multi-widget",
+        "thread_id": "fixture-thread",
+        "content": {
+          "last_node_id": 2,
+          "links": [[1, 2, 0, 1, 1, "CONDITIONING"]],
+          "nodes": [
+            {
+              "id": 1,
+              "type": "KSampler",
+              "pos": [100, 100],
+              "size": [315, 262],
+              "flags": {},
+              "order": 1,
+              "mode": 0,
+              "inputs": [
+                { "name": "positive", "type": "CONDITIONING", "link": 1 }
+              ],
+              "outputs": [
+                { "name": "LATENT", "type": "LATENT", "links": [] }
+              ],
+              "properties": {},
+              "widgets_values": [7, "randomize", 24, 8.5, "dpmpp_2m", "karras", 1]
+            },
+            {
+              "id": 2,
+              "type": "CLIPTextEncode",
+              "pos": [-360, 100],
+              "size": [400, 200],
+              "flags": {},
+              "order": 0,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                {
+                  "name": "CONDITIONING",
+                  "type": "CONDITIONING",
+                  "links": [1]
+                }
+              ],
+              "properties": {},
+              "widgets_values": ["a studio portrait, soft rim light"]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

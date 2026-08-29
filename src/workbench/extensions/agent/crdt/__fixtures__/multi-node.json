@@ -1,0 +1,50 @@
+{
+  "scenario": "multi-node",
+  "frames": [
+    {
+      "type": "draft_patch",
+      "data": {
+        "base_version": 30,
+        "version": 31,
+        "workflow_id": "fixture-workflow-native-folders",
+        "message_id": "fixture-message-multi-node",
+        "thread_id": "fixture-thread",
+        "content": {
+          "last_node_id": 2,
+          "links": [[1, 1, 0, 2, 0, "IMAGE"]],
+          "nodes": [
+            {
+              "id": 1,
+              "type": "LoadImage",
+              "pos": [100, 100],
+              "size": [315, 314],
+              "flags": {},
+              "order": 0,
+              "mode": 0,
+              "inputs": [],
+              "outputs": [
+                { "name": "IMAGE", "type": "IMAGE", "links": [1] },
+                { "name": "MASK", "type": "MASK", "links": [] }
+              ],
+              "properties": {},
+              "widgets_values": ["reference.png", "image"]
+            },
+            {
+              "id": 2,
+              "type": "SaveImage",
+              "pos": [500, 100],
+              "size": [315, 270],
+              "flags": {},
+              "order": 1,
+              "mode": 0,
+              "inputs": [{ "name": "images", "type": "IMAGE", "link": 1 }],
+              "outputs": [],
+              "properties": {},
+              "widgets_values": ["agent-fixture"]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
