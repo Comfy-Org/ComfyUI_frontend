@@ -7470,28 +7470,9 @@ const translations = {
       '在 Comfy 无服务器引擎上从 0 扩展到数百万次生成。无需配置 GPU，没有冷启动——只为实际用量付费。'
   },
   'platform.serverlessVisual.ariaLabel': {
-    en: 'Animated diagram showing serverless activity moving through B200 GPU workers.',
-    'zh-CN': '动画图示：无服务器活动在 B200 GPU 工作节点之间移动。'
-  },
-  'platform.serverlessVisual.client': {
-    en: 'Client request',
-    'zh-CN': '客户端请求'
-  },
-  'platform.serverlessVisual.gateway': {
-    en: 'API gateway',
-    'zh-CN': 'API 网关'
-  },
-  'platform.serverlessVisual.functions': {
-    en: 'Serverless functions',
-    'zh-CN': '无服务器函数'
-  },
-  'platform.serverlessVisual.database': {
-    en: 'Database  B200s',
-    'zh-CN': '数据库  B200s'
-  },
-  'platform.serverlessVisual.worker': {
-    en: 'B200s',
-    'zh-CN': 'B200s'
+    en: 'Animated diagram showing serverless activity moving through RTX 6000 PRO, H100, and B200 GPU workers.',
+    'zh-CN':
+      '动画图示：无服务器活动在 RTX 6000 PRO、H100 和 B200 GPU 工作节点之间移动。'
   },
   'platform.products.builder.title': {
     en: 'Builder',
@@ -7912,14 +7893,6 @@ const translations = {
       '测试期限额——10 个并发工作节点、10 个构建、3 个部署、每个部署 500 GB 模型——均可申请提高。'
   },
   // ── Router subpage ────────────────────────────────────────────
-  'platform.modelsCalls.heading': {
-    en: 'Three calls, one queue',
-    'zh-CN': '三种调用，一个队列'
-  },
-  'platform.modelsCalls.subtitle': {
-    en: 'Direct, queued, or fire-and-forget — pick the call shape. The queue makes sure nothing is dropped.',
-    'zh-CN': '直接、排队或即发即忘——选择你要的调用方式。队列确保请求永不丢失。'
-  },
   'platform.modelsFeatures.heading': {
     en: 'One key, every frontier model',
     'zh-CN': '一个密钥，所有前沿模型'

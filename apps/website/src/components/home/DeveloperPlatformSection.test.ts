@@ -2,6 +2,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
+import { t } from '../../i18n/translations'
 import DeveloperPlatformSection from './DeveloperPlatformSection.vue'
 
 describe('DeveloperPlatformSection', () => {
@@ -10,9 +11,15 @@ describe('DeveloperPlatformSection', () => {
 
     const hrefOf = (name: string) =>
       screen.getByRole('link', { name }).getAttribute('href')
-    expect(hrefOf('Serverless API')).toBe('/platform/serverless')
-    expect(hrefOf('Models API')).toBe('/platform/models')
-    expect(hrefOf('Builder')).toBe('/platform/builder')
+    expect(hrefOf(t('platform.products.serverless.title', 'en'))).toBe(
+      '/platform/serverless'
+    )
+    expect(hrefOf(t('platform.products.models.title', 'en'))).toBe(
+      '/platform/models'
+    )
+    expect(hrefOf(t('platform.products.builder.title', 'en'))).toBe(
+      '/platform/builder'
+    )
     expect(hrefOf('Explore the Developer Platform')).toBe('/platform')
   })
 

@@ -2,7 +2,6 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
-import ModelsApiCallsSection from '../../../templates/platform/ModelsApiCallsSection.vue'
 import ModelsApiFeaturesSection from '../../../templates/platform/ModelsApiFeaturesSection.vue'
 import ModelsApiHero from '../../../templates/platform/ModelsApiHero.vue'
 import { t } from '../../../i18n/translations'
@@ -13,7 +12,6 @@ import { t } from '../../../i18n/translations'
   description={t('platform.products.models.description', 'zh-CN')}
 >
   <ModelsApiHero locale="zh-CN" client:load />
-  <ModelsApiCallsSection locale="zh-CN" client:visible />
   <ModelsApiFeaturesSection locale="zh-CN" />
   <ClosingCtaSection locale="zh-CN" />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
