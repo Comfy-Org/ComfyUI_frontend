@@ -92,6 +92,17 @@ describe('CloudSignInForm password manager support', () => {
     expect(passwordField()).toHaveAttribute('autocomplete', 'current-password')
   })
 
+  it('toggles password visibility', async () => {
+    const user = userEvent.setup()
+    renderRealForm()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.auth.showPassword })
+    )
+
+    expect(passwordField()).toHaveAttribute('type', 'text')
+  })
+
   it('binds both labels to their inputs', () => {
     renderRealForm()
 

@@ -111,7 +111,6 @@ export const primeVueImportAllowlist = [
   'src/platform/missingModel/components/MissingModelCard.test.ts',
   'src/platform/nodeReplacement/components/SwapNodeGroupRow.test.ts',
   'src/platform/nodeReplacement/components/SwapNodesCard.test.ts',
-  'src/platform/secrets/components/SecretFormDialog.vue',
   'src/platform/secrets/components/SecretFormDialog.zindex.test.ts',
   'src/platform/secrets/components/SecretsPanel.vue',
   'src/platform/settings/components/ColorPaletteMessage.vue',

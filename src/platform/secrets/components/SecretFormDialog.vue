@@ -126,20 +126,38 @@
                 :class="{ 'p-invalid': errors.secretValue }"
               />
             </template>
-            <Password
-              v-else
-              id="secret-value"
-              v-model="form.secretValue"
-              :placeholder="
-                mode === 'edit'
-                  ? $t('secrets.secretValuePlaceholderEdit')
-                  : $t('secrets.secretValuePlaceholder')
-              "
-              :feedback="false"
-              toggle-mask
-              fluid
-              :class="{ 'p-invalid': errors.secretValue }"
-            />
+            <div v-else class="relative">
+              <Input
+                id="secret-value"
+                v-model="form.secretValue"
+                :type="secretVisible ? 'text' : 'password'"
+                :placeholder="
+                  mode === 'edit'
+                    ? $t('secrets.secretValuePlaceholderEdit')
+                    : $t('secrets.secretValuePlaceholder')
+                "
+                class="pr-10"
+                :aria-invalid="!!errors.secretValue"
+              />
+              <button
+                type="button"
+                class="absolute top-1/2 right-3 flex -translate-y-1/2 text-muted-foreground"
+                :aria-label="
+                  $t(secretVisible ? 'auth.hidePassword' : 'auth.showPassword')
+                "
+                :aria-pressed="secretVisible"
+                @click="secretVisible = !secretVisible"
+              >
+                <i
+                  :class="
+                    secretVisible
+                      ? 'icon-[lucide--eye-off]'
+                      : 'icon-[lucide--eye]'
+                  "
+                  class="size-4"
+                />
+              </button>
+            </div>
             <small v-if="errors.secretValue" class="text-red-500">
               {{ errors.secretValue }}
             </small>
@@ -172,8 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import Password from 'primevue/password'
-import { computed, useId, useTemplateRef } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -217,6 +234,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const titleId = useId()
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
+const secretVisible = ref(false)
 
 const {
   form,

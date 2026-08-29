@@ -1,7 +1,6 @@
 import { Form, FormField } from '@primevue/forms'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import Password from 'primevue/password'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
@@ -92,8 +91,7 @@ function globalOptions() {
       Form,
       FormField,
       Button,
-      Input,
-      Password
+      Input
     }
   }
 }
@@ -176,6 +174,26 @@ describe('SignUpForm', () => {
       expect(passwordInput).toHaveAttribute('id', 'comfy-org-sign-up-password')
       expect(passwordInput).toHaveAttribute('name', 'password')
       expect(passwordInput).toHaveAttribute('autocomplete', 'new-password')
+      expect(passwordInput).toHaveAttribute('type', 'password')
+    })
+
+    it('toggles password visibility without changing the confirmation field', async () => {
+      const { user } = renderComponent()
+      const passwordInput = screen.getByPlaceholderText(
+        enMessages.auth.signup.passwordPlaceholder
+      )
+      const confirmPasswordInput = screen.getByPlaceholderText(
+        enMessages.auth.login.confirmPasswordPlaceholder
+      )
+
+      await user.click(
+        screen.getAllByRole('button', {
+          name: enMessages.auth.showPassword
+        })[0]
+      )
+
+      expect(passwordInput).toHaveAttribute('type', 'text')
+      expect(confirmPasswordInput).toHaveAttribute('type', 'password')
     })
 
     it('renders confirm-password input with distinct name and new-password autocomplete', () => {
