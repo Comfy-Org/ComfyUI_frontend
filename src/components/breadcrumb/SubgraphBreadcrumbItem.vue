@@ -8,9 +8,9 @@
     :data-testid="`subgraph-breadcrumb-item-${item.key}`"
     :data-active="isActive ? '' : undefined"
     draggable="false"
-    class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
+    class="p-breadcrumb-item-link flex h-8 cursor-pointer items-center px-2"
     :class="{
-      'flex items-center gap-1': isActive,
+      'gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
       'p-breadcrumb-item-link-icon-visible': isActive,
       'active-breadcrumb-item': isActive
