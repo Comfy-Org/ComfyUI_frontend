@@ -65,13 +65,13 @@
 </template>
 
 <script setup lang="ts">
-import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useSecrets } from '../composables/useSecrets'

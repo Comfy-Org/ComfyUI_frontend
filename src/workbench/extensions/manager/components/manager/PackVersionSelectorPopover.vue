@@ -84,13 +84,13 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import Listbox from 'primevue/listbox'
-import ProgressSpinner from 'primevue/progressspinner'
 import { valid as validSemver } from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
