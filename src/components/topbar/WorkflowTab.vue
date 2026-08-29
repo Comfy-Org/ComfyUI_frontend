@@ -229,7 +229,7 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
         hint: t('sideToolbar.workflowTab.dirtyCloseHint')
       }))
     ) {
-      // User clicked cancel
+      // User cancelled, or the replacement load failed
       break
     }
   }
