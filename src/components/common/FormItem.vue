@@ -30,7 +30,6 @@
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
 import { markRaw } from 'vue'
 import type { Component } from 'vue'
 
@@ -44,6 +43,7 @@ import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
 import Input from '@/components/ui/input/Input.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import type { FormItem } from '@/platform/settings/types'
 
@@ -94,7 +94,7 @@ function getFormComponent(item: FormItem): Component {
     case 'boolean':
       return Switch
     case 'number':
-      return InputNumber
+      return FormattedNumberStepper
     case 'slider':
       return InputSlider
     case 'knob':

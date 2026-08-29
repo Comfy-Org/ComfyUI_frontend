@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
@@ -142,15 +142,12 @@ function openFullSettings() {
               :step="GRID_SIZE_STEP"
               @update:model-value="updateGridSpacingFromSlider"
             />
-            <InputNumber
+            <FormattedNumberStepper
               :model-value="gridSpacing"
               class="w-16"
-              size="small"
-              pt:pc-input-text:root="min-w-[4ch] bg-transparent border-none text-center truncate"
               :min="GRID_SIZE_MIN"
               :max="GRID_SIZE_MAX"
               :step="GRID_SIZE_STEP"
-              :allow-empty="false"
               @update:model-value="updateGridSpacingFromInput"
             />
           </div>

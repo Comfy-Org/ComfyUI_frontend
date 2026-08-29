@@ -1,6 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import InputNumber from 'primevue/inputnumber'
 import { describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -56,8 +54,7 @@ function renderComponent(
 ) {
   return render(WidgetInputNumberGradientSlider, {
     global: {
-      plugins: [PrimeVue, i18n],
-      components: { InputNumber },
+      plugins: [i18n],
       stubs: {
         GradientSlider: GradientSliderStub,
         WidgetLayoutField: WidgetLayoutFieldStub
@@ -68,7 +65,7 @@ function renderComponent(
 }
 
 const getGradientSlider = () => screen.getByTestId('gradient-slider')
-const getNumberInput = () => screen.getByRole('spinbutton') as HTMLInputElement
+const getNumberInput = () => screen.getByRole('textbox') as HTMLInputElement
 
 describe('WidgetInputNumberGradientSlider', () => {
   describe('Value and bounds pass-through', () => {

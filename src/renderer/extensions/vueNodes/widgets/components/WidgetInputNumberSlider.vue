@@ -16,29 +16,28 @@
         :aria-label="widget.name"
         @update:model-value="updateLocalValue"
       />
-      <InputNumber
-        :key="timesEmptied"
-        :model-value="modelValue"
-        v-bind="filteredProps"
+      <FormattedNumberStepper
+        v-model="modelValue"
         :step="stepValue"
-        :min-fraction-digits="precision"
-        :max-fraction-digits="precision"
+        :min="widget.options?.min ?? -Infinity"
+        :max="widget.options?.max"
+        :disabled="widget.options?.disabled"
+        :format-options="{
+          minimumFractionDigits: precision,
+          maximumFractionDigits: precision
+        }"
         :aria-label="widget.name"
-        size="small"
-        pt:pc-input-text:root="min-w-[4ch] bg-transparent border-none text-center truncate"
         class="w-16"
-        :pt="sliderNumberPt"
-        @update:model-value="handleNumberInputUpdate"
       />
     </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
+import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -47,7 +46,6 @@ import {
 } from '@/utils/widgetPropFilter'
 
 import { useNumberStepCalculation } from '../composables/useNumberStepCalculation'
-import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -57,18 +55,8 @@ const { widget } = defineProps<{
 
 const modelValue = defineModel<number>({ default: 0 })
 
-const timesEmptied = ref(0)
-
 const updateLocalValue = (newValue: number[] | undefined): void => {
   if (newValue?.length) modelValue.value = newValue[0]
-}
-
-const handleNumberInputUpdate = (newValue: number | undefined) => {
-  if (newValue !== undefined) {
-    updateLocalValue([newValue])
-    return
-  }
-  timesEmptied.value += 1
 }
 
 const filteredProps = computed(() =>
@@ -80,16 +68,4 @@ const precision = typeof p === 'number' && p >= 0 ? p : undefined
 
 // Calculate the step value based on precision or widget options
 const stepValue = useNumberStepCalculation(widget.options, precision, true)
-
-const sliderNumberPt = useNumberWidgetButtonPt({
-  roundedLeft: true,
-  roundedRight: true
-})
 </script>
-
-<style scoped>
-:deep(.p-inputnumber-button.p-disabled .pi),
-:deep(.p-inputnumber-button.p-disabled .p-icon) {
-  color: var(--color-node-icon-disabled) !important;
-}
-</style>
