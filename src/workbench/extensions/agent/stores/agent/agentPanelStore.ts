@@ -11,7 +11,10 @@ const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
-  const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false)
+  // writeDefaults false: no storage key planted for flag-off users.
+  const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
+    writeDefaults: false
+  })
   const gateSettled = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
