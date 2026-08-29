@@ -20,45 +20,38 @@
         class="p-0"
       />
     </div>
-    <Listbox
-      v-else
-      v-model="selectedVersion"
-      option-label="label"
-      option-value="value"
-      option-disabled="isInstalled"
-      :options="processedVersionOptions"
-      :highlight-on-select="false"
-      class="max-h-[50vh] w-full rounded-md border-none shadow-none"
-      :pt="{
-        listContainer: { class: 'scrollbar-hide' }
-      }"
-    >
-      <template #option="slotProps">
-        <div class="flex w-full items-center justify-between p-1">
+    <ListboxRoot v-else v-model="selectedVersion" class="w-full">
+      <ListboxContent class="max-h-[50vh] scrollbar-hide overflow-y-auto p-1">
+        <ListboxItem
+          v-for="option in processedVersionOptions"
+          :key="option.value"
+          :value="option.value"
+          :disabled="option.isInstalled"
+          class="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 outline-none data-disabled:cursor-not-allowed data-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
+        >
           <div class="flex items-center gap-2">
-            <template v-if="slotProps.option.value === 'nightly'">
+            <template v-if="option.value === 'nightly'">
               <div class="w-4"></div>
             </template>
             <template v-else>
               <i
-                v-if="slotProps.option.hasConflict"
+                v-if="option.hasConflict"
                 v-tooltip="{
-                  value: slotProps.option.conflictMessage,
+                  value: option.conflictMessage,
                   showDelay: 300
                 }"
                 class="icon-[lucide--triangle-alert] text-warning-background"
               />
               <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             </template>
-            <span>{{ slotProps.option.label }}</span>
+            <span>{{ option.label }}</span>
           </div>
-          <i
-            v-if="slotProps.option.isSelected"
-            class="pi pi-check text-highlight"
-          />
-        </div>
-      </template>
-    </Listbox>
+          <ListboxItemIndicator v-if="option.isSelected" as-child>
+            <i class="icon-[lucide--check] text-highlight" />
+          </ListboxItemIndicator>
+        </ListboxItem>
+      </ListboxContent>
+    </ListboxRoot>
     <ContentDivider class="my-2" />
     <div class="flex justify-end gap-2 px-3 py-1">
       <Button
@@ -83,7 +76,12 @@
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import Listbox from 'primevue/listbox'
+import {
+  ListboxContent,
+  ListboxItem,
+  ListboxItemIndicator,
+  ListboxRoot
+} from 'reka-ui'
 import { valid as validSemver } from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
