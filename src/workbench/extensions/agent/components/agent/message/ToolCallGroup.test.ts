@@ -3,8 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { ToolPart } from '../../../services/agent/agentMessageParts'
+import type { TurnId } from '../../../schemas/agentApiSchema'
+import type {
+  AssistantMessage,
+  ToolPart
+} from '../../../services/agent/agentMessageParts'
 
+import AgentMessage from './AgentMessage.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
 
 function tool(
@@ -203,5 +208,47 @@ describe('ToolCallGroup', () => {
       'Applying the edit',
       'Set widget'
     ])
+  })
+})
+
+describe('AgentMessage tool grouping', () => {
+  it('keeps the current tool phase expanded while streaming', () => {
+    const message: AssistantMessage = {
+      id: 'msg-0' as TurnId,
+      role: 'assistant',
+      parts: [tool('c1', 'add_node', 'done', true)],
+      streaming: true,
+      thinking: false
+    }
+    render(AgentMessage, { props: { message }, global: { plugins: [i18n] } })
+
+    expect(
+      screen.getByRole('button', { name: /ran 1 tool call/i })
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Add node')).toBeInTheDocument()
+  })
+
+  it('groups adjacent tool parts into one pluralized card that opens on click', async () => {
+    const message: AssistantMessage = {
+      id: 'msg-1' as TurnId,
+      role: 'assistant',
+      parts: [
+        tool('c1', 'add_node', 'done', true),
+        tool('c2', 'add_node', 'done', true)
+      ],
+      streaming: false,
+      thinking: false
+    }
+    render(AgentMessage, { props: { message }, global: { plugins: [i18n] } })
+
+    expect(screen.getByText('Ran 2 tool calls')).toBeInTheDocument()
+    expect(screen.queryByText('Add node')).not.toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /ran 2 tool calls/i })
+    )
+
+    expect(await screen.findAllByText('Add node')).toHaveLength(1)
+    expect(screen.getByText('×2')).toBeInTheDocument()
   })
 })

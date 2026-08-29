@@ -58,12 +58,6 @@ const config: KnipConfig = {
     // TRANSITIONAL (agent-v1 chain): dev-only debug panel with no mount site
     // until slices 07+ import the crdt tree; removable then. See docs/adr/0024.
     'src/workbench/extensions/agent/crdt/CrdtDevPanel.vue',
-    // TRANSITIONAL (agent-v1 chain): the message factory is consumed here
-    // (08's conversation store); the residual orphans are the part types
-    // with no consumer yet - PartState, NoticePart, TabLinkPart,
-    // ActivityPart - taken by the renderer (10/11) slices; knip's
-    // config-hint gate forces removal the moment they land.
-    'src/workbench/extensions/agent/services/agent/agentMessageParts.ts',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
