@@ -56,12 +56,16 @@ const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
 const mockOutputLoadNew = vi.hoisted(() => vi.fn())
 const mockInputLoadNew = vi.hoisted(() => vi.fn())
+const mockInputInvalidate = vi.hoisted(() => vi.fn(async () => undefined))
 const mockHasCategory = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     setAssetDeleting: mockSetAssetDeleting,
     outputAssets: { loadNew: mockOutputLoadNew },
-    inputAssets: { loadNew: mockInputLoadNew },
+    inputAssets: {
+      loadNew: mockInputLoadNew,
+      invalidate: mockInputInvalidate
+    },
     invalidateModelsForCategory: mockInvalidateModelsForCategory,
     hasCategory: mockHasCategory
   })
@@ -1305,6 +1309,120 @@ describe('useMediaAssetActions', () => {
       expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('deleteAssets - failures', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetAssetType.mockReturnValue('input')
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+      mockAppGraph.value = { _nodes: [] }
+    })
+
+    it('retains a failed asset and allows the deletion to be retried', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDeleteAsset
+        .mockRejectedValueOnce(new Error('503 Service Unavailable'))
+        .mockResolvedValueOnce(undefined)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: 'asset-503', name: 'retry.png' })
+
+      await actions.deleteAssets(asset)
+
+      expect(mockSetAssetDeleting.mock.calls).toEqual([
+        ['asset-503', true],
+        ['asset-503', false]
+      ])
+      expect(mockInputInvalidate).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'mediaAsset.failedToDeleteAsset'
+      })
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+
+      await actions.deleteAssets(asset)
+
+      expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
+      expect(mockInputInvalidate).toHaveBeenCalledWith(['asset-503'])
+      expect(mockSetAssetDeleting.mock.calls).toEqual([
+        ['asset-503', true],
+        ['asset-503', false],
+        ['asset-503', true],
+        ['asset-503', false]
+      ])
+    })
+
+    it('invalidates and cleans up only successful assets after a partial bulk deletion', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDeleteAsset.mockImplementation(async (id: string) => {
+        if (id === 'asset-failed') throw new Error('503 Service Unavailable')
+      })
+      const actions = useMediaAssetActions()
+      const assets = [
+        createMockAsset({ id: 'asset-first', name: 'first.png' }),
+        createMockAsset({ id: 'asset-failed', name: 'failed.png' }),
+        createMockAsset({ id: 'asset-third', name: 'third.png' })
+      ]
+      const successfulValues = new Set([
+        'first.png',
+        'first.png [input]',
+        'third.png',
+        'third.png [input]'
+      ])
+
+      await actions.deleteAssets(assets)
+
+      expect(mockDeleteAsset.mock.calls.map(([id]) => id)).toEqual([
+        'asset-first',
+        'asset-failed',
+        'asset-third'
+      ])
+      expect(mockInputInvalidate).toHaveBeenCalledWith([
+        'asset-first',
+        'asset-third'
+      ])
+      expect(mockMarkMissingMedia).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        successfulValues
+      )
+      expect(mockClearNodePreviewCache).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        successfulValues,
+        expect.any(Function)
+      )
+      expect(mockClearWidgetValues).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        successfulValues
+      )
+      expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'g.warning',
+        detail: 'mediaAsset.selection.partialDeleteSuccess',
+        life: 3000
+      })
+      expect(vi.mocked(useI18n().t)).toHaveBeenCalledWith(
+        'mediaAsset.selection.partialDeleteSuccess',
+        { succeeded: 2, failed: 1 }
+      )
+      expect(mockSetAssetDeleting.mock.calls).toEqual([
+        ['asset-first', true],
+        ['asset-failed', true],
+        ['asset-third', true],
+        ['asset-first', false],
+        ['asset-failed', false],
+        ['asset-third', false]
+      ])
     })
   })
 
