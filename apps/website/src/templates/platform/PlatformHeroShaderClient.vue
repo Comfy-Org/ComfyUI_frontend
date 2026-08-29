@@ -50,7 +50,7 @@ const swirlSpeed = computed(() => (prefersReducedMotion() ? 0 : 2.8))
             { color: '#ff00aa', position: 1 }
           ]"
         />
-        <Ascii :cell-size="65" :spacing="0.5" />
+        <Ascii :cell-size="82" :spacing="0.5" />
       </CRTScreen>
     </Shader>
   </div>
