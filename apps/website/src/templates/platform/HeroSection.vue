@@ -15,7 +15,7 @@ const ctas = platformCtas(locale)
   <div class="relative isolate overflow-hidden md:overflow-visible">
     <PlatformHeroShader />
     <div
-      class="pointer-events-none absolute inset-0 z-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/45 to-transparent md:-bottom-32"
+      class="pointer-events-none absolute inset-0 z-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/45 to-transparent md:-bottom-48 md:mask-[linear-gradient(to_bottom,black_0%,black_64%,transparent_100%)]"
     />
     <HeroSplit01
       :locale="locale"
