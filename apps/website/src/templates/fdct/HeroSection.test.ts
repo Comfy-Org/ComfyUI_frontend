@@ -10,9 +10,12 @@ describe('fdct HeroSection', () => {
     render(HeroSection)
 
     const video = screen.getByLabelText(t('fdct.hero.title', 'en'))
-    expect(video.hasAttribute('autoplay')).toBe(true)
-    expect(video.hasAttribute('loop')).toBe(true)
-    expect((video as HTMLVideoElement).muted).toBe(true)
+    if (!(video instanceof HTMLVideoElement)) {
+      throw new Error('hero label is not on a <video>')
+    }
+    expect(video.autoplay).toBe(true)
+    expect(video.loop).toBe(true)
+    expect(video.muted).toBe(true)
     expect(video.getAttribute('poster')).toContain('FDCT_V4_thumb')
   })
 
