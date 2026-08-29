@@ -37,7 +37,7 @@ An Architecture Decision Record captures an important technical decision made al
 
 ## Creating a New ADR
 
-1. Copy the template below
+1. Copy the structure of an existing ADR, including Context, Decision, Consequences, and Status
 2. Name it with the next number in sequence: `NNNN-descriptive-title.md`
 3. Fill in all sections
 4. Update this index
