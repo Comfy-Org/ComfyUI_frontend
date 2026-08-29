@@ -8,7 +8,7 @@
       <div class="flex w-full flex-col items-center">
         <div class="flex w-full flex-col gap-2">
           <label for="new-user-input">{{ $t('userSelect.newUser') }}:</label>
-          <InputText
+          <Input
             id="new-user-input"
             v-model="newUsername"
             :placeholder="$t('userSelect.enterUsername')"
@@ -42,12 +42,12 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import Message from '@/components/ui/message/Message.vue'
 import type { User } from '@/stores/userStore'
 import { useUserStore } from '@/stores/userStore'

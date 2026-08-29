@@ -13,14 +13,14 @@
       >
         {{ t('auth.signup.emailLabel') }}
       </label>
-      <InputText
-        pt:root:id="comfy-org-sign-up-email"
-        pt:root:name="email"
-        pt:root:autocomplete="email"
+      <Input
+        v-bind="$field.props"
+        id="comfy-org-sign-up-email"
+        autocomplete="email"
         :class="fieldClass"
         type="email"
         :placeholder="t('auth.signup.emailPlaceholder')"
-        :invalid="$field.invalid"
+        :aria-invalid="$field.invalid"
       />
       <small v-if="$field.error" class="text-red-500">{{
         $field.error.message
@@ -67,7 +67,6 @@ import type { FormSubmitEvent } from '@primevue/forms'
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
-import InputText from 'primevue/inputtext'
 import { computed, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -76,6 +75,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import Input from '@/components/ui/input/Input.vue'
 import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'

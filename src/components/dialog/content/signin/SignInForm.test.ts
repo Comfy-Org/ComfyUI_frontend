@@ -2,13 +2,13 @@ import { Form } from '@primevue/forms'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import ToastService from 'primevue/toastservice'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAuthStore } from '@/stores/authStore'
@@ -51,7 +51,7 @@ describe('SignInForm', () => {
     const result = render(SignInForm, {
       global: {
         plugins: [PrimeVue, i18n, ToastService],
-        components: { Form, Button, InputText, Password, ProgressSpinner }
+        components: { Form, Button, Input, Password, ProgressSpinner }
       },
       props
     })

@@ -6,13 +6,13 @@
         size="sm"
         class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-component-node-foreground"
       />
-      <InputText
+      <Input
         v-model="modelValue"
         v-bind="filteredProps"
         :class="
           cn(
             WidgetInputBaseClass,
-            'w-full px-4',
+            'h-auto w-full min-w-[4ch] truncate rounded-none px-4',
             !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
             loading && 'pl-9'
@@ -21,18 +21,16 @@
         :aria-label="widget.name"
         :aria-invalid="invalid || undefined"
         :readonly="isReadOnly"
-        size="small"
-        :pt="{ root: 'truncate min-w-[4ch]' }"
       />
     </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
+import Input from '@/components/ui/input/Input.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 import {

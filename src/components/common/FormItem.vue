@@ -31,7 +31,6 @@
 
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import { markRaw } from 'vue'
 import type { Component } from 'vue'
@@ -44,6 +43,7 @@ import FormRadioGroup from '@/components/common/FormRadioGroup.vue'
 import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
+import Input from '@/components/ui/input/Input.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import type { FormItem } from '@/platform/settings/types'
 
@@ -111,7 +111,7 @@ function getFormComponent(item: FormItem): Component {
     case 'backgroundImage':
       return BackgroundImageUpload
     default:
-      return InputText
+      return Input
   }
 }
 </script>
@@ -129,6 +129,10 @@ function getFormComponent(item: FormItem): Component {
 
 .form-input :deep(.p-inputtext),
 .form-input :deep(.p-select) {
+  width: 11rem;
+}
+
+.form-input > input {
   width: 11rem;
 }
 </style>
