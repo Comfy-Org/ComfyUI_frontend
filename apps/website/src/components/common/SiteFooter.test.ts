@@ -15,6 +15,19 @@ describe('SiteFooter', () => {
     expect(hrefs).not.toContain('/models')
   })
 
+  it('links the workflow use-cases hub in the same tab', () => {
+    render(SiteFooter, { props: { locale: 'en' } })
+
+    const links = screen.getAllByRole('link', { name: 'Workflow Use Cases' })
+    expect(links.length).toBeGreaterThan(0)
+    for (const link of links) {
+      expect(link.getAttribute('href')).toBe(
+        'https://comfy.org/workflows/use-cases/'
+      )
+      expect(link.getAttribute('target')).toBeNull()
+    }
+  })
+
   it('links the MiniMax license page at its localized path for zh-CN', () => {
     render(SiteFooter, { props: { locale: 'zh-CN' } })
 
