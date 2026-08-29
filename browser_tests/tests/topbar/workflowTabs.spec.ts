@@ -12,6 +12,62 @@ test.describe('Workflow tabs', () => {
     await comfyPage.setup()
   })
 
+  test.describe('Agent workflow-tab contract from slice 04', () => {
+    test('keeps exactly one active tab after selecting several workflows', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+      await topbar.newWorkflowButton.click()
+      await topbar.newWorkflowButton.click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
+
+      await topbar.getTab(1).click()
+      await expect(topbar.getActiveTab()).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+      await expect(
+        comfyPage.page.locator('.workflow-tabs .p-togglebutton-checked')
+      ).toHaveCount(1)
+    })
+
+    test('keeps path-backed active identity after a tab switch', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+      await topbar.newWorkflowButton.click()
+      const names = await topbar.getTabNames()
+      await topbar.getTab(0).click()
+
+      await expect.poll(() => topbar.getActiveTabName()).toContain(names[0])
+    })
+
+    test('activates a valid neighbor when the active workflow is closed', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+      await topbar.newWorkflowButton.click()
+      await topbar.newWorkflowButton.click()
+      await topbar.getTab(1).click()
+      await topbar.closeWorkflowTab('Unsaved Workflow (2)')
+
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+      await expect(topbar.getActiveTab()).toBeVisible()
+    })
+
+    test('preserves tab identity across browser reload', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+      await topbar.newWorkflowButton.click()
+      await topbar.getTab(1).click()
+      const activeName = await topbar.getActiveTabName()
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await expect.poll(() => topbar.getActiveTabName()).toContain(activeName)
+    })
+  })
+
   test('Default workflow tab is visible on load', async ({ comfyPage }) => {
     await expect
       .poll(() => comfyPage.menu.topbar.getTabNames())
