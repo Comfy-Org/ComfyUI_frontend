@@ -53,10 +53,13 @@
         <SignUpForm v-else ref="signUpForm" @submit="signUpWithEmail" />
       </template>
 
-      <!-- Divider -->
-      <Divider align="center" layout="horizontal" class="my-8">
-        <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
-      </Divider>
+      <div class="my-8 flex items-center gap-3">
+        <div class="grow border-t border-interface-stroke" />
+        <span class="shrink-0 text-muted">{{
+          t('auth.login.orContinueWith')
+        }}</span>
+        <div class="grow border-t border-interface-stroke" />
+      </div>
 
       <!-- Social Login Buttons (hidden if host not whitelisted) -->
       <div class="flex flex-col gap-6">
@@ -162,7 +165,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

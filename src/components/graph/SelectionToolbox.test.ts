@@ -480,7 +480,7 @@ describe('SelectionToolbox', () => {
       canvasStore.selectedItems = [createMockPositionable()]
       const { container } = renderComponent()
 
-      const panel = container.querySelector('.panel')
+      const panel = container.querySelector('[data-testid="selection-toolbox"]')
       expect(panel).toBeTruthy()
       await fireEvent.wheel(panel!)
 

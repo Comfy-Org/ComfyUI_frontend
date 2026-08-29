@@ -11,7 +11,7 @@
       <h2 class="mb-2 text-2xl font-bold">
         {{ $t('credits.credits') }}
       </h2>
-      <Divider />
+      <div class="border-t border-interface-stroke" />
     </div>
 
     <div v-if="embedded" class="rounded-2xl border border-interface-stroke p-6">
@@ -59,7 +59,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref, watch } from 'vue'
 
