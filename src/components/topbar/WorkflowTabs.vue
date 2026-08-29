@@ -18,7 +18,6 @@
     <ScrollPanel
       class="no-drag overflow-hidden"
       :pt:content="{
-        ref: setScrollContent,
         class: 'p-0 w-full flex',
         onwheel: handleWheel
       }"
@@ -123,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { useScroll } from '@vueuse/core'
+import { useMutationObserver, useScroll } from '@vueuse/core'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import {
@@ -131,11 +130,12 @@ import {
   effectScope,
   nextTick,
   onBeforeUnmount,
+  onMounted,
   onUpdated,
   ref,
   watch
 } from 'vue'
-import type { ComponentPublicInstance, EffectScope } from 'vue'
+import type { EffectScope } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -258,8 +258,10 @@ function disposeScrollContent() {
   scrollContentScope = null
 }
 
-function setScrollContent(element: Element | ComponentPublicInstance | null) {
-  const nextScrollContent = element instanceof HTMLElement ? element : null
+function bindScrollContent() {
+  const nextScrollContent =
+    containerRef.value?.querySelector<HTMLElement>('.p-scrollpanel-content') ??
+    null
   if (nextScrollContent === scrollContent.value) return
 
   disposeScrollContent()
@@ -329,9 +331,17 @@ watch(
   { immediate: true }
 )
 
+onMounted(bindScrollContent)
+useMutationObserver(containerRef, bindScrollContent, {
+  childList: true,
+  subtree: true
+})
 onBeforeUnmount(disposeScrollContent)
 
-onUpdated(() => overflowObserver?.checkOverflow())
+onUpdated(() => {
+  bindScrollContent()
+  overflowObserver?.checkOverflow()
+})
 </script>
 
 <style scoped>

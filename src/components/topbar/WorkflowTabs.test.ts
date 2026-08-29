@@ -58,7 +58,9 @@ vi.mock('primevue/scrollpanel', async () => {
                 ...passThroughProps,
                 key: contentKey.value,
                 class: 'p-scrollpanel-content',
-                'data-testid': 'scroll-content'
+                'data-testid': 'scroll-content',
+                'data-internal-ref-preserved':
+                  'ref' in passThroughProps ? undefined : 'true'
               },
               slots.default?.()
             )
@@ -311,6 +313,17 @@ describe('WorkflowTabs agent entry button', () => {
 describe('WorkflowTabs scrolling', () => {
   beforeEach(() => {
     overflowObservers.length = 0
+  })
+
+  it('does not overwrite the ScrollPanel content ref', async () => {
+    renderComponent()
+
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+
+    expect(screen.getByTestId('scroll-content')).toHaveAttribute(
+      'data-internal-ref-preserved',
+      'true'
+    )
   })
 
   it('rebinds scroll listeners when scroll content is replaced', async () => {
