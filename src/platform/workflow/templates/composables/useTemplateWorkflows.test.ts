@@ -433,6 +433,21 @@ describe('useTemplateWorkflows', () => {
         { openSource: 'template' }
       )
     })
+
+    it('rejects JSON without a workflow envelope before opening', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(JSON.stringify({ workflow: 'invalid' }))
+      )
+      const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+      const result = await loadWorkflowTemplate('invalid-template', 'default')
+
+      expect(result).toBe(false)
+      expectNoOpeningSideEffects()
+    })
   })
 
   it('tracks template telemetry on load in cloud builds', async () => {
