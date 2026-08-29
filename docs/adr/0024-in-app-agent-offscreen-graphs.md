@@ -57,7 +57,8 @@ The document owns or references the following state:
 
 ```text
 GraphDocument (stable document_id, optional cloud workflow_id)
-├── lifecycle: created | loaded | dirty | persisted | closed
+├── lifecycle: created | loaded | closed
+├── persistence: unsaved | clean | dirty
 ├── graph-scope registry and ECS/domain stores
 ├── document-owned ChangeTracker and persistence baseline
 ├── target session: follower Y.Doc, state vector, sequence, lineage, queue
@@ -66,31 +67,32 @@ GraphDocument (stable document_id, optional cloud workflow_id)
     └── at most one active canvas binding at a time per active-canvas policy
 ```
 
-`dirty` and `persisted` describe the persistence position of a loaded document: a
-successful save establishes a persisted baseline, while a later human or remote domain
-mutation makes the document dirty. The lifecycle is independent of whether a renderer
-is attached:
+Lifecycle and persistence are independent fields. `created`, `loaded`, and `closed`
+describe document existence. `unsaved`, `clean`, and `dirty` compare a document with its
+persistence baseline. A successful save establishes a clean baseline, while a later
+human or remote domain mutation makes the loaded document dirty. Both fields are
+independent of whether a renderer is attached:
 
 ```text
-created ──load/hydrate──> loaded (clean)
-                              │
-                         domain mutation
-                              ▼
-                         loaded (dirty)
-                              │ save
-                              ▼
-                         persisted (clean)
-                              │ explicit close
-                              ▼
-                            closed
+created + unsaved ──load/hydrate──> loaded + unsaved/clean
+                                          │
+                                     domain mutation
+                                          ▼
+                                    loaded + dirty
+                                          │ save
+                                          ▼
+                                    loaded + clean
+                                          │ explicit close
+                                          ▼
+                                    closed + clean
 ```
 
-Created, loaded, and closed describe document existence. Dirty and persisted describe
-its save baseline; they are not permissions to mutate the graph. Closing a dirty
-document requires an explicit save or discard decision. Closing removes domain/render
-bindings only after that decision. A target session may remain detached and retain a
-bounded queue after a document is closed; it must not be mistaken for a new document or
-silently redirected to the active tab.
+Persistence state is not permission to mutate the graph. A mutation transitions
+`clean → dirty`; `unsaved` remains unsaved while accumulating changes. Closing a dirty or
+unsaved document requires an explicit save or discard decision. Closing removes
+domain/render bindings only after that decision. A target session may remain detached
+and retain a bounded queue after a document is closed; it must not be mistaken for a new
+document or silently redirected to the active tab.
 
 A tab is a view binding that names a `document_id`; it does not own document identity,
 ECS stores, CRDT state, or persistence. A document may have no tab while it is queued,
