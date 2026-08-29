@@ -36,9 +36,13 @@
       "
       :aria-label="$t('g.graphNavigation')"
     >
-      <ol class="p-breadcrumb-list m-0 flex list-none items-center p-0">
+      <ol
+        class="p-breadcrumb-list m-0 flex list-none items-center p-0 text-muted"
+      >
         <template v-for="(item, index) in items" :key="item.key">
-          <li class="p-breadcrumb-item pointer-events-auto">
+          <li
+            class="p-breadcrumb-item hover:text-foreground pointer-events-auto"
+          >
             <SubgraphBreadcrumbItem
               :item="item"
               :is-active="item.key === activeItemKey"
