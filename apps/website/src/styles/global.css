@@ -316,12 +316,23 @@
 @keyframes platform-closing-column-body {
   0%,
   100% {
-    clip-path: inset(28% 0 0);
+    clip-path: inset(48.15% 0 0);
   }
 
   50% {
-    clip-path: inset(0);
+    clip-path: inset(20.15% 0 0);
   }
+}
+
+@utility clip-platform-closing-column {
+  clip-path: polygon(
+    50% 0,
+    100% 18.75%,
+    100% 81.25%,
+    50% 100%,
+    0 81.25%,
+    0 18.75%
+  );
 }
 
 @keyframes platform-closing-column-cap {
