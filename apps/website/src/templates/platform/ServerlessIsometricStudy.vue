@@ -129,20 +129,25 @@ const resetProgress = computed(() =>
 const resetIndicatorProgress = computed(() =>
   reducedMotion ? 1 : clamp(frameTime.value / (BUILD_DURATION + HOLD_DURATION))
 )
-const resetIndicatorFlatProgress = computed(() =>
-  clamp((resetIndicatorProgress.value - 0.72) / 0.28)
+const resetIndicatorHeight = computed(
+  () => (1 - resetIndicatorProgress.value) * 150
 )
-const resetIndicatorPlateOpacity = computed(() =>
-  clamp((resetIndicatorProgress.value - 0.45) / 0.55)
+const resetIndicatorLeftFace = computed(() =>
+  polygonPoints([
+    [268.774, 432.187 - resetIndicatorHeight.value],
+    [400, 507.951 - resetIndicatorHeight.value],
+    [400, 507.951],
+    [268.774, 432.187]
+  ])
 )
-const resetIndicatorHexTransform = computed(() => {
-  const centerX = 73
-  const centerY = 255
-  const scaleX = 1 - resetIndicatorProgress.value * 0.08
-  const scaleY = 1 - resetIndicatorProgress.value * 0.52
-
-  return `translate(${centerX} ${centerY}) scale(${scaleX} ${scaleY}) translate(${-centerX} ${-centerY})`
-})
+const resetIndicatorRightFace = computed(() =>
+  polygonPoints([
+    [400, 507.951 - resetIndicatorHeight.value],
+    [531.225, 432.187 - resetIndicatorHeight.value],
+    [531.225, 432.187],
+    [400, 507.951]
+  ])
+)
 const phase = computed(() => {
   if (reducedMotion || frameTime.value < BUILD_DURATION) return 'grow'
   if (frameTime.value < BUILD_DURATION + HOLD_DURATION) return 'hold'
@@ -272,29 +277,37 @@ watch(
         </pattern>
       </defs>
 
-      <image
-        href="/assets/platform/serverless/local-node.svg"
-        x="44"
-        y="223"
-        width="58"
-        height="64"
-        :transform="resetIndicatorHexTransform"
-        :opacity="1 - resetIndicatorFlatProgress"
-      />
-      <g
-        transform="translate(-15 160) scale(0.22)"
-        :opacity="resetIndicatorPlateOpacity"
-      >
+      <g transform="translate(-15 160) scale(0.22)">
         <path
           d="M400 285.274C414.877 285.274 429.684 288.556 440.919 295.042L638.843 409.313C650.085 415.804 655.411 424.129 655.411 432.187C655.411 440.246 650.085 448.571 638.843 455.062L440.919 569.333C429.684 575.819 414.877 579.1 400 579.1C385.123 579.1 370.316 575.819 359.081 569.333L161.156 455.062C149.914 448.571 144.588 440.246 144.588 432.188C144.588 424.129 149.914 415.804 161.156 409.313L359.081 295.042C370.316 288.556 385.123 285.274 400 285.274Z"
           fill="var(--color-primary-comfy-ink)"
           stroke="var(--color-primary-comfy-plum)"
           stroke-width="2.6"
         />
+        <template v-if="resetIndicatorHeight > 0.5">
+          <polygon
+            :points="resetIndicatorLeftFace"
+            fill="url(#isometric-field-texture)"
+          />
+          <polygon
+            :points="resetIndicatorRightFace"
+            fill="url(#isometric-field-texture)"
+          />
+          <polygon
+            :points="resetIndicatorLeftFace"
+            fill="var(--color-primary-comfy-ink)"
+            fill-opacity="0.16"
+          />
+          <polygon
+            :points="resetIndicatorRightFace"
+            fill="var(--color-primary-comfy-plum)"
+            fill-opacity="0.08"
+          />
+        </template>
         <path
           d="M280.253 444.187C268.774 437.56 268.774 426.815 280.253 420.187L379.215 363.052C390.694 356.424 409.305 356.424 420.784 363.052L519.746 420.187C531.225 426.815 531.225 437.56 519.746 444.187L420.784 501.323C409.305 507.951 390.694 507.951 379.215 501.323L280.253 444.187Z"
           fill="var(--color-primary-comfy-yellow)"
-          :opacity="resetIndicatorFlatProgress"
+          :transform="`translate(0 ${-resetIndicatorHeight})`"
         />
       </g>
 
