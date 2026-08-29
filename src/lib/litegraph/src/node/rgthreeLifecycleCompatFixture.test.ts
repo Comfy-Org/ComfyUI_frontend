@@ -12,6 +12,7 @@ import {
   getRgthreePrototypeWrapperDepth,
   installRgthreeLifecycleFixture,
   RGTHREE_LIFECYCLE_FIXTURE_IDENTITY,
+  resolveRgthreeLifecycleDrawNode,
   RgthreeLabelFixtureNode
 } from '@/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture'
 import type {
@@ -41,7 +42,7 @@ class TestCanvas implements RgthreeLifecycleCanvas {
     (node) => `${node.id}:${node.title}`
   )
 
-  drawNode(node: LGraphNode, _context: CleanExtensionDrawContext): string {
+  drawNode(node: LGraphNode, _context: CleanExtensionDrawContext): unknown {
     return this.coreDraws(node)
   }
 }
@@ -229,6 +230,7 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
 
   it('preserves wrappers installed later by another extension', () => {
     const setup = createScaleSetup(1)
+    const originalDrawNode = TestCanvas.prototype.drawNode
     const installation = installRgthreeLifecycleFixture(
       TestCanvas.prototype,
       setup.host,
@@ -241,6 +243,10 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
       return rgthreeWrapper.call(this, node, context)
     }
     const competingWrapper = TestCanvas.prototype.drawNode
+    const disposeCompetingWrapper = () => {
+      TestCanvas.prototype.drawNode =
+        resolveRgthreeLifecycleDrawNode(rgthreeWrapper)
+    }
 
     installation.dispose()
     const result = setup.canvas.drawNode(setup.nodes[1], setup.context)
@@ -250,6 +256,7 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
     expect(result).toBe(`${setup.nodes[1].id}:${setup.nodes[1].title}`)
     expect(installation.counters.wrapperCalls).toBe(0)
     expect(setup.canvas.coreDraws).toHaveBeenCalledOnce()
-    TestCanvas.prototype.drawNode = rgthreeWrapper
+    disposeCompetingWrapper()
+    expect(TestCanvas.prototype.drawNode).toBe(originalDrawNode)
   })
 })

@@ -51,6 +51,12 @@ export interface RgthreeLifecycleHost {
 }
 
 type CanvasPrototype = Pick<RgthreeLifecycleCanvas, 'drawNode'>
+type DrawNode = RgthreeLifecycleCanvas['drawNode']
+
+interface DrawNodeWrapperState {
+  disposed: boolean
+  previous: DrawNode
+}
 
 export class RgthreeLabelFixtureNode extends LGraphNode {}
 
@@ -68,6 +74,7 @@ interface ActiveInstallation extends RgthreeLifecycleInstallation {
 interface RgthreeLifecycleRegistry {
   activeInstallations: WeakMap<CanvasPrototype, ActiveInstallation>
   wrapperDepths: WeakMap<CanvasPrototype, number>
+  wrapperStates: WeakMap<DrawNode, DrawNodeWrapperState>
 }
 
 const registryKey = Symbol.for('comfy.rgthree-lifecycle-compat.registry')
@@ -79,7 +86,8 @@ function getRegistry(): RgthreeLifecycleRegistry {
 
   const registry = {
     activeInstallations: new WeakMap<CanvasPrototype, ActiveInstallation>(),
-    wrapperDepths: new WeakMap<CanvasPrototype, number>()
+    wrapperDepths: new WeakMap<CanvasPrototype, number>(),
+    wrapperStates: new WeakMap<DrawNode, DrawNodeWrapperState>()
   }
   scope[registryKey] = registry
   return registry
@@ -89,6 +97,16 @@ export function getRgthreePrototypeWrapperDepth(
   prototype: CanvasPrototype
 ): number {
   return getRegistry().wrapperDepths.get(prototype) ?? 0
+}
+
+export function resolveRgthreeLifecycleDrawNode(drawNode: DrawNode): DrawNode {
+  let resolved = drawNode
+  let state = getRegistry().wrapperStates.get(resolved)
+  while (state?.disposed) {
+    resolved = state.previous
+    state = getRegistry().wrapperStates.get(resolved)
+  }
+  return resolved
 }
 
 export function createRgthreeLifecycleInstaller() {
@@ -107,7 +125,7 @@ export function createRgthreeLifecycleInstaller() {
     const depth = getRgthreePrototypeWrapperDepth(prototype) + 1
     registry.wrapperDepths.set(prototype, depth)
 
-    const wrapper: RgthreeLifecycleCanvas['drawNode'] = function (
+    const wrapper: DrawNode = function (
       this: RgthreeLifecycleCanvas,
       node,
       context
@@ -129,6 +147,8 @@ export function createRgthreeLifecycleInstaller() {
       }
       return result
     }
+    const wrapperState = { disposed: false, previous: originalDrawNode }
+    registry.wrapperStates.set(wrapper, wrapperState)
     prototype.drawNode = wrapper
 
     const onRefresh = () => counters.listenerCalls++
@@ -149,8 +169,9 @@ export function createRgthreeLifecycleInstaller() {
       dispose() {
         if (installation.disposed) return
         installation.disposed = true
+        wrapperState.disposed = true
         if (prototype.drawNode === wrapper) {
-          prototype.drawNode = originalDrawNode
+          prototype.drawNode = resolveRgthreeLifecycleDrawNode(originalDrawNode)
         }
         registry.wrapperDepths.set(prototype, depth - 1)
         host.events.removeEventListener('fixture:refresh', onRefresh)
