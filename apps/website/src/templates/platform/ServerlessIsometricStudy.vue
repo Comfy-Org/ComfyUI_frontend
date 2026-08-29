@@ -244,29 +244,32 @@ watch(
       aria-hidden="true"
     >
       <defs>
-        <clipPath
-          v-for="tile in visualTiles"
-          :id="`isometric-body-${tile.id}`"
-          :key="tile.id"
-          clipPathUnits="userSpaceOnUse"
+        <pattern
+          id="isometric-field-texture"
+          width="760"
+          height="360"
+          patternUnits="userSpaceOnUse"
+          patternContentUnits="userSpaceOnUse"
         >
-          <polygon :points="leftFace(tile)" />
-          <polygon :points="rightFace(tile)" />
-        </clipPath>
+          <image
+            href="/assets/platform/serverless/isometric-texture.webp"
+            width="760"
+            height="360"
+            preserveAspectRatio="xMidYMid slice"
+          />
+        </pattern>
       </defs>
 
       <g v-for="tile in visualTiles" :key="tile.id">
-        <image
-          v-if="tile.height > 0.5"
-          href="/assets/platform/serverless/isometric-texture.webp"
-          :x="tile.x"
-          :y="tile.y - tile.height"
-          :width="TILE_WIDTH"
-          :height="tile.height + TILE_HEIGHT / 2"
-          :clip-path="`url(#isometric-body-${tile.id})`"
-          preserveAspectRatio="none"
-        />
         <template v-if="tile.height > 0.5">
+          <polygon
+            :points="leftFace(tile)"
+            fill="url(#isometric-field-texture)"
+          />
+          <polygon
+            :points="rightFace(tile)"
+            fill="url(#isometric-field-texture)"
+          />
           <g
             :opacity="tile.textureShadeOpacity"
             :data-texture-shade="tile.textureShadeOpacity"
