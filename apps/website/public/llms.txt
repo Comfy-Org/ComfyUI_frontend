@@ -59,6 +59,7 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 
 - [Docs index for agents](https://docs.comfy.org/llms.txt): Machine-readable index of the full documentation.
 - [Docs full text for agents](https://docs.comfy.org/llms-full.txt): The complete documentation as one markdown file.
+- [Model catalog for agents](https://comfy.org/p/supported-models/llms.txt): Machine-readable index of every supported-model page; each page also has a markdown twin at its URL plus `.md`.
 - [Docs homepage as markdown](https://docs.comfy.org/index.md): Append `.md` to any docs URL for its markdown twin.
 - [Developer Platform for agents](https://platform.comfy.org/llms.txt): What platform.comfy.org is for and which of its pages need a browser.
 - [Comfy API OpenAPI document](https://api.comfy.org/openapi): OpenAPI specification for api.comfy.org.
@@ -81,7 +82,7 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 
 ## Models
 
-- [Supported Models](https://comfy.org/p/supported-models/): Directory of 380+ models that run in ComfyUI: image, video, audio, 3D, and utility models, each with its own page.
+- [Supported Models](https://comfy.org/p/supported-models/): Directory of 380+ models that run in ComfyUI: image, video, audio, 3D, and utility models, each with its own page. Machine-readable catalog at https://comfy.org/p/supported-models/llms.txt.
 - [Models Overview](https://comfy.org/models/): Flagship models available on Comfy, with links to each launch page.
 - [Flux 3 (Black Forest Labs, video model)](https://comfy.org/flux-3/): Multimodal model: video with native audio, up to 20 seconds per generation, from text, image, video, or keyframes.
 - [Gemini Omni 1.1 Flash (Google, video model)](https://comfy.org/gemini-omni/): One node covers text to video, image to video, reference to video, editing, and scene extension, with output up to 4K and audio on every clip.

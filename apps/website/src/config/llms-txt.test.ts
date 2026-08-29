@@ -59,12 +59,13 @@ function pageMatchers(root: string): {
   const dynamic: RegExp[] = []
   const entries = readdirSync(root, { recursive: true, withFileTypes: true })
   for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith('.astro')) continue
+    if (!entry.isFile() || !/\.(astro|ts)$/.test(entry.name)) continue
+    if (entry.name.endsWith('.test.ts') || entry.name.startsWith('_')) continue
     const relative = join(entry.parentPath, entry.name)
       .slice(root.length)
       .split(sep)
       .join('/')
-      .replace(/\.astro$/, '')
+      .replace(/\.(astro|ts)$/, '')
     if (root === pagesDir && relative.startsWith('/zh-CN/')) continue
     const route = relative.replace(/\/index$/, '') || '/'
     if (route.includes('[')) {
