@@ -1,14 +1,14 @@
 <template>
   <div class="input-slider flex flex-row items-center gap-2">
     <Slider
-      :model-value="modelValue"
+      :model-value="[modelValue]"
       class="slider-part"
       :class="sliderClass"
       :min="min"
       :max="max"
       :step="step"
       v-bind="$attrs"
-      @update:model-value="(value) => updateValue(value as number)"
+      @update:model-value="(value) => updateValue(value?.[0] ?? modelValue)"
     />
     <InputNumber
       :model-value="modelValue"
@@ -26,8 +26,9 @@
 
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
-import Slider from 'primevue/slider'
 import { ref, watch } from 'vue'
+
+import Slider from '@/components/ui/slider/Slider.vue'
 
 const props = defineProps<{
   modelValue: number
