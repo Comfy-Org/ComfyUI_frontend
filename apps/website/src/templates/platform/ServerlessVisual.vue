@@ -12,11 +12,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const COLS = 12
 const ROWS = 6
 const CELL_COUNT = COLS * ROWS
-const CELL_STEP_DURATION = 150
+const CELL_STEP_DURATION = 260
 const TRAIL_LENGTH = 3
 const REST_DURATION = 1400
 const CYCLE_DURATION =
-  (CELL_COUNT + TRAIL_LENGTH) * CELL_STEP_DURATION + REST_DURATION
+  (COLS + TRAIL_LENGTH) * CELL_STEP_DURATION + REST_DURATION
 const CELL_OPACITIES = [
   0.68, 0.98, 0.37, 1, 0.9, 0.13, 0.74, 0.44, 0.22, 0.21, 0.13, 0.61, 0.48,
   0.91, 0.51, 0.96, 0.97, 0.17, 0.89, 0.61, 0.15, 0.35, 0.19, 0.46, 0.3, 0.8,
@@ -39,6 +39,7 @@ interface ActivityCell {
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
 const onScreen = useElementVisibility(stageRef)
 const elapsed = ref(0)
+const reducedMotion = prefersReducedMotion()
 
 const frameTime = computed(() => elapsed.value % CYCLE_DURATION)
 
@@ -52,7 +53,7 @@ const activityCells: ActivityCell[] = Array.from(
       id,
       column,
       row,
-      sequence: column * ROWS + (ROWS - 1 - row),
+      sequence: column,
       opacity: CELL_OPACITIES[id]
     }
   }
@@ -84,7 +85,7 @@ const { pause, resume } = useRafFn(
 watch(
   onScreen,
   (visible) => {
-    if (visible && !prefersReducedMotion()) resume()
+    if (visible && !reducedMotion) resume()
     else pause()
   },
   { immediate: true }
@@ -98,12 +99,42 @@ watch(
     :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
     class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink font-mono"
   >
-    <img
-      src="/assets/platform/serverless/local-node.svg"
-      alt=""
+    <div
       class="absolute top-1/2 left-[max(9%,3.75rem)] z-10 size-24 -translate-1/2 sm:size-28"
       aria-hidden="true"
-    />
+    >
+      <span
+        :class="
+          cn(
+            'border-primary-comfy-yellow/25 absolute top-1/2 left-1/2 z-20 size-8 -translate-1/2 rotate-45 rounded-md border',
+            !reducedMotion &&
+              'animate-ping animate-delay-[-1.6s] animate-duration-[2.4s]'
+          )
+        "
+      />
+      <span
+        :class="
+          cn(
+            'border-primary-comfy-plum absolute top-1/2 left-1/2 z-20 size-8 -translate-1/2 rotate-45 rounded-md border',
+            !reducedMotion &&
+              'animate-ping animate-delay-[-0.8s] animate-duration-[2.4s]'
+          )
+        "
+      />
+      <span
+        :class="
+          cn(
+            'border-secondary-mauve/70 absolute top-1/2 left-1/2 z-20 size-8 -translate-1/2 rotate-45 rounded-md border',
+            !reducedMotion && 'animate-ping animate-duration-[2.4s]'
+          )
+        "
+      />
+      <img
+        src="/assets/platform/serverless/local-node.svg"
+        alt=""
+        class="relative z-10 size-full"
+      />
+    </div>
 
     <img
       src="/assets/platform/serverless/input-line.svg"
@@ -131,9 +162,9 @@ watch(
         :style="{
           opacity:
             cell.state === 'idle'
-              ? cell.opacity
+              ? 0.18 + cell.opacity * 0.22
               : cell.state === 'trail'
-                ? 0.72
+                ? 0.58
                 : 1
         }"
       />
