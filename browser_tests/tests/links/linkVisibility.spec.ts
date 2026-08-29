@@ -1,3 +1,4 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -7,6 +8,73 @@ test.use({
   initialSettings: { 'Comfy.UseNewMenu': 'Disabled' }
 })
 
+interface Point {
+  x: number
+  y: number
+}
+
+/** Converts a graph-space point to viewport coordinates for pointer aiming. */
+async function graphPointToClient(
+  comfyPage: ComfyPage,
+  point: Point
+): Promise<Point> {
+  return comfyPage.page.evaluate(({ x, y }) => {
+    const canvas = window.app!.canvas
+    const rect = canvas.canvas.getBoundingClientRect()
+    const { scale, offset } = canvas.ds
+    return {
+      x: rect.left + (x + offset[0]) * scale,
+      y: rect.top + (y + offset[1]) * scale
+    }
+  }, point)
+}
+
+/** Graph-space midpoint of the first rendered link — pointer aiming only. */
+async function firstLinkMidpoint(comfyPage: ComfyPage): Promise<Point> {
+  const handle = await comfyPage.page.waitForFunction(() => {
+    const link = window.app!.graph!.links.values().next().value
+    const pos = link?._pos
+    return pos ? { x: pos[0], y: pos[1] } : null
+  })
+  const point = await handle.jsonValue()
+  if (!point) throw new Error('Rendered link midpoint was not found')
+  return point
+}
+
+/** Graph-space centre of the first hidden-link badge — pointer aiming only. */
+async function firstBadgeCenter(comfyPage: ComfyPage): Promise<Point> {
+  const handle = await comfyPage.page.waitForFunction(() => {
+    const badge = window.app!.canvas.linkBadgeFrameState.hitAreas[0]
+    return badge
+      ? { x: badge.x + badge.width / 2, y: badge.y + badge.height / 2 }
+      : null
+  })
+  const point = await handle.jsonValue()
+  if (!point) throw new Error('Hidden link badge was not found')
+  return point
+}
+
+/** Hides the link under `graphPoint` through the user-facing context menu. */
+async function hideLinkViaMenu(
+  comfyPage: ComfyPage,
+  graphPoint: Point
+): Promise<void> {
+  const clientPoint = await graphPointToClient(comfyPage, graphPoint)
+  await comfyPage.page.mouse.click(clientPoint.x, clientPoint.y, {
+    button: 'right'
+  })
+  await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
+  await comfyPage.contextMenu.clickLitegraphMenuItem('Hide Link')
+  await comfyPage.contextMenu.waitForHidden()
+  await parkPointer(comfyPage)
+}
+
+/** Moves the pointer off the canvas so screenshots are cursor-independent. */
+async function parkPointer(comfyPage: ComfyPage): Promise<void> {
+  await comfyPage.page.mouse.move(1, 1)
+  await comfyPage.nextFrame()
+}
+
 test.describe('Hidden link badges', { tag: ['@canvas'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
@@ -15,61 +83,20 @@ test.describe('Hidden link badges', { tag: ['@canvas'] }, () => {
   test('hides, reveals, and restores a link from canvas gestures', async ({
     comfyPage
   }) => {
-    const linkPointHandle = await comfyPage.page.waitForFunction(() => {
-      const link = window.app!.graph!.links.values().next().value
-      const pos = link?._pos
-      return pos ? { x: pos[0], y: pos[1] } : null
-    })
-    const linkPoint = await linkPointHandle.jsonValue()
-    if (!linkPoint) throw new Error('Rendered link midpoint was not found')
-    await comfyPage.page.mouse.click(linkPoint.x, linkPoint.y, {
-      button: 'right'
-    })
-    await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
-    await comfyPage.contextMenu.clickLitegraphMenuItem('Hide Link')
-    await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
 
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          const canvas = window.app!.canvas
-          const link = window.app!.graph!.links.values().next().value
-          return {
-            hidden: link?.hidden,
-            curveRendered: link ? canvas.renderedPaths.has(link) : null,
-            badgeCount: canvas.linkBadgeFrameState.hitAreas.length
-          }
-        })
-      )
-      .toEqual({ hidden: true, curveRendered: false, badgeCount: 2 })
+    await hideLinkViaMenu(comfyPage, await firstLinkMidpoint(comfyPage))
 
-    const badgeCenter = await comfyPage.page.evaluate(() => {
-      const badge = window.app!.canvas.linkBadgeFrameState.hitAreas[0]
-      return badge
-        ? {
-            x: badge.x + badge.width / 2,
-            y: badge.y + badge.height / 2
-          }
-        : null
-    })
-    if (!badgeCenter) throw new Error('Hidden link badge was not found')
+    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+
+    const badgeCenter = await graphPointToClient(
+      comfyPage,
+      await firstBadgeCenter(comfyPage)
+    )
     await comfyPage.page.mouse.move(badgeCenter.x, badgeCenter.y)
     await comfyPage.nextFrame()
 
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          const link = window.app!.graph!.links.values().next().value
-          return {
-            hidden: link?.hidden,
-            curveRendered: link
-              ? window.app!.canvas.renderedPaths.has(link)
-              : null
-          }
-        })
-      )
-      .toEqual({ hidden: true, curveRendered: true })
+    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden-revealed.png')
 
     await comfyPage.page.mouse.click(badgeCenter.x, badgeCenter.y, {
       button: 'right'
@@ -77,40 +104,15 @@ test.describe('Hidden link badges', { tag: ['@canvas'] }, () => {
     await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
     await comfyPage.contextMenu.clickLitegraphMenuItem('Show Link')
     await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.nextFrame()
+    await parkPointer(comfyPage)
 
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          const canvas = window.app!.canvas
-          const link = window.app!.graph!.links.values().next().value
-          return {
-            hidden: link?.hidden,
-            curveRendered: link ? canvas.renderedPaths.has(link) : null,
-            badgeCount: canvas.linkBadgeFrameState.hitAreas.length
-          }
-        })
-      )
-      .toEqual({ hidden: undefined, curveRendered: true, badgeCount: 0 })
+    await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
   })
 
   test('persists hidden state through a serialize and load round-trip', async ({
     comfyPage
   }) => {
-    const linkPointHandle = await comfyPage.page.waitForFunction(() => {
-      const link = window.app!.graph!.links.values().next().value
-      const pos = link?._pos
-      return pos ? { x: pos[0], y: pos[1] } : null
-    })
-    const linkPoint = await linkPointHandle.jsonValue()
-    if (!linkPoint) throw new Error('Rendered link midpoint was not found')
-    await comfyPage.page.mouse.click(linkPoint.x, linkPoint.y, {
-      button: 'right'
-    })
-    await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
-    await comfyPage.contextMenu.clickLitegraphMenuItem('Hide Link')
-    await comfyPage.contextMenu.waitForHidden()
-    await comfyPage.nextFrame()
+    await hideLinkViaMenu(comfyPage, await firstLinkMidpoint(comfyPage))
 
     const serialized = await comfyPage.workflow.getExportedWorkflow()
     const serializedLink = serialized.links?.[0]
@@ -123,20 +125,11 @@ test.describe('Hidden link badges', { tag: ['@canvas'] }, () => {
     })
 
     await comfyPage.workflow.loadGraphData(serialized)
+    await comfyPage.nextFrame()
 
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => {
-          const canvas = window.app!.canvas
-          const link = window.app!.graph!.links.values().next().value
-          return {
-            hidden: link?.hidden,
-            curveRendered: link ? canvas.renderedPaths.has(link) : null,
-            badgeCount: canvas.linkBadgeFrameState.hitAreas.length
-          }
-        })
-      )
-      .toEqual({ hidden: true, curveRendered: false, badgeCount: 2 })
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'link-hidden-after-reload.png'
+    )
   })
 })
 
@@ -158,49 +151,35 @@ test.describe(
       await expect(inputSlot).toBeVisible()
       await expect(outputSlot).toBeVisible()
 
-      const linkId = await comfyPage.page.evaluate(() => {
+      const midpointHandle = await comfyPage.page.waitForFunction(() => {
         const graph = window.app!.graph!
-        const sourceNode = graph.nodes.find(
+        const source = graph.nodes.find(
           (node) => node.title === 'Load Checkpoint'
         )
-        const targetNode = graph.nodes.find(
-          (node) => node.title === 'VAE Decode'
-        )
-        if (!sourceNode || !targetNode) {
-          throw new Error('Workflow endpoint nodes were not found')
-        }
-        const outputSlot = sourceNode.outputs.findIndex(
+        const target = graph.nodes.find((node) => node.title === 'VAE Decode')
+        if (!source || !target) return null
+        const outputIndex = source.outputs.findIndex(
           (slot) => slot.name === 'VAE'
         )
-        const inputSlot = targetNode.inputs.findIndex(
+        const inputIndex = target.inputs.findIndex(
           (slot) => slot.name === 'vae'
         )
         const link = [...graph.links.values()].find(
           (candidate) =>
-            candidate.origin_id === sourceNode.id &&
-            candidate.origin_slot === outputSlot &&
-            candidate.target_id === targetNode.id &&
-            candidate.target_slot === inputSlot
+            candidate.origin_id === source.id &&
+            candidate.origin_slot === outputIndex &&
+            candidate.target_id === target.id &&
+            candidate.target_slot === inputIndex
         )
-        if (!link) throw new Error('Workflow link was not found')
-        link.hidden = true
-        window.app!.canvas.setDirty(false, true)
-        return link.id
+        const pos = link?._pos
+        return pos ? { x: pos[0], y: pos[1] } : null
       })
-      await comfyPage.nextFrame()
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((linkId) => {
-            const link = window.app!.graph!.getLink(linkId)
-            return link
-              ? {
-                  hidden: link.hidden,
-                  curveRendered: window.app!.canvas.renderedPaths.has(link)
-                }
-              : null
-          }, linkId)
-        )
-        .toEqual({ hidden: true, curveRendered: false })
+      const midpoint = await midpointHandle.jsonValue()
+      if (!midpoint) throw new Error('Workflow link was not found')
+
+      await hideLinkViaMenu(comfyPage, midpoint)
+
+      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
 
       const inputBounds = await inputSlot.boundingBox()
       if (!inputBounds) throw new Error('Input slot has no bounding box')
@@ -209,25 +188,14 @@ test.describe(
         inputBounds.y + inputBounds.height / 2
       )
       await comfyPage.nextFrame()
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((linkId) => {
-            const link = window.app!.graph!.getLink(linkId)
-            return link ? window.app!.canvas.renderedPaths.has(link) : null
-          }, linkId)
-        )
-        .toBe(true)
 
-      await comfyPage.canvasOps.moveMouseToEmptyArea()
-      await comfyPage.nextFrame()
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((linkId) => {
-            const link = window.app!.graph!.getLink(linkId)
-            return link ? window.app!.canvas.renderedPaths.has(link) : null
-          }, linkId)
-        )
-        .toBe(false)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-link-revealed-from-input.png'
+      )
+
+      await parkPointer(comfyPage)
+
+      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
 
       const outputBounds = await outputSlot.boundingBox()
       if (!outputBounds) throw new Error('Output slot has no bounding box')
@@ -236,25 +204,14 @@ test.describe(
         outputBounds.y + outputBounds.height / 2
       )
       await comfyPage.nextFrame()
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((linkId) => {
-            const link = window.app!.graph!.getLink(linkId)
-            return link ? window.app!.canvas.renderedPaths.has(link) : null
-          }, linkId)
-        )
-        .toBe(true)
 
-      await comfyPage.canvasOps.moveMouseToEmptyArea()
-      await comfyPage.nextFrame()
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((linkId) => {
-            const link = window.app!.graph!.getLink(linkId)
-            return link ? window.app!.canvas.renderedPaths.has(link) : null
-          }, linkId)
-        )
-        .toBe(false)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-link-revealed-from-output.png'
+      )
+
+      await parkPointer(comfyPage)
+
+      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
     })
   }
 )
