@@ -32,10 +32,10 @@
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
+import Tag from '@/components/ui/badge/Badge.vue'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 

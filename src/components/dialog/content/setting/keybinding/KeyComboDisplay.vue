@@ -12,9 +12,9 @@
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 
+import Tag from '@/components/ui/badge/Badge.vue'
 import type { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 
 const { keyCombo, isModified = false } = defineProps<{

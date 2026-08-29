@@ -77,10 +77,10 @@
 </template>
 
 <script setup lang="ts">
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
