@@ -1,4 +1,4 @@
-﻿{
+{
   "Comfy-Desktop_CheckForUpdates": {
     "label": "Nach Updates suchen"
   },
@@ -15,10 +15,10 @@
     "label": "extra_model_paths.yaml öffnen"
   },
   "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Modelle-Ordner öffnen"
+    "label": "Modellordner öffnen"
   },
   "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Ausgabe-Ordner öffnen"
+    "label": "Ausgabeordner öffnen"
   },
   "Comfy-Desktop_OpenDevTools": {
     "label": "Entwicklertools öffnen"
@@ -39,7 +39,7 @@
     "label": "3D-Viewer (Beta) für ausgewählten Node öffnen"
   },
   "Comfy_BrowseModelAssets": {
-    "label": "Experimentell: Modell-Assets durchsuchen"
+    "label": "Experimentell: Modellressourcen durchsuchen"
   },
   "Comfy_BrowseTemplates": {
     "label": "Vorlagen durchsuchen"
@@ -84,28 +84,28 @@
     "label": "Alles auswählen"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
-    "label": "Verbindungssichtbarkeit umschalten"
+    "label": "Verbindungssichtbarkeit im Canvas umschalten"
   },
   "Comfy_Canvas_ToggleLock": {
     "label": "Canvas-Sperre umschalten"
   },
   "Comfy_Canvas_ToggleMinimap": {
-    "label": "Minimap umschalten"
-  },
-  "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "Ausgewählte Elemente anheften/lösen"
+    "label": "Canvas-Minimap umschalten"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
-    "label": "Ausgewählte Nodes umgehen/nicht umgehen"
+    "label": "Bypass für ausgewählte Nodes aktivieren/deaktivieren"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Ausgewählte Nodes einklappen/ausklappen"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
-    "label": "Ausgewählte Nodes stummschalten/aktivieren"
+    "label": "Ausgewählte Nodes stummschalten/Stummschaltung aufheben"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
     "label": "Ausgewählte Nodes anheften/lösen"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "Ausgewählte Elemente anheften/lösen"
   },
   "Comfy_Canvas_Unlock": {
     "label": "Canvas entsperren"
@@ -159,7 +159,7 @@
     "label": "Ausgewählten Subgraph entpacken"
   },
   "Comfy_Help_AboutComfyUI": {
-    "label": "Über ComfyUI öffnen"
+    "label": "Info zu ComfyUI öffnen"
   },
   "Comfy_Help_OpenComfyOrgDiscord": {
     "label": "Comfy-Org Discord öffnen"
@@ -174,7 +174,7 @@
     "label": "ComfyUI-Issues öffnen"
   },
   "Comfy_Interrupt": {
-    "label": "Abbrechen"
+    "label": "Unterbrechen"
   },
   "Comfy_LayerEditor_OpenLayerEditor": {
     "label": "Ebenen-Editor für ausgewählten Node öffnen"
@@ -183,7 +183,7 @@
     "label": "Standard-Workflow laden"
   },
   "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
-    "label": "Custom-Nodes-Manager"
+    "label": "Manager für benutzerdefinierte Nodes"
   },
   "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
     "label": "Custom Nodes (Legacy)"
@@ -192,10 +192,10 @@
     "label": "Manager-Menü (Legacy)"
   },
   "Comfy_Manager_ShowMissingPacks": {
-    "label": "Fehlende Custom Nodes installieren"
+    "label": "Fehlende benutzerdefinierte Nodes installieren"
   },
   "Comfy_Manager_ShowUpdateAvailablePacks": {
-    "label": "Nach Custom-Node-Updates suchen"
+    "label": "Nach Updates für benutzerdefinierte Nodes suchen"
   },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Pinselgröße im MaskEditor verringern"
@@ -204,19 +204,19 @@
     "label": "Pinselgröße im MaskEditor erhöhen"
   },
   "Comfy_MaskEditor_ColorPicker": {
-    "label": "Farbwähler im MaskEditor öffnen"
+    "label": "Farbauswahl im MaskEditor öffnen"
   },
   "Comfy_MaskEditor_Mirror_Horizontal": {
     "label": "Horizontal spiegeln im MaskEditor"
   },
   "Comfy_MaskEditor_Mirror_Vertical": {
-    "label": "Vertikal spiegeln im MaskEditor"
+    "label": "Im MaskEditor vertikal spiegeln"
   },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Mask-Editor für ausgewählten Node öffnen"
   },
   "Comfy_MaskEditor_Rotate_Left": {
-    "label": "Nach links drehen im MaskEditor"
+    "label": "Im MaskEditor nach links drehen"
   },
   "Comfy_MaskEditor_Rotate_Right": {
     "label": "Nach rechts drehen im MaskEditor"
@@ -242,17 +242,17 @@
   "Comfy_PublishSubgraph": {
     "label": "Subgraph veröffentlichen"
   },
-  "Comfy_Queue_ToggleOverlay": {
-    "label": "Job-Verlauf umschalten"
-  },
   "Comfy_QueuePrompt": {
-    "label": "Prompt in Warteschlange stellen"
+    "label": "Prompt einreihen"
   },
   "Comfy_QueuePromptFront": {
-    "label": "Prompt vorne in Warteschlange stellen"
+    "label": "Prompt einreihen (vorne)"
   },
   "Comfy_QueueSelectedOutputNodes": {
-    "label": "Ausgewählte Output-Nodes in Warteschlange stellen"
+    "label": "Ausgewählte Output-Nodes einreihen"
+  },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Auftragsverlauf ein-/ausblenden"
   },
   "Comfy_Redo": {
     "label": "Wiederholen"
@@ -282,7 +282,7 @@
     "label": "Experimentell: AssetAPI aktivieren"
   },
   "Comfy_ToggleCanvasInfo": {
-    "label": "Canvas-Performance"
+    "label": "Canvas-Leistung"
   },
   "Comfy_ToggleHelpCenter": {
     "label": "Hilfecenter"
@@ -321,10 +321,7 @@
     "label": "Suchfeld umschalten"
   },
   "Workspace_ToggleBottomPanel": {
-    "label": "Unteres Panel umschalten"
-  },
-  "Workspace_ToggleBottomPanel_Shortcuts": {
-    "label": "Tastenkürzel-Dialog anzeigen"
+    "label": "Bottom-Panel ein-/ausblenden"
   },
   "Workspace_ToggleBottomPanelTab_command-terminal": {
     "label": "Terminal-Panel umschalten"
@@ -336,29 +333,32 @@
     "label": "Grundlagen-Panel umschalten"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
-    "label": "Ansichtssteuerung-Panel umschalten"
+    "label": "Bottom-Panel für Ansichtssteuerung ein-/ausblenden"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Tastenkürzel-Dialog anzeigen"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Fokusmodus umschalten"
   },
   "Workspace_ToggleSidebarTab_apps": {
-    "label": "Apps-Seitenleiste umschalten",
+    "label": "Apps-Seitenleiste ein-/ausblenden",
     "tooltip": "Apps"
   },
   "Workspace_ToggleSidebarTab_assets": {
-    "label": "Assets-Seitenleiste umschalten",
+    "label": "Assets-Seitenleiste ein-/ausblenden",
     "tooltip": "Assets"
   },
   "Workspace_ToggleSidebarTab_model-library": {
-    "label": "Modellbibliothek-Seitenleiste umschalten",
+    "label": "Modellbibliothek-Seitenleiste ein-/ausblenden",
     "tooltip": "Modellbibliothek"
   },
   "Workspace_ToggleSidebarTab_node-library": {
-    "label": "Node-Bibliothek-Seitenleiste umschalten",
+    "label": "Node-Bibliothek-Seitenleiste ein-/ausblenden",
     "tooltip": "Node-Bibliothek"
   },
   "Workspace_ToggleSidebarTab_workflows": {
-    "label": "Workflows-Seitenleiste umschalten",
+    "label": "Workflow-Seitenleiste ein-/ausblenden",
     "tooltip": "Workflows"
   }
 }
