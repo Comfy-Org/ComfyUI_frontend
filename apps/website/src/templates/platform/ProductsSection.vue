@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Badge from '../../components/ui/badge/Badge.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
@@ -30,8 +31,13 @@ const modelsTabs = modelsApiCodeTabs
         class="absolute inset-0 rounded-4xl"
       ></a>
       <div>
-        <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">
+        <h3
+          class="flex items-center gap-2.5 text-lg font-normal text-primary-warm-white lg:text-xl"
+        >
           {{ t('platform.products.serverless.title', locale) }}
+          <Badge variant="accent" size="xs">
+            {{ t('nav.badgeBeta', locale) }}
+          </Badge>
         </h3>
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
           {{ t('platform.products.serverless.description', locale) }}
@@ -51,7 +57,7 @@ const modelsTabs = modelsApiCodeTabs
       <ServerlessVisual />
     </article>
 
-    <!-- Comfy Router and Builder, side by side -->
+    <!-- Models API and Builder, side by side -->
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
       <article
         id="models"

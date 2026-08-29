@@ -3363,6 +3363,7 @@ const translations = {
   },
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
+  'nav.badgeBeta': { en: 'BETA', 'zh-CN': 'BETA' },
   // Column headers used in HeaderMainDesktop dropdowns
   'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
   'nav.supportedModels': { en: 'Supported Models', 'zh-CN': '支持的模型' },
@@ -7216,6 +7217,19 @@ const translations = {
   },
 
   // ── Managed Builds (/enterprise + /enterprise/managed-builds) ──
+  'enterprise.platformBand.label': {
+    en: 'DEVELOPER PLATFORM',
+    'zh-CN': '开发者平台'
+  },
+  'enterprise.platformBand.text': {
+    en: 'Deploy and scale ComfyUI workflows — Serverless API, Models API, and Builder behind one API key. Now in limited beta.',
+    'zh-CN':
+      '部署并扩展 ComfyUI 工作流——Serverless API、Models API 和 Builder 共用一个 API 密钥。现已开启有限测试。'
+  },
+  'enterprise.platformBand.cta': {
+    en: 'Explore the Developer Platform',
+    'zh-CN': '了解开发者平台'
+  },
   'enterprise.managedBuilds.heading': {
     en: 'Managed Builds',
     'zh-CN': '托管构建'
@@ -7445,8 +7459,8 @@ const translations = {
     'zh-CN': '企业版：托管构建'
   },
   'platform.products.models.title': {
-    en: 'Comfy Router',
-    'zh-CN': 'Comfy Router'
+    en: 'Models API',
+    'zh-CN': 'Models API'
   },
   'platform.products.models.description': {
     en: 'Call partner models — Seedance, Minimax H3, Nano Banana, GPT-Image-2 — and access the latest models with a single API key.',
@@ -7675,9 +7689,9 @@ const translations = {
     'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $45.50 + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
-    en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
+    en: 'Models API usage shows per-output prices on each model card and draws from the same credit pool.',
     'zh-CN':
-      'Comfy Router 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
+      'Models API 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
   },
   // ── Serverless API subpage ────────────────────────────────────
   'platform.serverlessFeatures.heading': {
