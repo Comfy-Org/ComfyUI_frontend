@@ -36,6 +36,8 @@
     "check:coderabbit": "node scripts/gen-coderabbit-config.mjs",
     "gen:coderabbit": "node scripts/gen-coderabbit-config.mjs --write",
     "check:imports": "node scripts/check-import-graph.mjs",
+    "check:stateless": "node scripts/check-stateless.mjs",
+    "test:clock-matrix": "npm run build && vitest run test/clock-matrix/clock-matrix.test.ts --reporter=verbose",
     "verify:corpus": "node scripts/verify-corpus.mjs"
   },
   "dependencies": {
@@ -45,7 +47,10 @@
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^24.0.0",
+    "@typescript-eslint/parser": "^8.68.0",
     "dependency-cruiser": "^17.4.3",
+    "eslint": "^9.39.5",
+    "eslint-plugin-sonarjs": "^3.0.7",
     "fast-check": "^4.9.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"

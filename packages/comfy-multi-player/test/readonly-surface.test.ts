@@ -717,6 +717,8 @@ describe("read-only surface — classification", () => {
     "LEGACY_NODE_INCARNATION",
     "widgetTargetKey",
     "MAX_LAMPORT_COUNTER",
+    "DocDerivedLamportClockStore",
+    "observedDocCounter",
     "validateLamportCounter",
     "observeLamport",
     "tickLamport",

@@ -331,9 +331,6 @@ export function opDigest(op: Op): string {
   return sha256Hex(canonicalOp(op));
 }
 
-const FROZEN = new Set<string>(FROZEN_OPS);
-const DEFERRED = new Set<string>(DEFERRED_OPS);
-
 /**
  * Resolve a node type to its catalog entry by OWN property only. Bracket
  * indexing walks the prototype chain, so an untrusted `type` of `__proto__`
@@ -369,13 +366,13 @@ function validateEnvelope(op: WireOp): void {
   if (typeof op !== "object" || op === null || typeof op.op !== "string") {
     throw new OpRejectedError("malformed_op", "op is not an object with a string 'op' kind");
   }
-  if (DEFERRED.has(op.op)) {
+  if ((DEFERRED_OPS as readonly string[]).includes(op.op)) {
     throw new OpRejectedError(
       "op_deferred",
       `unknown op '${op.op}' — defined by the vocabulary but deferred (op-vocabulary-v1.md §1.6); rejected until un-deferred by amendment`,
     );
   }
-  if (!FROZEN.has(op.op)) {
+  if (!(FROZEN_OPS as readonly string[]).includes(op.op)) {
     throw new OpRejectedError("unknown_op", `unknown op '${op.op}'`);
   }
   if (typeof op.op_id !== "string" || op.op_id.length === 0) {

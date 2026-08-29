@@ -23,10 +23,10 @@ import {
 import { SCHEMA_VERSION, type WidgetCatalog, type WorkflowJSON, type WorkflowNode } from "./types.js";
 
 /** Top-level keys that are NOT meta passthrough: structural keys get their own root maps; comfy-cli bookkeeping is never imported. */
-const NON_META_KEYS = new Set(["nodes", "links", "definitions", "_applied_ops", "_widget_stamps"]);
+const NON_META_KEYS = ["nodes", "links", "definitions", "_applied_ops", "_widget_stamps"] as const;
 
 /** Meta keys owned by the doc itself — a workflow must not carry them. */
-const RESERVED_META_KEYS = new Set(["schema_version", "catalog_version"]);
+const RESERVED_META_KEYS = ["schema_version", "catalog_version"] as const;
 
 /** OWN-property lookup: an inherited key such as `__proto__` must read as "missing", not as a catalog entry (#13). */
 function widgetOrderFor(catalog: WidgetCatalog, nodeType: string): readonly string[] | undefined {
@@ -83,8 +83,8 @@ export function mint(workflow: WorkflowJSON, catalog: WidgetCatalog, catalogVers
     stampsMap(doc);
 
     for (const [k, v] of Object.entries(workflow)) {
-      if (NON_META_KEYS.has(k)) continue;
-      if (RESERVED_META_KEYS.has(k) || k.startsWith("__")) {
+      if (NON_META_KEYS.includes(k as (typeof NON_META_KEYS)[number])) continue;
+      if (RESERVED_META_KEYS.includes(k as (typeof RESERVED_META_KEYS)[number]) || k.startsWith("__")) {
         throw new TypeError(`mint: workflow key '${k}' collides with a reserved doc-meta key`);
       }
       meta.set(k, cloneForMap(v, `mint: workflow.${k}`));

@@ -237,21 +237,25 @@ export function initDoc(doc: Y.Doc, catalogVersion = ""): void {
 // node Y.Map is ONE mutation regardless of its field count.
 // ---------------------------------------------------------------------------
 
-const mutationsByDoc = new WeakMap<Y.Doc, number>();
+const MUTATION_COUNT = Symbol("comfy-multi-player mutation count");
+type InstrumentedDoc = Y.Doc & { [MUTATION_COUNT]?: number };
 
 /** Reset one doc's Y-mutation counter (test instrumentation for the §11 bounded-writes rule). */
 export function _resetMutationCount(doc: Y.Doc): void {
-  mutationsByDoc.set(doc, 0);
+  (doc as InstrumentedDoc)[MUTATION_COUNT] = 0;
 }
 
 /** Y-mutations performed on one doc since its last reset. */
 export function _getMutationCount(doc: Y.Doc): number {
-  return mutationsByDoc.get(doc) ?? 0;
+  return (doc as InstrumentedDoc)[MUTATION_COUNT] ?? 0;
 }
 
 function countMutation(type: { readonly doc: Y.Doc | null }): void {
   const doc = type.doc;
-  if (doc !== null) mutationsByDoc.set(doc, (mutationsByDoc.get(doc) ?? 0) + 1);
+  if (doc !== null) {
+    const instrumented = doc as InstrumentedDoc;
+    instrumented[MUTATION_COUNT] = (instrumented[MUTATION_COUNT] ?? 0) + 1;
+  }
 }
 
 export function mset<T>(m: Y.Map<T>, key: string, value: T): void {

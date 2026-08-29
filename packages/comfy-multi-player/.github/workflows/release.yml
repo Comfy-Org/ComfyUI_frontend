@@ -46,6 +46,9 @@ jobs:
       - name: Purity gate
         run: npm run check:purity
 
+      - name: Statelessness gate
+        run: npm run check:stateless
+
       - name: Profile-claim staleness gate
         run: npm run check:profile-claims
 
@@ -60,6 +63,9 @@ jobs:
 
       - name: Tests
         run: npm test
+
+      - name: Clock ordering matrix
+        run: npm run test:clock-matrix
 
       - name: Verify package contents
         run: |

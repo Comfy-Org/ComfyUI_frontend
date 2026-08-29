@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { MAX_LAMPORT_COUNTER, freezeLamportEnvelope, observeLamport,
-  persistLamportTick, tickLamport, type LamportClockStore } from "../src/index.js";
+import { applyOps, DocDerivedLamportClockStore, freezeLamportEnvelope, MAX_LAMPORT_COUNTER,
+  mint, observeLamport, persistLamportTick, tickLamport, type LamportClockStore } from "../src/index.js";
+import { loadCatalog } from "./helpers.js";
+
+const catalog = loadCatalog();
 
 describe("creator-owned Lamport counter", () => {
   it("observes, ticks, and refuses overflow", () => {
@@ -21,5 +24,37 @@ describe("creator-owned Lamport counter", () => {
       op: "clear", actor: "agent:t:1", op_id: "a".repeat(32), base_version: 13,
       stamp: [13, "agent:t:1"],
     });
+  });
+
+  it("reseeds from the document's winning stamps without package-owned state", async () => {
+    const doc = mint({
+      nodes: [{ id: 1, type: "KSampler", pos: [0, 0], inputs: [], outputs: [], widgets_values: [0, "fixed", 20, 7, "euler", "normal", 1] }],
+      links: [],
+    }, catalog);
+    const op = {
+      op: "set_widget" as const,
+      op_id: "b".repeat(32),
+      actor: "agent:clock",
+      base_version: 12,
+      stamp: [12, "agent:clock"] as [number, string],
+      node_id: 1,
+      widget: "steps",
+      value: 42,
+      node_incarnation: "0",
+    };
+    expect(applyOps(doc, [op], catalog).outcomes.some((outcome) => outcome.outcome === "rejected")).toBe(false);
+    const store = new DocDerivedLamportClockStore(doc);
+    const identity = { workflow_id: "w", lineage_id: "l", producer_id: "agent:clock" };
+    await expect(persistLamportTick(store, identity, [], { requireSeed: true })).resolves.toBe(13);
+    expect(await persistLamportTick(new DocDerivedLamportClockStore(mint({ nodes: [], links: [] }, catalog)), identity, [4])).toBe(5);
+  });
+
+  it("fails closed when the document stamp ledger is malformed", async () => {
+    const doc = mint({ nodes: [], links: [] }, catalog);
+    doc.getMap<unknown>("__stamps").set("bad", [Number.NaN, "agent:bad", "c".repeat(32)]);
+    await expect(new DocDerivedLamportClockStore(doc).transaction(
+      { workflow_id: "w", lineage_id: "l", producer_id: "p" },
+      async (stored) => ({ counter: tickLamport(stored ?? 0), value: stored }),
+    )).rejects.toThrow(/Lamport counter/);
   });
 });

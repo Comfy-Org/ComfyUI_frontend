@@ -1,3 +1,5 @@
+import * as Y from "yjs";
+import { ROOT_STAMPS } from "./doc.js";
 import type { Actor } from "./types.js";
 
 export const MAX_LAMPORT_COUNTER = Number.MAX_SAFE_INTEGER;
@@ -15,6 +17,51 @@ export interface LamportClockStore {
     identity: Omit<LamportProducerClock, "counter">,
     update: (stored: number | undefined) => Promise<{ counter: number; value: T }>,
   ): Promise<T>;
+}
+
+/**
+ * A caller-owned Lamport store whose floor is derived from this document's
+ * winning stamp ledger on every transaction. The package keeps no producer
+ * counter: the Y.Doc is the caller-owned lineage snapshot and `transaction`
+ * remains the caller's serialization boundary.
+ *
+ * Stamp values are validated rather than silently skipped. A malformed
+ * `__stamps` entry must fail closed before a producer mints an unsafe counter.
+ * Incarnation-qualified target keys all belong to this document lineage, so
+ * old node lives remain part of the observed floor (DQ-11 / ADR-021).
+ */
+export class DocDerivedLamportClockStore implements LamportClockStore {
+  public constructor(private readonly doc: Y.Doc) {}
+
+  public async transaction<T>(
+    _identity: Omit<LamportProducerClock, "counter">,
+    update: (stored: number | undefined) => Promise<{ counter: number; value: T }>,
+  ): Promise<T> {
+    const floor = observedDocCounter(this.doc);
+    const result = await update(floor);
+    validateLamportCounter(result.counter);
+    if (floor !== undefined && result.counter <= floor) {
+      throw new RangeError(`Lamport counter ${result.counter} did not advance beyond document floor ${floor}`);
+    }
+    return result.value;
+  }
+}
+
+/** Return the maximum valid counter in the document's `__stamps` ledger. */
+export function observedDocCounter(doc: Y.Doc): number | undefined {
+  const root = doc.share.get(ROOT_STAMPS);
+  if (root === undefined) return undefined;
+  if (!(root instanceof Y.Map)) throw new TypeError("__stamps root is not a Y.Map");
+
+  let maximum: number | undefined;
+  root.forEach((value) => {
+    if (!Array.isArray(value) || value.length < 3 || typeof value[1] !== "string" || typeof value[2] !== "string") {
+      throw new TypeError("__stamps contains a malformed stamp");
+    }
+    const counter = validateLamportCounter(value[0], true);
+    maximum = maximum === undefined ? counter : Math.max(maximum, counter);
+  });
+  return maximum;
 }
 
 export function validateLamportCounter(value: unknown, allowZero = false): number {

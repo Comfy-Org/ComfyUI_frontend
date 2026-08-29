@@ -1,9 +1,9 @@
 /**
- * Strict ESLint config for the sonarjs-lint review check.
+ * Strict ESLint config for the sonarjs-lint review check and the statelessness gate.
  *
  * Uses eslint-plugin-sonarjs for SonarQube-grade analysis without a server.
- * This config is NOT the package's development lint config — it is only used by
- * the code-review checks' static-analysis pass.
+ * The source rules are shared by code review and `check:stateless`; this is
+ * intentionally the package's only static-analysis seam.
  *
  * Setup + run (install transiently so the config's bare imports resolve, without
  * touching package.json; the pure yjs-only production dep set is unaffected):
@@ -24,10 +24,41 @@
 import sonarjs from "eslint-plugin-sonarjs";
 import tsParser from "@typescript-eslint/parser";
 
+const statelessRules = {
+  "no-restricted-imports": [
+    "error",
+    {
+      paths: [
+        { name: "pinia", message: "KA-13: caller-owned state only (see docs/INVARIANTS.md)." },
+        { name: "vuex", message: "KA-13: caller-owned state only (see docs/INVARIANTS.md)." },
+        { name: "vue", message: "KA-3/KA-13: cmp is DOM/framework-free and stateless (see docs/INVARIANTS.md)." },
+      ],
+      patterns: [
+        {
+          group: ["pinia/*", "vuex/*", "vue/*", "@vue/*"],
+          message: "KA-3/KA-13: UI/reactivity imports do not belong in cmp.",
+        },
+      ],
+    },
+  ],
+  "no-restricted-syntax": [
+    "error",
+    {
+      selector: "Program > VariableDeclaration[kind='let'], Program > VariableDeclaration[kind='var']",
+      message: "KA-13: no module-level let/var; caller-owned state only.",
+    },
+    {
+      selector:
+        "Program > VariableDeclaration > VariableDeclarator > NewExpression[callee.type='Identifier'][callee.name=/^(Map|Set|WeakMap|WeakSet)$/]",
+      message: "KA-13: no module-level mutable collection; inject state through the caller.",
+    },
+  ],
+};
+
 export default [
-  // recommended already registers the `sonarjs` plugin and enables its rules;
-  // do not redefine the plugin key (ESLint flat config forbids it).
-  sonarjs.configs.recommended,
+  // `CMP_STATELESS_ONLY=1` lets the merge-blocking gate reuse this config's
+  // parser/files/ignore seam without inheriting unrelated review findings.
+  ...(process.env.CMP_STATELESS_ONLY === "1" ? [] : [sonarjs.configs.recommended]),
   {
     files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts", "**/*.js", "**/*.mjs", "**/*.cjs"],
     languageOptions: {
@@ -36,7 +67,8 @@ export default [
       parser: tsParser,
     },
     rules: {
-      "sonarjs/cognitive-complexity": ["error", 15],
+      ...(process.env.CMP_STATELESS_ONLY === "1" ? {} : { "sonarjs/cognitive-complexity": ["error", 15] }),
+      ...statelessRules,
     },
   },
   {
