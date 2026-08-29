@@ -8,7 +8,7 @@ import BuilderVisual from './BuilderVisual.vue'
 import CodeTabs from './CodeTabs.vue'
 import { modelsApiCodeTabs } from './codeSamples'
 import { platformCtas } from './ctas'
-import ServerlessVisual from './ServerlessVisual.vue'
+import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -54,7 +54,7 @@ const modelsTabs = modelsApiCodeTabs
           </Button>
         </div>
       </div>
-      <ServerlessVisual :locale />
+      <ServerlessIsometricStudy :locale />
     </article>
 
     <!-- Models API and Builder, side by side -->
