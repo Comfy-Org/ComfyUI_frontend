@@ -129,7 +129,7 @@ watch(
     class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink font-mono"
   >
     <div
-      class="absolute top-1/2 left-[max(9%,3.75rem)] z-10 size-24 -translate-1/2 sm:size-28"
+      class="absolute top-1/2 left-[max(9%,3.75rem)] z-10 size-12 -translate-1/2 sm:size-14"
       aria-hidden="true"
     >
       <img
