@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Ascii, Shader, SolidColor, ThinFilm } from 'shaders/vue'
+import { Ascii, Shader, ThinFilm } from 'shaders/vue'
 
 const blobCenter = { x: 0.5, y: 0 }
 const blobShape = {
@@ -16,7 +16,6 @@ const blobShape = {
 
 <template>
   <Shader tone-mapping="aces" class="block size-full">
-    <SolidColor color="#001204" />
     <Ascii characters="@#8960543271">
       <ThinFilm
         mode="custom"
