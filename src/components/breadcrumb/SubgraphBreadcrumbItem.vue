@@ -64,11 +64,11 @@ import InputText from 'primevue/inputtext'
 import type { MenuState } from 'primevue/menu'
 import Menu from 'primevue/menu'
 import type { MenuItem } from 'primevue/menuitem'
-import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import Tag from '@/components/ui/badge/Badge.vue'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {

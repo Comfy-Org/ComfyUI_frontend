@@ -1,11 +1,7 @@
 <template>
   <Message
     :severity="statusSeverity"
-    class="flex w-fit items-center rounded-xl p-0 wrap-break-word"
-    :pt="{
-      text: { class: 'text-xs' },
-      content: { class: 'px-2 py-0.5' }
-    }"
+    class="w-fit rounded-xl px-2 py-0.5 text-xs wrap-break-word"
   >
     <i
       class="pi pi-circle-fill mr-1.5 p-0 text-[0.6rem]"
@@ -16,9 +12,10 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
 import { computed, inject } from 'vue'
 
+import type { MessageVariants } from '@/components/ui/message/message.variants'
+import Message from '@/components/ui/message/Message.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
 
@@ -26,11 +23,9 @@ type PackVersionStatus = components['schemas']['NodeVersionStatus']
 type PackStatus = components['schemas']['NodeStatus']
 type Status = PackVersionStatus | PackStatus
 
-type MessageProps = InstanceType<typeof Message>['$props']
-type MessageSeverity = MessageProps['severity']
 type StatusProps = {
   label: string
-  severity: MessageSeverity
+  severity: MessageVariants['severity']
 }
 
 const { statusType, hasCompatibilityIssues } = defineProps<{

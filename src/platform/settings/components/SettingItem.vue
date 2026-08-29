@@ -23,11 +23,11 @@
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
+import Tag from '@/components/ui/badge/Badge.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingOption, SettingParams } from '@/platform/settings/types'
