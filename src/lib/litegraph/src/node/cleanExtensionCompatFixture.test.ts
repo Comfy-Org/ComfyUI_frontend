@@ -241,5 +241,36 @@ describe('clean extension compatibility fixture', () => {
     )
     expect(reinstalled).not.toBe(first)
     expect(reinstalled.counters.registrations).toBe(1)
+    reinstalled.dispose()
+  })
+
+  it('preserves a draw wrapper installed by another extension', () => {
+    const setup = createMatrixSetup()
+    const fixture = installCleanExtensionFixture(
+      setup.host,
+      setup.scheduler,
+      'combined'
+    )
+    const fixtureWrapper = setup.host.drawNode
+    const competingCalls = vi.fn()
+    setup.host.drawNode = (node, context) => {
+      competingCalls(node, context)
+      fixtureWrapper(node, context)
+    }
+    const competingWrapper = setup.host.drawNode
+
+    fixture.dispose()
+    setup.host.drawNode(setup.label, setup.context)
+
+    expect(setup.host.drawNode).toBe(competingWrapper)
+    expect(competingCalls).toHaveBeenCalledExactlyOnceWith(
+      setup.label,
+      setup.context
+    )
+    expect(setup.coreDraws).toHaveBeenCalledExactlyOnceWith(
+      setup.label,
+      setup.context
+    )
+    expect(fixture.counters.labelHookCalls).toBe(0)
   })
 })
