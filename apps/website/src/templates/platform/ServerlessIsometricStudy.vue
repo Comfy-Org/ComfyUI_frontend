@@ -171,10 +171,6 @@ const visualTiles = computed<VisualTile[]>(() =>
   })
 )
 
-function tileTransform(tile: VisualTile) {
-  return `matrix(${ISO_X} ${-ISO_Y} ${ISO_X} ${ISO_Y} ${tile.x} ${tile.y - tile.height})`
-}
-
 function tileCorners(tile: VisualTile, elevation: number): readonly Point[] {
   const topY = tile.y - elevation
   const halfWidth = TILE_WIDTH / 2
@@ -288,11 +284,8 @@ watch(
             fill-opacity="0.06"
           />
         </template>
-        <rect
-          :width="TILE_SIZE"
-          :height="TILE_SIZE"
-          rx="5"
-          :transform="tileTransform(tile)"
+        <polygon
+          :points="polygonPoints(tileCorners(tile, tile.height))"
           :fill="tile.topFill"
         />
       </g>
