@@ -179,7 +179,7 @@ describe('QueueProgressOverlay', () => {
     expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
   })
 
-  it('does not select a missing job asset when pagination cannot advance', async () => {
+  it('keeps the assets sidebar usable when bounded lookup misses', async () => {
     itemToView = createCompletedJobView('missing-job')
     loadOutputAssetMock.mockResolvedValue(false)
     const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
@@ -193,6 +193,12 @@ describe('QueueProgressOverlay', () => {
       expect(loadOutputAssetMock).toHaveBeenCalledWith('missing-job')
     )
     expect(assetSelectionStore.selectedIdsArray).toEqual([])
+    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+
+    await user.click(screen.getByTestId('show-assets-button'))
+    expect(sidebarTabStore.activeSidebarTabId).toBe(null)
+
+    await user.click(screen.getByTestId('show-assets-button'))
     expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
   })
 
