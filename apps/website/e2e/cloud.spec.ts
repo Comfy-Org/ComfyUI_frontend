@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 test.describe('Cloud page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -103,8 +104,7 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /What is Comfy Cloud/i
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
-    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+    await waitForIsland(page, firstQuestion)
     await firstQuestion.click()
 
     await expect(
@@ -116,8 +116,7 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /What is Comfy Cloud/i
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
-    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+    await waitForIsland(page, firstQuestion)
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')

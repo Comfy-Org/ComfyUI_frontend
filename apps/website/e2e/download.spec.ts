@@ -2,6 +2,7 @@ import type { Browser, BrowserContext, Page } from '@playwright/test'
 import { devices, expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const WINDOWS_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
@@ -372,9 +373,7 @@ test.describe('FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /Do I need a GPU/i
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
-    // Gate: wait for Vue hydration to bind aria-expanded
-    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+    await waitForIsland(page, firstQuestion)
     await firstQuestion.click()
 
     await expect(
@@ -386,9 +385,7 @@ test.describe('FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /Do I need a GPU/i
     })
-    await firstQuestion.scrollIntoViewIfNeeded()
-    // Gate: wait for Vue hydration to bind aria-expanded
-    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+    await waitForIsland(page, firstQuestion)
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
