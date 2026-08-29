@@ -44,6 +44,14 @@ function response(
   })
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((res) => {
+    resolve = res
+  })
+  return { promise, resolve }
+}
+
 async function createList(
   key: string,
   initialIds: string[],
@@ -229,5 +237,31 @@ describe('useAssetsQuery loadMore pagination', () => {
 
     expect(toValue(list.hasMore)).toBe(true)
     expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
+  })
+
+  it('discards a delayed page when invalidation resets the list', async () => {
+    const list = await createList('invalidate-race', ['old-head'], {
+      hasMore: true,
+      nextCursor: 'old-page-2'
+    })
+    const delayedPage = deferred<Response>()
+    fetchApiMock
+      .mockReturnValueOnce(delayedPage.promise)
+      .mockResolvedValueOnce(
+        response(['reset-head'], { hasMore: true, nextCursor: 'reset-page-2' })
+      )
+
+    const loadMorePromise = list.loadMore()
+    await vi.waitFor(() => expect(fetchApiMock).toHaveBeenCalledTimes(2))
+    const delayedSignal = fetchApiMock.mock.calls[1][1]?.signal
+
+    const invalidatePromise = list.invalidate()
+    expect(delayedSignal?.aborted).toBe(true)
+    delayedPage.resolve(response(['stale-tail'], { hasMore: false }))
+    await Promise.all([loadMorePromise, invalidatePromise])
+
+    expect(toValue(list.items).map(({ id }) => id)).toEqual(['reset-head'])
+    expect(toValue(list.hasMore)).toBe(true)
+    expect(requestedAfterCursors()).toEqual(['old-page-2', null])
   })
 })

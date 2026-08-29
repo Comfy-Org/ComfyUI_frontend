@@ -25,9 +25,7 @@ function assetsQueryInternal(
   const onError = options.onError ?? console.error
 
   let nextCursor: string | undefined
-  const seenCursors = new Set(
-    params.after === undefined ? [] : [params.after]
-  )
+  const seenCursors = new Set(params.after === undefined ? [] : [params.after])
   const hasMore = ref(true)
   const items = ref<AssetItem[]>([])
 
