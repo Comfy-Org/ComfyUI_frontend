@@ -1,5 +1,6 @@
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { createPinia, setActivePinia } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
@@ -8,13 +9,18 @@ import { useI18n } from 'vue-i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  AssetResponse
+} from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
+import type * as assetsStoreModule from '@/stores/assetsStore'
 import type * as clearDeletedAssetWidgetValuesModule from '../utils/clearDeletedAssetWidgetValues'
 import type * as clearNodePreviewCacheForValuesModule from '../utils/clearNodePreviewCacheForValues'
 import type * as loaderNodeUtilModule from '@/utils/loaderNodeUtil'
 import type * as outputAssetUtilModule from '../utils/outputAssetUtil'
+import { assetService } from '../services/assetService'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -61,21 +67,41 @@ const mockOutputLoadNew = vi.hoisted(() => vi.fn())
 const mockInputLoadNew = vi.hoisted(() => vi.fn())
 const mockInputInvalidate = vi.hoisted(() => vi.fn(async () => undefined))
 const mockHasCategory = vi.hoisted(() => vi.fn())
+const mockAssetsStoreOverride = vi.hoisted(() => ({
+  value: undefined as
+    | {
+        setAssetDeleting: (assetId: string, isDeleting: boolean) => void
+        outputAssets: { loadNew: () => Promise<void> }
+        inputAssets: {
+          loadNew: () => Promise<void>
+          invalidate: (stale?: string[]) => Promise<void>
+        }
+        invalidateModelsForCategory: (category: string) => void
+        hasCategory: (category: string) => boolean
+      }
+    | undefined
+}))
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    setAssetDeleting: mockSetAssetDeleting,
-    outputAssets: { loadNew: mockOutputLoadNew },
-    inputAssets: {
-      loadNew: mockInputLoadNew,
-      invalidate: mockInputInvalidate
-    },
-    invalidateModelsForCategory: mockInvalidateModelsForCategory,
-    hasCategory: mockHasCategory
-  })
+  useAssetsStore: () =>
+    mockAssetsStoreOverride.value ?? {
+      setAssetDeleting: mockSetAssetDeleting,
+      outputAssets: { loadNew: mockOutputLoadNew },
+      inputAssets: {
+        loadNew: mockInputLoadNew,
+        invalidate: mockInputInvalidate
+      },
+      invalidateModelsForCategory: mockInvalidateModelsForCategory,
+      hasCategory: mockHasCategory
+    }
 }))
 
 vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({})
+  useModelToNodeStore: () => ({
+    getAllNodeProviders: vi.fn(() => []),
+    getCategoryForNodeType: vi.fn((nodeType: string) =>
+      nodeType === 'CheckpointLoaderSimple' ? 'checkpoints' : undefined
+    )
+  })
 }))
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
@@ -169,7 +195,9 @@ const mockCreateAssetExport = vi.hoisted(() =>
 vi.mock('../services/assetService', () => ({
   assetService: {
     deleteAsset: mockDeleteAsset,
-    createAssetExport: mockCreateAssetExport
+    createAssetExport: mockCreateAssetExport,
+    getAssetsPageForNodeType: vi.fn(),
+    getAssetsPageByTag: vi.fn()
   }
 }))
 
@@ -343,6 +371,7 @@ function mountMediaActions(asset?: AssetMeta) {
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
+    mockAssetsStoreOverride.value = undefined
     mockIsCloud.value = false
     vi.mocked(api.getServerFeature).mockImplementation(
       (_path: string, defaultValue?: unknown) => defaultValue
@@ -1304,6 +1333,66 @@ describe('useMediaAssetActions', () => {
       expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
         'checkpoints'
       )
+    })
+
+    it('refetches only affected loaded model caches after deletion', async () => {
+      setActivePinia(createPinia())
+      const { useAssetsStore } = await vi.importActual<
+        typeof assetsStoreModule
+      >('@/stores/assetsStore')
+      const store = useAssetsStore()
+      mockAssetsStoreOverride.value = store
+
+      const page = (assets: AssetItem[]): AssetResponse => ({
+        assets,
+        total: assets.length,
+        has_more: false
+      })
+      const checkpoint = createMockAsset({
+        id: 'checkpoint-1',
+        tags: ['models', 'checkpoints', 'uncached-category']
+      })
+      const unrelatedLora = createMockAsset({
+        id: 'lora-1',
+        tags: ['models', 'loras']
+      })
+      const refreshedCheckpoint = createMockAsset({
+        id: 'checkpoint-2',
+        tags: ['models', 'checkpoints']
+      })
+
+      vi.mocked(assetService.getAssetsPageForNodeType)
+        .mockResolvedValueOnce(page([checkpoint]))
+        .mockResolvedValueOnce(page([refreshedCheckpoint]))
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockResolvedValueOnce(page([checkpoint, unrelatedLora]))
+        .mockResolvedValueOnce(page([unrelatedLora]))
+
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      await store.updateModelsForTag('models')
+      await store.updateModelsForTag('loras')
+
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+
+      const { actions, unmount } = mountMediaActions()
+      await actions.deleteAssets(checkpoint)
+      unmount()
+
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
+      expect(store.getAssets('tag:models')).toEqual([])
+      expect(store.getAssets('tag:loras')).toEqual([unrelatedLora])
+      expect(store.hasCategory('uncached-category')).toBe(false)
+
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([
+        refreshedCheckpoint
+      ])
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
     })
   })
 
