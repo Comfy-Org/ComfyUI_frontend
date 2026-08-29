@@ -43,16 +43,20 @@ through the target document's ECS/domain stores whether or not that document is 
 
 ### Document object
 
-`GraphDocument` is the frontend's first-class workflow entity. Its identity is the
-canonical wire `workflow_id`; an internal `document_id` may be an alias only when it
-preserves that same stable value. A nested `GraphId`/graph scope identifies a graph
-inside the workflow document, not a second top-level document. Subgraphs remain domain
-scopes within the same document.
+`GraphDocument` is the frontend's first-class workflow entity. Every document has a
+stable frontend-owned `document_id`, including local and unsaved workflows. A cloud-backed
+document may also have a `workflow_id`, which is the canonical wire address used by agent
+commands and host frames. The document registry maintains the optional
+`workflow_id` → `document_id` mapping and rejects duplicate or stale mappings. Local-only
+documents are first-class documents but are not agent-addressable until a cloud
+`workflow_id` is assigned. A nested `GraphId`/graph scope identifies a graph inside the
+workflow document, not a second top-level document. Subgraphs remain domain scopes within
+the same document.
 
 The document owns or references the following state:
 
 ```text
-GraphDocument (document_id = workflow_id)
+GraphDocument (stable document_id, optional cloud workflow_id)
 ├── lifecycle: created | loaded | dirty | persisted | closed
 ├── graph-scope registry and ECS/domain stores
 ├── document-owned ChangeTracker and persistence baseline
@@ -234,9 +238,10 @@ the prior incarnation to affect the new target occupant. Retries preserve the or
 
 ## Invariants
 
-- **Stable target identity:** `workflow_id` is mandatory at command, frame, session, and
-  adapter seams. Missing or unresolved targets fail loudly; active-canvas fallback is
-  forbidden.
+- **Stable target identity:** every document has a stable `document_id`; `workflow_id` is
+  mandatory at agent command, frame, target-session, and adapter seams. Missing or
+  unresolved cloud targets fail loudly; active-canvas fallback is forbidden. Local-only
+  documents cannot receive agent frames until their `workflow_id` mapping exists.
 - **Activation is presentation:** activation/deactivation attaches or detaches view
   concerns only. It does not alter semantic graph state, CRDT lineage, IDs, or merge
   authority.
@@ -341,8 +346,9 @@ document registry and target-aware tracker seam are the intended follow-up.
   its renderer/view state; it is not tab focus itself.
 - **CRDT** — conflict-free replicated data type; here the host-produced Yjs semantic
   workflow document and the separate FE-owned layout document.
-- **Document object / `GraphDocument`** — first-class workflow domain entity keyed by
-  canonical `workflow_id`, independent of tabs and renderers.
+- **Document object / `GraphDocument`** — first-class workflow domain entity keyed by a
+  stable frontend `document_id`, independent of tabs and renderers; cloud-backed documents
+  additionally map a canonical `workflow_id` for agent addressing.
 - **ECS** — Entity Component System; the frontend direction in which dedicated stores
   own graph data and systems own behavior, with LiteGraph as a compatibility projection.
 - **Follower** — receive-only frontend replica that integrates host-produced Yjs updates.
