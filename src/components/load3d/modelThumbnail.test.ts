@@ -26,7 +26,6 @@ describe('generateModelThumbnail', () => {
     createLoad3d.mockReset()
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     persistThumbnail.mockReset()
-    vi.unstubAllGlobals()
   })
 
   it('renders offscreen, returns the data url, and disposes the instance', async () => {

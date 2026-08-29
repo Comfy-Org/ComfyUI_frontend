@@ -37,10 +37,7 @@
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>
-      <AgentPanelRoot
-        v-if="agentPanelStore.enabled && agentPanelStore.isOpen"
-      />
-      <AppBuilder v-else-if="isBuilderMode" />
+      <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
     <template v-if="showUI" #agent-panel>
@@ -204,8 +201,6 @@ import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
-import AgentPanelRoot from '@/workbench/extensions/agent/AgentPanelRoot.vue'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -234,7 +229,6 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
 > | null>(null)
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
-const agentPanelStore = useAgentPanelStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
 const agentNodeSelectionStore = useAgentNodeSelectionStore()

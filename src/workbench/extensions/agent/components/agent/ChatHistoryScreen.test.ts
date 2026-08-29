@@ -59,8 +59,8 @@ describe('ChatHistoryScreen', () => {
     const icon = back.querySelector('.icon-\\[lucide--chevron-left\\]')
 
     expect(icon).toHaveClass('size-4')
-    expect(screen.getByRole('heading', { name: 'Chat History' })).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Chat History' })).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Chat history' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Chat history' })).toBeNull()
   })
 
   it('shows the exact back tooltip after hovering the control', async () => {

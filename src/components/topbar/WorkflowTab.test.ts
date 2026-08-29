@@ -204,7 +204,9 @@ describe('WorkflowTab - workflow status indicator', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
     expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.getByTestId('workflow-dirty-indicator').textContent).toBe('•')
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'bg-smoke-800'
+    )
   })
 
   it('keeps an unsaved inactive tab dot muted when workflow keys collide', () => {
@@ -222,7 +224,9 @@ describe('WorkflowTab - workflow status indicator', () => {
   it('shows the unsaved dot when modified and autosave is off', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
 
-    expect(screen.getByTestId('workflow-dirty-indicator').textContent).toBe('•')
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'rounded-full'
+    )
   })
 
   it('workflow status replaces the unsaved dot', () => {
