@@ -16,10 +16,9 @@ targets or retain work for a target whose graph is not currently loaded.
 
 The missing abstraction is larger than an offscreen queue: a workflow graph needs to be
 a first-class domain document that exists independently of a tab and renderer. Activation
-then becomes an explicit binding between that document and the active canvas. The program
-repository's [ADR-015](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md)
-remains the cross-repository target-routing contract; this document is the frontend-owned
-model and lifecycle mirror.
+then becomes an explicit binding between that document and the active canvas. This ADR is
+the self-contained frontend contract for target routing, document ownership, and lifecycle;
+its requirements do not depend on access to a separate program repository.
 
 The current `ChangeTracker` is important prior art. It stores serialized state during
 tab deactivation, allowing transient graph state to survive a tab switch, but its
@@ -369,7 +368,6 @@ document registry and target-aware tracker seam are the intended follow-up.
 - [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md)
 - [PR #15721: graph-level atomicity audit](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15721)
 - [PR #15421: canonical architecture knowledge and domain glossary](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15421)
-- [Program ADR-015: target-graph addressing and offscreen queues](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md)
 
 ## Glossary
 
