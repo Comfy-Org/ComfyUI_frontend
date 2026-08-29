@@ -153,7 +153,10 @@
       </Button>
     </div>
 
-    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
+    <div
+      v-if="!accountActionsOnly"
+      class="mx-0 my-2 border-t border-interface-stroke"
+    />
 
     <div
       v-if="!accountActionsOnly && isCloud && showPlansAndPricing"
@@ -206,7 +209,10 @@
       }}</span>
     </div>
 
-    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
+    <div
+      v-if="!accountActionsOnly"
+      class="mx-0 my-2 border-t border-interface-stroke"
+    />
 
     <!-- Workspace Settings (always shown) -->
     <div
@@ -233,7 +239,7 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <div class="mx-0 my-2 border-t border-interface-stroke" />
 
     <!-- Logout (always shown) -->
     <div
@@ -252,7 +258,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'

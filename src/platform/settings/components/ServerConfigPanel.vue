@@ -38,7 +38,7 @@
       v-for="([label, items], i) in Object.entries(serverConfigsByCategory)"
       :key="label"
     >
-      <Divider v-if="i > 0" />
+      <div v-if="i > 0" class="border-t border-interface-stroke" />
       <h3>{{ $t(`serverConfigCategories.${label}`, label) }}</h3>
       <div v-for="item in items" :key="item.name" class="mb-4">
         <FormItem
@@ -56,7 +56,6 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'

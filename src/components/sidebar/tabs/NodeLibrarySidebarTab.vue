@@ -133,10 +133,9 @@
             :filtered-node-defs="filteredNodeDefs"
             :open-node-help="openHelp"
           />
-          <Divider
+          <div
             v-show="nodeBookmarkStore.bookmarks.length > 0"
-            type="dashed"
-            class="m-2"
+            class="m-2 border-t border-dashed border-interface-stroke"
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
@@ -163,7 +162,6 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import type { Ref } from 'vue'
 import {

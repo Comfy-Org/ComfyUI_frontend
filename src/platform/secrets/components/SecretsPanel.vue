@@ -9,7 +9,7 @@
         </p>
       </div>
 
-      <Divider class="my-4" />
+      <div class="my-4 border-t border-interface-stroke" />
 
       <div class="my-4 flex items-center justify-between">
         <h3 class="my-0 text-lg font-semibold">
@@ -65,7 +65,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import { ref } from 'vue'

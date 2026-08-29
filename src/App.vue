@@ -1,11 +1,14 @@
 <template>
   <router-view />
   <GlobalDialog />
-  <BlockUI full-screen :blocked="isLoading" />
+  <div
+    v-if="isLoading"
+    class="fixed inset-0 z-1100 bg-black/10"
+    aria-busy="true"
+  />
 </template>
 
 <script setup lang="ts">
-import BlockUI from 'primevue/blockui'
 import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'

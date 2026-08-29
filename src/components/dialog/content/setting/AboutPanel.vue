@@ -15,14 +15,14 @@
       >
         <Tag class="mr-2" :severity="badge.severity">
           <template #icon>
-            <i :class="[badge.icon, 'mr-2 text-xl']" />
+            <i :class="cn(badge.icon, 'mr-2 text-xl')" />
           </template>
           {{ badge.label }}
         </Tag>
       </a>
     </div>
 
-    <Divider />
+    <div class="border-t border-interface-stroke" />
 
     <SystemStatsPanel
       v-if="systemStatsStore.systemStats"
@@ -32,8 +32,8 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import Tag from 'primevue/tag'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'

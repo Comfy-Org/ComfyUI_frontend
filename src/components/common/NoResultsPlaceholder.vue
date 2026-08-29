@@ -1,33 +1,27 @@
 <template>
-  <div class="no-results-placeholder h-full p-8" :class="props.class">
-    <Card>
-      <template #content>
-        <div class="flex flex-col items-center">
-          <i
-            v-if="icon"
-            :class="icon"
-            style="font-size: 3rem; margin-bottom: 1rem"
-          />
-          <h3 v-if="title">{{ title }}</h3>
-          <p :class="textClass" class="text-center whitespace-pre-line">
-            {{ message }}
-          </p>
-          <Button
-            v-if="buttonLabel"
-            :variant="buttonVariant ?? 'textonly'"
-            @click="$emit('action')"
-          >
-            <i v-if="buttonIcon" :class="buttonIcon" />
-            {{ buttonLabel }}
-          </Button>
-        </div>
-      </template>
-    </Card>
+  <div :class="cn('h-full p-8', props.class)">
+    <div class="bg-(--surface-ground) text-center">
+      <div class="flex flex-col items-center">
+        <i v-if="icon" :class="cn(icon, 'mb-4 text-5xl')" />
+        <h3 v-if="title" class="mb-2 text-base-foreground">{{ title }}</h3>
+        <p :class="cn('mb-4 text-center whitespace-pre-line', textClass)">
+          {{ message }}
+        </p>
+        <Button
+          v-if="buttonLabel"
+          :variant="buttonVariant ?? 'textonly'"
+          @click="$emit('action')"
+        >
+          <i v-if="buttonIcon" :class="buttonIcon" />
+          {{ buttonLabel }}
+        </Button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Card from 'primevue/card'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '../ui/button/button.variants'
@@ -45,20 +39,3 @@ const props = defineProps<{
 
 defineEmits(['action'])
 </script>
-
-<style scoped>
-.no-results-placeholder :deep(.p-card) {
-  background-color: var(--surface-ground);
-  text-align: center;
-  box-shadow: unset;
-}
-
-.no-results-placeholder h3 {
-  color: var(--text-color);
-  margin-bottom: 0.5rem;
-}
-
-.no-results-placeholder p {
-  margin-bottom: 1rem;
-}
-</style>

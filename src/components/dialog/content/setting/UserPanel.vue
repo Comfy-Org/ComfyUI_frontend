@@ -2,7 +2,7 @@
   <div class="user-settings-container h-full">
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
-      <Divider class="mb-3" />
+      <div class="mb-3 border-t border-interface-stroke" />
 
       <!-- Normal User Panel -->
       <div v-if="isLoggedIn" class="flex flex-col gap-2">
@@ -99,7 +99,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'

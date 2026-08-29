@@ -23,7 +23,7 @@
     </div>
 
     <template v-if="hasDevices">
-      <Divider />
+      <div class="border-t border-interface-stroke" />
 
       <div>
         <h2 class="mb-4 text-2xl font-semibold">
@@ -46,7 +46,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import TabPanel from 'primevue/tabpanel'
 import TabView from 'primevue/tabview'
 import { computed } from 'vue'

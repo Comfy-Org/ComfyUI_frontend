@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useScroll, whenever } from '@vueuse/core'
-import Panel from 'primevue/panel'
 import TabMenu from 'primevue/tabmenu'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -181,29 +180,22 @@ onBeforeUnmount(() => {
         }"
       >
         <div v-for="(log, index) in focusedLogs" :key="index">
-          <Panel
-            :expanded="collapsedPanels[index] === true"
-            toggleable
-            class="shadow-elevation-1 mt-2 rounded-lg"
-          >
-            <template #header>
-              <div class="flex w-full items-center justify-between py-2">
-                <div class="flex flex-col text-sm/normal font-medium">
-                  <span>{{ log.taskName }}</span>
-                  <span class="text-muted">
-                    {{
-                      isTaskInProgress(index)
-                        ? t('g.inProgress')
-                        : t('g.completedWithCheckmark')
-                    }}
-                  </span>
-                </div>
+          <div class="shadow-elevation-1 mt-2 rounded-lg">
+            <div class="flex w-full items-center justify-between px-4 py-2">
+              <div class="flex flex-col text-sm/normal font-medium">
+                <span>{{ log.taskName }}</span>
+                <span class="text-muted">
+                  {{
+                    isTaskInProgress(index)
+                      ? t('g.inProgress')
+                      : t('g.completedWithCheckmark')
+                  }}
+                </span>
               </div>
-            </template>
-            <template #toggleicon>
               <Button
                 variant="textonly"
                 class="text-neutral-300"
+                :aria-expanded="!collapsedPanels[index]"
                 @click="togglePanel(index)"
               >
                 <i
@@ -214,8 +206,9 @@ onBeforeUnmount(() => {
                   "
                 />
               </Button>
-            </template>
+            </div>
             <div
+              v-show="!collapsedPanels[index]"
               :ref="
                 index === focusedLogs.length - 1
                   ? (el) => (lastPanelRef = el as HTMLElement)
@@ -240,7 +233,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </div>
-          </Panel>
+          </div>
         </div>
       </div>
     </template>
