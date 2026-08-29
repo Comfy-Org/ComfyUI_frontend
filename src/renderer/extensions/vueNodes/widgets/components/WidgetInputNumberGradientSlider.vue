@@ -11,40 +11,34 @@
         :aria-label="widget.name"
         class="min-w-0 flex-1"
       />
-      <InputNumber
-        :key="timesEmptied"
-        :model-value="modelValue"
-        v-bind="filteredProps"
+      <FormattedNumberStepper
+        v-model="modelValue"
         :step="stepValue"
-        :min-fraction-digits="precision"
-        :max-fraction-digits="precision"
+        :min="widget.options?.min ?? -Infinity"
+        :max="widget.options?.max"
+        :disabled="widget.options?.disabled"
+        :format-options="{
+          minimumFractionDigits: precision,
+          maximumFractionDigits: precision
+        }"
         :aria-label="widget.name"
-        size="small"
-        pt:pc-input-text:root="min-w-[4ch] bg-transparent border-none text-center truncate"
         class="w-16 shrink-0"
-        :pt="numberPt"
-        @update:model-value="handleNumberInputUpdate"
       />
     </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import GradientSlider from '@/components/gradientslider/GradientSlider.vue'
+import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import type { ColorStop } from '@/lib/litegraph/src/interfaces'
 import type { IWidgetGradientSliderOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
-import {
-  STANDARD_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
 
 import { useNumberStepCalculation } from '../composables/useNumberStepCalculation'
-import { useNumberWidgetButtonPt } from '../composables/useNumberWidgetButtonPt'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -59,25 +53,11 @@ const { widget } = defineProps<{
 
 const modelValue = defineModel<number>({ default: 0 })
 
-const timesEmptied = ref(0)
-
-const handleNumberInputUpdate = (newValue: number | undefined) => {
-  if (newValue !== undefined) {
-    modelValue.value = newValue
-    return
-  }
-  timesEmptied.value += 1
-}
-
 const gradientStops = computed<ColorStop[]>(() => {
   const stops = widget.options?.gradient_stops
   if (stops && stops.length >= 2) return stops
   return DEFAULT_GRADIENT_STOPS
 })
-
-const filteredProps = computed(() =>
-  filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
-)
 
 const precision = computed(() => {
   const p = widget.options?.precision
@@ -85,9 +65,4 @@ const precision = computed(() => {
 })
 
 const stepValue = useNumberStepCalculation(widget.options, precision, true)
-
-const numberPt = useNumberWidgetButtonPt({
-  roundedLeft: true,
-  roundedRight: true
-})
 </script>

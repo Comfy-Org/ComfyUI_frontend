@@ -117,7 +117,7 @@ describe('ZoomControlsModal', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    const input = screen.getByRole('spinbutton')
+    const input = screen.getByRole('textbox')
     await user.tripleClick(input)
     await user.keyboard('150')
 
@@ -128,7 +128,7 @@ describe('ZoomControlsModal', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    const input = screen.getByRole('spinbutton')
+    const input = screen.getByRole('textbox')
     await user.tripleClick(input)
     await user.keyboard('0')
 
@@ -139,7 +139,7 @@ describe('ZoomControlsModal', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    const input = screen.getByRole('spinbutton')
+    const input = screen.getByRole('textbox')
     await user.tripleClick(input)
     await user.keyboard('100')
     mockSetAppZoom.mockClear()
