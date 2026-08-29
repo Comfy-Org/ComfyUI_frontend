@@ -25,6 +25,9 @@ const EXCLUDED_PAGES = new Set([
   '/demos' // index is a "Coming Soon" placeholder; the demo pages are listed
 ])
 
+/** Files the build emits outside src/pages (the sitemap integration writes this one). */
+const BUILD_ARTIFACTS = new Set(['/sitemap-index.xml'])
+
 /**
  * Route shapes of the Comfy Workflows app, which lives in another repo and is
  * served behind the comfy.org router. Only these shapes may be linked; the
@@ -127,6 +130,7 @@ describe('llms.txt', () => {
 
   it('only links comfy.org paths that this site (or the workflows app) serves', () => {
     const unknown = internalPaths.filter((path) => {
+      if (BUILD_ARTIFACTS.has(path)) return false
       if (path.includes('/workflows')) {
         return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
       }
