@@ -16,9 +16,8 @@ targets or retain work for a target whose graph is not currently loaded.
 
 The missing abstraction is larger than an offscreen queue: a workflow graph needs to be
 a first-class domain document that exists independently of a tab and renderer. Activation
-then becomes an explicit binding between that document and the active canvas. This ADR
-evolves the narrow target-addressing contract from PR [#16195](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16195)
-into that document model. The program repository's [ADR-015](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md)
+then becomes an explicit binding between that document and the active canvas. The program
+repository's [ADR-015](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md)
 remains the cross-repository target-routing contract; this document is the frontend-owned
 model and lifecycle mirror.
 
