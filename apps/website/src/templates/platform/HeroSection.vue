@@ -12,10 +12,10 @@ const ctas = platformCtas(locale)
 </script>
 
 <template>
-  <div class="relative isolate overflow-hidden">
+  <div class="relative isolate overflow-hidden md:overflow-visible">
     <PlatformHeroShader />
     <div
-      class="pointer-events-none absolute inset-0 z-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/45 to-transparent"
+      class="pointer-events-none absolute inset-0 z-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/45 to-transparent md:-bottom-32"
     />
     <HeroSplit01
       :locale="locale"
