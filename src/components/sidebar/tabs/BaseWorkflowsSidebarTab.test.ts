@@ -49,8 +49,8 @@ const {
     mockWorkflowService: {
       openWorkflow: vi.fn().mockResolvedValue(undefined),
       closeWorkflow: vi.fn().mockResolvedValue(undefined),
-      renameWorkflow: vi.fn().mockResolvedValue(undefined),
-      deleteWorkflow: vi.fn().mockResolvedValue(undefined),
+      renameWorkflow: vi.fn().mockResolvedValue(true),
+      deleteWorkflow: vi.fn().mockResolvedValue(true),
       insertWorkflow: vi.fn().mockResolvedValue(undefined),
       duplicateWorkflow: vi.fn().mockResolvedValue(undefined)
     }
@@ -209,9 +209,10 @@ describe('BaseWorkflowsSidebarTab', () => {
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
   })
 
-  it.fails('propagates failed workflow deletion to the tree', async () => {
+  it('propagates failed workflow operations to the tree', async () => {
     const workflow = createMockWorkflow('workflows/test.json')
     Object.assign(useWorkflowStore(), { workflows: [workflow] })
+    mockWorkflowService.renameWorkflow.mockResolvedValueOnce(false)
     mockWorkflowService.deleteWorkflow.mockResolvedValueOnce(false)
 
     renderComponent()
@@ -221,7 +222,9 @@ describe('BaseWorkflowsSidebarTab', () => {
     const leaf = root?.children?.find(({ data }) => data === workflow)
 
     expect(leaf?.data).toBe(workflow)
+    expect(leaf?.handleRename).toBeTypeOf('function')
     expect(leaf?.handleDelete).toBeTypeOf('function')
+    expect(await leaf?.handleRename?.('renamed')).toBe(false)
     expect(await leaf?.handleDelete?.()).toBe(false)
   })
 

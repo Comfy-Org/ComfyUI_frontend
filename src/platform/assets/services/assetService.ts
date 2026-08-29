@@ -890,7 +890,7 @@ function createAssetService() {
       console.error(
         new Error(`Unable to update asset ${id}: Server returned ${res.status}`)
       )
-      return { kind: 'failed', serverState: 'unchanged' }
+      return { kind: 'failed', serverState: 'unknown' }
     }
 
     let response: unknown
