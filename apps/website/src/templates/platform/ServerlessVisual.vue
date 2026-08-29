@@ -9,6 +9,9 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+// GPU classes the fleet runs on, one label per column of the worker grid.
+const GPUS = ['RTX 6000 PRO', 'H100', 'B200']
+
 const COLS = 12
 const ROWS = 5
 const CELL_COUNT = COLS * ROWS
@@ -175,12 +178,12 @@ watch(
     <div
       class="text-primary-comfy-yellow/80 absolute right-[5%] bottom-[6%] left-3/10 grid grid-cols-3 text-[7px] tracking-widest uppercase sm:text-[9px] lg:text-[10px]"
     >
-      <span>{{ t('platform.serverlessVisual.worker', locale) }}</span>
-      <span class="text-center">
-        {{ t('platform.serverlessVisual.worker', locale) }}
-      </span>
-      <span class="text-right">
-        {{ t('platform.serverlessVisual.worker', locale) }}
+      <span
+        v-for="(gpu, index) in GPUS"
+        :key="gpu"
+        :class="cn(index === 1 && 'text-center', index === 2 && 'text-right')"
+      >
+        {{ gpu }}
       </span>
     </div>
   </div>
