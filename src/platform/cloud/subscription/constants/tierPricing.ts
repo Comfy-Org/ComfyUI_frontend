@@ -53,7 +53,7 @@ const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
 
 const FOUNDER_MONTHLY_PRICE = 20
-const FOUNDER_MONTHLY_CREDITS = 5460
+const FOUNDER_MONTHLY_CREDITS = 5461
 
 export function getTierPrice(tierKey: TierKey, isYearly = false): number {
   if (tierKey === 'free') return 0

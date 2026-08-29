@@ -261,6 +261,27 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('4.2K left of 4.2K')
   })
 
+  it('uses the backend Founder allowance when clamping reconstructed credits', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.tier = 'FOUNDERS_EDITION'
+    state.subscription = {
+      tier: 'FOUNDERS_EDITION',
+      duration: 'MONTHLY',
+      renewalDate: '2026-08-30T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 2589,
+      cloudCreditBalanceMicros: 2589,
+      prepaidBalanceMicros: 0
+    }
+
+    const { container } = renderTile()
+
+    expect(container.textContent).toContain('5,463')
+    expect(container.textContent).toContain('5,461 left of 5,461')
+    expect(container.textContent).toContain('0 used')
+  })
+
   it('uses the full annual Team grant for the credit pool total', () => {
     state.canAccessSubscriptionFeatures = true
     state.subscription = {
