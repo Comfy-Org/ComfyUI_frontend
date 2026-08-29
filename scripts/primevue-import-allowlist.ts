@@ -22,8 +22,6 @@ export const primeVueImportAllowlist = [
   'src/components/common/LazyImage.vue',
   'src/components/common/SystemStatsPanel.vue',
   'src/components/common/TreeExplorer.vue',
-  'src/components/common/UrlInput.test.ts',
-  'src/components/common/UrlInput.vue',
   'src/components/common/UserCredit.vue',
   'src/components/dialog/GlobalDialog.test.ts',
   'src/components/dialog/GlobalDialog.vue',

@@ -1,33 +1,35 @@
 <template>
-  <IconField class="w-full">
-    <Input
-      v-bind="$attrs"
-      :model-value="internalValue"
-      class="w-full"
-      :aria-invalid="validationState === ValidationState.INVALID"
-      @update:model-value="handleInput"
-      @blur="handleBlur"
-    />
-    <InputIcon
-      :class="{
-        'pi pi-spin pi-spinner text-neutral-400':
-          validationState === ValidationState.LOADING,
-        'pi pi-check cursor-pointer text-green-500':
-          validationState === ValidationState.VALID,
-        'pi pi-times cursor-pointer text-red-500':
-          validationState === ValidationState.INVALID
-      }"
-      @click="validateUrl(props.modelValue)"
-    />
-  </IconField>
+  <SearchInput
+    :model-value="internalValue"
+    v-bind="$attrs"
+    class="w-full"
+    :debounce-time="0"
+    :invalid="validationState === ValidationState.INVALID"
+    @update:model-value="handleInput"
+    @blur="handleBlur"
+  >
+    <template #trailing="{ iconClass, positionClass }">
+      <button
+        v-show="validationState !== ValidationState.IDLE"
+        type="button"
+        :class="cn('absolute flex', positionClass)"
+        :aria-label="$t('g.validate')"
+        :disabled="validationState === ValidationState.LOADING"
+        :data-validation-state="validationState"
+        @click="validateUrl(props.modelValue)"
+      >
+        <i :class="cn(validationIcon, iconClass)" />
+      </button>
+    </template>
+  </SearchInput>
 </template>
 
 <script setup lang="ts">
-import IconField from 'primevue/iconfield'
-import InputIcon from 'primevue/inputicon'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
-import Input from '@/components/ui/input/Input.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
@@ -43,6 +45,18 @@ const emit = defineEmits<{
 }>()
 
 const validationState = ref<ValidationState>(ValidationState.IDLE)
+const validationIcon = computed(() => {
+  switch (validationState.value) {
+    case ValidationState.LOADING:
+      return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
+    case ValidationState.VALID:
+      return 'icon-[lucide--check] text-success-foreground'
+    case ValidationState.INVALID:
+      return 'icon-[lucide--x] text-destructive-foreground'
+    default:
+      return undefined
+  }
+})
 
 const cleanInput = (value: string): string =>
   value ? value.replace(/\s+/g, '') : ''
@@ -68,10 +82,9 @@ onMounted(async () => {
   await validateUrl(props.modelValue)
 })
 
-const handleInput = (value: string | number | undefined) => {
-  // Update internal value without emitting
-  internalValue.value = cleanInput(String(value ?? ''))
-  // Reset validation state when user types
+const handleInput = (value: string) => {
+  const cleaned = cleanInput(value)
+  internalValue.value = cleaned
   validationState.value = ValidationState.IDLE
 }
 

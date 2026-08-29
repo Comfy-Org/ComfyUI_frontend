@@ -1,14 +1,19 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import IconField from 'primevue/iconfield'
-import InputIcon from 'primevue/inputicon'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import Input from '@/components/ui/input/Input.vue'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import UrlInput from './UrlInput.vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 describe('UrlInput', () => {
   function renderComponent(
@@ -21,10 +26,7 @@ describe('UrlInput', () => {
     const user = userEvent.setup()
 
     const result = render(UrlInput, {
-      global: {
-        plugins: [PrimeVue],
-        components: { IconField, InputIcon, Input }
-      },
+      global: { plugins: [i18n] },
       props
     })
 
@@ -38,7 +40,7 @@ describe('UrlInput', () => {
       disabled: true
     })
 
-    expect(screen.getByRole('textbox')).toBeDisabled()
+    expect(screen.getByRole('combobox')).toBeDisabled()
   })
 
   it('emits update:modelValue on blur', async () => {
@@ -49,7 +51,7 @@ describe('UrlInput', () => {
       'onUpdate:modelValue': onUpdate
     })
 
-    const input = screen.getByRole('textbox')
+    const input = screen.getByRole('combobox')
     await user.type(input, 'https://test.com/')
     expect(onUpdate).not.toHaveBeenCalled()
 
@@ -60,7 +62,7 @@ describe('UrlInput', () => {
   })
 
   it('renders spinner when validation is loading', async () => {
-    const { container, rerender } = renderComponent({
+    const { rerender } = renderComponent({
       modelValue: '',
       placeholder: 'Enter URL',
       validateUrlFn: () =>
@@ -73,12 +75,16 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-spinner class with no ARIA role
-    expect(container.querySelector('.pi-spinner')).not.toBeNull()
+    expect(
+      screen.getByRole('button', { name: enMessages.g.validate })
+    ).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: enMessages.g.validate })
+    ).toHaveAttribute('data-validation-state', 'LOADING')
   })
 
   it('renders check icon when validation is valid', async () => {
-    const { container, rerender } = renderComponent({
+    const { rerender } = renderComponent({
       modelValue: '',
       placeholder: 'Enter URL',
       validateUrlFn: () => Promise.resolve(true)
@@ -88,12 +94,13 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-check class with no ARIA role
-    expect(container.querySelector('.pi-check')).not.toBeNull()
+    expect(
+      screen.getByRole('button', { name: enMessages.g.validate })
+    ).toHaveAttribute('data-validation-state', 'VALID')
   })
 
   it('renders cross icon when validation is invalid', async () => {
-    const { container, rerender } = renderComponent({
+    const { rerender } = renderComponent({
       modelValue: '',
       placeholder: 'Enter URL',
       validateUrlFn: () => Promise.resolve(false)
@@ -103,12 +110,13 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-times class with no ARIA role
-    expect(container.querySelector('.pi-times')).not.toBeNull()
+    expect(
+      screen.getByRole('button', { name: enMessages.g.validate })
+    ).toHaveAttribute('data-validation-state', 'INVALID')
   })
 
   it('validates on mount', async () => {
-    const { container } = renderComponent({
+    renderComponent({
       modelValue: 'https://test.com',
       validateUrlFn: () => Promise.resolve(true)
     })
@@ -116,13 +124,14 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-check class with no ARIA role
-    expect(container.querySelector('.pi-check')).not.toBeNull()
+    expect(
+      screen.getByRole('button', { name: enMessages.g.validate })
+    ).toHaveAttribute('data-validation-state', 'VALID')
   })
 
   it('triggers validation when clicking the validation icon', async () => {
     let validationCount = 0
-    const { container, user } = renderComponent({
+    const { user } = renderComponent({
       modelValue: 'https://test.com',
       validateUrlFn: () => {
         validationCount++
@@ -134,10 +143,9 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // Click the validation icon
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-check class with no ARIA role
-    const icon = container.querySelector('.pi-check')!
-    await user.click(icon)
+    await user.click(
+      screen.getByRole('button', { name: enMessages.g.validate })
+    )
     await nextTick()
     await nextTick()
 
@@ -146,7 +154,7 @@ describe('UrlInput', () => {
 
   it('prevents multiple simultaneous validations', async () => {
     let validationCount = 0
-    const { container, rerender, user } = renderComponent({
+    const { rerender, user } = renderComponent({
       modelValue: '',
       validateUrlFn: () => {
         validationCount++
@@ -160,12 +168,12 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // Trigger multiple validations in quick succession
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon
-    const spinner = container.querySelector('.pi-spinner')!
-    await user.click(spinner)
-    await user.click(spinner)
-    await user.click(spinner)
+    const validationButton = screen.getByRole('button', {
+      name: enMessages.g.validate
+    })
+    await user.click(validationButton)
+    await user.click(validationButton)
+    await user.click(validationButton)
 
     await nextTick()
     await nextTick()
@@ -180,7 +188,7 @@ describe('UrlInput', () => {
         placeholder: 'Enter URL'
       })
 
-      const input = screen.getByRole('textbox')
+      const input = screen.getByRole('combobox')
 
       // The component strips whitespace on input via handleInput
       // We use fireEvent.input to simulate the input event handler directly
@@ -207,7 +215,7 @@ describe('UrlInput', () => {
         placeholder: 'Enter URL'
       })
 
-      const input = screen.getByRole('textbox')
+      const input = screen.getByRole('combobox')
 
       // Check initial value is trimmed
       expect(input).toHaveValue('https://initial-value.com')
