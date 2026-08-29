@@ -20,7 +20,7 @@ For agents: every docs.comfy.org page serves markdown when you append `.md` to i
 
 - [Homepage](https://comfy.org/): Overview of Comfy, the AI creation engine for visual professionals, built on the open-source ComfyUI node graph.
 - [Comfy Desktop](https://comfy.org/download/): Free desktop app for macOS, Windows, and Linux that runs the full ComfyUI engine on your own GPU.
-- [Comfy Cloud](https://comfy.org/cloud/): Managed ComfyUI in the browser with pre-loaded models, pre-installed custom nodes, and concurrent jobs; no local install required.
+- [Comfy Cloud](https://comfy.org/cloud/): Managed ComfyUI in the browser with pre-loaded models, pre-installed custom nodes, and concurrent jobs; no local install required. The app itself runs at https://cloud.comfy.org (sign-in required).
 - [Comfy Cloud Pricing](https://comfy.org/cloud/pricing/): Plans, credits, and what each Comfy Cloud plan includes, for individuals and teams.
 - [Comfy API](https://comfy.org/api/): Turn any ComfyUI workflow into a production endpoint: submit jobs, inject dynamic inputs at runtime, and run open and partner models through one API on Comfy Cloud.
 - [Comfy MCP](https://comfy.org/mcp/): The full ComfyUI engine over the Model Context Protocol, so Claude Code, Claude Desktop, and any MCP client can build workflows and generate images, video, audio, and 3D, on Comfy Cloud or your own machine.
@@ -228,5 +228,6 @@ For agents: every docs.comfy.org page serves markdown when you append `.md` to i
 - [العربية Workflows](https://comfy.org/ar/workflows/): Arabic localization of Comfy Workflows.
 - [Türkçe Workflows](https://comfy.org/tr/workflows/): Turkish localization of Comfy Workflows.
 - [Docs full text for agents](https://docs.comfy.org/llms-full.txt): The complete documentation as one markdown file.
+- [ComfyUI on Wikipedia](https://en.wikipedia.org/wiki/ComfyUI): Encyclopedia entry for the ComfyUI project.
 - [Ubisoft CHORD announcement (blog)](https://blog.comfy.org/p/ubisoft-open-sources-the-chord-model): Original blog post announcing Ubisoft's open-source CHORD model.
 - [Open-source storytelling (blog)](https://blog.comfy.org/p/how-open-source-is-fueling-the-open): Blog post on how open source is fueling the Open Story Movement.

@@ -25,10 +25,18 @@ const EXCLUDED_PAGES = new Set([
   '/demos' // index is a "Coming Soon" placeholder; the demo pages are listed
 ])
 
-/** Path prefixes served by other apps behind the comfy.org router. */
-const EXTERNAL_APP_PREFIXES = [
-  /^\/workflows(\/|$)/,
-  /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows(\/|$)/
+/**
+ * Route shapes of the Comfy Workflows app, which lives in another repo and is
+ * served behind the comfy.org router. Only these shapes may be linked; the
+ * slugs themselves are verified against the live site, not here.
+ */
+const WORKFLOW_APP_ROUTES = [
+  /^\/workflows$/,
+  /^\/workflows\/creators$/,
+  /^\/workflows\/category\/[a-z0-9-]+$/,
+  /^\/workflows\/model(\/[a-z0-9-]+)?$/,
+  /^\/workflows\/use-cases(\/[a-z0-9-]+)?$/,
+  /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows$/
 ]
 
 const LINK_LINE =
@@ -118,8 +126,9 @@ describe('llms.txt', () => {
 
   it('only links comfy.org paths that this site (or the workflows app) serves', () => {
     const unknown = internalPaths.filter((path) => {
-      if (EXTERNAL_APP_PREFIXES.some((prefix) => prefix.test(path)))
-        return false
+      if (path.includes('/workflows')) {
+        return !WORKFLOW_APP_ROUTES.some((route) => route.test(path))
+      }
       if (path.startsWith('/zh-CN')) {
         const base = normalizePath(path.slice('/zh-CN'.length))
         return (
