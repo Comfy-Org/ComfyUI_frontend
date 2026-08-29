@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useElementVisibility, useRafFn } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
@@ -15,10 +14,12 @@ const CELL_COUNT = COLS * ROWS
 const SEND_DURATION = 650
 const BUILD_DURATION = 2200
 const HOLD_DURATION = 1300
-const CLEAR_DURATION = 650
+const CLEAR_DURATION = 500
 const ARTWORK_DURATION =
   SEND_DURATION + BUILD_DURATION + HOLD_DURATION + CLEAR_DURATION
-const PACKET_TRAIL_OFFSETS = [0, 0.14, 0.28] as const
+const IDLE_CELL_COLOR =
+  'color-mix(in srgb, var(--color-primary-comfy-yellow) 22%, var(--color-primary-comfy-ink))'
+const ACTIVE_CELL_COLOR = 'var(--color-primary-comfy-yellow)'
 
 interface Point {
   x: number
@@ -34,16 +35,8 @@ interface HeatmapCell {
   id: number
   column: number
   row: number
-  idleOpacity: number
-  revealOrder: number
   x: number
   y: number
-}
-
-interface DataPacket {
-  id: number
-  opacity: number
-  progress: number
 }
 
 function inEllipse(
@@ -214,9 +207,6 @@ const heatmapCells: HeatmapCell[] = Array.from(
       id,
       column,
       row,
-      idleOpacity: 0.14 + (((id * 43 + 19) % 100) / 100) * 0.2,
-      revealOrder:
-        (column / (COLS - 1)) * 0.64 + ((ROWS - 1 - row) / (ROWS - 1)) * 0.36,
       x: (column / (COLS - 1)) * 2 - 1,
       y: (row / (ROWS - 1)) * 2 - 1
     }
@@ -233,9 +223,6 @@ const artworkIndex = computed(() =>
 )
 const artworkTime = computed(() => frameTime.value % ARTWORK_DURATION)
 const currentArtwork = computed(() => ARTWORKS[artworkIndex.value])
-const isSending = computed(
-  () => !reducedMotion && artworkTime.value < SEND_DURATION
-)
 const buildProgress = computed(() => {
   if (reducedMotion) return 1
   if (artworkTime.value < SEND_DURATION) return 0
@@ -243,51 +230,39 @@ const buildProgress = computed(() => {
 
   return (artworkTime.value - SEND_DURATION) / BUILD_DURATION
 })
-const clearProgress = computed(() => {
-  const clearStart = SEND_DURATION + BUILD_DURATION + HOLD_DURATION
-  if (reducedMotion || artworkTime.value < clearStart) return 0
-
-  return (artworkTime.value - clearStart) / CLEAR_DURATION
+const clearStart = SEND_DURATION + BUILD_DURATION + HOLD_DURATION
+const isClear = computed(
+  () => !reducedMotion && artworkTime.value >= clearStart
+)
+const connectionProgress = computed(() => {
+  if (reducedMotion) return 1
+  if (isClear.value) return 0
+  return Math.min(1, artworkTime.value / SEND_DURATION)
 })
-const packetHeadProgress = computed(() =>
-  isSending.value ? artworkTime.value / SEND_DURATION : 0
-)
-const dataPackets = computed<DataPacket[]>(() =>
-  PACKET_TRAIL_OFFSETS.flatMap((offset, id) => {
-    const progress = packetHeadProgress.value - offset
+const phase = computed(() => {
+  if (reducedMotion) return 'hold'
+  if (artworkTime.value < SEND_DURATION) return 'connect'
+  if (artworkTime.value < SEND_DURATION + BUILD_DURATION) return 'build'
+  if (artworkTime.value < clearStart) return 'hold'
+  return 'off'
+})
 
-    if (!isSending.value || progress <= 0) return []
+function randomRevealOrder(cell: HeatmapCell) {
+  const seed =
+    cell.id * 73 + artworkIndex.value * 109 + cell.row * 31 + cell.column * 17
+  const value = Math.sin(seed * 12.9898 + 78.233) * 43758.5453
+  return value - Math.floor(value)
+}
 
-    const endpointFade = Math.min(1, progress / 0.08, (1 - progress) / 0.08)
-
-    return [
-      {
-        id,
-        progress,
-        opacity: Math.max(0, endpointFade) * (1 - id * 0.24)
-      }
-    ]
-  })
-)
 const visualCells = computed(() =>
   heatmapCells.map((cell) => {
     const artworkIntensity = currentArtwork.value.pixel(cell.x, cell.y)
-    const isRevealed = buildProgress.value >= cell.revealOrder
-    const activeOpacity = 0.4 + artworkIntensity * 0.6
-    const visibleOpacity =
-      artworkIntensity > 0 && isRevealed
-        ? cell.idleOpacity +
-          (activeOpacity - cell.idleOpacity) * (1 - clearProgress.value)
-        : cell.idleOpacity
+    const isRevealed = buildProgress.value >= randomRevealOrder(cell)
+    const isActive = artworkIntensity > 0 && isRevealed && !isClear.value
 
     return {
       ...cell,
-      opacity: visibleOpacity,
-      isActive: artworkIntensity > 0 && isRevealed,
-      isLeading:
-        artworkIntensity > 0 &&
-        buildProgress.value < 1 &&
-        Math.abs(buildProgress.value - cell.revealOrder) < 0.035
+      color: isActive ? ACTIVE_CELL_COLOR : IDLE_CELL_COLOR
     }
   })
 )
@@ -315,6 +290,7 @@ watch(
     role="img"
     :aria-label="t('platform.serverlessVisual.ariaLabel', locale)"
     :data-artwork="currentArtwork.id"
+    :data-phase="phase"
     class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink font-mono"
   >
     <div
@@ -329,17 +305,12 @@ watch(
     </div>
 
     <div
-      class="bg-primary-comfy-plum absolute top-1/2 left-[14%] h-px w-[16%] -translate-y-1/2"
+      class="absolute top-1/2 left-[14%] h-px w-[16%] -translate-y-1/2"
       aria-hidden="true"
     >
       <span
-        v-for="packet in dataPackets"
-        :key="packet.id"
-        class="bg-primary-comfy-yellow absolute top-1/2 size-2 -translate-1/2 rounded-full"
-        :style="{
-          left: `${packet.progress * 100}%`,
-          opacity: packet.opacity
-        }"
+        class="bg-primary-comfy-yellow absolute inset-0 origin-left"
+        :style="{ transform: `scaleX(${connectionProgress})` }"
       />
     </div>
 
@@ -351,14 +322,8 @@ watch(
       <span
         v-for="cell in visualCells"
         :key="cell.id"
-        :class="
-          cn(
-            'bg-primary-comfy-yellow aspect-square rounded-[2px] transition-[opacity,box-shadow] duration-100',
-            cell.isActive && 'shadow-primary-comfy-yellow/20 shadow-sm',
-            cell.isLeading && 'shadow-primary-comfy-yellow/45 shadow-md'
-          )
-        "
-        :style="{ opacity: cell.opacity }"
+        class="aspect-square rounded-[2px]"
+        :style="{ backgroundColor: cell.color }"
       />
     </div>
 
