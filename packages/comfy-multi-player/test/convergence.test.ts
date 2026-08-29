@@ -20,6 +20,7 @@ import { describe, expect, it } from "vitest";
 import { applyOps, mint, project, writeTarget, type Op, type WireOp } from "../src/index.js";
 import { assertNever } from "../src/exhaustive.js";
 import { canonicalize, loadCatalog, loadSession, sessionFiles } from "./helpers.js";
+import { checkGraphInvariants } from "./graph-invariant-oracle.js";
 
 const catalog = loadCatalog();
 
@@ -116,6 +117,8 @@ describe("two-doc convergence through the single-applier discipline", () => {
 
       const recorded = fork();
       expect(applyOps(recorded, ops, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
+      const recordedViolations = checkGraphInvariants(recorded);
+      expect(recordedViolations, `graph invariant violation: ${JSON.stringify(recordedViolations)}`).toEqual([]);
       const want = JSON.stringify(canonicalize(project(recorded, catalog)));
 
       for (const variant of ["reverse", "rotate"] as const) {
@@ -123,6 +126,8 @@ describe("two-doc convergence through the single-applier discipline", () => {
         const reordered = permuted(variant);
         expect(reordered.length).toBe(ops.length);
         expect(applyOps(other, reordered, catalog).outcomes.find((outcome) => outcome.outcome === "rejected")).toBeUndefined();
+        const violations = checkGraphInvariants(other);
+        expect(violations, `graph invariant violation: ${JSON.stringify(violations)}`).toEqual([]);
         expect(
           JSON.stringify(canonicalize(project(other, catalog))),
           `${variant} order diverged`,

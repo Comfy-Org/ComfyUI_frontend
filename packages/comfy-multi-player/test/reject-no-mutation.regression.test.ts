@@ -11,6 +11,7 @@ import {
 } from "../src/index.js";
 import { appliedMap } from "../src/doc.js";
 import { loadCatalog } from "./helpers.js";
+import { checkGraphInvariants } from "./graph-invariant-oracle.js";
 
 const catalog = loadCatalog();
 /** Same catalog, but with a real `inputcount` widget on the grow destination. */
@@ -271,6 +272,8 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
       const doc = new Y.Doc();
       Y.applyUpdate(doc, snapshot);
       for (const op of order) applyOps(doc, [op], catalog);
+      const violations = checkGraphInvariants(doc);
+      expect(violations, `graph invariant violation: ${JSON.stringify(violations)}`).toEqual([]);
       return JSON.stringify(project(doc, catalog));
     });
     expect(projections[0]).toEqual(projections[1]);

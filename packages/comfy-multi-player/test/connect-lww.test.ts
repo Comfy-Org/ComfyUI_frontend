@@ -29,6 +29,7 @@ import {
   type WorkflowNode,
 } from "../src/index.js";
 import { canonicalize, loadCatalog } from "./helpers.js";
+import { checkGraphInvariants } from "./graph-invariant-oracle.js";
 
 const catalog = loadCatalog();
 
@@ -225,6 +226,8 @@ function runOrder(base: WorkflowJSON, ops: Op[]): { json: string; wf: WorkflowJS
   const res = applyOps(doc, ops, catalog);
   const failed = res.outcomes.find((outcome) => outcome.outcome === "rejected");
   expect(failed, `a legal interleaving must never abort the batch: ${JSON.stringify(failed)}`).toBeUndefined();
+  const violations = checkGraphInvariants(doc);
+  expect(violations, `graph invariant violation: ${JSON.stringify(violations)}`).toEqual([]);
   const wf = project(doc, catalog);
   return { json: comparable(wf), wf };
 }
