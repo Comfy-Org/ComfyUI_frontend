@@ -290,6 +290,9 @@ export default defineConfig({
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
+        // VS Code Web hosts its remote extension process over a WebSocket
+        // below the same /api/customnodes/editor path as the workbench.
+        ws: true,
         ...cloudProxyConfig,
         bypass: (req, res, _options) => {
           if (!res) return null

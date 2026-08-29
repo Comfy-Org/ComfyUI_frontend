@@ -1,5 +1,5 @@
 <template>
-  <div class="comfyui-body grid size-full overflow-hidden">
+  <div class="comfyui-body grid size-full min-h-0 min-w-0 overflow-hidden">
     <div id="comfyui-body-top" class="comfyui-body-top" />
     <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
     <div id="comfyui-body-left" class="comfyui-body-left" />
@@ -8,7 +8,7 @@
       v-show="!linearMode"
       id="graph-canvas-container"
       ref="graphCanvasContainerRef"
-      class="graph-canvas-container"
+      class="graph-canvas-container min-h-0 min-w-0"
     >
       <GraphCanvas @ready="onGraphReady" />
     </div>
@@ -396,8 +396,8 @@ const onGraphReady = () => {
 
 <style scoped>
 .comfyui-body {
-  grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 /**

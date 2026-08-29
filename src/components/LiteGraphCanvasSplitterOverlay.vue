@@ -1,23 +1,23 @@
 <template>
   <div
-    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-col"
+    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full min-h-0 min-w-0 flex-col"
   >
     <slot name="workflow-tabs" />
 
     <div
-      class="pointer-events-none flex flex-1 overflow-hidden"
+      class="pointer-events-none flex min-h-0 min-w-0 flex-1 overflow-hidden"
       :class="{
         'flex-row': sidebarLocation === 'left',
         'flex-row-reverse': sidebarLocation === 'right'
       }"
     >
-      <div class="side-toolbar-container">
+      <div class="side-toolbar-container shrink-0">
         <slot name="side-toolbar" />
       </div>
 
       <Splitter
         :key="splitterRefreshKey"
-        class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
+        class="pointer-events-none min-h-0 min-w-0 flex-1 overflow-hidden border-none bg-transparent"
         :state-key="
           isSelectMode
             ? sidebarLocation === 'left'
@@ -36,7 +36,7 @@
             sidebarLocation === 'left'
               ? cn(
                   'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                  sidebarPanelVisible && 'min-w-78'
+                  sidebarPanelVisible && 'min-w-0 sm:min-w-78'
                 )
               : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
           "
@@ -61,7 +61,10 @@
         </SplitterPanel>
 
         <!-- Main panel (always present) -->
-        <SplitterPanel :size="centerPanelDefaultSize" class="flex flex-col">
+        <SplitterPanel
+          :size="centerPanelDefaultSize"
+          class="flex min-h-0 min-w-0 flex-col"
+        >
           <slot name="topmenu" :sidebar-panel-visible />
 
           <Splitter
@@ -96,7 +99,7 @@
             sidebarLocation === 'right'
               ? cn(
                   'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                  sidebarPanelVisible && 'min-w-78'
+                  sidebarPanelVisible && 'min-w-0 sm:min-w-78'
                 )
               : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
           "
