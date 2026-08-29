@@ -1,4 +1,6 @@
 // For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import type { Rule } from 'eslint'
+
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
@@ -21,6 +23,7 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
+import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
 
@@ -88,6 +91,53 @@ const reportErrorRestrictions = [
       "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
   }
 ] as const
+
+const noPrimeVueImports: Rule.RuleModule = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description: 'Disallow new PrimeVue imports'
+    },
+    messages: {
+      banned:
+        'New PrimeVue usage is banned per the PrimeVue removal effort. Remove the import or, for a pre-existing offender, update scripts/primevue-import-allowlist.ts.'
+    },
+    schema: []
+  },
+  create(context) {
+    function reportIfPrimeVueImport(node: Rule.Node, source: unknown) {
+      if (
+        typeof source === 'string' &&
+        /^(?:primevue(?:\/|$)|@primevue(?:\/|$))/.test(source)
+      ) {
+        context.report({ node, messageId: 'banned' })
+      }
+    }
+
+    return {
+      ImportDeclaration(node) {
+        reportIfPrimeVueImport(node, node.source.value)
+      },
+      ImportExpression(node) {
+        if (node.source.type === 'Literal') {
+          reportIfPrimeVueImport(node, node.source.value)
+        }
+      },
+      ExportNamedDeclaration(node) {
+        if (node.source) reportIfPrimeVueImport(node, node.source.value)
+      },
+      ExportAllDeclaration(node) {
+        reportIfPrimeVueImport(node, node.source.value)
+      }
+    }
+  }
+}
+
+const primeVueRemovalPlugin = {
+  rules: {
+    'no-imports': noPrimeVueImports
+  }
+}
 
 const errorAssertionRestrictions = [
   {
@@ -164,6 +214,21 @@ export default defineConfig([
       globals: commonGlobals,
       parser: vueParser,
       parserOptions: commonParserOptions
+    }
+  },
+  {
+    files: ['src/**/*.{ts,tsx,vue}'],
+    plugins: {
+      'primevue-removal': primeVueRemovalPlugin
+    },
+    rules: {
+      'primevue-removal/no-imports': 'error'
+    }
+  },
+  {
+    files: [...primeVueImportAllowlist],
+    rules: {
+      'primevue-removal/no-imports': 'off'
     }
   },
   pluginJs.configs.recommended,
