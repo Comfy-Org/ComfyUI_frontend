@@ -75,7 +75,7 @@ test.describe('Wan 3.0 launch page @smoke', () => {
     const secondary = hero.getByRole('link', { name: HERO_SECONDARY_CTA })
     await expect(secondary).toHaveAttribute(
       'href',
-      `${externalLinks.workflows}/model/wan`
+      new URL('model/wan/', externalLinks.workflows).href
     )
   })
 
