@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
+import { LGraph } from '@/lib/litegraph/src/LGraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
 import { NODES_KEY, WIDGETS_KEY } from './docSchema'
 import type { GraphMutator, MutationBatch } from './graphMutations'
+import { LitegraphMutator } from './litegraphMutator'
 import { SemanticProjector } from './semanticProjector'
 
 class FakeGraphMutator implements GraphMutator {
@@ -80,5 +83,43 @@ describe('SemanticProjector', () => {
 
     expect(afterReset).toBe(1)
     expect(mutator.batches).toHaveLength(2)
+  })
+
+  it('R-48 current-risk reproducer: advances the snapshot before an over-ceiling add throws', () => {
+    const doc = new Y.Doc()
+    for (let id = 1; id <= LiteGraph.MAX_NUMBER_OF_NODES; id++) {
+      setNode(doc, String(id), 'LoadImage', [id, 0])
+    }
+
+    const graph = new LGraph()
+    let activeGraph: LGraph | null = null
+    const mutator = new LitegraphMutator({
+      getGraph: () => activeGraph,
+      createNode: () => new LGraphNode('R-48 ceiling candidate')
+    })
+    const projector = new SemanticProjector(mutator)
+
+    // Establish an aligned snapshot without painting the initial document; then
+    // model the already-rendered canvas at LiteGraph's current admission limit.
+    expect(projector.project(doc)).toBe(LiteGraph.MAX_NUMBER_OF_NODES)
+    graph._nodes.length = LiteGraph.MAX_NUMBER_OF_NODES
+    activeGraph = graph
+
+    const overCeilingId = String(LiteGraph.MAX_NUMBER_OF_NODES + 1)
+    setNode(doc, overCeilingId, 'SaveImage', [0, 0])
+
+    // This characterizes the current R-48 hazard, not desired behavior:
+    // project() stores `next` before applyBatch() reaches LGraph.add()'s guard.
+    expect(() => projector.project(doc)).toThrow(
+      'LiteGraph: max number of nodes in a graph reached'
+    )
+    expect(graph._nodes).toHaveLength(LiteGraph.MAX_NUMBER_OF_NODES)
+    expect(graph.getNodeById(toNodeId(overCeilingId))).toBeUndefined()
+
+    // The advanced snapshot makes the unchanged retry look fully projected, so
+    // the missing canvas node cannot self-heal without an explicit reset.
+    expect(projector.project(doc)).toBe(0)
+    expect(graph._nodes).toHaveLength(LiteGraph.MAX_NUMBER_OF_NODES)
+    expect(graph.getNodeById(toNodeId(overCeilingId))).toBeUndefined()
   })
 })
