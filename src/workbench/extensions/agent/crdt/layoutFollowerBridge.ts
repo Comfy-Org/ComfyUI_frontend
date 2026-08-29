@@ -37,11 +37,23 @@ function trySend(send: () => boolean): boolean {
  */
 export class LayoutFollowerBridge extends EventTarget {
   /**
-   * Reassigned only by {@link onDocReset}: a lineage break replaces the doc
-   * wholesale, because folding a re-minted document into the old one merges
-   * two unrelated histories and duplicates every node on the canvas.
+   * Reassigned only when the document it holds stops being the document being
+   * followed: a lineage break ({@link onDocReset}) or a binding change
+   * ({@link subscribe} with a different workflow). In both cases the doc is
+   * replaced wholesale, because folding one document's history into another's
+   * merges two unrelated histories and duplicates every node on the canvas.
    */
   private followerDoc = new FollowerDoc()
+  /**
+   * The workflow {@link followerDoc}'s contents belong to — the doc's
+   * IDENTITY, distinct from subscription intent below, which can move to
+   * another workflow (or to null and back) while the doc still holds the old
+   * workflow's state. Compared on every {@link subscribe} so a binding change
+   * re-mints the doc instead of folding the new workflow's lineage into the
+   * old one (FEB-5): `reconcile()` sends `this.follower.stateVector()`, and a
+   * vector minted from workflow A must never scope workflow B's catch-up.
+   */
+  private docWorkflowId: string | null = null
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -101,7 +113,23 @@ export class LayoutFollowerBridge extends EventTarget {
     )
   }
 
+  /**
+   * Follow a workflow. A doc's lifetime is its BINDING's lifetime (FEB-5): on
+   * a change of workflow the held doc is dropped and re-minted exactly as
+   * {@link onDocReset} does, so the subscribe that follows carries the fresh
+   * (empty) state vector and the server's ordinary catch-up returns the new
+   * workflow's full folded state. Without the re-mint, the new workflow's
+   * updates fold into the OLD workflow's Y.Doc — a cross-workflow lineage
+   * merge on every switch. Re-subscribing to the SAME workflow keeps the doc,
+   * so a warm re-attach still catches up incrementally.
+   */
   subscribe(workflowId: string): void {
+    if (this.docWorkflowId !== null && this.docWorkflowId !== workflowId) {
+      this.followerDoc.destroy()
+      this.followerDoc = new FollowerDoc()
+      this.schemaError = null
+    }
+    this.docWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     this.reconcile()
   }

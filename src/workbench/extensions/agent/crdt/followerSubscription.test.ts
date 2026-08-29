@@ -399,6 +399,85 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
   })
 })
 
+describe('FEB-5 — a workflow switch re-mints the doc: its lifetime is the binding lifetime', () => {
+  it('drops the old doc on switch and subscribes with the FRESH (empty) state vector', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe('wf-a')
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-a'))
+    const oldDoc = bridge.follower
+    expect(oldDoc.updatesApplied).toBe(1)
+
+    bridge.subscribe('wf-b')
+
+    // wf-a's history is dropped wholesale, never folded into wf-b's doc.
+    expect(bridge.follower).not.toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
+
+    // The wf-b subscribe carries the fresh doc's EMPTY vector — a vector
+    // minted from wf-a's doc must never scope wf-b's catch-up.
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { workflow_id: string; state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.workflow_id).toBe('wf-b')
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+
+    // wf-b's updates land on the fresh doc.
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-b'))
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(projected).toHaveLength(2)
+  })
+
+  it('re-subscribing to the SAME workflow keeps the doc, so catch-up stays incremental', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const oldDoc = bridge.follower
+
+    bridge.subscribe(WORKFLOW_ID)
+
+    expect(bridge.follower).toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('a detach does not launder the doc identity: unsubscribe then switch still re-mints', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe('wf-a')
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-a'))
+    const oldDoc = bridge.follower
+
+    bridge.unsubscribe()
+    bridge.subscribe('wf-b')
+
+    expect(bridge.follower).not.toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(0)
+  })
+
+  it('a schema failure latched on one workflow does not close the read path of the next', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe('wf-a')
+    const v2 = hostDocUpdate((doc) => metaMap(doc).set('schema_version', 2))
+    transport.deliver('doc_update', docUpdateFrame(v2, 'wf-a'))
+    expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
+
+    bridge.subscribe('wf-b')
+
+    expect(bridge.lastSchemaError).toBeNull()
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-b'))
+    expect(projected).toHaveLength(1)
+    error.mockRestore()
+  })
+})
+
 describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
   it('accepts a doc the shared package seeded at the version this build reads', () => {
     const { transport, bridge, projected, schemaErrors } = wire()
