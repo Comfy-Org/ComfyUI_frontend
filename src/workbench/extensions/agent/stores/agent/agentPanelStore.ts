@@ -12,6 +12,7 @@ const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false)
+  const gateSettled = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
 
@@ -62,6 +63,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   return {
     enabled,
     isOpen,
+    gateSettled,
     width,
     isMaximized,
     dismissedSelectionSignature,

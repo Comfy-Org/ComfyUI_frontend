@@ -17,6 +17,9 @@ import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 
 type NodeRootAction = 'add' | 'update' | 'delete'
+type MutationsForTarget =
+  | GraphMutations
+  | ((workflowId: string) => GraphMutations)
 
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
@@ -39,8 +42,6 @@ function readSemanticNode(doc: Y.Doc, id: string): SemanticNodePayload | null {
       payload[key] = plain(value)
     }
   })
-  // The normalized root key is authoritative even when a stale payload's
-  // embedded id used a different JSON representation (DQ-15).
   payload.id = id
   payload.type = type
   return payload as SemanticNodePayload
@@ -102,56 +103,131 @@ function frameContext(update: DocUpdate): RemoteMutationContext {
   }
 }
 
+interface TargetSession {
+  readonly workflowId: string
+  readonly follower: FollowerDoc
+  readonly nodes: Y.Map<Y.Map<unknown>>
+  readonly links: Y.Map<unknown>
+  readonly mutations: GraphMutations
+  readonly nodeActions: Map<string, NodeRootAction>
+  readonly changedWidgets: Map<string, Set<string>>
+  readonly changedLinks: Set<string>
+  readonly frameQueue: DocUpdate[]
+  onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
+  onLinksChanged: (event: Y.YMapEvent<unknown>) => void
+  reconcileNextFrame: boolean
+  applying: boolean
+}
+
 /**
- * Observes the actual Yjs transaction effects integrated by FollowerDoc and
- * applies those changed entity keys directly to ECS stores. It retains no
- * second graph snapshot and never calls the shared applier or LiteGraph.
+ * Projects each subscribed semantic document into its own ECS mutation stream.
+ * Target sessions own their Yjs observers, pending effects, and apply queue;
+ * one workflow can therefore never consume or overwrite another workflow's
+ * follower state.
  */
 export class EcsFollowerAdapter {
-  private follower: FollowerDoc | null = null
-  private nodes: Y.Map<Y.Map<unknown>> | null = null
-  private links: Y.Map<unknown> | null = null
-  private readonly nodeActions = new Map<string, NodeRootAction>()
-  private readonly changedWidgets = new Map<string, Set<string>>()
-  private readonly changedLinks = new Set<string>()
-  private reconcileNextFrame = true
+  private readonly targets = new Map<string, TargetSession>()
 
-  constructor(private readonly mutations: GraphMutations) {}
+  constructor(private readonly mutations: MutationsForTarget) {}
 
-  bind(follower: FollowerDoc): void {
-    this.unbind()
-    this.follower = follower
-    this.nodes = nodesMap(follower.doc)
-    this.links = linksMap(follower.doc)
-    this.reconcileNextFrame = true
-    this.nodes.observeDeep(this.onNodesChanged)
-    this.links.observe(this.onLinksChanged)
+  bind(workflowId: string, follower: FollowerDoc): void {
+    this.unbind(workflowId)
+    const session = this.createSession(workflowId, follower)
+    this.targets.set(workflowId, session)
+    session.nodes.observeDeep(session.onNodesChanged)
+    session.links.observe(session.onLinksChanged)
   }
 
-  /** Apply effects collected synchronously while the bridge integrated frame. */
-  applyFrame(update: DocUpdate): boolean {
-    const follower = this.follower
-    if (!follower) return false
-    const nodeActions = new Map(this.nodeActions)
-    const changedWidgets = new Map(
-      [...this.changedWidgets].map(([id, names]) => [id, new Set(names)])
-    )
-    const changedLinkIds = new Set(this.changedLinks)
-    const reconcile = this.reconcileNextFrame
-    this.reconcileNextFrame = false
-    this.discardPending()
+  unbind(workflowId: string): void {
+    const session = this.targets.get(workflowId)
+    if (!session) return
+    session.nodes.unobserveDeep(session.onNodesChanged)
+    session.links.unobserve(session.onLinksChanged)
+    this.targets.delete(workflowId)
+  }
 
-    // Re-adding a node under one normalized id is a new incarnation. Its
-    // current links may be unchanged at the root map, so explicitly reconcile
-    // every incident authoritative link after replacing the old shell.
+  /** Queue and drain only the target addressed by this frame. */
+  applyFrame(update: DocUpdate): boolean {
+    const session = this.targets.get(update.workflowId)
+    if (!session) return false
+
+    session.frameQueue.push(update)
+    if (session.applying) return true
+    session.applying = true
+    try {
+      while (session.frameQueue.length > 0) {
+        const frame = session.frameQueue.shift()
+        if (frame) this.applyQueuedFrame(session, frame)
+      }
+    } finally {
+      session.applying = false
+    }
+    return true
+  }
+
+  /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
+  clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
+    const session = this.targets.get(workflowId)
+    if (!session) return false
+    this.discardSessionPending(session)
+    return session.mutations.clearSemanticGraph(context)
+  }
+
+  discardPending(workflowId: string): void {
+    const session = this.targets.get(workflowId)
+    if (session) this.discardSessionPending(session)
+  }
+
+  destroy(): void {
+    for (const workflowId of [...this.targets.keys()]) this.unbind(workflowId)
+  }
+
+  private createSession(
+    workflowId: string,
+    follower: FollowerDoc
+  ): TargetSession {
+    const session: TargetSession = {
+      workflowId,
+      follower,
+      nodes: nodesMap(follower.doc),
+      links: linksMap(follower.doc),
+      mutations:
+        typeof this.mutations === 'function'
+          ? this.mutations(workflowId)
+          : this.mutations,
+      nodeActions: new Map<string, NodeRootAction>(),
+      changedWidgets: new Map<string, Set<string>>(),
+      changedLinks: new Set<string>(),
+      frameQueue: [],
+      reconcileNextFrame: true,
+      applying: false,
+      onNodesChanged: (_events): void => undefined,
+      onLinksChanged: (_event): void => undefined
+    }
+
+    session.onNodesChanged = (events) => this.onNodesChanged(session, events)
+    session.onLinksChanged = (event) => this.onLinksChanged(session, event)
+    return session
+  }
+
+  private applyQueuedFrame(session: TargetSession, update: DocUpdate): void {
+    const nodeActions = new Map(session.nodeActions)
+    const changedWidgets = new Map(
+      [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
+    )
+    const changedLinkIds = new Set(session.changedLinks)
+    const reconcile = session.reconcileNextFrame
+    session.reconcileNextFrame = false
+    this.discardSessionPending(session)
+
     const replacedNodeIds = new Set(
       [...nodeActions]
         .filter(([, action]) => action === 'update')
         .map(([id]) => id)
     )
     if (replacedNodeIds.size > 0) {
-      linksMap(follower.doc).forEach((_raw, id) => {
-        const link = readSemanticLink(follower.doc, id)
+      session.links.forEach((_raw, id) => {
+        const link = readSemanticLink(session.follower.doc, id)
         if (
           link &&
           (replacedNodeIds.has(String(link.originNodeId)) ||
@@ -163,104 +239,77 @@ export class EcsFollowerAdapter {
     }
 
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
-      linksMap(follower.doc).has(id) ? [] : [Number(id)]
+      session.links.has(id) ? [] : [Number(id)]
     )
-    return this.mutations.batch(frameContext(update), (batch) => {
-      // Input replacement can retire an incumbent even when delete-wins leaves
-      // no new link to install, so removals are an independent derived effect.
+    session.mutations.batch(frameContext(update), (batch) => {
       batch.removeLinks(removedLinkIds)
-      // Delete/update roots first so a same-id update starts a fresh widget
-      // incarnation and cannot retain stale values (DQ-11).
       for (const [id, action] of nodeActions) {
-        if (action === 'delete' || action === 'update') {
+        if (action === 'delete' || action === 'update')
           batch.deleteNode(toNodeId(id))
-        }
       }
       for (const [id, action] of nodeActions) {
         if (action === 'delete') continue
-        const payload = readSemanticNode(follower.doc, id)
+        const payload = readSemanticNode(session.follower.doc, id)
         if (!payload) continue
         if (reconcile && action === 'add') batch.reconcileNode(payload)
         else batch.addNode(payload)
       }
       for (const [id, names] of changedWidgets) {
         if (nodeActions.has(id)) continue
-        const node = nodesMap(follower.doc).get(id)
+        const node = session.nodes.get(id)
         const widgets = node?.get('widgets')
         if (!(widgets instanceof Y.Map)) continue
         for (const name of names) {
-          if (widgets.has(name)) {
+          if (widgets.has(name))
             batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
-          }
         }
       }
       for (const id of changedLinkIds) {
-        const link = readSemanticLink(follower.doc, id)
+        const link = readSemanticLink(session.follower.doc, id)
         if (link) batch.connect(link)
       }
     })
   }
 
-  /** Explicit lineage reset only; ordinary reconnect/gap recovery never calls it. */
-  clearForReset(context: RemoteMutationContext): boolean {
-    this.discardPending()
-    return this.mutations.clearSemanticGraph(context)
+  private discardSessionPending(session: TargetSession): void {
+    session.nodeActions.clear()
+    session.changedWidgets.clear()
+    session.changedLinks.clear()
   }
 
-  discardPending(): void {
-    this.nodeActions.clear()
-    this.changedWidgets.clear()
-    this.changedLinks.clear()
-  }
-
-  destroy(): void {
-    this.unbind()
-    this.discardPending()
-  }
-
-  private unbind(): void {
-    this.nodes?.unobserveDeep(this.onNodesChanged)
-    this.links?.unobserve(this.onLinksChanged)
-    this.nodes = null
-    this.links = null
-    this.follower = null
-  }
-
-  private readonly onNodesChanged = (
+  private onNodesChanged(
+    session: TargetSession,
     events: Y.YEvent<Y.AbstractType<unknown>>[]
-  ): void => {
+  ): void {
     for (const event of events) {
       if (!(event instanceof Y.YMapEvent)) continue
-      if (event.target === this.nodes) {
-        for (const [id, change] of event.changes.keys) {
-          this.nodeActions.set(id, change.action)
-        }
+      if (event.target === session.nodes) {
+        for (const [id, change] of event.changes.keys)
+          session.nodeActions.set(id, change.action)
         continue
       }
 
       const id = String(event.path[0] ?? '')
       if (!id) continue
       if (event.path[1] === 'widgets') {
-        const names = this.changedWidgets.get(id) ?? new Set<string>()
+        const names = session.changedWidgets.get(id) ?? new Set<string>()
         for (const name of event.keysChanged) names.add(name)
-        this.changedWidgets.set(id, names)
+        session.changedWidgets.set(id, names)
         continue
       }
 
-      // A node that had no widget map gains one on its first set_widget.
       if (event.path.length === 1 && event.keysChanged.has('widgets')) {
-        const follower = this.follower
-        if (!follower) continue
-        const node = nodesMap(follower.doc).get(id)
-        const widgets = node?.get('widgets')
-        if (widgets instanceof Y.Map) {
-          this.changedWidgets.set(id, new Set(widgets.keys()))
-        }
+        const widgets = session.nodes.get(id)?.get('widgets')
+        if (widgets instanceof Y.Map)
+          session.changedWidgets.set(id, new Set(widgets.keys()))
       }
     }
   }
 
-  private readonly onLinksChanged = (event: Y.YMapEvent<unknown>): void => {
-    for (const id of event.keysChanged) this.changedLinks.add(id)
+  private onLinksChanged(
+    session: TargetSession,
+    event: Y.YMapEvent<unknown>
+  ): void {
+    for (const id of event.keysChanged) session.changedLinks.add(id)
   }
 }

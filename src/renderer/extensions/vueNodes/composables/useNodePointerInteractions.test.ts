@@ -309,7 +309,7 @@ describe('useNodePointerInteractions', () => {
       useNodeEventHandlers()
     const { startDrag } = useNodeDrag()
     useAgentNodeSelectionStore().isActive = true
-    const { pointerHandlers } = useNodePointerInteractions(testNodeId)
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
 
     pointerHandlers.onPointerdown(
       createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })

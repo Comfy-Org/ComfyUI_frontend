@@ -116,7 +116,6 @@ export function useAgentCrdtFollower(
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
-  adapter.bind(bridge.follower)
   const tabId = crypto.randomUUID()
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
@@ -254,14 +253,19 @@ export function useAgentCrdtFollower(
   const onDocReset: EventListener = (event) => {
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { actor?: string; seq?: number })
+        ? (event.detail as {
+            workflowId?: string
+            actor?: string
+            seq?: number
+          })
         : undefined
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail?.actor ?? 'agent-reset',
       opId: `doc-reset:${detail?.seq ?? 'unknown'}`
     }
-    adapter.clearForReset(context)
+    if (detail?.workflowId !== undefined)
+      adapter.clearForReset(detail.workflowId, context)
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
@@ -273,7 +277,8 @@ export function useAgentCrdtFollower(
     )
   }
   const onFollowerReplaced: EventListener = () => {
-    adapter.bind(bridge.follower)
+    const workflowId = bridge.subscribedWorkflowId
+    if (workflowId !== null) adapter.bind(workflowId, bridge.follower)
   }
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
@@ -282,7 +287,12 @@ export function useAgentCrdtFollower(
     connected.value = false
     lastFrameType.value = event.type
     clearStaleProbe()
-    adapter.discardPending()
+    const detail =
+      event instanceof CustomEvent
+        ? (event.detail as { workflowId?: string } | null)
+        : null
+    if (detail?.workflowId !== undefined)
+      adapter.discardPending(detail.workflowId)
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -324,6 +334,7 @@ export function useAgentCrdtFollower(
   // with the previous mount — rebind from sessionStorage) from a later null
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
+  let boundWorkflowId: string | null = null
   watch(
     workflowId,
     (next) => {
@@ -336,16 +347,30 @@ export function useAgentCrdtFollower(
         initialBind = false
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
+          if (boundWorkflowId !== persisted) {
+            if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
+            adapter.bind(persisted, bridge.follower)
+            boundWorkflowId = persisted
+          }
           subscribedWorkflowId.value = persisted
           bridge.subscribe(persisted)
           return
         }
         clearPersistedDocId()
+        if (boundWorkflowId !== null) {
+          adapter.unbind(boundWorkflowId)
+          boundWorkflowId = null
+        }
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
         return
       }
       initialBind = false
+      if (boundWorkflowId !== next) {
+        if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
+        adapter.bind(next, bridge.follower)
+        boundWorkflowId = next
+      }
       subscribedWorkflowId.value = next
       bridge.subscribe(next)
     },

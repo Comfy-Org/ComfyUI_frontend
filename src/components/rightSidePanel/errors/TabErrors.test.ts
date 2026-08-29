@@ -223,14 +223,12 @@ describe('TabErrors.vue', () => {
   })
 
   it('passes raw details through to the card for agent prompt errors only', () => {
-    renderComponent({
-      executionError: {
-        lastPromptError: {
-          type: 'agent_api_failed',
-          message: 'Comfy Agent hit a server error.',
-          details: 'HTTP 500 from /api/agent/threads'
-        }
-      }
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordPromptError({
+        type: 'agent_api_failed',
+        message: 'Comfy Agent hit a server error.',
+        details: 'HTTP 500 from /api/agent/threads'
+      })
     })
 
     expect(
