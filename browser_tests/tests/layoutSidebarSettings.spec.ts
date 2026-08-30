@@ -95,8 +95,6 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
   })
 
   test.describe('Comfy.TreeExplorer.ItemPadding', () => {
-    // The setting writes a CSS var consumed by .p-tree-node-content,
-    // which only renders in the legacy PrimeVue Tree.
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
       await comfyPage.menu.nodeLibraryTab.open()
@@ -108,7 +106,7 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
       await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 0)
       await expect(
         comfyPage.menu.nodeLibraryTab.nodeLibraryTree
-          .locator('.p-tree-node-content')
+          .getByRole('treeitem')
           .first()
       ).toHaveCSS('padding', '0px')
     })
@@ -119,7 +117,7 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
       await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 8)
       await expect(
         comfyPage.menu.nodeLibraryTab.nodeLibraryTree
-          .locator('.p-tree-node-content')
+          .getByRole('treeitem')
           .first()
       ).toHaveCSS('padding', '8px')
     })

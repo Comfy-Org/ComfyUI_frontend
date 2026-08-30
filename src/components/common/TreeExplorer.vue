@@ -21,13 +21,15 @@
         <div
           :class="
             cn(
-              'tree-explorer-item group/tree-node flex min-w-0 cursor-pointer items-center gap-1 rounded-sm py-(--comfy-tree-explorer-item-padding) outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered',
+              'tree-explorer-item group/tree-node flex min-w-0 cursor-pointer items-center gap-1 rounded-sm py-(--comfy-tree-explorer-item-padding) pr-(--comfy-tree-explorer-item-padding) outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered',
               isSelected && 'bg-node-component-surface-selected'
             )
           "
           :data-tree-key="item.value.key"
           :data-parent-key="item.parentItem?.key"
-          :style="{ paddingLeft: `${(item.level - 1) * 16}px` }"
+          :style="{
+            paddingLeft: `calc(var(--comfy-tree-explorer-item-padding) + ${(item.level - 1) * 16}px)`
+          }"
           @click="onNodeContentClick($event, item.value)"
           @contextmenu="handleContextMenu($event, item.value)"
         >
