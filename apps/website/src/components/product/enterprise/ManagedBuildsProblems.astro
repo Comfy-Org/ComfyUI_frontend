@@ -1,0 +1,54 @@
+---
+const problems = [
+  {
+    number: '01',
+    title: '“It works on my machine.”',
+    before: 'The same graph behaves differently when libraries, nodes, or model versions drift underneath it.',
+    after: 'Every install resolves to the same pinned environment.',
+  },
+  {
+    number: '02',
+    title: 'One administrator rebuilds everyone.',
+    before: 'A technical owner becomes the bottleneck for every node test, install, fix, and handoff.',
+    after: 'Define once, then release changes as a new build version.',
+  },
+  {
+    number: '03',
+    title: 'Onboarding depends on a wiki.',
+    before: 'New teammates inherit manual access steps and a morning of machine setup.',
+    after: 'Company identity connects each person to the approved build they need.',
+  },
+  {
+    number: '04',
+    title: 'Governance lives in a spreadsheet.',
+    before: 'Model, provider, and custom-node policy is documented but not attached to the environment.',
+    after: 'The approved set and provider-key policy live with the build.',
+  },
+] as const
+---
+
+<section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
+  <div class="max-w-4xl">
+    <p class="text-xs font-bold tracking-[0.2em] text-primary-comfy-yellow">WHAT BREAKS WHEN COMFYUI BECOMES A TEAM TOOL</p>
+    <h2 class="mt-4 text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl">
+      Designed around the failure modes studios bring to us.
+    </h2>
+  </div>
+  <div class="mt-12 border-y border-primary-comfy-canvas/15">
+    {
+      problems.map((problem) => (
+        <article class="grid gap-5 border-b border-primary-comfy-canvas/15 py-8 last:border-b-0 md:grid-cols-[4rem_0.75fr_1fr] md:gap-8 lg:py-10">
+          <p class="font-mono text-2xl text-primary-comfy-yellow">{problem.number}</p>
+          <div>
+            <h3 class="text-2xl font-light text-primary-comfy-canvas">{problem.title}</h3>
+            <p class="mt-3 text-sm/relaxed text-primary-comfy-canvas/55">{problem.before}</p>
+          </div>
+          <div class="rounded-2xl bg-primary-comfy-canvas/5 p-5 md:self-start">
+            <p class="text-[0.65rem] font-bold tracking-[0.18em] text-primary-comfy-yellow">WITH MANAGED BUILDS</p>
+            <p class="mt-3 text-base/relaxed text-primary-comfy-canvas/80">{problem.after}</p>
+          </div>
+        </article>
+      ))
+    }
+  </div>
+</section>

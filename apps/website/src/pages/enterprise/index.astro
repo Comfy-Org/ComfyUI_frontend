@@ -2,12 +2,14 @@
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
+import EnterpriseCommercialLicensing from '../../components/product/enterprise/EnterpriseCommercialLicensing.astro'
+import EnterpriseGovernance from '../../components/product/enterprise/EnterpriseGovernance.astro'
 import EnterpriseOfferings from '../../components/product/enterprise/EnterpriseOfferings.astro'
+import EnterpriseTeamPlan from '../../components/product/enterprise/EnterpriseTeamPlan.astro'
+import EnterpriseTrustRail from '../../components/product/enterprise/EnterpriseTrustRail.astro'
+import ManagedBuildsIndustries from '../../components/product/enterprise/ManagedBuildsIndustries.astro'
 import ManagedBuildsSpotlight from '../../components/product/enterprise/ManagedBuildsSpotlight.astro'
-import BYOKeySection from '../../components/product/enterprise/BYOKeySection.vue'
-import DataOwnershipSection from '../../components/product/enterprise/DataOwnershipSection.vue'
 import HeroSection from '../../components/product/enterprise/HeroSection.vue'
-import TeamSection from '../../components/product/enterprise/TeamSection.vue'
 import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { faqAnswerPlainText } from '../../utils/faqAnswer'
@@ -34,6 +36,16 @@ const faqs = [
     question: 'How does Comfy support security review?',
     answer: `SSO and a DPA are available. Comfy does not train on customer data, and our SOC 2 Type II audit is in progress. Review current controls in the [Comfy Trust Center](${externalLinks.trustCenter}).`,
   },
+  {
+    id: 'usage',
+    question: 'What usage and audit information is available?',
+    answer: 'Usage visibility is available by model and partner. We scope any additional authentication, build-assignment, release, retention, or export events explicitly during enterprise security review.',
+  },
+  {
+    id: 'team-plan',
+    question: 'What does the team plan include?',
+    answer: 'Team plans provide a shared credit pool, centralized billing, and Single Sign-On so organizations can operate Cloud GPU time and partner-model usage through one relationship.',
+  },
 ] as const
 
 const { url } = pageContext(Astro.site, Astro.url.pathname, Astro.currentLocale)
@@ -48,11 +60,13 @@ const faqPage = faqPageNode(url, faqs.map((faq) => ({ question: faq.question, an
   extraJsonLd={[faqPage]}
 >
   <HeroSection client:load />
+  <EnterpriseTrustRail />
   <EnterpriseOfferings />
   <ManagedBuildsSpotlight />
-  <TeamSection />
-  <DataOwnershipSection client:visible />
-  <BYOKeySection />
+  <EnterpriseGovernance />
+  <EnterpriseTeamPlan />
+  <EnterpriseCommercialLicensing />
+  <ManagedBuildsIndustries />
   <BenefitsGrid01
     heading="A clearer path through security review."
     benefits={[

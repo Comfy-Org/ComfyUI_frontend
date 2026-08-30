@@ -20,7 +20,7 @@ const offerings = [
     label: 'COMMERCIAL RIGHTS',
     title: 'Model licensing',
     description:
-      'Clear commercial terms for leading models, including MiniMax, through an official licensing partner.',
+      'Clear commercial terms for leading models, including MiniMax, through an official reseller.',
     href: '/minimax/license/',
     cta: 'VIEW MINIMAX LICENSING',
   },
@@ -54,7 +54,7 @@ const offerings = [
         <a
           href={offering.href}
           class:list={[
-            'group flex min-h-80 flex-col rounded-[2.5rem] border p-8 transition-colors lg:p-10',
+            'group flex flex-col rounded-[2.5rem] border p-8 transition-colors md:min-h-80 lg:p-10',
             index === 0
               ? 'border-primary-comfy-yellow bg-primary-comfy-yellow text-primary-comfy-ink'
               : 'border-primary-comfy-canvas/15 bg-primary-comfy-ink text-primary-comfy-canvas hover:border-primary-comfy-yellow/70',

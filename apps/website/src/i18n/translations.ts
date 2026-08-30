@@ -3476,7 +3476,7 @@ const translations = {
 
   // SiteFooter
   'footer.tagline': {
-    en: 'The most powerful workflow engine for visual AI.',
+    en: 'The open standard for visual AI.',
     'zh-CN': '最强大的视觉 AI 工作流引擎。'
   },
   'footer.products': { en: 'Products', 'zh-CN': '产品' },

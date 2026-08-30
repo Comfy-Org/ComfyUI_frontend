@@ -1,0 +1,31 @@
+---
+import { externalLinks } from '../../../config/routes'
+
+const trustSignals = [
+  'SSO AVAILABLE',
+  'DPA AVAILABLE',
+  'NO TRAINING ON CUSTOMER DATA',
+  'SOC 2 TYPE II AUDIT IN PROGRESS',
+] as const
+---
+
+<section class="border-y border-primary-comfy-canvas/10" aria-label="Enterprise trust and procurement">
+  <div class="max-w-9xl mx-auto flex flex-wrap items-center gap-x-8 gap-y-4 px-6 py-5 lg:px-20">
+    {
+      trustSignals.map((signal) => (
+        <p class="flex items-center gap-3 text-[0.7rem] font-bold tracking-[0.14em] text-primary-comfy-canvas/70">
+          <span class="size-1.5 shrink-0 rounded-full bg-primary-comfy-yellow" aria-hidden="true"></span>
+          {signal}
+        </p>
+      ))
+    }
+    <a
+      href={externalLinks.trustCenter}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="ml-auto text-[0.7rem] font-bold tracking-[0.14em] text-primary-comfy-yellow underline decoration-primary-comfy-yellow/35 underline-offset-4"
+    >
+      VIEW TRUST CENTER →
+    </a>
+  </div>
+</section>

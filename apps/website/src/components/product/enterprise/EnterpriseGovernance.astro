@@ -1,0 +1,70 @@
+---
+const policies = [
+  {
+    number: '01',
+    label: 'BUILD POLICY',
+    title: 'Define the environment.',
+    description: 'Pin the ComfyUI release, Python and CUDA versions, custom nodes, models, and dependencies that belong in an approved build.',
+    items: ['Versioned releases', 'Approved custom nodes', 'Reproducible dependencies'],
+  },
+  {
+    number: '02',
+    label: 'MODEL POLICY',
+    title: 'Decide what can run.',
+    description: 'Choose the partner, open, and private models available to each environment. Use your own provider keys and contracts where supported.',
+    items: ['Model and provider allowlists', 'Private model assets', 'Bring your own keys'],
+  },
+  {
+    number: '03',
+    label: 'PEOPLE & ACCESS',
+    title: 'Assign the approved build.',
+    description: 'Use company identity and SSO to give teams the environments they need without opening every machine to unmanaged installs.',
+    items: ['SSO available', 'Identity-gated assignment', 'Team-specific builds'],
+  },
+  {
+    number: '04',
+    label: 'USAGE RECORDS',
+    title: 'See where usage goes.',
+    description: 'Track API calls and credit spend by model and partner. Keep additional audit-event, retention, and export requirements explicit in the security review.',
+    items: ['Model and partner usage', 'Credit-spend visibility', 'Audit scope by requirement'],
+  },
+] as const
+---
+
+<section id="governance" class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
+  <div class="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+    <div>
+      <p class="text-xs font-bold tracking-[0.2em] text-primary-comfy-yellow">GOVERNANCE, MADE CONCRETE</p>
+      <h2 class="mt-4 text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl">
+        Govern the build, the models, the people, and the usage.
+      </h2>
+    </div>
+    <p class="max-w-2xl text-base/relaxed text-primary-comfy-canvas/70 lg:justify-self-end lg:text-lg/relaxed">
+      The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization.
+    </p>
+  </div>
+
+  <div class="mt-12 grid overflow-hidden rounded-[2.5rem] border border-primary-comfy-canvas/15 md:grid-cols-2">
+    {
+      policies.map((policy, index) => (
+        <article
+          class:list={[
+            'flex min-h-96 flex-col bg-primary-comfy-ink p-8 lg:p-10',
+            index % 2 === 0 ? 'md:border-r md:border-primary-comfy-canvas/15' : '',
+            index < 2 ? 'border-b border-primary-comfy-canvas/15' : '',
+          ]}
+        >
+          <div class="flex items-center justify-between gap-6">
+            <p class="text-xs font-bold tracking-[0.18em] text-primary-comfy-yellow">{policy.label}</p>
+            <span class="font-mono text-sm text-primary-comfy-canvas/35">{policy.number}</span>
+          </div>
+          <h3 class="mt-8 text-3xl font-light tracking-tight text-primary-comfy-canvas">{policy.title}</h3>
+          <p class="mt-4 max-w-xl text-base/relaxed text-primary-comfy-canvas/70">{policy.description}</p>
+          <ul class="mt-auto grid gap-2 pt-10 text-sm text-primary-comfy-canvas/80 sm:grid-cols-3">
+            {policy.items.map((item) => <li class="rounded-xl bg-primary-comfy-canvas/5 px-3 py-3">{item}</li>)}
+          </ul>
+        </article>
+      ))
+    }
+  </div>
+</section>

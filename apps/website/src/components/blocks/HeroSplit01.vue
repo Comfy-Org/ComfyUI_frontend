@@ -38,6 +38,7 @@ const {
   imageWidth = 800,
   imageHeight = 600,
   imagePosition = 'right',
+  mediaFirstOnMobile = true,
   videoSrc,
   videoPoster,
   videoTracks = [],
@@ -65,6 +66,7 @@ const {
   imageWidth?: number
   imageHeight?: number
   imagePosition?: 'left' | 'right'
+  mediaFirstOnMobile?: boolean
   videoSrc?: string
   videoPoster?: string
   videoTracks?: VideoTrack[]
@@ -144,7 +146,12 @@ const {
       </div>
     </div>
 
-    <div class="order-first w-full lg:order-last lg:flex-1">
+    <div
+      :class="[
+        'w-full lg:order-last lg:flex-1',
+        mediaFirstOnMobile ? 'order-first' : 'order-last'
+      ]"
+    >
       <slot name="media">
         <VideoPlayer
           v-if="videoSrc"

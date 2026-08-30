@@ -1,0 +1,40 @@
+---
+const industries = [
+  {
+    number: '01',
+    title: 'Game studios',
+    description: 'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.',
+  },
+  {
+    number: '02',
+    title: 'VFX and animation',
+    description: 'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.',
+  },
+  {
+    number: '03',
+    title: 'Studios you onboard',
+    description: 'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.',
+  },
+] as const
+---
+
+<section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
+  <div class="text-center">
+    <p class="text-xs font-bold tracking-[0.2em] text-primary-comfy-yellow">INDUSTRY OPERATING PATTERNS</p>
+    <h2 class="mt-4 text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl">Built with studios in the room.</h2>
+    <p class="mx-auto mt-6 max-w-2xl text-base/relaxed text-primary-comfy-canvas/70">
+      For teams that need ComfyUI to move between people, productions, and partners without changing underneath them.
+    </p>
+  </div>
+  <div class="mt-12 grid gap-4 lg:grid-cols-3">
+    {
+      industries.map((industry) => (
+        <article class="flex min-h-80 flex-col rounded-[2rem] border border-primary-comfy-canvas/15 bg-primary-comfy-ink p-8">
+          <p class="font-mono text-sm text-primary-comfy-yellow">{industry.number}</p>
+          <h3 class="mt-auto pt-16 text-3xl font-light text-primary-comfy-canvas">{industry.title}</h3>
+          <p class="mt-4 text-base/relaxed text-primary-comfy-canvas/65">{industry.description}</p>
+        </article>
+      ))
+    }
+  </div>
+</section>

@@ -1,0 +1,51 @@
+---
+import VideoPlayer from '../../common/VideoPlayer.vue'
+
+interface Props {
+  videoSrc?: string
+  posterSrc?: string
+}
+
+const { videoSrc, posterSrc } = Astro.props
+---
+
+{
+  videoSrc ? (
+    <VideoPlayer
+      src={videoSrc}
+      poster={posterSrc}
+      playButtonVariant="overlay"
+      ariaLabel="ComfyUI Managed Builds product walkthrough"
+      client:visible
+    />
+  ) : (
+    <div class="rounded-[2.5rem] border border-primary-comfy-canvas/15 bg-primary-comfy-canvas p-5 text-primary-comfy-ink lg:p-8">
+      <div class="rounded-3xl bg-primary-comfy-ink p-5 text-primary-comfy-canvas lg:p-6">
+        <div class="flex items-center justify-between border-b border-primary-comfy-canvas/10 pb-5">
+          <div>
+            <p class="text-xs font-bold tracking-widest text-primary-comfy-yellow">APPROVED BUILD</p>
+            <p class="mt-1 text-2xl">Studio production</p>
+          </div>
+          <span class="rounded-full bg-primary-comfy-yellow px-3 py-1 text-xs font-bold text-primary-comfy-ink">V12</span>
+        </div>
+        <dl class="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+          <div class="rounded-xl bg-primary-comfy-canvas/5 px-4 py-3"><dt class="text-primary-comfy-canvas/55">COMFYUI + DEPENDENCIES</dt><dd class="mt-1">PINNED</dd></div>
+          <div class="rounded-xl bg-primary-comfy-canvas/5 px-4 py-3"><dt class="text-primary-comfy-canvas/55">CUSTOM NODES</dt><dd class="mt-1">ALLOWLISTED</dd></div>
+          <div class="rounded-xl bg-primary-comfy-canvas/5 px-4 py-3"><dt class="text-primary-comfy-canvas/55">MODELS</dt><dd class="mt-1">APPROVED + PRIVATE</dd></div>
+          <div class="rounded-xl bg-primary-comfy-canvas/5 px-4 py-3"><dt class="text-primary-comfy-canvas/55">PROVIDER ACCESS</dt><dd class="mt-1">BYOK</dd></div>
+        </dl>
+        <div class="mt-5 flex items-center gap-3 text-xs text-primary-comfy-canvas/60">
+          <span class="rounded-lg border border-primary-comfy-canvas/10 px-3 py-2">V11</span>
+          <span aria-hidden="true">→</span>
+          <span class="rounded-lg border border-primary-comfy-yellow/50 px-3 py-2 text-primary-comfy-yellow">V12 CURRENT</span>
+          <span class="ml-auto">RELEASED DELIBERATELY</span>
+        </div>
+      </div>
+      <div class="grid gap-2 pt-5 text-center text-[0.65rem] font-bold tracking-wide sm:grid-cols-3">
+        <div class="rounded-xl border border-primary-comfy-ink/15 p-3">WORKSTATIONS</div>
+        <div class="rounded-xl border border-primary-comfy-ink/15 p-3">GPU SERVERS</div>
+        <div class="rounded-xl border border-primary-comfy-ink/15 p-3">CUSTOMER INFRASTRUCTURE</div>
+      </div>
+    </div>
+  )
+}
