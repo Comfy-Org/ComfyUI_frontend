@@ -102,15 +102,10 @@
       </div>
 
       <!-- Options Menu -->
-      <TieredMenu
+      <Menu
         ref="optionsMenu"
         :model="menuItems"
-        popup
-        class="audio-player-menu"
-        :pt:root:class="
-          cn('border-component-node-border bg-component-node-widget-background')
-        "
-        :pt:submenu:class="cn('bg-component-node-widget-background')"
+        class="border-component-node-border bg-component-node-widget-background"
       >
         <template #item="{ item }">
           <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
@@ -129,22 +124,20 @@
           <div
             v-else
             class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
-            @click="item.onClick?.()"
           >
             <span class="text-base-foreground">{{ item.label }}</span>
             <i
-              v-if="item.selected"
+              v-if="item.checked"
               class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
             />
           </div>
         </template>
-      </TieredMenu>
+      </Menu>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import TieredMenu from 'primevue/tieredmenu'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
@@ -153,8 +146,8 @@ import { useToast } from 'primevue/usetoast'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { formatTime } from '@/utils/formatUtil'
 
@@ -168,7 +161,7 @@ const { hideWhenEmpty = true, showOptionsButton } = defineProps<{
 
 // Refs
 const audioRef = useTemplateRef('audioRef')
-const optionsMenu = ref()
+const optionsMenu = ref<InstanceType<typeof Menu>>()
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const volume = ref(1)
@@ -278,18 +271,18 @@ const menuItems = computed(() => [
     items: [
       {
         label: t('g.halfSpeed'),
-        onClick: () => setPlaybackSpeed(0.5),
-        selected: playbackRate.value === 0.5
+        command: () => setPlaybackSpeed(0.5),
+        checked: playbackRate.value === 0.5
       },
       {
         label: t('g.1x'),
-        onClick: () => setPlaybackSpeed(1),
-        selected: playbackRate.value === 1
+        command: () => setPlaybackSpeed(1),
+        checked: playbackRate.value === 1
       },
       {
         label: t('g.2x'),
-        onClick: () => setPlaybackSpeed(2),
-        selected: playbackRate.value === 2
+        command: () => setPlaybackSpeed(2),
+        checked: playbackRate.value === 2
       }
     ]
   },
@@ -309,10 +302,3 @@ whenever(
   { immediate: true }
 )
 </script>
-
-<style scoped>
-.audio-player-menu {
-  --p-tieredmenu-item-focus-background: rgb(255 255 255 / 0.1);
-  --p-tieredmenu-item-active-background: rgb(255 255 255 / 0.1);
-}
-</style>

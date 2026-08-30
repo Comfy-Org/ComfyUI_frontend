@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuArrow,
   DropdownMenuContent,
@@ -11,6 +10,7 @@ import { computed, ref, toValue } from 'vue'
 
 import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ButtonVariants } from '../ui/button/button.variants'

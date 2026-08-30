@@ -37,13 +37,13 @@
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts" generic="T">
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
 import { computed, provide, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
 import { useTreeFolderOperations } from '@/composables/tree/useTreeFolderOperations'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {

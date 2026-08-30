@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useScroll, whenever } from '@vueuse/core'
-import TabMenu from 'primevue/tabmenu'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -159,16 +158,19 @@ onBeforeUnmount(() => {
   <HoneyToast v-model:expanded="isExpanded" :visible>
     <template #default>
       <div v-if="isExpanded" class="flex items-center px-4 py-2">
-        <TabMenu
-          v-model:active-index="activeTabIndex"
-          :model="tabs"
-          class="w-full border-none"
-          :pt="{
-            menu: { class: 'border-none' },
-            menuitem: { class: 'font-medium' },
-            action: { class: 'px-4 py-2' }
-          }"
-        />
+        <div class="flex w-full" role="tablist">
+          <Button
+            v-for="(tab, index) in tabs"
+            :key="tab.label"
+            role="tab"
+            variant="muted-textonly"
+            class="rounded-none px-4 py-2 font-medium"
+            :aria-selected="activeTabIndex === index"
+            @click="activeTabIndex = index"
+          >
+            {{ tab.label }}
+          </Button>
+        </div>
       </div>
 
       <div

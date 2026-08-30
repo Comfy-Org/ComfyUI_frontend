@@ -64,11 +64,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from 'primevue/button'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
