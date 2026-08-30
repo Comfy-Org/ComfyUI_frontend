@@ -5,11 +5,14 @@ import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 
 import { recordDevEvent } from './devPanelLog'
-import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
+import type { DocFrameTransport, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
+import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import type { OpsResultView } from './opSender'
+import { createOpSender } from './opSender'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount / page reload loses the binding until the NEXT turn ack.
@@ -84,7 +87,8 @@ export const apiTransport: DocFrameTransport = {
 
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
-  graphMutations: MutationsForTarget
+  graphMutations: MutationsForTarget,
+  userId: () => string | null = () => null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -117,6 +121,30 @@ export function useAgentCrdtFollower(
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = crypto.randomUUID()
+  const sender = createOpSender({
+    sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
+    onOpsResult(listener) {
+      const handler: EventListener = (event) => {
+        if (!(event instanceof CustomEvent)) return
+        const detail = event.detail as OpsResultView & { failed?: unknown }
+        listener({
+          ok: detail.ok,
+          applied: detail.applied,
+          skipped: detail.skipped,
+          ...(detail.failed && typeof detail.failed === 'object'
+            ? { failure: detail.failed as OpsResultView['failure'] }
+            : {})
+        })
+      }
+      bridge.addEventListener('doc_ops_result', handler)
+      return () => bridge.removeEventListener('doc_ops_result', handler)
+    },
+    workflowId: () => bridge.subscribedWorkflowId,
+    tab: tabId,
+    actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
+    baseVersion: () => bridge.lastSequence,
+    onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
+  })
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -391,6 +419,7 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('doc_reset', onDocReset)
       bridge.removeEventListener('follower_replaced', onFollowerReplaced)
       bridge.removeEventListener('schema_error', onSchemaError)
+      sender.detach()
       adapter.destroy()
       bridge.destroy()
     } finally {
@@ -408,8 +437,7 @@ export function useAgentCrdtFollower(
 
   return {
     status: readonly(status),
-    // The semantic canvas-command adapter will call this after it moves to
-    // @comfyorg/comfy-multi-player. Raw Yjs client updates are never sent.
-    sendHumanOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops)
+    enqueueHumanOperations: (operations: GraphOperation[]) =>
+      sender.enqueue(operations)
   }
 }

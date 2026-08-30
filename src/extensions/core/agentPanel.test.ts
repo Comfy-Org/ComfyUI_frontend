@@ -4,6 +4,8 @@ import type { ComfyExtension } from '@/types/comfy'
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
+  notifyAfterGraphConfigure: vi.fn(),
+  notifyBeforeGraphLoad: vi.fn(),
   agentStore: { enabled: false, isOpen: true, close: vi.fn() },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
@@ -32,6 +34,11 @@ vi.mock('@/services/extensionService', () => ({
       mocks.capturedExtensions.push(ext)
     }
   })
+}))
+
+vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
+  notifyMintPortsAfterGraphConfigure: mocks.notifyAfterGraphConfigure,
+  notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad
 }))
 
 vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
@@ -94,6 +101,8 @@ async function loadEntryAndSetup(): Promise<void> {
 describe('AgentPanel extension flag gate', () => {
   beforeEach(() => {
     mocks.capturedExtensions.length = 0
+    mocks.notifyAfterGraphConfigure.mockClear()
+    mocks.notifyBeforeGraphLoad.mockClear()
     mocks.agentStore.close.mockClear()
     mocks.agentStore.enabled = false
     mocks.flagEnabled = undefined
@@ -168,6 +177,7 @@ describe('AgentPanel extension flag gate', () => {
 
     extension!.beforeLoadGraph!({} as never)
 
+    expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(mocks.nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
 
     mocks.nodeSelectionStore.isLoadingWorkflow = true
@@ -187,6 +197,18 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
     expect(mocks.canvasStore.updateSelectedItems).toHaveBeenCalledOnce()
     expect(mocks.nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
+  })
+
+  it('closes the mint suppression bracket after graph configuration', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+
+    extension!.afterConfigureGraph!([], {} as never)
+
+    expect(mocks.notifyAfterGraphConfigure).toHaveBeenCalledOnce()
   })
 
   it('restores a subgraph reference by its locator after graph load', async () => {

@@ -40,6 +40,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
+import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -80,6 +82,7 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
@@ -87,7 +90,7 @@ const toast = useToastStore()
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
-const { userDisplayName } = useCurrentUser()
+const { resolvedUserInfo, userDisplayName } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -367,10 +370,20 @@ const {
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow and projects doc updates onto the canvas.
-const { status: crdtStatus } = useAgentCrdtFollower(
+const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
   boundWorkflowId,
-  graphMutations
+  graphMutations,
+  () => resolvedUserInfo.value?.id ?? null
 )
+const mintPortWiring = attachMintPortWiring({
+  isEnabled: () => agentPanelStore.enabled,
+  isDocBound: () => boundWorkflowId.value !== null,
+  enqueue: enqueueHumanOperations,
+  layoutChanges: (listener) => layoutStore.onChange(listener),
+  withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
+  localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
+  getGraph: () => (app.isGraphReady ? app.rootGraph : null)
+})
 // Dev instrument only (slice-02 classification): never ships to users.
 const isCrdtDevPanelEnabled = import.meta.env.DEV
 
@@ -519,6 +532,7 @@ async function onAgentActiveTab(
 start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
   tabActivity.setEditing(null)

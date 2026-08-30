@@ -1,3 +1,5 @@
+import type { Op } from '@comfyorg/comfy-multi-player'
+
 const DOC_PROTOCOL_VERSION = 1
 
 export interface DocOp {
@@ -260,7 +262,7 @@ export class DocFrameClient extends EventTarget {
   }
 
   /** @returns whether the ops frame actually left the transport. */
-  sendOps(workflowId: string, tab: string, ops: DocOp[]): boolean {
+  sendOps(workflowId: string, tab: string, ops: DocOp[] | Op[]): boolean {
     return this.send('doc_ops', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,

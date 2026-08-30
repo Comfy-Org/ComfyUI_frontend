@@ -24,6 +24,7 @@ const bridgeState = vi.hoisted(() => {
     destroy = vi.fn()
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
+    lastSequence = 41
     follower = {
       updatesApplied: 0,
       doc: {
@@ -35,7 +36,8 @@ const bridgeState = vi.hoisted(() => {
 })
 
 const clientState = vi.hoisted(() => ({
-  destroy: vi.fn()
+  destroy: vi.fn(),
+  sendOps: vi.fn(() => true)
 }))
 
 const adapterState = vi.hoisted(() => ({
@@ -77,6 +79,7 @@ vi.mock('./layoutFollowerBridge', () => ({
 vi.mock('./docFrameClient', () => ({
   DocFrameClient: class {
     destroy = clientState.destroy
+    sendOps = clientState.sendOps
   }
 }))
 
@@ -312,24 +315,36 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('sends human ops through the bridge with the session tab', () => {
+  it('sends minted human operations through the doc client', () => {
     const workflowId = ref<string | null>('wf-1')
-    let send!: (ops: never[]) => void
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { sendHumanOps } = useAgentCrdtFollower(
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
           graphMutations
         )
-        send = sendHumanOps as (ops: never[]) => void
+        enqueue = enqueueHumanOperations
         return () => null
       }
     })
     const { unmount } = render(host)
 
-    send([])
+    enqueue([
+      {
+        op: 'delete_node',
+        node_id: '1',
+        removed_links: []
+      }
+    ])
 
-    expect(bridge().sendHumanOps).toHaveBeenCalledWith(expect.any(String), [])
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
+    )
     unmount()
   })
 

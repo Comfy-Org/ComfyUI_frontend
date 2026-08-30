@@ -31,7 +31,7 @@ import type { MintSession } from './mintSession'
 export interface MintableGraph {
   id: string
   rootGraph?: { id: string }
-  getNodeById(id: NodeId | string): LGraphNode | null
+  getNodeById(id: NodeId): LGraphNode | null
   _nodes: LGraphNode[]
 }
 
@@ -63,6 +63,16 @@ export interface MintPortWiring {
   /** Forward from the app extension's `afterConfigureGraph` hook. */
   onAfterGraphConfigure(): void
   detach(): void
+}
+
+const activeWirings = new Set<MintPortWiring>()
+
+export function notifyMintPortsBeforeGraphLoad(): void {
+  for (const wiring of activeWirings) wiring.onBeforeGraphLoad()
+}
+
+export function notifyMintPortsAfterGraphConfigure(): void {
+  for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
 }
 
 /**
@@ -136,7 +146,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     isDocBound: deps.isDocBound,
     source: {
       serializeNode(id) {
-        const node = deps.getGraph()?.getNodeById(id)
+        const node = deps.getGraph()?.getNodeById(id as NodeId)
         return node ? serializeForMint(node) : null
       },
       nodeIds() {
@@ -215,7 +225,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   let loadBracketOpen = false
 
-  return {
+  const wiring: MintPortWiring = {
     session,
     runRemoteScope(apply) {
       session.runRemoteApply(() => {
@@ -236,6 +246,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       session.endGraphTeardown()
     },
     detach() {
+      activeWirings.delete(wiring)
       detachLinkActions()
       detachWidgetActions()
       widgetPort.detach()
@@ -243,4 +254,6 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       linkPort.detach()
     }
   }
+  activeWirings.add(wiring)
+  return wiring
 }
