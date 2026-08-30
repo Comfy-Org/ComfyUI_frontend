@@ -1,8 +1,29 @@
 import { expect } from '@playwright/test'
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as baseTest } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
+
+const test = baseTest.extend({
+  page: async ({ page }, use, testInfo) => {
+    if (testInfo.tags.includes('@cloud')) {
+      await mockCloudBoot(page, {
+        features: {},
+        settings: {
+          'Comfy.Queue.QPOV2': false,
+          'Comfy.RightSidePanel.ShowErrorsTab': false,
+          'Comfy.TutorialCompleted': true,
+          'Comfy.UseNewMenu': 'Top',
+          'Comfy.VersionCompatibility.DisableWarnings': true
+        }
+      })
+      await mockBilling(page)
+    }
+    await use(page)
+  }
+})
 
 const contractTest = test.extend<{ assetApiRequests: URL[] }>({
   assetApiRequests: async ({ page }, use) => {
@@ -48,12 +69,11 @@ contractTest.describe(
   'Assets sidebar Asset API contract',
   { tag: '@oss' },
   () => {
+    contractTest.use({ initialFeatureFlags: { assets: true } })
+
     contractTest(
       'uses the shared query contract when enabled on OSS',
       async ({ assetApiRequests, comfyPage }) => {
-        await comfyPage.featureFlags.seedFlags({ assets: true })
-        await comfyPage.setup()
-
         const tab = comfyPage.menu.assetsTab
         await tab.open()
         await expect(tab.getAssetCardByName('enabled-output')).toBeVisible()
@@ -79,12 +99,11 @@ contractTest.describe(
   'Assets sidebar Asset API contract on Cloud',
   { tag: '@cloud' },
   () => {
+    contractTest.use({ initialFeatureFlags: { assets: true } })
+
     contractTest(
       'uses the shared query contract',
       async ({ assetApiRequests, comfyPage }) => {
-        await comfyPage.featureFlags.seedFlags({ assets: true })
-        await comfyPage.setup()
-
         const tab = comfyPage.menu.assetsTab
         await tab.open()
         await expect(tab.getAssetCardByName('enabled-output')).toBeVisible()
@@ -107,6 +126,8 @@ contractTest.describe(
 )
 
 test.describe('Assets sidebar flag-off isolation', { tag: '@oss' }, () => {
+  test.use({ initialFeatureFlags: { assets: false } })
+
   test('uses history without requesting the Asset API', async ({
     comfyPage,
     page
@@ -122,8 +143,6 @@ test.describe('Assets sidebar flag-off isolation', { tag: '@oss' }, () => {
       createMockJob({ id: 'legacy-output' })
     ])
     await comfyPage.assets.mockInputFiles([])
-    await comfyPage.featureFlags.seedFlags({ assets: false })
-    await comfyPage.setup()
 
     const tab = comfyPage.menu.assetsTab
     await tab.open({ waitForAssets: false })
@@ -141,6 +160,8 @@ test.describe(
   'Assets sidebar flag-off isolation on Cloud',
   { tag: '@cloud' },
   () => {
+    test.use({ initialFeatureFlags: { assets: false } })
+
     test('falls back to history without Asset API controls', async ({
       comfyPage,
       page
@@ -161,8 +182,6 @@ test.describe(
         createMockJob({ id: 'legacy-output' })
       ])
       await comfyPage.assets.mockInputFiles([])
-      await comfyPage.featureFlags.seedFlags({ assets: false })
-      await comfyPage.setup()
 
       const tab = comfyPage.menu.assetsTab
       await tab.open({ waitForAssets: false })
