@@ -1708,7 +1708,8 @@
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
-    "Workflows": "Workflows"
+    "Workflows": "Workflows",
+    "Go to Node": "Go to Node"
   },
   "desktopMenu": {
     "reinstall": "Reinstall",
