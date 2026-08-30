@@ -75,7 +75,6 @@ function toggle(event: Event) {
 }
 
 function updateOpen(value: boolean) {
-  if (!value) window.clearTimeout(showTimer.value)
   open.value = value
   if (value) emit('show')
   else emit('hide')
