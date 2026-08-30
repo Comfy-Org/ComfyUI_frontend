@@ -72,9 +72,6 @@ catalogs:
     '@primeuix/utils':
       specifier: ^0.3.2
       version: 0.3.2
-    '@primevue/core':
-      specifier: 4.2.5
-      version: 4.2.5
     '@primevue/forms':
       specifier: 4.2.5
       version: 4.2.5
@@ -520,9 +517,6 @@ importers:
       '@primeuix/utils':
         specifier: 'catalog:'
         version: 0.3.2
-      '@primevue/core':
-        specifier: 'catalog:'
-        version: 4.2.5(vue@3.5.41(typescript@6.0.3))
       '@primevue/forms':
         specifier: 'catalog:'
         version: 4.2.5(vue@3.5.41(typescript@6.0.3))
