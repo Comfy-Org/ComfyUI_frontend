@@ -450,4 +450,29 @@ describe('useCustomNodeEditor', () => {
       status: 404
     })
   })
+
+  it('restores a checkpoint and returns the rewound files', async () => {
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse({
+        files: [{ path: 'README.md', content: 'rewound\n', editable: true }],
+        directories: [],
+        initial_path: 'README.md',
+        digest: 'digest-rewound'
+      })
+    )
+
+    const { restoreCheckpoint } = useCustomNodeEditor()
+    const restored = await restoreCheckpoint('session-1', 'proposal-1')
+
+    expect(restored.files[0].content).toBe('rewound\n')
+    expect(restored.digest).toBe('digest-rewound')
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/customnodes/editor/sessions/session-1/checkpoints/proposal-1/restore',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      }
+    )
+  })
 })

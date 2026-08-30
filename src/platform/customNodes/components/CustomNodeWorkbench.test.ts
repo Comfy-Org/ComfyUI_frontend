@@ -16,13 +16,15 @@ const mocks = vi.hoisted(() => ({
   createAgentProposal: vi.fn(),
   replaceFiles: vi.fn(),
   reportError: vi.fn(),
+  restoreCheckpoint: vi.fn(),
   saveAll: vi.fn()
 }))
 
 vi.mock('../composables/useCustomNodeEditor', () => ({
   useCustomNodeEditor: () => ({
     applyAgentProposal: mocks.applyAgentProposal,
-    createAgentProposal: mocks.createAgentProposal
+    createAgentProposal: mocks.createAgentProposal,
+    restoreCheckpoint: mocks.restoreCheckpoint
   })
 }))
 
@@ -96,6 +98,10 @@ const i18n = createI18n({
             stop: 'Stop',
             stopped: 'Stopped.',
             applied: 'Changes applied',
+            restore: 'Restore',
+            restoreLabel: 'Restore the files from this point',
+            restored: 'Files restored to this point.',
+            restoreFailed: 'Could not restore the files.',
             working: 'Building and testing…',
             testStatus: {
               passed: 'Backend test passed',
@@ -162,6 +168,7 @@ describe('CustomNodeWorkbench', () => {
     mocks.createAgentProposal.mockReset()
     mocks.replaceFiles.mockReset().mockResolvedValue(undefined)
     mocks.reportError.mockReset()
+    mocks.restoreCheckpoint.mockReset().mockResolvedValue(appliedFiles)
     mocks.saveAll.mockReset().mockResolvedValue(undefined)
   })
 
@@ -549,6 +556,59 @@ describe('CustomNodeWorkbench', () => {
     })
     expect(mocks.createAgentProposal).toHaveBeenCalledTimes(2)
     expect(mocks.applyAgentProposal).toHaveBeenCalledTimes(2)
+  })
+
+  it('restores the checkpoint for an applied agent turn', async () => {
+    const user = userEvent.setup()
+    mocks.createAgentProposal.mockResolvedValue({
+      id: 'proposal-1',
+      summary: 'Prepared the change.',
+      changes: [
+        {
+          kind: 'modified',
+          path: 'README.md',
+          originalContent: 'before',
+          proposedContent: 'after'
+        }
+      ],
+      createdAt: '2026-08-29T12:00:00Z'
+    })
+    const restoredFiles = {
+      files: [{ path: 'README.md', content: 'before', editable: true }],
+      directories: [],
+      initialPath: 'README.md',
+      digest: 'digest-restored'
+    }
+    mocks.restoreCheckpoint.mockResolvedValue(restoredFiles)
+
+    render(CustomNodeWorkbench, {
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
+      global: { plugins: [i18n] }
+    })
+    await user.type(
+      screen.getByRole('textbox', { name: 'Describe a node change' }),
+      'Change the readme'
+    )
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    expect(await screen.findByText('Changes applied')).toBeVisible()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Restore the files from this point' })
+    )
+
+    await waitFor(() => {
+      expect(mocks.restoreCheckpoint).toHaveBeenCalledWith(
+        'session-1',
+        'proposal-1'
+      )
+      expect(mocks.replaceFiles).toHaveBeenLastCalledWith(restoredFiles)
+    })
+    expect(screen.getByText('Files restored to this point.')).toBeVisible()
+    expect(mocks.reportError).not.toHaveBeenCalled()
   })
 
   it('reports when applying the agent work fails', async () => {

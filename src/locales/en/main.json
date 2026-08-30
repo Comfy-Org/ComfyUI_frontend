@@ -82,6 +82,10 @@
         "stop": "Stop",
         "stopped": "Stopped.",
         "applied": "Changes applied",
+        "restore": "Restore",
+        "restoreLabel": "Restore the files from this point",
+        "restored": "Files restored to this point.",
+        "restoreFailed": "Could not restore the files.",
         "working": "Building and testing…",
         "testStatus": {
           "passed": "Backend test passed",

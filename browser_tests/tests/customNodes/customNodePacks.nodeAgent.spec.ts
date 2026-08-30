@@ -27,7 +27,11 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
         await route.fulfill({ status: 201, json: testedNodeAgentProposal })
         return
       }
-      if (path.endsWith('/apply') || path.endsWith('/files')) {
+      if (
+        path.endsWith('/apply') ||
+        path.endsWith('/files') ||
+        path.endsWith('/restore')
+      ) {
         await route.fulfill({ json: nodeAgentEditorFiles })
         return
       }
@@ -111,5 +115,12 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
       .getByRole('button', { name: 'v2/nodes/checkerboard.py', exact: true })
       .click()
     await expect(page.getByLabel('Node Agent proposed changes')).toBeVisible()
+
+    await page
+      .getByRole('button', { name: 'Restore the files from this point' })
+      .click()
+    await expect(page.getByTestId('node-agent-conversation')).toContainText(
+      'Files restored to this point.'
+    )
   })
 })

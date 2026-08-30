@@ -208,6 +208,34 @@ test.describe(
             containsVerification: true,
             containsRefinement: true
           })
+
+        // Restoring the first turn's checkpoint rewinds the refinement while
+        // keeping the first applied change.
+        await page
+          .getByRole('button', { name: 'Restore the files from this point' })
+          .first()
+          .click()
+        await expect(page.getByTestId('node-agent-conversation')).toContainText(
+          'Files restored to this point.'
+        )
+        await expect
+          .poll(
+            async () => {
+              const rewound = await getFiles(request, owner, sessionId!)
+              const readme = rewound.files.find(
+                (file) => file.path === 'README.md'
+              )?.content
+              return {
+                containsVerification: readme?.includes(verificationLine),
+                containsRefinement: readme?.includes(refinementLine)
+              }
+            },
+            { timeout: 30_000 }
+          )
+          .toEqual({
+            containsVerification: true,
+            containsRefinement: false
+          })
       } finally {
         if (sessionId) {
           await request.delete(

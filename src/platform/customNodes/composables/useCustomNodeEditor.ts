@@ -413,6 +413,21 @@ export function useCustomNodeEditor() {
       )
     )
 
+  const restoreCheckpoint = async (
+    id: string,
+    checkpointId: string
+  ): Promise<CustomNodeEditorFiles> =>
+    readFiles(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}/checkpoints/${encodeURIComponent(checkpointId)}/restore`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        }
+      )
+    )
+
   const createDraftTest = async (
     id: string,
     test: CustomNodeEditorDraftTestRequest
@@ -466,6 +481,7 @@ export function useCustomNodeEditor() {
     applyOperations,
     createAgentProposal,
     applyAgentProposal,
+    restoreCheckpoint,
     createDraftTest,
     getDraftTest,
     deleteDraftTest,

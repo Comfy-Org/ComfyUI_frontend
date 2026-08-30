@@ -365,16 +365,38 @@
                     </span>
                   </button>
 
-                  <p
+                  <div
                     v-if="message.applied"
-                    class="m-0 flex items-center gap-2 px-1.5 py-1 text-xs text-muted-foreground"
+                    class="flex items-center gap-2 px-1.5 py-0.5"
                   >
                     <i
                       class="icon-[lucide--check] size-3.5 shrink-0 text-success-background"
                       aria-hidden="true"
                     />
-                    {{ $t('customNodePacks.editor.agent.applied') }}
-                  </p>
+                    <span
+                      class="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+                    >
+                      {{ $t('customNodePacks.editor.agent.applied') }}
+                    </span>
+                    <Button
+                      variant="muted-textonly"
+                      size="sm"
+                      class="shrink-0"
+                      :aria-label="
+                        $t('customNodePacks.editor.agent.restoreLabel')
+                      "
+                      :title="$t('customNodePacks.editor.agent.restoreLabel')"
+                      :loading="isRestoringMessage(message.id)"
+                      :disabled="runState.phase !== 'idle'"
+                      @click="restoreTurn(message)"
+                    >
+                      <i
+                        class="icon-[lucide--history] size-3.5"
+                        aria-hidden="true"
+                      />
+                      {{ $t('customNodePacks.editor.agent.restore') }}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </li>
@@ -478,7 +500,8 @@ const explorerOpen = defineModel<boolean>('explorerOpen', { default: true })
 const { t } = useI18n()
 const colorPaletteStore = useColorPaletteStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-const { createAgentProposal, applyAgentProposal } = useCustomNodeEditor()
+const { createAgentProposal, applyAgentProposal, restoreCheckpoint } =
+  useCustomNodeEditor()
 const treeEditorRef =
   useTemplateRef<InstanceType<typeof CustomNodeTreeEditor>>('treeEditorRef')
 const promptInputRef =
@@ -499,6 +522,7 @@ interface AgentChatMessage {
 type AgentRunState =
   | { phase: 'idle' }
   | { phase: 'asking'; controller: AbortController }
+  | { phase: 'restoring'; messageId: string }
 
 const editorStateKey = computed(() =>
   customNodeEditorStateKey(teamWorkspaceStore.activeWorkspaceId, packName)
@@ -641,6 +665,51 @@ async function applyProposal(
         kind: 'error'
       }
     ]
+  }
+}
+
+function isRestoringMessage(messageId: string): boolean {
+  return (
+    runState.value.phase === 'restoring' &&
+    runState.value.messageId === messageId
+  )
+}
+
+async function restoreTurn(message: AgentChatMessage) {
+  if (!message.proposal || !message.applied || runState.value.phase !== 'idle')
+    return
+  runState.value = { phase: 'restoring', messageId: message.id }
+  try {
+    const result = await restoreCheckpoint(sessionId, message.proposal.id)
+    await treeEditorRef.value?.replaceFiles(result)
+    selectedProposal.value = null
+    selectedChangeIndex.value = -1
+    messages.value = [
+      ...messages.value,
+      {
+        id: nextMessageId(),
+        role: 'assistant',
+        content: t('customNodePacks.editor.agent.restored'),
+        kind: 'message'
+      }
+    ]
+  } catch (error) {
+    reportError(error, { errorType: 'custom_node_agent_restore_failed' })
+    messages.value = [
+      ...messages.value,
+      {
+        id: nextMessageId(),
+        role: 'assistant',
+        content:
+          error instanceof Error
+            ? error.message
+            : t('customNodePacks.editor.agent.restoreFailed'),
+        kind: 'error'
+      }
+    ]
+  } finally {
+    runState.value = { phase: 'idle' }
+    await scrollConversation()
   }
 }
 
