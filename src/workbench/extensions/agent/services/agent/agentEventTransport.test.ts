@@ -412,6 +412,33 @@ describe('agentEventTransport settle lifecycle', () => {
     })
   })
 
+  it('closes thinking before recording a tab switch', () => {
+    const message = drive([
+      thinking('opening the workflow'),
+      activeTab('wf-1', 'Portrait upscale'),
+      thinking('checking its nodes')
+    ])
+
+    expect(parts(message).map((part) => part.type)).toEqual([
+      'thinking',
+      'tabLink',
+      'thinking'
+    ])
+    expect(thinkingParts(message)).toEqual([
+      {
+        type: 'thinking',
+        text: 'opening the workflow',
+        state: 'done'
+      },
+      {
+        type: 'thinking',
+        text: 'checking its nodes',
+        state: 'streaming'
+      }
+    ])
+    expect(message.thinkingText).toBe('checking its nodes')
+  })
+
   it('links a tab once even when the agent keeps working between announcements', () => {
     const message = drive([
       activeTab('wf-1', 'First'),
