@@ -2496,6 +2496,46 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.useRealTimers()
   })
 
+  it('mints no tab and writes no file when the panel closes mid-create', async () => {
+    makeTab('wf-42')
+    let resolveDraft: ((response: Response) => void) | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('workflow_id=wf-new')) {
+          return new Promise<Response>((resolve) => {
+            resolveDraft = resolve
+          })
+        }
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await sendFromComposer('work here')
+
+    vi.useFakeTimers()
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    resolveDraft?.(json(404, { error: 'none' }))
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(499)
+    expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeUndefined()
+
+    unmount()
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeUndefined()
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
   it('lowers the creating flag when the draft fetch for a fresh tab fails', async () => {
     makeTab('wf-42')
     let rejectDraft: ((error: Error) => void) | undefined

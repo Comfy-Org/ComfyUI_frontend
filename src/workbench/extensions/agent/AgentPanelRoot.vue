@@ -776,9 +776,10 @@ onBeforeUnmount(() => {
   // stop() precedes the throw-capable exit so a raise there cannot leave the
   // session subscribed.
   stop()
-  exitNodeSelectionMode()
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
+  // Last: the throw-capable call no longer sits in front of the flag clears.
+  exitNodeSelectionMode()
 })
 
 const history = useAgentChatHistoryStore()

@@ -60,7 +60,11 @@ test.describe('In-App Agent panel shell', { tag: '@cloud' }, () => {
     await expect(panel).toHaveCount(0)
   })
 
-  test('the shimmer class resolves to a live animation in a real browser', async ({
+  // STYLESHEET LIVENESS ONLY. This appends its own element carrying the class,
+  // so it cannot fail if AgentMessage stops emitting that class - the
+  // element-to-class half is pinned elsewhere and its replacement gates the
+  // deletion of AgentMessage.test.ts's two class assertions.
+  test('the shimmer rule resolves to a live animation in a real browser', async ({
     page,
     agentFlagEnabled
   }) => {
