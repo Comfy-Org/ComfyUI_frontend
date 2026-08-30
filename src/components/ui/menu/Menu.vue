@@ -5,7 +5,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -40,7 +40,7 @@ function show(event: Event) {
     x: mouseEvent?.clientX ?? rect?.left ?? 0,
     y: mouseEvent?.clientY ?? rect?.bottom ?? 0
   }
-  void nextTick(() => {
+  window.setTimeout(() => {
     open.value = true
   })
 }
