@@ -11,17 +11,24 @@ export function registerAgentPanelExtension(): void {
   if (!IS_CLOUD_BUILD) return
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
-    setup() {
+    async setup() {
       // The service's per-extension catch owns a rejection here, so a
-      // failed gate can never surface as an unhandled rejection.
-      return setupFlagGate()
+      // failed gate or tracker load can never surface as an unhandled
+      // rejection.
+      await Promise.all([registerTabActivityTracker(), setupFlagGate()])
     }
   })
 }
 
+async function registerTabActivityTracker(): Promise<void> {
+  const { registerWorkflowTabActivityTracker } =
+    await import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker')
+  registerWorkflowTabActivityTracker()
+}
+
 async function setupFlagGate(): Promise<void> {
   const { useAgentPanelStore } =
-    await import('@/workbench/extensions/agent/stores/agentPanelStore')
+    await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
   const agentPanelStore = useAgentPanelStore()
   const settle = (): void => {
     agentPanelStore.gateSettled = true

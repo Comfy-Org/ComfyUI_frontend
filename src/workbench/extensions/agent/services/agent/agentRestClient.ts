@@ -5,6 +5,7 @@ import { api } from '@/scripts/api'
 
 import {
   zAgentCancelAccepted,
+  zAgentDraftSnapshot,
   zAgentError,
   zAgentMessages,
   zAgentThreads,
@@ -14,6 +15,7 @@ import {
 } from '../../schemas/agentApiSchema'
 import type {
   AgentCancelAccepted,
+  AgentDraftSnapshot,
   AgentMessages,
   AgentThreadSummary,
   AgentTurnAccepted,
@@ -36,6 +38,11 @@ export class AgentApiError extends Error {
   }
 }
 
+export interface DraftUpload {
+  content: unknown
+  version: number | null
+}
+
 interface OpenTabEntry {
   workflow_id: string
   name: string
@@ -51,6 +58,7 @@ export interface PostMessageInput {
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
+  draft?: DraftUpload
   tabs?: OpenTabsSnapshot
 }
 
@@ -120,6 +128,7 @@ export function createAgentRestClient() {
     }
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
+    if (req.draft !== undefined) body.draft = req.draft
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),
@@ -175,6 +184,15 @@ export function createAgentRestClient() {
     )
   }
 
+  async function getDraft(workflowId: string): Promise<AgentDraftSnapshot> {
+    const query = encodeURIComponent(workflowId)
+    return request(
+      `/agent/draft?workflow_id=${query}`,
+      { method: 'GET' },
+      zAgentDraftSnapshot
+    )
+  }
+
   async function uploadImage(
     image: Blob,
     filename: string
@@ -194,6 +212,7 @@ export function createAgentRestClient() {
     listThreads,
     listCloudWorkflows,
     cancelMessage,
+    getDraft,
     uploadImage
   }
 }

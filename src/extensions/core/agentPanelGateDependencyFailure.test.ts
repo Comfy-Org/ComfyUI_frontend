@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const registered = vi.hoisted(() => ({
   setup: null as (() => Promise<void> | void) | null
@@ -18,6 +18,13 @@ vi.mock('@/platform/telemetry/reportError', () => ({
 vi.mock('@/workbench/extensions/agent/utils/postHogFlagSource', () => {
   throw new Error('flag source chunk failed to load')
 })
+
+// The tracker registers alongside the gate in setup(); stub it so this suite
+// stays a flag-gate probe instead of booting the workflow store universe.
+vi.mock(
+  '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
+  () => ({ registerWorkflowTabActivityTracker: vi.fn() })
+)
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({

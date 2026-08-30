@@ -141,7 +141,7 @@ import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'

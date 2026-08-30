@@ -61,6 +61,7 @@ export function useFocusNode() {
   }
 
   return {
-    focusNode
+    focusNode,
+    focusNodeInstance
   }
 }

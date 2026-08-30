@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { FLAG_SETTLE_TIMEOUT_MS } from '@/workbench/extensions/agent/utils/postHogFlagSource'
 
 const posthogState = vi.hoisted(() => ({

@@ -7,9 +7,11 @@ import type { AgentEventSource } from '../../services/agent/agentEventSource'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  DraftUpload,
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 
 export interface SessionNotice {
   level: 'error'
@@ -27,7 +29,6 @@ interface SentTag {
   title: string
 }
 
-/** @knipIgnoreUsedByStackedPR */
 export interface WorkflowTurnContext {
   id: string
   tabPath: string
@@ -43,8 +44,14 @@ export interface AgentSessionDeps {
   events: AgentEventSource
   workflow?: {
     current(): WorkflowTurnContext | undefined
-    adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+    adopted(
+      workflowId: string,
+      sent: WorkflowTurnContext | undefined,
+      uploaded: boolean
+    ): void
     prepare?(): Promise<void>
+    snapshot?(): DraftUpload | undefined
+    uploadSkipped?(): void
     tabs?(): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
   }
@@ -61,26 +68,15 @@ let sessionGeneration = 0
  */
 let localErrorCount = 0
 
-/**
- * Page-lifetime binding memory: the workflow a resumed turn belongs to must
- * survive a panel remount. Module-level like `sessionGeneration`;
- * newChat/loadThread clear it.
- */
-let rememberedWorkflowId: string | null = null
-
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
 
   const conversationStore = useAgentConversationStore()
-  /**
-   * The workflow the session is bound to (set on turn ack or an active-tab
-   * switch, cleared by newChat/loadThread) - the CRDT follower's subscribe
-   * target.
-   */
-  const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
+  const draftStore = useAgentDraftStore()
 
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
+  let resyncing = false
   const sending = ref(false)
 
   function nextLocalErrorId(): TurnId {
@@ -95,17 +91,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value.push({ level: 'error', text })
   }
 
+  async function resyncDraft(): Promise<void> {
+    const id = draftStore.workflowId
+    if (id === null || resyncing) return
+    resyncing = true
+    try {
+      const snapshot = await rest.getDraft(id)
+      if (draftStore.workflowId === id) draftStore.adoptSnapshot(snapshot)
+    } catch (error) {
+      if (error instanceof AgentApiError) {
+        if (error.status === 404) return
+        pushError(error.message)
+        return
+      }
+      pushError(error instanceof Error ? error.message : String(error))
+    } finally {
+      resyncing = false
+    }
+  }
+
   function start(): void {
     ownedGeneration = ++sessionGeneration
-    // The binding only outlives a remount together with its thread: a page
-    // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(THREAD_STORAGE_KEY) === null
-    ) {
-      rememberedWorkflowId = null
-      boundWorkflowId.value = null
-    }
     unsubscribe?.()
     unsubscribeStatus?.()
     unsubscribe = events.subscribe(onRaw)
@@ -205,25 +211,60 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sending.value = true
     stopRequestedWhileSending = false
     let wfContext: WorkflowTurnContext | undefined
+    let upload: DraftUpload | undefined
     let tabs: OpenTabsSnapshot | undefined
-    async function postTurn(threadId: string) {
-      const input = {
+    let uploaded: boolean
+    function buildInput(draft: DraftUpload | undefined) {
+      return {
         content: text,
         tabs,
         selection:
           tags !== undefined && tags.length > 0
             ? { node_ids: tags.map((tag) => tag.id) }
             : undefined,
-        attachments: attachments?.map((attachment) => attachment.ref)
+        attachments: attachments?.map((attachment) => attachment.ref),
+        draft
       }
+    }
+    async function post(threadId: string, draft: DraftUpload | undefined) {
+      const input = buildInput(draft)
       return rest.postMessage(
         threadId,
         wfContext ? { ...input, workflowId: wfContext.id } : input
       )
     }
+    async function postTurn(threadId: string) {
+      try {
+        return await post(threadId, upload)
+      } catch (error) {
+        if (!(error instanceof AgentApiError)) throw error
+        const serverVersion = (error.body as { version?: unknown } | null)
+          ?.version
+        if (
+          error.status === 409 &&
+          upload !== undefined &&
+          typeof serverVersion === 'number'
+        ) {
+          return await post(threadId, { ...upload, version: serverVersion })
+        }
+        if (upload !== undefined && error.status >= 500) {
+          console.warn(
+            '[agent] draft upload rejected by the server, sending without it',
+            error.message
+          )
+          const ack = await post(threadId, undefined)
+          uploaded = false
+          workflow?.uploadSkipped?.()
+          return ack
+        }
+        throw error
+      }
+    }
     try {
       let ack
       try {
+        // A throwing workflow callback is a failed send, never an escaped
+        // rejection with `sending` latched (08-fix pins r2c/r3c/r3d).
         if (workflow?.prepare)
           await Promise.race([
             workflow.prepare().catch(() => undefined),
@@ -232,7 +273,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
             )
           ])
         wfContext = workflow?.current()
+        upload = workflow?.snapshot?.()
         tabs = workflow?.tabs?.()
+        uploaded = upload !== undefined
         ack = await postTurn(conversationStore.threadId ?? 'new')
       } catch (error) {
         const message =
@@ -252,6 +295,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // unconditionally, before any fallible local side effect, or the
       // reply's events arrive with no open turn to land in.
       conversationStore.setThreadId(ack.thread_id)
+      if (ack.workflow_id !== undefined) draftStore.bind(ack.workflow_id)
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(
         turnId,
@@ -264,7 +308,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags?.map((tag) => `${tag.title} #${tag.id}`)
       )
       conversationStore.startTurn(turnId)
-      if (ack.workflow_id !== undefined) bindWorkflow(ack.workflow_id)
       try {
         localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       } catch (error) {
@@ -274,7 +317,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       try {
         if (ack.workflow_id !== undefined)
-          workflow?.adopted(ack.workflow_id, wfContext)
+          workflow?.adopted(ack.workflow_id, wfContext, uploaded)
       } catch (error) {
         // Consumer bookkeeping cannot retract an accepted turn.
         console.warn('[agent] workflow.adopted consumer threw', error)
@@ -321,8 +364,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
     conversationStore.reset()
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    draftStore.reset()
     localStorage.removeItem(THREAD_STORAGE_KEY)
   }
 
@@ -336,8 +378,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
     conversationStore.stashActiveTurn()
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    draftStore.reset()
     conversationStore.setThreadId(threadId)
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent, true)
@@ -368,6 +409,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     const event = parsed.data
     switch (event.type) {
+      case 'draft_patch':
+        if (
+          event.data.thread_id === undefined ||
+          event.data.thread_id === conversationStore.threadId
+        )
+          draftStore.applyPatch(event.data)
+        return
+      case 'draft_version':
+        if (draftStore.checkHeartbeat(event.data) === 'behind')
+          void resyncDraft()
+        return
       case 'agent_active_tab':
         // Every thread records the link in its own transcript; only the thread
         // on screen is allowed to move the user's tabs.
@@ -395,7 +447,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function onStatus(live: boolean): void {
-    if (live) return
+    if (live) {
+      void resyncDraft()
+      return
+    }
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()
   }
@@ -407,14 +462,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       : null
   )
 
-  function bindWorkflow(workflowId: string): void {
-    boundWorkflowId.value = workflowId
-    rememberedWorkflowId = workflowId
-  }
-
   return {
-    boundWorkflowId: computed(() => boundWorkflowId.value),
-    bindWorkflow,
     isSending,
     editableTurnId,
     start,

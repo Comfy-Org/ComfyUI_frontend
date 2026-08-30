@@ -143,9 +143,9 @@ describe('agentApiSchema contract subtleties', () => {
     }
   })
 
-  it('keeps draft frames foreign to this union', () => {
-    expect(isAgentEvent('draft_patch')).toBe(false)
-    expect(isAgentEvent('draft_version')).toBe(false)
+  it('admits draft frames into the union', () => {
+    expect(isAgentEvent('draft_patch')).toBe(true)
+    expect(isAgentEvent('draft_version')).toBe(true)
   })
 
   it('rejects an unknown event type in the union while isAgentEvent stays false', () => {
@@ -163,14 +163,16 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.success).toBe(true)
   })
 
-  it('exposes exactly the five agent event types', () => {
+  it('exposes exactly the seven agent event types', () => {
     expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
       [
         'agent_active_tab',
         'agent_message_delta',
         'agent_message_done',
         'agent_thinking',
-        'agent_tool_call'
+        'agent_tool_call',
+        'draft_patch',
+        'draft_version'
       ].sort()
     )
   })

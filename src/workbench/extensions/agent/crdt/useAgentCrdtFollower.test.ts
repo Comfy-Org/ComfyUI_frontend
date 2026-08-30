@@ -13,6 +13,12 @@ import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
 
+// The follower gate resolves once at module load; opt in before the
+// composable module is imported so this suite exercises the enabled path.
+vi.hoisted(() => {
+  localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
+})
+
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
     subscribe = vi.fn()

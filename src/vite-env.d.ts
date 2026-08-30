@@ -18,6 +18,7 @@ declare global {
   }
 
   interface ImportMetaEnv {
+    VITE_AGENT_CRDT_FOLLOWER?: string
     VITE_APP_VERSION?: string
     VITE_POSTHOG_DEBUG?: string
     VITE_POSTHOG_PROJECT_TOKEN?: string

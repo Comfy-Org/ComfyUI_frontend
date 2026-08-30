@@ -37,6 +37,8 @@ vi.mock('@/platform/distribution/types', () => ({
 const promptErrorTitleSeeds = vi.hoisted(
   () =>
     ({
+      agent_api_failed: 'seeded agent_api_failed title',
+      agent_draft_apply_failed: 'seeded agent_draft_apply_failed title',
       op_rejected: 'seeded op_rejected title',
       prefix_abort: 'seeded prefix_abort title',
       guard_trip: 'seeded guard_trip title',
