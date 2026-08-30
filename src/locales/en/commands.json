@@ -137,6 +137,12 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "Export Workflow (API Format)"
   },
+  "Comfy_Graph_AddSelectedImagesToBatch": {
+    "label": "Add Selected Images to Batch"
+  },
+  "Comfy_Graph_BatchSelectedImageNodes": {
+    "label": "Batch Selected Images"
+  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convert Selection to Subgraph"
   },

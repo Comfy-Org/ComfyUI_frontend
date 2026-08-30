@@ -166,3 +166,27 @@ export function anyItemOverlapsRect(
   }
   return false
 }
+
+/**
+ * Finds the first position at or after `position`, stepping by `offset`, where
+ * a rectangle of `size` clears every item. Returns the final candidate when
+ * nothing is free within `maxSteps` so placement always resolves.
+ */
+export function findNonOverlappingPosition(
+  items: Iterable<{ pos: Vec2; size: Vec2 }>,
+  position: Vec2,
+  size: Vec2,
+  offset: Vec2,
+  maxSteps = 20
+): [number, number] {
+  const obstacles = [...items]
+  let [x, y] = position
+
+  for (let step = 0; step < maxSteps; step++) {
+    if (!anyItemOverlapsRect(obstacles, [x, y, size[0], size[1]])) break
+    x += offset[0]
+    y += offset[1]
+  }
+
+  return [x, y]
+}

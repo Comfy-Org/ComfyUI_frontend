@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useBatchImages } from '@/composables/graph/useBatchImages'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -1072,6 +1073,24 @@ export function useCoreCommands(): ComfyCommand[] {
         const { node } = res
         canvas.select(node)
         canvasStore.updateSelectedItems()
+      }
+    },
+    {
+      id: 'Comfy.Graph.BatchSelectedImageNodes',
+      icon: 'icon-[lucide--images]',
+      label: 'Batch Selected Images',
+      versionAdded: '1.49.3',
+      function: () => {
+        useBatchImages().batchSelectedImages()
+      }
+    },
+    {
+      id: 'Comfy.Graph.AddSelectedImagesToBatch',
+      icon: 'icon-[lucide--image-plus]',
+      label: 'Add Selected Images to Batch',
+      versionAdded: '1.49.3',
+      function: () => {
+        useBatchImages().addSelectedImagesToBatch()
       }
     },
     {

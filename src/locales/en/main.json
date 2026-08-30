@@ -2432,6 +2432,7 @@
     "nothingSelected": "Nothing selected",
     "cannotCreateSubgraph": "Cannot create subgraph",
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
+    "batchImagesNodeUnavailable": "The Batch Images node is not available on this server",
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",

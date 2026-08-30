@@ -80,6 +80,11 @@ export function isImageNode(node: LGraphNode | undefined): node is ImageNode {
   )
 }
 
+export function hasImageOutput(node: LGraphNode | undefined): boolean {
+  if (!node) return false
+  return !!node.outputs?.some((output) => output.type === 'IMAGE')
+}
+
 export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
   if (!node) return false
   return node.previewMediaType === 'video' || !!node.videoContainer

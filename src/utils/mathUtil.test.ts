@@ -5,6 +5,7 @@ import {
   clipRectToBounds,
   computeUnionBounds,
   denormalize,
+  findNonOverlappingPosition,
   gcd,
   lcm,
   normalize,
@@ -182,6 +183,34 @@ describe('mathUtil', () => {
       expect(
         clipRectToBounds({ left: 10, top: 10, right: 200, bottom: 40 }, bounds)
       ).toEqual({ left: 10, top: 10, right: 100, bottom: 40 })
+    })
+  })
+  describe('findNonOverlappingPosition', () => {
+    const size = [100, 50] as const
+    const offset = [0, 70] as const
+
+    it('keeps the requested position when it is already clear', () => {
+      const items = [{ pos: [500, 500], size: [100, 50] }] as const
+      expect(findNonOverlappingPosition(items, [0, 0], size, offset)).toEqual([
+        0, 0
+      ])
+    })
+
+    it('steps until the rect clears every item', () => {
+      const items = [
+        { pos: [0, 0], size: [100, 50] },
+        { pos: [0, 70], size: [100, 50] }
+      ] as const
+      expect(findNonOverlappingPosition(items, [0, 0], size, offset)).toEqual([
+        0, 140
+      ])
+    })
+
+    it('gives up after maxSteps so placement always resolves', () => {
+      const items = [{ pos: [0, 0], size: [100, 1000] }] as const
+      expect(
+        findNonOverlappingPosition(items, [0, 0], size, offset, 2)
+      ).toEqual([0, 140])
     })
   })
 })
