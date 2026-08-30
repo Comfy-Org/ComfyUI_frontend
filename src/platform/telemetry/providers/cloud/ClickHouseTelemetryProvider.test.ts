@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AuthClearedMetadata, WorkflowImportMetadata } from '../../types'
 import { ClickHouseTelemetryProvider } from './ClickHouseTelemetryProvider'
@@ -23,10 +23,6 @@ function lastPostedEvent() {
 
 describe('ClickHouseTelemetryProvider', () => {
   const provider = new ClickHouseTelemetryProvider()
-
-  afterEach(() => {
-    mockFetchApi.mockClear()
-  })
 
   it('posts an auth_state_cleared event with the clear metadata', () => {
     const metadata: AuthClearedMetadata = {

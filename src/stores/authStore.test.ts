@@ -144,6 +144,11 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+const mockReportError = vi.fn()
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: (...args: unknown[]) => mockReportError(...args)
+}))
+
 // Keep the real API singleton (other modules rely on its full surface) but
 // override resetSocket so we can assert socket lifecycle calls without opening
 // a real WebSocket.
@@ -1156,6 +1161,10 @@ describe('useAuthStore', () => {
 
       expect(() => authStateCallback(null)).not.toThrow()
       expect(clearWorkspaceContext).toHaveBeenCalled()
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'auth_clear_telemetry_failed' })
+      )
     })
 
     it('does not emit on the initial unauthenticated boot (no prior user)', () => {

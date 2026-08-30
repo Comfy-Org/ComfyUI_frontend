@@ -32,6 +32,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -177,6 +178,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
     } catch (error) {
       console.warn('[authStore] Failed to report auth-state clear', error)
+      reportError(error, { errorType: 'auth_clear_telemetry_failed' })
     }
   }
 
