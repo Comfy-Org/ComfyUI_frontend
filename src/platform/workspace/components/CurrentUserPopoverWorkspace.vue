@@ -42,31 +42,35 @@
         </span>
       </div>
       <template v-else>
-        <button
-          ref="workspaceSwitcherTrigger"
-          v-tooltip="{ value: workspaceName, showDelay: 300 }"
-          type="button"
-          class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
-          :aria-expanded="isWorkspaceSwitcherOpen"
-          aria-haspopup="menu"
-          aria-controls="workspace-switcher-panel"
-          data-testid="workspace-switcher-trigger"
-          @click="toggleWorkspaceSwitcher"
-          @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+        <Tooltip
+          :config="{ value: workspaceName, showDelay: 300 }"
+          side="right"
         >
-          <div class="flex w-0 flex-1 items-center gap-2">
-            <WorkspaceProfilePic
-              class="size-6 shrink-0 text-xs"
-              :workspace-name="workspaceName"
+          <button
+            ref="workspaceSwitcherTrigger"
+            type="button"
+            class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
+            :aria-expanded="isWorkspaceSwitcherOpen"
+            aria-haspopup="menu"
+            aria-controls="workspace-switcher-panel"
+            data-testid="workspace-switcher-trigger"
+            @click="toggleWorkspaceSwitcher"
+            @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+          >
+            <div class="flex w-0 flex-1 items-center gap-2">
+              <WorkspaceProfilePic
+                class="size-6 shrink-0 text-xs"
+                :workspace-name="workspaceName"
+              />
+              <span class="truncate text-sm text-base-foreground">
+                {{ workspaceName }}
+              </span>
+            </div>
+            <i
+              class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
             />
-            <span class="truncate text-sm text-base-foreground">
-              {{ workspaceName }}
-            </span>
-          </div>
-          <i
-            class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
-          />
-        </button>
+          </button>
+        </Tooltip>
 
         <div
           v-if="isWorkspaceSwitcherOpen"
@@ -97,16 +101,20 @@
       <span v-else class="text-base font-semibold text-base-foreground">{{
         displayedCredits
       }}</span>
-      <Button
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-sm"
-        class="mr-auto"
-        :aria-label="$t('credits.unified.tooltip')"
-        data-testid="credits-info-button"
+      <Tooltip
+        :config="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
+        side="right"
       >
-        <i class="icon-[lucide--circle-help]" />
-      </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          class="mr-auto"
+          :aria-label="$t('credits.unified.tooltip')"
+          data-testid="credits-info-button"
+        >
+          <i class="icon-[lucide--circle-help]" />
+        </Button>
+      </Tooltip>
       <Button
         v-if="canTopUp"
         variant="secondary"
@@ -255,6 +263,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Skeleton from 'primevue/skeleton'
