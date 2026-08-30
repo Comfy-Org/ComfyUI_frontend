@@ -232,12 +232,21 @@ describe('registerAgentLifetimes (app scope)', () => {
     const conversation = useAgentConversationStore()
     const abortActiveTurn = vi.spyOn(conversation, 'abortActiveTurn')
     const dropBackgroundTurns = vi.spyOn(conversation, 'dropBackgroundTurns')
+    conversation.setThreadId('th-live')
+    const turnId = 'turn-live' as TurnId
+    conversation.recordUser(turnId, 'mid-stream')
+    conversation.startTurn(turnId)
+    const live = conversation.messages[0]!
+    expect(live.streaming).toBe(true)
 
     setUser('user-b')
     await nextTick()
 
     expect(abortActiveTurn).toHaveBeenCalledTimes(1)
     expect(dropBackgroundTurns).toHaveBeenCalledTimes(1)
+    // reset() nulls the transport via clearActive() WITHOUT settling it, so an
+    // abort that runs after reset silently no-ops and leaves this true.
+    expect(live.streaming).toBe(false)
   })
 
   it('leaves the outgoing background turn unreachable after a switch', async () => {
@@ -264,12 +273,42 @@ describe('registerAgentLifetimes (app scope)', () => {
     startLifetimes()
     setUser('user-a')
     await nextTick()
-    seedUserScopedState()
+    const { conversation } = seedUserScopedState()
+    // A stashed background turn retains its previews, so reset() only
+    // revokes them once the drop has already emptied the retained set.
+    // This is what makes the abort/drop/reset order load-bearing.
+    const turnId = 'turn-1' as TurnId
+    conversation.recordUser(turnId, 'look at this', [
+      { name: 'cat.png', previewUrl: 'blob:stashed-preview', ref: 'cat.png' }
+    ])
+    conversation.startTurn(turnId)
+    conversation.stashActiveTurn()
 
     setUser('user-b')
     await nextTick()
 
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:cat-preview')
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:stashed-preview')
+  })
+
+  it('revokes a background turn preview that recordUser never tracked', async () => {
+    startLifetimes()
+    setUser('user-a')
+    await nextTick()
+    const conversation = useAgentConversationStore()
+    // The ack-after-navigation path: the turn is stashed straight into
+    // backgroundTurns, so its previews live nowhere else.
+    conversation.startBackgroundTurn(
+      'th-bg',
+      'turn-bg' as TurnId,
+      'sent before switching',
+      [{ name: 'dog.png', previewUrl: 'blob:bg-preview', ref: 'dog.png' }]
+    )
+
+    setUser('user-b')
+    await nextTick()
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:bg-preview')
   })
 
   it('purges on logout through the same switch path', async () => {

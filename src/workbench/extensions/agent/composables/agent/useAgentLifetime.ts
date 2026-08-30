@@ -38,8 +38,10 @@ function purgeUserScopedAgentState(): void {
   const conversation = useAgentConversationStore()
   // Order is load-bearing: settle the outgoing user's in-flight turn and drop
   // its background turns BEFORE reset(), because reset() only clears the
-  // active slot. Dropping first also empties the retained set, so reset's
-  // dropAttachmentPreviews revokes every preview it still owns.
+  // active slot and its revoker skips anything the background turns retain.
+  // Each drop revokes the previews it alone owns, and dropping first empties
+  // the retained set so reset's dropAttachmentPreviews skips none of its own.
+  // A preview held in both places is revoked twice, which is idempotent.
   conversation.abortActiveTurn()
   conversation.dropBackgroundTurns()
   conversation.reset()
