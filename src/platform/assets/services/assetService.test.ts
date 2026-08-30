@@ -843,6 +843,52 @@ describe(assetService.updateAsset, () => {
 })
 
 describe(assetService.getAssetsByTag, () => {
+  it.for([
+    { distribution: 'Cloud', isCloud: true },
+    { distribution: 'OSS', isCloud: false }
+  ])(
+    'parses the shared public HTTP response contract on $distribution',
+    async ({ isCloud }) => {
+      mockDistributionState.isCloud = isCloud
+      const wireAsset = {
+        ...validAsset({ id: 'shared-output', tags: ['output'] }),
+        size: '42'
+      }
+      fetchApiMock.mockResolvedValueOnce(
+        buildResponse({
+          assets: [wireAsset],
+          total: 3,
+          has_more: true,
+          next_cursor: 'next-page'
+        })
+      )
+
+      const page = await assetService.getAssetsPageByTag('output', true, {
+        limit: 25,
+        after: 'current-page'
+      })
+
+      expect(page).toEqual({
+        assets: [{ ...wireAsset, size: 42 }],
+        total: 3,
+        has_more: true,
+        next_cursor: 'next-page'
+      })
+
+      const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
+      expect(typeof requestedUrl).toBe('string')
+      const url = new URL(String(requestedUrl), 'http://localhost/api')
+      expect(url.pathname).toBe('/assets')
+      expect(Object.fromEntries(url.searchParams)).toEqual({
+        include_tags: 'output',
+        limit: '25',
+        exclude_tags: MISSING_TAG,
+        after: 'current-page',
+        include_public: 'true'
+      })
+    }
+  )
+
   it('forwards include_public=true by default and requests missing-tag exclusion', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
