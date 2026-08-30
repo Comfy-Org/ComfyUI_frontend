@@ -99,7 +99,6 @@ export const primeVueImportAllowlist = [
   'src/renderer/extensions/vueNodes/composables/useNodeTooltips.ts',
   'src/renderer/extensions/vueNodes/composables/useProcessedWidgets.test.ts',
   'src/renderer/extensions/vueNodes/types/widgetGrid.ts',
-  'src/renderer/extensions/vueNodes/widgets/components/WidgetChart.vue',
   'src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.test.ts',
   'src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue',
   'src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.asset-mode.test.ts',
