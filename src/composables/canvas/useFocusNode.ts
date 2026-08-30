@@ -32,6 +32,14 @@ async function navigateToGraph(targetGraph: LGraph) {
 export function useFocusNode() {
   const canvasStore = useCanvasStore()
 
+  /* Focus a graph node on the canvas, descending into its subgraph if needed. */
+  async function focusGraphNode(graphNode: LGraphNode) {
+    if (!canvasStore.canvas || !graphNode.graph) return
+
+    await navigateToGraph(graphNode.graph as LGraph)
+    canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
+  }
+
   /* Locate and focus a node on the canvas by its execution ID. */
   async function focusNode(
     nodeId: string,
@@ -42,13 +50,13 @@ export function useFocusNode() {
     const graphNode = executionIdMap
       ? executionIdMap.get(nodeId)
       : getNodeByExecutionId(app.rootGraph, nodeId)
-    if (!graphNode?.graph) return
+    if (!graphNode) return
 
-    await navigateToGraph(graphNode.graph as LGraph)
-    canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
+    await focusGraphNode(graphNode)
   }
 
   return {
+    focusGraphNode,
     focusNode
   }
 }
