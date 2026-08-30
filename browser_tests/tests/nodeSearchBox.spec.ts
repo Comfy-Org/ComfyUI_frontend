@@ -147,8 +147,8 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await comfyPage.searchBox.input.fill(node)
     await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
 
-    const firstResult = comfyPage.searchBox.dropdown.locator('li').first()
-    await expect(firstResult).toHaveAttribute('aria-label', node)
+    const firstResult = comfyPage.searchBox.dropdown.getByRole('option').first()
+    await expect(firstResult).toHaveAccessibleName(node)
   })
 
   test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
