@@ -123,6 +123,7 @@
         ref="workbenchRef"
         :session-id="session.id"
         :agent-enabled="session.agentEnabled"
+        :pack-name="session.name"
       />
 
       <iframe

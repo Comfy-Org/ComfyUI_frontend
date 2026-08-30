@@ -27,6 +27,7 @@
           v-show="!selectedChange"
           ref="treeEditorRef"
           :session-id="sessionId"
+          :state-key="editorStateKey"
         />
         <CustomNodeCodeEditor
           v-if="selectedChange"
@@ -175,31 +176,45 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import { useCustomNodeEditor } from '../composables/useCustomNodeEditor'
 import type { CustomNodeEditorProposal } from '../composables/useCustomNodeEditor'
+import {
+  customNodeEditorStateKey,
+  migrateCustomNodeEditorState,
+  readCustomNodeEditorState,
+  updateCustomNodeEditorState
+} from '../utils/customNodeEditorState'
 import CustomNodeCodeEditor from './CustomNodeCodeEditor.vue'
 import CustomNodeTreeEditor from './CustomNodeTreeEditor.vue'
 
-const { sessionId, agentEnabled } = defineProps<{
+const props = defineProps<{
   sessionId: string
   agentEnabled: boolean
+  packName: string
 }>()
 
 const { t } = useI18n()
 const colorPaletteStore = useColorPaletteStore()
+const teamWorkspaceStore = useTeamWorkspaceStore()
 const { createAgentProposal, applyAgentProposal } = useCustomNodeEditor()
 const treeEditorRef =
   useTemplateRef<InstanceType<typeof CustomNodeTreeEditor>>('treeEditorRef')
 
-const agentOpen = ref(true)
+const editorStateKey = computed(() =>
+  customNodeEditorStateKey(teamWorkspaceStore.activeWorkspaceId, props.packName)
+)
+const agentOpen = ref(
+  readCustomNodeEditorState(editorStateKey.value)?.agentOpen ?? true
+)
 const instruction = ref('')
 const proposal = ref<CustomNodeEditorProposal | null>(null)
 const selectedChangePath = ref('')
@@ -227,7 +242,7 @@ async function askAgent() {
   agentError.value = null
   try {
     await saveAll()
-    proposal.value = await createAgentProposal(sessionId, requestedChange)
+    proposal.value = await createAgentProposal(props.sessionId, requestedChange)
     instruction.value = ''
     selectedChangePath.value = proposal.value.changes[0]?.path ?? ''
   } catch (error) {
@@ -255,7 +270,7 @@ async function applyProposal() {
   isApplying.value = true
   agentError.value = null
   try {
-    const result = await applyAgentProposal(sessionId, proposal.value.id)
+    const result = await applyAgentProposal(props.sessionId, proposal.value.id)
     await treeEditorRef.value?.replaceFiles(result)
     proposal.value = null
     selectedChangePath.value = ''
@@ -269,6 +284,26 @@ async function applyProposal() {
     isApplying.value = false
   }
 }
+
+watch(
+  () => props.packName,
+  (packName, previousPackName) => {
+    const workspaceId = teamWorkspaceStore.activeWorkspaceId
+    migrateCustomNodeEditorState(
+      customNodeEditorStateKey(workspaceId, previousPackName),
+      customNodeEditorStateKey(workspaceId, packName)
+    )
+  },
+  { flush: 'sync' }
+)
+
+watch(editorStateKey, (key) => {
+  agentOpen.value = readCustomNodeEditorState(key)?.agentOpen ?? true
+})
+
+watch(agentOpen, (isOpen) => {
+  updateCustomNodeEditorState(editorStateKey.value, { agentOpen: isOpen })
+})
 
 defineExpose({ saveAll })
 </script>

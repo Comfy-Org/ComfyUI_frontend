@@ -3,6 +3,7 @@
     ref="rootElement"
     class="custom-node-tree-editor relative size-full min-h-0 min-w-0 overflow-hidden bg-base-background"
     data-testid="custom-node-tree-editor"
+    @pointerup.capture="persistEditorState"
   >
     <Editor
       ref="editorElement"
@@ -11,7 +12,7 @@
       :filelist-title="$t('customNodePacks.editor.workbench.explorer')"
       :font-size="13"
       language="en-US"
-      :sider-min-width="180"
+      :sider-min-width="explorerWidth"
       :theme="editorTheme"
       @reload="handleReload"
       @save-file="handleSaveFile"
@@ -67,7 +68,14 @@
 import { useDebounceFn, useResizeObserver } from '@vueuse/core'
 import { Editor, useGlobalSettings, useMonaco } from 'monaco-tree-editor'
 import type { Files } from 'monaco-tree-editor'
-import { computed, nextTick, onUnmounted, ref, useTemplateRef } from 'vue'
+import {
+  computed,
+  nextTick,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -79,12 +87,17 @@ import type {
   CustomNodeEditorFile,
   CustomNodeEditorFiles
 } from '../composables/useCustomNodeEditor'
+import {
+  readCustomNodeEditorState,
+  updateCustomNodeEditorState
+} from '../utils/customNodeEditorState'
 import { monaco } from './customNodeMonaco'
 
 import 'monaco-tree-editor/index.css'
 
-const { sessionId } = defineProps<{
+const { sessionId, stateKey } = defineProps<{
   sessionId: string
+  stateKey: string
 }>()
 
 const { t } = useI18n()
@@ -103,10 +116,14 @@ const initialPath = ref('')
 const isLoading = ref(true)
 const loadError = ref<string | null>(null)
 const saveError = ref<string | null>(null)
-const initialFileOpened = ref(false)
+const restoredState = readCustomNodeEditorState(stateKey)
+const explorerWidth = ref(restoredState?.explorerWidth ?? 180)
+const explorerPreference = ref(restoredState?.explorerOpen ?? true)
+const editorStateRestored = ref(false)
 let saveQueue: Promise<void> = Promise.resolve()
 let editorChangeListener: monaco.IDisposable | undefined
 let explorerCollapsedForWidth = false
+let changingExplorerForLayout = false
 
 const editorTheme = computed(() =>
   colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
@@ -268,20 +285,95 @@ const scheduleSave = useDebounceFn(() => {
   void saveAll().catch(() => undefined)
 }, 900)
 
-function openInitialFile() {
-  if (initialFileOpened.value || !initialPath.value) return
-  const path = relativeEditorPath(initialPath.value)
+function storedFilePath(editorPath: string | undefined): string | undefined {
+  if (!editorPath) return undefined
+  const normalized = editorPath.startsWith('/')
+    ? editorPath.slice(1)
+    : editorPath
+  return files.value.some((file) => file.path === normalized)
+    ? normalized
+    : undefined
+}
+
+function currentExplorerWidth(): number {
+  const width = rootElement.value
+    ?.querySelector<HTMLElement>('.monaco-tree-editor-list-wrapper')
+    ?.getBoundingClientRect().width
+  return width && width >= 180 ? Math.round(width) : explorerWidth.value
+}
+
+function persistEditorState() {
+  if (!editorStateRestored.value) return
+  const openedPaths = monacoEditor.states.openedFiles.value.flatMap(
+    (file: { path: string }) => {
+      const path = storedFilePath(file.path)
+      return path ? [path] : []
+    }
+  )
+  const activePath = storedFilePath(monacoEditor.states.currentPath.value)
+  explorerWidth.value = currentExplorerWidth()
+  updateCustomNodeEditorState(stateKey, {
+    activePath,
+    openedPaths,
+    explorerOpen: explorerPreference.value,
+    explorerWidth: explorerWidth.value
+  })
+}
+
+function restoreEditorState() {
+  if (editorStateRestored.value || !initialPath.value) return
+  const state = readCustomNodeEditorState(stateKey)
+  explorerPreference.value = state?.explorerOpen ?? true
+  changingExplorerForLayout = true
+  globalSettings.commands.switchCurrentLeftSiderBar(
+    explorerPreference.value ? 'Explorer' : undefined,
+    false
+  )
+  changingExplorerForLayout = false
+
+  const openedPaths = (state?.openedPaths ?? []).flatMap((storedPath) => {
+    const path = storedFilePath(storedPath)
+    return path ? [relativeEditorPath(path)] : []
+  })
+  if (openedPaths.length > 0) {
+    monacoEditor.commands.setOpenedFiles(openedPaths.map((path) => ({ path })))
+  }
+  const activePath =
+    storedFilePath(state?.activePath) ??
+    initialPath.value ??
+    files.value[0]?.path
+  if (!activePath) return
+  const path = relativeEditorPath(activePath)
   const model = monacoEditor.commands._restoreModel(path)
   if (!model) return
   monacoEditor.commands._openOrFocusPath(path)
-  initialFileOpened.value = true
+  editorStateRestored.value = true
   editorChangeListener ??= monacoEditor.commands
     .getEditor()
     .onDidChangeModelContent(scheduleSave)
 }
 
 const stopFileTreeListener =
-  monacoEditor.events.onFileTreeLoaded.listen(openInitialFile)
+  monacoEditor.events.onFileTreeLoaded.listen(restoreEditorState)
+
+const stopOpenedFilesWatcher = watch(
+  monacoEditor.states.openedFiles,
+  persistEditorState,
+  { deep: true }
+)
+const stopCurrentPathWatcher = watch(
+  monacoEditor.states.currentPath,
+  persistEditorState
+)
+const stopExplorerWatcher = watch(
+  globalSettings.states.opendLeftSiderBar,
+  (openPanel) => {
+    if (!editorStateRestored.value || changingExplorerForLayout) return
+    explorerPreference.value = openPanel === 'Explorer'
+    persistEditorState()
+  },
+  { flush: 'sync' }
+)
 
 useResizeObserver(rootElement, (entries) => {
   editorElement.value?.resize()
@@ -291,17 +383,25 @@ useResizeObserver(rootElement, (entries) => {
     isNarrow &&
     globalSettings.states.opendLeftSiderBar.value === 'Explorer'
   ) {
+    changingExplorerForLayout = true
     globalSettings.commands.switchCurrentLeftSiderBar(undefined)
+    changingExplorerForLayout = false
     explorerCollapsedForWidth = true
   } else if (!isNarrow && explorerCollapsedForWidth) {
+    changingExplorerForLayout = true
     globalSettings.commands.switchCurrentLeftSiderBar('Explorer', false)
+    changingExplorerForLayout = false
     explorerCollapsedForWidth = false
   }
 })
 
 onUnmounted(() => {
+  persistEditorState()
   scheduleSave.cancel()
   stopFileTreeListener()
+  stopOpenedFilesWatcher()
+  stopCurrentPathWatcher()
+  stopExplorerWatcher()
   editorChangeListener?.dispose()
   for (const file of files.value) {
     monaco.editor

@@ -3,6 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import {
+  customNodeEditorStateKey,
+  readCustomNodeEditorState,
+  updateCustomNodeEditorState
+} from '../utils/customNodeEditorState'
 import CustomNodeWorkbench from './CustomNodeWorkbench.vue'
 
 const mocks = vi.hoisted(() => ({
@@ -30,6 +35,10 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({ activeWorkspaceId: 'workspace-1' })
+}))
+
 vi.mock('@/components/ui/button/Button.vue', () => ({
   default: {
     name: 'Button',
@@ -43,7 +52,7 @@ vi.mock('@/components/ui/button/Button.vue', () => ({
 vi.mock('./CustomNodeTreeEditor.vue', () => ({
   default: {
     name: 'CustomNodeTreeEditor',
-    props: ['sessionId'],
+    props: ['sessionId', 'stateKey'],
     methods: {
       replaceFiles: mocks.replaceFiles,
       saveAll: mocks.saveAll
@@ -99,6 +108,7 @@ const i18n = createI18n({
 
 describe('CustomNodeWorkbench', () => {
   beforeEach(() => {
+    localStorage.clear()
     mocks.applyAgentProposal.mockReset()
     mocks.createAgentProposal.mockReset()
     mocks.replaceFiles.mockReset().mockResolvedValue(undefined)
@@ -108,7 +118,11 @@ describe('CustomNodeWorkbench', () => {
 
   it('opens the project editor with the Node Agent visible', () => {
     render(CustomNodeWorkbench, {
-      props: { sessionId: 'session-1', agentEnabled: true },
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
       global: { plugins: [i18n] }
     })
 
@@ -146,7 +160,11 @@ describe('CustomNodeWorkbench', () => {
     mocks.applyAgentProposal.mockResolvedValue(appliedFiles)
 
     render(CustomNodeWorkbench, {
-      props: { sessionId: 'session-1', agentEnabled: true },
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
       global: { plugins: [i18n] }
     })
 
@@ -189,5 +207,58 @@ describe('CustomNodeWorkbench', () => {
       expect(mocks.replaceFiles).toHaveBeenCalledWith(appliedFiles)
     })
     expect(screen.getByTestId('custom-node-tree-editor')).toBeVisible()
+  })
+
+  it('restores and persists whether the Node Agent is open for the pack', async () => {
+    const user = userEvent.setup()
+    const key = customNodeEditorStateKey('workspace-1', 'Checkerboard Mask')
+    updateCustomNodeEditorState(key, { agentOpen: false })
+
+    render(CustomNodeWorkbench, {
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const agent = screen.getByRole('complementary', { name: 'Node Agent' })
+    expect(agent).toHaveAttribute('data-open', 'false')
+
+    await user.click(screen.getByRole('button', { name: 'Toggle Node Agent' }))
+    await waitFor(() => {
+      expect(readCustomNodeEditorState(key)).toMatchObject({ agentOpen: true })
+    })
+  })
+
+  it('moves the local editor state when the pack is renamed', async () => {
+    const previousKey = customNodeEditorStateKey(
+      'workspace-1',
+      'Checkerboard Mask'
+    )
+    const nextKey = customNodeEditorStateKey('workspace-1', 'Renamed Pack')
+    updateCustomNodeEditorState(previousKey, {
+      activePath: 'README.md',
+      agentOpen: false
+    })
+
+    const view = render(CustomNodeWorkbench, {
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
+      global: { plugins: [i18n] }
+    })
+    await view.rerender({ packName: 'Renamed Pack' })
+
+    await waitFor(() => {
+      expect(readCustomNodeEditorState(previousKey)).toBeNull()
+      expect(readCustomNodeEditorState(nextKey)).toMatchObject({
+        activePath: 'README.md',
+        agentOpen: false
+      })
+    })
   })
 })

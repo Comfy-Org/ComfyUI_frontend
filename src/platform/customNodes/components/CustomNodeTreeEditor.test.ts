@@ -4,6 +4,10 @@ import type * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import {
+  readCustomNodeEditorState,
+  updateCustomNodeEditorState
+} from '../utils/customNodeEditorState'
 import CustomNodeTreeEditor from './CustomNodeTreeEditor.vue'
 
 interface ResizeEntry {
@@ -12,18 +16,24 @@ interface ResizeEntry {
 
 const mocks = vi.hoisted(() => ({
   changeListener: vi.fn(),
+  currentPath: undefined as undefined | { value: string | undefined },
   destroy: vi.fn(),
+  explorerPanel: undefined as
+    | undefined
+    | { value: 'Explorer' | 'Setting' | undefined },
   fileTreeLoaded: undefined as undefined | (() => void),
   getFiles: vi.fn(),
   getValue: vi.fn(),
   hasChanged: vi.fn(),
   lightTheme: false,
   openOrFocusPath: vi.fn(),
+  openedFiles: undefined as undefined | { value: Array<{ path: string }> },
   reportError: vi.fn(),
   resize: vi.fn(),
   resizeCallback: undefined as undefined | ((entries: ResizeEntry[]) => void),
   restoreModel: vi.fn(),
   saveFiles: vi.fn(),
+  setOpenedFiles: vi.fn(),
   stopFileTreeListener: vi.fn(),
   switchCurrentLeftSiderBar: vi.fn()
 }))
@@ -43,13 +53,17 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 })
 
 vi.mock('monaco-tree-editor', async () => {
-  const { defineComponent, onMounted } = await import('vue')
+  const { defineComponent, onMounted, ref } = await import('vue')
+  mocks.currentPath = ref<string>()
+  mocks.explorerPanel = ref<'Explorer' | 'Setting' | undefined>('Explorer')
+  mocks.openedFiles = ref<Array<{ path: string }>>([])
   return {
     Editor: defineComponent({
       name: 'Editor',
       props: {
         files: { type: Object, required: true },
         monacoId: { type: String, required: true },
+        siderMinWidth: { type: Number, required: true },
         theme: { type: String, required: true }
       },
       emits: [
@@ -73,7 +87,11 @@ vi.mock('monaco-tree-editor', async () => {
         })
       },
       template: `
-      <div data-testid="library-editor" :data-theme="theme">
+      <div
+        data-testid="library-editor"
+        :data-theme="theme"
+        :data-explorer-width="siderMinWidth"
+      >
         {{ Object.keys(files).join('|') }}
         <button
           type="button"
@@ -92,13 +110,17 @@ vi.mock('monaco-tree-editor', async () => {
     }),
     useGlobalSettings: () => ({
       states: {
-        opendLeftSiderBar: { value: 'Explorer' }
+        opendLeftSiderBar: mocks.explorerPanel
       },
       commands: {
         switchCurrentLeftSiderBar: mocks.switchCurrentLeftSiderBar
       }
     }),
     useMonaco: () => ({
+      states: {
+        currentPath: mocks.currentPath,
+        openedFiles: mocks.openedFiles
+      },
       commands: {
         _getValue: mocks.getValue,
         _hasChanged: mocks.hasChanged,
@@ -106,7 +128,8 @@ vi.mock('monaco-tree-editor', async () => {
         _restoreModel: mocks.restoreModel,
         getEditor: () => ({
           onDidChangeModelContent: mocks.changeListener
-        })
+        }),
+        setOpenedFiles: mocks.setOpenedFiles
       },
       destroy: mocks.destroy,
       events: {
@@ -190,26 +213,36 @@ const initialFiles = {
 
 describe('CustomNodeTreeEditor', () => {
   beforeEach(() => {
+    localStorage.clear()
     mocks.changeListener.mockReset().mockReturnValue({ dispose: vi.fn() })
+    mocks.currentPath!.value = undefined
     mocks.destroy.mockReset()
+    mocks.explorerPanel!.value = 'Explorer'
     mocks.fileTreeLoaded = undefined
     mocks.getFiles.mockReset().mockResolvedValue(structuredClone(initialFiles))
     mocks.getValue.mockReset()
     mocks.hasChanged.mockReset().mockReturnValue(false)
     mocks.lightTheme = false
     mocks.openOrFocusPath.mockReset()
+    mocks.openedFiles!.value = []
     mocks.reportError.mockReset()
     mocks.resize.mockReset()
     mocks.resizeCallback = undefined
     mocks.restoreModel.mockReset().mockReturnValue({})
     mocks.saveFiles.mockReset().mockResolvedValue(structuredClone(initialFiles))
+    mocks.setOpenedFiles.mockReset()
     mocks.stopFileTreeListener.mockReset()
-    mocks.switchCurrentLeftSiderBar.mockReset()
+    mocks.switchCurrentLeftSiderBar
+      .mockReset()
+      .mockImplementation(
+        (panel: 'Explorer' | 'Setting' | undefined) =>
+          (mocks.explorerPanel!.value = panel)
+      )
   })
 
   it('loads the tree, follows the app theme, and opens checkerboard.py', async () => {
     render(CustomNodeTreeEditor, {
-      props: { sessionId: 'session-1' },
+      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
       global: { plugins: [i18n] }
     })
 
@@ -232,7 +265,7 @@ describe('CustomNodeTreeEditor', () => {
   it('translates package paths when saving and responds to container width', async () => {
     const user = userEvent.setup()
     render(CustomNodeTreeEditor, {
-      props: { sessionId: 'session-1' },
+      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
       global: { plugins: [i18n] }
     })
 
@@ -263,13 +296,72 @@ describe('CustomNodeTreeEditor', () => {
   it('uses Monaco light mode when the active Comfy palette is light', async () => {
     mocks.lightTheme = true
     render(CustomNodeTreeEditor, {
-      props: { sessionId: 'session-1' },
+      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
       global: { plugins: [i18n] }
     })
 
     expect(await screen.findByTestId('library-editor')).toHaveAttribute(
       'data-theme',
       'light'
+    )
+  })
+
+  it('restores open files, the active file, and explorer layout for the pack', async () => {
+    updateCustomNodeEditorState('editor-state-key', {
+      activePath: 'README.md',
+      openedPaths: ['README.md', 'v2/nodes/checkerboard.py'],
+      explorerOpen: false,
+      explorerWidth: 260
+    })
+
+    render(CustomNodeTreeEditor, {
+      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
+      global: { plugins: [i18n] }
+    })
+
+    expect(await screen.findByTestId('library-editor')).toHaveAttribute(
+      'data-explorer-width',
+      '260'
+    )
+    await waitFor(() => {
+      expect(mocks.setOpenedFiles).toHaveBeenCalledWith([
+        { path: '/README.md' },
+        { path: '/v2/nodes/checkerboard.py' }
+      ])
+      expect(mocks.restoreModel).toHaveBeenCalledWith('/README.md')
+      expect(mocks.openOrFocusPath).toHaveBeenCalledWith('/README.md')
+    })
+    expect(mocks.switchCurrentLeftSiderBar).toHaveBeenCalledWith(
+      undefined,
+      false
+    )
+  })
+
+  it('persists tab navigation without storing source content', async () => {
+    render(CustomNodeTreeEditor, {
+      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
+      global: { plugins: [i18n] }
+    })
+
+    await waitFor(() =>
+      expect(mocks.openOrFocusPath).toHaveBeenCalledWith(
+        '/v2/nodes/checkerboard.py'
+      )
+    )
+    mocks.openedFiles!.value = [
+      { path: '/README.md' },
+      { path: '/v2/nodes/checkerboard.py' }
+    ]
+    mocks.currentPath!.value = '/README.md'
+
+    await waitFor(() => {
+      expect(readCustomNodeEditorState('editor-state-key')).toMatchObject({
+        activePath: 'README.md',
+        openedPaths: ['README.md', 'v2/nodes/checkerboard.py']
+      })
+    })
+    expect(localStorage.getItem('editor-state-key')).not.toContain(
+      '# checkerboard starter'
     )
   })
 })

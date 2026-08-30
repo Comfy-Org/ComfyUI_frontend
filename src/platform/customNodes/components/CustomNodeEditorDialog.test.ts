@@ -57,7 +57,7 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('./CustomNodeWorkbench.vue', () => ({
   default: {
     name: 'CustomNodeWorkbench',
-    props: ['sessionId', 'agentEnabled'],
+    props: ['sessionId', 'agentEnabled', 'packName'],
     methods: { saveAll: mocks.saveAll },
     template: '<div data-testid="custom-node-workbench" />'
   }
