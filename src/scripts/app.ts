@@ -249,21 +249,43 @@ export interface QueuePromptOptions {
 
 function createNodeOutputsMutationView(
   outputs: Record<string, NodeExecutionOutput>,
-  commit: () => void
+  commit: (id: string, output: NodeExecutionOutput | undefined) => void
 ): Record<string, NodeExecutionOutput> {
-  const views = new WeakMap<object, object>()
-  const mapNestedValue = (_property: PropertyKey, value: unknown): unknown => {
+  const views = new WeakMap<object, Map<string, object>>()
+  const wrapNestedValue = (id: string, value: unknown): unknown => {
     if (value === null || typeof value !== 'object') return value
-    const existing = views.get(value)
+    const existing = views.get(value)?.get(id)
     if (existing) return existing
     const view = createMutationView(value, {
-      commit,
-      mapValue: mapNestedValue
+      commit: () => commit(id, outputs[id]),
+      mapValue: (_property, nestedValue) => wrapNestedValue(id, nestedValue)
     })
-    views.set(value, view)
+    const viewsById = views.get(value) ?? new Map<string, object>()
+    viewsById.set(id, view)
+    views.set(value, viewsById)
     return view
   }
-  return createMutationView(outputs, { commit, mapValue: mapNestedValue })
+  return new Proxy(outputs, {
+    get(target, property) {
+      const value = Reflect.get(target, property, target)
+      if (typeof value === 'function') return value.bind(target)
+      return wrapNestedValue(String(property), value)
+    },
+    set(target, property, value) {
+      const previous = Reflect.get(target, property, target)
+      const updated = Reflect.set(target, property, value, target)
+      if (updated && previous !== value) {
+        commit(String(property), value as NodeExecutionOutput)
+      }
+      return updated
+    },
+    deleteProperty(target, property) {
+      const existed = Reflect.has(target, property)
+      const deleted = Reflect.deleteProperty(target, property)
+      if (deleted && existed) commit(String(property), undefined)
+      return deleted
+    }
+  })
 }
 
 export class ComfyApp {
@@ -300,9 +322,11 @@ export class ComfyApp {
   private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
   private readonly _nodeOutputs = createNodeOutputsMutationView(
     this.nodeOutputsData,
-    () => {
-      if (this.vueAppReady)
-        useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
+    (id, output) => {
+      if (!this.vueAppReady) return
+      const store = useNodeOutputStore()
+      if (output === undefined) store.removeOutputFromLegacy(id)
+      else store.setOutputFromLegacy(id, output)
     }
   )
   nodePreviewImages: Record<string, string[]>
@@ -685,7 +709,8 @@ export class ComfyApp {
         event.preventDefault()
         event.stopPropagation()
 
-        if (isSelectOnly(this.canvas)) {
+        const dropCanvas: LGraphCanvas = this.canvas
+        if (isSelectOnly(dropCanvas)) {
           this.dragOverNode = null
           return
         }
@@ -693,9 +718,9 @@ export class ComfyApp {
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it
         // from the drop event so nodes created below land at the cursor.
-        this.canvas.adjustMouseEvent(event)
-        this.canvas.graph_mouse[0] = event.canvasX
-        this.canvas.graph_mouse[1] = event.canvasY
+        dropCanvas.adjustMouseEvent(event)
+        dropCanvas.graph_mouse[0] = event.canvasX
+        dropCanvas.graph_mouse[1] = event.canvasY
 
         const n = this.dragOverNode
         this.dragOverNode = null
@@ -705,6 +730,7 @@ export class ComfyApp {
 
         const files = await extractFilesFromDragEvent(event)
         if (files.length === 0) return
+        if (this.canvas !== dropCanvas || isSelectOnly(dropCanvas)) return
 
         const workspace = useWorkspaceStore()
         try {
@@ -1174,6 +1200,7 @@ export class ComfyApp {
   loadTemplateData(templateData: {
     templates?: { name?: string; data?: string }[]
   }): void {
+    if (isSelectOnly(this.canvas)) return
     if (!templateData?.templates) {
       return
     }
@@ -2081,15 +2108,25 @@ export class ComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      const outcome = await importA1111(this.rootGraph, parameters, () => {
-        try {
-          // false: final destination; no later load republishes the hash.
-          useWorkflowService().beforeLoadNewGraph(false)
-        } finally {
-          useMissingNodesErrorStore().setMissingNodeTypes([])
+      const outcome = await importA1111(
+        this.rootGraph,
+        parameters,
+        async () => {
+          try {
+            // false: final destination; no later load republishes the hash.
+            useWorkflowService().beforeLoadNewGraph(false)
+            await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+            await useExtensionService().invokeExtensionsAsync(
+              'beforeConfigureGraph',
+              this.rootGraph,
+              parameters
+            )
+          } finally {
+            useMissingNodesErrorStore().setMissingNodeTypes([])
+          }
+          this.canvas.setGraph(this.rootGraph)
         }
-        this.canvas.setGraph(this.rootGraph)
-      })
+      )
       switch (outcome) {
         case 'core-nodes-unavailable':
           useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
@@ -2113,10 +2150,17 @@ export class ComfyApp {
           )
         }
       }
+      await useExtensionService().invokeExtensionsAsync(
+        'afterConfigureGraph',
+        parameters,
+        undefined,
+        this.rootGraph
+      )
       await useWorkflowService().afterLoadNewGraph(
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       return
     }
 
@@ -2255,6 +2299,12 @@ export class ComfyApp {
   ): Promise<void> {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    await useExtensionService().invokeExtensionsAsync(
+      'beforeConfigureGraph',
+      this.rootGraph,
+      apiData
+    )
     this.canvas.setGraph(this.rootGraph)
     this.clean()
 
@@ -2397,11 +2447,18 @@ export class ComfyApp {
     app.rootGraph.arrange()
     for (const id of ids) processNodeInputs(id)
     app.rootGraph.arrange()
+    await useExtensionService().invokeExtensionsAsync(
+      'afterConfigureGraph',
+      apiData,
+      undefined,
+      this.rootGraph
+    )
 
     await useWorkflowService().afterLoadNewGraph(
       fileName,
       this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes, options)
     }

@@ -95,14 +95,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value.push({ level: 'error', text })
   }
 
+  function storageGet(): string | null {
+    try {
+      return localStorage.getItem(THREAD_STORAGE_KEY)
+    } catch {
+      return null
+    }
+  }
+  function storageSet(value: string): void {
+    try {
+      localStorage.setItem(THREAD_STORAGE_KEY, value)
+    } catch (error) {
+      console.warn('[agent] failed to persist the thread id', error)
+    }
+  }
+  function storageRemove(): void {
+    try {
+      localStorage.removeItem(THREAD_STORAGE_KEY)
+    } catch (error) {
+      console.warn('[agent] failed to remove the thread id', error)
+    }
+  }
+
   function start(): void {
     ownedGeneration = ++sessionGeneration
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(THREAD_STORAGE_KEY) === null
-    ) {
+    if (conversationStore.threadId === null && storageGet() === null) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
@@ -123,7 +142,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     if (conversationStore.messages.length === 0) {
-      const stored = localStorage.getItem(THREAD_STORAGE_KEY)
+      const stored = storageGet()
       if (stored !== null) {
         const generation = ++loadGeneration
         conversationStore.setThreadId(stored)
@@ -145,6 +164,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
+      conversationStore.stashActiveTurn()
       conversationStore.hydrate(history)
       return true
     } catch (error) {
@@ -162,14 +182,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
           conversationStore.reset()
         } else if (conversationStore.threadId === threadId)
           conversationStore.setThreadId(null)
-        localStorage.removeItem(THREAD_STORAGE_KEY)
+        storageRemove()
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
       if (resetOwned) {
         conversationStore.stashActiveTurn()
         conversationStore.reset()
-        localStorage.removeItem(THREAD_STORAGE_KEY)
+        storageRemove()
       }
       return false
     }
@@ -193,7 +213,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     attachments?: SentAttachment[],
     tags?: SentTag[]
   ): Promise<boolean> {
-    if (sending.value) {
+    if (sending.value || conversationStore.activeTurnId !== null) {
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
         text,
@@ -206,6 +226,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     stopRequestedWhileSending = false
     let wfContext: WorkflowTurnContext | undefined
     let tabs: OpenTabsSnapshot | undefined
+    const destinationThread = conversationStore.threadId ?? 'new'
+    const initiatingGeneration = loadGeneration
+    const initiatingOwner = ownedGeneration
     async function postTurn(threadId: string) {
       const input = {
         content: text,
@@ -233,7 +256,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
           ])
         wfContext = workflow?.current()
         tabs = workflow?.tabs?.()
-        ack = await postTurn(conversationStore.threadId ?? 'new')
+        if (
+          initiatingOwner !== sessionGeneration ||
+          initiatingGeneration !== loadGeneration ||
+          (conversationStore.threadId ?? 'new') !== destinationThread
+        )
+          return false
+        ack = await postTurn(destinationThread)
       } catch (error) {
         const message =
           error instanceof AgentApiError
@@ -251,22 +280,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // The server accepted the turn: the store transitions are owed
       // unconditionally, before any fallible local side effect, or the
       // reply's events arrive with no open turn to land in.
-      conversationStore.setThreadId(ack.thread_id)
       const turnId = ack.message_id as TurnId
-      conversationStore.recordUser(
-        turnId,
-        text,
-        attachments?.map(({ name, previewUrl, ref }) => ({
-          name,
-          previewUrl,
-          ref
-        })),
-        tags?.map((tag) => `${tag.title} #${tag.id}`)
-      )
+      const sentAttachments = attachments?.map(({ name, previewUrl, ref }) => ({
+        name,
+        previewUrl,
+        ref
+      }))
+      const sentTags = tags?.map((tag) => `${tag.title} #${tag.id}`)
+      const stillDisplayed =
+        initiatingOwner === sessionGeneration &&
+        initiatingGeneration === loadGeneration &&
+        (conversationStore.threadId ?? 'new') === destinationThread
+      if (!stillDisplayed) {
+        conversationStore.startBackgroundTurn(
+          ack.thread_id,
+          turnId,
+          text,
+          sentAttachments,
+          sentTags
+        )
+        return true
+      }
+      conversationStore.setThreadId(ack.thread_id)
+      conversationStore.recordUser(turnId, text, sentAttachments, sentTags)
       conversationStore.startTurn(turnId)
       if (ack.workflow_id !== undefined) bindWorkflow(ack.workflow_id)
       try {
-        localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
+        storageSet(ack.thread_id)
       } catch (error) {
         // Thread persistence is best-effort; a quota failure must not fail
         // an accepted turn.
@@ -323,7 +363,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(THREAD_STORAGE_KEY)
+    storageRemove()
   }
 
   function listThreads() {
@@ -339,12 +379,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     conversationStore.setThreadId(threadId)
-    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
+    storageSet(threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent, true)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
 
   function onRaw(raw: unknown): void {
+    if (ownedGeneration !== sessionGeneration) return
     if (typeof raw !== 'object' || raw === null) return
     const type = (raw as { type?: unknown }).type
     if (typeof type !== 'string' || !isAgentEvent(type)) return
@@ -352,15 +393,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!parsed.success) {
       const messageId = (raw as { data?: { message_id?: unknown } }).data
         ?.message_id
+      const rawThreadId = (raw as { data?: { thread_id?: unknown } }).data
+        ?.thread_id
       if (type === 'agent_message_done') {
         if (
-          typeof messageId !== 'string' ||
-          messageId === conversationStore.activeTurnId
+          (rawThreadId === undefined ||
+            rawThreadId === conversationStore.threadId) &&
+          (typeof messageId !== 'string' ||
+            messageId === conversationStore.activeTurnId)
         ) {
           conversationStore.abortActiveTurn()
           pushError(i18n.global.t('agent.malformedEvent'))
-        } else {
-          conversationStore.settleBackgroundTurn(messageId)
+        } else if (
+          typeof rawThreadId === 'string' &&
+          typeof messageId === 'string'
+        ) {
+          conversationStore.settleBackgroundTurn(rawThreadId, messageId)
         }
       }
       console.warn('[agent] dropping malformed agent event', parsed.error)
@@ -395,6 +443,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function onStatus(live: boolean): void {
+    if (ownedGeneration !== sessionGeneration) return
     if (live) return
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()

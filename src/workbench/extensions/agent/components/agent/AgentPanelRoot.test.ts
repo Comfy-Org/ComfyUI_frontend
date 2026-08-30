@@ -27,6 +27,11 @@ describe('AgentPanelRoot', () => {
   it('titles the panel with a heading the dock landmark can reference', () => {
     renderRoot()
 
+    expect(screen.getByTestId('agent-panel-root')).toHaveAttribute(
+      'id',
+      'agent-panel-root'
+    )
+
     const heading = screen.getByRole('heading', {
       name: enMessages.agent.title
     })

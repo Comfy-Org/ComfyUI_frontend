@@ -9,6 +9,8 @@
 import { BATCHABLE_OPS } from '@comfyorg/comfy-multi-player'
 import type { Actor, Op, Stamp } from '@comfyorg/comfy-multi-player'
 
+import { createUuidv4 } from '@/utils/uuid'
+
 import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256
@@ -18,20 +20,32 @@ export interface MintContext {
   actor: Actor
   /** Doc version the ops are minted against (`base_version` on every op). */
   baseVersion: number
+  /** Optional sender-owned monotonic identity source for same-stamp writes. */
+  nextOpId?: () => string
 }
 
 /** uuid4 hex: 32 lowercase `[0-9a-f]` chars (vocabulary §8.2). */
 export function mintOpId(): string {
-  return crypto.randomUUID().replaceAll('-', '')
+  return createUuidv4().replaceAll('-', '')
+}
+
+/**
+ * A sender-local sequence in the high half makes later operations from the
+ * same actor sort after earlier operations when their base version ties. The
+ * random low half keeps identities disjoint across sender lifetimes.
+ */
+export function mintOrderedOpId(sequence: number): string {
+  const order = sequence.toString(16).padStart(16, '0')
+  return `${order}${mintOpId().slice(16)}`
 }
 
 function withEnvelope<T extends GraphOperation>(
   operation: T,
-  { actor, baseVersion }: MintContext
+  { actor, baseVersion, nextOpId }: MintContext
 ): T & { op_id: string; actor: Actor; base_version: number; stamp: Stamp } {
   return {
     ...operation,
-    op_id: mintOpId(),
+    op_id: nextOpId?.() ?? mintOpId(),
     actor,
     base_version: baseVersion,
     stamp: [baseVersion, actor]

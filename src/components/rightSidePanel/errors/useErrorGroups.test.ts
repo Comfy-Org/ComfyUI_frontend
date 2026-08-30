@@ -37,6 +37,7 @@ vi.mock('@/platform/distribution/types', () => ({
 const promptErrorTitleSeeds = vi.hoisted(
   () =>
     ({
+      agent_api_failed: 'seeded agent_api_failed title',
       op_rejected: 'seeded op_rejected title',
       prefix_abort: 'seeded prefix_abort title',
       guard_trip: 'seeded guard_trip title',
@@ -80,6 +81,8 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
+    'errorCatalog.promptErrors.agent_api_failed.desc':
+      'Comfy Agent hit a server error. Try again.',
     'errorCatalog.promptErrors.apply_failed.desc':
       'An agent edit could not be applied to the workflow document.',
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',

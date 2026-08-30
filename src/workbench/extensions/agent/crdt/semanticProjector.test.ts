@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { toNodeId } from '@/types/nodeId'
+
+const reportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 import { NODES_KEY, WIDGETS_KEY } from './docSchema'
 import type { GraphMutator, MutationBatch } from './graphMutations'
@@ -99,6 +102,9 @@ describe('SemanticProjector', () => {
     const projector = new SemanticProjector(failingMutator)
 
     expect(() => projector.project(doc)).toThrow()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_semantic_projection_failure'
+    })
 
     // The snapshot was NOT advanced past the failed batch: the retry
     // re-derives the same delta instead of diffing to zero mutations and

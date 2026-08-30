@@ -4764,6 +4764,10 @@
         "title": "Prompt validation failed",
         "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
       },
+      "agent_api_failed": {
+        "title": "Comfy Agent error",
+        "desc": "Comfy Agent hit a server error. Try again."
+      },
       "op_rejected": {
         "title": "Agent edit rejected",
         "desc": "The workflow document refused an agent edit. The canvas and the shared document may briefly differ until the next update."
@@ -5084,39 +5088,21 @@
         }
       },
       "nudge": {
-        "title": "Your first output. Here's what's next.",
-        "body": "Each one starts from the image you just made.",
-        "animate": {
-          "title": "Animate it",
-          "detail": "Image to video · 5s"
+        "ran": {
+          "title": "That was one of hundreds",
+          "body": "You just made your first. Explore what else you can build."
         },
-        "upscale": {
-          "title": "Upscale it",
-          "detail": "Same image, more detail",
-          "badge": "4x"
-        },
-        "restyle": {
-          "title": "Restyle with Nano Banana",
-          "detail": "Partner model · Any paid plan"
-        },
-        "fallback": {
+        "noTour": {
           "title": "Hundreds more where that came from",
           "body": "Browse the templates and pick something to build."
         },
-        "loadFailed": "That template couldn't be loaded. Please try again.",
-        "explore": "Browse all templates"
+        "dismiss": "Not now",
+        "explore": "Explore templates"
       }
     }
   },
   "agent": {
     "askComfyAgent": "Ask Comfy Agent",
-    "historyYesterday": "Yesterday",
-    "historyToday": "Today",
-    "historyEmpty": "No conversations yet",
-    "historyEarlier": "Earlier",
-    "historyCurrent": "Current",
-    "history": "Chat History",
-    "backToPreviousChat": "Back to previous chat",
     "title": "Comfy Agent",
     "loadFailed": "The agent panel failed to load.",
     "malformedEvent": "The agent sent an event this panel could not read",
@@ -5134,7 +5120,6 @@
     "toolSavedPreference": "Saved a preference",
     "toolForgotPreference": "Forgot a preference",
     "copyMarkdown": "Copy as markdown",
-    "untitledChat": "Untitled",
     "downloadAssets": "Download assets",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
@@ -5149,7 +5134,6 @@
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
     "changeWorkflowForChat": "Change the workflow for this chat",
-    "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
     "chooseWorkflowForChat": "Choose a workflow for this chat",
     "credits": "credits",
@@ -5179,6 +5163,15 @@
     "send": "Send",
     "stop": "Stop",
     "switchWorkflow": "Switch workflow",
-    "uploading": "Uploading"
+    "uploading": "Uploading",
+    "history": "Chat History",
+    "historyCurrent": "Current",
+    "historyToday": "Today",
+    "historyYesterday": "Yesterday",
+    "historyEarlier": "Earlier",
+    "historyEmpty": "No conversations yet",
+    "untitledChat": "Untitled",
+    "chatOptions": "Chat options",
+    "backToPreviousChat": "Back to previous chat"
   }
 }

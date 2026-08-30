@@ -1,6 +1,19 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
+
+function isTrustedGcsUrl(location: string | undefined): location is string {
+  if (!location) return false
+  try {
+    const url = new URL(location)
+    return (
+      url.protocol === 'https:' && url.hostname === 'storage.googleapis.com'
+    )
+  } catch {
+    return false
+  }
+}
 
 /**
  * Dev-only (cloud distribution): the ComfyUI proxy answers media requests
@@ -15,7 +28,7 @@ export function handleGcsRedirect(
   const location = proxyRes.headers.location
   const isGcsRedirect =
     proxyRes.statusCode === 302 &&
-    location?.includes('storage.googleapis.com') &&
+    isTrustedGcsUrl(location) &&
     proxyRes.headers.via?.includes('google')
 
   // Not a GCS redirect - pass through normally
@@ -35,7 +48,10 @@ export function handleGcsRedirect(
   // are forwarded and the partial-content response relayed so ranged reads
   // behave like production, where the browser talks to GCS directly.
   const rangeHeader = req.headers.range
-  fetch(location, rangeHeader ? { headers: { range: rangeHeader } } : undefined)
+  fetch(location, {
+    headers: rangeHeader ? { range: rangeHeader } : undefined,
+    redirect: 'manual'
+  })
     .then(async (gcsResponse) => {
       if (!gcsResponse.body) {
         res.statusCode = 500
@@ -50,14 +66,17 @@ export function handleGcsRedirect(
         gcsResponse.headers.get('content-type') || 'application/octet-stream'
       )
 
-      for (const header of [
-        'content-length',
+      const responseHeaders = [
+        ...(gcsResponse.headers.has('content-encoding')
+          ? []
+          : ['content-length']),
         'content-range',
         'accept-ranges',
         'cache-control',
         'etag',
         'last-modified'
-      ]) {
+      ]
+      for (const header of responseHeaders) {
         const value = gcsResponse.headers.get(header)
         if (value) {
           res.setHeader(header, value)
@@ -66,11 +85,11 @@ export function handleGcsRedirect(
 
       // Convert Web ReadableStream to Node.js stream and pipe to client
       const readable = Readable.fromWeb(gcsResponse.body as NodeReadableStream)
-      readable.pipe(res)
+      await pipeline(readable, res)
     })
     .catch((error) => {
       console.error('Error fetching from GCS:', error)
-      res.statusCode = 500
-      res.end('Error fetching media')
+      if (!res.headersSent) res.statusCode = 500
+      if (!res.writableEnded && !res.destroyed) res.end('Error fetching media')
     })
 }

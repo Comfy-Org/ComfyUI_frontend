@@ -137,13 +137,18 @@ describe('Composer', () => {
 
   it('shows Stop instead of a spinner while submitting and emits stop', async () => {
     const { emitted } = mount({ submitting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'keep this{Enter}')
+    expect(emitted().stop).toHaveLength(1)
+    expect(emitted().send).toBeUndefined()
+    expect(box).toHaveValue('keep this')
     const stop = screen.getByRole('button', { name: 'Stop' })
     await userEvent.click(stop)
-    expect(emitted().stop).toHaveLength(1)
+    expect(emitted().stop).toHaveLength(2)
     expect(emitted().send).toBeUndefined()
   })
 
-  describe('run permissions popover', () => {
+  describe.skip('run permissions popover pending enforced API support', () => {
     beforeEach(() => {
       localStorage.clear()
     })
@@ -180,7 +185,7 @@ describe('Composer', () => {
       expect(save).toBeEnabled()
       await userEvent.click(save)
 
-      expect(store.mode).toBe('auto-limit')
+      expect(store.mode).toBe('auto_limited')
       expect(store.creditLimit).toBe(500)
       expect(
         screen.queryByText('Choose when the agent needs your consent')
@@ -193,7 +198,7 @@ describe('Composer', () => {
     it('keeps Save disabled while the limit draft is invalid', async () => {
       mount()
       const store = useAgentRunModeStore()
-      store.save('auto-limit', 450)
+      await store.save('auto_limited', 450)
 
       await userEvent.click(
         await screen.findByRole('button', { name: 'Auto (limited)' })
@@ -209,7 +214,7 @@ describe('Composer', () => {
     it('enables Save when only the credit limit changes', async () => {
       mount()
       const store = useAgentRunModeStore()
-      store.save('auto-limit', 450)
+      await store.save('auto_limited', 450)
 
       await userEvent.click(
         await screen.findByRole('button', { name: 'Auto (limited)' })
@@ -226,9 +231,9 @@ describe('Composer', () => {
       expect(store.creditLimit).toBe(460)
     })
 
-    it('keeps unlimited auto mode distinct from limited auto mode', () => {
+    it('keeps unlimited auto mode distinct from limited auto mode', async () => {
       const store = useAgentRunModeStore()
-      store.save('auto', 450)
+      await store.save('auto', null)
 
       mount()
 
@@ -239,13 +244,16 @@ describe('Composer', () => {
     })
 
     it.for([
-      ['ask', 'Ask', 'Ask for permission'],
+      ['ask_approval', 'Ask', 'Ask for permission'],
       ['auto', 'Auto', 'Run workflow without permission'],
-      ['auto-limit', 'Auto (limited)', 'Ask when credit limit is reached']
+      ['auto_limited', 'Auto (limited)', 'Ask when credit limit is reached']
     ] as const)(
       'shows the %s mode tooltip copy',
       async ([mode, triggerName, tooltipCopy]) => {
-        useAgentRunModeStore().save(mode, 450)
+        await useAgentRunModeStore().save(
+          mode,
+          mode === 'auto_limited' ? 450 : null
+        )
         mount()
 
         await userEvent.hover(screen.getByRole('button', { name: triggerName }))
@@ -265,13 +273,23 @@ describe('Composer', () => {
         await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
       await userEvent.keyboard('{Escape}')
-      expect(store.mode).toBe('ask')
+      expect(store.mode).toBe('ask_approval')
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       expect(
         await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
       ).toBeChecked()
     })
+  })
+
+  it('[12-T7 regression] hides unenforced run-mode promises', () => {
+    mount()
+    expect(
+      screen.queryByRole('button', { name: 'Ask' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Choose when the agent needs your consent')
+    ).not.toBeInTheDocument()
   })
 
   describe('typed @ mention', () => {

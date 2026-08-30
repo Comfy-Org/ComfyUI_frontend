@@ -17,6 +17,7 @@ import {
   getAssetDisplayName,
   getAssetUrlFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -26,7 +27,6 @@ import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
-import RunModePopover from './composer/RunModePopover.vue'
 import AgentTooltip from './AgentTooltip.vue'
 
 const {
@@ -73,6 +73,7 @@ const mentionNodes = computed(() => {
   )
 })
 const mentionAssets = ref<AssetItem[]>([])
+let mentionAssetsGeneration = 0
 function loadMentionNodes(): void {
   graphNodes.value = getMentionNodes().toSorted((a, b) =>
     a.title.localeCompare(b.title)
@@ -80,12 +81,16 @@ function loadMentionNodes(): void {
 }
 
 async function loadMentionAssets(): Promise<void> {
+  const generation = ++mentionAssetsGeneration
   try {
-    mentionAssets.value = (await getMentionAssets()).toSorted((a, b) =>
+    const assets = (await getMentionAssets()).toSorted((a, b) =>
       getAssetDisplayName(a).localeCompare(getAssetDisplayName(b))
     )
-  } catch {
+    if (generation === mentionAssetsGeneration) mentionAssets.value = assets
+  } catch (error) {
+    if (generation !== mentionAssetsGeneration) return
     mentionAssets.value = []
+    reportError(error, { errorType: 'agent_mention_assets_load_failure' })
   }
 }
 
@@ -146,6 +151,12 @@ const mentionMatches = computed<MentionMatch[]>(() => {
 })
 
 const mentionVisible = computed(() => mentionMatches.value.length > 0)
+watch(mentionMatches, (matches) => {
+  mentionActive.value = Math.max(
+    0,
+    Math.min(mentionActive.value, matches.length - 1)
+  )
+})
 
 function duplicatedTitles(nodes: SelectedNode[]): Set<string> {
   const seen = new Set<string>()
@@ -241,7 +252,8 @@ function onComposerKeydown(event: KeyboardEvent): void {
     }
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault()
-      pickMention(matches[mentionActive.value])
+      const selected = matches[mentionActive.value]
+      if (selected) pickMention(selected)
       return
     }
     if (event.key === 'Escape') {
@@ -281,7 +293,7 @@ const placeholderHint = computed(() => {
 
 const composer = useComposer({
   onSend: (text, attachments) => emit('send', text, attachments),
-  isStreaming: () => streaming,
+  isStreaming: () => streaming || submitting,
   onStop: () => emit('stop')
 })
 
@@ -550,7 +562,6 @@ defineExpose({
         </DropdownMenuRoot>
 
         <div class="flex items-center gap-1">
-          <RunModePopover />
           <AgentTooltip :label="primaryActionTooltip" :disabled="running">
             <button
               type="button"

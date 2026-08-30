@@ -444,6 +444,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodeOutputs.value = { ...parsedOutputs }
   }
 
+  function setOutputFromLegacy(
+    id: string,
+    output: ExecutedWsMessage['output']
+  ): void {
+    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id) ?? id
+    nodeOutputs.value[locatorId] = { ...output }
+  }
+
+  function removeOutputFromLegacy(id: string): void {
+    const locatorId = executionIdToNodeLocatorId(app.rootGraph, id) ?? id
+    delete nodeOutputs.value[locatorId]
+  }
+
   function restoreOutputs(
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
@@ -513,6 +526,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     removeNodeOutputsForNode,
     snapshotOutputs,
     replaceOutputsFromLegacy,
+    setOutputFromLegacy,
+    removeOutputFromLegacy,
     restoreOutputs,
     resetAllOutputsAndPreviews,
 

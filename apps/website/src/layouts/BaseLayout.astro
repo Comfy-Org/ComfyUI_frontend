@@ -7,6 +7,7 @@ import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { isNoindexPathname } from '../config/indexing'
+import { markdownTwinPath } from '../lib/markdown-twin-path'
 import { isHrefActive } from '../composables/useCurrentPath'
 import {
   BANNER_DISMISS_ATTR,
@@ -110,6 +111,15 @@ const structuredData = shouldNoindex
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+    {
+      !shouldNoindex && (
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href={markdownTwinPath(canonicalURL.pathname)}
+        />
+      )
+    }
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 

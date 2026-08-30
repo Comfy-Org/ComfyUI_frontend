@@ -21,6 +21,12 @@ export interface DocSubscribed {
   message?: string
 }
 
+interface DocOpFailure {
+  op_id: string
+  code: string
+  message: string
+}
+
 interface DocOpsResult {
   workflowId: string
   ok: boolean
@@ -30,10 +36,10 @@ interface DocOpsResult {
   code?: string
   message?: string
   /**
-   * PoC diagnostics: the batch's failure, forwarded verbatim. The wire type is
-   * a single object (`DocOpFailure {op_id, code, message}`), not an array.
+   * PoC diagnostics: the batch's failure. The wire type is a single object,
+   * not an array.
    */
-  failed?: unknown
+  failed?: DocOpFailure
 }
 
 interface DocAwareness {
@@ -129,6 +135,23 @@ function parseRecord(value: unknown): Record<string, unknown> | null {
     : null
 }
 
+function parseDocOpFailure(value: unknown): DocOpFailure | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return null
+  const failure = value as Record<string, unknown>
+  if (
+    typeof failure.op_id !== 'string' ||
+    typeof failure.code !== 'string' ||
+    typeof failure.message !== 'string'
+  )
+    return null
+  return {
+    op_id: failure.op_id,
+    code: failure.code,
+    message: failure.message
+  }
+}
+
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   if (typeof value !== 'object' || value === null) return null
   const frame = value as { type?: unknown; data?: unknown }
@@ -183,6 +206,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   }
 
   if (frame.type === 'doc_ops_result' && typeof data.ok === 'boolean') {
+    const failed = parseDocOpFailure(data.failed)
     return {
       type: frame.type,
       data: {
@@ -201,8 +225,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         ...(typeof data.seq === 'number' && { seq: data.seq }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message }),
-        // PoC diagnostics: surface the failure verbatim (object, not array).
-        ...(data.failed != null && { failed: data.failed })
+        ...(failed !== null && { failed })
       }
     }
   }

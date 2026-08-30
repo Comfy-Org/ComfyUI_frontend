@@ -235,6 +235,19 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('defaults person_profiles when remote config contains null', async () => {
+      hoisted.refs.remoteConfig.value = {
+        posthog_config: { person_profiles: null }
+      }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'identified_only' })
+      )
+    })
+
     it('registers onUserResolved callback after init', async () => {
       createProvider()
       await vi.dynamicImportSettled()

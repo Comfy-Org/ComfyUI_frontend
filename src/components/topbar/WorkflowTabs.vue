@@ -24,19 +24,22 @@
       pt:bar-x="h-1"
     >
       <SelectButton
+        :key="selectionRevision"
         class="workflow-tabs bg-transparent"
         :class="props.class"
         :model-value="selectedWorkflow"
         :options="options"
         option-label="label"
         data-key="value"
-        @update:model-value="onWorkflowChange"
+        :allow-empty="false"
+        @click="onWorkflowClick"
       >
         <template #option="{ option, index }">
           <WorkflowTab
             :workflow-option="option"
             :is-first="index === 0"
             :is-last="index === options.length - 1"
+            :data-workflow-path="option.value"
             @click.middle="onCloseWorkflow(option)"
             @close-to-left="closeWorkflows(options.slice(0, index))"
             @close-to-right="closeWorkflows(options.slice(index + 1))"
@@ -192,6 +195,7 @@ const containerRef = ref<HTMLElement | null>(null)
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
+const selectionRevision = ref(0)
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -207,17 +211,26 @@ const selectedWorkflow = computed<WorkflowOption | null>(() =>
     : null
 )
 
-const onWorkflowChange = async (option: WorkflowOption) => {
-  // Prevent unselecting the current workflow
-  if (!option) {
-    return
-  }
-  // Prevent reloading the current workflow
-  if (selectedWorkflow.value?.value === option.value) {
-    return
-  }
+const onWorkflowClick = async (event: MouseEvent) => {
+  const target = event.target
+  if (!(target instanceof HTMLElement)) return
 
-  await workflowService.openWorkflow(option.workflow)
+  const workflowElement =
+    target.closest<HTMLElement>('[data-workflow-path]') ??
+    target
+      .closest<HTMLButtonElement>('button')
+      ?.querySelector<HTMLElement>('[data-workflow-path]')
+  const path = workflowElement?.dataset.workflowPath
+  const option = options.value.find(({ value }) => value === path)
+  if (!option) return
+
+  try {
+    await workflowService.openWorkflow(option.workflow)
+  } catch (error) {
+    selectionRevision.value++
+    await nextTick()
+    throw error
+  }
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {

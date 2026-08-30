@@ -31,6 +31,9 @@ describe('useFocusNode', () => {
     canvas.graph = undefined
     canvas.subgraph = undefined
     canvas.setGraph.mockReset()
+    canvas.setGraph.mockImplementation((graph) => {
+      canvas.graph = graph
+    })
     canvas.animateToBounds.mockReset()
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       callback(0)
@@ -112,6 +115,24 @@ describe('useFocusNode', () => {
 
     // The switch itself ran (the path is not vacuous) - only framing stops.
     expect(canvas.setGraph).toHaveBeenCalled()
+    expect(canvas.animateToBounds).not.toHaveBeenCalled()
+  })
+
+  it('does not frame when another graph replaces the target during navigation', async () => {
+    const graph = { isRootGraph: false } as LGraph
+    const replacement = { isRootGraph: false } as LGraph
+    const node = {
+      graph,
+      boundingRect: [1, 2, 3, 4]
+    } as unknown as LGraphNode
+
+    const pending = useFocusNode().focusNode(
+      'node-1',
+      new Map([['node-1', node]])
+    )
+    canvas.graph = replacement
+    await pending
+
     expect(canvas.animateToBounds).not.toHaveBeenCalled()
   })
 })

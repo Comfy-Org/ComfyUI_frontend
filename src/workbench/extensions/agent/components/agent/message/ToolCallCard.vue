@@ -31,22 +31,22 @@ const label = computed(() => {
 
 const glyph = computed(() => toolGlyph(name, state, ok))
 
-const glyphColor = 'text-agent-fg-subtle'
+const glyphColor = 'text-muted-foreground'
 </script>
 
 <template>
   <div
     role="listitem"
-    class="text-agent-fg-muted ml-2 flex h-8 items-center gap-2 px-2 text-sm leading-none"
+    class="ml-2 flex h-8 items-center gap-2 px-2 text-sm leading-none text-muted-foreground"
   >
     <span :class="cn('size-4 shrink-0', glyph, glyphColor)" />
     <span class="truncate text-sm leading-none">{{ label }}</span>
-    <span v-if="count > 1" class="text-agent-fg-subtle text-xs"
+    <span v-if="count > 1" class="text-xs text-muted-foreground"
       >×{{ count }}</span
     >
     <span
       v-if="durationMs !== undefined"
-      class="text-agent-fg-subtle ml-auto shrink-0 font-mono text-xs/4"
+      class="ml-auto shrink-0 font-mono text-xs/4 text-muted-foreground"
       >{{ (durationMs / 1000).toFixed(1) }}s</span
     >
   </div>

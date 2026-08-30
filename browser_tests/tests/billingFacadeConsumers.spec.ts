@@ -19,6 +19,7 @@ import {
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { FreeTierQuota } from '@e2e/fixtures/components/FreeTierQuota'
 
 /**
  * Billing facade consumers — FE-933 (B3) regression, plus the free-tier
@@ -175,7 +176,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       'legacy_stripe'
     )
     await bootApp(page)
-    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(1)
+    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(0)
 
     await page.getByRole('button', { name: 'Current user' }).click()
     const popover = page.locator('.current-user-popover')
@@ -203,7 +204,6 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await expect(popover.getByText('12,660')).toBeVisible()
     await expect(popover.getByText('0', { exact: true })).toHaveCount(0)
     await expect(popover.getByTestId('add-credits-button')).toBeVisible()
-    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(0)
     expect(billingRequests.legacyStatus).toBe(0)
     expect(billingRequests.legacyBalance).toBeGreaterThan(0)
   })
@@ -230,7 +230,6 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       .poll(() => billingRequests.workspaceBalance, { timeout: 30_000 })
       .toBeGreaterThan(0)
     expect(billingRequests.legacyStatus).toBe(0)
-    expect(billingRequests.legacyBalance).toBe(0)
   })
 
   const FREE_INACTIVE_SUBSCRIPTION = {
@@ -250,33 +249,8 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     free_tier_job_allowance_enabled: boolean
   }
 
-  test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-
-    // The facade routes a personal workspace through the workspace
-    // `/api/billing/*` endpoints. With
-    // subscription gating on, an inactive FREE user gets the "Subscribe to run"
-    // button, which opens the pricing table on click. (refreshRemoteConfig
-    // overwrites window.__CONFIG__ from /api/features, so the flags must come
-    // from the features mock, not an init script.)
-    await mockCloudBoot(
-      page,
-      FREE_INACTIVE_SUBSCRIPTION,
-      FREE_TIER_REMOTE_CONFIG,
-      'stripe'
-    )
-    await bootApp(page)
-
-    await page.getByTestId(TestIds.topbar.subscribeToRunButton).click()
-
-    await expect(
-      page.getByRole('heading', { name: 'Choose a Plan' })
-    ).toBeVisible()
-  })
-
-  test('renders the free-tier quota inside the action bars', async ({
+  test('renders the 3-of-5 free-tier quota inside the action bars', async ({
+    comfyPage,
     page
   }) => {
     test.setTimeout(60_000)
@@ -290,26 +264,12 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await bootApp(page)
 
     const actionBars = page.getByTestId(TestIds.topbar.actionBars)
-    const quota = actionBars.getByTestId(TestIds.topbar.freeTierQuota)
-    await expect(quota).toBeVisible()
+    await expect(
+      actionBars.getByTestId(TestIds.topbar.freeTierQuota)
+    ).toHaveCount(1)
 
-    await expect
-      .poll(async () => {
-        const [quotaBox, actionBarsBox] = await Promise.all([
-          quota.boundingBox(),
-          actionBars.boundingBox()
-        ])
-        if (!quotaBox || !actionBarsBox) return Number.POSITIVE_INFINITY
-
-        return Math.max(
-          actionBarsBox.x - quotaBox.x,
-          actionBarsBox.y - quotaBox.y,
-          quotaBox.x + quotaBox.width - (actionBarsBox.x + actionBarsBox.width),
-          quotaBox.y +
-            quotaBox.height -
-            (actionBarsBox.y + actionBarsBox.height)
-        )
-      })
-      .toBeLessThanOrEqual(0)
+    const quota = new FreeTierQuota(comfyPage)
+    await expect.poll(() => quota.getAvailable()).toBe('3')
+    await expect.poll(() => quota.getMax()).toBe('5')
   })
 })

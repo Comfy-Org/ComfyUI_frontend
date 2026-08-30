@@ -161,4 +161,22 @@ describe('useSelectionOperations selection-only guards', () => {
     expect(selectedItem.title).toBe('Renamed')
     expect(setDirty).toHaveBeenCalledWith(true, true)
   })
+
+  it('does not rename when picking starts while the prompt is open', async () => {
+    const { selectedItem, setDirty } = stubCanvas(false)
+    let finishPrompt: (value: string) => void = () => {}
+    prompt.mockReturnValue(
+      new Promise((resolve) => {
+        finishPrompt = resolve
+      })
+    )
+
+    const pending = useSelectionOperations().renameSelection()
+    Reflect.set(app.canvas, 'selectOnly', true)
+    finishPrompt('Renamed')
+    await pending
+
+    expect(selectedItem.title).toBe('Original')
+    expect(setDirty).not.toHaveBeenCalled()
+  })
 })
