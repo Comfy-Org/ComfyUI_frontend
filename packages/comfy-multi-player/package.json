@@ -25,6 +25,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
     "typecheck": "npm run build && tsc -p tsconfig.test.json && tsc -p test/types/tsconfig.json",
     "prepack": "npm run build",
     "prepare": "npm run build",
