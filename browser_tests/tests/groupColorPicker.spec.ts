@@ -78,7 +78,7 @@ test.describe(
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
 
       await comfyPage.page.getByText('Color', { exact: true }).click()
       const redSwatch = comfyPage.page.getByTitle('Red')
@@ -110,7 +110,7 @@ test.describe(
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
       await comfyPage.page.getByText('Color', { exact: true }).click()
       await expect(redSwatch.first()).toBeVisible()
 
