@@ -1,9 +1,5 @@
 import type { LiteGraphGlobal } from './LiteGraphGlobal'
 
-declare global {
-  var __COMFY_LITEGRAPH_INSTANCE__: LiteGraphGlobal | undefined
-}
-
 /**
  * Late-bound holder for the {@link LiteGraphGlobal} singleton.
  *
@@ -20,11 +16,10 @@ let instance: LiteGraphGlobal | null = null
 
 export function registerLiteGraphInstance(value: LiteGraphGlobal): void {
   instance = value
-  globalThis.__COMFY_LITEGRAPH_INSTANCE__ = value
 }
 
 export function clearRegisteredLiteGraphTypes(): void {
-  globalThis.__COMFY_LITEGRAPH_INSTANCE__?.clearRegisteredTypes()
+  instance?.clearRegisteredTypes()
 }
 
 export function litegraph(): LiteGraphGlobal {
