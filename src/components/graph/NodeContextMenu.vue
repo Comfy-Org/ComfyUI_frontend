@@ -157,18 +157,12 @@ function convertToMenuItem(option: MenuOption): MenuItem {
         getCurrentShape()?.localizedName === sub.label,
       isShapeSubmenuItem: Boolean(option.isShapePicker),
       disabled: sub.disabled,
-      command: () => {
-        sub.action()
-        hide()
-      }
+      command: sub.action
     }))
   }
 
   if (!option.hasSubmenu && option.action) {
-    item.command = () => {
-      option.action?.()
-      hide()
-    }
+    item.command = option.action
   }
 
   return item
