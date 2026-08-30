@@ -63,21 +63,35 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
       .click()
     await page.getByRole('button', { name: 'Create', exact: true }).click()
     await expect(page.getByTestId('custom-node-workbench')).toBeVisible()
-
-    await page
-      .getByRole('textbox', {
-        name: 'For example: add a color input and use it for the dark checkerboard squares'
+    await expect(page.getByTestId('node-agent-start')).toContainText(
+      'I can build new nodes, change behavior, answer questions about this pack, and test and debug your changes.'
+    )
+    await expect(
+      page.getByRole('button', {
+        name: 'Add a color input and use it for the dark checkerboard squares'
       })
-      .fill('Add a configurable checkerboard color and test it')
-    await page
-      .getByRole('button', { name: 'Propose changes', exact: true })
-      .click()
+    ).toBeVisible()
 
+    const prompt = page.getByRole('textbox', {
+      name: 'Describe what you want to build or change'
+    })
+    await expect(prompt).toBeVisible()
+    await prompt.fill('Add a configurable checkerboard color and test it')
+    await page.getByRole('button', { name: 'Send', exact: true }).click()
+
+    await expect(page.getByTestId('node-agent-start')).toBeHidden()
+    await expect(page.getByTestId('node-agent-conversation')).toContainText(
+      'Add a configurable checkerboard color and test it'
+    )
+    await expect(prompt).toBeVisible()
     const testResult = page.getByTestId('node-agent-test-result')
     await expect(testResult).toContainText('Backend test passed')
-    await expect(testResult).toContainText(
+    const testDetail = testResult.getByText(
       'Ephemeral test workflow completed with 1 output.'
     )
+    await expect(testDetail).toBeHidden()
+    await testResult.getByText('Backend test passed').click()
+    await expect(testDetail).toBeVisible()
     await expect(testResult).toContainText('Completed in 2184 ms')
     await expect(testResult).toContainText('Phase: complete')
     await expect(testResult).toContainText('Sandbox: seatbelt')

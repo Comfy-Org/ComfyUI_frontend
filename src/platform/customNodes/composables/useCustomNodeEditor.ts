@@ -383,7 +383,8 @@ export function useCustomNodeEditor() {
 
   const createAgentProposal = async (
     id: string,
-    instruction: string
+    instruction: string,
+    signal?: AbortSignal
   ): Promise<CustomNodeEditorProposalView> =>
     readProposal(
       await api.fetchApi(
@@ -391,7 +392,8 @@ export function useCustomNodeEditor() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ instruction: instruction.trim() })
+          body: JSON.stringify({ instruction: instruction.trim() }),
+          signal
         }
       )
     )

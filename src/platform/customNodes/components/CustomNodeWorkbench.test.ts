@@ -90,7 +90,13 @@ const i18n = createI18n({
             title: 'Node Agent',
             close: 'Close Node Agent',
             description: 'Describe the change.',
+            samplePrompt: 'Add a configurable checkerboard color',
             placeholder: 'Describe a node change',
+            send: 'Send',
+            stop: 'Stop',
+            stopped: 'Stopped.',
+            applied: 'Changes applied',
+            superseded: 'Replaced by a newer proposal',
             ask: 'Propose changes',
             working: 'Building and testing…',
             proposal: 'Proposed changes',
@@ -153,7 +159,8 @@ describe('CustomNodeWorkbench', () => {
     mocks.saveAll.mockReset().mockResolvedValue(undefined)
   })
 
-  it('opens the project editor with the Node Agent visible', () => {
+  it('opens with a minimal starter and persistent prompt composer', async () => {
+    const user = userEvent.setup()
     render(CustomNodeWorkbench, {
       props: {
         sessionId: 'session-1',
@@ -167,6 +174,20 @@ describe('CustomNodeWorkbench', () => {
     expect(
       screen.getByRole('complementary', { name: 'Node Agent' })
     ).toBeVisible()
+    expect(screen.getByText('Describe the change.')).toBeVisible()
+    const samplePrompt = screen.getByRole('button', {
+      name: 'Add a configurable checkerboard color'
+    })
+    const prompt = screen.getByRole('textbox', {
+      name: 'Describe a node change'
+    })
+    expect(samplePrompt).toBeVisible()
+    expect(prompt).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+
+    await user.click(samplePrompt)
+    expect(prompt).toHaveValue('Add a configurable checkerboard color')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
     expect(screen.queryByText(/Getting Started/i)).not.toBeInTheDocument()
   })
 
@@ -237,20 +258,32 @@ describe('CustomNodeWorkbench', () => {
       screen.getByRole('textbox', { name: 'Describe a node change' }),
       'Add a configurable color'
     )
-    await user.click(screen.getByRole('button', { name: 'Propose changes' }))
+    await user.click(screen.getByRole('button', { name: 'Send' }))
 
     await waitFor(() => {
       expect(mocks.saveAll).toHaveBeenCalledOnce()
       expect(mocks.createAgentProposal).toHaveBeenCalledWith(
         'session-1',
-        'Add a configurable color'
+        'Add a configurable color',
+        expect.any(AbortSignal)
       )
     })
     expect(mocks.saveAll.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.createAgentProposal.mock.invocationCallOrder[0]
     )
     expect(screen.getByText('Added a configurable color.')).toBeVisible()
+    expect(
+      screen.getByText('Add a configurable color', { exact: true })
+    ).toBeVisible()
+    expect(screen.queryByTestId('node-agent-start')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('textbox', { name: 'Describe a node change' })
+    ).toBeVisible()
     expect(screen.getByText('Backend test passed')).toBeVisible()
+    expect(
+      screen.getByText('Ephemeral test workflow completed with 1 output.')
+    ).not.toBeVisible()
+    await user.click(screen.getByText('Backend test passed'))
     expect(
       screen.getByText('Ephemeral test workflow completed with 1 output.')
     ).toBeVisible()
@@ -288,6 +321,7 @@ describe('CustomNodeWorkbench', () => {
       expect(mocks.replaceFiles).toHaveBeenCalledWith(appliedFiles)
     })
     expect(screen.getByTestId('custom-node-tree-editor')).toBeVisible()
+    expect(screen.getByText('Changes applied')).toBeVisible()
   })
 
   it('reviews structural Node Agent operations without showing an empty diff', async () => {
@@ -319,7 +353,7 @@ describe('CustomNodeWorkbench', () => {
       screen.getByRole('textbox', { name: 'Describe a node change' }),
       'Move the helper module'
     )
-    await user.click(screen.getByRole('button', { name: 'Propose changes' }))
+    await user.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(
       await screen.findAllByText(
@@ -381,7 +415,7 @@ describe('CustomNodeWorkbench', () => {
       screen.getByRole('textbox', { name: 'Describe a node change' }),
       'Break the draft'
     )
-    await user.click(screen.getByRole('button', { name: 'Propose changes' }))
+    await user.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(
       await screen.findByTestId('node-agent-python-error')
@@ -408,6 +442,102 @@ describe('CustomNodeWorkbench', () => {
       expect(readCustomNodeEditorState(key)).toMatchObject({ agentOpen: true })
     })
     expect(agent).toHaveAttribute('data-open', 'true')
+  })
+
+  it('replaces Send with Stop while the agent is working', async () => {
+    const user = userEvent.setup()
+    mocks.createAgentProposal.mockImplementation(
+      (_sessionId: string, _instruction: string, signal: AbortSignal) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            const error = new Error('Aborted')
+            error.name = 'AbortError'
+            reject(error)
+          })
+        })
+    )
+
+    render(CustomNodeWorkbench, {
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    await user.type(
+      screen.getByRole('textbox', { name: 'Describe a node change' }),
+      'Try a long-running change'
+    )
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    await user.click(await screen.findByRole('button', { name: 'Stop' }))
+
+    expect(await screen.findByText('Stopped.')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeVisible()
+    expect(mocks.reportError).not.toHaveBeenCalled()
+  })
+
+  it('keeps later prompts and agent work in one conversation', async () => {
+    const user = userEvent.setup()
+    mocks.createAgentProposal
+      .mockResolvedValueOnce({
+        id: 'proposal-1',
+        summary: 'Prepared the first change.',
+        changes: [
+          {
+            kind: 'modified',
+            path: 'README.md',
+            originalContent: 'before',
+            proposedContent: 'first'
+          }
+        ],
+        createdAt: '2026-08-29T12:00:00Z'
+      })
+      .mockResolvedValueOnce({
+        id: 'proposal-2',
+        summary: 'Refined the pending change.',
+        changes: [
+          {
+            kind: 'modified',
+            path: 'README.md',
+            originalContent: 'before',
+            proposedContent: 'refined'
+          }
+        ],
+        createdAt: '2026-08-29T12:01:00Z'
+      })
+
+    render(CustomNodeWorkbench, {
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
+      global: { plugins: [i18n] }
+    })
+    const prompt = screen.getByRole('textbox', {
+      name: 'Describe a node change'
+    })
+
+    await user.type(prompt, 'Build the first version')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    expect(await screen.findByText('Prepared the first change.')).toBeVisible()
+
+    await user.type(prompt, 'Now refine it')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    expect(await screen.findByText('Refined the pending change.')).toBeVisible()
+
+    const conversation = screen.getByTestId('node-agent-conversation')
+    expect(conversation).toHaveTextContent('Build the first version')
+    expect(conversation).toHaveTextContent('Prepared the first change.')
+    expect(conversation).toHaveTextContent('Now refine it')
+    expect(conversation).toHaveTextContent('Refined the pending change.')
+    expect(conversation).toHaveTextContent('Replaced by a newer proposal')
+    expect(
+      screen.getAllByRole('button', { name: 'Apply changes' })
+    ).toHaveLength(1)
+    expect(mocks.createAgentProposal).toHaveBeenCalledTimes(2)
   })
 
   it('moves the local editor state when the pack is renamed', async () => {

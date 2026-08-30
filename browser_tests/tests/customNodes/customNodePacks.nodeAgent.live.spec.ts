@@ -11,6 +11,7 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 const managerUrl =
   process.env.CUSTOM_NODE_MANAGER_URL ?? 'http://127.0.0.1:8096'
 const verificationLine = 'Live Node Agent verification.'
+const refinementLine = 'Conversation refinement verified.'
 
 interface EditorFilesResponse {
   files: Array<{ path: string; content: string }>
@@ -130,25 +131,44 @@ test.describe(
 
         await page
           .getByRole('textbox', {
-            name: 'For example: add a color input and use it for the dark checkerboard squares'
+            name: 'Describe what you want to build or change'
           })
           .fill(
             `Change only README.md by appending a new final line containing exactly: ${verificationLine} Do not alter node behavior. Use the existing packaged workflow and call the test_node tool before returning the proposal.`
           )
-        await page
-          .getByRole('button', { name: 'Propose changes', exact: true })
-          .click()
+        await page.getByRole('button', { name: 'Send', exact: true }).click()
 
-        const testResult = page.getByTestId('node-agent-test-result')
-        await expect(testResult).toContainText('Backend test passed', {
+        const firstTestResult = page.getByTestId('node-agent-test-result')
+        await expect(firstTestResult).toContainText('Backend test passed', {
           timeout: 360_000
         })
-        await expect(testResult).toContainText('Phase: complete')
-        await expect(testResult).toContainText('Sandbox: seatbelt')
+        await firstTestResult.getByText('Backend test passed').click()
+        await expect(firstTestResult).toContainText('Phase: complete')
+        await expect(firstTestResult).toContainText('Sandbox: seatbelt')
+
+        await page
+          .getByRole('textbox', {
+            name: 'Describe what you want to build or change'
+          })
+          .fill(
+            `Keep the pending README change and also append a final line containing exactly: ${refinementLine} Test the complete refined candidate before returning it.`
+          )
+        await page.getByRole('button', { name: 'Send', exact: true }).click()
+
+        const testResults = page.getByTestId('node-agent-test-result')
+        await expect(testResults).toHaveCount(2, { timeout: 360_000 })
+        const refinedTestResult = testResults.last()
+        await expect(refinedTestResult).toContainText('Backend test passed')
+        await refinedTestResult.getByText('Backend test passed').click()
+        await expect(refinedTestResult).toContainText('Phase: complete')
+        await expect(refinedTestResult).toContainText('Sandbox: seatbelt')
         await expect(
-          testResult.getByRole('img', {
+          refinedTestResult.getByRole('img', {
             name: 'Draft test preview for output 1'
           })
+        ).toBeVisible()
+        await expect(
+          page.getByText('Replaced by a newer proposal')
         ).toBeVisible()
         await expect(
           page.getByLabel('Node Agent proposed changes')
@@ -175,12 +195,19 @@ test.describe(
                 changed: applied.digest !== initial.digest,
                 containsVerification: applied.files
                   .find((file) => file.path === 'README.md')
-                  ?.content.includes(verificationLine)
+                  ?.content.includes(verificationLine),
+                containsRefinement: applied.files
+                  .find((file) => file.path === 'README.md')
+                  ?.content.includes(refinementLine)
               }
             },
             { timeout: 30_000 }
           )
-          .toEqual({ changed: true, containsVerification: true })
+          .toEqual({
+            changed: true,
+            containsVerification: true,
+            containsRefinement: true
+          })
       } finally {
         if (sessionId) {
           await request.delete(

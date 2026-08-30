@@ -287,7 +287,12 @@ describe('useCustomNodeEditor', () => {
       )
 
     const { createAgentProposal, applyAgentProposal } = useCustomNodeEditor()
-    const proposal = await createAgentProposal('session-1', ' Change it ')
+    const controller = new AbortController()
+    const proposal = await createAgentProposal(
+      'session-1',
+      ' Change it ',
+      controller.signal
+    )
     const applied = await applyAgentProposal('session-1', proposal.id)
 
     expect(proposal.changes[0].originalContent).toBe('# before\n')
@@ -324,7 +329,8 @@ describe('useCustomNodeEditor', () => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ instruction: 'Change it' })
+          body: JSON.stringify({ instruction: 'Change it' }),
+          signal: controller.signal
         }
       ],
       [
