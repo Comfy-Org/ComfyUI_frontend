@@ -35,9 +35,6 @@ const contentStyle = useModalLiftedZIndex(computed(() => true))
         :class="
           cn(
             'z-1700 max-w-96 rounded-md border border-node-component-tooltip-border bg-node-component-tooltip-surface px-3 py-2 text-xs/tight text-node-component-tooltip shadow-interface',
-            'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
-            'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2',
-            'data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
             className
           )
         "
