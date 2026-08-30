@@ -402,7 +402,8 @@
     "blueprints": "Blueprints",
     "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
-    "expandAll": "Expand all"
+    "expandAll": "Expand all",
+    "goToNodePrompt": "Enter a node ID"
   },
   "hdrViewer": {
     "title": "HDR Viewer",
@@ -685,7 +686,8 @@
     "Vertical": "Vertical",
     "new": "new",
     "deprecated": "deprecated",
-    "Extensions": "Extensions"
+    "Extensions": "Extensions",
+    "Go to Node": "Go to Node"
   },
   "icon": {
     "bookmark": "Bookmark",
@@ -2451,7 +2453,8 @@
     "failedToLoadHDRI": "Failed to load HDRI file",
     "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
     "failedToToggleGizmo": "Failed to toggle gizmo",
-    "failedToSetGizmoMode": "Failed to set gizmo mode"
+    "failedToSetGizmoMode": "Failed to set gizmo mode",
+    "nodeNotFound": "Node not found: {nodeId}"
   },
   "nodeBadge": {
     "partnerNodesCount": "Partner Nodes x {count}"
