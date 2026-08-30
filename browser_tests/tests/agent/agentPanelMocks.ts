@@ -236,7 +236,7 @@ type AgentFixtures = {
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
-  postedMessages: async (_fixtures, use) => {
+  postedMessages: async ({}, use) => {
     await use([])
   },
   page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
