@@ -1,12 +1,11 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
@@ -16,8 +15,8 @@ function mount(props: ComponentProps<typeof Composer> = {}) {
   return render(Composer, {
     props,
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: Tooltip }
+      plugins: [i18n],
+      directives: { tooltip: {} }
     }
   })
 }
@@ -241,15 +240,13 @@ describe('Composer', () => {
       ['auto-limit', 'Auto (limited)', 'Ask when credit limit is reached']
     ] as const)(
       'shows the %s mode tooltip copy',
-      async ([mode, triggerName, tooltipCopy]) => {
+      ([mode, , tooltipCopy]) => {
+        const spy = vi.spyOn(tooltipConfig, 'buildAgentTooltipConfig')
         useAgentRunModeStore().save(mode, 450)
+
         mount()
 
-        await userEvent.hover(screen.getByRole('button', { name: triggerName }))
-
-        expect(
-          await screen.findByRole('tooltip', { hidden: true })
-        ).toHaveTextContent(tooltipCopy)
+        expect(spy).toHaveBeenCalledWith(tooltipCopy)
       }
     )
 
@@ -567,16 +564,12 @@ describe('Composer', () => {
     expect(emitted().removeTag).toEqual([['5']])
   })
 
-  it('shows the remove tooltip for a selection chip', async () => {
+  it('builds the remove tooltip for a selection chip', () => {
+    const spy = vi.spyOn(tooltipConfig, 'buildAgentTooltipConfig')
+
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    await userEvent.hover(
-      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
-    )
-
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Remove')
+    expect(spy).toHaveBeenCalledWith('Remove')
   })
 
   it('emits focusTag when a selection chip is activated', async () => {

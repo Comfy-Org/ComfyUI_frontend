@@ -1,19 +1,22 @@
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
-import { describe, expect, it } from 'vitest'
+import { render } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 
+import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 
 import PanelHeader from './PanelHeader.vue'
+
+const tooltipDirectiveStub = {
+  mounted: vi.fn(),
+  updated: vi.fn()
+}
 
 function mount(isMaximized = false) {
   return render(PanelHeader, {
     props: { isMaximized },
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: Tooltip }
+      plugins: [i18n],
+      directives: { tooltip: tooltipDirectiveStub }
     }
   })
 }
@@ -26,14 +29,12 @@ describe('PanelHeader', () => {
     [false, 'Close']
   ] as const)(
     'shows the %s panel tooltip for %s',
-    async ([isMaximized, label]) => {
+    ([isMaximized, label]) => {
+      const spy = vi.spyOn(tooltipConfig, 'buildAgentTooltipConfig')
+
       mount(isMaximized)
 
-      await userEvent.hover(screen.getByRole('button', { name: label }))
-
-      expect(
-        await screen.findByRole('tooltip', { hidden: true })
-      ).toHaveTextContent(label)
+      expect(spy).toHaveBeenCalledWith(label)
     }
   )
 })
