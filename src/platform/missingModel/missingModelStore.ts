@@ -5,7 +5,7 @@ import { t } from '@/i18n'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -283,10 +283,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
       if (isAbortError(error)) return
 
       console.error('Failed to refresh missing models:', error)
-      useToastStore().add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('rightSidePanel.missingModels.refreshFailed')
+      useToast().error(t('g.error'), {
+        description: t('rightSidePanel.missingModels.refreshFailed')
       })
     } finally {
       isRefreshingMissingModels.value = false

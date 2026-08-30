@@ -17,7 +17,7 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import {
   zEmbeddingsResponse,
@@ -1587,30 +1587,19 @@ export class ComfyApi extends EventTarget {
 
       if (res.status === 200) {
         if (options.freeExecutionCache) {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models and Execution Cache have been cleared.',
-            life: 3000
+          useToast().success('Models and Execution Cache have been cleared.', {
+            duration: 3000
           })
         } else {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models have been unloaded.',
-            life: 3000
-          })
+          useToast().success('Models have been unloaded.', { duration: 3000 })
         }
       } else {
-        useToastStore().add({
-          severity: 'error',
-          summary:
-            'Unloading of models failed. Installed ComfyUI may be an outdated version.'
-        })
+        useToast().error(
+          'Unloading of models failed. Installed ComfyUI may be an outdated version.'
+        )
       }
     } catch (error) {
-      useToastStore().add({
-        severity: 'error',
-        summary: 'An error occurred while trying to unload models.'
-      })
+      useToast().error('An error occurred while trying to unload models.')
     }
   }
 

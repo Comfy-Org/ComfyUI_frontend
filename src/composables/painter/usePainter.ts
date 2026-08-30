@@ -13,7 +13,7 @@ import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@/extensions/core/maskeditor/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -36,7 +36,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const { canvasEl, cursorEl, modelValue } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
 
   const isDirty = ref(false)
 
@@ -645,7 +645,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: 0,
         statusText: e instanceof Error ? e.message : String(e)
       })
-      toastStore.addAlert(err)
+      toastStore.warning('Alert', { description: err })
       throw new Error(err, { cause: e })
     }
 
@@ -655,7 +655,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: resp.status,
         statusText: bodyText || resp.statusText || 'unknown error'
       })
-      toastStore.addAlert(err)
+      toastStore.warning('Alert', { description: err })
       throw new Error(err)
     }
 
@@ -667,13 +667,13 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: resp.status,
         statusText: e instanceof Error ? e.message : String(e)
       })
-      toastStore.addAlert(err)
+      toastStore.warning('Alert', { description: err })
       throw new Error(err, { cause: e })
     }
 
     if (!data?.name) {
       const detail = `Painter upload succeeded (${resp.status}) but response is missing 'name'`
-      toastStore.addAlert(detail)
+      toastStore.warning('Alert', { description: detail })
       throw new Error(detail)
     }
 

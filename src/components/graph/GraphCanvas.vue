@@ -178,7 +178,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
@@ -238,7 +238,7 @@ const { linearMode } = storeToRefs(canvasStore)
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
-const toastStore = useToastStore()
+const toastStore = useToast()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
@@ -465,11 +465,7 @@ useEventListener(
   canvasRef,
   'litegraph:no-items-selected',
   () => {
-    toastStore.add({
-      severity: 'warn',
-      summary: t('toastMessages.nothingSelected'),
-      life: 2000
-    })
+    toastStore.warning(t('toastMessages.nothingSelected'), { duration: 2000 })
   },
   { passive: true }
 )

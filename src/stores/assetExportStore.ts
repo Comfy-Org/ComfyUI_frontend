@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetExportWsMessage } from '@/schemas/apiSchema'
@@ -85,13 +85,12 @@ export const useAssetExportStore = defineStore('assetExport', () => {
       exp.downloadError = message
       exp.downloadTriggered = false
 
-      useToastStore().add({
-        severity: 'error',
-        summary: t('exportToast.downloadFailed', {
+      useToast().error(
+        t('exportToast.downloadFailed', {
           name: exp.exportName
         }),
-        detail: message
-      })
+        { description: message }
+      )
     }
   }
 

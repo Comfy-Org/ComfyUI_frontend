@@ -9,7 +9,7 @@ import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
@@ -491,10 +491,8 @@ function getParentNodes(): SubgraphNode[] {
   const { navigationStack } = useSubgraphNavigationStore()
   const subgraph = navigationStack.at(-1)
   if (!subgraph) {
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subgraphStore.promoteOutsideSubgraph')
+    useToast().error(t('g.error'), {
+      description: t('subgraphStore.promoteOutsideSubgraph')
     })
     return []
   }

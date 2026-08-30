@@ -9,7 +9,7 @@
  */
 
 import { debounce } from 'es-toolkit'
-import { useToast } from 'primevue'
+import { useToast } from '@/components/ui/toast'
 import { tryOnScopeDispose, whenever } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -116,10 +116,8 @@ export function useWorkflowPersistenceV2() {
     })
 
     if (!saved) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('toastMessages.failedToSaveDraft')
+      toast.error(t('g.error'), {
+        description: t('toastMessages.failedToSaveDraft')
       })
       return
     }

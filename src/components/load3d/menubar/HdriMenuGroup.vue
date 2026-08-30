@@ -77,7 +77,7 @@ import {
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
 import type { LightConfig } from '@/extensions/core/load3d/interfaces'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 const { compact = false, sceneHasImage = false } = defineProps<{
   compact?: boolean
@@ -107,7 +107,9 @@ function onHdriFilePicked(event: Event) {
   if (file) {
     const ext = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`
     if (!SUPPORTED_HDRI_EXTENSIONS.has(ext)) {
-      useToastStore().addAlert(t('toastMessages.unsupportedHDRIFormat'))
+      useToast().warning('Alert', {
+        description: t('toastMessages.unsupportedHDRIFormat')
+      })
       return
     }
   }

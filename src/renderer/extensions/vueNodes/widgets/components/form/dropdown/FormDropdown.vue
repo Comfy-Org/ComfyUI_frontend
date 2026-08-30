@@ -10,7 +10,7 @@ import type { ComponentPublicInstance } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 
 import type {
@@ -110,7 +110,7 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
-const toastStore = useToastStore()
+const toastStore = useToast()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
@@ -269,7 +269,9 @@ function handleSelection(item: FormDropdownItem, index: number) {
       sel.clear()
       sel.add(item.id)
     } else {
-      toastStore.addAlert(t('widgets.uploadSelect.maxSelectionReached'))
+      toastStore.warning('Alert', {
+        description: t('widgets.uploadSelect.maxSelectionReached')
+      })
       return
     }
   }

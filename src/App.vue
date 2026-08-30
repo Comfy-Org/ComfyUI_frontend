@@ -96,12 +96,6 @@ onMounted(() => {
     // core dependencies). These are plugin bugs, not ComfyUI core failures, but
     // the generic error message alarms users and offers no actionable guidance.
     // The console.error above still logs the details for developers to debug.
-    // useToastStore().add({
-    //   severity: 'error',
-    //   summary: t('g.preloadErrorTitle'),
-    //   detail: t('g.preloadError'),
-    //   life: 10000
-    // })
   })
 
   // Capture resource load failures (CSS, scripts) in non-localhost distributions

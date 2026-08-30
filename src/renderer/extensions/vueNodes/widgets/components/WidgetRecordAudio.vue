@@ -88,7 +88,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@/types/nodeId'
@@ -117,9 +117,9 @@ const recorder = useAudioRecorder({
     waveform.dispose()
   },
   onError: () => {
-    useToastStore().addAlert(
-      t('g.micPermissionDenied') || 'Microphone permission denied'
-    )
+    useToast().warning('Alert', {
+      description: t('g.micPermissionDenied') || 'Microphone permission denied'
+    })
   }
 })
 

@@ -21,7 +21,7 @@ import type {
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
@@ -67,7 +67,9 @@ export async function createNode(
     }
     return addedNode
   } else {
-    useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
+    useToast().warning('Alert', {
+      description: t('assetBrowser.failedToCreateNode')
+    })
     return null
   }
 }

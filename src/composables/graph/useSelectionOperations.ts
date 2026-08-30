@@ -1,7 +1,7 @@
 // import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems' // Unused for now
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   useCanvasStore,
@@ -17,7 +17,7 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
 export function useSelectionOperations() {
   // const { getSelectedNodes } = useSelectedLiteGraphItems() // Unused for now
   const canvasStore = useCanvasStore()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const dialogService = useDialogService()
   const titleEditorStore = useTitleEditorStore()
   const workflowStore = useWorkflowStore()
@@ -25,21 +25,17 @@ export function useSelectionOperations() {
   const copySelection = () => {
     const canvas = app.canvas
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('g.nothingToCopy'),
-        detail: t('g.selectItemsToCopy'),
-        life: 3000
+      toastStore.warning(t('g.nothingToCopy'), {
+        description: t('g.selectItemsToCopy'),
+        duration: 3000
       })
       return
     }
 
     canvas.copyToClipboard()
-    toastStore.add({
-      severity: 'success',
-      summary: t('g.copied'),
-      detail: t('g.itemsCopiedToClipboard'),
-      life: 2000
+    toastStore.success(t('g.copied'), {
+      description: t('g.itemsCopiedToClipboard'),
+      duration: 2000
     })
   }
 
@@ -54,11 +50,9 @@ export function useSelectionOperations() {
   const duplicateSelection = () => {
     const canvas = app.canvas
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('g.nothingToDuplicate'),
-        detail: t('g.selectItemsToDuplicate'),
-        life: 3000
+      toastStore.warning(t('g.nothingToDuplicate'), {
+        description: t('g.selectItemsToDuplicate'),
+        duration: 3000
       })
       return
     }
@@ -83,11 +77,9 @@ export function useSelectionOperations() {
     // mode ends.
     if (isSelectOnly(canvas)) return
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('g.nothingToDelete'),
-        detail: t('g.selectItemsToDelete'),
-        life: 3000
+      toastStore.warning(t('g.nothingToDelete'), {
+        description: t('g.selectItemsToDelete'),
+        duration: 3000
       })
       return
     }
@@ -154,11 +146,9 @@ export function useSelectionOperations() {
       return
     }
 
-    toastStore.add({
-      severity: 'warn',
-      summary: t('g.nothingToRename'),
-      detail: t('g.selectItemsToRename'),
-      life: 3000
+    toastStore.warning(t('g.nothingToRename'), {
+      description: t('g.selectItemsToRename'),
+      duration: 3000
     })
   }
 

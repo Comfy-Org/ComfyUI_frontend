@@ -3,15 +3,14 @@
     <!-- This will render the nested route components -->
     <RouterView />
   </CloudTemplate>
-  <!-- Global Toast for displaying notifications -->
-  <GlobalToast />
+  <Toaster />
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
-import GlobalToast from '@/components/toast/GlobalToast.vue'
+import { Toaster } from '@/components/ui/toast'
 
 import CloudTemplate from './CloudTemplate.vue'
 

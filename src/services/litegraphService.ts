@@ -41,7 +41,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -185,7 +185,7 @@ function getMinSize(node: LGraphNode) {
  */
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
@@ -690,12 +690,12 @@ export const useLitegraphService = () => {
                 throw error
               }
             } catch (error) {
-              toastStore.addAlert(
-                t('toastMessages.errorCopyImage', {
+              toastStore.warning('Alert', {
+                description: t('toastMessages.errorCopyImage', {
                   // @ts-expect-error fixme ts strict error
                   error: error.message ?? error
                 })
-              )
+              })
             }
           }, 'preview')
         }

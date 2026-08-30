@@ -9,7 +9,7 @@ import {
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelWorkflowData } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -169,14 +169,13 @@ export async function runMissingModelPipeline({
             '[Missing Model Pipeline] Asset verification failed:',
             err
           )
-          useToastStore().add({
-            severity: 'warn',
-            summary: st(
+          useToast().warning(
+            st(
               'toastMessages.missingModelVerificationFailed',
               'Failed to verify missing models. Some models may not be shown in the Issues tab.'
             ),
-            life: 5000
-          })
+            { duration: 5000 }
+          )
         })
     } else {
       if (!confirmedCandidates.length) {
