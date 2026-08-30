@@ -34,11 +34,35 @@ export interface CustomNodeEditorFile {
 
 export interface CustomNodeEditorFiles {
   files: CustomNodeEditorFile[]
+  directories: string[]
   initialPath?: string
+  digest: string
 }
 
+export type CustomNodeEditorOperation =
+  | {
+      kind: 'replace_text'
+      path: string
+      oldText: string
+      newText: string
+    }
+  | { kind: 'replace_file'; path: string; content: string }
+  | { kind: 'create_file'; path: string; content: string }
+  | { kind: 'create_directory'; path: string }
+  | { kind: 'move_file'; path: string; destination: string }
+  | { kind: 'delete_file'; path: string }
+
+export type CustomNodeEditorProposalChangeKind =
+  | 'modified'
+  | 'created'
+  | 'deleted'
+  | 'moved'
+  | 'directory_created'
+
 export interface CustomNodeEditorProposalChange {
+  kind: CustomNodeEditorProposalChangeKind
   path: string
+  destinationPath?: string
   originalContent: string
   proposedContent: string
 }
@@ -129,14 +153,18 @@ interface CustomNodeEditorFileDto {
 
 interface CustomNodeEditorFilesDto {
   files: CustomNodeEditorFileDto[]
+  directories?: string[]
   initial_path?: string
+  digest?: string
 }
 
 interface CustomNodeEditorProposalDto {
   id: string
   summary: string
   changes: Array<{
+    kind?: CustomNodeEditorProposalChangeKind
     path: string
+    destination_path?: string
     original_content: string
     proposed_content: string
   }>
@@ -148,7 +176,12 @@ const readFiles = async (
 ): Promise<CustomNodeEditorFiles> => {
   if (!response.ok) throw await readError(response)
   const data = (await response.json()) as CustomNodeEditorFilesDto
-  return { files: data.files, initialPath: data.initial_path }
+  return {
+    files: data.files,
+    directories: data.directories ?? [],
+    initialPath: data.initial_path,
+    digest: data.digest ?? ''
+  }
 }
 
 const readProposal = async (
@@ -160,7 +193,9 @@ const readProposal = async (
     id: data.id,
     summary: data.summary,
     changes: data.changes.map((change) => ({
+      kind: change.kind ?? 'modified',
       path: change.path,
+      destinationPath: change.destination_path,
       originalContent: change.original_content,
       proposedContent: change.proposed_content
     })),
@@ -257,6 +292,38 @@ export function useCustomNodeEditor() {
       )
     )
 
+  const applyOperations = async (
+    id: string,
+    operations: CustomNodeEditorOperation[],
+    baselineDigest: string
+  ): Promise<CustomNodeEditorFiles> =>
+    readFiles(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}/files`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            baseline_digest: baselineDigest,
+            operations: operations.map((operation) => ({
+              kind: operation.kind,
+              path: operation.path,
+              ...('destination' in operation
+                ? { destination: operation.destination }
+                : {}),
+              ...('oldText' in operation
+                ? {
+                    old_text: operation.oldText,
+                    new_text: operation.newText
+                  }
+                : {}),
+              ...('content' in operation ? { content: operation.content } : {})
+            }))
+          })
+        }
+      )
+    )
+
   const createAgentProposal = async (
     id: string,
     instruction: string
@@ -303,6 +370,7 @@ export function useCustomNodeEditor() {
     runSessionAction,
     getFiles,
     saveFiles,
+    applyOperations,
     createAgentProposal,
     applyAgentProposal,
     abandonSession,

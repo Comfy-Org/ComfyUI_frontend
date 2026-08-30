@@ -10,6 +10,7 @@
       :monaco-id="monacoId"
       :files="treeFiles"
       :filelist-title="$t('customNodePacks.editor.workbench.explorer')"
+      :file-menu="fileMenu"
       :font-size="13"
       language="en-US"
       :sider-min-width="explorerWidth"
@@ -17,12 +18,81 @@
       @reload="handleReload"
       @save-file="handleSaveFile"
       @new-file="handleNewFile"
-      @new-folder="rejectNewFolder"
-      @rename-file="rejectRename"
+      @new-folder="handleNewFolder"
+      @rename-file="handleMoveFile"
       @rename-folder="rejectRename"
-      @delete-file="rejectDelete"
+      @delete-file="handleDeleteFile"
       @delete-folder="rejectDelete"
+      @contextmenu-select="handleContextMenuSelect"
     />
+
+    <div
+      v-if="moveSource"
+      class="absolute inset-0 z-40 flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="`${monacoId}-move-title`"
+      @keydown.esc="cancelMove"
+    >
+      <form
+        class="flex w-full max-w-md flex-col gap-4 rounded-lg border border-border-default bg-base-background p-4 shadow-lg"
+        @submit.prevent="confirmMove"
+      >
+        <div>
+          <h3
+            :id="`${monacoId}-move-title`"
+            class="text-foreground m-0 text-sm font-medium"
+          >
+            {{ $t('customNodePacks.editor.workbench.moveFile') }}
+          </h3>
+          <p class="mt-1 mb-0 truncate text-xs text-muted-foreground">
+            {{ moveSource }}
+          </p>
+        </div>
+        <label class="flex flex-col gap-1.5 text-xs text-muted-foreground">
+          {{ $t('customNodePacks.editor.workbench.destinationPath') }}
+          <Input
+            v-model="moveDestination"
+            autofocus
+            :disabled="isMoving"
+            :placeholder="
+              $t('customNodePacks.editor.workbench.destinationPlaceholder')
+            "
+          />
+        </label>
+        <p
+          v-if="moveError"
+          class="m-0 text-xs text-destructive-background"
+          role="alert"
+        >
+          {{ moveError }}
+        </p>
+        <div class="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            :disabled="isMoving"
+            @click="cancelMove"
+          >
+            {{ $t('g.cancel') }}
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            :loading="isMoving"
+            :disabled="
+              !moveDestination.trim() ||
+              moveDestination.trim() === moveSource ||
+              isMoving
+            "
+          >
+            {{ $t('customNodePacks.editor.workbench.move') }}
+          </Button>
+        </div>
+      </form>
+    </div>
 
     <div
       v-if="isLoading"
@@ -79,13 +149,15 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import { useCustomNodeEditor } from '../composables/useCustomNodeEditor'
 import type {
   CustomNodeEditorFile,
-  CustomNodeEditorFiles
+  CustomNodeEditorFiles,
+  CustomNodeEditorOperation
 } from '../composables/useCustomNodeEditor'
 import {
   readCustomNodeEditorState,
@@ -103,7 +175,7 @@ const { sessionId, stateKey, packName } = defineProps<{
 const explorerOpen = defineModel<boolean>('explorerOpen', { default: true })
 
 const { t } = useI18n()
-const { getFiles, saveFiles } = useCustomNodeEditor()
+const { applyOperations, getFiles, saveFiles } = useCustomNodeEditor()
 const colorPaletteStore = useColorPaletteStore()
 const globalSettings = useGlobalSettings()
 const monacoId = `custom-node-${sessionId}`
@@ -114,10 +186,16 @@ const editorElement =
   useTemplateRef<InstanceType<typeof Editor>>('editorElement')
 
 const files = ref<CustomNodeEditorFile[]>([])
+const directories = ref<string[]>([])
+const digest = ref('')
 const initialPath = ref('')
 const isLoading = ref(true)
 const loadError = ref<string | null>(null)
 const saveError = ref<string | null>(null)
+const moveSource = ref('')
+const moveDestination = ref('')
+const moveError = ref<string | null>(null)
+const isMoving = ref(false)
 const restoredState = readCustomNodeEditorState(stateKey)
 const explorerWidth = ref(restoredState?.explorerWidth ?? 180)
 explorerOpen.value = restoredState?.explorerOpen ?? explorerOpen.value
@@ -131,10 +209,23 @@ const modelCreationListener = monaco.editor.onDidCreateModel(
 const editorTheme = computed(() =>
   colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
 )
+const fileMenu = computed(() => [
+  {
+    label: t('customNodePacks.editor.workbench.moveFile'),
+    value: 'moveFile'
+  }
+])
 
 const treeFiles = computed<Files>(() => {
   const result: Files = {
     [projectRoot.value]: {
+      isFile: false,
+      isFolder: true,
+      readonly: true
+    }
+  }
+  for (const directory of directories.value) {
+    result[`${projectRoot.value}/${directory}`] = {
       isFile: false,
       isFolder: true,
       readonly: true
@@ -145,7 +236,7 @@ const treeFiles = computed<Files>(() => {
       content: file.content,
       isFile: true,
       isFolder: false,
-      readonly: true
+      readonly: !file.editable
     }
   }
   return result
@@ -159,7 +250,17 @@ function projectFilePath(path: string): string | null {
   const normalized = path.replaceAll('\\', '/')
   const prefix = `${projectRoot.value}/`
   if (!normalized.startsWith(prefix)) return null
-  return normalized.slice(prefix.length)
+  const components: string[] = []
+  for (const component of normalized.slice(prefix.length).split('/')) {
+    if (!component || component === '.') continue
+    if (component === '..') {
+      if (components.length === 0) return null
+      components.pop()
+      continue
+    }
+    components.push(component)
+  }
+  return components.length > 0 ? components.join('/') : null
 }
 
 function messageFor(error: unknown, fallbackKey: string): string {
@@ -168,6 +269,8 @@ function messageFor(error: unknown, fallbackKey: string): string {
 
 async function replaceFiles(result: CustomNodeEditorFiles) {
   files.value = result.files
+  directories.value = result.directories
+  digest.value = result.digest
   initialPath.value = result.initialPath ?? result.files[0]?.path ?? ''
   loadError.value = null
   await nextTick()
@@ -208,11 +311,39 @@ function queueSave(updates: CustomNodeEditorFile[]): Promise<void> {
   return pending
 }
 
+function queueOperations(
+  operations: CustomNodeEditorOperation[]
+): Promise<void> {
+  const pending = saveQueue
+    .catch(() => undefined)
+    .then(async () => {
+      if (!digest.value) {
+        throw new Error(t('customNodePacks.editor.workbench.reloadRequired'))
+      }
+      await replaceFiles(
+        await applyOperations(sessionId, operations, digest.value)
+      )
+      saveError.value = null
+    })
+  saveQueue = pending
+  return pending
+}
+
 function reportSaveFailure(error: unknown): string {
   reportError(error, { errorType: 'custom_node_workbench_save_failed' })
   const message = messageFor(
     error,
     'customNodePacks.editor.workbench.saveFailed'
+  )
+  saveError.value = message
+  return message
+}
+
+function reportOperationFailure(error: unknown): string {
+  reportError(error, { errorType: 'custom_node_workbench_operation_failed' })
+  const message = messageFor(
+    error,
+    'customNodePacks.editor.workbench.operationFailed'
   )
   saveError.value = message
   return message
@@ -239,15 +370,104 @@ function handleNewFile(
   resolve: () => void,
   reject: (message?: string) => void
 ) {
-  handleSaveFile(editorPath, '', resolve, reject)
+  const path = projectFilePath(editorPath)
+  if (!path) {
+    reject(t('customNodePacks.editor.workbench.invalidPath'))
+    return
+  }
+  void runOperations([{ kind: 'create_file', path, content: '' }])
+    .then(resolve)
+    .catch((error: unknown) => reject(reportOperationFailure(error)))
 }
 
-function rejectNewFolder(
-  _path: string,
-  _resolve: () => void,
+function handleNewFolder(
+  editorPath: string,
+  resolve: () => void,
   reject: (message?: string) => void
 ) {
-  reject(t('customNodePacks.editor.workbench.folderUnsupported'))
+  const path = projectFilePath(editorPath)
+  if (!path) {
+    reject(t('customNodePacks.editor.workbench.invalidPath'))
+    return
+  }
+  void runOperations([{ kind: 'create_directory', path }])
+    .then(resolve)
+    .catch((error: unknown) => reject(reportOperationFailure(error)))
+}
+
+function handleMoveFile(
+  editorPath: string,
+  newEditorPath: string,
+  resolve: () => void,
+  reject: (message?: string) => void
+) {
+  const path = projectFilePath(editorPath)
+  const destination = projectFilePath(newEditorPath)
+  if (!path || !destination) {
+    reject(t('customNodePacks.editor.workbench.invalidPath'))
+    return
+  }
+  void runOperations([{ kind: 'move_file', path, destination }])
+    .then(resolve)
+    .catch((error: unknown) => reject(reportOperationFailure(error)))
+}
+
+function handleDeleteFile(
+  editorPath: string,
+  resolve: () => void,
+  reject: (message?: string) => void
+) {
+  const path = projectFilePath(editorPath)
+  if (!path) {
+    reject(t('customNodePacks.editor.workbench.invalidPath'))
+    return
+  }
+  void runOperations([{ kind: 'delete_file', path }])
+    .then(resolve)
+    .catch((error: unknown) => reject(reportOperationFailure(error)))
+}
+
+function handleContextMenuSelect(editorPath: string, item: { value: unknown }) {
+  if (item.value !== 'moveFile') return
+  const path = projectFilePath(editorPath)
+  if (!path) {
+    saveError.value = t('customNodePacks.editor.workbench.invalidPath')
+    return
+  }
+  moveSource.value = path
+  moveDestination.value = path
+  moveError.value = null
+}
+
+function cancelMove() {
+  if (isMoving.value) return
+  moveSource.value = ''
+  moveDestination.value = ''
+  moveError.value = null
+}
+
+async function confirmMove() {
+  if (!moveSource.value || isMoving.value) return
+  const destination = projectFilePath(
+    `${projectRoot.value}/${moveDestination.value.trim()}`
+  )
+  if (!destination || destination === moveSource.value) {
+    moveError.value = t('customNodePacks.editor.workbench.invalidPath')
+    return
+  }
+  isMoving.value = true
+  moveError.value = null
+  try {
+    await runOperations([
+      { kind: 'move_file', path: moveSource.value, destination }
+    ])
+    moveSource.value = ''
+    moveDestination.value = ''
+  } catch (error) {
+    moveError.value = reportOperationFailure(error)
+  } finally {
+    isMoving.value = false
+  }
 }
 
 function rejectRename(
@@ -265,6 +485,11 @@ function rejectDelete(
   reject: (message?: string) => void
 ) {
   reject(t('customNodePacks.editor.workbench.fileOperationUnsupported'))
+}
+
+async function runOperations(operations: CustomNodeEditorOperation[]) {
+  await saveAll()
+  await queueOperations(operations)
 }
 
 async function saveAll() {
@@ -431,6 +656,13 @@ defineExpose({ replaceFiles, saveAll })
 </script>
 
 <style scoped>
+:global(.monaco-tree-editor-modal) {
+  /* The dependency teleports confirmations outside the modal editor dialog. */
+  position: fixed !important;
+  z-index: 1800 !important;
+  pointer-events: auto !important;
+}
+
 .custom-node-tree-editor {
   container-type: inline-size;
 }
@@ -455,10 +687,7 @@ defineExpose({ replaceFiles, saveAll })
   --monaco-bg-messagepopup-box-hover: var(--monaco-c-black-4);
 }
 
-.custom-node-tree-editor :deep(.monaco-tree-editor-area-empty),
-.custom-node-tree-editor :deep(label[title='New Folder..']),
-.custom-node-tree-editor :deep(label[title='Rename']),
-.custom-node-tree-editor :deep(label[title='Delete']) {
+.custom-node-tree-editor :deep(.monaco-tree-editor-area-empty) {
   display: none;
 }
 

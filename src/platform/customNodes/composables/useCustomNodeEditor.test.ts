@@ -135,7 +135,9 @@ describe('useCustomNodeEditor', () => {
           editable: true
         }
       ],
-      initial_path: 'v2/nodes/checkerboard.py'
+      directories: ['v2', 'v2/nodes'],
+      initial_path: 'v2/nodes/checkerboard.py',
+      digest: 'digest-1'
     }
     fetchApi
       .mockResolvedValueOnce(jsonResponse(filesDto))
@@ -146,6 +148,8 @@ describe('useCustomNodeEditor', () => {
     await saveFiles('session-1', loaded.files)
 
     expect(loaded.initialPath).toBe('v2/nodes/checkerboard.py')
+    expect(loaded.directories).toEqual(['v2', 'v2/nodes'])
+    expect(loaded.digest).toBe('digest-1')
     expect(fetchApi.mock.calls).toEqual([
       ['/customnodes/editor/sessions/session-1/files', { method: 'GET' }],
       [
@@ -166,6 +170,62 @@ describe('useCustomNodeEditor', () => {
     ])
   })
 
+  it('applies stale-safe structured project operations', async () => {
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse({
+        files: [],
+        directories: ['v2', 'v2/nodes', 'v2/nodes/helpers'],
+        digest: 'digest-2'
+      })
+    )
+
+    const { applyOperations } = useCustomNodeEditor()
+    const updated = await applyOperations(
+      'session-1',
+      [
+        { kind: 'create_directory', path: 'v2/nodes/helpers' },
+        {
+          kind: 'create_file',
+          path: 'v2/nodes/helpers/example.py',
+          content: '# example\n'
+        },
+        {
+          kind: 'move_file',
+          path: 'README.md',
+          destination: 'GUIDE.md'
+        },
+        { kind: 'delete_file', path: 'v2/web/js/checkerboard.js' }
+      ],
+      'digest-1'
+    )
+
+    expect(updated.digest).toBe('digest-2')
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/customnodes/editor/sessions/session-1/files',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          baseline_digest: 'digest-1',
+          operations: [
+            { kind: 'create_directory', path: 'v2/nodes/helpers' },
+            {
+              kind: 'create_file',
+              path: 'v2/nodes/helpers/example.py',
+              content: '# example\n'
+            },
+            {
+              kind: 'move_file',
+              path: 'README.md',
+              destination: 'GUIDE.md'
+            },
+            { kind: 'delete_file', path: 'v2/web/js/checkerboard.js' }
+          ]
+        })
+      }
+    )
+  })
+
   it('creates and explicitly applies a Node Agent proposal', async () => {
     fetchApi
       .mockResolvedValueOnce(
@@ -175,6 +235,7 @@ describe('useCustomNodeEditor', () => {
             summary: 'Changed the checkerboard.',
             changes: [
               {
+                kind: 'modified',
                 path: 'v2/nodes/checkerboard.py',
                 original_content: '# before\n',
                 proposed_content: '# after\n'
@@ -195,7 +256,9 @@ describe('useCustomNodeEditor', () => {
               editable: true
             }
           ],
-          initial_path: 'v2/nodes/checkerboard.py'
+          directories: ['v2', 'v2/nodes'],
+          initial_path: 'v2/nodes/checkerboard.py',
+          digest: 'digest-2'
         })
       )
 
@@ -204,6 +267,7 @@ describe('useCustomNodeEditor', () => {
     const applied = await applyAgentProposal('session-1', proposal.id)
 
     expect(proposal.changes[0].originalContent).toBe('# before\n')
+    expect(proposal.changes[0].kind).toBe('modified')
     expect(applied.files[0].content).toBe('# after\n')
     expect(fetchApi.mock.calls).toEqual([
       [

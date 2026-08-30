@@ -17,12 +17,33 @@
           :pack-name="packName"
         />
         <CustomNodeCodeEditor
-          v-if="selectedChange"
+          v-if="selectedChange && selectedChangeUsesDiff"
           :path="selectedChange.path"
           :original-content="selectedChange.originalContent"
           :proposed-content="selectedChange.proposedContent"
           :theme="editorTheme"
         />
+        <div
+          v-else-if="selectedChange"
+          class="flex size-full items-center justify-center p-6"
+          data-testid="proposal-structural-change"
+        >
+          <div
+            class="flex max-w-lg flex-col items-center gap-3 rounded-sm border border-border-default bg-secondary-background p-6 text-center"
+          >
+            <i
+              :class="proposalChangeIcon(selectedChange.kind)"
+              class="size-6 text-blue-500"
+              aria-hidden="true"
+            />
+            <p class="text-foreground m-0 text-sm font-medium">
+              {{ proposalChangeLabel(selectedChange) }}
+            </p>
+            <p class="m-0 text-xs text-muted-foreground">
+              {{ $t('customNodePacks.editor.agent.structuralChange') }}
+            </p>
+          </div>
+        </div>
       </main>
 
       <aside
@@ -78,23 +99,26 @@
               </div>
               <div class="flex flex-col gap-1">
                 <button
-                  v-for="change in proposal.changes"
-                  :key="change.path"
+                  v-for="(change, index) in proposal.changes"
+                  :key="`${index}:${change.kind}:${change.path}:${change.destinationPath ?? ''}`"
                   type="button"
                   :class="
                     cn(
                       'flex items-center gap-2 rounded-sm border border-transparent px-2 py-1.5 text-left text-xs hover:bg-base-background',
-                      change.path === selectedChange?.path &&
+                      index === selectedChangeIndex &&
                         'border-border-default bg-base-background'
                     )
                   "
-                  @click="selectChange(change.path)"
+                  @click="selectChange(index)"
                 >
                   <i
-                    class="icon-[lucide--file-diff] size-3.5 text-green-500"
+                    :class="proposalChangeIcon(change.kind)"
+                    class="size-3.5 text-green-500"
                     aria-hidden="true"
                   />
-                  <span class="min-w-0 flex-1 truncate">{{ change.path }}</span>
+                  <span class="min-w-0 flex-1 truncate">
+                    {{ proposalChangeLabel(change) }}
+                  </span>
                 </button>
               </div>
               <p class="m-0 text-xs/4 text-muted-foreground">
@@ -174,7 +198,11 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import { useCustomNodeEditor } from '../composables/useCustomNodeEditor'
-import type { CustomNodeEditorProposal } from '../composables/useCustomNodeEditor'
+import type {
+  CustomNodeEditorProposal,
+  CustomNodeEditorProposalChange,
+  CustomNodeEditorProposalChangeKind
+} from '../composables/useCustomNodeEditor'
 import {
   customNodeEditorStateKey,
   migrateCustomNodeEditorState,
@@ -206,7 +234,7 @@ agentOpen.value =
   readCustomNodeEditorState(editorStateKey.value)?.agentOpen ?? agentOpen.value
 const instruction = ref('')
 const proposal = ref<CustomNodeEditorProposal | null>(null)
-const selectedChangePath = ref('')
+const selectedChangeIndex = ref(-1)
 const isAsking = ref(false)
 const isApplying = ref(false)
 const agentError = ref<string | null>(null)
@@ -215,9 +243,14 @@ const editorTheme = computed(() =>
   colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
 )
 const selectedChange = computed(() =>
-  proposal.value?.changes.find(
-    (change) => change.path === selectedChangePath.value
-  )
+  selectedChangeIndex.value < 0
+    ? undefined
+    : proposal.value?.changes[selectedChangeIndex.value]
+)
+const selectedChangeUsesDiff = computed(
+  () =>
+    selectedChange.value?.kind !== 'moved' &&
+    selectedChange.value?.kind !== 'directory_created'
 )
 
 async function saveAll() {
@@ -233,7 +266,7 @@ async function askAgent() {
     await saveAll()
     proposal.value = await createAgentProposal(props.sessionId, requestedChange)
     instruction.value = ''
-    selectedChangePath.value = proposal.value.changes[0]?.path ?? ''
+    selectedChangeIndex.value = proposal.value.changes.length > 0 ? 0 : -1
   } catch (error) {
     reportError(error, { errorType: 'custom_node_agent_request_failed' })
     agentError.value =
@@ -245,13 +278,13 @@ async function askAgent() {
   }
 }
 
-function selectChange(path: string) {
-  selectedChangePath.value = path
+function selectChange(index: number) {
+  selectedChangeIndex.value = index
 }
 
 function dismissProposal() {
   proposal.value = null
-  selectedChangePath.value = ''
+  selectedChangeIndex.value = -1
 }
 
 async function applyProposal() {
@@ -262,7 +295,7 @@ async function applyProposal() {
     const result = await applyAgentProposal(props.sessionId, proposal.value.id)
     await treeEditorRef.value?.replaceFiles(result)
     proposal.value = null
-    selectedChangePath.value = ''
+    selectedChangeIndex.value = -1
   } catch (error) {
     reportError(error, { errorType: 'custom_node_agent_apply_failed' })
     agentError.value =
@@ -271,6 +304,28 @@ async function applyProposal() {
         : t('customNodePacks.editor.agent.applyFailed')
   } finally {
     isApplying.value = false
+  }
+}
+
+function proposalChangeLabel(change: CustomNodeEditorProposalChange): string {
+  if (change.kind === 'moved' && change.destinationPath) {
+    return `${change.path} → ${change.destinationPath}`
+  }
+  return change.kind === 'directory_created' ? `${change.path}/` : change.path
+}
+
+function proposalChangeIcon(kind: CustomNodeEditorProposalChangeKind): string {
+  switch (kind) {
+    case 'created':
+      return 'icon-[lucide--file-plus-2]'
+    case 'deleted':
+      return 'icon-[lucide--file-minus-2]'
+    case 'moved':
+      return 'icon-[lucide--file-input]'
+    case 'directory_created':
+      return 'icon-[lucide--folder-plus]'
+    default:
+      return 'icon-[lucide--file-diff]'
   }
 }
 

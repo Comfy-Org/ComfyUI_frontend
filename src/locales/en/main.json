@@ -62,9 +62,14 @@
         "loadFailed": "Could not open the project files.",
         "retry": "Try again",
         "saveFailed": "Save failed",
+        "operationFailed": "Could not change the project tree.",
+        "reloadRequired": "Refresh the project files before changing the project tree.",
         "invalidPath": "The editor returned an invalid project path.",
-        "folderUnsupported": "Create a file at the desired path; its folders will be created automatically.",
-        "fileOperationUnsupported": "File rename and delete are not available in this proof of concept."
+        "moveFile": "Move File…",
+        "destinationPath": "Project-relative destination",
+        "destinationPlaceholder": "v2/nodes/helpers/example.py",
+        "move": "Move",
+        "fileOperationUnsupported": "Renaming and deleting folders is not supported."
       },
       "agent": {
         "title": "Node Agent",
@@ -79,9 +84,10 @@
         "dismiss": "Dismiss",
         "failed": "Node Agent could not create a proposal.",
         "applyFailed": "Could not apply the proposal.",
+        "structuralChange": "This operation changes the project tree and does not need a source diff.",
         "unavailable": "Node Agent is not configured for this environment.",
         "unavailableDetail": "A server-owned hosted-model API key is required. Do not enter personal credentials here.",
-        "safety": "When asked, Node Agent sends the editable pack text to our hosted model. It can only propose text-file edits; it cannot run code, install extensions, access credentials, or submit this pack."
+        "safety": "When asked, Node Agent sends the editable pack text to our hosted model. It can only propose reviewed file and folder operations; it cannot run code, install extensions, access credentials, or submit this pack."
       },
       "status": {
         "creating": "Preparing editor",

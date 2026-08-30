@@ -98,6 +98,7 @@ const i18n = createI18n({
             dismiss: 'Dismiss',
             failed: 'Proposal failed',
             applyFailed: 'Apply failed',
+            structuralChange: 'This changes the project tree.',
             unavailable: 'Node Agent unavailable',
             unavailableDetail: 'Server key required',
             safety: 'Node Agent cannot run code or submit.'
@@ -160,6 +161,7 @@ describe('CustomNodeWorkbench', () => {
       summary: 'Added a configurable color.',
       changes: [
         {
+          kind: 'modified',
           path: 'v2/nodes/checkerboard.py',
           originalContent: '# locally edited\n',
           proposedContent: '# agent proposal\n'
@@ -175,7 +177,9 @@ describe('CustomNodeWorkbench', () => {
           editable: true
         }
       ],
-      initialPath: 'v2/nodes/checkerboard.py'
+      directories: ['v2', 'v2/nodes'],
+      initialPath: 'v2/nodes/checkerboard.py',
+      digest: 'digest-2'
     }
     mocks.applyAgentProposal.mockResolvedValue(appliedFiles)
 
@@ -227,6 +231,46 @@ describe('CustomNodeWorkbench', () => {
       expect(mocks.replaceFiles).toHaveBeenCalledWith(appliedFiles)
     })
     expect(screen.getByTestId('custom-node-tree-editor')).toBeVisible()
+  })
+
+  it('reviews structural Node Agent operations without showing an empty diff', async () => {
+    const user = userEvent.setup()
+    mocks.createAgentProposal.mockResolvedValue({
+      id: 'proposal-2',
+      summary: 'Organized the helper module.',
+      changes: [
+        {
+          kind: 'moved',
+          path: 'v2/nodes/helper.py',
+          destinationPath: 'v2/nodes/helpers/helper.py',
+          originalContent: '# helper\n',
+          proposedContent: '# helper\n'
+        }
+      ],
+      createdAt: '2026-08-29T12:00:00Z'
+    })
+
+    render(CustomNodeWorkbench, {
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
+      global: { plugins: [i18n] }
+    })
+    await user.type(
+      screen.getByRole('textbox', { name: 'Describe a node change' }),
+      'Move the helper module'
+    )
+    await user.click(screen.getByRole('button', { name: 'Propose changes' }))
+
+    expect(
+      await screen.findAllByText(
+        'v2/nodes/helper.py → v2/nodes/helpers/helper.py'
+      )
+    ).toHaveLength(2)
+    expect(screen.getByTestId('proposal-structural-change')).toBeVisible()
+    expect(screen.queryByTestId('proposal-diff')).not.toBeInTheDocument()
   })
 
   it('restores and persists whether the Node Agent is open for the pack', async () => {

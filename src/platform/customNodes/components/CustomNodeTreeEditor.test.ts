@@ -15,6 +15,7 @@ interface ResizeEntry {
 }
 
 const mocks = vi.hoisted(() => ({
+  applyOperations: vi.fn(),
   changeListener: vi.fn(),
   currentPath: undefined as undefined | { value: string | undefined },
   destroy: vi.fn(),
@@ -76,6 +77,7 @@ vi.mock('monaco-tree-editor', async () => {
       name: 'Editor',
       props: {
         files: { type: Object, required: true },
+        fileMenu: { type: Array, required: true },
         monacoId: { type: String, required: true },
         siderMinWidth: { type: Number, required: true },
         theme: { type: String, required: true }
@@ -88,7 +90,8 @@ vi.mock('monaco-tree-editor', async () => {
         'renameFile',
         'renameFolder',
         'deleteFile',
-        'deleteFolder'
+        'deleteFolder',
+        'contextmenuSelect'
       ],
       setup(_props, { emit, expose }) {
         expose({ resize: mocks.resize })
@@ -118,6 +121,61 @@ vi.mock('monaco-tree-editor', async () => {
           )"
         >
           Save checkerboard
+        </button>
+        <button
+          type="button"
+          @click="$emit(
+            'newFolder',
+            Object.keys(files)[0] + '/v2/nodes/helpers',
+            () => undefined,
+            () => undefined
+          )"
+        >
+          New helpers folder
+        </button>
+        <button
+          type="button"
+          @click="$emit(
+            'newFile',
+            Object.keys(files)[0] + '/v2/nodes/new_node.py',
+            () => undefined,
+            () => undefined
+          )"
+        >
+          New node file
+        </button>
+        <button
+          type="button"
+          @click="$emit(
+            'renameFile',
+            Object.keys(files)[0] + '/README.md',
+            Object.keys(files)[0] + '/GUIDE.md',
+            () => undefined,
+            () => undefined
+          )"
+        >
+          Rename readme
+        </button>
+        <button
+          type="button"
+          @click="$emit(
+            'contextmenuSelect',
+            Object.keys(files)[0] + '/README.md',
+            { label: 'Move File…', value: 'moveFile' }
+          )"
+        >
+          Move readme to folder
+        </button>
+        <button
+          type="button"
+          @click="$emit(
+            'deleteFile',
+            Object.keys(files)[0] + '/v2/web/js/checkerboard.js',
+            () => undefined,
+            () => undefined
+          )"
+        >
+          Delete browser extension
         </button>
       </div>
     `
@@ -180,6 +238,7 @@ vi.mock('./customNodeMonaco', () => ({
 
 vi.mock('../composables/useCustomNodeEditor', () => ({
   useCustomNodeEditor: () => ({
+    applyOperations: mocks.applyOperations,
     getFiles: mocks.getFiles,
     saveFiles: mocks.saveFiles
   })
@@ -215,12 +274,18 @@ const i18n = createI18n({
             retry: 'Try again',
             loadFailed: 'Could not open files',
             saveFailed: 'Save failed',
+            operationFailed: 'Operation failed',
+            reloadRequired: 'Reload required',
             invalidPath: 'Invalid path',
-            folderUnsupported: 'Folder unsupported',
+            moveFile: 'Move File…',
+            destinationPath: 'Project-relative destination',
+            destinationPlaceholder: 'v2/nodes/helpers/example.py',
+            move: 'Move',
             fileOperationUnsupported: 'Operation unsupported'
           }
         }
-      }
+      },
+      g: { cancel: 'Cancel' }
     }
   }
 })
@@ -234,12 +299,18 @@ const initialFiles = {
       editable: true
     }
   ],
-  initialPath: 'v2/nodes/checkerboard.py'
+  directories: ['v2', 'v2/nodes', 'v2/web', 'v2/web/js'],
+  initialPath: 'v2/nodes/checkerboard.py',
+  digest: 'digest-1'
 }
 
 describe('CustomNodeTreeEditor', () => {
   beforeEach(() => {
     localStorage.clear()
+    mocks.applyOperations.mockReset().mockResolvedValue({
+      ...structuredClone(initialFiles),
+      digest: 'digest-2'
+    })
     mocks.changeListener.mockReset().mockReturnValue({ dispose: vi.fn() })
     mocks.currentPath!.value = undefined
     mocks.destroy.mockReset()
@@ -363,6 +434,95 @@ describe('CustomNodeTreeEditor', () => {
     expect(mocks.switchCurrentLeftSiderBar).toHaveBeenLastCalledWith(
       'Explorer',
       false
+    )
+  })
+
+  it('creates folders and files, moves files, and deletes files with structured operations', async () => {
+    const user = userEvent.setup()
+    let revision = 1
+    mocks.applyOperations.mockImplementation(async () => ({
+      ...structuredClone(initialFiles),
+      directories: [
+        ...initialFiles.directories,
+        ...(revision > 0 ? ['v2/nodes/helpers'] : [])
+      ],
+      digest: `digest-${++revision}`
+    }))
+    render(CustomNodeTreeEditor, {
+      props: {
+        sessionId: 'session-1',
+        stateKey: 'editor-state-key',
+        packName: 'New Custom Node'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    await screen.findByTestId('library-editor')
+    await user.click(screen.getByRole('button', { name: 'New helpers folder' }))
+    await waitFor(() => expect(mocks.applyOperations).toHaveBeenCalledTimes(1))
+    expect(mocks.applyOperations).toHaveBeenNthCalledWith(
+      1,
+      'session-1',
+      [{ kind: 'create_directory', path: 'v2/nodes/helpers' }],
+      'digest-1'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'New node file' }))
+    await waitFor(() => expect(mocks.applyOperations).toHaveBeenCalledTimes(2))
+    expect(mocks.applyOperations).toHaveBeenNthCalledWith(
+      2,
+      'session-1',
+      [{ kind: 'create_file', path: 'v2/nodes/new_node.py', content: '' }],
+      'digest-2'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Rename readme' }))
+    await waitFor(() => expect(mocks.applyOperations).toHaveBeenCalledTimes(3))
+    expect(mocks.applyOperations).toHaveBeenNthCalledWith(
+      3,
+      'session-1',
+      [
+        {
+          kind: 'move_file',
+          path: 'README.md',
+          destination: 'GUIDE.md'
+        }
+      ],
+      'digest-3'
+    )
+
+    await user.click(
+      screen.getByRole('button', { name: 'Move readme to folder' })
+    )
+    const destination = screen.getByRole('textbox', {
+      name: 'Project-relative destination'
+    })
+    await user.clear(destination)
+    await user.type(destination, 'v2/GUIDE.md')
+    await user.click(screen.getByRole('button', { name: 'Move' }))
+    await waitFor(() => expect(mocks.applyOperations).toHaveBeenCalledTimes(4))
+    expect(mocks.applyOperations).toHaveBeenNthCalledWith(
+      4,
+      'session-1',
+      [
+        {
+          kind: 'move_file',
+          path: 'README.md',
+          destination: 'v2/GUIDE.md'
+        }
+      ],
+      'digest-4'
+    )
+
+    await user.click(
+      screen.getByRole('button', { name: 'Delete browser extension' })
+    )
+    await waitFor(() => expect(mocks.applyOperations).toHaveBeenCalledTimes(5))
+    expect(mocks.applyOperations).toHaveBeenNthCalledWith(
+      5,
+      'session-1',
+      [{ kind: 'delete_file', path: 'v2/web/js/checkerboard.js' }],
+      'digest-5'
     )
   })
 
