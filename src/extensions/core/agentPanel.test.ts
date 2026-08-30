@@ -80,7 +80,8 @@ const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
 async function loadEntryAndSetup(): Promise<void> {
-  await import('./agentPanel')
+  const { registerAgentPanelExtension } = await import('./agentPanel')
+  registerAgentPanelExtension()
   const ext = mocks.capturedExtensions.find(
     (e) => e.name === 'Comfy.AgentPanel'
   )
@@ -109,6 +110,12 @@ describe('AgentPanel extension flag gate', () => {
     mocks.nodeSelectionStore.isLoadingWorkflow = false
     mocks.workflowStore.activeWorkflow = { path: 'workflows/first.json' }
     vi.resetModules()
+  })
+
+  it('does not self-register when its module is imported', async () => {
+    await import('./agentPanel')
+
+    expect(mocks.capturedExtensions).toEqual([])
   })
 
   it('forces the panel on in development even while the flag is false', async () => {
@@ -150,7 +157,8 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('restores each workflow reference after the shared graph load', async () => {
-    await import('./agentPanel')
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
@@ -182,7 +190,8 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('restores a subgraph reference by its locator after graph load', async () => {
-    await import('./agentPanel')
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
@@ -205,7 +214,8 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
-    await import('./agentPanel')
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )

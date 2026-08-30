@@ -83,5 +83,3 @@ async function setupFlagGate(): Promise<void> {
     reportError(error, { errorType: 'agent_flag_gate_load_failure' })
   }
 }
-
-registerAgentPanelExtension()
