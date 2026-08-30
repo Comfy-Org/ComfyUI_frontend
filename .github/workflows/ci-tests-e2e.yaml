@@ -47,8 +47,27 @@ jobs:
           path: dist/
           retention-days: 1
 
+      - name: Verify localhost Assets default
+        run: pnpm test:assets-flag-artifact
+
+      - name: Build and verify desktop Assets default
+        run: |
+          DISTRIBUTION=desktop pnpm exec vite build --config vite.config.mts
+          pnpm test:assets-flag-artifact
+
       - name: Build cloud frontend
         uses: ./.github/actions/build-cloud-frontend
+
+      - name: Verify Cloud Assets default
+        id: cloud-assets-default
+        continue-on-error: true
+        run: pnpm test:assets-flag-artifact
+
+      - name: Confirm known Cloud Assets default regression remains detected
+        if: steps.cloud-assets-default.outcome != 'failure'
+        run: |
+          echo "::error::Cloud Assets unexpectedly defaulted off. Remove the expected-failure gate."
+          exit 1
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
