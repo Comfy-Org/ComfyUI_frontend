@@ -12,7 +12,9 @@ export class Topbar {
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
-    this.menuTrigger = page.getByRole('button', { name: 'Menu', exact: true })
+    this.menuTrigger = page.getByRole('button', {
+      name: /^(?:Menu|Show Menu)$/
+    })
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
