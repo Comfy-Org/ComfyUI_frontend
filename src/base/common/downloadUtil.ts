@@ -4,7 +4,7 @@
 import { t } from '@/i18n'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { isCloud } from '@/platform/distribution/types'
-// eslint-disable-next-line import-x/no-restricted-paths
+
 import { useToast } from '@/components/ui/toast'
 
 // Constants
