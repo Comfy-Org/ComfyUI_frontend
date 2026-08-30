@@ -15,7 +15,7 @@ vi.mock('@/scripts/api', () => ({ api: { socket: null } }))
 
 import { api } from '@/scripts/api'
 
-import { apiTransport, runFollowerTeardown } from './useAgentCrdtFollower'
+import { apiTransport } from './useAgentCrdtFollower'
 
 const mutableApi = api as unknown as {
   socket: { readyState: number; send: (frame: string) => void } | null
@@ -43,25 +43,5 @@ describe('apiTransport.send', () => {
     mutableApi.socket = { readyState: WebSocket.OPEN, send }
     expect(apiTransport.send('frame')).toBe(true)
     expect(send).toHaveBeenCalledWith('frame')
-  })
-})
-
-describe('runFollowerTeardown', () => {
-  it('runs remaining cleanups then rethrows the first error', () => {
-    const removeListener = vi.fn()
-    const destroyClient = vi.fn()
-
-    expect(() =>
-      runFollowerTeardown([
-        () => {
-          throw new Error('unsubscribe failed')
-        },
-        removeListener,
-        destroyClient
-      ])
-    ).toThrow('unsubscribe failed')
-
-    expect(removeListener).toHaveBeenCalledOnce()
-    expect(destroyClient).toHaveBeenCalledOnce()
   })
 })

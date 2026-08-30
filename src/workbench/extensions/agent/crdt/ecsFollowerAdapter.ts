@@ -13,7 +13,6 @@ import type {
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
-import { ecsLog } from './crdtLog'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 
@@ -242,27 +241,7 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
-    ecsLog.debug(
-      'doc_effects',
-      `seq ${update.seq}: ${nodeActions.size} node action(s), ${changedWidgets.size} widget group(s), ${changedLinkIds.size} link(s)`,
-      {
-        seq: update.seq,
-        actor: update.actor ?? null,
-        opIds: update.opIds ?? [],
-        nodeActions: Object.fromEntries(nodeActions),
-        widgets: Object.fromEntries(
-          [...changedWidgets].map(([id, names]) => [id, [...names]])
-        ),
-        links: [...changedLinkIds],
-        removedLinkIds,
-        replacedNodeIds: [...replacedNodeIds],
-        reconcile
-      }
-    )
-
     session.mutations.batch(frameContext(update), (batch) => {
-      // Input replacement can retire an incumbent even when delete-wins leaves
-      // no new link to install, so removals are an independent derived effect.
       batch.removeLinks(removedLinkIds)
       for (const [id, action] of nodeActions) {
         if (action === 'delete' || action === 'update')

@@ -9,8 +9,6 @@
 import { BATCHABLE_OPS } from '@comfyorg/comfy-multi-player'
 import type { Actor, Op, Stamp } from '@comfyorg/comfy-multi-player'
 
-import { createUuidv4 } from '@/utils/uuid'
-
 import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256
@@ -24,7 +22,7 @@ export interface MintContext {
 
 /** uuid4 hex: 32 lowercase `[0-9a-f]` chars (vocabulary §8.2). */
 export function mintOpId(): string {
-  return createUuidv4().replaceAll('-', '')
+  return crypto.randomUUID().replaceAll('-', '')
 }
 
 function withEnvelope<T extends GraphOperation>(
