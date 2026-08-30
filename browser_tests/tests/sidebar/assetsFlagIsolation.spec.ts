@@ -75,7 +75,7 @@ contractTest.describe(
       'uses the shared query contract when enabled on OSS',
       async ({ assetApiRequests, comfyPage }) => {
         const tab = comfyPage.menu.assetsTab
-        await tab.open()
+        await tab.open({ waitForAssets: false })
         await expect(tab.getAssetCardByName('enabled-output')).toBeVisible()
         await tab.switchToImported()
         await expect(tab.getAssetCardByName('enabled-input')).toBeVisible()
@@ -105,7 +105,7 @@ contractTest.describe(
       'uses the shared query contract',
       async ({ assetApiRequests, comfyPage }) => {
         const tab = comfyPage.menu.assetsTab
-        await tab.open()
+        await tab.open({ waitForAssets: false })
         await expect(tab.getAssetCardByName('enabled-output')).toBeVisible()
         await tab.switchToImported()
         await expect(tab.getAssetCardByName('enabled-input')).toBeVisible()
