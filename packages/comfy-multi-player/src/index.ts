@@ -44,6 +44,7 @@
  */
 
 export * from "./types.js";
+export * from "./event-schema.js";
 export * from "./stamps.js";
 export * from "./limits.js";
 export * from "./clock.js";
