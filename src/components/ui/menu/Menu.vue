@@ -76,10 +76,12 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent
+        v-bind="$attrs"
         :class="cn(menuContentClass, $attrs.class)"
         :style="contentStyle"
         :side-offset="2"
         align="start"
+        @close-auto-focus.prevent
       >
         <MenuItems :items="model">
           <template v-if="$slots.item" #item="slotProps">
