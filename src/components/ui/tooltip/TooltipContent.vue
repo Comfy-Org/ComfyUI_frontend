@@ -1,0 +1,54 @@
+<script setup lang="ts">
+import type { TooltipContentEmits, TooltipContentProps } from 'reka-ui'
+import {
+  TooltipArrow,
+  TooltipContent,
+  TooltipPortal,
+  useForwardPropsEmits
+} from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
+import { computed } from 'vue'
+
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const {
+  class: className,
+  sideOffset = 6,
+  ...restProps
+} = defineProps<TooltipContentProps & { class?: HTMLAttributes['class'] }>()
+const emits = defineEmits<TooltipContentEmits>()
+const forwarded = useForwardPropsEmits(
+  computed(() => ({ sideOffset, ...restProps })),
+  emits
+)
+const contentStyle = useModalLiftedZIndex(computed(() => true))
+</script>
+
+<template>
+  <TooltipPortal>
+    <TooltipContent
+      v-bind="forwarded"
+      role="tooltip"
+      :style="contentStyle"
+      :class="
+        cn(
+          'pointer-events-none z-1700 max-w-96 rounded-md border border-node-component-tooltip-border bg-node-component-tooltip-surface px-3 py-2 text-xs/tight text-node-component-tooltip shadow-interface',
+          'data-[state=closed]:animate-out data-[state=open]:animate-in',
+          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+          'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+          'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2',
+          'data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+          className
+        )
+      "
+    >
+      <slot />
+      <TooltipArrow
+        :width="10"
+        :height="5"
+        class="fill-node-component-tooltip-surface stroke-node-component-tooltip-border"
+      />
+    </TooltipContent>
+  </TooltipPortal>
+</template>
