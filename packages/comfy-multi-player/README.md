@@ -58,6 +58,20 @@ same hazard — schema §9 — and it does not apply to the v1 seeds; see
 `docs/INVARIANTS.md` KA-10, where both halves are measured rather than assumed.)
 Each side looks correct alone, so this is silent until the merge.
 
+## 0.2.0 release scope
+
+Version 0.2.0 is a breaking release because it replaces the 0.1.0
+`ApplyResult` shape with ADR-007's ordered, discriminated outcomes and renames
+the old version-like count to `ops_seen`. It also adds ADR-008's explicitly
+passed, caller-owned event sink and the public event schema surface:
+`AGENT_EVENT_JSON_SCHEMA`, `CMP_EVENT_SCHEMA_VERSION`, `AgentEvent`,
+`CmpEvent`, `CmpEventType`, `CmpEventSink`, and `CmpCallContext`.
+
+ADR-011 also makes reconnect behavior explicit: an ordinary sequence gap or
+reconnect reuses the existing follower document and recovers through
+state-vector delta replay. Only an explicit `doc_reset` lineage break may
+replace the document, after every projector has received the reset.
+
 ## The catalog, and why every call takes one
 
 Ops address widgets by **name** (`steps`), workflow JSON stores them by
@@ -93,7 +107,7 @@ Throws (`TypeError`) on a workflow that collides with a reserved meta key, or
 whose node carries more `widgets_values` entries than its class has widget
 names in the catalog.
 
-### `applyOps(doc, ops, catalog?): ApplyResult`
+### `applyOps(doc, ops, catalog?, context?): ApplyResult`
 
 Applies a batch, one Yjs transaction per op, in the given order. Never throws
 for a rejected op — every outcome comes back in the result. See
@@ -102,6 +116,13 @@ for a rejected op — every outcome comes back in the result. See
 `catalog` is optional but effectively required for a real host: without it, an
 `add_node` carrying positional widget values is rejected `catalog_required`,
 and unknown widget names are no longer caught.
+
+`context` may carry ADR-008's caller-owned `eventSink`. The sink receives
+versioned, JSON-safe `CmpEvent` diagnostics and cannot change semantic results;
+there is no global registration or package-owned telemetry state. The API also
+exports the host event contract (`CMP_EVENT_SCHEMA_VERSION`, `CmpEvent`,
+`CmpEventType`, `CmpEventSink`, and `CmpCallContext`) and the agent broadcast
+event schema (`AGENT_EVENT_JSON_SCHEMA` and its event types).
 
 ### `project(doc, catalog): WorkflowJSON`
 
