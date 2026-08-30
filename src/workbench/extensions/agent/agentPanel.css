@@ -1,5 +1,3 @@
-@import './agentTheme.css';
-
 @keyframes agent-collapsible-down {
   from {
     height: 0;
