@@ -5,7 +5,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { ref } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -26,6 +26,7 @@ const emit = defineEmits<{
   hide: []
 }>()
 
+const content = useTemplateRef<HTMLElement>('content')
 const open = ref(false)
 const anchor = ref({ x: 0, y: 0 })
 const visible = open
@@ -40,6 +41,7 @@ function show(event: Event) {
     x: mouseEvent?.clientX ?? rect?.left ?? 0,
     y: mouseEvent?.clientY ?? rect?.bottom ?? 0
   }
+  open.value = false
   window.setTimeout(() => {
     open.value = true
   })
@@ -50,7 +52,7 @@ function hide() {
 }
 
 function toggle(event: Event) {
-  if (open.value) hide()
+  if (content.value?.isConnected) hide()
   else show(event)
 }
 
@@ -76,18 +78,23 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent
-        v-bind="$attrs"
-        :class="cn(menuContentClass, $attrs.class)"
-        :style="contentStyle"
+        as-child
         :side-offset="2"
         align="start"
         @close-auto-focus.prevent
       >
-        <MenuItems :items="model">
-          <template v-if="$slots.item" #item="slotProps">
-            <slot name="item" v-bind="slotProps" />
-          </template>
-        </MenuItems>
+        <div
+          ref="content"
+          v-bind="$attrs"
+          :class="cn(menuContentClass, $attrs.class)"
+          :style="contentStyle"
+        >
+          <MenuItems :items="model">
+            <template v-if="$slots.item" #item="slotProps">
+              <slot name="item" v-bind="slotProps" />
+            </template>
+          </MenuItems>
+        </div>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>

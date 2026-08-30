@@ -32,6 +32,34 @@ describe('Menu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('reopens after selecting a nested command', async () => {
+    const command = vi.fn()
+    render(
+      defineComponent({
+        components: { Menu },
+        setup() {
+          const menu = ref<InstanceType<typeof Menu>>()
+          const items = [
+            { label: 'View', items: [{ label: 'Panel', command }] }
+          ]
+          return { items, menu }
+        },
+        template:
+          '<button @click="menu?.toggle($event)">Open</button><Menu ref="menu" :model="items" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const trigger = screen.getByRole('button', { name: 'Open' })
+
+    await user.click(trigger)
+    await user.hover(await screen.findByRole('menuitem', { name: 'View' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Panel' }))
+    screen.getByRole('menu').remove()
+
+    await user.click(trigger)
+    expect(await screen.findByRole('menuitem', { name: 'View' })).toBeVisible()
+  })
+
   it('opens a context menu at the pointer and dismisses outside', async () => {
     render(
       defineComponent({
