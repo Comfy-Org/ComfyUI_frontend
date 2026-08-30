@@ -2,7 +2,6 @@ import type { Page, Route } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
@@ -118,18 +117,9 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   }
 }
 
-function agentFeatures(agentFlag: boolean): RemoteConfig {
-  return {
-    'agent-in-app-experience': agentFlag
-  }
-}
-
 async function mockAgentBoot(
   page: Page,
-  {
-    agentFlag,
-    postedMessages
-  }: { agentFlag: boolean; postedMessages: string[] }
+  { postedMessages }: { postedMessages: string[] }
 ): Promise<void> {
   await page.addInitScript(() => {
     localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
@@ -140,9 +130,7 @@ async function mockAgentBoot(
     r.fulfill(jsonRoute({ assets: [] }))
   )
 
-  await page.route('**/api/features', (r) =>
-    r.fulfill(jsonRoute(agentFeatures(agentFlag)))
-  )
+  await page.route('**/api/features', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
@@ -233,8 +221,14 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   postedMessages: async ({}, use) => {
     await use([])
   },
-  page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
-    await mockAgentBoot(page, { agentFlag: agentFlagEnabled, postedMessages })
+  page: async ({ page, postedMessages }, use) => {
+    await mockAgentBoot(page, { postedMessages })
     await use(page)
+  },
+  comfyPage: async ({ comfyPage, agentFlagEnabled }, use) => {
+    await comfyPage.featureFlags.setServerFlagsPersistent({
+      'agent-in-app-experience': agentFlagEnabled
+    })
+    await use(comfyPage)
   }
 })
