@@ -26,6 +26,11 @@ const mocks = vi.hoisted(() => ({
   getValue: vi.fn(),
   hasChanged: vi.fn(),
   lightTheme: false,
+  models: [] as Array<{
+    dispose: () => void
+    getLanguageId: () => string
+    uri: { path: string }
+  }>,
   openOrFocusPath: vi.fn(),
   openedFiles: undefined as undefined | { value: Array<{ path: string }> },
   reportError: vi.fn(),
@@ -33,6 +38,7 @@ const mocks = vi.hoisted(() => ({
   resizeCallback: undefined as undefined | ((entries: ResizeEntry[]) => void),
   restoreModel: vi.fn(),
   saveFiles: vi.fn(),
+  setModelLanguage: vi.fn(),
   setOpenedFiles: vi.fn(),
   stopFileTreeListener: vi.fn(),
   switchCurrentLeftSiderBar: vi.fn()
@@ -147,8 +153,16 @@ vi.mock('monaco-tree-editor', async () => {
 vi.mock('monaco-tree-editor/index.css', () => ({}))
 
 vi.mock('./customNodeMonaco', () => ({
+  languageForCustomNodePath: (path: string) => {
+    if (path.endsWith('.py')) return 'python'
+    if (path.endsWith('.md')) return 'markdown'
+    return 'plaintext'
+  },
   monaco: {
-    editor: { getModels: () => [] }
+    editor: {
+      getModels: () => mocks.models,
+      setModelLanguage: mocks.setModelLanguage
+    }
   }
 }))
 
@@ -223,6 +237,18 @@ describe('CustomNodeTreeEditor', () => {
     mocks.getValue.mockReset()
     mocks.hasChanged.mockReset().mockReturnValue(false)
     mocks.lightTheme = false
+    mocks.models = [
+      {
+        dispose: vi.fn(),
+        getLanguageId: () => 'md',
+        uri: { path: '/README.md' }
+      },
+      {
+        dispose: vi.fn(),
+        getLanguageId: () => 'py',
+        uri: { path: '/v2/nodes/checkerboard.py' }
+      }
+    ]
     mocks.openOrFocusPath.mockReset()
     mocks.openedFiles!.value = []
     mocks.reportError.mockReset()
@@ -230,6 +256,7 @@ describe('CustomNodeTreeEditor', () => {
     mocks.resizeCallback = undefined
     mocks.restoreModel.mockReset().mockReturnValue({})
     mocks.saveFiles.mockReset().mockResolvedValue(structuredClone(initialFiles))
+    mocks.setModelLanguage.mockReset()
     mocks.setOpenedFiles.mockReset()
     mocks.stopFileTreeListener.mockReset()
     mocks.switchCurrentLeftSiderBar
@@ -263,6 +290,14 @@ describe('CustomNodeTreeEditor', () => {
       )
     })
     expect(editor).toHaveAttribute('data-theme', 'dark')
+    expect(mocks.setModelLanguage).toHaveBeenCalledWith(
+      mocks.models[0],
+      'markdown'
+    )
+    expect(mocks.setModelLanguage).toHaveBeenCalledWith(
+      mocks.models[1],
+      'python'
+    )
     expect(screen.queryByText(/Getting Started/i)).not.toBeInTheDocument()
   })
 

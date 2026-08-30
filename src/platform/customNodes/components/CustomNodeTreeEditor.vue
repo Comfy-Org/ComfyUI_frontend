@@ -91,7 +91,7 @@ import {
   readCustomNodeEditorState,
   updateCustomNodeEditorState
 } from '../utils/customNodeEditorState'
-import { monaco } from './customNodeMonaco'
+import { languageForCustomNodePath, monaco } from './customNodeMonaco'
 
 import 'monaco-tree-editor/index.css'
 
@@ -345,8 +345,26 @@ function restoreEditorState() {
     .onDidChangeModelContent(scheduleSave)
 }
 
+function synchronizeModelLanguages() {
+  for (const file of files.value) {
+    const model = monaco.editor
+      .getModels()
+      .find((candidate) => candidate.uri.path === relativeEditorPath(file.path))
+    if (!model) continue
+    const language = languageForCustomNodePath(file.path)
+    if (model.getLanguageId() !== language) {
+      monaco.editor.setModelLanguage(model, language)
+    }
+  }
+}
+
+function handleFileTreeLoaded() {
+  synchronizeModelLanguages()
+  restoreEditorState()
+}
+
 const stopFileTreeListener =
-  monacoEditor.events.onFileTreeLoaded.listen(restoreEditorState)
+  monacoEditor.events.onFileTreeLoaded.listen(handleFileTreeLoaded)
 
 const stopOpenedFilesWatcher = watch(
   monacoEditor.states.openedFiles,

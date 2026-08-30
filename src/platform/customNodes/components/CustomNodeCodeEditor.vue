@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 
-import { monaco } from './customNodeMonaco'
+import { languageForCustomNodePath, monaco } from './customNodeMonaco'
 
 const { originalContent, path, proposedContent, theme } = defineProps<{
   path: string
@@ -32,35 +32,10 @@ function disposeEditor() {
   proposedModel = undefined
 }
 
-function languageForPath(filePath: string): string {
-  const extension = filePath.split('.').pop()?.toLowerCase()
-  switch (extension) {
-    case 'py':
-      return 'python'
-    case 'js':
-    case 'mjs':
-    case 'cjs':
-      return 'javascript'
-    case 'json':
-      return 'json'
-    case 'md':
-      return 'markdown'
-    case 'css':
-      return 'css'
-    case 'toml':
-      return 'ini'
-    case 'yaml':
-    case 'yml':
-      return 'yaml'
-    default:
-      return 'plaintext'
-  }
-}
-
 function createEditor() {
   if (!editorElement.value) return
   disposeEditor()
-  const language = languageForPath(path)
+  const language = languageForCustomNodePath(path)
   originalModel = monaco.editor.createModel(originalContent, language)
   proposedModel = monaco.editor.createModel(proposedContent, language)
   editor = monaco.editor.createDiffEditor(editorElement.value, {

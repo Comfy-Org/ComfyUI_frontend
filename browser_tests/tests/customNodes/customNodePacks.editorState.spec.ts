@@ -117,9 +117,25 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
     await expect(
       page.locator('.monaco-tree-editor-opened-tab-item-active')
     ).toContainText('checkerboard.py')
-    await expect(
-      page.locator('.monaco-editor .view-lines').last()
-    ).toContainText('import torch')
+    const pythonEditorContent = page
+      .locator('.monaco-editor .view-lines')
+      .last()
+    await expect(pythonEditorContent).toContainText('import torch')
+    await expect
+      .poll(() =>
+        pythonEditorContent
+          .locator('.view-line')
+          .first()
+          .evaluate(
+            (line) =>
+              new Set(
+                Array.from(
+                  line.querySelectorAll<HTMLElement>('span[class*="mtk"]')
+                ).map((token) => token.className)
+              ).size
+          )
+      )
+      .toBeGreaterThan(1)
     await expect(
       page.getByText('pyproject.toml', { exact: true }).first()
     ).toBeVisible()
