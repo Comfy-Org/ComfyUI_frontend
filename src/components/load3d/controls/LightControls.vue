@@ -17,20 +17,24 @@
       />
     </div>
     <div v-else-if="showIntensityControl" class="relative">
-      <Button
-        ref="triggerRef"
-        v-tooltip.right="{
+      <Tooltip
+        :config="{
           value: $t('load3d.lightIntensity'),
           showDelay: 300
         }"
-        size="icon"
-        variant="textonly"
-        class="rounded-full"
-        :aria-label="$t('load3d.lightIntensity')"
-        @click="toggleLightIntensity"
+        side="right"
       >
-        <i class="icon-[lucide--sun] text-lg text-base-foreground" />
-      </Button>
+        <Button
+          ref="triggerRef"
+          size="icon"
+          variant="textonly"
+          class="rounded-full"
+          :aria-label="$t('load3d.lightIntensity')"
+          @click="toggleLightIntensity"
+        >
+          <i class="icon-[lucide--sun] text-lg text-base-foreground" />
+        </Button>
+      </Tooltip>
       <div
         v-show="showLightIntensity"
         ref="panelRef"
@@ -50,6 +54,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

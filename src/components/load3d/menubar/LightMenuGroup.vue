@@ -1,15 +1,16 @@
 <template>
   <Popover v-if="isOriginalMaterial" v-model:open="intensityOpen">
     <PopoverTrigger as-child>
-      <button
-        v-tooltip.bottom="tip(t('load3d.menuBar.intensity'))"
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.intensity') : undefined"
-      >
-        <i class="icon-[lucide--sun] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.intensity') }}</span>
-      </button>
+      <Tooltip :config="tip(t('load3d.menuBar.intensity'))" side="bottom">
+        <button
+          :class="actionClass(false)"
+          type="button"
+          :aria-label="compact ? t('load3d.menuBar.intensity') : undefined"
+        >
+          <i class="icon-[lucide--sun] size-4" />
+          <span v-if="!compact">{{ t('load3d.menuBar.intensity') }}</span>
+        </button>
+      </Tooltip>
     </PopoverTrigger>
     <PopoverContent
       side="bottom"
@@ -38,6 +39,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

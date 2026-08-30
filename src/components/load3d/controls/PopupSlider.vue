@@ -1,15 +1,16 @@
 <template>
   <div class="show-slider relative">
-    <Button
-      v-tooltip.right="{ value: tooltipText, showDelay: 300 }"
-      size="icon"
-      variant="textonly"
-      class="rounded-full"
-      :aria-label="tooltipText"
-      @click="toggleSlider"
-    >
-      <i :class="['pi', icon, 'text-lg text-base-foreground']" />
-    </Button>
+    <Tooltip :config="{ value: tooltipText, showDelay: 300 }" side="right">
+      <Button
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="tooltipText"
+        @click="toggleSlider"
+      >
+        <i :class="['pi', icon, 'text-lg text-base-foreground']" />
+      </Button>
+    </Tooltip>
     <div
       v-show="showSlider"
       class="absolute top-0 left-12 w-[150px] rounded-lg bg-interface-menu-surface p-4 shadow-lg"
@@ -27,6 +28,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

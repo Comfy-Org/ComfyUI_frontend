@@ -1,26 +1,28 @@
 <template>
-  <button
-    v-tooltip.bottom="tip(t('load3d.menuBar.switchProjection'))"
-    :class="actionClass(false)"
-    type="button"
-    :aria-label="compact ? t('load3d.menuBar.switchProjection') : undefined"
-    @click="switchCamera"
-  >
-    <i class="icon-[lucide--camera] size-4" />
-    <span v-if="!compact">{{ cameraTypeLabel }}</span>
-  </button>
+  <Tooltip :config="tip(t('load3d.menuBar.switchProjection'))" side="bottom">
+    <button
+      :class="actionClass(false)"
+      type="button"
+      :aria-label="compact ? t('load3d.menuBar.switchProjection') : undefined"
+      @click="switchCamera"
+    >
+      <i class="icon-[lucide--camera] size-4" />
+      <span v-if="!compact">{{ cameraTypeLabel }}</span>
+    </button>
+  </Tooltip>
 
   <Popover v-if="isPerspective" v-model:open="fovOpen">
     <PopoverTrigger as-child>
-      <button
-        v-tooltip.bottom="tip(t('load3d.menuBar.fov'))"
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.fov') : undefined"
-      >
-        <i class="icon-[lucide--focus] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
-      </button>
+      <Tooltip :config="tip(t('load3d.menuBar.fov'))" side="bottom">
+        <button
+          :class="actionClass(false)"
+          type="button"
+          :aria-label="compact ? t('load3d.menuBar.fov') : undefined"
+        >
+          <i class="icon-[lucide--focus] size-4" />
+          <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
+        </button>
+      </Tooltip>
     </PopoverTrigger>
     <PopoverContent
       side="bottom"
@@ -44,6 +46,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
