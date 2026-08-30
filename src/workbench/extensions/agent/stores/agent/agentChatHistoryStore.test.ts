@@ -145,6 +145,43 @@ describe('useAgentChatHistoryStore', () => {
     expect(store.activeId).toBe('a')
   })
 
+  it('[09-T1 regression] replaceAll clears only an active id absent from the retained sessions', () => {
+    const store = useAgentChatHistoryStore()
+    store.setActive('a')
+    store.replaceAll([session('b', NOW)])
+    expect(store.activeId).toBeNull()
+    expect(store.grouped.today.map(({ id }) => id)).toEqual(['b'])
+
+    store.setActive('a')
+    store.replaceAll([session('a', NOW), session('b', NOW - 1)])
+    expect(store.activeId).toBe('a')
+    expect(store.grouped.current.map(({ id }) => id)).toEqual(['a'])
+  })
+
+  it('[09-T2 regression] tolerates malformed persisted title and tombstone shapes', async () => {
+    const invalidPairs = [
+      ['null', '[]'],
+      ['7', '[]'],
+      ['["bad"]', '[]'],
+      ['{"a":"ok","b":7}', '[]'],
+      ['{}', '{"a":true}'],
+      ['{}', '["a",7]']
+    ]
+    for (const [titles, deleted] of invalidPairs) {
+      localStorage.setItem('Comfy.Agent.ChatTitles.user-1.workspace-1', titles)
+      localStorage.setItem(
+        'Comfy.Agent.DeletedThreads.user-1.workspace-1',
+        deleted
+      )
+      setActivePinia(createPinia())
+      const store = useAgentChatHistoryStore()
+      expect(() => store.replaceAll([session('a', NOW)])).not.toThrow()
+      expect(() => store.rename('a', 'safe')).not.toThrow()
+      expect(() => store.remove('a')).not.toThrow()
+      await nextTick()
+    }
+  })
+
   it('persists a rename and a tombstone across a pinia re-instantiation', async () => {
     const store = useAgentChatHistoryStore()
     store.replaceAll([session('a', NOW - 1_000), session('b', NOW - 2_000)])
@@ -160,7 +197,7 @@ describe('useAgentChatHistoryStore', () => {
     expect(reloaded.titleFor('a')).toBe('Kept title')
   })
 
-  it('rotates persisted metadata and clears the in-memory list on account change', async () => {
+  it('[09-T3 regression] rotates persisted metadata and clears the in-memory list on account change', async () => {
     const store = useAgentChatHistoryStore()
     store.replaceAll([session('a', NOW - 1_000)])
     store.rename('a', 'Account one')
