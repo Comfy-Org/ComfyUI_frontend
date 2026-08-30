@@ -6,7 +6,7 @@ import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 export class ModelExporter {
   static detectFormatFromURL(url: string): string | null {
@@ -46,7 +46,9 @@ export class ModelExporter {
       downloadBlob(desiredFilename, blob)
     } catch (error) {
       console.error('Error downloading from URL:', error)
-      useToastStore().addAlert(t('toastMessages.failedToDownloadFile'))
+      useToast().warning('Alert', {
+        description: t('toastMessages.failedToDownloadFile')
+      })
       throw error
     }
   }
@@ -84,9 +86,9 @@ export class ModelExporter {
       ModelExporter.saveArrayBuffer(result, filename)
     } catch (error) {
       console.error('Error exporting GLB:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToExportModel', { format: 'GLB' })
-      )
+      useToast().warning('Alert', {
+        description: t('toastMessages.failedToExportModel', { format: 'GLB' })
+      })
       throw error
     }
   }
@@ -113,9 +115,9 @@ export class ModelExporter {
       ModelExporter.saveString(result, filename)
     } catch (error) {
       console.error('Error exporting OBJ:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToExportModel', { format: 'OBJ' })
-      )
+      useToast().warning('Alert', {
+        description: t('toastMessages.failedToExportModel', { format: 'OBJ' })
+      })
       throw error
     }
   }
@@ -148,9 +150,9 @@ export class ModelExporter {
       )
     } catch (error) {
       console.error('Error exporting FBX:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToExportModel', { format: 'FBX' })
-      )
+      useToast().warning('Alert', {
+        description: t('toastMessages.failedToExportModel', { format: 'FBX' })
+      })
       throw error
     }
   }
@@ -177,9 +179,9 @@ export class ModelExporter {
       ModelExporter.saveString(result, filename)
     } catch (error) {
       console.error('Error exporting STL:', error)
-      useToastStore().addAlert(
-        t('toastMessages.failedToExportModel', { format: 'STL' })
-      )
+      useToast().warning('Alert', {
+        description: t('toastMessages.failedToExportModel', { format: 'STL' })
+      })
       throw error
     }
   }

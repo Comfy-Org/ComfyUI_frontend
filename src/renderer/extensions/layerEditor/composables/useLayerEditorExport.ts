@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { buildPsdFromEditor } from '@/renderer/extensions/layerEditor/psdExport'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 const PSD_MIME = 'image/vnd.adobe.photoshop'
 
@@ -56,7 +56,7 @@ export async function buildSessionPsdBlob(
 
 export function useLayerEditorExport(session: LayerEditorSession) {
   const { t } = useI18n()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const exporting = ref(false)
 
   async function exportPsd(): Promise<void> {
@@ -67,10 +67,8 @@ export function useLayerEditorExport(session: LayerEditorSession) {
       downloadBlob(psdExportFilename(new Date()), blob)
     } catch (err) {
       console.warn('[LayerEditor] PSD export failed', err)
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('layerEditor.exportPsdFailed')
+      toastStore.error(t('g.error'), {
+        description: t('layerEditor.exportPsdFailed')
       })
     } finally {
       exporting.value = false

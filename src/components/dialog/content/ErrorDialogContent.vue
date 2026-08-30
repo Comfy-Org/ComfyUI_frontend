@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -147,10 +147,8 @@ onMounted(async () => {
     })
   } catch (error) {
     console.error('Error fetching logs:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('toastMessages.failedToFetchLogs')
+    toast.error(t('g.error'), {
+      description: t('toastMessages.failedToFetchLogs')
     })
   }
 })

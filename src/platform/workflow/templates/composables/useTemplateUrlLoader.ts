@@ -1,4 +1,4 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -115,10 +115,8 @@ export function useTemplateUrlLoader() {
       )
 
       if (!success) {
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('templateWorkflows.error.templateNotFound', {
+        toast.error(t('g.error'), {
+          description: t('templateWorkflows.error.templateNotFound', {
             templateName: templateParam
           })
         })
@@ -136,11 +134,7 @@ export function useTemplateUrlLoader() {
         '[useTemplateUrlLoader] Failed to load template from URL:',
         error
       )
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.errorLoadingTemplate')
-      })
+      toast.error(t('g.error'), { description: t('g.errorLoadingTemplate') })
     } finally {
       cleanupUrlParams()
       clearPreservedQuery(TEMPLATE_NAMESPACE)

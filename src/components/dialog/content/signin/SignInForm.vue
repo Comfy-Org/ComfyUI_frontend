@@ -96,7 +96,7 @@ import type { FormSubmitEvent } from '@primevue/forms'
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -134,11 +134,7 @@ const handleForgotPassword = async (
   isValid: boolean | undefined
 ) => {
   if (!email || !isValid) {
-    toast.add({
-      severity: 'warn',
-      summary: t('auth.login.emailPlaceholder'),
-      life: 5_000
-    })
+    toast.warning(t('auth.login.emailPlaceholder'), { duration: 5_000 })
     // Focus the email input
     document.getElementById(emailInputId)?.focus?.()
     return

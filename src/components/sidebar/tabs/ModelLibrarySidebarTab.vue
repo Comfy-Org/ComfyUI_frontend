@@ -80,7 +80,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { ResourceState, useModelStore } from '@/stores/modelStore'
@@ -92,7 +92,7 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
-const toastStore = useToastStore()
+const toastStore = useToast()
 const { t } = useI18n()
 const usesAssetApi = computed(() =>
   settingStore.get('Comfy.Assets.UseAssetAPI')
@@ -266,11 +266,9 @@ async function withLoadFailureToast(action: () => Promise<unknown>) {
     await action()
   } catch (error) {
     console.error('Model library load failed', error)
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('sideToolbar.modelLibraryLoadFailed'),
-      life: 5000
+    toastStore.error(t('g.error'), {
+      description: t('sideToolbar.modelLibraryLoadFailed'),
+      duration: 5000
     })
   }
 }

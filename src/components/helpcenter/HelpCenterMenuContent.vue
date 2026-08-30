@@ -154,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -594,38 +594,30 @@ const onReinstall = (): void => {
 const onUpdateComfyUI = async (): Promise<void> => {
   const { updateComfyUI, rebootComfyUI, error } = useComfyManagerService()
 
-  toast.add({
-    severity: 'info',
-    summary: t('helpCenter.updateComfyUIStarted'),
-    detail: t('helpCenter.updateComfyUIStartedDetail'),
-    life: 3000
+  toast.info(t('helpCenter.updateComfyUIStarted'), {
+    description: t('helpCenter.updateComfyUIStartedDetail'),
+    duration: 3000
   })
 
   try {
     const result = await updateComfyUI({ is_stable: true })
 
     if (result === null || error.value) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: error.value || t('helpCenter.updateComfyUIFailed')
+      toast.error(t('g.error'), {
+        description: error.value || t('helpCenter.updateComfyUIFailed')
       })
       return
     }
 
-    toast.add({
-      severity: 'success',
-      summary: t('helpCenter.updateComfyUISuccess'),
-      detail: t('helpCenter.updateComfyUISuccessDetail'),
-      life: 3000
+    toast.success(t('helpCenter.updateComfyUISuccess'), {
+      description: t('helpCenter.updateComfyUISuccessDetail'),
+      duration: 3000
     })
 
     await rebootComfyUI()
   } catch (err) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: err instanceof Error ? err.message : t('g.unknownError')
+    toast.error(t('g.error'), {
+      description: err instanceof Error ? err.message : t('g.unknownError')
     })
   }
 }

@@ -1,5 +1,5 @@
 import { uniqBy } from 'es-toolkit'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -126,19 +126,16 @@ export function useMediaAssetActions() {
 
     try {
       targetAssets.forEach((asset) => downloadSingleAsset(asset))
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', targetAssets.length),
-        life: 2000
+      toast.success(t('g.success'), {
+        description: t(
+          'mediaAsset.selection.downloadsStarted',
+          targetAssets.length
+        ),
+        duration: 2000
       })
     } catch (error) {
       console.error('Failed to download assets:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
+      toast.error(t('g.error'), { description: t('g.failedToDownloadImage') })
     }
   }
 
@@ -182,22 +179,16 @@ export function useMediaAssetActions() {
 
       filesToDownload.forEach((asset) => downloadSingleAsset(asset))
 
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t(
+      toast.success(t('g.success'), {
+        description: t(
           'mediaAsset.selection.downloadsStarted',
           filesToDownload.length
         ),
-        life: 2000
+        duration: 2000
       })
     } catch (error) {
       console.error('Failed to download assets:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
+      toast.error(t('g.error'), { description: t('g.failedToDownloadImage') })
     }
   }
 
@@ -258,22 +249,18 @@ export function useMediaAssetActions() {
 
       assetExportStore.trackExport(result.task_id)
 
-      toast.add({
-        severity: 'info',
-        summary: t('exportToast.exportStarted'),
-        detail: t(
+      toast.info(t('exportToast.exportStarted'), {
+        description: t(
           'mediaAsset.selection.exportStarted',
           { count: fileCount },
           fileCount
         ),
-        life: 3000
+        duration: 3000
       })
     } catch (error) {
       console.error('Failed to create asset export:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('exportToast.exportFailedSingle')
+      toast.error(t('g.error'), {
+        description: t('exportToast.exportFailedSingle')
       })
     }
   }
@@ -288,11 +275,9 @@ export function useMediaAssetActions() {
       (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
 
     if (!jobId) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.noJobIdFound'),
-        life: 2000
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.noJobIdFound'),
+        duration: 2000
       })
       return
     }
@@ -314,11 +299,9 @@ export function useMediaAssetActions() {
     )
 
     if (!nodeType || !widgetName) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.unsupportedFileType'),
-        life: 2000
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.unsupportedFileType'),
+        duration: 2000
       })
       return
     }
@@ -332,10 +315,8 @@ export function useMediaAssetActions() {
     )
 
     if (!node) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('mediaAsset.failedToCreateNode')
+      toast.error(t('g.error'), {
+        description: t('mediaAsset.failedToCreateNode')
       })
       return
     }
@@ -349,11 +330,9 @@ export function useMediaAssetActions() {
     }
     node.graph?.setDirtyCanvas(true, true)
 
-    toast.add({
-      severity: 'success',
-      summary: t('g.success'),
-      detail: t('mediaAsset.nodeAddedToWorkflow', { nodeType }),
-      life: 2000
+    toast.success(t('g.success'), {
+      description: t('mediaAsset.nodeAddedToWorkflow', { nodeType }),
+      duration: 2000
     })
   }
 
@@ -372,18 +351,14 @@ export function useMediaAssetActions() {
     const result = await workflowActions.openWorkflowAction(workflow, filename)
 
     if (!result.success) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: result.error || t('mediaAsset.noWorkflowDataFound'),
-        life: 2000
+      toast.warning(t('g.warning'), {
+        description: result.error || t('mediaAsset.noWorkflowDataFound'),
+        duration: 2000
       })
     } else {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.workflowOpenedInNewTab'),
-        life: 2000
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.workflowOpenedInNewTab'),
+        duration: 2000
       })
     }
   }
@@ -409,18 +384,17 @@ export function useMediaAssetActions() {
 
     if (!result.success) {
       const isNoWorkflow = result.error?.includes('No workflow')
-      toast.add({
-        severity: isNoWorkflow ? 'warn' : 'error',
-        summary: isNoWorkflow ? t('g.warning') : t('g.error'),
-        detail: result.error || t('mediaAsset.failedToExportWorkflow'),
-        life: 3000
-      })
+      const title = isNoWorkflow ? t('g.warning') : t('g.error')
+      const options = {
+        description: result.error || t('mediaAsset.failedToExportWorkflow'),
+        duration: 3000
+      }
+      if (isNoWorkflow) toast.warning(title, options)
+      else toast.error(title, options)
     } else {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.workflowExportedSuccessfully'),
-        life: 2000
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.workflowExportedSuccessfully'),
+        duration: 2000
       })
     }
   }
@@ -473,29 +447,23 @@ export function useMediaAssetActions() {
     }
 
     if (failed === 0) {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.nodesAddedToWorkflow', {
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.selection.nodesAddedToWorkflow', {
           count: succeeded
         }),
-        life: 2000
+        duration: 2000
       })
     } else if (succeeded === 0) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('mediaAsset.selection.failedToAddNodes')
+      toast.error(t('g.error'), {
+        description: t('mediaAsset.selection.failedToAddNodes')
       })
     } else {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.partialAddNodesSuccess', {
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.partialAddNodesSuccess', {
           succeeded,
           failed
         }),
-        life: 3000
+        duration: 3000
       })
     }
   }
@@ -526,28 +494,24 @@ export function useMediaAssetActions() {
     }
 
     if (failed === 0) {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.workflowsOpened', { count: succeeded }),
-        life: 2000
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.selection.workflowsOpened', {
+          count: succeeded
+        }),
+        duration: 2000
       })
     } else if (succeeded === 0) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.noWorkflowsFound'),
-        life: 3000
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.noWorkflowsFound'),
+        duration: 3000
       })
     } else {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.partialWorkflowsOpened', {
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.partialWorkflowsOpened', {
           succeeded,
           failed
         }),
-        life: 3000
+        duration: 3000
       })
     }
   }
@@ -581,30 +545,24 @@ export function useMediaAssetActions() {
     if (succeeded === 0 && failed === 0) return
 
     if (failed === 0) {
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.workflowsExported', {
+      toast.success(t('g.success'), {
+        description: t('mediaAsset.selection.workflowsExported', {
           count: succeeded
         }),
-        life: 2000
+        duration: 2000
       })
     } else if (succeeded === 0) {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.noWorkflowsToExport'),
-        life: 3000
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.noWorkflowsToExport'),
+        duration: 3000
       })
     } else {
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('mediaAsset.selection.partialWorkflowsExported', {
+      toast.warning(t('g.warning'), {
+        description: t('mediaAsset.selection.partialWorkflowsExported', {
           succeeded,
           failed
         }),
-        life: 3000
+        duration: 3000
       })
     }
   }
@@ -647,11 +605,9 @@ export function useMediaAssetActions() {
         return uniqBy(operations, (op) => op.id)
       }
       if (!flags.assetDeletionEnabled) {
-        toast.add({
-          detail: t('mediaAsset.deletionUnsupported'),
-          life: 5000,
-          severity: 'error',
-          summary: t('g.error')
+        toast.error(t('g.error'), {
+          description: t('mediaAsset.deletionUnsupported'),
+          duration: 5000
         })
         return []
       }
@@ -835,12 +791,14 @@ export function useMediaAssetActions() {
       )
     }
 
-    toast.add({
-      detail: resultMessages.join('\n'),
-      life: severity === 'success' ? 2000 : 5000,
-      severity,
-      summary: t(`mediaAsset.assetDelete.${severity}`)
-    })
+    const resultTitle = t(`mediaAsset.assetDelete.${severity}`)
+    const resultOptions = {
+      description: resultMessages.join('\n'),
+      duration: severity === 'success' ? 2000 : 5000
+    }
+    if (severity === 'success') toast.success(resultTitle, resultOptions)
+    else if (severity === 'warn') toast.warning(resultTitle, resultOptions)
+    else toast.error(resultTitle, resultOptions)
     return true
   }
 
