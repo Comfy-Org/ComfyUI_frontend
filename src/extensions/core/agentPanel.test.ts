@@ -80,7 +80,9 @@ vi.mock('@/composables/useFeatureFlags', async () => {
 })
 
 async function loadEntryAndSetup(): Promise<void> {
-  await import('./agentPanel')
+  vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+  const { registerAgentPanelExtension } = await import('./agentPanel')
+  registerAgentPanelExtension()
   const ext = mocks.capturedExtensions.find(
     (e) => e.name === 'Comfy.AgentPanel'
   )
@@ -106,6 +108,15 @@ describe('AgentPanel extension flag gate', () => {
     mocks.nodeSelectionStore.isLoadingWorkflow = false
     mocks.workflowStore.activeWorkflow = { path: 'workflows/first.json' }
     vi.resetModules()
+  })
+
+  it('does not register the posthog-backed gate in OSS builds', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+
+    registerAgentPanelExtension()
+
+    expect(mocks.capturedExtensions).toHaveLength(0)
   })
 
   it('forces the panel on in development even while the flag is false', async () => {
@@ -146,7 +157,9 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('restores each workflow reference after the shared graph load', async () => {
-    await import('./agentPanel')
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
@@ -178,7 +191,9 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('restores a subgraph reference by its locator after graph load', async () => {
-    await import('./agentPanel')
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
@@ -201,7 +216,9 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
-    await import('./agentPanel')
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )

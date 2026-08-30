@@ -14,8 +14,13 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 let registered = false
+const IS_CLOUD_BUILD = __DISTRIBUTION__ === 'cloud'
 
 export function registerAgentPanelExtension(): void {
+  // Keep the whole flag-gate dependency graph, including posthog-js, out of
+  // OSS builds. Vite replaces the distribution literal at build time and
+  // drops this unreachable branch and its imports.
+  if (!IS_CLOUD_BUILD) return
   if (registered) return
   registered = true
 
@@ -78,5 +83,3 @@ function setupFlagGate(): void {
     agentPanelStore.gateSettled = true
   }
 }
-
-registerAgentPanelExtension()
