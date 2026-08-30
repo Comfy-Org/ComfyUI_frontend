@@ -31,15 +31,17 @@
         :options="options"
         option-label="label"
         data-key="value"
-        :allow-empty="false"
+        :allow-empty="!agentFeatureEnabled"
         @click="onWorkflowClick"
+        @update:model-value="onWorkflowChange"
       >
         <template #option="{ option, index }">
           <WorkflowTab
             :workflow-option="option"
             :is-first="index === 0"
             :is-last="index === options.length - 1"
-            :data-workflow-path="option.value"
+            :restyled="agentFeatureEnabled"
+            :data-workflow-path="agentFeatureEnabled ? option.value : undefined"
             @click.middle="onCloseWorkflow(option)"
             @close-to-left="closeWorkflows(options.slice(0, index))"
             @close-to-right="closeWorkflows(options.slice(index + 1))"
@@ -178,6 +180,7 @@ const { isLoggedIn } = useCurrentUser()
 // The literal keeps the agent store out of OSS builds entirely.
 const agentPanelStore =
   __DISTRIBUTION__ === 'cloud' ? useAgentPanelStore() : null
+const agentFeatureEnabled = computed(() => agentPanelStore?.enabled === true)
 
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
@@ -211,7 +214,21 @@ const selectedWorkflow = computed<WorkflowOption | null>(() =>
     : null
 )
 
+const onWorkflowChange = async (option: WorkflowOption | null) => {
+  if (
+    agentFeatureEnabled.value ||
+    !option ||
+    selectedWorkflow.value?.value === option.value
+  ) {
+    return
+  }
+
+  await workflowService.openWorkflow(option.workflow)
+}
+
 const onWorkflowClick = async (event: MouseEvent) => {
+  if (!agentFeatureEnabled.value) return
+
   const target = event.target
   if (!(target instanceof HTMLElement)) return
 

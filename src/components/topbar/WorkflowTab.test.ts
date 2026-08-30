@@ -125,12 +125,14 @@ function renderTab({
   workflowOption = makeWorkflowOption(),
   activeWorkflowKey = 'other-key',
   activeWorkflowPath,
-  noActiveWorkflow = false
+  noActiveWorkflow = false,
+  restyled = true
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
   activeWorkflowPath?: string
   noActiveWorkflow?: boolean
+  restyled?: boolean
 } = {}) {
   const resolvedActiveWorkflowPath =
     activeWorkflowPath ??
@@ -168,7 +170,8 @@ function renderTab({
     props: {
       workflowOption,
       isFirst: false,
-      isLast: false
+      isLast: false,
+      restyled
     }
   })
 }
@@ -256,6 +259,24 @@ describe('WorkflowTab - workflow status indicator', () => {
 })
 
 describe('WorkflowTab - clean tab', () => {
+  it('renders the original markup and classes when the restyle is disabled', () => {
+    renderTab({
+      restyled: false,
+      workflowOption: makeWorkflowOption({ isPersisted: false })
+    })
+
+    const tab = screen.getByText(() => true, { selector: '.workflow-tab' })
+    expect(tab).not.toHaveAttribute('data-testid')
+    expect(tab).toHaveClass('p-2')
+    expect(tab).not.toHaveClass('h-(--workflow-tabs-height)', 'px-4')
+
+    const dirtyIndicator = screen.getByTestId('workflow-dirty-indicator')
+    expect(dirtyIndicator).not.toHaveAttribute('data-active')
+    expect(dirtyIndicator).toHaveTextContent('•')
+    expect(screen.getByTestId('close-workflow-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('close-workflow-icon')).toBeNull()
+  })
+
   it('renders only the close control for a persisted unmodified tab', () => {
     renderTab()
 

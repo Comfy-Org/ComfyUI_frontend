@@ -141,10 +141,18 @@ vi.mock('./WorkflowTab.vue', () => ({
       workflowOption: {
         type: Object as PropType<{ workflow: { filename: string } }>,
         required: true
-      }
+      },
+      restyled: { type: Boolean, required: true }
     },
     render() {
-      return h('div', this.workflowOption.workflow.filename)
+      return h(
+        'div',
+        {
+          'data-testid': 'workflow-tab-stub',
+          'data-restyled': this.restyled || undefined
+        },
+        this.workflowOption.workflow.filename
+      )
     }
   })
 }))
@@ -256,11 +264,17 @@ describe('WorkflowTabs agent entry button', () => {
 
   it('does not render the entry button while the feature flag is off', () => {
     agentPanelHolder.store.enabled.value = false
+    workflowStore.openWorkflows = [
+      { key: 'first', path: 'first.json', filename: 'First workflow' }
+    ]
     renderComponent()
 
     expect(
       screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
     ).toBeNull()
+    const tab = screen.getByTestId('workflow-tab-stub')
+    expect(tab).not.toHaveAttribute('data-restyled')
+    expect(tab).not.toHaveAttribute('data-workflow-path')
   })
 
   it('toggles the panel and reflects the pressed state on the button', async () => {
@@ -303,6 +317,8 @@ describe('WorkflowTabs selection and overflow', () => {
   }
 
   beforeEach(() => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    agentPanelHolder.store.enabled.value = true
     workflowStore.openWorkflows = [firstWorkflow, secondWorkflow]
     workflowStore.activeWorkflow = firstWorkflow
     openWorkflow.mockReset()
@@ -311,6 +327,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
   it('opens the selected workflow again when its tab is activated', async () => {
     const { user } = renderComponent()
+    expect(screen.getAllByTestId('workflow-tab-stub')[0]).toHaveAttribute(
+      'data-restyled',
+      'true'
+    )
 
     await user.click(screen.getByText('First workflow'))
 
