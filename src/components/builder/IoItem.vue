@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -74,15 +76,16 @@ const entries = computed(() => {
         @edit="onEditComplete"
         @cancel="isEditing = false"
       />
-      <div
-        v-tooltip.left="{ value: subTitleTooltip, showDelay: 300 }"
-        class="drag-handle truncate text-xs text-muted-foreground"
-        data-testid="builder-io-item-subtitle"
-        @mouseenter="
-          subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
-        "
-        v-text="subTitle"
-      />
+      <Tooltip :config="{ value: subTitleTooltip, showDelay: 300 }" side="left">
+        <div
+          class="drag-handle truncate text-xs text-muted-foreground"
+          data-testid="builder-io-item-subtitle"
+          @mouseenter="
+            subTitleTooltip = isTruncated($event) ? (subTitle ?? null) : null
+          "
+          v-text="subTitle"
+        />
+      </Tooltip>
     </div>
     <Popover :entries>
       <template #button>

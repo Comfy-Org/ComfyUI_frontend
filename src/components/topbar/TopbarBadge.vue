@@ -98,31 +98,33 @@
   </div>
 
   <!-- Full mode: Icon + Label + Text -->
-  <div
-    v-else
-    v-tooltip="badge.tooltip"
-    class="flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
-    :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-3']"
-    :style="menuBackgroundStyle"
-  >
-    <i
-      v-if="iconClass"
-      data-testid="badge-icon"
-      :class="['shrink-0 text-base', iconClass, iconColorClass]"
-    />
+  <Tooltip v-else :config="badge.tooltip" side="right">
     <div
-      v-if="badge.label"
-      class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
-      :class="labelClasses"
+      class="flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
+      :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-3']"
+      :style="menuBackgroundStyle"
     >
-      {{ badge.label }}
+      <i
+        v-if="iconClass"
+        data-testid="badge-icon"
+        :class="['shrink-0 text-base', iconClass, iconColorClass]"
+      />
+      <div
+        v-if="badge.label"
+        class="shrink-0 rounded-full px-1.5 py-0.5 text-3xs font-semibold"
+        :class="labelClasses"
+      >
+        {{ badge.label }}
+      </div>
+      <div class="font-inter text-sm" :class="textClasses">
+        {{ badge.text }}
+      </div>
     </div>
-    <div class="font-inter text-sm" :class="textClasses">
-      {{ badge.text }}
-    </div>
-  </div>
+  </Tooltip>
 </template>
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 

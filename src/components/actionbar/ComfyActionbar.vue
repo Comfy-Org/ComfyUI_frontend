@@ -28,47 +28,49 @@
           <Suspense @resolve="comfyRunButtonResolved">
             <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
           </Suspense>
-          <Button
-            v-tooltip.bottom="cancelJobTooltipConfig"
-            variant="destructive"
-            size="icon"
-            :disabled="isExecutionIdle"
-            :aria-label="t('menu.interrupt')"
-            @click="cancelCurrentJob"
-          >
-            <i class="icon-[lucide--x] size-4" />
-          </Button>
-          <Button
-            v-tooltip.bottom="queueHistoryTooltipConfig"
-            variant="secondary"
-            size="md"
-            :aria-pressed="
-              isQueuePanelV2Enabled
-                ? activeSidebarTabId === 'job-history'
-                : queueOverlayExpanded
-            "
-            class="relative px-3"
-            data-testid="queue-overlay-toggle"
-            @click="toggleQueueOverlay"
-            @contextmenu.stop.prevent="showQueueContextMenu"
-          >
-            <span class="text-sm font-normal tabular-nums">
-              {{ activeJobsLabel }}
-            </span>
-            <StatusBadge
-              v-if="activeJobsCount > 0"
-              data-testid="active-jobs-indicator"
-              variant="dot"
-              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-            />
-            <span class="sr-only">
-              {{
+          <Tooltip :config="cancelJobTooltipConfig" side="bottom">
+            <Button
+              variant="destructive"
+              size="icon"
+              :disabled="isExecutionIdle"
+              :aria-label="t('menu.interrupt')"
+              @click="cancelCurrentJob"
+            >
+              <i class="icon-[lucide--x] size-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip :config="queueHistoryTooltipConfig" side="bottom">
+            <Button
+              variant="secondary"
+              size="md"
+              :aria-pressed="
                 isQueuePanelV2Enabled
-                  ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                  : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-              }}
-            </span>
-          </Button>
+                  ? activeSidebarTabId === 'job-history'
+                  : queueOverlayExpanded
+              "
+              class="relative px-3"
+              data-testid="queue-overlay-toggle"
+              @click="toggleQueueOverlay"
+              @contextmenu.stop.prevent="showQueueContextMenu"
+            >
+              <span class="text-sm font-normal tabular-nums">
+                {{ activeJobsLabel }}
+              </span>
+              <StatusBadge
+                v-if="activeJobsCount > 0"
+                data-testid="active-jobs-indicator"
+                variant="dot"
+                class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+              />
+              <span class="sr-only">
+                {{
+                  isQueuePanelV2Enabled
+                    ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+                    : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+                }}
+              </span>
+            </Button>
+          </Tooltip>
           <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
         </div>
         <FreeTierQuota v-if="!isDocked" />
@@ -87,6 +89,8 @@
 </template>
 
 <script lang="ts" setup>
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import {
   useDraggable,
   useEventListener,

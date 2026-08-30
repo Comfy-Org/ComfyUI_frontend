@@ -78,19 +78,23 @@
       :workflows="workflowStore.openWorkflows"
       :active-workflow="workflowStore.activeWorkflow"
     />
-    <Button
-      v-tooltip="{
+    <Tooltip
+      :config="{
         value: $t('sideToolbar.newBlankWorkflow'),
         showDelay: 300
       }"
-      class="new-blank-workflow-button no-drag aspect-square h-full w-auto shrink-0 rounded-none"
-      variant="muted-textonly"
-      size="icon"
-      :aria-label="$t('sideToolbar.newBlankWorkflow')"
-      @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
+      side="right"
     >
-      <i class="pi pi-plus" />
-    </Button>
+      <Button
+        class="new-blank-workflow-button no-drag aspect-square h-full w-auto shrink-0 rounded-none"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('sideToolbar.newBlankWorkflow')"
+        @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
+      >
+        <i class="pi pi-plus" />
+      </Button>
+    </Tooltip>
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
@@ -107,7 +111,7 @@
             'no-drag shrink-0 border border-solid text-base-foreground',
             agentPanelStore.isOpen
               ? 'border-plum-500 bg-plum-600/20'
-              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
+              : 'border-plum-600 bg-secondary-background hover:border-plum-500'
           )
         "
         @click="onAgentEntryClick"
@@ -115,17 +119,21 @@
         <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
         <span>{{ $t('agent.askComfyAgent') }}</span>
       </Button>
-      <Button
+      <Tooltip
         v-if="isCloud || isNightly"
-        v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon"
-        class="shrink-0 text-base-foreground"
-        :aria-label="$t('actionbar.feedback')"
-        @click="openFeedback"
+        :config="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
+        side="right"
       >
-        <i class="icon-[lucide--megaphone]" />
-      </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          class="shrink-0 text-base-foreground"
+          :aria-label="$t('actionbar.feedback')"
+          @click="openFeedback"
+        >
+          <i class="icon-[lucide--megaphone]" />
+        </Button>
+      </Tooltip>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
     </div>
@@ -137,6 +145,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useScroll } from '@vueuse/core'
 import {
   computed,

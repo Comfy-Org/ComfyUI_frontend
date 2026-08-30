@@ -9,11 +9,13 @@
       >
         <slot name="name-prefix" />
         {{ props.item.name }}
-        <i
+        <Tooltip
           v-if="props.item.tooltip"
-          v-tooltip="props.item.tooltip"
-          class="pi pi-info-circle bg-transparent"
-        />
+          :config="props.item.tooltip"
+          side="right"
+        >
+          <i class="pi pi-info-circle bg-transparent" />
+        </Tooltip>
         <slot name="name-suffix" />
       </span>
     </div>
@@ -30,6 +32,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { markRaw } from 'vue'
 import type { Component } from 'vue'
 
