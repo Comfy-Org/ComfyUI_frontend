@@ -1,5 +1,4 @@
 import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -37,8 +36,7 @@ function renderComponent(
 ) {
   return render(WidgetInputNumberInput, {
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: Tooltip }
+      plugins: [PrimeVue, i18n]
     },
     props: {
       widget,
