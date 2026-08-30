@@ -139,6 +139,7 @@ export class Topbar {
     const isAlreadyOpen = await this.menuLocator.isVisible()
     if (isAlreadyOpen) {
       await this.closeTopbarMenu()
+      await this.menuLocator.waitFor({ state: 'detached', timeout: 1000 })
     }
 
     await this.menuTrigger.click()
@@ -260,6 +261,7 @@ export class Topbar {
     } catch {
       await this.page.locator('body').click({ position: { x: 500, y: 300 } })
       await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
+      await this.menuLocator.waitFor({ state: 'detached', timeout: 1000 })
       await this.menuTrigger.click()
       await this.menuLocator.waitFor({ state: 'visible' })
       submenu = await this.openSubmenu(tabName)
