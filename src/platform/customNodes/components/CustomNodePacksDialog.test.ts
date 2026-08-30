@@ -84,7 +84,7 @@ const i18n = createI18n({
         delete: 'Delete',
         close: 'Close',
         editor: {
-          starterName: 'Checkerboard Mask',
+          starterName: 'New Custom Node',
           openFailed: 'Could not open code editor'
         }
       }
@@ -95,7 +95,7 @@ const i18n = createI18n({
 const readySession = {
   id: 'session-1',
   mode: 'create' as const,
-  name: 'Checkerboard Mask',
+  name: 'New Custom Node',
   status: 'creating' as const,
   createdAt: '2026-08-28T12:00:00Z',
   updatedAt: '2026-08-28T12:00:00Z'
@@ -121,7 +121,7 @@ describe('CustomNodePacksDialog', () => {
     ]
   })
 
-  it('opens the checkerboard starter immediately from Create', async () => {
+  it('opens a new custom node immediately from Create', async () => {
     render(CustomNodePacksDialog, { global: { plugins: [i18n] } })
 
     await userEvent.click(screen.getByRole('button', { name: 'Create' }))
@@ -129,22 +129,22 @@ describe('CustomNodePacksDialog', () => {
     await waitFor(() => {
       expect(mocks.createSession).toHaveBeenCalledWith({
         mode: 'create',
-        name: 'Checkerboard Mask'
+        name: 'New Custom Node'
       })
     })
     expect(mocks.showEditor).toHaveBeenCalledWith(readySession, mocks.refresh)
   })
 
-  it('chooses an available checkerboard starter name', async () => {
+  it('chooses an available default pack name', async () => {
     mocks.packs.value = [
       {
         revisionId: 'checkerboard-1',
-        name: 'Checkerboard Mask',
+        name: 'New Custom Node',
         uploadedAt: '2026-08-28T12:00:00Z'
       },
       {
         revisionId: 'checkerboard-2',
-        name: 'Checkerboard Mask 2',
+        name: 'New Custom Node 2',
         uploadedAt: '2026-08-28T12:00:00Z'
       }
     ]
@@ -155,7 +155,7 @@ describe('CustomNodePacksDialog', () => {
     await waitFor(() => {
       expect(mocks.createSession).toHaveBeenCalledWith({
         mode: 'create',
-        name: 'Checkerboard Mask 3'
+        name: 'New Custom Node 3'
       })
     })
   })
