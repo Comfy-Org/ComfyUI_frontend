@@ -1,4 +1,4 @@
-# ADR-PRIMEVUE: Use PrimeVue Without a Fork
+# ADR-PRIMEVUE: Fork PrimeVue
 
 Date: 2025-08-27
 

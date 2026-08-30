@@ -30,7 +30,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [ONADDED](ONADDED-defer-promoted-widget-registration-to-onadded.md)                       | Defer Promoted-Widget Registration to `onAdded()`                  | Accepted | 2026-09-01 |
 | [OPEN](OPEN-output-passthrough-for-extensible-nodes.md)                                   | Output Passthrough for Extensible Nodes                            | Accepted | 2026-03-11 |
 | [PERF](PERF-performance-evidence-and-regression-framework.md)                             | Performance Evidence and Regression Framework                      | Proposed | 2026-08-26 |
-| [PRIMEVUE](PRIMEVUE-use-primevue-without-a-fork.md)                                       | Use PrimeVue Without a Fork                                        | Rejected | 2025-08-27 |
+| [PRIMEVUE](PRIMEVUE-fork-primevue.md)                                                     | Fork PrimeVue                                                      | Rejected | 2025-08-27 |
 | [PROMOTION](PROMOTION-represent-promoted-widgets-as-linked-inputs.md)                     | Represent Promoted Widgets as Linked Inputs                        | Proposed | 2026-05-05 |
 | [RED](RED-recoverable-event-diagnostics.md)                                               | Recoverable Event Diagnostics                                      | Proposed | 2026-08-25 |
 | [RNO](RNO-remove-nx-orchestration.md)                                                      | Remove Nx Orchestration                                            | Accepted | 2026-05-19 |
