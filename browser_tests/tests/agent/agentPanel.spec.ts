@@ -92,8 +92,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 1 tool call for 1.3 seconds'
     })
     await expect(firstSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
+    await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
 
     pushEvent(ws, INTERMEDIATE_MESSAGE_EVENT)
@@ -102,8 +102,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         'The first graph edit is complete. I will check the remaining work.'
       )
     ).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
@@ -140,8 +140,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(secondSummary).toHaveCount(0)
 
     const toolRows = panel.getByRole('listitem')
-    await expect(toolRows).toHaveCount(3)
-    await expect(toolRows.filter({ hasText: 'Set widget' })).toBeVisible()
+    await expect(toolRows).toHaveCount(2)
+    await expect(toolRows.filter({ hasText: 'Set widget' })).toHaveCount(0)
     await expect(
       toolRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
     ).toBeVisible()
@@ -158,9 +158,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
-    await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
+    await expect(finalSummary).toHaveAttribute('aria-expanded', 'false')
     await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Opened a new tab')).toBeVisible()
+    await expect(panel.getByText('Opened a new tab')).toBeHidden()
 
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
