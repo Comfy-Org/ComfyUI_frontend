@@ -83,6 +83,19 @@ export const apiTransport: DocFrameTransport = {
   }
 }
 
+/** Run every cleanup even when an earlier one fails. */
+export function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
+  let firstError: unknown = null
+  for (const cleanup of cleanups) {
+    try {
+      cleanup()
+    } catch (error) {
+      firstError ??= error
+    }
+  }
+  if (firstError !== null) throw firstError
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: GraphMutations
@@ -380,23 +393,23 @@ export function useAgentCrdtFollower(
 
   onBeforeUnmount(() => {
     // Teardown must be total. Anything that survives would apply every later
-    // update twice after a remount.
-    try {
-      clearSubscribeRetry()
-      clearStaleProbe()
-      api.removeEventListener('reconnected', onReconnected)
-      api.removeEventListener('status', onSocketActivity)
-      bridge.removeEventListener('doc_subscribed', onSubscribed)
-      bridge.removeEventListener('doc_update', onUpdate)
-      bridge.removeEventListener('doc_ops_result', onOpsResult)
-      bridge.removeEventListener('doc_reset', onDocReset)
-      bridge.removeEventListener('follower_replaced', onFollowerReplaced)
-      bridge.removeEventListener('schema_error', onSchemaError)
-      adapter.destroy()
-      bridge.destroy()
-    } finally {
-      client.destroy()
-    }
+    // update twice after a remount. The cleanup runner ensures every detach
+    // and destroy still runs if one step throws.
+    runFollowerTeardown([
+      clearSubscribeRetry,
+      clearStaleProbe,
+      () => api.removeEventListener('reconnected', onReconnected),
+      () => api.removeEventListener('status', onSocketActivity),
+      () => bridge.removeEventListener('doc_subscribed', onSubscribed),
+      () => bridge.removeEventListener('doc_update', onUpdate),
+      () => bridge.removeEventListener('doc_ops_result', onOpsResult),
+      () => bridge.removeEventListener('doc_reset', onDocReset),
+      () => bridge.removeEventListener('follower_replaced', onFollowerReplaced),
+      () => bridge.removeEventListener('schema_error', onSchemaError),
+      () => adapter.destroy(),
+      () => bridge.destroy(),
+      () => client.destroy()
+    ])
   })
 
   const status = computed<AgentCrdtStatus>(() => ({
