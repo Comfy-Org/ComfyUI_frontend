@@ -125,6 +125,17 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.agentStore.enabled).toBe(false)
   })
 
+  it('ignores a stale persisted flag until the first delivery', async () => {
+    mocks.flagEnabled = true
+
+    await loadEntryAndSetup()
+
+    expect(mocks.agentStore.enabled).toBe(false)
+
+    mocks.flagListener!()
+    expect(mocks.agentStore.enabled).toBe(true)
+  })
+
   it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {
     await loadEntryAndSetup()
     expect(mocks.registerTracker).toHaveBeenCalledTimes(1)

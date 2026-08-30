@@ -74,9 +74,12 @@ async function setupFlagGate(): Promise<void> {
       sync()
       settle()
     })
-    sync()
-    if (import.meta.env.MODE === 'development') settle()
-    else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
+    if (import.meta.env.MODE === 'development') {
+      sync()
+      settle()
+    } else {
+      setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
+    }
   } catch (error) {
     console.error('[Comfy.AgentPanel] feature-flag gate failed to load', error)
     settle()
