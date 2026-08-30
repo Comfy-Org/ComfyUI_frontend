@@ -127,12 +127,7 @@ export class Topbar {
   }
 
   async openTopbarMenu() {
-    // If menu is already open, close it first to reset state
-    const isAlreadyOpen = await this.menuLocator.isVisible()
-    if (isAlreadyOpen) {
-      await this.closeTopbarMenu()
-      await this.menuLocator.waitFor({ state: 'detached', timeout: 1000 })
-    }
+    if (await this.menuLocator.isVisible()) return this.menuLocator
 
     await this.menuTrigger.click()
     await this.menuLocator.waitFor({ state: 'visible' })
