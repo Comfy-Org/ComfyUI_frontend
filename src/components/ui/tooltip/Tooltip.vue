@@ -45,6 +45,7 @@ const isDisabled = computed(
 )
 const open = ref(rootProps.open ?? rootProps.defaultOpen ?? false)
 let closeTimer: ReturnType<typeof setTimeout> | undefined
+let clearTouchStartListener: (() => void) | undefined
 
 function updateOpen(nextOpen: boolean) {
   if (closeTimer) clearTimeout(closeTimer)
@@ -60,6 +61,11 @@ function updateOpen(nextOpen: boolean) {
 function setOpen(nextOpen: boolean) {
   open.value = nextOpen
   emit('update:open', nextOpen)
+  if (nextOpen) {
+    listenForTouchStart(() => setOpen(false))
+  } else {
+    clearTouchStartListener?.()
+  }
 }
 
 function handleClick(event: MouseEvent) {
@@ -68,20 +74,35 @@ function handleClick(event: MouseEvent) {
   setOpen(true)
 }
 
+function listenForTouchStart(closeTooltip: () => void) {
+  if (clearTouchStartListener || typeof document === 'undefined') return
+
+  const handleTouchStart = () => {
+    clearTouchStartListener = undefined
+    closeTooltip()
+  }
+  document.addEventListener('touchstart', handleTouchStart, {
+    once: true,
+    passive: true
+  })
+  clearTouchStartListener = () => {
+    document.removeEventListener('touchstart', handleTouchStart)
+    clearTouchStartListener = undefined
+  }
+}
+
+function handleTriggerPointerMove(event: PointerEvent) {
+  const trigger = event.currentTarget as HTMLElement
+  listenForTouchStart(() => trigger.dispatchEvent(new Event('pointerleave')))
+}
+
 watch(isDisabled, (disabled) => {
   if (disabled) setOpen(false)
 })
 
-watch(open, (isOpen, _, onCleanup) => {
-  if (!isOpen || typeof document === 'undefined') return
-
-  const closeOnTouchStart = () => setOpen(false)
-  document.addEventListener('touchstart', closeOnTouchStart, { passive: true })
-  onCleanup(() => document.removeEventListener('touchstart', closeOnTouchStart))
-})
-
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer)
+  clearTouchStartListener?.()
 })
 </script>
 
@@ -95,7 +116,13 @@ onBeforeUnmount(() => {
       :disable-closing-trigger="openOnClick || rootProps.disableClosingTrigger"
       @update:open="updateOpen"
     >
-      <TooltipTrigger v-bind="$attrs" as-child @click="handleClick">
+      <TooltipTrigger
+        v-bind="$attrs"
+        as-child
+        @click="handleClick"
+        @pointermove="handleTriggerPointerMove"
+        @pointerleave="clearTouchStartListener?.()"
+      >
         <slot />
       </TooltipTrigger>
       <TooltipContent
