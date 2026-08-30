@@ -157,6 +157,62 @@ test.describe('Assets sidebar flag-off isolation', { tag: '@oss' }, () => {
   })
 })
 
+test.describe('Assets sidebar remote flag lifecycle', { tag: '@oss' }, () => {
+  test('falls back to settled history state when the flag turns off', async ({
+    comfyPage,
+    page
+  }) => {
+    test.fail(
+      true,
+      'The Assets sidebar does not refresh history after a runtime flag change'
+    )
+
+    const assetListRequests: string[] = []
+    const apiAsset = {
+      id: 'remote-enabled-output',
+      name: 'remote-enabled.png',
+      mime_type: 'image/png',
+      tags: ['output'],
+      preview_url: '/api/view?filename=remote-enabled.png&type=output',
+      created_at: '2026-08-29T00:00:00.000Z',
+      updated_at: '2026-08-29T00:00:00.000Z'
+    } satisfies Asset
+    await page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
+      assetListRequests.push(route.request().url())
+      await route.fulfill({
+        json: {
+          assets: [apiAsset],
+          total: 1,
+          has_more: false
+        } satisfies ListAssetsResponse
+      })
+    })
+    await comfyPage.assets.mockOutputHistory([
+      createMockJob({ id: 'legacy-after-flag-off' })
+    ])
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.featureFlags.setServerFlags({ assets: true })
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open({ waitForAssets: false })
+    const apiCard = tab.getAssetCardByName('remote-enabled')
+    await expect(apiCard).toBeVisible()
+    await apiCard.click()
+    await expect(tab.selectionFooter).toBeVisible()
+    const requestCountBeforeFlagOff = assetListRequests.length
+
+    await comfyPage.featureFlags.setServerFlags({ assets: false })
+
+    await expect(
+      tab.getAssetCardByName('output_legacy-after-flag-off')
+    ).toBeVisible()
+    await expect(apiCard).toHaveCount(0)
+    await expect(tab.selectionFooter).toHaveCount(0)
+    await expect(tab.filterButton).toHaveCount(0)
+    expect(assetListRequests).toHaveLength(requestCountBeforeFlagOff)
+  })
+})
+
 test.describe(
   'Assets sidebar flag-off isolation on Cloud',
   { tag: '@cloud' },
