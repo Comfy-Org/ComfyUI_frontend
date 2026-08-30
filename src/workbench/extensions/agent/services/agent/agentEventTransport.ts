@@ -111,6 +111,9 @@ export function createAgentEventTransport(
         if (lastTabWorkflowId === event.data.workflow_id) return
         lastTabWorkflowId = event.data.workflow_id
         closeOpenText()
+        closeOpenThinking()
+        message.thinking = false
+        message.thinkingText = undefined
         message.parts.push({
           type: 'tabLink',
           workflowId: event.data.workflow_id,
