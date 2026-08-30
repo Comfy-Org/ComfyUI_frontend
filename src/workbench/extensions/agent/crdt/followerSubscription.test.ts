@@ -419,6 +419,27 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
   })
+
+  it('ignores a late acknowledgement for the previous workflow', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe('wf-a')
+    bridge.subscribe('wf-b')
+
+    const forwarded: unknown[] = []
+    bridge.addEventListener('doc_subscribed', (event) => {
+      if (event instanceof CustomEvent) forwarded.push(event.detail)
+    })
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-a',
+      ok: true,
+      seq: 9
+    })
+
+    expect(forwarded).toEqual([])
+    expect(bridge.subscribedWorkflowId).toBe('wf-b')
+  })
 })
 
 describe('FE-KA11-1 — the read-time schema gate fails closed', () => {

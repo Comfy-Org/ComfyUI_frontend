@@ -242,10 +242,9 @@ export class LayoutFollowerBridge extends EventTarget {
   private readonly onDocSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
-    if (subscribed.workflowId === this.sentWorkflowId) {
-      if (subscribed.ok) this.lastSeq = subscribed.seq ?? null
-      else this.sentWorkflowId = null
-    }
+    if (subscribed.workflowId !== this.sentWorkflowId) return
+    if (subscribed.ok) this.lastSeq = subscribed.seq ?? null
+    else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
 
