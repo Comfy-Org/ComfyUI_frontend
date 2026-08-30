@@ -2,20 +2,10 @@
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import ServerlessAutoscaleAnimation from './ServerlessAutoscaleAnimation.vue'
+import ServerlessLogsAnimation from './ServerlessLogsAnimation.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-// Log-stream mock: [timestamp width, message width, highlighted?]
-const logRows = [
-  [48, 120, false],
-  [48, 168, true],
-  [48, 96, false],
-  [48, 144, false],
-  [48, 112, true]
-] as const
-
-// Ecosystem clusters feeding the endpoint: models, custom nodes, partner models
-const clusterYs = [22, 60, 98]
 </script>
 
 <template>
@@ -34,25 +24,9 @@ const clusterYs = [22, 60, 98]
       <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
         <div
           aria-hidden="true"
-          class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4"
+          class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink p-4"
         >
-          <svg viewBox="0 0 240 120" class="size-full">
-            <path
-              d="M 8 96 C 48 88, 64 44, 96 36 C 128 28, 144 60, 176 52 C 200 46, 216 24, 232 20"
-              class="animate-dash-flow fill-none stroke-primary-comfy-canvas/40"
-              stroke-width="1.5"
-              stroke-dasharray="5 5"
-            />
-            <path
-              d="M 8 104 H 48 V 72 H 88 V 48 H 128 V 64 H 168 V 40 H 208 V 28 H 232"
-              class="stroke-primary-comfy-yellow fill-none"
-              stroke-width="2"
-            />
-            <path
-              d="M 8 104 H 48 V 72 H 88 V 48 H 128 V 64 H 168 V 40 H 208 V 28 H 232 V 112 H 8 Z"
-              class="fill-primary-comfy-yellow/10"
-            />
-          </svg>
+          <ServerlessAutoscaleAnimation />
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
           {{ t('platform.serverlessScale.1.title', locale) }}
@@ -66,42 +40,9 @@ const clusterYs = [22, 60, 98]
       <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
         <div
           aria-hidden="true"
-          class="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black/40"
+          class="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink"
         >
-          <div
-            class="flex items-center gap-1.5 border-b border-white/10 px-4 py-2.5"
-          >
-            <span class="size-2 rounded-full bg-white/15" />
-            <span class="size-2 rounded-full bg-white/15" />
-            <span class="size-2 rounded-full bg-white/15" />
-          </div>
-          <div class="space-y-2.5 px-4 py-3">
-            <div
-              v-for="([stamp, message, highlighted], index) in logRows"
-              :key="index"
-              class="animate-gpu-pulse flex items-center gap-2"
-              :style="{
-                animationDelay: `${index * 0.45}s`,
-                animationDuration: '3.2s'
-              }"
-            >
-              <span
-                class="h-1.5 rounded-full bg-white/15"
-                :style="{ width: `${stamp}px` }"
-              />
-              <span
-                class="size-1.5 shrink-0 rounded-full"
-                :class="highlighted ? 'bg-primary-comfy-yellow' : 'bg-white/25'"
-              />
-              <span
-                class="h-1.5 rounded-full"
-                :class="
-                  highlighted ? 'bg-primary-comfy-yellow/50' : 'bg-white/15'
-                "
-                :style="{ width: `${message}px` }"
-              />
-            </div>
-          </div>
+          <ServerlessLogsAnimation />
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
           {{ t('platform.serverlessScale.2.title', locale) }}
@@ -115,78 +56,172 @@ const clusterYs = [22, 60, 98]
       <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
         <div
           aria-hidden="true"
-          class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4"
+          class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-primary-comfy-ink p-4"
         >
-          <svg viewBox="0 0 240 120" class="size-full">
-            <g v-for="y in clusterYs" :key="y">
-              <path
-                :d="`M 64 ${y} C 110 ${y}, 130 60, 168 60`"
-                class="animate-dash-flow fill-none stroke-primary-comfy-canvas/40"
-                stroke-width="1.5"
-                stroke-dasharray="5 5"
+          <svg viewBox="0 0 760 420" class="size-full">
+            <defs>
+              <pattern
+                id="convergence-dots"
+                width="24"
+                height="24"
+                patternUnits="userSpaceOnUse"
+              >
+                <circle
+                  cx="1.2"
+                  cy="1.2"
+                  r="1.1"
+                  fill="#7a68ce"
+                  opacity="0.14"
+                />
+              </pattern>
+              <radialGradient
+                id="convergence-dotfade"
+                cx="50%"
+                cy="50%"
+                r="72%"
+              >
+                <stop offset="0" stop-color="#fff" />
+                <stop offset="1" stop-color="#fff" stop-opacity="0.2" />
+              </radialGradient>
+              <mask id="convergence-dotmask">
+                <rect
+                  width="760"
+                  height="420"
+                  fill="url(#convergence-dotfade)"
+                />
+              </mask>
+              <radialGradient
+                id="convergence-core-glow"
+                cx="50%"
+                cy="50%"
+                r="50%"
+              >
+                <stop offset="0" stop-color="#EFF75A" stop-opacity="0.30" />
+                <stop offset="0.55" stop-color="#EFF75A" stop-opacity="0.08" />
+                <stop offset="1" stop-color="#EFF75A" stop-opacity="0" />
+              </radialGradient>
+              <linearGradient
+                id="convergence-shape"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop offset="0" stop-color="#6B5CB8" />
+                <stop offset="1" stop-color="#4A3E85" />
+              </linearGradient>
+            </defs>
+
+            <rect
+              width="760"
+              height="420"
+              fill="url(#convergence-dots)"
+              mask="url(#convergence-dotmask)"
+            />
+
+            <g
+              fill="none"
+              stroke="#7a68ce"
+              stroke-width="2"
+              stroke-dasharray="2 10"
+              stroke-linecap="round"
+              opacity="0.75"
+            >
+              <path d="M218,110 C340,112 430,180 520,204" />
+              <path d="M218,210 C330,210 420,210 520,210" />
+              <path d="M218,310 C340,308 430,240 520,216" />
+            </g>
+
+            <g>
+              <circle cx="86" cy="110" r="17" fill="#3a3161" />
+              <circle cx="144" cy="110" r="17" fill="#5d4fa3" />
+              <circle cx="200" cy="110" r="17" fill="url(#convergence-shape)" />
+            </g>
+
+            <g>
+              <rect
+                x="70"
+                y="194"
+                width="32"
+                height="32"
+                rx="9"
+                fill="#3a3161"
+              />
+              <rect
+                x="128"
+                y="194"
+                width="32"
+                height="32"
+                rx="9"
+                fill="#5d4fa3"
+              />
+              <rect
+                x="184"
+                y="194"
+                width="32"
+                height="32"
+                rx="9"
+                fill="url(#convergence-shape)"
               />
             </g>
+
+            <g>
+              <rect
+                x="72"
+                y="296"
+                width="28"
+                height="28"
+                rx="7"
+                fill="#3a3161"
+                transform="rotate(45 86 310)"
+              />
+              <rect
+                x="130"
+                y="296"
+                width="28"
+                height="28"
+                rx="7"
+                fill="#5d4fa3"
+                transform="rotate(45 144 310)"
+              />
+              <rect
+                x="186"
+                y="296"
+                width="28"
+                height="28"
+                rx="7"
+                fill="url(#convergence-shape)"
+                transform="rotate(45 200 310)"
+              />
+            </g>
+
             <circle
-              cx="24"
-              cy="22"
-              r="5"
-              class="fill-primary-comfy-canvas/60"
-            />
-            <circle
-              cx="40"
-              cy="22"
-              r="5"
-              class="fill-primary-comfy-canvas/35"
-            />
-            <circle
-              cx="56"
-              cy="22"
-              r="5"
-              class="fill-primary-comfy-canvas/80"
-            />
-            <rect
-              x="20"
-              y="56"
-              width="9"
-              height="9"
-              rx="2"
-              class="fill-primary-comfy-canvas/60"
-            />
-            <rect
-              x="36"
-              y="56"
-              width="9"
-              height="9"
-              rx="2"
-              class="fill-primary-comfy-canvas/35"
-            />
-            <rect
-              x="52"
-              y="56"
-              width="9"
-              height="9"
-              rx="2"
-              class="fill-primary-comfy-canvas/80"
-            />
-            <polygon
-              points="24,92 30,98 24,104 18,98"
-              class="fill-primary-comfy-canvas/60"
-            />
-            <polygon
-              points="40,92 46,98 40,104 34,98"
-              class="fill-primary-comfy-canvas/35"
-            />
-            <polygon
-              points="56,92 62,98 56,104 50,98"
-              class="fill-primary-comfy-canvas/80"
+              cx="590"
+              cy="210"
+              r="150"
+              fill="url(#convergence-core-glow)"
             />
             <circle
-              cx="188"
-              cy="60"
-              r="24"
-              class="animate-ripple stroke-primary-comfy-yellow/40 fill-none"
+              cx="590"
+              cy="210"
+              r="86"
+              fill="none"
+              stroke="var(--color-primary-comfy-yellow)"
+              stroke-width="1.5"
+              opacity="0.85"
             />
-            <circle cx="188" cy="60" r="11" class="fill-primary-comfy-yellow" />
+            <circle
+              cx="590"
+              cy="210"
+              r="40"
+              fill="var(--color-primary-comfy-yellow)"
+            />
+            <circle
+              cx="520"
+              cy="210"
+              r="4"
+              fill="var(--color-primary-comfy-yellow)"
+            />
           </svg>
         </div>
         <h3 class="mt-4 text-base font-normal text-primary-warm-white">
