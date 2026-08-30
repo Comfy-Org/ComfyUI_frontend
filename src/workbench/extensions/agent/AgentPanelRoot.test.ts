@@ -36,6 +36,11 @@ vi.mock('@/composables/canvas/useFocusNode', () => ({
   useFocusNode: () => ({ focusNodeInstance })
 }))
 
+vi.mock('./composables/agent/useAgentFeatureGate', async () => {
+  const { computed } = await import('vue')
+  return { useAgentFeatureGate: () => computed(() => true) }
+})
+
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
   const listeners = new Map<string, Set<Listener>>()
@@ -50,8 +55,9 @@ const ws = vi.hoisted(() => {
   const emit = (type: string, data?: unknown): void => {
     for (const listener of listeners.get(type) ?? []) listener({ detail: data })
   }
+  const listenerCount = (type: string): number => listeners.get(type)?.size ?? 0
   const clear = (): void => listeners.clear()
-  return { add, remove, emit, clear }
+  return { add, remove, emit, listenerCount, clear }
 })
 
 vi.mock('@/scripts/api', () => ({
@@ -386,6 +392,20 @@ describe('AgentPanelRoot session notices', () => {
       type: 'agent_api_failed',
       details: i18n.global.t('agent.malformedEvent')
     })
+  })
+
+  it('unsubscribes the integrated event transport on unmount', () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(200, { threads: [] }))
+    )
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(ws.listenerCount('agent_message_delta')).toBe(1)
+
+    panel.unmount()
+
+    expect(ws.listenerCount('agent_message_delta')).toBe(0)
   })
 })
 

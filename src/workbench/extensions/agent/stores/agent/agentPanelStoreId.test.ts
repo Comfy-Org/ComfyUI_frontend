@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 import { useAgentPanelStore } from './agentPanelStore'
@@ -33,6 +34,7 @@ describe('the agentPanel store id', () => {
     setActivePinia(pinia)
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.stubGlobal('devicePixelRatio', 1)
+    api.serverFeatureFlags.value = { 'agent-in-app-experience': true }
   })
 
   it('resolves the full panel shape even though the dock mount registers it first', () => {

@@ -1,24 +1,15 @@
-export const AGENT_PANEL_FLAG = 'agent-in-app-experience'
+import type { ComputedRef } from 'vue'
+import { computed } from 'vue'
 
-export interface AgentFlagSource {
-  isEnabled(): boolean
-  onChange?(listener: () => void): () => void
-}
+import {
+  ServerFeatureFlag,
+  useFeatureFlags
+} from '@/composables/useFeatureFlags'
 
-export interface PostHogLike {
-  isFeatureEnabled(flag: string): boolean | undefined
-  onFeatureFlags(listener: () => void): (() => void) | void
-}
-
-export function createPostHogFlagSource(
-  posthog: PostHogLike,
-  flag: string = AGENT_PANEL_FLAG
-): AgentFlagSource {
-  return {
-    isEnabled: () => posthog.isFeatureEnabled(flag) === true,
-    onChange: (listener) => {
-      const unsubscribe = posthog.onFeatureFlags(listener)
-      return typeof unsubscribe === 'function' ? unsubscribe : () => {}
-    }
-  }
+export function useAgentFeatureGate(): ComputedRef<boolean> {
+  const flag = useFeatureFlags().featureFlag(
+    ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
+    false
+  )
+  return computed(() => flag.value === true)
 }

@@ -84,18 +84,18 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
-      :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
+      :data-agent-gate-settled="agentFeatureEnabled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelStore.enabled"
+        v-if="agentFeatureEnabled"
         variant="link"
         size="sm"
-        :aria-pressed="agentPanelStore.isOpen"
+        :aria-pressed="agentPanelOpen"
         :class="
           cn(
             'no-drag shrink-0 border border-solid text-base-foreground',
-            agentPanelStore.isOpen
+            agentPanelOpen
               ? 'border-plum-500 bg-plum-600/20'
               : 'border-plum-600 bg-ink-700 hover:border-plum-500'
           )
@@ -156,6 +156,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentFeatureGate } from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
@@ -175,14 +176,21 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
-const agentPanelStore = useAgentPanelStore()
+const agentFeatureEnabled = useAgentFeatureGate()
+let agentPanelStore: ReturnType<typeof useAgentPanelStore> | null = null
+const getAgentPanelStore = () => (agentPanelStore ??= useAgentPanelStore())
+const agentPanelOpen = computed(
+  () => agentFeatureEnabled.value && getAgentPanelStore().isOpen
+)
 const tabActivity = useWorkflowTabActivityStore()
 
 function onAgentEntryClick(): void {
+  if (!agentFeatureEnabled.value) return
+  const panelStore = getAgentPanelStore()
   useTelemetry()?.trackAgentEntryButtonClicked({
-    resulting_state: agentPanelStore.isOpen ? 'closed' : 'opened'
+    resulting_state: panelStore.isOpen ? 'closed' : 'opened'
   })
-  agentPanelStore.toggle()
+  panelStore.toggle()
 }
 const { isLoggedIn } = useCurrentUser()
 // Dismiss a tab's terminal status badge once it has been viewed

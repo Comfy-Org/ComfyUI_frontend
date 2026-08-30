@@ -53,6 +53,10 @@ export interface PostMessageInput {
   tabs?: OpenTabsSnapshot
 }
 
+export interface AgentRestClientOptions {
+  signal?: () => AbortSignal | undefined
+}
+
 interface IngestErrorBody {
   error: { message: string }
 }
@@ -67,7 +71,7 @@ function isIngestErrorBody(body: unknown): body is IngestErrorBody {
   )
 }
 
-export function createAgentRestClient() {
+export function createAgentRestClient(options: AgentRestClientOptions = {}) {
   async function toApiError(response: Response): Promise<AgentApiError> {
     const text = await response.text()
     let body: unknown
@@ -90,7 +94,11 @@ export function createAgentRestClient() {
     init: RequestInit,
     schema: z.ZodType<T>
   ): Promise<T> {
-    const response = await api.fetchApi(route, init)
+    const signal = options.signal?.()
+    const response = await api.fetchApi(
+      route,
+      signal === undefined ? init : { ...init, signal }
+    )
     if (!response.ok) throw await toApiError(response)
     return schema.parse(await response.json())
   }

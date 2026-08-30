@@ -25,7 +25,8 @@ export enum ServerFeatureFlag {
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
-  V1_PAYMENT_RECOVERY = 'v1_payment_recovery'
+  V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
+  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience'
 }
 
 export function useFeatureFlags() {
@@ -33,6 +34,9 @@ export function useFeatureFlags() {
     flags: {
       billingControlEnabled: true,
       v1PaymentRecovery: true
-    }
+    },
+    featureFlag: <T>(_featurePath: string, defaultValue?: T) => ({
+      value: defaultValue
+    })
   }
 }

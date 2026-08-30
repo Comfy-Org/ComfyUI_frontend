@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { api } from '@/scripts/api'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
@@ -11,6 +12,7 @@ describe('useAgentDockMount', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    api.serverFeatureFlags.value = {}
   })
 
   it('returns an inert mount on non-cloud distributions', () => {
@@ -24,6 +26,7 @@ describe('useAgentDockMount', () => {
 
   it('docks only once the gate enables and the panel opens on cloud', () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    api.serverFeatureFlags.value = { 'agent-in-app-experience': true }
     const store = useAgentPanelStore()
 
     const { docked, DockedAgentPanel } = useAgentDockMount()

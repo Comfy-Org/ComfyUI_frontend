@@ -38,15 +38,12 @@ import './widgetInputs'
 
 // Cloud-only extensions - tree-shaken in OSS builds
 // The literal __DISTRIBUTION__ comparison (not the isCloud const) is what
-// dead-code-eliminates this block and its posthog-js import from OSS builds.
+// dead-code-eliminates this block and the agent extension from OSS builds.
 if (__DISTRIBUTION__ === 'cloud') {
   await import('./cloudRemoteConfig')
-  // Called, not dynamically imported: the gate must be part of the core
-  // graph so a flag-off cloud session fetches zero agent chunks.
   registerAgentPanelExtension()
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
-  await import('./agentPanel')
 }
 
 // Feedback button for cloud and nightly builds

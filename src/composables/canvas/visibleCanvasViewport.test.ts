@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { api } from '@/scripts/api'
 
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
@@ -13,6 +14,7 @@ describe('visibleCanvasViewport', () => {
     localStorage.clear()
     setActivePinia(createPinia())
     vi.stubGlobal('devicePixelRatio', 2)
+    api.serverFeatureFlags.value = {}
   })
 
   it('uses the full CSS-pixel canvas while the Agent panel is closed', () => {
@@ -24,6 +26,7 @@ describe('visibleCanvasViewport', () => {
   })
 
   it('excludes the docked Agent panel width from the visible canvas', () => {
+    api.serverFeatureFlags.value = { 'agent-in-app-experience': true }
     const panel = useAgentPanelStore()
     panel.enabled = true
     panel.isOpen = true

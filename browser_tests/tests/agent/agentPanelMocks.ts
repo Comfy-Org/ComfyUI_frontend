@@ -5,6 +5,8 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   AgentCancelAccepted,
+  AgentMessages,
+  AgentThreadSummary,
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -13,7 +15,7 @@ import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
+export const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
@@ -24,6 +26,34 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
+
+const RESUMED_THREAD: AgentThreadSummary = {
+  id: THREAD_ID,
+  title: 'Saved fox chat',
+  preview: 'Build a saved fox workflow',
+  updated_at: '2026-08-30T00:00:00.000Z'
+}
+
+const RESUMED_MESSAGES: AgentMessages = [
+  {
+    id: 'saved-user-message',
+    thread_id: THREAD_ID,
+    seq: 0,
+    role: 'user',
+    status: 'complete',
+    turn_id: 'saved-turn',
+    content: { text: 'Build a saved fox workflow' }
+  },
+  {
+    id: 'saved-assistant-message',
+    thread_id: THREAD_ID,
+    seq: 1,
+    role: 'assistant',
+    status: 'complete',
+    turn_id: 'saved-turn',
+    content: { text: 'The saved fox workflow is ready.' }
+  }
+]
 
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
@@ -134,12 +164,34 @@ async function mockAgentBoot(
   page: Page,
   {
     agentFlag,
-    postedMessages
-  }: { agentFlag: boolean; postedMessages: string[] }
+    agentMessageError,
+    cancelRequests,
+    postedMessages,
+    resumedThread
+  }: {
+    agentFlag: boolean
+    agentMessageError: boolean
+    cancelRequests: string[]
+    postedMessages: string[]
+    resumedThread: boolean
+  }
 ): Promise<void> {
-  await page.addInitScript(() => {
+  await page.addInitScript((enabled: boolean) => {
     localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-  })
+    const timer = window.setInterval(() => {
+      const api = window.app?.api
+      if (!api) return
+      const apply = () => {
+        api.serverFeatureFlags.value = {
+          ...api.serverFeatureFlags.value,
+          'agent-in-app-experience': enabled
+        }
+      }
+      apply()
+      api.addEventListener('feature_flags', apply)
+      window.clearInterval(timer)
+    })
+  }, agentFlag)
 
   await mockBilling(page)
   await page.route('**/api/assets**', (r) =>
@@ -208,6 +260,13 @@ async function mockAgentBoot(
     const request = route.request()
     if (request.method() === 'POST') {
       postedMessages.push(request.postData() ?? '')
+      if (agentMessageError) {
+        return route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'mock agent server failure' })
+        })
+      }
       const accepted: AgentTurnAccepted = {
         ...TURN_ACCEPTED,
         message_id:
@@ -221,26 +280,60 @@ async function mockAgentBoot(
         body: JSON.stringify(accepted)
       })
     }
-    return route.fulfill(jsonRoute([]))
+    return route.fulfill(
+      jsonRoute(resumedThread ? RESUMED_MESSAGES : ([] satisfies AgentMessages))
+    )
   })
 
-  await page.route('**/api/agent/threads/*/messages/*/cancel', (route: Route) =>
-    route.fulfill(jsonRoute(CANCEL_ACCEPTED))
+  await page.route(
+    '**/api/agent/threads/*/messages/*/cancel',
+    (route: Route) => {
+      cancelRequests.push(route.request().url())
+      return route.fulfill(jsonRoute(CANCEL_ACCEPTED))
+    }
+  )
+
+  await page.route('**/api/agent/threads', (route: Route) =>
+    route.fulfill(jsonRoute({ threads: resumedThread ? [RESUMED_THREAD] : [] }))
   )
 }
 
 type AgentFixtures = {
   agentFlagEnabled: boolean
+  agentMessageError: boolean
+  agentResumedThread: boolean
+  cancelRequests: string[]
   postedMessages: string[]
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
+  agentMessageError: [false, { option: true }],
+  agentResumedThread: [false, { option: true }],
+  cancelRequests: async ({}, use) => {
+    await use([])
+  },
   postedMessages: async ({}, use) => {
     await use([])
   },
-  page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
-    await mockAgentBoot(page, { agentFlag: agentFlagEnabled, postedMessages })
+  page: async (
+    {
+      page,
+      agentFlagEnabled,
+      agentMessageError,
+      agentResumedThread,
+      cancelRequests,
+      postedMessages
+    },
+    use
+  ) => {
+    await mockAgentBoot(page, {
+      agentFlag: agentFlagEnabled,
+      agentMessageError,
+      cancelRequests,
+      postedMessages,
+      resumedThread: agentResumedThread
+    })
     await use(page)
   }
 })

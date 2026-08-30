@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, reactive } from 'vue'
+import { defineComponent, h, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -107,6 +107,17 @@ vi.mock(
     // reactive() unwraps the holder refs on read, matching a real pinia
     // store proxy now that the component reads properties directly.
     return { useAgentPanelStore: () => reactive(agentPanelHolder.store) }
+  }
+)
+
+vi.mock(
+  '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate',
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useAgentFeatureGate: () =>
+        computed(() => agentPanelHolder.store.enabled.value)
+    }
   }
 )
 
@@ -259,15 +270,10 @@ describe('WorkflowTabs agent entry button', () => {
     expect(button).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('exposes the gate-settled signal on the actions container once the gate settles', async () => {
+  it('exposes the synchronous gate signal on the actions container', () => {
     renderComponent()
 
     const actions = screen.getByTestId('integrated-tab-bar-actions')
-    expect(actions).not.toHaveAttribute('data-agent-gate-settled')
-
-    agentPanelHolder.store.gateSettled.value = true
-    await nextTick()
-
     expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
   })
 })

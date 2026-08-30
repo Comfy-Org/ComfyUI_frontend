@@ -158,12 +158,17 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentFeatureGate } from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const sidebarTabStore = useSidebarTabStore()
-const agentPanelStore = useAgentPanelStore()
+const agentFeatureEnabled = useAgentFeatureGate()
+let agentPanelStore: ReturnType<typeof useAgentPanelStore> | null = null
+let agentNodeSelectionStore: ReturnType<
+  typeof useAgentNodeSelectionStore
+> | null = null
 const { t } = useI18n()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -174,15 +179,21 @@ const unifiedWidth = computed(() =>
 )
 
 const { focusMode } = storeToRefs(workspaceStore)
-const { isActive: agentNodeSelectionActive } = storeToRefs(
-  useAgentNodeSelectionStore()
-)
+const agentNodeSelectionActive = computed(() => {
+  if (!agentFeatureEnabled.value) return false
+  agentNodeSelectionStore ??= useAgentNodeSelectionStore()
+  return agentNodeSelectionStore.isActive
+})
 
 const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
-const { isOpen: agentPanelOpen } = storeToRefs(agentPanelStore)
+const agentPanelOpen = computed(() => {
+  if (!agentFeatureEnabled.value) return false
+  agentPanelStore ??= useAgentPanelStore()
+  return agentPanelStore.isOpen
+})
 // The agent docks in its own `agent-panel` slot outside the splitter, so it is
 // not an offside trigger; it only discriminates the saved layout key below.
 const showOffsideSplitter = computed(

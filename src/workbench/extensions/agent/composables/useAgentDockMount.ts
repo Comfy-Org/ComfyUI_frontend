@@ -2,6 +2,7 @@ import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent } from 'vue'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentFeatureGate } from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
@@ -18,9 +19,14 @@ export function useAgentDockMount(): AgentDockMount {
   if (__DISTRIBUTION__ !== 'cloud') {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
-  const agentPanelStore = useAgentPanelStore()
+  const featureEnabled = useAgentFeatureGate()
+  let agentPanelStore: ReturnType<typeof useAgentPanelStore> | null = null
   return {
-    docked: computed(() => agentPanelStore.enabled && agentPanelStore.isOpen),
+    docked: computed(() => {
+      if (!featureEnabled.value) return false
+      agentPanelStore ??= useAgentPanelStore()
+      return agentPanelStore.enabled && agentPanelStore.isOpen
+    }),
     DockedAgentPanel: defineAsyncComponent(
       () =>
         import('@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue')

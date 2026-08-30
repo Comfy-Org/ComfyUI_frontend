@@ -140,6 +140,25 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('transitions from disabled to in-flight, cancel, and idle states', async () => {
+    const panel = mount()
+    const textbox = screen.getByRole('textbox')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+
+    await userEvent.type(textbox, 'make a scene')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+
+    await panel.rerender({ submitting: true })
+    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+    expect(panel.emitted().stop).toHaveLength(1)
+
+    await panel.rerender({ submitting: false, streaming: true })
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+
+    await panel.rerender({ streaming: false })
+    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+  })
+
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()

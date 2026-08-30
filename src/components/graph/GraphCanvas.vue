@@ -23,9 +23,9 @@
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
-        :inert="agentNodeSelectionStore.isActive"
+        :inert="agentNodeSelectionActive"
         class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto transition-opacity duration-200 ease-in-out"
-        :class="{ 'opacity-0': agentNodeSelectionStore.isActive }"
+        :class="{ 'opacity-0': agentNodeSelectionActive }"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
@@ -208,6 +208,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useAgentFeatureGate } from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
@@ -231,7 +232,15 @@ const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const agentFeatureEnabled = useAgentFeatureGate()
+let agentNodeSelectionStore: ReturnType<
+  typeof useAgentNodeSelectionStore
+> | null = null
+const agentNodeSelectionActive = computed(() => {
+  if (!agentFeatureEnabled.value) return false
+  agentNodeSelectionStore ??= useAgentNodeSelectionStore()
+  return agentNodeSelectionStore.isActive
+})
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const { linearMode } = storeToRefs(canvasStore)
@@ -260,7 +269,7 @@ const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 const selectionToolboxEnabled = computed(
   () =>
     settingStore.get('Comfy.Canvas.SelectionToolbox') &&
-    !agentNodeSelectionStore.isActive
+    !agentNodeSelectionActive.value
 )
 const activeSidebarTab = computed(() => {
   return workspaceStore.sidebarTab.activeSidebarTab

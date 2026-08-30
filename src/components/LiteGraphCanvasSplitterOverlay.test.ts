@@ -9,6 +9,7 @@ import { createI18n } from 'vue-i18n'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
@@ -62,6 +63,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
   })
 
   it('keeps tabs with the graph and Agent panel during graph node selection', async () => {
+    api.serverFeatureFlags.value = { 'agent-in-app-experience': true }
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     setActivePinia(pinia)
     vi.mocked(useSettingStore().get).mockImplementation((id) => {
