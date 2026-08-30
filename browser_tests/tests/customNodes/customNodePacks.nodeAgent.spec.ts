@@ -27,7 +27,7 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
         await route.fulfill({ status: 201, json: testedNodeAgentProposal })
         return
       }
-      if (path.endsWith('/files')) {
+      if (path.endsWith('/apply') || path.endsWith('/files')) {
         await route.fulfill({ json: nodeAgentEditorFiles })
         return
       }
@@ -101,9 +101,15 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
         name: 'Draft test preview for output 1'
       })
     ).toBeVisible()
-    await expect(page.getByLabel('Node Agent proposed changes')).toBeVisible()
+    await expect(page.getByTestId('node-agent-conversation')).toContainText(
+      'Changes applied'
+    )
     await expect(
       page.getByRole('button', { name: 'Apply changes', exact: true })
-    ).toBeVisible()
+    ).toHaveCount(0)
+    await page
+      .getByRole('button', { name: 'v2/nodes/checkerboard.py', exact: true })
+      .click()
+    await expect(page.getByLabel('Node Agent proposed changes')).toBeVisible()
   })
 })

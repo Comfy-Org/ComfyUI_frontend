@@ -83,7 +83,7 @@ test.describe(
   () => {
     test.describe.configure({ timeout: 420_000 })
 
-    test('tests a real proposal before explicitly applying it', async ({
+    test('tests and applies a real proposal automatically', async ({
       page,
       request
     }) => {
@@ -145,13 +145,34 @@ test.describe(
         await firstTestResult.getByText('Backend test passed').click()
         await expect(firstTestResult).toContainText('Phase: complete')
         await expect(firstTestResult).toContainText('Sandbox: seatbelt')
+        await expect(page.getByTestId('node-agent-conversation')).toContainText(
+          'Changes applied'
+        )
+        await expect(
+          page.getByRole('button', { name: 'Apply changes', exact: true })
+        ).toHaveCount(0)
+
+        await expect
+          .poll(
+            async () => {
+              const applied = await getFiles(request, owner, sessionId!)
+              return {
+                changed: applied.digest !== initial.digest,
+                containsVerification: applied.files
+                  .find((file) => file.path === 'README.md')
+                  ?.content.includes(verificationLine)
+              }
+            },
+            { timeout: 30_000 }
+          )
+          .toEqual({ changed: true, containsVerification: true })
 
         await page
           .getByRole('textbox', {
             name: 'Describe what you want to build or change'
           })
           .fill(
-            `Keep the pending README change and also append a final line containing exactly: ${refinementLine} Test the complete refined candidate before returning it.`
+            `Keep the existing verification line in README.md and append another final line containing exactly: ${refinementLine} Test the complete refined candidate before returning it.`
           )
         await page.getByRole('button', { name: 'Send', exact: true }).click()
 
@@ -167,44 +188,22 @@ test.describe(
             name: 'Draft test preview for output 1'
           })
         ).toBeVisible()
-        await expect(
-          page.getByText('Replaced by a newer proposal')
-        ).toBeVisible()
-        await expect(
-          page.getByLabel('Node Agent proposed changes')
-        ).toBeVisible()
-
-        const beforeApply = await getFiles(request, owner, sessionId!)
-        expect(beforeApply.digest).toBe(initial.digest)
-        expect(
-          beforeApply.files.find((file) => file.path === 'README.md')?.content
-        ).not.toContain(verificationLine)
-
-        await page
-          .getByRole('button', { name: 'Apply changes', exact: true })
-          .click()
-        await expect(
-          page.getByRole('button', { name: 'Apply changes', exact: true })
-        ).toBeHidden()
 
         await expect
           .poll(
             async () => {
-              const applied = await getFiles(request, owner, sessionId!)
+              const refined = await getFiles(request, owner, sessionId!)
+              const readme = refined.files.find(
+                (file) => file.path === 'README.md'
+              )?.content
               return {
-                changed: applied.digest !== initial.digest,
-                containsVerification: applied.files
-                  .find((file) => file.path === 'README.md')
-                  ?.content.includes(verificationLine),
-                containsRefinement: applied.files
-                  .find((file) => file.path === 'README.md')
-                  ?.content.includes(refinementLine)
+                containsVerification: readme?.includes(verificationLine),
+                containsRefinement: readme?.includes(refinementLine)
               }
             },
             { timeout: 30_000 }
           )
           .toEqual({
-            changed: true,
             containsVerification: true,
             containsRefinement: true
           })

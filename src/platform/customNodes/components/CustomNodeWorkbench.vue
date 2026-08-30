@@ -28,9 +28,7 @@
           class="flex size-full items-center justify-center p-6"
           data-testid="proposal-structural-change"
         >
-          <div
-            class="flex max-w-lg flex-col items-center gap-3 rounded-lg border border-border-default bg-secondary-background p-6 text-center"
-          >
+          <div class="flex max-w-lg flex-col items-center gap-3 text-center">
             <i
               :class="proposalChangeIcon(selectedChange.kind)"
               class="size-6 text-muted-foreground"
@@ -160,17 +158,17 @@
 
                 <div
                   v-if="message.proposal"
-                  class="mt-2.5 overflow-hidden rounded-lg border border-border-default bg-base-background"
+                  class="mt-2 flex flex-col"
                   data-testid="node-agent-proposal"
                 >
                   <details
                     v-if="message.proposal.test"
-                    class="group border-b border-border-subtle"
+                    class="group"
                     :open="message.proposal.test.status === 'failed'"
                     data-testid="node-agent-test-result"
                   >
                     <summary
-                      class="flex cursor-pointer items-center gap-2 px-3 py-2 text-xs select-none [&::-webkit-details-marker]:hidden"
+                      class="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs select-none hover:bg-secondary-background-hover [&::-webkit-details-marker]:hidden"
                     >
                       <i
                         :class="testResultIcon(message.proposal.test.status)"
@@ -185,9 +183,11 @@
                         aria-hidden="true"
                       />
                     </summary>
-                    <div class="flex flex-col gap-2 px-3 pt-0.5 pb-2.5 text-xs">
+                    <div
+                      class="flex flex-col gap-1.5 py-1 pr-1.5 pl-7 text-xs text-muted-foreground"
+                    >
                       <p
-                        class="m-0 max-h-40 overflow-y-auto wrap-break-word whitespace-pre-wrap text-muted-foreground"
+                        class="m-0 max-h-40 overflow-y-auto wrap-break-word whitespace-pre-wrap"
                       >
                         {{ message.proposal.test.summary }}
                       </p>
@@ -197,7 +197,7 @@
                           message.proposal.test.phase ||
                           message.proposal.test.sandbox
                         "
-                        class="m-0 flex flex-wrap gap-x-2 gap-y-1 text-muted-foreground"
+                        class="m-0 flex flex-wrap gap-x-2 gap-y-1"
                       >
                         <span v-if="message.proposal.test.durationMs > 0">
                           {{
@@ -223,16 +223,17 @@
                       </p>
                       <div
                         v-if="message.proposal.test.error"
-                        class="rounded-md bg-secondary-background p-2"
                         data-testid="node-agent-python-error"
                       >
-                        <p class="m-0 font-medium wrap-break-word">
+                        <p
+                          class="m-0 font-medium wrap-break-word text-base-foreground"
+                        >
                           {{ message.proposal.test.error.type }}:
                           {{ message.proposal.test.error.message }}
                         </p>
                         <ul
                           v-if="message.proposal.test.error.frames.length > 0"
-                          class="mt-1.5 mb-0 flex list-none flex-col gap-1 p-0 font-mono text-muted-foreground"
+                          class="mt-1 mb-0 flex list-none flex-col gap-0.5 p-0 font-mono"
                           :aria-label="
                             $t('customNodePacks.editor.agent.traceback')
                           "
@@ -249,7 +250,7 @@
                             ><template v-if="frame.function">
                               — {{ frame.function }}</template
                             >
-                            <span v-if="frame.source" class="block pl-2">
+                            <span v-if="frame.source" class="block pl-3">
                               {{ frame.source }}
                             </span>
                           </li>
@@ -260,18 +261,17 @@
                           message.proposal.test.stdout ||
                           message.proposal.test.stderr
                         "
-                        class="text-muted-foreground"
                       >
                         <summary class="cursor-pointer select-none">
                           {{ $t('customNodePacks.editor.agent.testLogs') }}
                         </summary>
-                        <div class="mt-1 flex flex-col gap-2">
+                        <div class="mt-1 flex flex-col gap-1.5">
                           <div v-if="message.proposal.test.stdout">
                             <p class="m-0 font-medium">
                               {{ $t('customNodePacks.editor.agent.stdout') }}
                             </p>
                             <pre
-                              class="m-0 max-h-32 overflow-auto rounded-md bg-secondary-background p-2 font-mono whitespace-pre-wrap"
+                              class="m-0 mt-0.5 max-h-32 overflow-auto rounded-md bg-base-background p-2 font-mono whitespace-pre-wrap"
                               >{{ message.proposal.test.stdout }}</pre>
                           </div>
                           <div v-if="message.proposal.test.stderr">
@@ -279,22 +279,21 @@
                               {{ $t('customNodePacks.editor.agent.stderr') }}
                             </p>
                             <pre
-                              class="m-0 max-h-32 overflow-auto rounded-md bg-secondary-background p-2 font-mono whitespace-pre-wrap"
+                              class="m-0 mt-0.5 max-h-32 overflow-auto rounded-md bg-base-background p-2 font-mono whitespace-pre-wrap"
                               >{{ message.proposal.test.stderr }}</pre>
                           </div>
                         </div>
                       </details>
                       <div
                         v-if="message.proposal.test.outputs.length > 0"
-                        class="flex flex-col gap-2"
+                        class="flex flex-col gap-1.5"
                         data-testid="node-agent-test-outputs"
                       >
                         <div
                           v-for="output in message.proposal.test.outputs"
                           :key="output.index"
-                          class="rounded-md bg-secondary-background p-2"
                         >
-                          <p class="m-0 text-muted-foreground">
+                          <p class="m-0">
                             {{
                               $t('customNodePacks.editor.agent.testOutput', {
                                 index: output.index + 1,
@@ -310,7 +309,7 @@
                           </p>
                           <p
                             v-if="output.value !== undefined"
-                            class="mt-1 mb-0 font-mono wrap-break-word whitespace-pre-wrap text-base-foreground"
+                            class="mt-0.5 mb-0 font-mono wrap-break-word whitespace-pre-wrap"
                           >
                             {{ plainOutputValue(output.value) }}
                           </p>
@@ -318,7 +317,7 @@
                             v-if="
                               output.artifacts.some((artifact) => artifact.url)
                             "
-                            class="mt-2 grid grid-cols-2 gap-2"
+                            class="mt-1.5 grid grid-cols-2 gap-2"
                           >
                             <img
                               v-for="artifact in output.artifacts.filter(
@@ -339,83 +338,44 @@
                     </div>
                   </details>
 
-                  <div
-                    v-if="message.proposal.changes.length > 0"
-                    class="flex flex-col gap-0.5 p-1.5"
+                  <button
+                    v-for="(change, index) in message.proposal.changes"
+                    :key="`${index}:${change.kind}:${change.path}:${change.destinationPath ?? ''}`"
+                    type="button"
+                    :title="proposalChangeLabel(change)"
+                    :class="
+                      cn(
+                        'flex cursor-pointer appearance-none items-center gap-2 rounded-md border-none bg-transparent px-1.5 py-1 text-left font-inter text-xs text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none',
+                        selectedProposal?.id === message.proposal.id &&
+                          index === selectedChangeIndex &&
+                          'bg-secondary-background-hover'
+                      )
+                    "
+                    @click="selectChange(message.proposal, index)"
                   >
-                    <button
-                      v-for="(change, index) in message.proposal.changes"
-                      :key="`${index}:${change.kind}:${change.path}:${change.destinationPath ?? ''}`"
-                      type="button"
-                      :title="proposalChangeLabel(change)"
-                      :class="
-                        cn(
-                          'flex cursor-pointer appearance-none items-center gap-2 rounded-md border-none bg-transparent px-2 py-1.5 text-left text-xs text-base-foreground hover:bg-secondary-background focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none',
-                          selectedProposal?.id === message.proposal.id &&
-                            index === selectedChangeIndex &&
-                            'bg-secondary-background'
-                        )
-                      "
-                      @click="selectChange(message.proposal, index)"
-                    >
-                      <i
-                        :class="[
-                          proposalChangeIcon(change.kind),
-                          proposalChangeIconColor(change.kind)
-                        ]"
-                        class="size-3.5 shrink-0"
-                        aria-hidden="true"
-                      />
-                      <span class="min-w-0 flex-1 truncate">
-                        {{ proposalChangeLabel(change) }}
-                      </span>
-                    </button>
-                  </div>
+                    <i
+                      :class="[
+                        proposalChangeIcon(change.kind),
+                        proposalChangeIconColor(change.kind)
+                      ]"
+                      class="size-3.5 shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span class="min-w-0 flex-1 truncate">
+                      {{ proposalChangeLabel(change) }}
+                    </span>
+                  </button>
 
-                  <div
-                    class="flex items-center justify-between gap-3 border-t border-border-subtle px-3 py-2"
+                  <p
+                    v-if="message.applied"
+                    class="m-0 flex items-center gap-2 px-1.5 py-1 text-xs text-muted-foreground"
                   >
-                    <template v-if="message.proposalState === 'pending'">
-                      <p
-                        class="m-0 min-w-0 flex-1 text-xs/4 text-muted-foreground"
-                      >
-                        {{ $t('customNodePacks.editor.agent.reviewNotice') }}
-                      </p>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        class="shrink-0"
-                        :loading="isApplyingMessage(message.id)"
-                        :disabled="runState.phase !== 'idle'"
-                        @click="applyProposal(message)"
-                      >
-                        <i
-                          class="icon-[lucide--check] size-3.5"
-                          aria-hidden="true"
-                        />
-                        {{ $t('customNodePacks.editor.agent.apply') }}
-                      </Button>
-                    </template>
-                    <p
-                      v-else-if="message.proposalState"
-                      class="m-0 flex items-center gap-1.5 text-xs text-muted-foreground"
-                    >
-                      <i
-                        :class="
-                          message.proposalState === 'applied'
-                            ? 'icon-[lucide--check] text-success-background'
-                            : 'icon-[lucide--history]'
-                        "
-                        class="size-3.5 shrink-0"
-                        aria-hidden="true"
-                      />
-                      {{
-                        $t(
-                          `customNodePacks.editor.agent.${message.proposalState}`
-                        )
-                      }}
-                    </p>
-                  </div>
+                    <i
+                      class="icon-[lucide--check] size-3.5 shrink-0 text-success-background"
+                      aria-hidden="true"
+                    />
+                    {{ $t('customNodePacks.editor.agent.applied') }}
+                  </p>
                 </div>
               </div>
             </li>
@@ -438,7 +398,6 @@
               :placeholder="$t('customNodePacks.editor.agent.placeholder')"
               :aria-label="$t('customNodePacks.editor.agent.placeholder')"
               maxlength="4096"
-              :disabled="runState.phase === 'applying'"
               @keydown.enter.exact.prevent="askAgent"
             />
             <div class="flex items-center justify-end px-1.5 pb-1.5">
@@ -528,7 +487,6 @@ const promptInputRef =
 const conversationRef = useTemplateRef<HTMLDivElement>('conversationRef')
 
 type AgentMessageKind = 'message' | 'working' | 'error' | 'stopped'
-type AgentProposalState = 'pending' | 'applied' | 'superseded'
 
 interface AgentChatMessage {
   id: string
@@ -536,13 +494,12 @@ interface AgentChatMessage {
   content: string
   kind: AgentMessageKind
   proposal?: CustomNodeEditorProposalView
-  proposalState?: AgentProposalState
+  applied?: boolean
 }
 
 type AgentRunState =
   | { phase: 'idle' }
   | { phase: 'asking'; controller: AbortController }
-  | { phase: 'applying'; messageId: string }
 
 const editorStateKey = computed(() =>
   customNodeEditorStateKey(teamWorkspaceStore.activeWorkspaceId, packName)
@@ -591,14 +548,6 @@ function replaceMessage(id: string, replacement: Omit<AgentChatMessage, 'id'>) {
   )
 }
 
-function supersedePendingProposals() {
-  messages.value = messages.value.map((message) =>
-    message.proposalState === 'pending'
-      ? { ...message, proposalState: 'superseded' }
-      : message
-  )
-}
-
 async function askAgent() {
   const requestedChange = instruction.value.trim()
   if (!requestedChange || runState.value.phase !== 'idle') return
@@ -632,16 +581,13 @@ async function askAgent() {
       controller.signal
     )
     if (controller.signal.aborted) return
-    supersedePendingProposals()
     replaceMessage(responseMessageId, {
       role: 'assistant',
       content: proposal.summary,
       kind: 'message',
-      proposal,
-      proposalState: 'pending'
+      proposal
     })
-    selectedProposal.value = proposal
-    selectedChangeIndex.value = proposal.changes.length > 0 ? 0 : -1
+    await applyProposal(responseMessageId, proposal)
   } catch (error) {
     if (isAbortError(error)) {
       replaceMessage(responseMessageId, {
@@ -672,48 +618,16 @@ async function askAgent() {
   }
 }
 
-function stopAgent() {
-  if (runState.value.phase === 'asking') {
-    runState.value.controller.abort()
-  }
-}
-
-function useSamplePrompt() {
-  instruction.value = t('customNodePacks.editor.agent.samplePrompt')
-  promptInputRef.value?.focus()
-}
-
-function selectChange(proposal: CustomNodeEditorProposalView, index: number) {
-  selectedProposal.value = proposal
-  selectedChangeIndex.value = index
-}
-
-function isApplyingMessage(messageId: string): boolean {
-  return (
-    runState.value.phase === 'applying' &&
-    runState.value.messageId === messageId
-  )
-}
-
-async function applyProposal(message: AgentChatMessage) {
-  if (
-    !message.proposal ||
-    message.proposalState !== 'pending' ||
-    runState.value.phase !== 'idle'
-  ) {
-    return
-  }
-  runState.value = { phase: 'applying', messageId: message.id }
+async function applyProposal(
+  messageId: string,
+  proposal: CustomNodeEditorProposalView
+) {
   try {
-    const result = await applyAgentProposal(sessionId, message.proposal.id)
+    const result = await applyAgentProposal(sessionId, proposal.id)
     await treeEditorRef.value?.replaceFiles(result)
     messages.value = messages.value.map((candidate) =>
-      candidate.id === message.id
-        ? { ...candidate, proposalState: 'applied' }
-        : candidate
+      candidate.id === messageId ? { ...candidate, applied: true } : candidate
     )
-    selectedProposal.value = null
-    selectedChangeIndex.value = -1
   } catch (error) {
     reportError(error, { errorType: 'custom_node_agent_apply_failed' })
     messages.value = [
@@ -728,10 +642,31 @@ async function applyProposal(message: AgentChatMessage) {
         kind: 'error'
       }
     ]
-  } finally {
-    runState.value = { phase: 'idle' }
-    await scrollConversation()
   }
+}
+
+function stopAgent() {
+  if (runState.value.phase === 'asking') {
+    runState.value.controller.abort()
+  }
+}
+
+function useSamplePrompt() {
+  instruction.value = t('customNodePacks.editor.agent.samplePrompt')
+  promptInputRef.value?.focus()
+}
+
+function selectChange(proposal: CustomNodeEditorProposalView, index: number) {
+  if (
+    selectedProposal.value?.id === proposal.id &&
+    selectedChangeIndex.value === index
+  ) {
+    selectedProposal.value = null
+    selectedChangeIndex.value = -1
+    return
+  }
+  selectedProposal.value = proposal
+  selectedChangeIndex.value = index
 }
 
 function isAbortError(error: unknown): boolean {

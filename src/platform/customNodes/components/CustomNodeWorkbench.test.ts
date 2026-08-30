@@ -96,10 +96,7 @@ const i18n = createI18n({
             stop: 'Stop',
             stopped: 'Stopped.',
             applied: 'Changes applied',
-            superseded: 'Replaced by a newer proposal',
-            ask: 'Propose changes',
             working: 'Building and testing…',
-            proposal: 'Proposed changes',
             testStatus: {
               passed: 'Backend test passed',
               failed: 'Backend test failed',
@@ -115,21 +112,30 @@ const i18n = createI18n({
             stderr: 'stderr',
             testOutput: 'Output {index}: {kind}',
             testPreview: 'Draft test preview for output {output}',
-            reviewNotice: 'Review before applying.',
-            apply: 'Apply changes',
-            dismiss: 'Dismiss',
             failed: 'Proposal failed',
             applyFailed: 'Apply failed',
             structuralChange: 'This changes the project tree.',
             unavailable: 'Node Agent unavailable',
-            unavailableDetail: 'Server key required',
-            safety: 'Node Agent cannot run code or submit.'
+            unavailableDetail: 'Server key required'
           }
         }
       }
     }
   }
 })
+
+const appliedFiles = {
+  files: [
+    {
+      path: 'v2/nodes/checkerboard.py',
+      content: '# agent proposal\n',
+      editable: true
+    }
+  ],
+  directories: ['v2', 'v2/nodes'],
+  initialPath: 'v2/nodes/checkerboard.py',
+  digest: 'digest-2'
+}
 
 const WorkbenchHarness = defineComponent({
   components: { CustomNodeWorkbench },
@@ -152,7 +158,7 @@ const WorkbenchHarness = defineComponent({
 describe('CustomNodeWorkbench', () => {
   beforeEach(() => {
     localStorage.clear()
-    mocks.applyAgentProposal.mockReset()
+    mocks.applyAgentProposal.mockReset().mockResolvedValue(appliedFiles)
     mocks.createAgentProposal.mockReset()
     mocks.replaceFiles.mockReset().mockResolvedValue(undefined)
     mocks.reportError.mockReset()
@@ -191,7 +197,7 @@ describe('CustomNodeWorkbench', () => {
     expect(screen.queryByText(/Getting Started/i)).not.toBeInTheDocument()
   })
 
-  it('saves edits before requesting a proposal and applies only after review', async () => {
+  it('saves edits, tests, and applies agent work automatically', async () => {
     const user = userEvent.setup()
     mocks.createAgentProposal.mockResolvedValue({
       id: 'proposal-1',
@@ -231,19 +237,6 @@ describe('CustomNodeWorkbench', () => {
       },
       createdAt: '2026-08-29T12:00:00Z'
     })
-    const appliedFiles = {
-      files: [
-        {
-          path: 'v2/nodes/checkerboard.py',
-          content: '# agent proposal\n',
-          editable: true
-        }
-      ],
-      directories: ['v2', 'v2/nodes'],
-      initialPath: 'v2/nodes/checkerboard.py',
-      digest: 'digest-2'
-    }
-    mocks.applyAgentProposal.mockResolvedValue(appliedFiles)
 
     render(CustomNodeWorkbench, {
       props: {
@@ -267,9 +260,17 @@ describe('CustomNodeWorkbench', () => {
         'Add a configurable color',
         expect.any(AbortSignal)
       )
+      expect(mocks.applyAgentProposal).toHaveBeenCalledWith(
+        'session-1',
+        'proposal-1'
+      )
+      expect(mocks.replaceFiles).toHaveBeenCalledWith(appliedFiles)
     })
     expect(mocks.saveAll.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.createAgentProposal.mock.invocationCallOrder[0]
+    )
+    expect(mocks.createAgentProposal.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.applyAgentProposal.mock.invocationCallOrder[0]
     )
     expect(screen.getByText('Added a configurable color.')).toBeVisible()
     expect(
@@ -279,6 +280,11 @@ describe('CustomNodeWorkbench', () => {
     expect(
       screen.getByRole('textbox', { name: 'Describe a node change' })
     ).toBeVisible()
+    expect(screen.getByText('Changes applied')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Apply changes' })
+    ).not.toBeInTheDocument()
+
     expect(screen.getByText('Backend test passed')).toBeVisible()
     expect(
       screen.getByText('Ephemeral test workflow completed with 1 output.')
@@ -299,6 +305,11 @@ describe('CustomNodeWorkbench', () => {
       'src',
       '/api/customnodes/editor/sessions/session-1/tests/test-1/artifacts/output-0-0.png'
     )
+
+    expect(screen.queryByTestId('proposal-diff')).not.toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: 'v2/nodes/checkerboard.py' })
+    )
     expect(screen.getByTestId('proposal-diff')).toHaveAttribute(
       'data-theme',
       'dark'
@@ -309,19 +320,11 @@ describe('CustomNodeWorkbench', () => {
     expect(screen.getByTestId('proposed-content')).toHaveTextContent(
       '# agent proposal'
     )
-    expect(mocks.applyAgentProposal).not.toHaveBeenCalled()
-
-    await user.click(screen.getByRole('button', { name: 'Apply changes' }))
-
-    await waitFor(() => {
-      expect(mocks.applyAgentProposal).toHaveBeenCalledWith(
-        'session-1',
-        'proposal-1'
-      )
-      expect(mocks.replaceFiles).toHaveBeenCalledWith(appliedFiles)
-    })
+    await user.click(
+      screen.getByRole('button', { name: 'v2/nodes/checkerboard.py' })
+    )
+    expect(screen.queryByTestId('proposal-diff')).not.toBeInTheDocument()
     expect(screen.getByTestId('custom-node-tree-editor')).toBeVisible()
-    expect(screen.getByText('Changes applied')).toBeVisible()
   })
 
   it('reviews structural Node Agent operations without showing an empty diff', async () => {
@@ -355,10 +358,13 @@ describe('CustomNodeWorkbench', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Send' }))
 
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'v2/nodes/helper.py → v2/nodes/helpers/helper.py'
+      })
+    )
     expect(
-      await screen.findAllByText(
-        'v2/nodes/helper.py → v2/nodes/helpers/helper.py'
-      )
+      screen.getAllByText('v2/nodes/helper.py → v2/nodes/helpers/helper.py')
     ).toHaveLength(2)
     expect(screen.getByTestId('proposal-structural-change')).toBeVisible()
     expect(screen.queryByTestId('proposal-diff')).not.toBeInTheDocument()
@@ -475,10 +481,11 @@ describe('CustomNodeWorkbench', () => {
 
     expect(await screen.findByText('Stopped.')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Send' })).toBeVisible()
+    expect(mocks.applyAgentProposal).not.toHaveBeenCalled()
     expect(mocks.reportError).not.toHaveBeenCalled()
   })
 
-  it('keeps later prompts and agent work in one conversation', async () => {
+  it('keeps later prompts and applied agent work in one conversation', async () => {
     const user = userEvent.setup()
     mocks.createAgentProposal
       .mockResolvedValueOnce({
@@ -496,12 +503,12 @@ describe('CustomNodeWorkbench', () => {
       })
       .mockResolvedValueOnce({
         id: 'proposal-2',
-        summary: 'Refined the pending change.',
+        summary: 'Refined the applied change.',
         changes: [
           {
             kind: 'modified',
             path: 'README.md',
-            originalContent: 'before',
+            originalContent: 'first',
             proposedContent: 'refined'
           }
         ],
@@ -526,18 +533,59 @@ describe('CustomNodeWorkbench', () => {
 
     await user.type(prompt, 'Now refine it')
     await user.click(screen.getByRole('button', { name: 'Send' }))
-    expect(await screen.findByText('Refined the pending change.')).toBeVisible()
+    expect(await screen.findByText('Refined the applied change.')).toBeVisible()
 
     const conversation = screen.getByTestId('node-agent-conversation')
     expect(conversation).toHaveTextContent('Build the first version')
     expect(conversation).toHaveTextContent('Prepared the first change.')
     expect(conversation).toHaveTextContent('Now refine it')
-    expect(conversation).toHaveTextContent('Refined the pending change.')
-    expect(conversation).toHaveTextContent('Replaced by a newer proposal')
-    expect(
-      screen.getAllByRole('button', { name: 'Apply changes' })
-    ).toHaveLength(1)
+    expect(conversation).toHaveTextContent('Refined the applied change.')
+    await waitFor(() => {
+      expect(screen.getAllByText('Changes applied')).toHaveLength(2)
+    })
     expect(mocks.createAgentProposal).toHaveBeenCalledTimes(2)
+    expect(mocks.applyAgentProposal).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports when applying the agent work fails', async () => {
+    const user = userEvent.setup()
+    mocks.createAgentProposal.mockResolvedValue({
+      id: 'proposal-1',
+      summary: 'Prepared the change.',
+      changes: [
+        {
+          kind: 'modified',
+          path: 'README.md',
+          originalContent: 'before',
+          proposedContent: 'after'
+        }
+      ],
+      createdAt: '2026-08-29T12:00:00Z'
+    })
+    mocks.applyAgentProposal.mockRejectedValue(
+      new Error('The workspace changed while applying.')
+    )
+
+    render(CustomNodeWorkbench, {
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
+      global: { plugins: [i18n] }
+    })
+    await user.type(
+      screen.getByRole('textbox', { name: 'Describe a node change' }),
+      'Change the readme'
+    )
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText('The workspace changed while applying.')
+    ).toBeVisible()
+    expect(screen.getByText('Prepared the change.')).toBeVisible()
+    expect(screen.queryByText('Changes applied')).not.toBeInTheDocument()
+    expect(mocks.reportError).toHaveBeenCalledOnce()
   })
 
   it('moves the local editor state when the pack is renamed', async () => {

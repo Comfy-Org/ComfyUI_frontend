@@ -82,10 +82,7 @@
         "stop": "Stop",
         "stopped": "Stopped.",
         "applied": "Changes applied",
-        "superseded": "Replaced by a newer proposal",
-        "ask": "Propose changes",
         "working": "Building and testing…",
-        "proposal": "Proposed changes",
         "testStatus": {
           "passed": "Backend test passed",
           "failed": "Backend test failed",
@@ -101,15 +98,11 @@
         "stderr": "stderr",
         "testOutput": "Output {index}: {kind}",
         "testPreview": "Draft test preview for output {output}",
-        "reviewNotice": "Review each diff. Nothing changes until you apply the proposal.",
-        "apply": "Apply changes",
-        "dismiss": "Dismiss",
         "failed": "Node Agent could not create a proposal.",
         "applyFailed": "Could not apply the proposal.",
         "structuralChange": "This operation changes the project tree and does not need a source diff.",
         "unavailable": "Node Agent is not configured for this environment.",
-        "unavailableDetail": "A server-owned hosted-model API key is required. Do not enter personal credentials here.",
-        "safety": "When asked, Node Agent sends the editable pack text to our hosted model. It cannot execute inside the editor, install extensions, access credentials, or submit the pack. Tests ZIP the unpublished snapshot, render its packaged workflow once in a disposable networkless backend sandbox, and delete the ephemeral pack without registering it or adding it to the node library."
+        "unavailableDetail": "A server-owned hosted-model API key is required. Do not enter personal credentials here."
       },
       "status": {
         "creating": "Preparing editor",
