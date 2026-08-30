@@ -7,6 +7,7 @@
       :min="min"
       :max="max"
       :step="step"
+      :disabled="disabled"
       v-bind="$attrs"
       @update:model-value="(value) => updateValue(value?.[0] ?? modelValue)"
     />
@@ -18,6 +19,7 @@
       :min="min"
       :max="max"
       :step="step"
+      :disabled="disabled"
       @update:model-value="updateValue"
     />
   </div>
@@ -36,6 +38,7 @@ const props = defineProps<{
   min?: number
   max?: number
   step?: number
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
