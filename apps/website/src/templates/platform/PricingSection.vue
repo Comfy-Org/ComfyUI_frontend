@@ -17,7 +17,6 @@ const {
 
 // Rates from the Limited Beta PRFAQ (USD and Comfy Credits).
 const gpuRates = [
-  { gpu: 'RTX 5090', vram: '32 GB', price: '$1.58/hr', credits: '333.38/hr' },
   {
     gpu: 'RTX PRO 6000',
     vram: '96 GB',

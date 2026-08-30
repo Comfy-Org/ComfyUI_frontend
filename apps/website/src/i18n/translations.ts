@@ -7834,64 +7834,6 @@ const translations = {
     'zh-CN': '目标是 2026 年 9 月底。'
   },
   // ── Serverless API subpage ────────────────────────────────────
-  'platform.serverlessFeatures.heading': {
-    en: 'Everything an endpoint needs',
-    'zh-CN': '一个端点所需的一切'
-  },
-  'platform.serverlessFeatures.1.title': {
-    en: 'Autoscaling with warm workers',
-    'zh-CN': '自动扩缩与常驻工作节点'
-  },
-  'platform.serverlessFeatures.1.description': {
-    en: 'Endpoints scale with request volume. Set minWorkers above zero to keep warm workers on the endpoints that need them.',
-    'zh-CN':
-      '端点随请求量自动扩缩。把 minWorkers 设为大于零，就能为需要的端点保留常驻工作节点。'
-  },
-  'platform.serverlessFeatures.2.title': {
-    en: 'Choose your GPU',
-    'zh-CN': '自选 GPU'
-  },
-  'platform.serverlessFeatures.2.description': {
-    en: 'RTX 5090 to B200 — pick the GPU class each deployment runs on. Billed by the GPU second.',
-    'zh-CN':
-      '从 RTX 5090 到 B200——为每个部署选择运行的 GPU 级别，按 GPU 秒计费。'
-  },
-  'platform.serverlessFeatures.3.title': {
-    en: 'Deploy in one step',
-    'zh-CN': '一步部署'
-  },
-  'platform.serverlessFeatures.3.description': {
-    en: 'Drag a workflow into the console or deploy from comfy-cli. Builder resolves it into an immutable build first.',
-    'zh-CN':
-      '把工作流拖进控制台，或用 comfy-cli 部署。Builder 会先把它解析成一个不可变构建。'
-  },
-  'platform.serverlessFeatures.4.title': {
-    en: 'SDK or plain HTTP',
-    'zh-CN': 'SDK 或纯 HTTP'
-  },
-  'platform.serverlessFeatures.4.description': {
-    en: 'Python and TypeScript SDKs are the front door; a plain POST to your endpoint URL works too.',
-    'zh-CN':
-      'Python 和 TypeScript SDK 是首选入口；直接向端点 URL 发 POST 同样可行。'
-  },
-  'platform.serverlessFeatures.5.title': {
-    en: 'Private by default',
-    'zh-CN': '默认私有'
-  },
-  'platform.serverlessFeatures.5.description': {
-    en: 'Models and code stay in your builds and deployments — delete them anytime. Generated outputs are retained for 24 hours.',
-    'zh-CN':
-      '模型和代码只存在于你的构建与部署中——随时可以删除。生成结果保留 24 小时。'
-  },
-  'platform.serverlessFeatures.6.title': {
-    en: 'Limits that grow with you',
-    'zh-CN': '随你增长的限额'
-  },
-  'platform.serverlessFeatures.6.description': {
-    en: 'Beta limits — 10 concurrent workers, 10 builds, 3 deployments, 500 GB of models per deployment — are all raisable on request.',
-    'zh-CN':
-      '测试期限额——10 个并发工作节点、10 个构建、3 个部署、每个部署 500 GB 模型——均可申请提高。'
-  },
   // ── Router subpage ────────────────────────────────────────────
   'platform.modelsFeatures.heading': {
     en: 'One key, every frontier model',
