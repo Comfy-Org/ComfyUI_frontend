@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { render, fireEvent } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -173,4 +174,30 @@ describe('AssetsSidebarListView', () => {
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
   })
+
+  for (const key of ['{Enter}', '{Space}']) {
+    it.fails(`selects a focused asset with ${key}`, async () => {
+      const user = userEvent.setup()
+      const imageAsset = {
+        ...buildAsset(`image-asset-${key}`, 'image.png'),
+        user_metadata: {}
+      } satisfies AssetItem
+      const onSelectAsset = vi.fn()
+
+      renderListView([buildOutputItem(imageAsset)], {
+        selectableAssets: [imageAsset],
+        'onSelect-asset': onSelectAsset
+      })
+
+      const item = screen.getByRole('button', {
+        name: 'assetBrowser.ariaLabel.assetCard'
+      })
+      item.focus()
+      expect(item).toHaveFocus()
+
+      await user.keyboard(key)
+
+      expect(onSelectAsset).toHaveBeenCalledWith(imageAsset, [imageAsset])
+    })
+  }
 })
