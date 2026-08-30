@@ -7,12 +7,18 @@
     @hide="onMenuHide"
   >
     <template #item="{ item, props, hasSubmenu }">
-      <a
-        v-bind="props.action"
-        class="flex items-center gap-2 px-3 py-1.5"
-        @click="onItemClick($event, item)"
-      >
-        <i v-if="item.icon" :class="[item.icon, 'size-4']" />
+      <a v-bind="props.action" class="flex items-center gap-2 px-3 py-1.5">
+        <span
+          v-if="item.color"
+          class="size-5 rounded-full border border-border-default"
+          :style="{ backgroundColor: item.color }"
+        />
+        <i v-else-if="item.icon" :class="[item.icon, 'size-4']" />
+        <i
+          v-else-if="item.checked"
+          class="icon-[lucide--check] size-4 shrink-0"
+        />
+        <span v-else-if="item.isShapeSubmenuItem" class="w-4 shrink-0" />
         <span class="flex-1">{{ item.label }}</span>
         <span
           v-if="item.shortcut"
@@ -21,28 +27,12 @@
           {{ item.shortcut }}
         </span>
         <i
-          v-if="hasSubmenu || item.isColorSubmenu || item.isShapeSubmenu"
+          v-if="hasSubmenu"
           class="icon-[lucide--chevron-right] size-4 opacity-60"
         />
       </a>
     </template>
   </ContextMenu>
-
-  <SubmenuPopover
-    v-if="colorOption"
-    ref="colorSubmenu"
-    key="color-submenu"
-    :option="colorOption"
-    @submenu-click="handleSubmenuSelect"
-  />
-
-  <SubmenuPopover
-    v-if="shapeOption"
-    ref="shapeSubmenu"
-    key="shape-submenu"
-    :option="shapeOption"
-    @submenu-click="handleSubmenuSelect"
-  />
 </template>
 
 <script setup lang="ts">
@@ -55,27 +45,15 @@ import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
-import type {
-  MenuOption,
-  SubMenuOption
-} from '@/composables/graph/useMoreOptionsMenu'
+import type { MenuOption } from '@/composables/graph/useMoreOptionsMenu'
+import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-import SubmenuPopover from './selectionToolbox/SubmenuPopover.vue'
-
-interface ExtendedMenuItem extends MenuItem {
-  isColorSubmenu?: boolean
-  isShapeSubmenu?: boolean
-  shortcut?: string
-  originalOption?: MenuOption
-}
-
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
-const colorSubmenu = ref<InstanceType<typeof SubmenuPopover>>()
-const shapeSubmenu = ref<InstanceType<typeof SubmenuPopover>>()
 const isOpen = ref(false)
 
 const { menuOptions, bump } = useMoreOptionsMenu()
+const { getCurrentShape } = useNodeCustomization()
 const canvasStore = useCanvasStore()
 
 // World position (canvas coordinates) where menu was opened
@@ -159,35 +137,25 @@ useEventListener(
   { passive: true }
 )
 
-const colorOption = computed(() =>
-  menuOptions.value.find((opt) => opt.isColorPicker)
-)
-
-const shapeOption = computed(() =>
-  menuOptions.value.find((opt) => opt.isShapePicker)
-)
-
-function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
+function convertToMenuItem(option: MenuOption): MenuItem {
   if (option.type === 'divider') return { separator: true }
 
-  const isColor = Boolean(option.isColorPicker)
-  const isShape = Boolean(option.isShapePicker)
-  const usesPopover = isColor || isShape
-
-  const item: ExtendedMenuItem = {
+  const item: MenuItem = {
     label: option.label,
     icon: option.icon,
     disabled: option.disabled,
-    shortcut: option.shortcut,
-    isColorSubmenu: isColor,
-    isShapeSubmenu: isShape,
-    originalOption: option
+    shortcut: option.shortcut
   }
 
-  if (option.hasSubmenu && option.submenu && !usesPopover) {
+  if (option.hasSubmenu && option.submenu) {
     item.items = option.submenu.map((sub) => ({
       label: sub.label,
       icon: sub.icon,
+      color: sub.color,
+      checked:
+        Boolean(option.isShapePicker) &&
+        getCurrentShape()?.localizedName === sub.label,
+      isShapeSubmenuItem: Boolean(option.isShapePicker),
       disabled: sub.disabled,
       command: () => {
         sub.action()
@@ -207,7 +175,7 @@ function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
 }
 
 // Build menu items
-const menuItems = computed<ExtendedMenuItem[]>(() =>
+const menuItems = computed<MenuItem[]>(() =>
   menuOptions.value.map(convertToMenuItem)
 )
 
@@ -251,34 +219,6 @@ function toggle(event: Event) {
 }
 
 defineExpose({ toggle, hide, isOpen, show })
-
-function onItemClick(event: MouseEvent, item: ExtendedMenuItem) {
-  if (item.isColorSubmenu) {
-    openSubmenuPopover(event, colorSubmenu.value, shapeSubmenu.value)
-  } else if (item.isShapeSubmenu) {
-    openSubmenuPopover(event, shapeSubmenu.value, colorSubmenu.value)
-  }
-}
-
-function openSubmenuPopover(
-  event: MouseEvent,
-  target: InstanceType<typeof SubmenuPopover> | undefined,
-  other: InstanceType<typeof SubmenuPopover> | undefined
-) {
-  if (!target) return
-  event.stopPropagation()
-  event.preventDefault()
-  other?.hide()
-  const anchor = Array.from((event.currentTarget as HTMLElement).children).find(
-    (el) => el.classList.contains('icon-[lucide--chevron-right]')
-  ) as HTMLElement
-  target.toggle(event, anchor)
-}
-
-function handleSubmenuSelect(subOption: SubMenuOption) {
-  subOption.action()
-  hide()
-}
 
 function onMenuShow() {
   isOpen.value = true
