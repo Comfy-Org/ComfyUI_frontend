@@ -1,9 +1,19 @@
+import type {
+  CustomNodeEditorDraftTest as CustomNodeEditorDraftTestDto,
+  CustomNodeEditorDraftTestError,
+  CustomNodeEditorDraftTestOutput,
+  CustomNodeEditorDraftTestRequest,
+  CustomNodeEditorDraftTestResult,
+  CustomNodeEditorProposal as GeneratedCustomNodeEditorProposal,
+  CustomNodeEditorTestResult as CustomNodeEditorTestResultDto
+} from '@comfyorg/ingest-types'
+
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
-export type CustomNodeEditorMode = 'create' | 'edit'
+type CustomNodeEditorMode = 'create' | 'edit'
 export type CustomNodeEditorAction = 'submit' | 'validate'
-export type CustomNodeEditorKind = 'workbench' | 'vscode'
+type CustomNodeEditorKind = 'workbench' | 'vscode'
 export type CustomNodeEditorStatus =
   | 'creating'
   | 'ready'
@@ -67,25 +77,37 @@ export interface CustomNodeEditorProposalChange {
   proposedContent: string
 }
 
-export type CustomNodeEditorTestStatus =
-  | 'passed'
-  | 'failed'
-  | 'not_run'
-  | 'unavailable'
+export type CustomNodeEditorTestStatus = CustomNodeEditorTestResultDto['status']
 
-export interface CustomNodeEditorTestResult {
+interface CustomNodeEditorTestResultView {
   status: CustomNodeEditorTestStatus
   summary: string
-  promptId?: string
+  testId?: string
+  phase?: CustomNodeEditorTestResultDto['phase']
+  sandbox?: string
   durationMs: number
-  outputNodes: string[]
+  stdout: string
+  stderr: string
+  outputs: CustomNodeEditorDraftTestOutput[]
+  error?: CustomNodeEditorDraftTestError
 }
 
-export interface CustomNodeEditorProposal {
+export interface CustomNodeEditorDraftTestView {
+  id: string
+  status: CustomNodeEditorDraftTestDto['status']
+  draftDigest: string
+  nodeId: string
+  error?: string
+  result?: CustomNodeEditorDraftTestResult
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CustomNodeEditorProposalView {
   id: string
   summary: string
   changes: CustomNodeEditorProposalChange[]
-  test?: CustomNodeEditorTestResult
+  test?: CustomNodeEditorTestResultView
   createdAt: string
 }
 
@@ -160,7 +182,7 @@ const readSession = async (
   return toSession((await response.json()) as CustomNodeEditorSessionDto)
 }
 
-export interface CustomNodeEditorFileDto {
+interface CustomNodeEditorFileDto {
   path: string
   content: string
   editable: boolean
@@ -173,25 +195,7 @@ export interface CustomNodeEditorFilesDto {
   digest?: string
 }
 
-export interface CustomNodeEditorProposalDto {
-  id: string
-  summary: string
-  changes: Array<{
-    kind?: CustomNodeEditorProposalChangeKind
-    path: string
-    destination_path?: string
-    original_content: string
-    proposed_content: string
-  }>
-  test?: {
-    status: CustomNodeEditorTestStatus
-    summary: string
-    prompt_id?: string
-    duration_ms: number
-    output_nodes?: string[]
-  }
-  created_at: string
-}
+export type CustomNodeEditorProposalDto = GeneratedCustomNodeEditorProposal
 
 const readFiles = async (
   response: Response
@@ -208,14 +212,14 @@ const readFiles = async (
 
 const readProposal = async (
   response: Response
-): Promise<CustomNodeEditorProposal> => {
+): Promise<CustomNodeEditorProposalView> => {
   if (!response.ok) throw await readError(response)
   const data = (await response.json()) as CustomNodeEditorProposalDto
   return {
     id: data.id,
     summary: data.summary,
     changes: data.changes.map((change) => ({
-      kind: change.kind ?? 'modified',
+      kind: change.kind,
       path: change.path,
       destinationPath: change.destination_path,
       originalContent: change.original_content,
@@ -225,12 +229,34 @@ const readProposal = async (
       ? {
           status: data.test.status,
           summary: data.test.summary,
-          promptId: data.test.prompt_id,
+          testId: data.test.test_id,
+          phase: data.test.phase,
+          sandbox: data.test.sandbox,
           durationMs: data.test.duration_ms,
-          outputNodes: data.test.output_nodes ?? []
+          stdout: data.test.stdout ?? '',
+          stderr: data.test.stderr ?? '',
+          outputs: data.test.outputs ?? [],
+          error: data.test.error
         }
       : undefined,
     createdAt: data.created_at
+  }
+}
+
+const readDraftTest = async (
+  response: Response
+): Promise<CustomNodeEditorDraftTestView> => {
+  if (!response.ok) throw await readError(response)
+  const data = (await response.json()) as CustomNodeEditorDraftTestDto
+  return {
+    id: data.id,
+    status: data.status,
+    draftDigest: data.draft_digest,
+    nodeId: data.node_id,
+    error: data.error,
+    result: data.result,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at
   }
 }
 
@@ -358,7 +384,7 @@ export function useCustomNodeEditor() {
   const createAgentProposal = async (
     id: string,
     instruction: string
-  ): Promise<CustomNodeEditorProposal> =>
+  ): Promise<CustomNodeEditorProposalView> =>
     readProposal(
       await api.fetchApi(
         `/customnodes/editor/sessions/${encodeURIComponent(id)}/agent/proposals`,
@@ -385,6 +411,40 @@ export function useCustomNodeEditor() {
       )
     )
 
+  const createDraftTest = async (
+    id: string,
+    test: CustomNodeEditorDraftTestRequest
+  ): Promise<CustomNodeEditorDraftTestView> =>
+    readDraftTest(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}/tests`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(test)
+        }
+      )
+    )
+
+  const getDraftTest = async (
+    id: string,
+    testId: string
+  ): Promise<CustomNodeEditorDraftTestView> =>
+    readDraftTest(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}/tests/${encodeURIComponent(testId)}`,
+        { method: 'GET' }
+      )
+    )
+
+  const deleteDraftTest = async (id: string, testId: string): Promise<void> => {
+    const response = await api.fetchApi(
+      `/customnodes/editor/sessions/${encodeURIComponent(id)}/tests/${encodeURIComponent(testId)}`,
+      { method: 'DELETE' }
+    )
+    if (!response.ok) throw await readError(response)
+  }
+
   const refreshNodeDefinitions = async (id: string): Promise<void> => {
     const response = await api.fetchApi(
       `/customnodes/editor/sessions/${encodeURIComponent(id)}/refresh`,
@@ -404,6 +464,9 @@ export function useCustomNodeEditor() {
     applyOperations,
     createAgentProposal,
     applyAgentProposal,
+    createDraftTest,
+    getDraftTest,
+    deleteDraftTest,
     abandonSession,
     refreshNodeDefinitions
   }

@@ -76,10 +76,17 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
     const testResult = page.getByTestId('node-agent-test-result')
     await expect(testResult).toContainText('Backend test passed')
     await expect(testResult).toContainText(
-      'Workflow completed with 1 output node(s).'
+      'Draft node executed successfully with 1 output.'
     )
-    await expect(testResult).toContainText('Completed in 13281 ms')
-    await expect(testResult).toContainText('Output nodes: 3')
+    await expect(testResult).toContainText('Completed in 2184 ms')
+    await expect(testResult).toContainText('Phase: complete')
+    await expect(testResult).toContainText('Sandbox: seatbelt')
+    await expect(testResult).toContainText('Output 1: IMAGE')
+    await expect(
+      testResult.getByRole('img', {
+        name: 'Draft test preview for output 1'
+      })
+    ).toBeVisible()
     await expect(page.getByLabel('Node Agent proposed changes')).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'Apply changes', exact: true })

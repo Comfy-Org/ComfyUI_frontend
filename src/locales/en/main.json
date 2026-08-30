@@ -87,7 +87,14 @@
           "unavailable": "Backend test unavailable"
         },
         "testDuration": "Completed in {duration} ms",
-        "testOutputs": "Output nodes: {nodes}",
+        "testPhase": "Phase: {phase}",
+        "testSandbox": "Sandbox: {sandbox}",
+        "traceback": "Python traceback",
+        "testLogs": "Captured process output",
+        "stdout": "stdout",
+        "stderr": "stderr",
+        "testOutput": "Output {index}: {kind}",
+        "testPreview": "Draft test preview for output {output}",
         "reviewNotice": "Review each diff. Nothing changes until you apply the proposal.",
         "apply": "Apply changes",
         "dismiss": "Dismiss",
@@ -96,7 +103,7 @@
         "structuralChange": "This operation changes the project tree and does not need a source diff.",
         "unavailable": "Node Agent is not configured for this environment.",
         "unavailableDetail": "A server-owned hosted-model API key is required. Do not enter personal credentials here.",
-        "safety": "When asked, Node Agent sends the editable pack text to our hosted model. It cannot execute inside the editor, install extensions, access credentials, or submit the pack. When configured, it can run a bounded workflow against a temporary draft registration in the secured backend runtime."
+        "safety": "When asked, Node Agent sends the editable pack text to our hosted model. It cannot execute inside the editor, install extensions, access credentials, or submit the pack. Tests run the unpublished file snapshot directly in a disposable, networkless backend sandbox; the draft is never registered or added to the node library."
       },
       "status": {
         "creating": "Preparing editor",

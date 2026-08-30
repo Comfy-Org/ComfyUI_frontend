@@ -2479,13 +2479,17 @@ export type JobAssetsResponse = {
 }
 
 /**
- * Request body for minting an input-image upload grant.
+ * Request body for minting an input-image or input-audio upload grant.
  */
 export type InputUploadUrlRequest = {
   /**
-   * MIME type of the image to upload. Must be one of image/jpeg,
-   * image/png, image/webp, or image/gif. Advisory: the stored asset's
-   * format always follows the uploaded bytes as decoded server-side.
+   * MIME type of the file to upload. Must be one of the image types
+   * image/jpeg, image/png, image/webp, image/gif, or the audio types
+   * audio/mpeg, audio/mp3, audio/wav, audio/wave, audio/x-wav,
+   * audio/flac, audio/x-flac, audio/ogg.
+   * Advisory: the stored asset's format always follows the uploaded
+   * bytes as identified server-side (decoded for images, sniffed for
+   * audio containers).
    *
    */
   content_type: string
@@ -3255,6 +3259,180 @@ export type DeleteSessionResponse = {
    * Whether the session was deleted successfully
    */
   success: boolean
+}
+
+export type CustomNodeEditorTestResult = {
+  duration_ms: number
+  error?: CustomNodeEditorDraftTestError
+  outputs?: Array<CustomNodeEditorDraftTestOutput>
+  phase?:
+    | 'snapshot'
+    | 'validate'
+    | 'prepare'
+    | 'import'
+    | 'execute'
+    | 'collect'
+    | 'complete'
+  sandbox?: string
+  status: 'passed' | 'failed' | 'not_run' | 'unavailable'
+  stderr?: string
+  stdout?: string
+  summary: string
+  /**
+   * Ephemeral test identity used only to fetch its owner-scoped artifacts.
+   */
+  test_id?: string
+}
+
+export type CustomNodeEditorDraftTestArtifact = {
+  mime_type: 'image/png'
+  name: string
+  url?: string
+}
+
+export type CustomNodeEditorDraftTestOutput = {
+  artifacts: Array<CustomNodeEditorDraftTestArtifact>
+  dtype?: string
+  index: number
+  kind: string
+  max?: number | null
+  mean?: number | null
+  min?: number | null
+  shape?: Array<number>
+  summary?: string
+  value?: unknown
+  value_type?: string
+}
+
+export type CustomNodeEditorDraftTestFrame = {
+  file: string
+  function?: string
+  line?: number | null
+  source?: string
+}
+
+export type CustomNodeEditorDraftTestError = {
+  frames: Array<CustomNodeEditorDraftTestFrame>
+  message: string
+  type: string
+}
+
+export type CustomNodeEditorProposal = {
+  changes: Array<{
+    destination_path?: string
+    kind: 'modified' | 'created' | 'deleted' | 'moved' | 'directory_created'
+    original_content: string
+    path: string
+    proposed_content: string
+  }>
+  created_at: string
+  id: string
+  summary: string
+  test?: CustomNodeEditorTestResult
+}
+
+export type CustomNodeEditorOperation = {
+  /**
+   * Complete UTF-8 content for create_file or replace_file.
+   */
+  content?: string
+  /**
+   * Required for move_file.
+   */
+  destination?: string
+  kind:
+    | 'replace_text'
+    | 'replace_file'
+    | 'create_file'
+    | 'create_directory'
+    | 'move_file'
+    | 'delete_file'
+  /**
+   * Replacement text for replace_text.
+   */
+  new_text?: string
+  /**
+   * Exact text that must occur once for replace_text.
+   */
+  old_text?: string
+  path: string
+}
+
+export type CustomNodeEditorFiles = {
+  /**
+   * Stable digest of the editable project tree used to reject stale operations.
+   */
+  digest: string
+  directories: Array<string>
+  files: Array<{
+    content: string
+    editable: boolean
+    path: string
+  }>
+  initial_path?: string
+}
+
+export type CustomNodeEditorDraftTestResult = {
+  duration_ms?: number
+  error?: CustomNodeEditorDraftTestError
+  format: 'comfy-draft-test/1'
+  guest_pid?: number
+  outputs: Array<CustomNodeEditorDraftTestOutput>
+  phase:
+    | 'snapshot'
+    | 'validate'
+    | 'prepare'
+    | 'import'
+    | 'execute'
+    | 'collect'
+    | 'complete'
+  progress?: Array<unknown>
+  sandbox?: string
+  status: 'passed' | 'failed'
+  stderr: string
+  stdout: string
+  ui?: unknown
+}
+
+export type CustomNodeEditorDraftTestRequest = {
+  /**
+   * Complete ephemeral UTF-8 snapshot of the editor's current unsaved files.
+   */
+  files: Array<{
+    content: string
+    path: string
+  }>
+  /**
+   * Scalar inputs or bounded image and mask fixture descriptors.
+   */
+  inputs: {
+    [key: string]: unknown
+  }
+  node_id: string
+  /**
+   * Optional client-computed digest used to reject a corrupted snapshot.
+   */
+  snapshot_digest?: string
+}
+
+export type CustomNodeEditorDraftTest = {
+  created_at: string
+  draft_digest: string
+  /**
+   * Test-worker infrastructure failure. Python failures are in result.error.
+   */
+  error?: string
+  id: string
+  node_id: string
+  result?: CustomNodeEditorDraftTestResult
+  status:
+    | 'queued'
+    | 'running'
+    | 'cancelling'
+    | 'passed'
+    | 'failed'
+    | 'cancelled'
+  updated_at: string
 }
 
 /**
@@ -4349,6 +4527,26 @@ export type AgentAnswerAccepted = {
 }
 
 /**
+ * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
+ */
+export type AgentAdmissionError = {
+  error: {
+    /**
+     * A human-readable explanation of why the request was declined, suitable for display.
+     */
+    message: string
+    /**
+     * The specific cause of the denial, for choosing what to show the user. `no_funds`: the workspace is out of credits — prompt them to add credits. `manual_block`: the workspace has been blocked — direct them to support. `funds_unavailable`: billing was temporarily unreachable — retry after the delay given in the `Retry-After` response header.
+     */
+    reason: 'no_funds' | 'manual_block' | 'funds_unavailable'
+    /**
+     * The general category of the denial, matching the HTTP status. `PAYMENT_REQUIRED` (402): the workspace cannot currently pay for a turn. `SERVICE_UNAVAILABLE` (503): billing status could not be checked right now and the request can be retried (see the `Retry-After` response header).
+     */
+    type: 'PAYMENT_REQUIRED' | 'SERVICE_UNAVAILABLE'
+  }
+}
+
+/**
  * Response returned after successfully accepting a workspace invitation.
  */
 export type AcceptInviteResponse = {
@@ -4702,6 +4900,10 @@ export type AgentListSkillsErrors = {
    */
   401: ErrorResponse
   /**
+   * The caller is not enrolled in the cohort gate fronting these CRUD routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
+   */
+  404: ErrorResponse
+  /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
   500: AgentError
@@ -4744,6 +4946,10 @@ export type AgentPublishSkillErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * The caller is not enrolled in the cohort gate fronting these CRUD routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
+   */
+  404: ErrorResponse
   /**
    * A per-user budget is full — the pack count, or the combined size of the caller's packs. Nothing about this pack can be edited to make it fit; another pack has to be deleted first.
    */
@@ -4805,7 +5011,7 @@ export type AgentDeleteSkillErrors = {
    */
   401: ErrorResponse
   /**
-   * The caller holds no pack with that name.
+   * The caller holds no pack with that name, or the caller is not enrolled in the cohort gate fronting these CRUD routes (the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface). Both flags default off and fail closed, and both answer 404 rather than 403 so the surface is invisible when off. The schema below is the agent-raised no-such-pack body; the gate-off 404 is ingest-raised and uses the standard ErrorResponse shape instead.
    */
   404: AgentError
   /**
@@ -5050,6 +5256,10 @@ export type AgentPostMessageErrors = {
    */
   401: ErrorResponse
   /**
+   * The request to run the agent was declined for a payment reason: the workspace is out of credits or has been blocked. Not retryable as-is — resolve the account condition first.
+   */
+  402: AgentAdmissionError
+  /**
    * Forbidden (workflow or thread not owned by the caller)
    */
   403: AgentError
@@ -5061,6 +5271,10 @@ export type AgentPostMessageErrors = {
    * Agent service unavailable
    */
   502: ErrorResponse
+  /**
+   * The workspace's billing status could not be checked right now (a temporary outage, not a payment problem). Retry the request after the delay given in the Retry-After header.
+   */
+  503: AgentAdmissionError
 }
 
 export type AgentPostMessageError =
@@ -7081,6 +7295,733 @@ export type GetBillingUsageTimeSeriesResponses = {
 
 export type GetBillingUsageTimeSeriesResponse =
   GetBillingUsageTimeSeriesResponses[keyof GetBillingUsageTimeSeriesResponses]
+
+export type DeleteWorkspaceCustomNodeData = {
+  body?: never
+  path?: never
+  query: {
+    name: string
+  }
+  url: '/api/customnodes'
+}
+
+export type DeleteWorkspaceCustomNodeErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Pack not found
+   */
+  404: unknown
+}
+
+export type DeleteWorkspaceCustomNodeResponses = {
+  /**
+   * Pack deleted
+   */
+  200: unknown
+}
+
+export type ListWorkspaceCustomNodesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/customnodes'
+}
+
+export type ListWorkspaceCustomNodesErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type ListWorkspaceCustomNodesResponses = {
+  /**
+   * Workspace packs
+   */
+  200: Array<{
+    name: string
+    owner: string
+    revision_id: string
+    snapshot: string
+    uploaded_at: string
+  }>
+}
+
+export type ListWorkspaceCustomNodesResponse =
+  ListWorkspaceCustomNodesResponses[keyof ListWorkspaceCustomNodesResponses]
+
+export type UploadWorkspaceCustomNodeData = {
+  body: {
+    file: Blob | File
+    idempotency_key: string
+    name: string
+  }
+  path?: never
+  query?: never
+  url: '/api/customnodes'
+}
+
+export type UploadWorkspaceCustomNodeErrors = {
+  /**
+   * Invalid pack archive
+   */
+  400: unknown
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type UploadWorkspaceCustomNodeResponses = {
+  /**
+   * Pack installed
+   */
+  200: unknown
+}
+
+export type DownloadWorkspaceCustomNodeData = {
+  body?: never
+  path: {
+    revision_id: string
+  }
+  query?: never
+  url: '/api/customnodes/{revision_id}/download'
+}
+
+export type DownloadWorkspaceCustomNodeErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Pack revision not found
+   */
+  404: unknown
+}
+
+export type DownloadWorkspaceCustomNodeResponses = {
+  /**
+   * Custom-node pack archive
+   */
+  200: Blob | File
+}
+
+export type DownloadWorkspaceCustomNodeResponse =
+  DownloadWorkspaceCustomNodeResponses[keyof DownloadWorkspaceCustomNodeResponses]
+
+export type CreateCustomNodeEditorSessionData = {
+  body: {
+    mode: 'create' | 'edit'
+    name: string
+    revision_id?: string
+  }
+  path?: never
+  query?: never
+  url: '/api/customnodes/editor/sessions'
+}
+
+export type CreateCustomNodeEditorSessionErrors = {
+  /**
+   * Invalid session request
+   */
+  400: unknown
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Pack identity or revision conflict
+   */
+  409: unknown
+  /**
+   * Too many editor sessions are active
+   */
+  429: unknown
+  /**
+   * Editor service is disabled
+   */
+  501: unknown
+}
+
+export type CreateCustomNodeEditorSessionResponses = {
+  /**
+   * Editor session is starting
+   */
+  202: unknown
+}
+
+export type AbandonCustomNodeEditorSessionData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}'
+}
+
+export type AbandonCustomNodeEditorSessionErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session not found
+   */
+  404: unknown
+  /**
+   * Session is already submitting or submitted
+   */
+  409: unknown
+}
+
+export type AbandonCustomNodeEditorSessionResponses = {
+  /**
+   * Editor session abandoned
+   */
+  200: unknown
+}
+
+export type GetCustomNodeEditorSessionData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}'
+}
+
+export type GetCustomNodeEditorSessionErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session not found
+   */
+  404: unknown
+}
+
+export type GetCustomNodeEditorSessionResponses = {
+  /**
+   * Editor session state
+   */
+  200: unknown
+}
+
+export type RenameCustomNodeEditorSessionData = {
+  body: {
+    name: string
+  }
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}'
+}
+
+export type RenameCustomNodeEditorSessionErrors = {
+  /**
+   * Invalid pack name
+   */
+  400: unknown
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session not found
+   */
+  404: unknown
+  /**
+   * Pack identity, revision, or session-state conflict
+   */
+  409: unknown
+}
+
+export type RenameCustomNodeEditorSessionResponses = {
+  /**
+   * Editor session renamed
+   */
+  200: unknown
+}
+
+export type RunCustomNodeEditorActionData = {
+  body: {
+    action: 'submit' | 'validate'
+  }
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/actions'
+}
+
+export type RunCustomNodeEditorActionErrors = {
+  /**
+   * Invalid editor action
+   */
+  400: unknown
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session not found
+   */
+  404: unknown
+  /**
+   * Session is not ready or another action is running
+   */
+  409: unknown
+  /**
+   * Editor action failed
+   */
+  422: unknown
+  /**
+   * Legacy VS Code editor tools did not respond
+   */
+  504: unknown
+}
+
+export type RunCustomNodeEditorActionResponses = {
+  /**
+   * Editor action completed
+   */
+  200: unknown
+}
+
+export type CreateCustomNodeEditorAgentProposalData = {
+  body: {
+    instruction: string
+  }
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/agent/proposals'
+}
+
+export type CreateCustomNodeEditorAgentProposalErrors = {
+  /**
+   * Invalid instruction
+   */
+  400: unknown
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session not found
+   */
+  404: unknown
+  /**
+   * Files or session changed while proposing
+   */
+  409: unknown
+  /**
+   * Pack is too large for Node Agent
+   */
+  413: unknown
+  /**
+   * Model returned an invalid or empty proposal
+   */
+  422: unknown
+  /**
+   * Node Agent is not configured
+   */
+  501: unknown
+  /**
+   * Hosted model API failed
+   */
+  502: unknown
+}
+
+export type CreateCustomNodeEditorAgentProposalResponses = {
+  /**
+   * Structured proposal awaiting explicit application
+   */
+  201: CustomNodeEditorProposal
+}
+
+export type CreateCustomNodeEditorAgentProposalResponse =
+  CreateCustomNodeEditorAgentProposalResponses[keyof CreateCustomNodeEditorAgentProposalResponses]
+
+export type ApplyCustomNodeEditorAgentProposalData = {
+  body?: never
+  path: {
+    id: string
+    proposal_id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/agent/proposals/{proposal_id}/apply'
+}
+
+export type ApplyCustomNodeEditorAgentProposalErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session or proposal not found
+   */
+  404: unknown
+  /**
+   * Files changed after proposal creation
+   */
+  409: unknown
+}
+
+export type ApplyCustomNodeEditorAgentProposalResponses = {
+  /**
+   * Updated editor files
+   */
+  200: CustomNodeEditorFiles
+}
+
+export type ApplyCustomNodeEditorAgentProposalResponse =
+  ApplyCustomNodeEditorAgentProposalResponses[keyof ApplyCustomNodeEditorAgentProposalResponses]
+
+export type ListCustomNodeEditorFilesData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/files'
+}
+
+export type ListCustomNodeEditorFilesErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session not found
+   */
+  404: unknown
+  /**
+   * Session is not a browser workbench
+   */
+  409: unknown
+}
+
+export type ListCustomNodeEditorFilesResponses = {
+  /**
+   * Allowlisted editor files and initial file
+   */
+  200: CustomNodeEditorFiles
+}
+
+export type ListCustomNodeEditorFilesResponse =
+  ListCustomNodeEditorFilesResponses[keyof ListCustomNodeEditorFilesResponses]
+
+export type SaveCustomNodeEditorFilesData = {
+  body: unknown & {
+    /**
+     * Digest returned by the latest files response. Required for operations.
+     */
+    baseline_digest?: string
+    files?: Array<{
+      content: string
+      path: string
+    }>
+    operations?: Array<CustomNodeEditorOperation>
+  }
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/files'
+}
+
+export type SaveCustomNodeEditorFilesErrors = {
+  /**
+   * Invalid path, text, or size
+   */
+  400: unknown
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session not found
+   */
+  404: unknown
+  /**
+   * Session is not a browser workbench or the operation baseline is stale
+   */
+  409: unknown
+}
+
+export type SaveCustomNodeEditorFilesResponses = {
+  /**
+   * Saved editor files
+   */
+  200: CustomNodeEditorFiles
+}
+
+export type SaveCustomNodeEditorFilesResponse =
+  SaveCustomNodeEditorFilesResponses[keyof SaveCustomNodeEditorFilesResponses]
+
+export type RefreshCustomNodeEditorDeploymentData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/refresh'
+}
+
+export type RefreshCustomNodeEditorDeploymentErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+}
+
+export type RefreshCustomNodeEditorDeploymentResponses = {
+  /**
+   * Custom-node deployment refreshed
+   */
+  200: unknown
+}
+
+export type CreateCustomNodeEditorDraftTestData = {
+  body: CustomNodeEditorDraftTestRequest
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/tests'
+}
+
+export type CreateCustomNodeEditorDraftTestErrors = {
+  /**
+   * Invalid draft snapshot or test inputs
+   */
+  400: unknown
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session not found
+   */
+  404: unknown
+  /**
+   * Another test is active or the supplied digest does not match
+   */
+  409: unknown
+  /**
+   * Draft testing is not enabled
+   */
+  501: unknown
+}
+
+export type CreateCustomNodeEditorDraftTestResponses = {
+  /**
+   * Draft test accepted
+   */
+  202: CustomNodeEditorDraftTest
+}
+
+export type CreateCustomNodeEditorDraftTestResponse =
+  CreateCustomNodeEditorDraftTestResponses[keyof CreateCustomNodeEditorDraftTestResponses]
+
+export type DeleteCustomNodeEditorDraftTestData = {
+  body?: never
+  path: {
+    id: string
+    test_id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/tests/{test_id}'
+}
+
+export type DeleteCustomNodeEditorDraftTestErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session or test not found
+   */
+  404: unknown
+}
+
+export type DeleteCustomNodeEditorDraftTestResponses = {
+  /**
+   * Running test cancellation accepted
+   */
+  202: unknown
+  /**
+   * Completed test and artifacts removed
+   */
+  204: void
+}
+
+export type DeleteCustomNodeEditorDraftTestResponse =
+  DeleteCustomNodeEditorDraftTestResponses[keyof DeleteCustomNodeEditorDraftTestResponses]
+
+export type GetCustomNodeEditorDraftTestData = {
+  body?: never
+  path: {
+    id: string
+    test_id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/tests/{test_id}'
+}
+
+export type GetCustomNodeEditorDraftTestErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session or test not found
+   */
+  404: unknown
+}
+
+export type GetCustomNodeEditorDraftTestResponses = {
+  /**
+   * Current test state and structured result
+   */
+  200: CustomNodeEditorDraftTest
+}
+
+export type GetCustomNodeEditorDraftTestResponse =
+  GetCustomNodeEditorDraftTestResponses[keyof GetCustomNodeEditorDraftTestResponses]
+
+export type GetCustomNodeEditorDraftTestArtifactData = {
+  body?: never
+  path: {
+    id: string
+    test_id: string
+    name: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/tests/{test_id}/artifacts/{name}'
+}
+
+export type GetCustomNodeEditorDraftTestArtifactErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown
+  /**
+   * Session, test, or artifact not found
+   */
+  404: unknown
+}
+
+export type GetCustomNodeEditorDraftTestArtifactResponses = {
+  /**
+   * Draft test preview image
+   */
+  200: Blob | File
+}
+
+export type GetCustomNodeEditorDraftTestArtifactResponse =
+  GetCustomNodeEditorDraftTestArtifactResponses[keyof GetCustomNodeEditorDraftTestArtifactResponses]
+
+export type GetCustomNodeEditorWorkbenchData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/vscode'
+}
+
+export type GetCustomNodeEditorWorkbenchErrors = {
+  /**
+   * Session or editor capability not found
+   */
+  404: unknown
+}
+
+export type GetCustomNodeEditorWorkbenchResponses = {
+  /**
+   * Proxied editor workbench
+   */
+  200: unknown
+}
+
+export type PostCustomNodeEditorWorkbenchData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/vscode'
+}
+
+export type PostCustomNodeEditorWorkbenchErrors = {
+  /**
+   * Session or editor capability not found
+   */
+  404: unknown
+}
+
+export type PostCustomNodeEditorWorkbenchResponses = {
+  /**
+   * Proxied editor response
+   */
+  200: unknown
+}
+
+export type GetCustomNodeEditorResourceData = {
+  body?: never
+  path: {
+    id: string
+    path: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/vscode/{path}'
+}
+
+export type GetCustomNodeEditorResourceErrors = {
+  /**
+   * Session or editor capability not found
+   */
+  404: unknown
+}
+
+export type GetCustomNodeEditorResourceResponses = {
+  /**
+   * Proxied editor response
+   */
+  200: unknown
+}
+
+export type PostCustomNodeEditorResourceData = {
+  body?: never
+  path: {
+    id: string
+    path: string
+  }
+  query?: never
+  url: '/api/customnodes/editor/sessions/{id}/vscode/{path}'
+}
+
+export type PostCustomNodeEditorResourceErrors = {
+  /**
+   * Session or editor capability not found
+   */
+  404: unknown
+}
+
+export type PostCustomNodeEditorResourceResponses = {
+  /**
+   * Proxied editor response
+   */
+  200: unknown
+}
 
 export type GetEmbeddingsData = {
   body?: never

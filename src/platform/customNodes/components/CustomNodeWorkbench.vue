@@ -137,16 +137,136 @@
                     }}
                   </p>
                   <p
-                    v-if="proposal.test.outputNodes.length > 0"
-                    class="mt-1 mb-0 truncate text-[11px]/4 text-muted-foreground"
-                    :title="proposal.test.outputNodes.join(', ')"
+                    v-if="proposal.test.phase || proposal.test.sandbox"
+                    class="mt-1 mb-0 text-[11px]/4 text-muted-foreground"
                   >
-                    {{
-                      $t('customNodePacks.editor.agent.testOutputs', {
-                        nodes: proposal.test.outputNodes.join(', ')
-                      })
-                    }}
+                    <span v-if="proposal.test.phase">
+                      {{
+                        $t('customNodePacks.editor.agent.testPhase', {
+                          phase: proposal.test.phase
+                        })
+                      }}
+                    </span>
+                    <span v-if="proposal.test.phase && proposal.test.sandbox">
+                      ·
+                    </span>
+                    <span v-if="proposal.test.sandbox">
+                      {{
+                        $t('customNodePacks.editor.agent.testSandbox', {
+                          sandbox: proposal.test.sandbox
+                        })
+                      }}
+                    </span>
                   </p>
+                  <div
+                    v-if="proposal.test.error"
+                    class="mt-2 rounded-sm bg-base-background p-2"
+                    data-testid="node-agent-python-error"
+                  >
+                    <p
+                      class="text-foreground m-0 font-mono text-xs/4 wrap-break-word"
+                    >
+                      {{ proposal.test.error.type }}:
+                      {{ proposal.test.error.message }}
+                    </p>
+                    <ul
+                      v-if="proposal.test.error.frames.length > 0"
+                      class="mt-2 mb-0 flex list-none flex-col gap-1 p-0 font-mono text-[11px]/4 text-muted-foreground"
+                      :aria-label="$t('customNodePacks.editor.agent.traceback')"
+                    >
+                      <li
+                        v-for="(frame, frameIndex) in proposal.test.error
+                          .frames"
+                        :key="`${frame.file}:${frame.line ?? 0}:${frameIndex}`"
+                      >
+                        {{ frame.file
+                        }}<template v-if="frame.line"
+                          >:{{ frame.line }}</template
+                        ><template v-if="frame.function">
+                          — {{ frame.function }}</template
+                        >
+                        <span v-if="frame.source" class="block pl-2">
+                          {{ frame.source }}
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+                  <details
+                    v-if="proposal.test.stdout || proposal.test.stderr"
+                    class="mt-2 text-[11px]/4 text-muted-foreground"
+                  >
+                    <summary class="cursor-pointer select-none">
+                      {{ $t('customNodePacks.editor.agent.testLogs') }}
+                    </summary>
+                    <div class="mt-1 flex flex-col gap-2">
+                      <div v-if="proposal.test.stdout">
+                        <p class="m-0 font-medium">
+                          {{ $t('customNodePacks.editor.agent.stdout') }}
+                        </p>
+                        <pre
+                          class="m-0 max-h-32 overflow-auto rounded-sm bg-base-background p-2 font-mono whitespace-pre-wrap"
+                          >{{ proposal.test.stdout }}</pre>
+                      </div>
+                      <div v-if="proposal.test.stderr">
+                        <p class="m-0 font-medium">
+                          {{ $t('customNodePacks.editor.agent.stderr') }}
+                        </p>
+                        <pre
+                          class="m-0 max-h-32 overflow-auto rounded-sm bg-base-background p-2 font-mono whitespace-pre-wrap"
+                          >{{ proposal.test.stderr }}</pre>
+                      </div>
+                    </div>
+                  </details>
+                  <div
+                    v-if="proposal.test.outputs.length > 0"
+                    class="mt-2 flex flex-col gap-2"
+                    data-testid="node-agent-test-outputs"
+                  >
+                    <div
+                      v-for="output in proposal.test.outputs"
+                      :key="output.index"
+                      class="rounded-sm bg-base-background p-2"
+                    >
+                      <p class="m-0 text-[11px]/4 text-muted-foreground">
+                        {{
+                          $t('customNodePacks.editor.agent.testOutput', {
+                            index: output.index + 1,
+                            kind: output.kind
+                          })
+                        }}
+                        <template v-if="output.shape?.length">
+                          · {{ output.shape.join(' × ') }}
+                        </template>
+                        <template v-if="output.dtype">
+                          · {{ output.dtype }}
+                        </template>
+                      </p>
+                      <p
+                        v-if="output.value !== undefined"
+                        class="text-foreground mt-1 mb-0 font-mono text-[11px]/4 wrap-break-word whitespace-pre-wrap"
+                      >
+                        {{ plainOutputValue(output.value) }}
+                      </p>
+                      <div
+                        v-if="output.artifacts.some((artifact) => artifact.url)"
+                        class="mt-2 grid grid-cols-2 gap-2"
+                      >
+                        <img
+                          v-for="artifact in output.artifacts.filter(
+                            (candidate) => candidate.url
+                          )"
+                          :key="artifact.name"
+                          :src="artifact.url"
+                          :alt="
+                            $t('customNodePacks.editor.agent.testPreview', {
+                              output: output.index + 1
+                            })
+                          "
+                          class="aspect-square w-full rounded-sm border border-border-default object-contain"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="flex flex-col gap-1">
@@ -257,7 +377,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import { useCustomNodeEditor } from '../composables/useCustomNodeEditor'
 import type {
-  CustomNodeEditorProposal,
+  CustomNodeEditorProposalView,
   CustomNodeEditorProposalChange,
   CustomNodeEditorProposalChangeKind,
   CustomNodeEditorTestStatus
@@ -292,7 +412,7 @@ const editorStateKey = computed(() =>
 agentOpen.value =
   readCustomNodeEditorState(editorStateKey.value)?.agentOpen ?? agentOpen.value
 const instruction = ref('')
-const proposal = ref<CustomNodeEditorProposal | null>(null)
+const proposal = ref<CustomNodeEditorProposalView | null>(null)
 const selectedChangeIndex = ref(-1)
 const isAsking = ref(false)
 const isApplying = ref(false)
@@ -413,6 +533,11 @@ function testResultIcon(status: CustomNodeEditorTestStatus): string {
     return 'icon-[lucide--circle-alert] text-warning-background'
   }
   return 'icon-[lucide--circle-minus] text-muted-foreground'
+}
+
+function plainOutputValue(value: unknown): string {
+  if (typeof value === 'string') return value
+  return JSON.stringify(value, null, 2) ?? ''
 }
 
 watch(

@@ -243,10 +243,27 @@ describe('useCustomNodeEditor', () => {
             ],
             test: {
               status: 'passed',
-              summary: 'Workflow completed with 1 output node(s).',
-              prompt_id: 'prompt-1',
+              summary: 'Draft node executed successfully with 1 output.',
+              test_id: 'test-1',
+              phase: 'complete',
+              sandbox: 'seatbelt',
               duration_ms: 842,
-              output_nodes: ['3']
+              stdout: 'draft output\n',
+              stderr: '',
+              outputs: [
+                {
+                  index: 0,
+                  kind: 'IMAGE',
+                  shape: [1, 64, 64, 3],
+                  artifacts: [
+                    {
+                      name: 'output-0-0.png',
+                      mime_type: 'image/png',
+                      url: '/api/customnodes/editor/sessions/session-1/tests/test-1/artifacts/output-0-0.png'
+                    }
+                  ]
+                }
+              ]
             },
             created_at: '2026-08-29T12:00:00Z'
           },
@@ -277,10 +294,28 @@ describe('useCustomNodeEditor', () => {
     expect(proposal.changes[0].kind).toBe('modified')
     expect(proposal.test).toEqual({
       status: 'passed',
-      summary: 'Workflow completed with 1 output node(s).',
-      promptId: 'prompt-1',
+      summary: 'Draft node executed successfully with 1 output.',
+      testId: 'test-1',
+      phase: 'complete',
+      sandbox: 'seatbelt',
       durationMs: 842,
-      outputNodes: ['3']
+      stdout: 'draft output\n',
+      stderr: '',
+      outputs: [
+        {
+          index: 0,
+          kind: 'IMAGE',
+          shape: [1, 64, 64, 3],
+          artifacts: [
+            {
+              name: 'output-0-0.png',
+              mime_type: 'image/png',
+              url: '/api/customnodes/editor/sessions/session-1/tests/test-1/artifacts/output-0-0.png'
+            }
+          ]
+        }
+      ],
+      error: undefined
     })
     expect(applied.files[0].content).toBe('# after\n')
     expect(fetchApi.mock.calls).toEqual([
@@ -299,6 +334,78 @@ describe('useCustomNodeEditor', () => {
           headers: { 'Content-Type': 'application/json' },
           body: '{}'
         }
+      ]
+    ])
+  })
+
+  it('tests an ephemeral unsaved snapshot without submitting the pack', async () => {
+    const queued = {
+      id: 'test-1',
+      status: 'queued' as const,
+      draft_digest: 'draft-digest',
+      node_id: 'CheckerboardMask',
+      created_at: '2026-08-29T12:00:00Z',
+      updated_at: '2026-08-29T12:00:00Z'
+    }
+    const passed = {
+      ...queued,
+      status: 'passed' as const,
+      result: {
+        format: 'comfy-draft-test/1' as const,
+        status: 'passed' as const,
+        phase: 'complete' as const,
+        stdout: '',
+        stderr: '',
+        outputs: []
+      }
+    }
+    fetchApi
+      .mockResolvedValueOnce(jsonResponse(queued, true, 202))
+      .mockResolvedValueOnce(jsonResponse(passed))
+      .mockResolvedValueOnce(jsonResponse(null, true, 204))
+
+    const files = [
+      {
+        path: 'v2/nodes/checkerboard.py',
+        content: '# unsaved browser buffer\n'
+      }
+    ]
+    const input = {
+      files,
+      node_id: 'CheckerboardMask',
+      inputs: {
+        image: {
+          $fixture: 'image',
+          width: 64,
+          height: 64,
+          pattern: 'gradient'
+        },
+        square_size: 8
+      }
+    }
+    const { createDraftTest, getDraftTest, deleteDraftTest } =
+      useCustomNodeEditor()
+    const created = await createDraftTest('session-1', input)
+    const completed = await getDraftTest('session-1', created.id)
+    await deleteDraftTest('session-1', created.id)
+
+    expect(completed.result?.status).toBe('passed')
+    expect(fetchApi.mock.calls).toEqual([
+      [
+        '/customnodes/editor/sessions/session-1/tests',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input)
+        }
+      ],
+      [
+        '/customnodes/editor/sessions/session-1/tests/test-1',
+        { method: 'GET' }
+      ],
+      [
+        '/customnodes/editor/sessions/session-1/tests/test-1',
+        { method: 'DELETE' }
       ]
     ])
   })

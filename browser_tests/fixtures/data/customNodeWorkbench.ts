@@ -47,10 +47,28 @@ export const testedNodeAgentProposal = {
   ],
   test: {
     status: 'passed',
-    summary: 'Workflow completed with 1 output node(s).',
-    prompt_id: '079b4c13-b5b0-db37-591a-e3e8003303f1',
-    duration_ms: 13281,
-    output_nodes: ['3']
+    summary: 'Draft node executed successfully with 1 output.',
+    test_id: 'draft-test-1',
+    phase: 'complete',
+    sandbox: 'seatbelt',
+    duration_ms: 2184,
+    stdout: '',
+    stderr: '',
+    outputs: [
+      {
+        index: 0,
+        kind: 'IMAGE',
+        shape: [1, 64, 64, 3],
+        dtype: 'float32',
+        artifacts: [
+          {
+            name: 'output-0-0.png',
+            mime_type: 'image/png',
+            url: '/api/customnodes/editor/sessions/node-agent-session/tests/draft-test-1/artifacts/output-0-0.png'
+          }
+        ]
+      }
+    ]
   },
   created_at: '2026-08-30T07:00:20Z'
 } satisfies CustomNodeEditorProposalDto

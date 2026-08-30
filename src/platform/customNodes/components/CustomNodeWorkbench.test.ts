@@ -101,7 +101,14 @@ const i18n = createI18n({
               unavailable: 'Backend test unavailable'
             },
             testDuration: 'Completed in {duration} ms',
-            testOutputs: 'Output nodes: {nodes}',
+            testPhase: 'Phase: {phase}',
+            testSandbox: 'Sandbox: {sandbox}',
+            traceback: 'Python traceback',
+            testLogs: 'Captured process output',
+            stdout: 'stdout',
+            stderr: 'stderr',
+            testOutput: 'Output {index}: {kind}',
+            testPreview: 'Draft test preview for output {output}',
             reviewNotice: 'Review before applying.',
             apply: 'Apply changes',
             dismiss: 'Dismiss',
@@ -178,10 +185,28 @@ describe('CustomNodeWorkbench', () => {
       ],
       test: {
         status: 'passed',
-        summary: 'Workflow completed with 1 output node(s).',
-        promptId: 'prompt-1',
+        summary: 'Draft node executed successfully with 1 output.',
+        testId: 'test-1',
+        phase: 'complete',
+        sandbox: 'seatbelt',
         durationMs: 842,
-        outputNodes: ['3']
+        stdout: 'draft says hello\n',
+        stderr: '',
+        outputs: [
+          {
+            index: 0,
+            kind: 'IMAGE',
+            shape: [1, 64, 64, 3],
+            dtype: 'float32',
+            artifacts: [
+              {
+                name: 'output-0-0.png',
+                mime_type: 'image/png',
+                url: '/api/customnodes/editor/sessions/session-1/tests/test-1/artifacts/output-0-0.png'
+              }
+            ]
+          }
+        ]
       },
       createdAt: '2026-08-29T12:00:00Z'
     })
@@ -227,10 +252,20 @@ describe('CustomNodeWorkbench', () => {
     expect(screen.getByText('Added a configurable color.')).toBeVisible()
     expect(screen.getByText('Backend test passed')).toBeVisible()
     expect(
-      screen.getByText('Workflow completed with 1 output node(s).')
+      screen.getByText('Draft node executed successfully with 1 output.')
     ).toBeVisible()
     expect(screen.getByText('Completed in 842 ms')).toBeVisible()
-    expect(screen.getByText('Output nodes: 3')).toBeVisible()
+    expect(screen.getByText('Phase: complete')).toBeVisible()
+    expect(screen.getByText('Sandbox: seatbelt')).toBeVisible()
+    expect(screen.getByTestId('node-agent-test-outputs')).toHaveTextContent(
+      'Output 1: IMAGE'
+    )
+    expect(
+      screen.getByRole('img', { name: 'Draft test preview for output 1' })
+    ).toHaveAttribute(
+      'src',
+      '/api/customnodes/editor/sessions/session-1/tests/test-1/artifacts/output-0-0.png'
+    )
     expect(screen.getByTestId('proposal-diff')).toHaveAttribute(
       'data-theme',
       'dark'
@@ -293,6 +328,67 @@ describe('CustomNodeWorkbench', () => {
     ).toHaveLength(2)
     expect(screen.getByTestId('proposal-structural-change')).toBeVisible()
     expect(screen.queryByTestId('proposal-diff')).not.toBeInTheDocument()
+  })
+
+  it('shows Python diagnostics from the unpublished draft sandbox', async () => {
+    const user = userEvent.setup()
+    mocks.createAgentProposal.mockResolvedValue({
+      id: 'proposal-failed',
+      summary: 'The draft still needs repair.',
+      changes: [
+        {
+          kind: 'modified',
+          path: 'v2/nodes/checkerboard.py',
+          originalContent: '# before\n',
+          proposedContent: '# broken\n'
+        }
+      ],
+      test: {
+        status: 'failed',
+        summary: 'execute failed: ValueError: draft boom',
+        testId: 'test-failed',
+        phase: 'execute',
+        sandbox: 'seatbelt',
+        durationMs: 31,
+        stdout: 'draft reached execute\n',
+        stderr: '',
+        outputs: [],
+        error: {
+          type: 'ValueError',
+          message: 'draft boom',
+          frames: [
+            {
+              file: 'v2/nodes/checkerboard.py',
+              line: 18,
+              function: 'execute',
+              source: 'raise ValueError("draft boom")'
+            }
+          ]
+        }
+      },
+      createdAt: '2026-08-29T12:00:00Z'
+    })
+
+    render(CustomNodeWorkbench, {
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
+      global: { plugins: [i18n] }
+    })
+    await user.type(
+      screen.getByRole('textbox', { name: 'Describe a node change' }),
+      'Break the draft'
+    )
+    await user.click(screen.getByRole('button', { name: 'Propose changes' }))
+
+    expect(
+      await screen.findByTestId('node-agent-python-error')
+    ).toHaveTextContent('ValueError: draft boom')
+    expect(screen.getByText(/v2\/nodes\/checkerboard\.py:18/)).toBeVisible()
+    await user.click(screen.getByText('Captured process output'))
+    expect(screen.getByText('draft reached execute')).toBeVisible()
   })
 
   it('restores and persists whether the Node Agent is open for the pack', async () => {
