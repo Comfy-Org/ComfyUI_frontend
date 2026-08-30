@@ -43,7 +43,6 @@ export const primeVueImportAllowlist = [
   'src/platform/nodeReplacement/components/SwapNodesCard.test.ts',
   'src/platform/secrets/components/SecretFormDialog.zindex.test.ts',
   'src/platform/updates/components/WhatsNewPopup.test.ts',
-  'src/platform/workspace/components/CurrentUserPopoverWorkspace.test.ts',
   'src/platform/workspace/components/CurrentUserPopoverWorkspace.vue',
   'src/renderer/extensions/vueNodes/VideoPreview.vue',
   'src/renderer/extensions/vueNodes/components/WidgetGrid.vue',

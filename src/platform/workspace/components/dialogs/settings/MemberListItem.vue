@@ -66,14 +66,18 @@
     >
       <DropdownMenu v-if="menuItems.length > 0" :entries="menuItems">
         <template #button>
-          <Button
-            v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-            variant="muted-textonly"
-            size="icon"
-            :aria-label="$t('g.moreOptions')"
+          <Tooltip
+            :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
+            side="right"
           >
-            <i class="pi pi-ellipsis-h" />
-          </Button>
+            <Button
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="$t('g.moreOptions')"
+            >
+              <i class="pi pi-ellipsis-h" />
+            </Button>
+          </Tooltip>
         </template>
       </DropdownMenu>
     </div>
@@ -81,6 +85,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import type { MenuItem } from '@/components/ui/menu/types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
