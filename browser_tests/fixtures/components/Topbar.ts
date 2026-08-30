@@ -29,7 +29,7 @@ export class Topbar {
 
   async getActiveTabName(): Promise<string> {
     return this.page
-      .locator('.workflow-tabs .p-togglebutton-checked')
+      .locator('.workflow-tabs .workflow-tab-button[data-state="on"]')
       .innerText()
   }
 
@@ -67,12 +67,12 @@ export class Topbar {
   }
 
   getTab(index: number): Locator {
-    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+    return this.page.locator('.workflow-tabs .workflow-tab-button').nth(index)
   }
 
   getActiveTab(): Locator {
     return this.page.locator(
-      '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
+      '.workflow-tabs .workflow-tab-button[data-state="on"]'
     )
   }
 
