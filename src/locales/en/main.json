@@ -119,6 +119,12 @@
         "abandoned": "Abandoned",
         "failed": "Failed to start"
       }
+    },
+    "graphMenu": {
+      "createNode": "Create Node",
+      "editNode": "Edit Node",
+      "inNewPack": "In a new pack…",
+      "inPack": "In {name}"
     }
   },
   "g": {
