@@ -372,9 +372,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = workflowId
   }
 
+  function retargetWorkflow(workflowId: string | null): void {
+    boundWorkflowId.value = workflowId
+    rememberedWorkflowId = workflowId
+  }
+
   return {
     boundWorkflowId: computed(() => boundWorkflowId.value),
     bindWorkflow,
+    retargetWorkflow,
     isSending,
     editableTurnId,
     start,

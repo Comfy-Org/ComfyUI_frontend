@@ -8,6 +8,13 @@ import type {
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
+interface TargetFollowerState {
+  follower: FollowerDoc
+  lastSeq: number | null
+  schemaError: FollowerSchemaError | null
+  confirmed: boolean
+}
+
 /**
  * Outbound frames are advisory: the follower's correctness never depends on one
  * arriving. A transport that cannot carry a frame reports `false`; one that
@@ -35,12 +42,8 @@ function trySend(send: () => boolean): boolean {
  * teardown is failure-tolerant; see the two id fields and {@link destroy}.
  */
 export class LayoutFollowerBridge extends EventTarget {
-  /**
-   * Reassigned only by {@link onDocReset}: a lineage break replaces the doc
-   * wholesale, because folding a re-minted document into the old one merges
-   * two unrelated histories and duplicates every node on the canvas.
-   */
-  private followerDoc = new FollowerDoc()
+  private readonly followers = new Map<string, TargetFollowerState>()
+  private readonly detachedFollower = new FollowerDoc()
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -59,16 +62,6 @@ export class LayoutFollowerBridge extends EventTarget {
    * never on the first successful open.
    */
   private sentWorkflowId: string | null = null
-  /** Set once a merged doc failed the KA-11 read gate; never rendered after. */
-  private schemaError: FollowerSchemaError | null = null
-  /**
-   * Highest doc seq seen since the last subscribe left the transport; `null`
-   * until the first post-subscribe frame, so catch-up re-baselines instead of
-   * being compared across a resubscribe. See the gap detector in
-   * {@link onDocUpdate}.
-   */
-  private lastSeq: number | null = null
-
   constructor(private readonly client: DocFrameClient) {
     super()
     client.addEventListener('doc_update', this.onDocUpdate)
@@ -79,7 +72,7 @@ export class LayoutFollowerBridge extends EventTarget {
 
   /** The semantic doc this bridge currently follows. */
   get follower(): FollowerDoc {
-    return this.followerDoc
+    return this.currentState?.follower ?? this.detachedFollower
   }
 
   /** The workflow a subscribe frame actually went out for, if any. */
@@ -89,7 +82,7 @@ export class LayoutFollowerBridge extends EventTarget {
 
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
   get lastSchemaError(): FollowerSchemaError | null {
-    return this.schemaError
+    return this.currentState?.schemaError ?? null
   }
 
   /** True while intent and reality disagree — i.e. a retry is still owed. */
@@ -102,6 +95,7 @@ export class LayoutFollowerBridge extends EventTarget {
 
   subscribe(workflowId: string): void {
     this.desiredWorkflowId = workflowId
+    this.ensureState(workflowId)
     this.reconcile()
   }
 
@@ -126,11 +120,15 @@ export class LayoutFollowerBridge extends EventTarget {
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
       this.sentWorkflowId = desired
-      this.lastSeq = null
+      const state = this.ensureState(desired)
+      state.lastSeq = null
+      state.confirmed = false
     }
   }
 
   resubscribe(): void {
+    if (this.sentWorkflowId !== null)
+      this.ensureState(this.sentWorkflowId).confirmed = false
     this.sentWorkflowId = null
     this.reconcile()
   }
@@ -142,7 +140,12 @@ export class LayoutFollowerBridge extends EventTarget {
 
   sendHumanOps(tab: string, ops: DocOp[]): void {
     const workflowId = this.sentWorkflowId
-    if (workflowId === null || ops.length === 0) return
+    if (
+      workflowId === null ||
+      ops.length === 0 ||
+      !this.ensureState(workflowId).confirmed
+    )
+      return
     trySend(() => this.client.sendOps(workflowId, tab, ops))
   }
 
@@ -162,7 +165,9 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
-      this.followerDoc.destroy()
+      this.detachedFollower.destroy()
+      for (const state of this.followers.values()) state.follower.destroy()
+      this.followers.clear()
     }
   }
 
@@ -170,21 +175,22 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
+    const state = this.ensureState(update.workflowId)
 
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
-    if (this.lastSeq !== null && update.seq <= this.lastSeq) return
+    if (state.lastSeq !== null && update.seq <= state.lastSeq) return
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
     // follower doc. Only an explicit doc_reset may replace it (ADR-0024).
-    if (this.lastSeq !== null && update.seq > this.lastSeq + 1) {
+    if (state.lastSeq !== null && update.seq > state.lastSeq + 1) {
       this.resubscribe()
       return
     }
-    if (this.lastSeq === null || update.seq > this.lastSeq)
-      this.lastSeq = update.seq
-    this.follower.applyRemoteUpdate(update.update)
+    if (state.lastSeq === null || update.seq > state.lastSeq)
+      state.lastSeq = update.seq
+    state.follower.applyRemoteUpdate(update.update)
 
     // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
     // integrated or they are not — but nothing downstream may READ a doc whose
@@ -192,10 +198,10 @@ export class LayoutFollowerBridge extends EventTarget {
     // before the frame is re-dispatched, is what keeps a v2 doc from being
     // half-projected onto the canvas by a v1 reader.
     try {
-      assertReadableSchema(this.follower.doc)
+      assertReadableSchema(state.follower.doc)
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
-      this.schemaError = error
+      state.schemaError = error
       this.dispatchEvent(
         new CustomEvent('schema_error', {
           detail: { workflowId: update.workflowId, found: error.found }
@@ -227,9 +233,14 @@ export class LayoutFollowerBridge extends EventTarget {
    * carries an empty state vector and pulls the new folded state.
    */
   private dropDocForNewLineage(): void {
-    this.followerDoc.destroy()
-    this.followerDoc = new FollowerDoc()
-    this.schemaError = null
+    const workflowId = this.desiredWorkflowId
+    if (workflowId === null) return
+    const state = this.ensureState(workflowId)
+    state.follower.destroy()
+    state.follower = new FollowerDoc()
+    state.lastSeq = null
+    state.schemaError = null
+    state.confirmed = false
   }
 
   /**
@@ -243,8 +254,14 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId === this.sentWorkflowId) {
-      if (subscribed.ok) this.lastSeq = subscribed.seq ?? null
-      else this.sentWorkflowId = null
+      const state = this.ensureState(subscribed.workflowId)
+      if (subscribed.ok) {
+        state.lastSeq = subscribed.seq ?? null
+        state.confirmed = true
+      } else {
+        state.confirmed = false
+        this.sentWorkflowId = null
+      }
     }
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
@@ -252,5 +269,23 @@ export class LayoutFollowerBridge extends EventTarget {
   private readonly forwardFrame: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+  }
+
+  private get currentState(): TargetFollowerState | undefined {
+    const workflowId = this.desiredWorkflowId
+    return workflowId === null ? undefined : this.followers.get(workflowId)
+  }
+
+  private ensureState(workflowId: string): TargetFollowerState {
+    const existing = this.followers.get(workflowId)
+    if (existing) return existing
+    const state: TargetFollowerState = {
+      follower: new FollowerDoc(),
+      lastSeq: null,
+      schemaError: null,
+      confirmed: false
+    }
+    this.followers.set(workflowId, state)
+    return state
   }
 }

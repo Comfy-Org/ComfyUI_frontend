@@ -60,7 +60,7 @@ vi.mock('@/scripts/api', () => ({
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
-    socket: { readyState: 1 },
+    socket: { readyState: 1, send: vi.fn() },
     addEventListener: ws.add,
     removeEventListener: ws.remove,
     addCustomEventListener: ws.add,
@@ -139,6 +139,7 @@ const hostStores = vi.hoisted(() => ({
     selectedItems: unknown[]
     updateSelectedItems: () => void
     currentGraph: unknown | null
+    rootGraphId: string
     canvas: unknown
   }
 }))
@@ -191,6 +192,11 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
     selectedItems: [] as unknown[],
     updateSelectedItems,
     currentGraph: null as unknown | null,
+    get rootGraphId() {
+      return String(
+        hostStores.workflow.activeWorkflow?.activeState?.id ?? 'root'
+      )
+    },
     canvas: undefined as unknown
   })
   hostStores.canvas = store
@@ -249,8 +255,17 @@ vi.mock('@/stores/executionErrorStore', () => ({
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => ({
+    userDisplayName: { value: 'Jo Rivera' },
+    resolvedUserInfo: { value: { id: 'user-a' } }
+  })
 }))
+
+vi.mock('./composables/agent/useAgentFeatureGate', async () => {
+  const { ref } = await import('vue')
+  const enabled = ref(true)
+  return { useAgentFeatureGate: () => enabled }
+})
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
@@ -1835,6 +1850,7 @@ describe('AgentPanelRoot greeting', () => {
 describe('AgentPanelRoot workflow binding', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    useAgentWorkflowTabBindingStore().setSubject('user-a')
     ws.clear()
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
@@ -2693,6 +2709,8 @@ describe('AgentPanelRoot workflow binding', () => {
       'Comfy.Agent.WorkflowTabBindings',
       JSON.stringify({ 'wf-old': 'workflows/mountain.json' })
     )
+    setActivePinia(createPinia())
+    useAgentWorkflowTabBindingStore().setSubject('user-a')
     makeTab('wf-42')
     addTab('workflows/mountain.json')
     const bodies = mockMessagesEndpoint('wf-42')

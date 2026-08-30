@@ -166,6 +166,70 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
     expect(bridge.subscribedWorkflowId).toBe('wf-b')
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
   })
+
+  it('keeps each workflow follower state and state vector isolated across rapid switches', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+
+    bridge.subscribe('wf-a')
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-a', 1))
+    const followerA = bridge.follower
+    const vectorA = encodeBase64(followerA.stateVector())
+
+    bridge.subscribe('wf-b')
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string; workflow_id: string }
+    }[]
+    expect(bridge.follower).not.toBe(followerA)
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-b', 1))
+    const followerB = bridge.follower
+
+    bridge.subscribe('wf-a')
+    expect(bridge.follower).toBe(followerA)
+    expect(bridge.follower).not.toBe(followerB)
+    const returned = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(returned[2].data.state_vector_b64).toBe(vectorA)
+  })
+
+  it('does not send human ops until the target subscription is acknowledged', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    bridge.sendHumanOps('tab-1', [
+      {
+        op_id: 'op-1',
+        actor: 'human:tab-1',
+        base_version: 1,
+        kind: 'remove_node',
+        node_id: '1'
+      }
+    ])
+    expect(transport.framesOfType('doc_ops')).toHaveLength(0)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    bridge.sendHumanOps('tab-1', [
+      {
+        op_id: 'op-2',
+        actor: 'human:tab-1',
+        base_version: 1,
+        kind: 'remove_node',
+        node_id: '1'
+      }
+    ])
+    expect(transport.framesOfType('doc_ops')).toHaveLength(1)
+  })
 })
 
 describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {

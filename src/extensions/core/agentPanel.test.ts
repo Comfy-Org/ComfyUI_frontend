@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -7,8 +8,6 @@ const mocks = vi.hoisted(() => ({
   agentStore: { enabled: false, isOpen: true, close: vi.fn() },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
-  flagEnabled: undefined as boolean | undefined,
-  flagListener: null as (() => void) | null,
   nodeSelectionStore: {
     beginWorkflowLoad: vi.fn(),
     finishWorkflowLoad: vi.fn(),
@@ -66,18 +65,11 @@ vi.mock(
   })
 )
 
-vi.mock('posthog-js', () => ({
-  default: {
-    isFeatureEnabled: () => mocks.flagEnabled,
-    onFeatureFlags: (listener: () => void) => {
-      mocks.flagListener = listener
-      return () => {}
-    }
-  }
-}))
-
-const flush = (): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, 0))
+const mockAgentEnabled = ref(false)
+vi.mock(
+  '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate',
+  () => ({ useAgentFeatureGate: () => mockAgentEnabled })
+)
 
 async function loadEntryAndSetup(): Promise<void> {
   await import('./agentPanel')
@@ -86,8 +78,15 @@ async function loadEntryAndSetup(): Promise<void> {
   )
   expect(ext).toBeDefined()
   ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
-  for (let i = 0; i < 2000 && mocks.flagListener === null; i++) await flush()
-  expect(mocks.flagListener).toBeTypeOf('function')
+  await nextTick()
+}
+
+async function loadEnabledExtension(): Promise<ComfyExtension> {
+  mockAgentEnabled.value = true
+  await loadEntryAndSetup()
+  return mocks.capturedExtensions.find(
+    (extension) => extension.name === 'Comfy.AgentPanel'
+  )!
 }
 
 describe('AgentPanel extension flag gate', () => {
@@ -95,8 +94,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.capturedExtensions.length = 0
     mocks.agentStore.close.mockClear()
     mocks.agentStore.enabled = false
-    mocks.flagEnabled = undefined
-    mocks.flagListener = null
+    mockAgentEnabled.value = false
     mocks.registerTracker.mockClear()
     mocks.canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
@@ -111,13 +109,12 @@ describe('AgentPanel extension flag gate', () => {
     vi.resetModules()
   })
 
-  it('forces the panel on in development even while the flag is false', async () => {
+  it('remains fail-closed in development while the server flag is false', async () => {
     vi.stubEnv('MODE', 'development')
-    mocks.flagEnabled = false
 
     await loadEntryAndSetup()
 
-    expect(mocks.agentStore.enabled).toBe(true)
+    expect(mocks.agentStore.enabled).toBe(false)
   })
 
   it('leaves the panel disabled while the flag is undefined', async () => {
@@ -125,24 +122,25 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.agentStore.enabled).toBe(false)
   })
 
-  it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {
+  it('does not register the tab-activity tracker while the flag is off', async () => {
     await loadEntryAndSetup()
-    expect(mocks.registerTracker).toHaveBeenCalledTimes(1)
+    expect(mocks.registerTracker).not.toHaveBeenCalled()
   })
 
   it('enables the panel when the flag turns true', async () => {
     await loadEntryAndSetup()
-    mocks.flagEnabled = true
-    mocks.flagListener!()
+    mockAgentEnabled.value = true
+    await nextTick()
     expect(mocks.agentStore.enabled).toBe(true)
+    expect(mocks.registerTracker).toHaveBeenCalled()
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
     await loadEntryAndSetup()
-    mocks.flagEnabled = true
-    mocks.flagListener!()
-    mocks.flagEnabled = false
-    mocks.flagListener!()
+    mockAgentEnabled.value = true
+    await nextTick()
+    mockAgentEnabled.value = false
+    await nextTick()
 
     expect(mocks.agentStore.enabled).toBe(false)
     expect(mocks.agentStore.close).not.toHaveBeenCalled()
@@ -150,10 +148,7 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('restores each workflow reference after the shared graph load', async () => {
-    await import('./agentPanel')
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
+    const extension = await loadEnabledExtension()
     const secondNode = { id: 12 }
     const rootGraph = {}
     const selectItems = vi.fn()
@@ -182,10 +177,7 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('restores a subgraph reference by its locator after graph load', async () => {
-    await import('./agentPanel')
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
+    const extension = await loadEnabledExtension()
     const locator = '12345678-1234-1234-1234-123456789abc:shared'
     const subgraphNode = { id: 'shared', locatorId: locator }
     const rootGraph = {}
@@ -205,10 +197,7 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
-    await import('./agentPanel')
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
+    const extension = await loadEnabledExtension()
     mocks.agentStore.isOpen = false
     mocks.nodeSelectionStore.isLoadingWorkflow = true
 

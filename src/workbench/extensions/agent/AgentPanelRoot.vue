@@ -23,6 +23,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
+import { useAgentFeatureGate } from './composables/agent/useAgentFeatureGate'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import {
@@ -73,7 +74,9 @@ import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
+import { useAgentLifetimeAdapter } from './composables/agent/useAgentLifetimeAdapter'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import type { AgentTarget } from './types/agentTarget'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
@@ -87,7 +90,8 @@ const toast = useToastStore()
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
-const { userDisplayName } = useCurrentUser()
+const agentEnabled = useAgentFeatureGate()
+const { userDisplayName, resolvedUserInfo } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -342,7 +346,8 @@ const {
   listThreads,
   loadThread,
   boundWorkflowId,
-  bindWorkflow
+  bindWorkflow,
+  retargetWorkflow
 } = useAgentSession({
   rest,
   events,
@@ -357,10 +362,73 @@ const {
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow and projects doc updates onto the canvas.
-const { status: crdtStatus } = useAgentCrdtFollower(
-  boundWorkflowId,
-  graphMutations
+const followerWorkflowId = ref<string | null>(null)
+const {
+  status: crdtStatus,
+  retarget: retargetFollower,
+  dispose: disposeFollower
+} = useAgentCrdtFollower(followerWorkflowId, graphMutations)
+
+const restoredTargetWorkflowId = ref(boundWorkflowId.value)
+const initialTabPath = workflowStore.activeWorkflow?.path
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  (path) => {
+    if (path !== initialTabPath) restoredTargetWorkflowId.value = null
+  }
 )
+
+const selectedAgentTarget = computed<AgentTarget | null>(() => {
+  if (restoredTargetWorkflowId.value !== null) {
+    const tabPath = bindingStore.tabPathFor(restoredTargetWorkflowId.value)
+    const tab = tabPath ? workflowStore.getWorkflowByPath(tabPath) : null
+    const graphId = tab?.activeState?.id
+    if (tabPath !== undefined && graphId)
+      return {
+        workflowId: restoredTargetWorkflowId.value,
+        tabPath,
+        graphId: String(graphId)
+      }
+  }
+  const workflow = activeWorkflowTurnContext()
+  const active = workflowStore.activeWorkflow
+  const graphId = active?.activeState?.id ?? canvasStore.rootGraphId
+  return workflow && graphId
+    ? {
+        workflowId: workflow.id,
+        tabPath: workflow.tabPath,
+        graphId: String(graphId)
+      }
+    : null
+})
+
+useAgentLifetimeAdapter({
+  enabled: agentEnabled,
+  userId: computed(() => resolvedUserInfo.value?.id ?? null),
+  target: selectedAgentTarget,
+  currentGraphId: computed(() => canvasStore.rootGraphId ?? null),
+  openTabPaths: computed(() =>
+    workflowStore.openWorkflows.map(({ path }) => path)
+  ),
+  bindings: bindingStore,
+  follower: {
+    retarget: retargetFollower,
+    dispose: disposeFollower
+  },
+  thread: {
+    retarget: (target) => retargetWorkflow(target?.workflowId ?? null),
+    close: (target) => {
+      if (boundWorkflowId.value !== target.workflowId) return
+      void stopTurn()
+      newChat()
+    },
+    abort: () => {
+      void stopTurn()
+      newChat()
+    },
+    dispose: stop
+  }
+})
 // Dev instrument only (slice-02 classification): never ships to users.
 const isCrdtDevPanelEnabled = import.meta.env.DEV
 
@@ -510,7 +578,6 @@ start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   exitNodeSelectionMode()
-  stop()
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
 })

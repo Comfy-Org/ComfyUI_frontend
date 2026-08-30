@@ -230,12 +230,22 @@ async function mockAgentBoot(
 }
 
 type AgentFixtures = {
+  _agentServerFlag: void
   agentFlagEnabled: boolean
   postedMessages: string[]
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
+  _agentServerFlag: [
+    async ({ comfyPage, agentFlagEnabled }, use) => {
+      await comfyPage.featureFlags.setServerFlagsPersistent({
+        'agent-in-app-experience': agentFlagEnabled
+      })
+      await use()
+    },
+    { auto: true }
+  ],
   postedMessages: async ({}, use) => {
     await use([])
   },

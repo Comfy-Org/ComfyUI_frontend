@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { AgentTarget } from '../types/agentTarget'
 
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
@@ -377,7 +378,10 @@ export function useAgentCrdtFollower(
     { immediate: true }
   )
 
-  onBeforeUnmount(() => {
+  let disposed = false
+  function dispose(): void {
+    if (disposed) return
+    disposed = true
     // Teardown must be total. Anything that survives would apply every later
     // update twice after a remount.
     try {
@@ -396,7 +400,9 @@ export function useAgentCrdtFollower(
     } finally {
       client.destroy()
     }
-  })
+  }
+
+  onBeforeUnmount(dispose)
 
   const status = computed<AgentCrdtStatus>(() => ({
     enabled: true,
@@ -408,6 +414,10 @@ export function useAgentCrdtFollower(
 
   return {
     status: readonly(status),
+    retarget(target: AgentTarget | null): void {
+      workflowId.value = target?.workflowId ?? null
+    },
+    dispose,
     // The semantic canvas-command adapter will call this after it moves to
     // @comfyorg/comfy-multi-player. Raw Yjs client updates are never sent.
     sendHumanOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops)

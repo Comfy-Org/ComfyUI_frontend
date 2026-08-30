@@ -17,6 +17,7 @@ import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
  * Known server feature flags (top-level, not extensions)
  */
 export enum ServerFeatureFlag {
+  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
   SUPPORTS_PREVIEW_METADATA = 'supports_preview_metadata',
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',

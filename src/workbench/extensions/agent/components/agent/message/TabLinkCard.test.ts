@@ -56,6 +56,7 @@ describe('TabLinkCard', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
+    useAgentWorkflowTabBindingStore().setSubject('user-1')
     mocks.openWorkflow.mockClear()
     mocks.activeWorkflow = undefined
     openTabs()
