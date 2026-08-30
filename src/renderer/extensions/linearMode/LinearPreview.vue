@@ -94,15 +94,15 @@ async function rerun(e: Event) {
       </Button>
       <div class="mx-1 border-r border-border-subtle" />
     </template>
-    <Button
-      v-if="selectedOutput"
-      v-tooltip.top="t('g.download')"
-      size="icon"
-      :aria-label="t('g.download')"
-      @click="() => downloadOutput(selectedOutput)"
-    >
-      <i class="icon-[lucide--download]" />
-    </Button>
+    <Tooltip v-if="selectedOutput" :config="t('g.download')" side="top">
+      <Button
+        size="icon"
+        :aria-label="t('g.download')"
+        @click="() => downloadOutput(selectedOutput)"
+      >
+        <i class="icon-[lucide--download]" />
+      </Button>
+    </Tooltip>
     <Button
       v-if="isWorkflowActive && !selectedItem"
       data-testid="linear-cancel-run"

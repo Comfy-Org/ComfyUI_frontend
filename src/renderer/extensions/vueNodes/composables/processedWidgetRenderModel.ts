@@ -1,5 +1,4 @@
-import type { TooltipOptions } from 'primevue'
-
+import type { TooltipConfig } from '@/components/ui/tooltip'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -75,7 +74,7 @@ export interface ProcessedWidget extends WidgetGridItem {
   hasLayoutSize: boolean
   hasError: boolean
   widgetId: WidgetId
-  tooltipConfig: TooltipOptions
+  tooltipConfig: TooltipConfig
   updateHandler: (value: WidgetValue) => void
 }
 
@@ -83,7 +82,7 @@ export interface WidgetUiCallbacks {
   getTooltipConfig: (
     widget: WidgetTooltipSource,
     fullVal?: string
-  ) => TooltipOptions
+  ) => TooltipConfig
   handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
 }
 
