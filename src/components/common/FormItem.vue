@@ -9,11 +9,13 @@
       >
         <slot name="name-prefix" />
         {{ props.item.name }}
-        <i
+        <Tooltip
           v-if="props.item.tooltip"
-          v-tooltip="props.item.tooltip"
-          class="pi pi-info-circle bg-transparent"
-        />
+          :config="props.item.tooltip"
+          side="right"
+        >
+          <i class="pi pi-info-circle bg-transparent" />
+        </Tooltip>
         <slot name="name-suffix" />
       </span>
     </div>
@@ -45,6 +47,7 @@ import Input from '@/components/ui/input/Input.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import type { FormItem } from '@/platform/settings/types'
 
 const formValue = defineModel<unknown>('formValue')
