@@ -5188,6 +5188,8 @@
     "dismiss": "Dismiss",
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",
+    "confirmDeleteChat": "Delete this chat? This cannot be undone.",
+    "confirmDeleteChatTitle": "Delete chat",
     "alpha": "ALPHA",
     "newChat": "New chat",
     "newChatTitle": "Untitled",

@@ -1,11 +1,11 @@
 /**
  * Runtime gate for the CRDT follower (R1a).
  *
- * The follower used to be gated ONLY by the build-time env
- * `VITE_AGENT_CRDT_FOLLOWER === 'true'`. Hosted predeploy builds inject only
- * the Stripe key, so every hosted preview bundle shipped with the follower
- * permanently inert — the only way to exercise the follow path was a local
- * dev-server build (`pnpm dev:cloud:crdt`).
+ * On this chain the follower runs unconditionally and was never env-gated, so
+ * the build-time-only history described upstream does not apply here. The gate
+ * below is carried for the chain that does gate it: hosted predeploy builds
+ * inject only the Stripe key, which would otherwise ship every hosted preview
+ * bundle with the follower permanently inert.
  *
  * This gate adds a per-session runtime opt-in so ANY built bundle can enable
  * the follower without a rebuild:
