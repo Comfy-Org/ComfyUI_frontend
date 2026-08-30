@@ -17,6 +17,11 @@ import type { DocFrameTransport, DocOp } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { LitegraphMutator } from './litegraphMutator'
+import type { LayoutChangeView } from './layoutMintPort'
+import type { MintableGraph } from './mintPortWiring'
+import { attachMintPortWiring } from './mintPortWiring'
+import type { BatchOutcome } from './opSender'
+import { createOpSender, toOpsResultView } from './opSender'
 import { SemanticProjector } from './semanticProjector'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
@@ -71,6 +76,16 @@ export interface AgentCrdtStatus {
   workflowId: string | null
   updatesApplied: number
   lastFrameType: string | null
+}
+
+export interface AgentCrdtWriteCompositionDeps {
+  isEnabled(): boolean
+  userId(): string | null
+  layoutChanges(listener: (change: LayoutChangeView) => void): () => void
+  withLayoutActor(actor: string, fn: () => void): void
+  localActorPrefix: string
+  getGraph(): MintableGraph | null
+  onBatchSettled(outcome: BatchOutcome): void
 }
 
 function boundFrameDetail(
@@ -142,7 +157,10 @@ export function summarizeOutboundDocFrame(
 // graph state on its own teardown.
 let followerInstanceMounted = false
 
-export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
+export function useAgentCrdtFollower(
+  workflowId: Ref<string | null>,
+  writeDeps: AgentCrdtWriteCompositionDeps
+) {
   if (import.meta.env.DEV && followerInstanceMounted) {
     console.warn(
       'useAgentCrdtFollower: second concurrent instance; id arming assumes one per tab'
@@ -194,6 +212,33 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     createNode: (type) => LiteGraph.createNode(type)
   })
   const projector = new SemanticProjector(mutator, { actor: tabId })
+  const sender = createOpSender({
+    sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
+    onOpsResult(listener) {
+      const handler: EventListener = (event) => {
+        if (!(event instanceof CustomEvent)) return
+        listener(
+          toOpsResultView(event.detail as Parameters<typeof toOpsResultView>[0])
+        )
+      }
+      bridge.addEventListener('doc_ops_result', handler)
+      return () => bridge.removeEventListener('doc_ops_result', handler)
+    },
+    workflowId: () => subscribedWorkflowId.value,
+    tab: tabId,
+    actor: () => `human:${writeDeps.userId() ?? 'anonymous'}:${tabId}`,
+    baseVersion: () => lastSeq,
+    onBatchSettled: writeDeps.onBatchSettled
+  })
+  const mintWiring = attachMintPortWiring({
+    isEnabled: () => writeDeps.isEnabled() && writeDeps.userId() !== null,
+    isDocBound: () => subscribedWorkflowId.value !== null,
+    enqueue: sender.enqueue,
+    layoutChanges: writeDeps.layoutChanges,
+    withLayoutActor: writeDeps.withLayoutActor,
+    localActorPrefix: writeDeps.localActorPrefix,
+    getGraph: writeDeps.getGraph
+  })
 
   // Arming is graph-scoped: the doc projects onto `app.graph`, so only THAT
   // graph's state mints coordination-free ids. `LGraph.clear()` replaces the
@@ -349,7 +394,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     lastFrameType.value = event.type
     if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
       lastSeq = Math.max(lastSeq, event.detail.seq)
-    projector.project(bridge.follower.doc)
+    mintWiring.runRemoteScope(() => projector.project(bridge.follower.doc))
     if (event instanceof CustomEvent) {
       const detail = event.detail as {
         workflowId?: string
@@ -515,6 +560,8 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // "client.destroy() always runs" guarantee local and readable.
     try {
       followerInstanceMounted = false
+      mintWiring.detach()
+      sender.detach()
       disarmCoordinationFreeIds()
       clearSubscribeRetry()
       clearStaleProbe()
@@ -696,9 +743,6 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }))
 
   return {
-    status: readonly(status),
-    // The semantic canvas-command adapter will call this after it moves to
-    // @comfyorg/comfy-multi-player. Raw Yjs client updates are never sent.
-    sendHumanOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops)
+    status: readonly(status)
   }
 }
