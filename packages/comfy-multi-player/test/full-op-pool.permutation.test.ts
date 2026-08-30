@@ -10,9 +10,10 @@
  * Amendment A6 / docs/decisions/EXCEPTIONS.md and schema §2.5 item 2 are the
  * deliberate state-dependent convergence exceptions. Section 4
  * abort-remainder effects are tracked separately. R-69 output-reference
- * ordering and repeated inputcount link-id reuse are unexpected risks: this
- * suite does not assert that either divergence persists; it only proves that
- * no additional projection field differs when one appears.
+ * ordering, repeated inputcount link-id reuse, and unrelated removed-link
+ * aliases are unexpected risks: this suite does not assert that any divergence
+ * persists; it only proves that no additional projection field differs when
+ * one appears.
  */
 import * as fc from "fast-check";
 import * as Y from "yjs";
@@ -77,6 +78,7 @@ interface Taxonomy {
   abortBoundary: number;
   unexpectedR69: number;
   unexpectedInputcountLinkReuse: number;
+  unexpectedRemovedLinkAlias: number;
 }
 
 function node(
@@ -171,6 +173,9 @@ function makeOp(
         return { ...common, grow: { name: `value_${side + 1}`, type: "VALUE", inputcount: { widget: "count", value } } };
       }
       if (precondition === "promoted-or-autogrow") {
+        if (side === 0) {
+          return { ...common, to_node: 57, link_type: "INT", grow: { name: "width", type: "INT", promoted: true } };
+        }
         return { ...common, grow: { name: `values.value${side}`, type: "VALUE" } };
       }
       return { ...common, to_slot: precondition === "to-slot-out-of-range" ? 5 : 0 };
@@ -317,6 +322,34 @@ function normalizeSourceDeleteAutogrow(workflow: WorkflowJSON, ops: readonly Wir
   return copy;
 }
 
+function removedLinkAliases(ops: readonly WireOp[]): Set<string> {
+  const aliases = new Set<string>();
+  for (const connect of ops.filter((op): op is Extract<WireOp, { op: "connect" }> =>
+    op.op === "connect" && op.grow?.promoted === true)) {
+    for (const deletion of ops.filter((op): op is Extract<WireOp, { op: "delete_node" }> => op.op === "delete_node")) {
+      if (String(deletion.node_id) !== String(connect.to_node) &&
+          deletion.removed_links.some((linkId) => String(linkId) === String(connect.link_id))) {
+        aliases.add(String(connect.link_id));
+      }
+    }
+  }
+  return aliases;
+}
+
+function normalizeRemovedLinkAlias(workflow: WorkflowJSON, aliases: ReadonlySet<string>): WorkflowJSON {
+  const copy = structuredClone(workflow);
+  copy.links = (copy.links as unknown[][]).filter((link) => !aliases.has(String(link[0])));
+  for (const candidate of copy.nodes) {
+    for (const input of (candidate.inputs ?? []) as Array<{ link?: unknown }>) {
+      if (aliases.has(String(input.link))) input.link = null;
+    }
+    for (const output of (candidate.outputs ?? []) as Array<{ links?: unknown[] }>) {
+      if (Array.isArray(output.links)) output.links = output.links.filter((linkId) => !aliases.has(String(linkId)));
+    }
+  }
+  return copy;
+}
+
 function rejectionMap(state: RunState): Map<string, string> {
   return new Map(state.outcomes.filter((outcome) => outcome.outcome === "rejected").map((outcome) => [outcome.opId, outcome.code ?? "rejected"]));
 }
@@ -372,6 +405,12 @@ function classify(
         stable(normalizeInputcountLinkReuse(normalizeR69(right.projection)))) {
     return "unexpectedInputcountLinkReuse";
   }
+  const aliases = removedLinkAliases(ops);
+  if (aliases.size > 0 &&
+      stable(normalizeRemovedLinkAlias(left.projection, aliases)) ===
+        stable(normalizeRemovedLinkAlias(right.projection, aliases))) {
+    return "unexpectedRemovedLinkAlias";
+  }
   throw new Error(`unexpected divergence ${stable({ precondition, mode, ops, left, right })}`);
 }
 
@@ -390,8 +429,10 @@ describe("full op-pool permutation equivalence", () => {
     const taxonomy: Taxonomy = {
       equivalent: 0, a6: 0, stateDependent: 0, abortBoundary: 0,
       unexpectedR69: 0, unexpectedInputcountLinkReuse: 0,
+      unexpectedRemovedLinkAlias: 0,
     };
     let firstR69: string | undefined;
+    let firstRemovedLinkAlias: string | undefined;
 
     for (const kinds of kindPairs()) {
       for (const precondition of PRECONDITIONS) {
@@ -406,6 +447,9 @@ describe("full op-pool permutation equivalence", () => {
               taxonomy[category]++;
               if (category === "unexpectedR69" && firstR69 === undefined) {
                 firstR69 = stable({ kinds, precondition, actors, versions, mode, ops: pair });
+              }
+              if (category === "unexpectedRemovedLinkAlias" && firstRemovedLinkAlias === undefined) {
+                firstRemovedLinkAlias = stable({ kinds, precondition, actors, versions, mode, ops: pair });
               }
             }
           }
@@ -424,7 +468,7 @@ describe("full op-pool permutation equivalence", () => {
     // not count-pinned: fixing it must not require weakening this test.
     expect(taxonomy.a6).toBeGreaterThan(0);
     expect(taxonomy.abortBoundary).toBeGreaterThan(0);
-    console.info("perm-4 pair taxonomy", { executions, taxonomy, firstR69 });
+    console.info("perm-4 pair taxonomy", { executions, taxonomy, firstR69, firstRemovedLinkAlias });
   }, 900_000);
 
   it("samples reproducible length-3-to-6 full-vocabulary streams with shrinking enabled", () => {
@@ -434,9 +478,11 @@ describe("full op-pool permutation equivalence", () => {
     const taxonomy: Taxonomy = {
       equivalent: 0, a6: 0, stateDependent: 0, abortBoundary: 0,
       unexpectedR69: 0, unexpectedInputcountLinkReuse: 0,
+      unexpectedRemovedLinkAlias: 0,
     };
     let firstR69: string | undefined;
     let firstInputcountLinkReuse: string | undefined;
+    let firstRemovedLinkAlias: string | undefined;
     const scenarioArb = fc.record({
       kinds: fc.array(fc.constantFrom(...KINDS), { minLength: 3, maxLength: 6 }),
       precondition: fc.constantFrom(...PRECONDITIONS),
@@ -468,6 +514,9 @@ describe("full op-pool permutation equivalence", () => {
       if (category === "unexpectedInputcountLinkReuse" && firstInputcountLinkReuse === undefined) {
         firstInputcountLinkReuse = stable({ seed: SAMPLE_SEED, scenario, ops, permuted: permuted.map((op) => op.op_id) });
       }
+      if (category === "unexpectedRemovedLinkAlias" && firstRemovedLinkAlias === undefined) {
+        firstRemovedLinkAlias = stable({ seed: SAMPLE_SEED, scenario, ops, permuted: permuted.map((op) => op.op_id) });
+      }
     }), { seed: SAMPLE_SEED, numRuns: SAMPLED_RUNS });
 
     expect(runs).toBe(SAMPLED_RUNS);
@@ -476,7 +525,8 @@ describe("full op-pool permutation equivalence", () => {
     for (const [kind, count] of Object.entries(hits)) expect(count, `${kind} was not sampled`).toBeGreaterThan(0);
     expect(Object.values(taxonomy).reduce((sum, count) => sum + count, 0)).toBe(SAMPLED_RUNS);
     console.info("perm-4 sampled taxonomy", {
-      seed: SAMPLE_SEED, runs, executions, hits, taxonomy, firstR69, firstInputcountLinkReuse,
+      seed: SAMPLE_SEED, runs, executions, hits, taxonomy,
+      firstR69, firstInputcountLinkReuse, firstRemovedLinkAlias,
     });
   }, 900_000);
 });
