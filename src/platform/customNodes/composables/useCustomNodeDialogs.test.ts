@@ -16,6 +16,14 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ closeDialog: mocks.closeDialog })
 }))
 
+vi.mock('../components/CustomNodeEditorDialog.vue', () => ({
+  default: { name: 'CustomNodeEditorDialog' }
+}))
+
+vi.mock('../components/CustomNodePacksDialog.vue', () => ({
+  default: { name: 'CustomNodePacksDialog' }
+}))
+
 describe('custom node dialogs', () => {
   beforeEach(() => {
     mocks.showLayoutDialog.mockReset()
@@ -29,6 +37,8 @@ describe('custom node dialogs', () => {
       name: 'Checkerboard Mask',
       status: 'ready' as const,
       editorUrl: '/editor/session-1',
+      editorKind: 'vscode' as const,
+      agentEnabled: false,
       createdAt: '2026-08-28T12:00:00Z',
       updatedAt: '2026-08-28T12:00:01Z'
     }

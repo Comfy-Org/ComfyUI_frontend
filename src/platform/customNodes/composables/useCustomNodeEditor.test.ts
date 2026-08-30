@@ -22,6 +22,8 @@ const sessionDto = {
   status: 'ready' as const,
   editor_url:
     '/api/customnodes/editor/sessions/session-1/vscode/?tkn=connection-token',
+  editor_kind: 'vscode' as const,
+  agent_enabled: false,
   created_at: '2026-08-28T12:00:00Z',
   updated_at: '2026-08-28T12:00:01Z'
 }
@@ -60,6 +62,7 @@ describe('useCustomNodeEditor', () => {
     })
     expect(session.editorUrl).toBe(sessionDto.editor_url)
     expect(session.status).toBe('ready')
+    expect(session.editorKind).toBe('vscode')
   })
 
   it('polls and abandons a session through owner-scoped routes', async () => {
@@ -121,6 +124,105 @@ describe('useCustomNodeEditor', () => {
     )
     expect(submitted.status).toBe('submitted')
     expect(submitted.revisionId).toBe('echo-pack-x87654321')
+  })
+
+  it('loads and saves browser-workbench files', async () => {
+    const filesDto = {
+      files: [
+        {
+          path: 'v2/nodes/checkerboard.py',
+          content: '# checkerboard\n',
+          editable: true
+        }
+      ],
+      initial_path: 'v2/nodes/checkerboard.py'
+    }
+    fetchApi
+      .mockResolvedValueOnce(jsonResponse(filesDto))
+      .mockResolvedValueOnce(jsonResponse(filesDto))
+
+    const { getFiles, saveFiles } = useCustomNodeEditor()
+    const loaded = await getFiles('session-1')
+    await saveFiles('session-1', loaded.files)
+
+    expect(loaded.initialPath).toBe('v2/nodes/checkerboard.py')
+    expect(fetchApi.mock.calls).toEqual([
+      ['/customnodes/editor/sessions/session-1/files', { method: 'GET' }],
+      [
+        '/customnodes/editor/sessions/session-1/files',
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            files: [
+              {
+                path: 'v2/nodes/checkerboard.py',
+                content: '# checkerboard\n'
+              }
+            ]
+          })
+        }
+      ]
+    ])
+  })
+
+  it('creates and explicitly applies a Node Agent proposal', async () => {
+    fetchApi
+      .mockResolvedValueOnce(
+        jsonResponse(
+          {
+            id: 'proposal-1',
+            summary: 'Changed the checkerboard.',
+            changes: [
+              {
+                path: 'v2/nodes/checkerboard.py',
+                original_content: '# before\n',
+                proposed_content: '# after\n'
+              }
+            ],
+            created_at: '2026-08-29T12:00:00Z'
+          },
+          true,
+          201
+        )
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          files: [
+            {
+              path: 'v2/nodes/checkerboard.py',
+              content: '# after\n',
+              editable: true
+            }
+          ],
+          initial_path: 'v2/nodes/checkerboard.py'
+        })
+      )
+
+    const { createAgentProposal, applyAgentProposal } = useCustomNodeEditor()
+    const proposal = await createAgentProposal('session-1', ' Change it ')
+    const applied = await applyAgentProposal('session-1', proposal.id)
+
+    expect(proposal.changes[0].originalContent).toBe('# before\n')
+    expect(applied.files[0].content).toBe('# after\n')
+    expect(fetchApi.mock.calls).toEqual([
+      [
+        '/customnodes/editor/sessions/session-1/agent/proposals',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instruction: 'Change it' })
+        }
+      ],
+      [
+        '/customnodes/editor/sessions/session-1/agent/proposals/proposal-1/apply',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        }
+      ]
+    ])
   })
 
   it('refreshes the deployment before reloading browser node definitions', async () => {

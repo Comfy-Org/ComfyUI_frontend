@@ -3,6 +3,7 @@ import { app } from '@/scripts/app'
 
 export type CustomNodeEditorMode = 'create' | 'edit'
 export type CustomNodeEditorAction = 'submit' | 'validate'
+export type CustomNodeEditorKind = 'workbench' | 'vscode'
 export type CustomNodeEditorStatus =
   | 'creating'
   | 'ready'
@@ -19,8 +20,34 @@ export interface CustomNodeEditorSession {
   editorUrl?: string
   error?: string
   revisionId?: string
+  editorKind: CustomNodeEditorKind
+  agentEnabled: boolean
   createdAt: string
   updatedAt: string
+}
+
+export interface CustomNodeEditorFile {
+  path: string
+  content: string
+  editable: boolean
+}
+
+export interface CustomNodeEditorFiles {
+  files: CustomNodeEditorFile[]
+  initialPath?: string
+}
+
+export interface CustomNodeEditorProposalChange {
+  path: string
+  originalContent: string
+  proposedContent: string
+}
+
+export interface CustomNodeEditorProposal {
+  id: string
+  summary: string
+  changes: CustomNodeEditorProposalChange[]
+  createdAt: string
 }
 
 export class CustomNodeEditorRequestError extends Error {
@@ -41,6 +68,8 @@ interface CustomNodeEditorSessionDto {
   editor_url?: string
   error?: string
   revision_id?: string
+  editor_kind?: CustomNodeEditorKind
+  agent_enabled?: boolean
   created_at: string
   updated_at: string
 }
@@ -61,6 +90,8 @@ const toSession = (
   editorUrl: session.editor_url,
   error: session.error,
   revisionId: session.revision_id,
+  editorKind: session.editor_kind ?? 'vscode',
+  agentEnabled: session.agent_enabled ?? false,
   createdAt: session.created_at,
   updatedAt: session.updated_at
 })
@@ -88,6 +119,53 @@ const readSession = async (
 ): Promise<CustomNodeEditorSession> => {
   if (!response.ok) throw await readError(response)
   return toSession((await response.json()) as CustomNodeEditorSessionDto)
+}
+
+interface CustomNodeEditorFileDto {
+  path: string
+  content: string
+  editable: boolean
+}
+
+interface CustomNodeEditorFilesDto {
+  files: CustomNodeEditorFileDto[]
+  initial_path?: string
+}
+
+interface CustomNodeEditorProposalDto {
+  id: string
+  summary: string
+  changes: Array<{
+    path: string
+    original_content: string
+    proposed_content: string
+  }>
+  created_at: string
+}
+
+const readFiles = async (
+  response: Response
+): Promise<CustomNodeEditorFiles> => {
+  if (!response.ok) throw await readError(response)
+  const data = (await response.json()) as CustomNodeEditorFilesDto
+  return { files: data.files, initialPath: data.initial_path }
+}
+
+const readProposal = async (
+  response: Response
+): Promise<CustomNodeEditorProposal> => {
+  if (!response.ok) throw await readError(response)
+  const data = (await response.json()) as CustomNodeEditorProposalDto
+  return {
+    id: data.id,
+    summary: data.summary,
+    changes: data.changes.map((change) => ({
+      path: change.path,
+      originalContent: change.original_content,
+      proposedContent: change.proposed_content
+    })),
+    createdAt: data.created_at
+  }
 }
 
 export function useCustomNodeEditor() {
@@ -154,6 +232,61 @@ export function useCustomNodeEditor() {
       )
     )
 
+  const getFiles = async (id: string): Promise<CustomNodeEditorFiles> =>
+    readFiles(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}/files`,
+        { method: 'GET' }
+      )
+    )
+
+  const saveFiles = async (
+    id: string,
+    files: CustomNodeEditorFile[]
+  ): Promise<CustomNodeEditorFiles> =>
+    readFiles(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}/files`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            files: files.map(({ path, content }) => ({ path, content }))
+          })
+        }
+      )
+    )
+
+  const createAgentProposal = async (
+    id: string,
+    instruction: string
+  ): Promise<CustomNodeEditorProposal> =>
+    readProposal(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}/agent/proposals`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instruction: instruction.trim() })
+        }
+      )
+    )
+
+  const applyAgentProposal = async (
+    id: string,
+    proposalId: string
+  ): Promise<CustomNodeEditorFiles> =>
+    readFiles(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}/agent/proposals/${encodeURIComponent(proposalId)}/apply`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        }
+      )
+    )
+
   const refreshNodeDefinitions = async (id: string): Promise<void> => {
     const response = await api.fetchApi(
       `/customnodes/editor/sessions/${encodeURIComponent(id)}/refresh`,
@@ -168,6 +301,10 @@ export function useCustomNodeEditor() {
     getSession,
     renameSession,
     runSessionAction,
+    getFiles,
+    saveFiles,
+    createAgentProposal,
+    applyAgentProposal,
     abandonSession,
     refreshNodeDefinitions
   }

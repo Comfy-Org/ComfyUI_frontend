@@ -138,6 +138,8 @@
     "marked": "^15.0.11",
     "mediabunny": "catalog:",
     "minisearch": "catalog:",
+    "monaco-editor": "catalog:",
+    "monaco-tree-editor": "catalog:",
     "pinia": "catalog:",
     "posthog-js": "catalog:",
     "primeicons": "catalog:",

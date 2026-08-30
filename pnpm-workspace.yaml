@@ -109,6 +109,8 @@ catalog:
   mediabunny: ^1.53.1
   minisearch: ^7.2.0
   mixpanel-browser: ^2.71.0
+  monaco-editor: 0.56.0
+  monaco-tree-editor: 1.2.1
   monocart-coverage-reports: ^2.12.9
   openai: ^7.4.0
   oxfmt: ^0.59.0

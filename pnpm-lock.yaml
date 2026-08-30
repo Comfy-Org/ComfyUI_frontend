@@ -297,6 +297,12 @@ catalogs:
     mixpanel-browser:
       specifier: ^2.71.0
       version: 2.81.0
+    monaco-editor:
+      specifier: 0.56.0
+      version: 0.56.0
+    monaco-tree-editor:
+      specifier: 1.2.1
+      version: 1.2.1
     monocart-coverage-reports:
       specifier: ^2.12.9
       version: 2.12.12
@@ -628,6 +634,12 @@ importers:
       minisearch:
         specifier: 'catalog:'
         version: 7.2.0
+      monaco-editor:
+        specifier: 'catalog:'
+        version: 0.56.0
+      monaco-tree-editor:
+        specifier: 'catalog:'
+        version: 1.2.1(@vue/reactivity@3.5.41)(monaco-editor@0.56.0)(vue@3.5.41(typescript@6.0.3))
       pinia:
         specifier: 'catalog:'
         version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
@@ -6576,6 +6588,9 @@ packages:
   immediate@3.0.6:
     resolution: {integrity: sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==}
 
+  immer@10.2.0:
+    resolution: {integrity: sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw==}
+
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
     engines: {node: '>=6'}
@@ -7243,6 +7258,11 @@ packages:
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
 
+  marked@14.0.0:
+    resolution: {integrity: sha512-uIj4+faQ+MgHgwUW1l2PsPglZLOLOT1uErt06dAPtx2kjteLAkbsd/0FiYg/MGS+i7ZKLb7w2WClxHkzOOuryQ==}
+    engines: {node: '>= 18'}
+    hasBin: true
+
   marked@15.0.12:
     resolution: {integrity: sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==}
     engines: {node: '>= 18'}
@@ -7527,6 +7547,16 @@ packages:
     resolution: {integrity: sha512-sweCIVXzx1aIGTCdzcMlSZt1h8k5Tmk08VNAuRk3IU28XamGiOH5ypi11g6De2CH7PhYqSSnGy2A/EFhbWnVKg==}
     engines: {node: '>=18.0.0'}
 
+  monaco-editor@0.56.0:
+    resolution: {integrity: sha512-sXboRm3BeBeLm938eaiyLMe0OxzfXIlZvbv4ir/jVgQy1zDhWjgmny0WoN45fuDKhCCQsYMbBJrv/A6jd8aCUg==}
+
+  monaco-tree-editor@1.2.1:
+    resolution: {integrity: sha512-oD2sq5zTQj7bcG0XzNMrWEVe5nn4aPzlLcghXgOf/g8h1vPyP86vrjoYO0TCr4NRoADAldZg/fz3PscpQXlzGg==}
+    engines: {node: '>=18.18.0'}
+    peerDependencies:
+      monaco-editor: '>=0.52.2'
+      vue: '>=3.5.12'
+
   monocart-coverage-reports@2.12.12:
     resolution: {integrity: sha512-d9FdUr2dn58Crweon0IE0zVi8r/i4vLvfvb2G7eL5vL5LfrxCB2X6F6qzuiwV6RioA4zbAI//7CYi6LjCvN3zA==}
     hasBin: true
@@ -7551,6 +7581,11 @@ packages:
   nanoid@3.3.17:
     resolution: {integrity: sha512-xQLf0A3HOMlgHq0n247/LRuAOYmB7dXJ/DvAxGvsSBij45XtBSmQycu+F8ODbHwns/XyFZagyL1+J0Offw1E0g==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
+  nanoid@5.1.16:
+    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
+    engines: {node: ^18 || >=20}
     hasBin: true
 
   napi-postinstall@0.3.4:
@@ -8826,6 +8861,9 @@ packages:
     resolution: {integrity: sha512-JfJeIHke7y2egdGGgRAvpCwYFUsHlM2gPcrVOxFkznt/4uzQ7HFmvE63iFHVLBJNDuyDOQgijDK/tXH/f6Msjg==}
     engines: {node: '>=6.10'}
 
+  ts-deferred@1.0.4:
+    resolution: {integrity: sha512-uE0e0mUQpqbS3VbqqauLDJ5x9kyHeMXGxRwmoXc+woXkEYWj/MiN61IsfPtlCzfxcVwlxy+S70aU05+atxeoPQ==}
+
   ts-map@1.0.3:
     resolution: {integrity: sha512-vDWbsl26LIcPGmDpoVzjEP6+hvHZkBkLW7JpvwbCv/5IYPJlsbzCVXY3wsCeAxAUeTclNOUZxnLdGh3VBD/J6w==}
 
@@ -9487,6 +9525,17 @@ packages:
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
+
+  vue-fn@0.3.0-rc:
+    resolution: {integrity: sha512-FPn7sniVcri+Qt+lXM8mQxpyk9V4hzwXaYFrueM/i2lLHxIseYekgyG+smsiWPLa/tWBFu8hu2UALUMQqKkeNQ==}
+    peerDependencies:
+      '@vue/reactivity': '>=3.5.0'
+      vue: '>=3.5.0'
+    peerDependenciesMeta:
+      '@vue/reactivity':
+        optional: true
+      vue:
+        optional: true
 
   vue-i18n@11.4.8:
     resolution: {integrity: sha512-0ULeHP6Z9CGvAm67S77ZEp41cfGXIREGL8qfhos2BMgcQQewtQcDKuojt6jjasAD/S8GwfTp2ySPmDSpwvrCMQ==}
@@ -15506,6 +15555,8 @@ snapshots:
 
   immediate@3.0.6: {}
 
+  immer@10.2.0: {}
+
   import-fresh@3.3.1:
     dependencies:
       parent-module: 1.0.1
@@ -16105,6 +16156,8 @@ snapshots:
 
   markdown-table@3.0.4: {}
 
+  marked@14.0.0: {}
+
   marked@15.0.12: {}
 
   math-intrinsics@1.1.0: {}
@@ -16655,6 +16708,21 @@ snapshots:
 
   modern-tar@0.7.6: {}
 
+  monaco-editor@0.56.0:
+    dependencies:
+      dompurify: 3.4.13
+      marked: 14.0.0
+
+  monaco-tree-editor@1.2.1(@vue/reactivity@3.5.41)(monaco-editor@0.56.0)(vue@3.5.41(typescript@6.0.3)):
+    dependencies:
+      monaco-editor: 0.56.0
+      nanoid: 5.1.16
+      ts-deferred: 1.0.4
+      vue: 3.5.41(typescript@6.0.3)
+      vue-fn: 0.3.0-rc(@vue/reactivity@3.5.41)(vue@3.5.41(typescript@6.0.3))
+    transitivePeerDependencies:
+      - '@vue/reactivity'
+
   monocart-coverage-reports@2.12.12:
     dependencies:
       acorn: 8.17.0
@@ -16684,6 +16752,8 @@ snapshots:
       tslib: 2.8.1
 
   nanoid@3.3.17: {}
+
+  nanoid@5.1.16: {}
 
   napi-postinstall@0.3.4: {}
 
@@ -18309,6 +18379,8 @@ snapshots:
 
   ts-dedent@2.3.0: {}
 
+  ts-deferred@1.0.4: {}
+
   ts-map@1.0.3: {}
 
   tsconfig-paths-webpack-plugin@4.2.0:
@@ -18966,6 +19038,14 @@ snapshots:
       semver: 7.8.5
     transitivePeerDependencies:
       - supports-color
+
+  vue-fn@0.3.0-rc(@vue/reactivity@3.5.41)(vue@3.5.41(typescript@6.0.3)):
+    dependencies:
+      immer: 10.2.0
+      ts-deferred: 1.0.4
+    optionalDependencies:
+      '@vue/reactivity': 3.5.41
+      vue: 3.5.41(typescript@6.0.3)
 
   vue-i18n@11.4.8(vue@3.5.41(typescript@6.0.3)):
     dependencies:

@@ -97,6 +97,8 @@ const readySession = {
   mode: 'create' as const,
   name: 'New Custom Node',
   status: 'creating' as const,
+  editorKind: 'workbench' as const,
+  agentEnabled: false,
   createdAt: '2026-08-28T12:00:00Z',
   updatedAt: '2026-08-28T12:00:00Z'
 }

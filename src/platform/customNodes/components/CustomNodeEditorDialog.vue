@@ -118,8 +118,15 @@
     </div>
 
     <main class="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+      <CustomNodeWorkbench
+        v-if="isEditorVisible && session.editorKind === 'workbench'"
+        ref="workbenchRef"
+        :session-id="session.id"
+        :agent-enabled="session.agentEnabled"
+      />
+
       <iframe
-        v-if="isEditorVisible && session.editorUrl"
+        v-else-if="isEditorVisible && session.editorUrl"
         class="block size-full min-h-0 min-w-0 border-0 bg-base-background"
         :src="session.editorUrl"
         :title="$t('customNodePacks.editor.frameTitle')"
@@ -185,6 +192,7 @@ import type {
   CustomNodeEditorSession,
   CustomNodeEditorStatus
 } from '../composables/useCustomNodeEditor'
+import CustomNodeWorkbench from './CustomNodeWorkbench.vue'
 
 const props = defineProps<{
   initialSession: CustomNodeEditorSession
@@ -210,6 +218,8 @@ const activeAction = ref<CustomNodeEditorAction | null>(null)
 const pollError = ref<string | null>(null)
 const terminalHandled = ref(false)
 const nameInputRef = useTemplateRef<InstanceType<typeof Input>>('nameInputRef')
+const workbenchRef =
+  useTemplateRef<InstanceType<typeof CustomNodeWorkbench>>('workbenchRef')
 let pendingRename: Promise<void> | null = null
 
 type RenameState =
@@ -353,6 +363,9 @@ const runEditorAction = async (action: CustomNodeEditorAction) => {
 
   activeAction.value = action
   try {
+    if (session.value.editorKind === 'workbench') {
+      await workbenchRef.value?.saveAll()
+    }
     session.value = await runSessionAction(session.value.id, action)
     pollError.value = null
     if (action === 'validate') {

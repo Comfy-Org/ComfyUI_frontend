@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   refreshNodeDefinitions: vi.fn(),
   renameSession: vi.fn(),
   runSessionAction: vi.fn(),
+  saveAll: vi.fn(),
   reportError: vi.fn(),
   toast: vi.fn()
 }))
@@ -52,6 +53,14 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({ confirm: vi.fn() })
+}))
+vi.mock('./CustomNodeWorkbench.vue', () => ({
+  default: {
+    name: 'CustomNodeWorkbench',
+    props: ['sessionId', 'agentEnabled'],
+    methods: { saveAll: mocks.saveAll },
+    template: '<div data-testid="custom-node-workbench" />'
+  }
 }))
 vi.mock('../composables/useCustomNodeEditor', () => ({
   CustomNodeEditorRequestError: mocks.RequestError,
@@ -107,6 +116,8 @@ const readySession = {
   mode: 'edit' as const,
   name: 'Echo Pack',
   status: 'ready' as const,
+  editorKind: 'workbench' as const,
+  agentEnabled: true,
   createdAt: '2026-08-29T12:00:00Z',
   updatedAt: '2026-08-29T12:00:01Z'
 }
@@ -120,6 +131,7 @@ describe('CustomNodeEditorDialog', () => {
     mocks.refreshNodeDefinitions.mockReset()
     mocks.renameSession.mockReset()
     mocks.runSessionAction.mockReset()
+    mocks.saveAll.mockReset().mockResolvedValue(undefined)
     mocks.reportError.mockReset()
     mocks.toast.mockReset()
   })
