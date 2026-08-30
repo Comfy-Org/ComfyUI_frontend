@@ -56,6 +56,14 @@ const { mockHandles } = vi.hoisted(() => {
           _signal: AbortSignal
         ) => undefined
       ),
+      toastStore: {
+        success: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        warning: vi.fn(),
+        loading: vi.fn(),
+        custom: vi.fn()
+      },
       assetService: {
         shouldUseAssetBrowser: vi.fn()
       },
@@ -106,6 +114,10 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
     candidates: readonly MissingModelCandidate[],
     signal: AbortSignal
   ) => mockHandles.verifyAssetSupportedCandidates(candidates, signal)
+}))
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => mockHandles.toastStore
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({

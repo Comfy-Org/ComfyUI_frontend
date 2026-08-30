@@ -13,7 +13,10 @@ beforeEach(() => {
   addAlert = useToastStore().addAlert
 })
 
-let addAlert: ReturnType<typeof useToastStore>['addAlert']
+const warning = vi.fn()
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({ warning })
+}))
 
 const i18n = createI18n({
   legacy: false,
@@ -170,7 +173,7 @@ describe('HDRIControls', () => {
       fileInput.dispatchEvent(new Event('change'))
 
       expect(onUpdateHdriFile).toHaveBeenCalledWith(file)
-      expect(addAlert).not.toHaveBeenCalled()
+      expect(warning).not.toHaveBeenCalled()
     })
 
     it('rejects unsupported file extensions with a toast and no emit', async () => {
@@ -185,7 +188,9 @@ describe('HDRIControls', () => {
       fileInput.dispatchEvent(new Event('change'))
 
       expect(onUpdateHdriFile).not.toHaveBeenCalled()
-      expect(addAlert).toHaveBeenCalledWith('Unsupported HDRI format')
+      expect(warning).toHaveBeenCalledWith('Alert', {
+        description: 'Unsupported HDRI format'
+      })
     })
   })
 })

@@ -27,7 +27,7 @@ vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
 }))
 
 import { useMissingModelStore } from './missingModelStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
@@ -158,15 +158,13 @@ describe('missingModelStore', () => {
       vi.spyOn(app, 'refreshMissingModels').mockRejectedValue(
         new Error('object_info failed')
       )
-      const toastStore = useToastStore()
-      const addSpy = vi.spyOn(toastStore, 'add')
+      const toastStore = useToast()
+      const addSpy = vi.spyOn(toastStore, 'error')
 
       await store.refreshMissingModels()
 
-      expect(addSpy).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'translated:g.error',
-        detail: 'translated:rightSidePanel.missingModels.refreshFailed'
+      expect(addSpy).toHaveBeenCalledWith('translated:g.error', {
+        description: 'translated:rightSidePanel.missingModels.refreshFailed'
       })
       expect(store.isRefreshingMissingModels).toBe(false)
     })
@@ -175,8 +173,8 @@ describe('missingModelStore', () => {
       const store = useMissingModelStore()
       const abortError = new DOMException('Refresh aborted', 'AbortError')
       vi.spyOn(app, 'refreshMissingModels').mockRejectedValue(abortError)
-      const toastStore = useToastStore()
-      const addSpy = vi.spyOn(toastStore, 'add')
+      const toastStore = useToast()
+      const addSpy = vi.spyOn(toastStore, 'error')
 
       await store.refreshMissingModels()
 

@@ -14,6 +14,19 @@ import {
   setCompositorLayers
 } from './useCompositorLayers'
 
+const { toastAdd } = vi.hoisted(() => ({ toastAdd: vi.fn() }))
+
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => toastAdd('success', ...args),
+    error: (...args: unknown[]) => toastAdd('error', ...args),
+    info: (...args: unknown[]) => toastAdd('info', ...args),
+    warning: (...args: unknown[]) => toastAdd('warning', ...args),
+    loading: (...args: unknown[]) => toastAdd('loading', ...args),
+    custom: (...args: unknown[]) => toastAdd('custom', ...args)
+  })
+}))
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -58,11 +71,10 @@ describe('useCompositorEditor', () => {
   it('shows a toast and keeps the dialog closed without cached layers', () => {
     renderCompositorEditor().openCompositorEditor(node)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'compositor.runWorkflowFirst'
-      })
+    expect(toastAdd).toHaveBeenCalledWith(
+      'info',
+      expect.any(String),
+      expect.objectContaining({ description: 'compositor.runWorkflowFirst' })
     )
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
   })
@@ -74,11 +86,10 @@ describe('useCompositorEditor', () => {
 
     renderCompositorEditor().openCompositorEditor(node)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'compositor.runWorkflowFirst'
-      })
+    expect(toastAdd).toHaveBeenCalledWith(
+      'info',
+      expect.any(String),
+      expect.objectContaining({ description: 'compositor.runWorkflowFirst' })
     )
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
   })

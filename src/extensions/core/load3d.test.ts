@@ -13,6 +13,7 @@ const {
   configureMock,
   configureForSaveMeshMock,
   getLoad3dMock,
+  toastWarningMock,
   getNodeByLocatorIdMock,
   nodeToLoad3dMap
 } = vi.hoisted(() => ({
@@ -22,6 +23,7 @@ const {
   configureMock: vi.fn(),
   configureForSaveMeshMock: vi.fn(),
   getLoad3dMock: vi.fn(),
+  toastWarningMock: vi.fn(),
   getNodeByLocatorIdMock: vi.fn(),
   nodeToLoad3dMap: new Map<object, unknown>()
 }))
@@ -109,10 +111,11 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-let toastAddAlertMock: ReturnType<typeof useToastStore>['addAlert']
-beforeEach(() => {
-  toastAddAlertMock = useToastStore().addAlert
-})
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({ warning: toastWarningMock })
+}))
+
+
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLoad3dNode: vi.fn(() => true)
@@ -472,9 +475,9 @@ describe('Comfy.Preview3D.nodeCreated', () => {
     await preview3DExt.nodeCreated(node)
     node.onExecuted!({ result: [] })
 
-    expect(toastAddAlertMock).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(toastWarningMock).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
   })
 })
 
@@ -1019,9 +1022,9 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated(node)
     node.onExecuted!({ result: [] })
 
-    expect(toastAddAlertMock).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(toastWarningMock).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 })

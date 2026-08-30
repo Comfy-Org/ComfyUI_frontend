@@ -25,6 +25,10 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: vi.fn(() => ({ warning: vi.fn() }))
+}))
+
 let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>
 let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
 

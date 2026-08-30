@@ -74,12 +74,18 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({ add: state.toastAdd })
+
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: state.toastAdd,
+    error: state.toastAdd,
+    info: state.toastAdd,
+    warning: state.toastAdd,
+    loading: state.toastAdd,
+    custom: state.toastAdd
   })
-)
+}))
 
 const apps: App<Element>[] = []
 
@@ -203,9 +209,9 @@ describe('useResubscribe', () => {
     // Exactly one started event on the legacy success rail: the pre-call start,
     // with no duplicate post-await started/pending emitted after resubscribe() resolves.
     expect(state.trackBillingEvent).toHaveBeenCalledTimes(1)
-    expect(state.toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
-    )
+    expect(state.toastAdd).toHaveBeenCalledWith(expect.any(String), {
+      duration: 5000
+    })
   })
 
   it('shows an error and resets loading when resubscription fails', async () => {
@@ -218,9 +224,9 @@ describe('useResubscribe', () => {
 
     expect(state.resubscribe).toHaveBeenCalledOnce()
     expect(state.toastAdd).toHaveBeenCalledWith(
+      expect.any(String),
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Resubscribe failed for person@example.com'
+        description: 'Resubscribe failed for person@example.com'
       })
     )
     expect(state.trackBillingEvent).toHaveBeenCalledWith({

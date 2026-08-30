@@ -39,7 +39,22 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   }))
 }))
 
-let toastAddMock: ReturnType<typeof useToastStore>['add']
+
+
+const { toastAddMock } = vi.hoisted(() => ({
+  toastAddMock: vi.fn()
+}))
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: vi.fn(() => ({
+    success: (...args: unknown[]) => toastAddMock('success', ...args),
+    error: (...args: unknown[]) => toastAddMock('error', ...args),
+    info: (...args: unknown[]) => toastAddMock('info', ...args),
+    warning: (...args: unknown[]) => toastAddMock('warning', ...args),
+    loading: (...args: unknown[]) => toastAddMock('loading', ...args),
+    custom: (...args: unknown[]) => toastAddMock('custom', ...args)
+  }))
+}))
 
 vi.mock(
   import('@/workbench/extensions/manager/composables/useManagerDialog'),
@@ -303,12 +318,11 @@ describe('useManagerState', () => {
       useManagerState()
 
       expect(toastAddMock).toHaveBeenCalledTimes(1)
-      expect(toastAddMock).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: 'manager.incompatibleVersion.title',
-        detail: 'manager.incompatibleVersion.message',
-        life: 15000
-      })
+      expect(toastAddMock).toHaveBeenCalledWith(
+        'warning',
+        'manager.incompatibleVersion.title',
+        { description: 'manager.incompatibleVersion.message', duration: 15000 }
+      )
     })
 
     it('openManager on INCOMPATIBLE re-emits the upgrade toast without settings redirect', async () => {
@@ -327,12 +341,11 @@ describe('useManagerState', () => {
       await managerState.openManager()
       expect(toastAddMock).toHaveBeenCalledTimes(2)
       // second call must still be the upgrade toast, not an error toast
-      expect(toastAddMock).toHaveBeenLastCalledWith({
-        severity: 'warn',
-        summary: 'manager.incompatibleVersion.title',
-        detail: 'manager.incompatibleVersion.message',
-        life: 15000
-      })
+      expect(toastAddMock).toHaveBeenLastCalledWith(
+        'warning',
+        'manager.incompatibleVersion.title',
+        { description: 'manager.incompatibleVersion.message', duration: 15000 }
+      )
     })
 
     it('does not fire upgrade toast when state is NEW_UI', () => {

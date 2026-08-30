@@ -41,6 +41,19 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  })
+}))
+
+
+
 vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
 }))
@@ -2409,10 +2422,11 @@ describe('useWorkspaceAuthStore', () => {
       // A permanent failure resolves to null (the caller surfaces its 401),
       // fires the error toast keyed to the 401 code, and clears the dead session.
       expect(result).toBeNull()
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        expect.any(String),
         expect.objectContaining({
-          severity: 'error',
-          detail: 'workspaceAuth.errors.invalidFirebaseToken'
+          description: 'workspaceAuth.errors.invalidFirebaseToken'
         })
       )
       expect(unifiedToken.value).toBeNull()
@@ -2741,8 +2755,10 @@ describe('useWorkspaceAuthStore', () => {
 
         await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
 
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error', detail: detailKey })
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          'error',
+          expect.any(String),
+          expect.objectContaining({ description: detailKey })
         )
         expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
           outcome: 'permanent_failure',
@@ -2777,10 +2793,11 @@ describe('useWorkspaceAuthStore', () => {
       await store.mintAtLogin()
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        expect.any(String),
         expect.objectContaining({
-          severity: 'error',
-          detail: 'workspaceAuth.errors.notAuthenticated'
+          description: 'workspaceAuth.errors.notAuthenticated'
         })
       )
       expect(unifiedToken.value).toBeNull()
@@ -3061,10 +3078,11 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(result).toBe(false)
       expect(unifiedToken.value).toBeNull()
-      expect(useToastStore().add).toHaveBeenCalledWith(
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        expect.any(String),
         expect.objectContaining({
-          severity: 'error',
-          detail: 'workspaceAuth.errors.invalidFirebaseToken'
+          description: 'workspaceAuth.errors.invalidFirebaseToken'
         })
       )
     })

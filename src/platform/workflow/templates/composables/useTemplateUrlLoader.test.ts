@@ -55,15 +55,16 @@ vi.mock<unknown>(
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd,
+    loading: mockToastAdd,
+    custom: mockToastAdd
   })
-)
+}))
 
 const apps: App<Element>[] = []
 
@@ -151,10 +152,8 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Template "invalid-template" not found'
+    expect(mockToastAdd).toHaveBeenCalledWith('Error', {
+      description: 'Template "invalid-template" not found'
     })
   })
 
@@ -244,10 +243,8 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: i18n.global.t('g.errorLoadingTemplate')
+    expect(mockToastAdd).toHaveBeenCalledWith('Error', {
+      description: i18n.global.t('g.errorLoadingTemplate')
     })
   })
 

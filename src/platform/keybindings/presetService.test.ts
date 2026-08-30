@@ -57,6 +57,19 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
+
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd,
+    loading: mockToastAdd,
+    custom: mockToastAdd
+  })
+}))
+
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandling: <T extends (...args: unknown[]) => unknown>(fn: T) =>

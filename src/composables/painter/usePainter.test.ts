@@ -33,6 +33,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
+vi.mock<unknown>(import('@/components/ui/toast'), () => {
+  const store = { warning: vi.fn() }
+  return { useToast: () => store }
+})
+
+
+
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),

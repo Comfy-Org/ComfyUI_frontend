@@ -9,7 +9,7 @@ import { useNodeImageUpload } from './useNodeImageUpload'
 import type { Mock } from 'vitest'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
-let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
+const mockWarning = vi.hoisted(() => vi.fn())
 let mockInvalidateInputs: Mock<
   ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
 >
@@ -35,6 +35,10 @@ vi.mock(import('@/composables/node/useNodePaste'), () => ({
 
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
+}))
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({ warning: mockWarning })
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -189,7 +193,9 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(mockWarning).toHaveBeenCalledWith('Alert', {
+      description: 'g.uploadAlreadyInProgress'
+    })
 
     await first
   })

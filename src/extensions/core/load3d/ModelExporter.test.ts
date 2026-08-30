@@ -7,12 +7,14 @@ import { ModelExporter } from './ModelExporter'
 
 const {
   downloadBlobMock,
+  warningMock,
   gltfParseMock,
   objParseMock,
   stlParseMock,
   fbxParseAsyncMock
 } = vi.hoisted(() => ({
   downloadBlobMock: vi.fn(),
+  warningMock: vi.fn(),
   gltfParseMock: vi.fn(),
   objParseMock: vi.fn(),
   stlParseMock: vi.fn(),
@@ -28,10 +30,9 @@ vi.mock('@/i18n', () => ({
     vars ? `${key}:${JSON.stringify(vars)}` : key
 }))
 
-let addAlertMock: ReturnType<typeof useToastStore>['addAlert']
-beforeEach(() => {
-  addAlertMock = useToastStore().addAlert
-})
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({ warning: warningMock })
+}))
 
 vi.mock('three/examples/jsm/exporters/GLTFExporter', () => ({
   GLTFExporter: class {
@@ -145,9 +146,9 @@ describe('ModelExporter', () => {
       await expect(
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('network')
-      expect(addAlertMock).toHaveBeenCalledWith(
-        'toastMessages.failedToDownloadFile'
-      )
+      expect(warningMock).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToDownloadFile'
+      })
       vi.unstubAllGlobals()
     })
 
@@ -166,9 +167,9 @@ describe('ModelExporter', () => {
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('HTTP 404')
       expect(downloadBlobMock).not.toHaveBeenCalled()
-      expect(addAlertMock).toHaveBeenCalledWith(
-        'toastMessages.failedToDownloadFile'
-      )
+      expect(warningMock).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToDownloadFile'
+      })
       vi.unstubAllGlobals()
     })
   })
@@ -227,9 +228,9 @@ describe('ModelExporter', () => {
       const assertion = expect(promise).rejects.toThrow('parse fail')
       await vi.runAllTimersAsync()
       await assertion
-      expect(addAlertMock).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"GLB"}'
-      )
+      expect(warningMock).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel:{"format":"GLB"}'
+      })
     })
   })
 
@@ -275,9 +276,9 @@ describe('ModelExporter', () => {
       const assertion = expect(promise).rejects.toThrow('obj fail')
       await vi.runAllTimersAsync()
       await assertion
-      expect(addAlertMock).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"OBJ"}'
-      )
+      expect(warningMock).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel:{"format":"OBJ"}'
+      })
     })
   })
 
@@ -323,9 +324,9 @@ describe('ModelExporter', () => {
       const assertion = expect(promise).rejects.toThrow('stl fail')
       await vi.runAllTimersAsync()
       await assertion
-      expect(addAlertMock).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"STL"}'
-      )
+      expect(warningMock).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel:{"format":"STL"}'
+      })
     })
   })
 
@@ -354,7 +355,7 @@ describe('ModelExporter', () => {
         ModelExporter.exportDirect(null, 'out.spz', 'spz')
       ).rejects.toThrow('No source file available to export as spz')
       expect(downloadBlobMock).not.toHaveBeenCalled()
-      expect(addAlertMock).not.toHaveBeenCalled()
+      expect(warningMock).not.toHaveBeenCalled()
     })
   })
 
@@ -399,9 +400,9 @@ describe('ModelExporter', () => {
       const assertion = expect(promise).rejects.toThrow('fbx fail')
       await vi.runAllTimersAsync()
       await assertion
-      expect(addAlertMock).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"FBX"}'
-      )
+      expect(warningMock).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel:{"format":"FBX"}'
+      })
     })
   })
 })

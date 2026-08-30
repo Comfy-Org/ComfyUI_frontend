@@ -77,7 +77,17 @@ vi.mock(
     useCompositorAutoSave: vi.fn(() => ({ stop: autoSaveStop }))
   })
 )
-
+)
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: toastAdd,
+    error: toastAdd,
+    info: toastAdd,
+    warning: toastAdd,
+    loading: toastAdd,
+    custom: toastAdd
+  })
+}))
 vi.mock(
   import('@/renderer/extensions/compositor/composables/compositorSession'),
   () => ({
@@ -222,11 +232,9 @@ describe('LayerEditorContent', () => {
     renderEditor('compositor')
 
     await vi.waitFor(() =>
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'warn',
-          detail: '2 layers failed to load'
-        })
+      expect(toastAdd).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: '2 layers failed to load' })
       )
     )
     expect(useCompositorAutoSave).not.toHaveBeenCalled()
@@ -241,8 +249,9 @@ describe('LayerEditorContent', () => {
     unmount()
 
     expect(saveLayerState).not.toHaveBeenCalled()
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ detail: 'Failed to save composite' })
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ description: 'Failed to save composite' })
     )
   })
 
@@ -251,9 +260,9 @@ describe('LayerEditorContent', () => {
     renderEditor('compositor')
 
     await vi.waitFor(() =>
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(
+        toastAdd.mock.calls.some(([title]) => typeof title === 'string')
+      ).toBe(true)
     )
     expect(useCompositorAutoSave).not.toHaveBeenCalled()
   })

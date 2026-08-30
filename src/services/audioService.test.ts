@@ -11,6 +11,10 @@ const mockApi = vi.hoisted(() => ({
   fetchApi: vi.fn()
 }))
 
+const mockToastStore = vi.hoisted(() => ({
+  warning: vi.fn()
+}))
+
 vi.mock(import('extendable-media-recorder'), () => ({
   register: mockRegister
 }))
@@ -21,6 +25,10 @@ vi.mock(import('extendable-media-recorder-wav-encoder'), () => ({
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mockApi
+}))
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: vi.fn(() => mockToastStore)
 }))
 
 describe('useAudioService', () => {
@@ -204,9 +212,9 @@ describe('useAudioService', () => {
         'Error uploading temp file: 500 - Internal Server Error'
       )
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'Error uploading temp file: 500 - Internal Server Error'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'Error uploading temp file: 500 - Internal Server Error'
+      })
     })
 
     it('should handle network errors', async () => {
@@ -235,11 +243,11 @@ describe('useAudioService', () => {
           `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
         )
 
-        expect(useToastStore().addAlert).toHaveBeenCalledWith(
-          `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
-        )
+        expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+          description: `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
+        })
 
-        vi.mocked(useToastStore().addAlert).mockClear()
+        mockToastStore.warning.mockClear()
       }
     })
 

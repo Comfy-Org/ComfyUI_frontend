@@ -1741,7 +1741,18 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    loading: vi.fn(),
+    custom: vi.fn()
+  })
+}))
+
+vi.mock<unknown>(import('@/i18n'), async (importOriginal) => ({
   ...(await importOriginal<typeof I18nModule>()),
   st: (_key: string, fallback: string) => fallback
 }))

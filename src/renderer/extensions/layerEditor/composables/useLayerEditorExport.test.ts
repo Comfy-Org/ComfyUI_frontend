@@ -25,7 +25,16 @@ const { writePsd, downloadBlob } = vi.hoisted(() => ({
 
 vi.mock(import('ag-psd'), () => ({ writePsd }))
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => toastAdd('success', ...args),
+    error: (...args: unknown[]) => toastAdd('error', ...args),
+    info: (...args: unknown[]) => toastAdd('info', ...args),
+    warning: (...args: unknown[]) => toastAdd('warning', ...args),
+    loading: (...args: unknown[]) => toastAdd('loading', ...args),
+    custom: (...args: unknown[]) => toastAdd('custom', ...args)
+  })
+}))
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -221,11 +230,10 @@ describe('useLayerEditorExport', () => {
     await exportPsd()
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'layerEditor.exportPsdFailed'
-      })
+    expect(toastAdd).toHaveBeenCalledWith(
+      'error',
+      expect.any(String),
+      expect.objectContaining({ description: 'layerEditor.exportPsdFailed' })
     )
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
