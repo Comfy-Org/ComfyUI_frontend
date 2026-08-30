@@ -133,6 +133,8 @@ const readySession = {
   status: 'ready' as const,
   editorKind: 'workbench' as const,
   agentEnabled: true,
+  agentBusy: false,
+  agentActivity: [],
   createdAt: '2026-08-29T12:00:00Z',
   updatedAt: '2026-08-29T12:00:01Z'
 }

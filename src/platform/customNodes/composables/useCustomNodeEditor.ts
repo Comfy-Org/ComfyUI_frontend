@@ -32,6 +32,8 @@ export interface CustomNodeEditorSession {
   revisionId?: string
   editorKind: CustomNodeEditorKind
   agentEnabled: boolean
+  agentBusy: boolean
+  agentActivity: string[]
   createdAt: string
   updatedAt: string
 }
@@ -131,6 +133,8 @@ export interface CustomNodeEditorSessionDto {
   revision_id?: string
   editor_kind?: CustomNodeEditorKind
   agent_enabled?: boolean
+  agent_busy?: boolean
+  agent_activity?: string[]
   created_at: string
   updated_at: string
 }
@@ -153,6 +157,8 @@ const toSession = (
   revisionId: session.revision_id,
   editorKind: session.editor_kind ?? 'vscode',
   agentEnabled: session.agent_enabled ?? false,
+  agentBusy: session.agent_busy ?? false,
+  agentActivity: session.agent_activity ?? [],
   createdAt: session.created_at,
   updatedAt: session.updated_at
 })

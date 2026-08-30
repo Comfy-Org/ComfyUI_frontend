@@ -14,6 +14,7 @@ import CustomNodeWorkbench from './CustomNodeWorkbench.vue'
 const mocks = vi.hoisted(() => ({
   applyAgentProposal: vi.fn(),
   createAgentProposal: vi.fn(),
+  getSession: vi.fn(),
   replaceFiles: vi.fn(),
   reportError: vi.fn(),
   restoreCheckpoint: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock('../composables/useCustomNodeEditor', () => ({
   useCustomNodeEditor: () => ({
     applyAgentProposal: mocks.applyAgentProposal,
     createAgentProposal: mocks.createAgentProposal,
+    getSession: mocks.getSession,
     restoreCheckpoint: mocks.restoreCheckpoint
   })
 }))
@@ -103,6 +105,7 @@ const i18n = createI18n({
             restored: 'Files restored to this point.',
             restoreFailed: 'Could not restore the files.',
             working: 'Building and testing…',
+            steps: 'Worked through {count} steps',
             applying: 'Applying changes…',
             restoring: 'Restoring files…',
             testStatus: {
@@ -168,6 +171,9 @@ describe('CustomNodeWorkbench', () => {
     localStorage.clear()
     mocks.applyAgentProposal.mockReset().mockResolvedValue(appliedFiles)
     mocks.createAgentProposal.mockReset()
+    mocks.getSession.mockReset().mockResolvedValue({
+      agentActivity: ['Reading the manifest doc', 'Sandbox test passed']
+    })
     mocks.replaceFiles.mockReset().mockResolvedValue(undefined)
     mocks.reportError.mockReset()
     mocks.restoreCheckpoint.mockReset().mockResolvedValue(appliedFiles)
@@ -291,6 +297,12 @@ describe('CustomNodeWorkbench', () => {
     ).toBeVisible()
     expect(screen.getByText('Changes applied')).toBeVisible()
     expect(screen.queryByTestId('node-agent-activity')).not.toBeInTheDocument()
+
+    const turnActivity = screen.getByTestId('node-agent-turn-activity')
+    expect(turnActivity).toHaveTextContent('Worked through 2 steps')
+    await user.click(screen.getByText('Worked through 2 steps'))
+    expect(screen.getByText('Reading the manifest doc')).toBeVisible()
+    expect(screen.getByText('Sandbox test passed')).toBeVisible()
     expect(
       screen.queryByRole('button', { name: 'Apply changes' })
     ).not.toBeInTheDocument()
@@ -630,6 +642,44 @@ describe('CustomNodeWorkbench', () => {
     expect(screen.getByText('Files restored to this point.')).toBeVisible()
     expect(screen.queryByTestId('node-agent-activity')).not.toBeInTheDocument()
     expect(mocks.reportError).not.toHaveBeenCalled()
+  })
+
+  it('renders answer-only turns without applying anything', async () => {
+    const user = userEvent.setup()
+    mocks.createAgentProposal.mockResolvedValue({
+      id: 'proposal-answer',
+      summary:
+        'The mask output marks blanked squares with 1.0; nothing needs to change.',
+      changes: [],
+      createdAt: '2026-08-29T12:00:00Z'
+    })
+
+    render(CustomNodeWorkbench, {
+      props: {
+        sessionId: 'session-1',
+        agentEnabled: true,
+        packName: 'Checkerboard Mask'
+      },
+      global: { plugins: [i18n] }
+    })
+    await user.type(
+      screen.getByRole('textbox', { name: 'Describe a node change' }),
+      'How is the mask computed?'
+    )
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText(
+        'The mask output marks blanked squares with 1.0; nothing needs to change.'
+      )
+    ).toBeVisible()
+    expect(mocks.applyAgentProposal).not.toHaveBeenCalled()
+    expect(screen.queryByText('Changes applied')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', {
+        name: 'Restore the files from this point'
+      })
+    ).not.toBeInTheDocument()
   })
 
   it('reports when applying the agent work fails', async () => {

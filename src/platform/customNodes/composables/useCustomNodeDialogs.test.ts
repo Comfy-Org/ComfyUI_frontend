@@ -39,6 +39,8 @@ describe('custom node dialogs', () => {
       editorUrl: '/editor/session-1',
       editorKind: 'vscode' as const,
       agentEnabled: false,
+      agentBusy: false,
+      agentActivity: [],
       createdAt: '2026-08-28T12:00:00Z',
       updatedAt: '2026-08-28T12:00:01Z'
     }

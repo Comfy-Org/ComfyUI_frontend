@@ -89,6 +89,7 @@
         "working": "Building and testing…",
         "applying": "Applying changes…",
         "restoring": "Restoring files…",
+        "steps": "Worked through {count} steps",
         "testStatus": {
           "passed": "Backend test passed",
           "failed": "Backend test failed",

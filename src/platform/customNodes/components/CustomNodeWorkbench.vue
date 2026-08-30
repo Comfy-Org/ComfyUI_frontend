@@ -145,6 +145,50 @@
                   {{ message.content }}
                 </p>
 
+                <details
+                  v-if="message.activity && message.activity.length > 0"
+                  class="group mt-2"
+                  data-testid="node-agent-turn-activity"
+                >
+                  <summary
+                    class="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs text-muted-foreground select-none hover:bg-secondary-background-hover [&::-webkit-details-marker]:hidden"
+                  >
+                    <i
+                      class="icon-[lucide--list-checks] size-3.5 shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span class="min-w-0 flex-1 truncate">
+                      {{
+                        $t('customNodePacks.editor.agent.steps', {
+                          count: message.activity.length
+                        })
+                      }}
+                    </span>
+                    <i
+                      class="icon-[lucide--chevron-right] size-3.5 shrink-0 transition-transform group-open:rotate-90"
+                      aria-hidden="true"
+                    />
+                  </summary>
+                  <ul
+                    class="m-0 flex list-none flex-col gap-1 py-1 pr-1.5 pl-7 text-xs text-muted-foreground"
+                  >
+                    <li
+                      v-for="(line, lineIndex) in message.activity"
+                      :key="lineIndex"
+                      class="flex items-start gap-2"
+                    >
+                      <i
+                        :class="activityIcon(line)"
+                        class="mt-0.5 size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span class="min-w-0 flex-1 wrap-break-word">
+                        {{ line }}
+                      </span>
+                    </li>
+                  </ul>
+                </details>
+
                 <div
                   v-if="message.proposal"
                   class="mt-2 flex flex-col"
@@ -390,6 +434,25 @@
               </div>
             </li>
           </ol>
+
+          <ul
+            v-if="runState.phase === 'asking' && liveActivity.length > 0"
+            class="m-0 flex list-none flex-col gap-1 px-3 pb-3 text-xs text-muted-foreground"
+            data-testid="node-agent-live-activity"
+          >
+            <li
+              v-for="(line, lineIndex) in liveActivity"
+              :key="lineIndex"
+              class="flex items-start gap-2"
+            >
+              <i
+                :class="activityIcon(line)"
+                class="mt-0.5 size-3.5 shrink-0"
+                aria-hidden="true"
+              />
+              <span class="min-w-0 flex-1 wrap-break-word">{{ line }}</span>
+            </li>
+          </ul>
         </div>
 
         <div
@@ -509,8 +572,12 @@ const explorerOpen = defineModel<boolean>('explorerOpen', { default: true })
 const { t } = useI18n()
 const colorPaletteStore = useColorPaletteStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-const { createAgentProposal, applyAgentProposal, restoreCheckpoint } =
-  useCustomNodeEditor()
+const {
+  createAgentProposal,
+  applyAgentProposal,
+  getSession,
+  restoreCheckpoint
+} = useCustomNodeEditor()
 const treeEditorRef =
   useTemplateRef<InstanceType<typeof CustomNodeTreeEditor>>('treeEditorRef')
 const promptInputRef =
@@ -526,6 +593,7 @@ interface AgentChatMessage {
   kind: AgentMessageKind
   proposal?: CustomNodeEditorProposalView
   applied?: boolean
+  activity?: string[]
 }
 
 type AgentRunState =
@@ -541,6 +609,7 @@ agentOpen.value =
   readCustomNodeEditorState(editorStateKey.value)?.agentOpen ?? agentOpen.value
 const instruction = ref('')
 const messages = ref<AgentChatMessage[]>([])
+const liveActivity = ref<string[]>([])
 const selectedProposal = ref<CustomNodeEditorProposalView | null>(null)
 const selectedChangeIndex = ref(-1)
 const runState = shallowRef<AgentRunState>({ phase: 'idle' })
@@ -603,6 +672,7 @@ async function askAgent() {
   appendMessage({ role: 'user', content: requestedChange, kind: 'message' })
   await scrollConversation()
 
+  startActivityPolling()
   try {
     await saveAll()
     const proposal = await createAgentProposal(
@@ -611,6 +681,7 @@ async function askAgent() {
       controller.signal
     )
     if (controller.signal.aborted) return
+    await refreshActivity()
     const responseMessageId = nextMessageId()
     messages.value = [
       ...messages.value,
@@ -619,12 +690,16 @@ async function askAgent() {
         role: 'assistant',
         content: proposal.summary,
         kind: 'message',
-        proposal
+        proposal,
+        activity: [...liveActivity.value]
       }
     ]
-    runState.value = { phase: 'applying' }
+    liveActivity.value = []
     await scrollConversation()
-    await applyProposal(responseMessageId, proposal)
+    if (proposal.changes.length > 0) {
+      runState.value = { phase: 'applying' }
+      await applyProposal(responseMessageId, proposal)
+    }
   } catch (error) {
     if (isAbortError(error)) {
       appendMessage({
@@ -644,10 +719,63 @@ async function askAgent() {
       })
     }
   } finally {
+    stopActivityPolling()
+    liveActivity.value = []
     runState.value = { phase: 'idle' }
     await scrollConversation()
     promptInputRef.value?.focus()
   }
+}
+
+let activityTimer: ReturnType<typeof setInterval> | undefined
+
+function startActivityPolling() {
+  stopActivityPolling()
+  liveActivity.value = []
+  activityTimer = setInterval(() => {
+    void refreshActivity()
+  }, 1000)
+}
+
+function stopActivityPolling() {
+  if (activityTimer !== undefined) {
+    clearInterval(activityTimer)
+    activityTimer = undefined
+  }
+}
+
+async function refreshActivity() {
+  try {
+    const session = await getSession(sessionId)
+    if (session.agentActivity.length > liveActivity.value.length) {
+      liveActivity.value = session.agentActivity
+      await scrollConversation()
+    }
+  } catch {
+    // Live progress is best-effort; the run itself reports its own errors.
+  }
+}
+
+function activityIcon(line: string): string {
+  if (line.startsWith('Reading')) return 'icon-[lucide--book-open]'
+  if (line.startsWith('Searching')) return 'icon-[lucide--search]'
+  if (line.startsWith('Testing')) return 'icon-[lucide--flask-conical]'
+  if (line.startsWith('Sandbox test passed')) {
+    return 'icon-[lucide--circle-check] text-success-background'
+  }
+  if (line.startsWith('Sandbox test failed')) {
+    return 'icon-[lucide--circle-x] text-destructive-background'
+  }
+  if (line.startsWith('Inspecting')) return 'icon-[lucide--image]'
+  if (
+    line.startsWith('Retrying') ||
+    line.startsWith('Reminding') ||
+    line.startsWith('Reconciling') ||
+    line.startsWith('Delivering')
+  ) {
+    return 'icon-[lucide--rotate-ccw]'
+  }
+  return 'icon-[lucide--sparkles]'
 }
 
 async function applyProposal(
@@ -853,7 +981,10 @@ watch(agentOpen, (isOpen) => {
   updateCustomNodeEditorState(editorStateKey.value, { agentOpen: isOpen })
 })
 
-onUnmounted(stopAgent)
+onUnmounted(() => {
+  stopActivityPolling()
+  stopAgent()
+})
 
 defineExpose({ saveAll })
 </script>
