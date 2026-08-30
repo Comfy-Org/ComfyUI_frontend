@@ -76,8 +76,22 @@ test.describe('Homepage @smoke', () => {
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
-    const cards = section.locator('a[href]')
+    const cards = section
+      .getByRole('group', { name: 'Products' })
+      .getByRole('link')
     await expect(cards).toHaveCount(4)
+  })
+
+  test('Homepage has 4 featured model cards', async ({ page }) => {
+    const models = page.getByRole('group', { name: 'Featured models' })
+
+    await expect(models.getByRole('link')).toHaveCount(4)
+    await expect(
+      models.getByRole('link', { name: 'FLUX 3 Image to Video' })
+    ).toHaveAttribute('href', '/flux-3')
+    await expect(
+      models.getByRole('link', { name: 'Seedance 2.5 Image to Video' })
+    ).toHaveAttribute('href', '/seedance-2.5')
   })
 
   test('CaseStudySpotlight section is visible', async ({ page }) => {
@@ -230,9 +244,10 @@ test.describe('Product cards links @smoke', () => {
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
+    const products = section.getByRole('group', { name: 'Products' })
 
     for (const href of ['/download', '/cloud', '/platform', '/enterprise']) {
-      await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
+      await expect(products.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })
 })

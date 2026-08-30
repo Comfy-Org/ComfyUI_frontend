@@ -424,6 +424,26 @@ const translations = {
     en: 'SEE ENTERPRISE FEATURES',
     'zh-CN': '查看企业版属性'
   },
+  'products.models.label': {
+    en: 'Featured models',
+    'zh-CN': '精选模型'
+  },
+  'products.models.minimaxTextToVideo': {
+    en: 'MiniMax H3\nMax Text to\nVideo',
+    'zh-CN': 'MiniMax H3\nMax 文生\n视频'
+  },
+  'products.models.fluxImageToVideo': {
+    en: 'FLUX 3\nImage to\nVideo',
+    'zh-CN': 'FLUX 3\n图生\n视频'
+  },
+  'products.models.seedanceImageToVideo': {
+    en: 'Seedance 2.5\nImage to\nVideo',
+    'zh-CN': 'Seedance 2.5\n图生\n视频'
+  },
+  'products.models.minimaxImageToVideo': {
+    en: 'MiniMax H3\nImage to\nVideo',
+    'zh-CN': 'MiniMax H3\n图生\n视频'
+  },
 
   // CaseStudySpotlightSection
   'caseStudy.label': {
