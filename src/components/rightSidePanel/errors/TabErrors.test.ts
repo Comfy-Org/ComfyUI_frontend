@@ -225,7 +225,7 @@ describe('TabErrors.vue', () => {
   it('passes raw details through to the card for agent prompt errors only', () => {
     renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordPromptError({
-        type: 'apply_failed',
+        type: 'agent_api_failed',
         message: 'Comfy Agent hit a server error.',
         details: 'HTTP 500 from /api/agent/threads'
       })

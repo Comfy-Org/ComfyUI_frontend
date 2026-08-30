@@ -630,6 +630,23 @@ describe('errorMessageResolver', () => {
         kind: 'prompt',
         isCloud: true,
         error: {
+          type: 'agent_api_failed',
+          message: 'Comfy Agent hit a server error.',
+          details: 'HTTP 500 from /api/agent/threads'
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Comfy Agent error',
+      displayMessage: 'Comfy Agent hit a server error. Try again.'
+    })
+  })
+
+  it('resolves an agent edit failure to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
           type: 'apply_failed',
           message: 'An agent edit could not be applied',
           details: 'op_rejected: unknown_widget at seed'
