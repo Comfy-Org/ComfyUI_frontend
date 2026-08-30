@@ -48,6 +48,13 @@ export * from "./event-schema.js";
 export * from "./stamps.js";
 export * from "./limits.js";
 export * from "./clock.js";
+export {
+  CMP_EVENT_SCHEMA_VERSION,
+  type CmpCallContext,
+  type CmpEvent,
+  type CmpEventSink,
+  type CmpEventType,
+} from "./events.js";
 /**
  * ADR-004 follower read-surface. These helpers expose the established wire
  * layout only so the frontend follower can consume host updates. They are

@@ -725,6 +725,7 @@ describe("read-only surface — classification", () => {
     "persistLamportTick",
     "freezeLamportEnvelope",
     "AGENT_EVENT_JSON_SCHEMA",
+    "CMP_EVENT_SCHEMA_VERSION",
   ];
   const READ_SURFACE: readonly string[] = [
     "readGraph",

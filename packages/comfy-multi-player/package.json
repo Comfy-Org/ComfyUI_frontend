@@ -13,7 +13,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "fixtures/cmp-events"
   ],
   "repository": {
     "type": "git",

@@ -100,6 +100,7 @@ import {
   widgetStorageOf,
 } from "./doc.js";
 import { sha256Hex } from "./digest.js";
+import { CMP_EVENT_SCHEMA_VERSION, emitCmpEvent, type CmpCallContext } from "./events.js";
 import {
   MAX_OP_COST,
   MAX_OPS_PER_BATCH,
@@ -140,14 +141,14 @@ import { NODE_INCARNATION_KEY } from "./types.js";
  * validation is skipped — writes are name-keyed either way) and ops that
  * cannot are rejected with `catalog_required`.
  */
-export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyResult {
+export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog, context?: CmpCallContext): ApplyResult {
   const bookkeeping = appliedMap(doc);
   const outcomes: ApplyOutcome[] = [];
   const duplicateIds = new Set<string>();
 
   if (ops.length > MAX_OPS_PER_BATCH) {
     const message = `batch of ${ops.length} ops exceeds the ${MAX_OPS_PER_BATCH}-op limit; rejected before any op was processed (#14)`;
-    return makeResult({
+    const result = makeResult({
       outcomes: ops.map((op) => ({
         op_id: opIdentity(op),
         outcome: "rejected" as const,
@@ -155,6 +156,16 @@ export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyR
       })),
       ops_seen: bookkeeping.size,
     }, ops, duplicateIds);
+    if (context?.eventSink !== undefined) {
+      emitCmpEvent(context.eventSink, {
+        schema_version: CMP_EVENT_SCHEMA_VERSION,
+        type: "limit_violation",
+        source: "applyOps",
+        code: "max_ops_per_batch",
+        message,
+      });
+    }
+    return result;
   }
 
   for (let index = 0; index < ops.length; index++) {
@@ -187,19 +198,27 @@ export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyR
       }, op.actor);
       outcomes.push({ op_id: op.op_id, outcome });
     } catch (err) {
-      outcomes.push({
-        op_id: opIdentity(op),
-        outcome: "rejected",
-        reason: {
-          code: err instanceof OpRejectedError ? err.code : "apply_failed",
-          message: err instanceof Error ? err.message : String(err),
-        },
-      });
+      const op_id = opIdentity(op);
+      const code = err instanceof OpRejectedError ? err.code : "apply_failed";
+      const message = err instanceof Error ? err.message : String(err);
+      outcomes.push({ op_id, outcome: "rejected", reason: { code, message } });
       for (const remainder of ops.slice(index + 1)) {
         outcomes.push({
           op_id: opIdentity(remainder),
           outcome: "rejected",
           reason: { code: "batch_aborted", message: `not processed because op at index ${index} was rejected` },
+        });
+      }
+      if (context?.eventSink !== undefined) {
+        emitCmpEvent(context.eventSink, {
+          schema_version: CMP_EVENT_SCHEMA_VERSION,
+          type: err instanceof OpRejectedError ? "op_rejected" : "applier_error",
+          source: "applyOps",
+          code,
+          message,
+          error_name: err instanceof OpRejectedError ? "OpRejectedError" : err instanceof Error ? "Error" : "NonError",
+          op_id,
+          batch_index: index,
         });
       }
       break; // abort-remainder (vocabulary §4)
