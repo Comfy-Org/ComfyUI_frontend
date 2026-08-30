@@ -36,6 +36,31 @@ function availablePackName(packs: readonly UploadedNodePack[]): string {
   }
 }
 
+/** Placeholder definition the app synthesises for LiteGraph types the backend
+ * does not serve. */
+const FRONTEND_ONLY_MODULE = 'custom_nodes.frontend_only'
+
+/**
+ * The definition only counts once the backend actually serves it — and, when
+ * the submitted revision is known, once it comes from that revision.
+ *
+ * A node type left registered in LiteGraph by an earlier session still appears
+ * in the store as a frontend-only placeholder. Placing that gives a node the
+ * backend cannot execute: it runs as a no-op and renders an empty preview.
+ */
+function registeredDefinition<T extends { python_module?: string } | undefined>(
+  definition: T,
+  revisionId?: string
+): T | undefined {
+  if (!definition) return undefined
+  const module = definition.python_module
+  if (!module || module === FRONTEND_ONLY_MODULE) return undefined
+  if (!revisionId) return definition
+  return packKeyFromPythonModule(module) === packKeyFromRevisionId(revisionId)
+    ? definition
+    : undefined
+}
+
 /**
  * A node name that does not collide with the nodes the target pack already
  * registers. Collisions are judged on the generated class name, which is what
@@ -115,12 +140,19 @@ export function useCustomNodeCreateFlow() {
    * and loses: the node is neither placed nor searchable until the page is
    * reloaded. Keep refreshing until the definition actually shows up.
    */
-  const addCreatedNodeToGraph = async (sessionId: string, nodeName: string) => {
+  const addCreatedNodeToGraph = async (
+    sessionId: string,
+    nodeName: string,
+    revisionId?: string
+  ) => {
     const nodeId = nodeClassNameFor(nodeName)
     const nodeDefStore = useNodeDefStore()
     const deadline = Date.now() + NODE_REGISTRATION_TIMEOUT_MS
     for (;;) {
-      const definition = nodeDefStore.nodeDefsByName[nodeId]
+      const definition = registeredDefinition(
+        nodeDefStore.nodeDefsByName[nodeId],
+        revisionId
+      )
       if (definition) {
         useLitegraphService().addNodeOnGraph(definition)
         return
@@ -177,7 +209,16 @@ export function useCustomNodeCreateFlow() {
           session,
           async () => {
             await packsApi.refresh().catch(() => undefined)
-            await addCreatedNodeToGraph(session.id, request.nodeName)
+            // The submitted revision pins which pack's node to wait for, so a
+            // same-named node from an earlier pack cannot be placed instead.
+            const submitted = packsApi.packs.value.find(
+              (pack) => pack.name === request.packName
+            )
+            await addCreatedNodeToGraph(
+              session.id,
+              request.nodeName,
+              submitted?.revisionId
+            )
           },
           { initialPrompt: request.prompt }
         )

@@ -232,6 +232,78 @@ describe('useCustomNodeCreateFlow', () => {
     }
   })
 
+  it('ignores a stale frontend-only node type from an earlier session', async () => {
+    vi.useFakeTimers()
+    try {
+      answerDialog({ packName: 'Blur Pack', nodeName: 'Cool Blur', prompt: '' })
+      await useCustomNodeCreateFlow().startCreateFlow()
+
+      // Left over in LiteGraph by a previous pack: the backend cannot run it.
+      const stale = {
+        name: 'CoolBlur',
+        python_module: 'custom_nodes.frontend_only'
+      }
+      const real = {
+        name: 'CoolBlur',
+        python_module: 'custom_nodes.pack_blur_pack_x1.nodes.cool_blur'
+      }
+      Object.assign(mocks.nodeDefsByName, { CoolBlur: stale })
+      mocks.refreshNodeDefinitions.mockImplementation(async () => {
+        if (mocks.refreshNodeDefinitions.mock.calls.length >= 2) {
+          Object.assign(mocks.nodeDefsByName, { CoolBlur: real })
+        }
+      })
+
+      const onSubmitted = mocks.showEditor.mock
+        .calls[0][1] as () => Promise<void>
+      const pending = onSubmitted()
+      await vi.advanceTimersByTimeAsync(10_000)
+      await pending
+
+      expect(mocks.addNodeOnGraph).toHaveBeenCalledTimes(1)
+      expect(mocks.addNodeOnGraph).toHaveBeenCalledWith(real)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('waits for the node from the revision just submitted', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.packs.value = [
+        { revisionId: 'blur-pack-xaaaa0001', name: 'Blur Pack', uploadedAt: '' }
+      ]
+      answerDialog({ packName: 'Blur Pack', nodeName: 'Cool Blur', prompt: '' })
+      await useCustomNodeCreateFlow().startCreateFlow()
+
+      // Same class name, but served by an older pack revision.
+      const older = {
+        name: 'CoolBlur',
+        python_module: 'custom_nodes.pack_blur_pack_xbbbb0002.nodes.cool_blur'
+      }
+      const current = {
+        name: 'CoolBlur',
+        python_module: 'custom_nodes.pack_blur_pack_xaaaa0001.nodes.cool_blur'
+      }
+      Object.assign(mocks.nodeDefsByName, { CoolBlur: older })
+      mocks.refreshNodeDefinitions.mockImplementation(async () => {
+        if (mocks.refreshNodeDefinitions.mock.calls.length >= 2) {
+          Object.assign(mocks.nodeDefsByName, { CoolBlur: current })
+        }
+      })
+
+      const onSubmitted = mocks.showEditor.mock
+        .calls[0][1] as () => Promise<void>
+      const pending = onSubmitted()
+      await vi.advanceTimersByTimeAsync(10_000)
+      await pending
+
+      expect(mocks.addNodeOnGraph).toHaveBeenCalledWith(current)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('warns instead of failing silently when the node never registers', async () => {
     vi.useFakeTimers()
     try {
