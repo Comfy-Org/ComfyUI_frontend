@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -69,10 +69,8 @@ async function onRevoke() {
     void fetchStatus().catch(console.error)
     dialogStore.closeDialog({ key: 'revoke-invite' })
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: error instanceof Error ? error.message : undefined
+    toast.error(t('g.error'), {
+      description: error instanceof Error ? error.message : undefined
     })
   } finally {
     loading.value = false

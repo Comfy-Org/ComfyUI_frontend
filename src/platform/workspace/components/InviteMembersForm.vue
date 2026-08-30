@@ -106,7 +106,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -279,14 +279,10 @@ async function onSubmit() {
     })
 
     emails.value = failedEmails
-    toast.add({
-      severity: 'error',
-      summary: t(
-        'workspacePanel.inviteMemberDialog.failedCount',
-        failedEmails.length
-      ),
-      life: 5000
-    })
+    toast.error(
+      t('workspacePanel.inviteMemberDialog.failedCount', failedEmails.length),
+      { duration: 5000 }
+    )
   } finally {
     loading.value = false
   }

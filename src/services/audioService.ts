@@ -1,7 +1,7 @@
 import { register } from 'extendable-media-recorder'
 import { connect } from 'extendable-media-recorder-wav-encoder'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 
 export interface AudioRecordingError {
@@ -65,7 +65,7 @@ export const useAudioService = () => {
 
     if (resp.status !== 200) {
       const err = `Error uploading temp file: ${resp.status} - ${resp.statusText}`
-      useToastStore().addAlert(err)
+      useToast().warning('Alert', { description: err })
       throw new Error(err)
     }
 

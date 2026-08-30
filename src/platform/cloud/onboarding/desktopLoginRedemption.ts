@@ -7,7 +7,7 @@ import {
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
@@ -100,11 +100,9 @@ function handleTransientFailure(
   }
   // Budget spent: drop the code and tell the user instead of failing silently.
   settle(code, state)
-  useToastStore().add({
-    severity: 'error',
-    summary: t('desktopLogin.failedSummary'),
-    detail: t('desktopLogin.failedDetail'),
-    life: 6000
+  useToast().error(t('desktopLogin.failedSummary'), {
+    description: t('desktopLogin.failedDetail'),
+    duration: 6000
   })
 }
 
@@ -193,22 +191,18 @@ async function redeemCode(code: string): Promise<void> {
 
   if (response.ok) {
     settle(code, state)
-    useToastStore().add({
-      severity: 'success',
-      summary: t('desktopLogin.successSummary'),
-      detail: t('desktopLogin.successDetail'),
-      life: 4000
+    useToast().success(t('desktopLogin.successSummary'), {
+      description: t('desktopLogin.successDetail'),
+      duration: 4000
     })
     return
   }
 
   if (TERMINAL_REDEEM_STATUSES.has(response.status)) {
     settle(code, state)
-    useToastStore().add({
-      severity: 'error',
-      summary: t('desktopLogin.expiredSummary'),
-      detail: t('desktopLogin.expiredDetail'),
-      life: 6000
+    useToast().error(t('desktopLogin.expiredSummary'), {
+      description: t('desktopLogin.expiredDetail'),
+      duration: 6000
     })
     return
   }

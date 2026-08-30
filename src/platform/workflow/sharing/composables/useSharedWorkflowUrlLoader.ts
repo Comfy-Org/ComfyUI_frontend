@@ -1,4 +1,4 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -129,11 +129,7 @@ export function useSharedWorkflowUrlLoader() {
       console.warn(
         `[useSharedWorkflowUrlLoader] Invalid share parameter format: ${shareParam}`
       )
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed')
-      })
+      toast.error(t('g.error'), { description: t('shareWorkflow.loadFailed') })
       clearShareIntent()
       return 'failed'
     }
@@ -173,10 +169,8 @@ export function useSharedWorkflowUrlLoader() {
             '[useSharedWorkflowUrlLoader] Failed to import assets:',
             importError
           )
-          toast.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('openSharedWorkflow.importFailed')
+          toast.error(t('g.error'), {
+            description: t('openSharedWorkflow.importFailed')
           })
         }
       }
@@ -197,10 +191,8 @@ export function useSharedWorkflowUrlLoader() {
           '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
           error
         )
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('shareWorkflow.loadFailed')
+        toast.error(t('g.error'), {
+          description: t('shareWorkflow.loadFailed')
         })
         clearShareIntent()
         return 'failed'

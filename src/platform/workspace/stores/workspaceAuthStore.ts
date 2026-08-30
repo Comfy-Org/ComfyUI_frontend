@@ -26,7 +26,7 @@ import {
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
@@ -125,10 +125,8 @@ function sessionErrorMessageKey(code: SessionErrorCode): string {
 // Workspace auth has no Firebase fallback, so surface permanent failures.
 function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   console.error('Unified workspace auth revoked or invalid:', err)
-  useToastStore().add({
-    severity: 'error',
-    summary: t('g.error'),
-    detail: t(
+  useToast().error(t('g.error'), {
+    description: t(
       sessionErrorMessageKey(
         isSessionErrorCode(err.code) ? err.code : 'TOKEN_EXCHANGE_FAILED'
       )

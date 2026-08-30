@@ -1,5 +1,7 @@
 import type { Component } from 'vue'
 
+import type { ToastId, ToastOptions } from '@/components/ui/toast'
+
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ExecutionErrorWsMessage, NodeError } from '@/schemas/apiSchema'
 import type { useDialogService } from '@/services/dialogService'
@@ -46,58 +48,14 @@ export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension
 
-/**
- * Defines message options in Toast component.
- */
-export interface ToastMessageOptions {
-  /**
-   * Severity level of the message.
-   * @defaultValue info
-   */
-  severity?:
-    | 'success'
-    | 'info'
-    | 'warn'
-    | 'error'
-    | 'secondary'
-    | 'contrast'
-    | undefined
-  /**
-   * Summary content of the message.
-   */
-  summary?: string | undefined
-  /**
-   * Detail content of the message.
-   */
-  detail?: string
-  /**
-   * Whether the message can be closed manually using the close icon.
-   * @defaultValue true
-   */
-  closable?: boolean | undefined
-  /**
-   * Delay in milliseconds to close the message automatically.
-   */
-  life?: number | undefined
-  /**
-   * Key of the Toast to display the message.
-   */
-  group?: string | undefined
-  /**
-   * Style class of the message.
-   */
-  styleClass?: string | string[] | Record<string, boolean>
-  /**
-   * Style class of the content.
-   * Matches PrimeVue Toast API which accepts Vue class bindings.
-   */
-  contentStyleClass?: string | string[] | Record<string, boolean>
-}
-
 export type ToastManager = {
-  add(message: ToastMessageOptions): void
-  remove(message: ToastMessageOptions): void
-  removeAll(): void
+  success(title: string, options?: ToastOptions): ToastId
+  error(title: string, options?: ToastOptions): ToastId
+  info(title: string, options?: ToastOptions): ToastId
+  warning(title: string, options?: ToastOptions): ToastId
+  loading(title: string, options?: ToastOptions): ToastId
+  dismiss(id: ToastId): void
+  dismissAll(): void
 }
 
 export interface ExtensionManager {

@@ -150,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -273,10 +273,10 @@ async function handleBuy() {
       outcome: 'failure',
       failure_category: categorizeBillingApiError(error)
     })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.purchaseError'),
-      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
+    toast.error(t('credits.topUp.purchaseError'), {
+      description: t('credits.topUp.purchaseErrorDetail', {
+        error: errorMessage
+      })
     })
   } finally {
     loading.value = false

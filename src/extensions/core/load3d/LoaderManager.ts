@@ -1,7 +1,7 @@
 import type * as THREE from 'three'
 
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
 import { createAdapterRef, fetchModelData } from './ModelAdapter'
@@ -112,7 +112,9 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       if (!fileExtension) {
-        useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
+        useToast().warning('Alert', {
+          description: t('toastMessages.couldNotDetermineFileType')
+        })
         return
       }
 
@@ -140,7 +142,9 @@ export class LoaderManager implements LoaderManagerInterface {
         this.eventManager.emitEvent('modelLoadingEnd', null)
         console.error('Error loading model:', error)
         if (!(options?.silentOnNotFound && isNotFoundError(error))) {
-          useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
+          useToast().warning('Alert', {
+            description: t('toastMessages.errorLoadingModel')
+          })
         }
       }
     }

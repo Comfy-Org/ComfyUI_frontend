@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -67,17 +67,12 @@ async function onRemove() {
   try {
     await workspaceStore.removeMember(memberId)
     void fetchStatus().catch(console.error)
-    toast.add({
-      severity: 'success',
-      summary: t('workspacePanel.removeMemberDialog.success'),
-      life: 2000
+    toast.success(t('workspacePanel.removeMemberDialog.success'), {
+      duration: 2000
     })
     dialogStore.closeDialog({ key: 'remove-member' })
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.removeMemberDialog.error')
-    })
+    toast.error(t('workspacePanel.removeMemberDialog.error'))
   } finally {
     loading.value = false
   }
