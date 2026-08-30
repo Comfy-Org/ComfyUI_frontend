@@ -61,18 +61,22 @@ const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const nodeBookmarkStore = useNodeBookmarkStore()
-const bookmarkedRoot = computed<TreeNode>(() => {
-  const filterTree = (node: TreeNode): TreeNode | null => {
+const bookmarkedRoot = computed<TreeNode<ComfyNodeDefImpl>>(() => {
+  const filterTree = (
+    node: TreeNode<ComfyNodeDefImpl>
+  ): TreeNode<ComfyNodeDefImpl> | null => {
     if (node.leaf) {
+      if (!node.data) return null
+      const nodeData = node.data
       // Check if the node's display_name is in the filteredNodeDefs list
-      return props.filteredNodeDefs.some((def) => def.name === node.data.name)
+      return props.filteredNodeDefs.some((def) => def.name === nodeData.name)
         ? node
         : null
     }
 
     const filteredChildren = node.children
       ?.map(filterTree)
-      .filter((child): child is TreeNode => child !== null)
+      .filter((child): child is TreeNode<ComfyNodeDefImpl> => child !== null)
 
     if (filteredChildren && filteredChildren.length > 0) {
       return {
@@ -129,7 +133,7 @@ const extraMenuItems = (
 const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
   () => {
     const fillNodeInfo = (
-      node: TreeNode
+      node: TreeNode<ComfyNodeDefImpl>
     ): TreeExplorerNode<ComfyNodeDefImpl> => {
       const children = node.children?.map(fillNodeInfo)
 
@@ -143,15 +147,16 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
 
       return {
         key: node.key,
-        label: node.leaf ? node.data.display_name : node.label,
+        label: node.leaf ? (node.data?.display_name ?? node.label) : node.label,
         leaf: node.leaf,
         data: node.data,
         getIcon() {
           if (this.leaf) {
             return 'pi pi-circle-fill'
           }
-          const customization =
-            nodeBookmarkStore.bookmarksCustomization[node.data?.nodePath]
+          const customization = node.data
+            ? nodeBookmarkStore.bookmarksCustomization[node.data.nodePath]
+            : undefined
           return customization?.icon
             ? 'pi ' + customization.icon
             : 'pi pi-bookmark-fill'
@@ -164,6 +169,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           }
         },
         renderDragPreview(container) {
+          if (!node.data) return
           const vnode = h(NodePreview, { nodeDef: node.data })
           vnode.appContext = appContext
           render(vnode, container)
