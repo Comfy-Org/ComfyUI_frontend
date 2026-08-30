@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useElementVisibility, useRafFn } from '@vueuse/core'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+const textureId = useId()
 
 const COLS = 20
 const ROWS = 7
@@ -265,7 +267,7 @@ watch(
     >
       <defs>
         <pattern
-          id="isometric-field-texture"
+          :id="textureId"
           width="760"
           height="360"
           patternUnits="userSpaceOnUse"
@@ -290,11 +292,11 @@ watch(
         <template v-if="resetIndicatorHeight > 0.5">
           <polygon
             :points="resetIndicatorLeftFace"
-            fill="url(#isometric-field-texture)"
+            :fill="`url(#${textureId})`"
           />
           <polygon
             :points="resetIndicatorRightFace"
-            fill="url(#isometric-field-texture)"
+            :fill="`url(#${textureId})`"
           />
           <polygon
             :points="resetIndicatorLeftFace"
@@ -316,14 +318,8 @@ watch(
 
       <g v-for="tile in visualTiles" :key="tile.id">
         <template v-if="tile.height > 0.5">
-          <polygon
-            :points="leftFace(tile)"
-            fill="url(#isometric-field-texture)"
-          />
-          <polygon
-            :points="rightFace(tile)"
-            fill="url(#isometric-field-texture)"
-          />
+          <polygon :points="leftFace(tile)" :fill="`url(#${textureId})`" />
+          <polygon :points="rightFace(tile)" :fill="`url(#${textureId})`" />
           <g
             :opacity="tile.textureShadeOpacity"
             :data-texture-shade="tile.textureShadeOpacity"
@@ -349,7 +345,7 @@ watch(
           />
           <polygon
             :points="polygonPoints(tileCorners(tile, tile.height))"
-            fill="url(#isometric-field-texture)"
+            :fill="`url(#${textureId})`"
           />
           <polygon
             :points="polygonPoints(tileCorners(tile, tile.height))"
