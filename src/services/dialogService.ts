@@ -13,7 +13,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
@@ -724,10 +724,9 @@ export const useDialogService = () => {
         return await downgradeToPersonal(options.planSlug)
       }
     } catch (error) {
-      useToastStore().add({
-        severity: 'error',
-        summary: t('subscription.downgrade.failed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      useToast().error(t('subscription.downgrade.failed'), {
+        description:
+          error instanceof Error ? error.message : t('g.unknownError')
       })
       return null
     }

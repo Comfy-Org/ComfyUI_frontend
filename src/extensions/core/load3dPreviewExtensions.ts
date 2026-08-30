@@ -13,11 +13,8 @@ import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type {
-  NodeExecutionOutput,
-  NodeOutputWith
-} from '@/platform/remote/comfyui/execution/types'
+import { useToast } from '@/components/ui/toast'
+import type { NodeExecutionOutput, NodeOutputWith } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
@@ -214,7 +211,7 @@ function createPreview3DExtension(
           if (!filePath) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
-            useToastStore().addAlert(msg)
+            useToast().warning('Alert', { description: msg })
             return
           }
 

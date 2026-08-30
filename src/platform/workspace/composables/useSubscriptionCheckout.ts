@@ -1,4 +1,4 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, ref } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -397,10 +397,8 @@ export function useSubscriptionCheckout(
   // a request the BE is guaranteed to reject with no way for the user to
   // consent.
   function notifyReactivationConfirmationRequired(): void {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subscription.preview.reactivation.confirmationRequired')
+    toast.error(t('g.error'), {
+      description: t('subscription.preview.reactivation.confirmationRequired')
     })
   }
 
@@ -575,10 +573,8 @@ export function useSubscriptionCheckout(
       }
       const paymentWindow = window.open(portalUrl.href, '_blank')
       if (!paymentWindow) {
-        toast.add({
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
+        toast.warning(t('g.warning'), {
+          description: t('subscription.preview.paymentPopupBlocked')
         })
         return 'blocked'
       }
@@ -615,10 +611,8 @@ export function useSubscriptionCheckout(
     }
     if (!isReactivationCapablePreview(freshPreview)) {
       resetToPricing()
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('subscription.preview.reactivation.unavailable')
+      toast.error(t('g.error'), {
+        description: t('subscription.preview.reactivation.unavailable')
       })
       return true
     }
@@ -627,10 +621,8 @@ export function useSubscriptionCheckout(
       !previewData.value ||
       amountDueTodayChanged(previewData.value, freshPreview)
     installPreview(freshPreview)
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t(
+    toast.error(t('g.error'), {
+      description: t(
         amountChanged
           ? 'subscription.preview.reactivation.amountChanged'
           : 'subscription.preview.reactivation.confirmationRequired'
@@ -682,19 +674,15 @@ export function useSubscriptionCheckout(
         amountDueTodayChanged(previewData.value, freshPreview)
       installPreview(freshPreview)
       if (!amountChanged) return false
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('subscription.preview.reactivation.amountChanged')
+      toast.error(t('g.error'), {
+        description: t('subscription.preview.reactivation.amountChanged')
       })
       return true
     }
     reactivationRequired.value = false
     resetToPricing()
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subscription.preview.reactivation.unavailable')
+    toast.error(t('g.error'), {
+      description: t('subscription.preview.reactivation.unavailable')
     })
     return true
   }
@@ -805,10 +793,8 @@ export function useSubscriptionCheckout(
         planSlug = getApiPlanSlug(tierKey, billingCycle)
       }
       if (!planSlug) {
-        toast.add({
-          severity: 'error',
-          summary: 'Unable to subscribe',
-          detail: 'This plan is not available'
+        toast.error('Unable to subscribe', {
+          description: 'This plan is not available'
         })
         return
       }
@@ -830,10 +816,8 @@ export function useSubscriptionCheckout(
             failure_category: 'unknown'
           })
         }
-        toast.add({
-          severity: 'error',
-          summary: 'Unable to subscribe',
-          detail: response?.reason || 'This plan is not available'
+        toast.error('Unable to subscribe', {
+          description: response?.reason || 'This plan is not available'
         })
         return
       }
@@ -856,11 +840,7 @@ export function useSubscriptionCheckout(
         error instanceof Error
           ? error.message
           : 'Failed to load subscription preview'
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: message
-      })
+      toast.error('Error', { description: message })
     } finally {
       isLoadingPreview.value = false
       loadingTier.value = null
@@ -938,10 +918,8 @@ export function useSubscriptionCheckout(
         checkoutStep.value = 'preview'
         return
       }
-      toast.add({
-        severity: 'error',
-        summary: t('subscription.teamPlan.name'),
-        detail:
+      toast.error(t('subscription.teamPlan.name'), {
+        description:
           previewError instanceof Error
             ? previewError.message
             : response?.reason || t('subscription.subscribeFailed')
@@ -992,10 +970,8 @@ export function useSubscriptionCheckout(
       checkoutStep.value = 'preview'
       return
     }
-    toast.add({
-      severity: 'error',
-      summary: t('subscription.teamPlan.name'),
-      detail:
+    toast.error(t('subscription.teamPlan.name'), {
+      description:
         previewError instanceof Error
           ? previewError.message
           : response?.reason || t('subscription.subscribeFailed')
@@ -1146,10 +1122,8 @@ export function useSubscriptionCheckout(
   }
 
   function showSubscribeError(error: unknown) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail:
+    toast.error(t('g.error'), {
+      description:
         error instanceof Error
           ? error.message
           : t('subscription.subscribeFailed')
@@ -1166,17 +1140,13 @@ export function useSubscriptionCheckout(
     )
     if (!refreshed) {
       resetToPricing()
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('subscription.preview.quoteRefreshFailed')
+      toast.error(t('g.error'), {
+        description: t('subscription.preview.quoteRefreshFailed')
       })
       return true
     }
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subscription.preview.quoteStale')
+    toast.error(t('g.error'), {
+      description: t('subscription.preview.quoteStale')
     })
     return true
   }
@@ -1463,10 +1433,8 @@ export function useSubscriptionCheckout(
       // gesture and can be popup-blocked; warn instead of failing silently.
       const paymentWindow = window.open(initialActionUrl, '_blank')
       if (!paymentWindow) {
-        toast.add({
-          severity: 'warn',
-          summary: t('g.warning'),
-          detail: t('subscription.preview.paymentPopupBlocked')
+        toast.warning(t('g.warning'), {
+          description: t('subscription.preview.paymentPopupBlocked')
         })
       }
     }
@@ -1587,10 +1555,8 @@ export function useSubscriptionCheckout(
 
     const teamCheckout = selectedTeamCheckout.value
     if (!teamCheckout.stop.id) {
-      toast.add({
-        severity: 'error',
-        summary: t('subscription.teamPlan.name'),
-        detail: t('subscription.teamPlan.unavailable')
+      toast.error(t('subscription.teamPlan.name'), {
+        description: t('subscription.teamPlan.unavailable')
       })
       finishCheckoutMutation(mutationToken)
       return
@@ -1737,11 +1703,7 @@ export function useSubscriptionCheckout(
           payment_intent_source: paymentIntentSource
         })
       }
-      toast.add({
-        severity: 'success',
-        summary: t('subscription.resubscribeSuccess'),
-        life: 5000
-      })
+      toast.success(t('subscription.resubscribeSuccess'), { duration: 5000 })
       emit('close', true)
     } catch (error) {
       const message =
@@ -1754,11 +1716,7 @@ export function useSubscriptionCheckout(
         payment_intent_source: paymentIntentSource,
         failure_category: categorizeBillingApiError(error)
       })
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: message
-      })
+      toast.error('Error', { description: message })
     } finally {
       isResubscribing.value = false
     }
