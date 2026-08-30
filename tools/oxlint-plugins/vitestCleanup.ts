@@ -16,7 +16,8 @@ const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
-const BEFORE_ALL_IMPORTS = new Set(['beforeAll'])
+const BEFORE_TEST_IMPORTS = new Set(['beforeAll', 'describe'])
+const TEARDOWN_IMPORTS = new Set(['afterAll', 'afterEach', 'onTestFinished'])
 const HOOK_IMPORTS = new Set([
   'afterAll',
   'afterEach',
@@ -24,7 +25,7 @@ const HOOK_IMPORTS = new Set([
   'beforeEach'
 ])
 const VI_IMPORTS = new Set(['vi'])
-const VITEST_GLOBALS = new Set([...HOOK_IMPORTS, 'vi'])
+const VITEST_GLOBALS = new Set([...HOOK_IMPORTS, 'describe', 'vi'])
 
 interface Node {
   readonly type: string
@@ -250,23 +251,23 @@ function enclosingExecutionBoundaryIndex(ancestors: readonly Node[]): number {
   return ancestors.findLastIndex(isDeferredBoundary)
 }
 
-function isHookCall(
+function isVitestCallbackCall(
   context: RuleContext,
   node: Node | undefined,
-  hookImports: ReadonlySet<string> = HOOK_IMPORTS
+  callbackImports: ReadonlySet<string> = HOOK_IMPORTS
 ): node is CallExpression {
   if (node?.type !== 'CallExpression') return false
   const call = node as CallExpression
-  if (isVitestImport(context, call.callee, hookImports)) return true
-  return [...hookImports].some((hook) =>
-    isVitestNamespaceMember(context, call.callee, hook)
+  if (isVitestImport(context, call.callee, callbackImports)) return true
+  return [...callbackImports].some((callback) =>
+    isVitestNamespaceMember(context, call.callee, callback)
   )
 }
 
-function runsDirectlyInHook(
+function runsDirectlyInVitestCallback(
   context: RuleContext,
   node: CallExpression,
-  hookImports: ReadonlySet<string> = HOOK_IMPORTS
+  callbackImports: ReadonlySet<string> = HOOK_IMPORTS
 ): boolean {
   const ancestors = context.sourceCode.getAncestors(node)
   const boundaryIndex = enclosingExecutionBoundaryIndex(ancestors)
@@ -276,7 +277,7 @@ function runsDirectlyInHook(
   if (!isFunction(callback)) return false
   const parent = ancestors[boundaryIndex - 1]
   return (
-    isHookCall(context, parent, hookImports) &&
+    isVitestCallbackCall(context, parent, callbackImports) &&
     parent.arguments.includes(callback as Expression)
   )
 }
@@ -293,7 +294,7 @@ function runsAtModuleScope(
 function runsBeforeTests(context: RuleContext, node: CallExpression): boolean {
   return (
     runsAtModuleScope(context, node) ||
-    runsDirectlyInHook(context, node, BEFORE_ALL_IMPORTS)
+    runsDirectlyInVitestCallback(context, node, BEFORE_TEST_IMPORTS)
   )
 }
 
@@ -306,9 +307,9 @@ export const noRedundantVitestCleanup = {
           !methodName ||
           !(
             (REDUNDANT_CLEANUP_METHODS.has(methodName) &&
-              runsDirectlyInHook(context, node)) ||
+              runsDirectlyInVitestCallback(context, node)) ||
             (REDUNDANT_TIMER_CLEANUP_METHODS.has(methodName) &&
-              runsDirectlyInHook(context, node, AFTER_EACH_IMPORTS))
+              runsDirectlyInVitestCallback(context, node, AFTER_EACH_IMPORTS))
           )
         ) {
           return
@@ -370,7 +371,8 @@ export const noRedundantLiteGraphCleanup = {
         const methodName = liteGraphMethodName(context, node)
         if (
           !methodName ||
-          !REDUNDANT_LITEGRAPH_CLEANUP_METHODS.has(methodName)
+          !REDUNDANT_LITEGRAPH_CLEANUP_METHODS.has(methodName) ||
+          !runsDirectlyInVitestCallback(context, node, TEARDOWN_IMPORTS)
         ) {
           return
         }
