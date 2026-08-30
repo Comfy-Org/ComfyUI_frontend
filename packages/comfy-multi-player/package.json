@@ -53,6 +53,6 @@
     "eslint-plugin-sonarjs": "^3.0.7",
     "fast-check": "^4.9.0",
     "typescript": "^5.9.0",
-    "vitest": "^3.2.0"
+    "vitest": "^4.1.11"
   }
 }
