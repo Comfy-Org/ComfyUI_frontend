@@ -447,6 +447,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   set selectOnly(value: boolean) {
+    const enteringSelectOnly = value && !this.state.selectOnly
+    const activeGesture =
+      this.pointer.isDown ||
+      this.isDragging ||
+      this.resizingGroup !== null ||
+      this.linkConnector.isConnecting
+    if (enteringSelectOnly && activeGesture) {
+      this.pointer.reset()
+      this.linkConnector.reset(true)
+      this.resizingGroup = null
+      this.isDragging = false
+    }
     this.state.selectOnly = value
   }
 
@@ -4634,7 +4646,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // covers non-gesture callers).
     picking: boolean = this.selectOnly
   ): void {
-    if (!item && picking) return
+    if (picking && !(item instanceof LGraphNode)) return
 
     const addModifier = e?.shiftKey
     const subtractModifier = e != null && (e.metaKey || e.ctrlKey)

@@ -94,6 +94,43 @@ describe('LGraphCanvas selectOnly', () => {
     expect(group.selected).toBeFalsy()
   })
 
+  it('does not emit selection changes for refused non-node picks', () => {
+    const { canvas } = createHarness()
+    const group = new LGraphGroup('Group')
+    const selectionChange = vi.fn()
+    const setDirty = vi.spyOn(canvas, 'setDirty')
+    canvas.onSelectionChange = selectionChange
+    canvas.selectOnly = true
+
+    canvas.processSelect(group, undefined, false, true)
+
+    expect(selectionChange).not.toHaveBeenCalled()
+    expect(setDirty).not.toHaveBeenCalled()
+  })
+
+  it('aborts an active item drag when selection-only mode is armed', () => {
+    const { canvas, firstNode } = createHarness()
+    canvas.pointer.isDown = true
+    canvas.pointer.eDown = {} as CanvasPointerEvent
+    canvas['_startDraggingItems'](firstNode, canvas.pointer)
+
+    canvas.selectOnly = true
+
+    expect(canvas.pointer.isDown).toBe(false)
+    expect(canvas.isDragging).toBe(false)
+  })
+
+  it('aborts an active link gesture when selection-only mode is armed', () => {
+    const { canvas } = createHarness()
+    canvas.pointer.isDown = true
+    canvas.linkConnector.state.connectingTo = 'input'
+
+    canvas.selectOnly = true
+
+    expect(canvas.pointer.isDown).toBe(false)
+    expect(canvas.linkConnector.isConnecting).toBe(false)
+  })
+
   it('keeps collapse clicks as node selection clicks', () => {
     const { canvas, firstNode } = createHarness()
     const event = { canvasX: 110, canvasY: 80 } as CanvasPointerEvent
@@ -132,9 +169,9 @@ describe('LGraphCanvas selectOnly', () => {
       clientY: 140
     })
     Object.defineProperty(event, 'isPrimary', { value: true })
+    canvas.selectOnly = true
     canvas.pointer.isDown = true
     vi.spyOn(canvas.pointer, 'down').mockImplementation(() => {})
-    canvas.selectOnly = true
 
     canvas.processMouseDown(event)
 

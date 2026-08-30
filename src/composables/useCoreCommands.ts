@@ -1112,6 +1112,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--settings-2]',
       versionAdded: '1.28.5',
       function: () => {
+        if (isSelectOnly(app.canvas)) return
         useRightSidePanelStore().openPanel('subgraph')
       }
     },
@@ -1208,6 +1209,7 @@ export function useCoreCommands(): ComfyCommand[] {
           message: t('subgraphStore.enterDescription'),
           defaultValue: currentDescription
         })
+        if (isSelectOnly(app.canvas)) return
         if (description === null) return
 
         extra.BlueprintDescription = description.trim() || undefined
@@ -1242,6 +1244,7 @@ export function useCoreCommands(): ComfyCommand[] {
               ', '
             )
           })
+          if (isSelectOnly(app.canvas)) return
           if (input === null) return
           aliases = parseAliases(input)
         } else {

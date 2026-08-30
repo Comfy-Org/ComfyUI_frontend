@@ -37,9 +37,8 @@ export function useFocusNode() {
     if (!node.graph) return
 
     await navigateToGraph(node.graph as LGraph)
-    // Re-read after the await: a graph switch can replace the canvas.
     const canvas = canvasStore.canvas
-    if (!canvas) return
+    if (!canvas || canvas.graph !== node.graph) return
     canvas.animateToBounds(node.boundingRect, {
       viewport: visibleCanvasViewport(canvas)
     })

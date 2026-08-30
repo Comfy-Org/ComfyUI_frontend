@@ -742,16 +742,17 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { position?: Point } = {}
   ) => {
-    // Inserting a workflow's nodes is an edit of the picked canvas.
-    if (isSelectOnly(app.canvas)) return
+    const canvas = app.canvas
+    if (isSelectOnly(canvas)) return
     const loadedWorkflow = await workflow.load()
+    if (app.canvas !== canvas || isSelectOnly(canvas)) return
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.
     const items = workflowToClipboardItems(
       workflowJSON as unknown as SerialisableGraph
     )
-    app.canvas._deserializeItems(items, options)
+    canvas._deserializeItems(items, options)
   }
 
   const loadNextOpenedWorkflow = async () => {

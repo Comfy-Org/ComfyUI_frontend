@@ -1666,6 +1666,51 @@ describe('useWorkflowService', () => {
       expect(workflow.load).toHaveBeenCalledOnce()
       expect(deserialize).toHaveBeenCalledOnce()
     })
+
+    it('does not insert when picking starts while the workflow loads', async () => {
+      const deserialize = vi.fn()
+      Reflect.set(app.canvas, '_deserializeItems', deserialize)
+      let finishLoad: (value: unknown) => void = () => {}
+      const workflow = {
+        load: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              finishLoad = resolve
+            })
+        )
+      } as unknown as ComfyWorkflow
+
+      const pending = useWorkflowService().insertWorkflow(workflow)
+      Reflect.set(app.canvas, 'selectOnly', true)
+      finishLoad({ initialState: { nodes: [], links: [] } })
+      await pending
+
+      expect(deserialize).not.toHaveBeenCalled()
+      Reflect.set(app.canvas, 'selectOnly', false)
+    })
+
+    it('does not insert into a canvas that replaced the load target', async () => {
+      const originalCanvas = app.canvas
+      const deserialize = vi.fn()
+      Reflect.set(originalCanvas, '_deserializeItems', deserialize)
+      let finishLoad: (value: unknown) => void = () => {}
+      const workflow = {
+        load: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              finishLoad = resolve
+            })
+        )
+      } as unknown as ComfyWorkflow
+
+      const pending = useWorkflowService().insertWorkflow(workflow)
+      Reflect.set(app, 'canvas', { selectOnly: false })
+      finishLoad({ initialState: { nodes: [], links: [] } })
+      await pending
+
+      expect(deserialize).not.toHaveBeenCalled()
+      Reflect.set(app, 'canvas', originalCanvas)
+    })
   })
 
   describe('saveWorkflow', () => {
