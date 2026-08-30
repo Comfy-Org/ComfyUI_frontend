@@ -67,6 +67,7 @@ import type {
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import { useAgentLifetime } from './composables/agent/useAgentLifetime'
 import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentDraftStore } from './stores/agent/agentDraftStore'
@@ -103,8 +104,6 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const draftStore = useAgentDraftStore()
-const crdtWorkflowId = computed(() => draftStore.workflowId)
-const { status: crdtStatus } = useAgentCrdtFollower(crdtWorkflowId)
 const agentPanelStore = useAgentPanelStore()
 const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
@@ -365,6 +364,10 @@ const {
     activeTab: enqueueActiveTab
   }
 })
+
+onBeforeUnmount(exitNodeSelectionMode)
+const { docWorkflowId } = useAgentLifetime({ session: { start, stop } })
+const { status: crdtStatus } = useAgentCrdtFollower(docWorkflowId)
 
 let autoFitPending = false
 
@@ -763,14 +766,7 @@ watch(
   }
 )
 
-start()
 void refreshCloudWorkflowIds()
-onBeforeUnmount(() => {
-  exitNodeSelectionMode()
-  stop()
-  tabActivity.setEditing(null)
-  tabActivity.setCreating(false)
-})
 
 const history = useAgentChatHistoryStore()
 

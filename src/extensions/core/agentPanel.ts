@@ -13,17 +13,17 @@ export function registerAgentPanelExtension(): void {
     name: 'Comfy.AgentPanel',
     async setup() {
       // The service's per-extension catch owns a rejection here, so a
-      // failed gate or tracker load can never surface as an unhandled
+      // failed gate or lifetime load can never surface as an unhandled
       // rejection.
-      await Promise.all([registerTabActivityTracker(), setupFlagGate()])
+      await Promise.all([registerLifetimes(), setupFlagGate()])
     }
   })
 }
 
-async function registerTabActivityTracker(): Promise<void> {
-  const { registerWorkflowTabActivityTracker } =
-    await import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker')
-  registerWorkflowTabActivityTracker()
+async function registerLifetimes(): Promise<void> {
+  const { registerAgentLifetimes } =
+    await import('@/workbench/extensions/agent/composables/agent/useAgentLifetime')
+  registerAgentLifetimes()
 }
 
 async function setupFlagGate(): Promise<void> {

@@ -19,11 +19,12 @@ vi.mock('@/workbench/extensions/agent/utils/postHogFlagSource', () => {
   throw new Error('flag source chunk failed to load')
 })
 
-// The tracker registers alongside the gate in setup(); stub it so this suite
-// stays a flag-gate probe instead of booting the workflow store universe.
+// The lifetime adapter registers alongside the gate in setup(); stub it so
+// this suite stays a flag-gate probe instead of booting the workflow store
+// universe.
 vi.mock(
-  '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
-  () => ({ registerWorkflowTabActivityTracker: vi.fn() })
+  '@/workbench/extensions/agent/composables/agent/useAgentLifetime',
+  () => ({ registerAgentLifetimes: vi.fn() })
 )
 
 vi.mock('@/services/extensionService', () => ({
