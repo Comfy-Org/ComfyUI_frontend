@@ -12,6 +12,8 @@ import { DocFrameClient } from './docFrameClient'
 import { resolveFollowerEnabled } from './followerGate'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { LitegraphMutator } from './litegraphMutator'
+import type { OpNack } from './opOutcome'
+import { classifyOpsResult, runProjection } from './opOutcome'
 import { SemanticProjector } from './semanticProjector'
 
 // Resolved once per page load ("per session"): build-time env, overridable at
@@ -74,6 +76,12 @@ export interface AgentCrdtStatus {
   workflowId: string | null
   updatesApplied: number
   lastFrameType: string | null
+  /** Host-rejected op batches this mount (FEB-6). Monotonic; never rolls back. */
+  opNacks: number
+  /** Most recent host nack, until the next one replaces it. */
+  lastOpNack: OpNack | null
+  /** Doc→canvas projection failures this mount (FEB-6). */
+  projectionErrors: number
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -98,6 +106,12 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  // FEB-6 (s1-D): op-outcome surfacing. Counters are per-mount and monotonic —
+  // they measure "how noisy has this session been", not doc state, so neither
+  // workflow switch nor doc_reset clears them.
+  const opNacks = ref(0)
+  const lastOpNack = ref<OpNack | null>(null)
+  const projectionErrors = ref(0)
 
   if (!enabled) {
     return {
@@ -107,7 +121,10 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
           connected: false,
           workflowId: null,
           updatesApplied: 0,
-          lastFrameType: null
+          lastFrameType: null,
+          opNacks: 0,
+          lastOpNack: null,
+          projectionErrors: 0
         })
       ),
       sendHumanOps: (_ops: DocOp[]) => undefined
@@ -154,6 +171,21 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     createNode: (type) => LiteGraph.createNode(type)
   })
   const projector = new SemanticProjector(mutator, { actor: tabId })
+  // FEB-6 (s1-D): a projection throw used to vanish inside the EventTarget
+  // dispatch — no status, no metric, canvas silently lagging the doc. Surface
+  // it; recovery stays with resubscribe/doc_reset paths (see runProjection).
+  const projectDoc = (): number =>
+    runProjection(
+      () => projector.project(bridge.follower.doc),
+      (failure, error) => {
+        projectionErrors.value += 1
+        recordDevEvent('projection_error', failure)
+        console.error(
+          '[agent-crdt] projection failed — canvas may lag the doc until the next update or resubscribe',
+          error
+        )
+      }
+    )
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -228,7 +260,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     lastFrameType.value = event.type
     if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
       lastSeq = Math.max(lastSeq, event.detail.seq)
-    projector.project(bridge.follower.doc)
+    projectDoc()
     if (event instanceof CustomEvent) {
       const detail = event.detail as {
         workflowId?: string
@@ -256,6 +288,16 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     if (event instanceof CustomEvent) {
       lastOpsResult = event.detail ?? null
       recordDevEvent('doc_ops_result', event.detail ?? null)
+      // FEB-6 (s1-D): ok:false means "a failure exists", not "nothing landed" —
+      // the host applies the valid prefix before nacking, so never roll back.
+      // Promote the nack out of the dev-panel-only tap into a real error path.
+      const nack = classifyOpsResult(event.detail)
+      if (nack) {
+        opNacks.value += 1
+        lastOpNack.value = nack
+        recordDevEvent('op_nack', nack)
+        console.error('[agent-crdt] host rejected op batch', nack)
+      }
     }
   }
   const onDocReset: EventListener = (event) => {
@@ -491,7 +533,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     sendOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops),
     resubscribe: () => bridge.resubscribe(),
     reconcile: () => bridge.reconcile(),
-    project: () => projector.project(bridge.follower.doc),
+    project: () => projectDoc(),
     tabId,
     get lastSeq() {
       return lastSeq
@@ -515,7 +557,10 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
         connected: connected.value,
         workflowId: subscribedWorkflowId.value,
         updatesApplied: updatesApplied.value,
-        lastFrameType: lastFrameType.value
+        lastFrameType: lastFrameType.value,
+        opNacks: opNacks.value,
+        lastOpNack: lastOpNack.value,
+        projectionErrors: projectionErrors.value
       }
     }
   }
@@ -526,7 +571,10 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
-    lastFrameType: lastFrameType.value
+    lastFrameType: lastFrameType.value,
+    opNacks: opNacks.value,
+    lastOpNack: lastOpNack.value,
+    projectionErrors: projectionErrors.value
   }))
 
   return {
