@@ -361,7 +361,7 @@ onUpdated(() => {
 
 :deep(.workflow-tab-button) {
   position: relative;
-  flex-shrink: 1;
+  flex: 0 1 auto;
   border: 0;
   border-right-style: solid;
   border-right-width: 1px;
