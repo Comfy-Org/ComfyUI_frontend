@@ -13,19 +13,15 @@ class ComfyNodeSearchFilterSelectionPanel {
   }
 
   async selectFilterType(filterType: string) {
-    await this.page
-      .locator(
-        `.filter-type-select .p-togglebutton-label:has-text("${filterType}")`
-      )
+    await this.root
+      .getByRole('button', { name: filterType, exact: true })
       .click()
   }
 
   async selectFilterValue(filterValue: string) {
-    await this.page.locator('.filter-value-select .p-select-dropdown').click()
+    await this.root.getByRole('combobox').click()
     await this.page
-      .locator(
-        `.p-select-overlay .p-select-list .p-select-option-label:text-is("${filterValue}")`
-      )
+      .getByRole('option', { name: filterValue, exact: true })
       .click()
   }
 

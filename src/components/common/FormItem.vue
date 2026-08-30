@@ -118,19 +118,12 @@ function getFormComponent(item: FormItem): Component {
 </script>
 
 <style scoped>
-.form-input :deep(.input-slider) .p-inputnumber input,
 .form-input :deep(.input-slider) .slider-part {
   width: 5rem;
 }
 
-.form-input :deep(.input-knob) .p-inputnumber input,
 .form-input :deep(.input-knob) .knob-part {
   width: 8rem;
-}
-
-.form-input :deep(.p-inputtext),
-.form-input :deep(.p-select) {
-  width: 11rem;
 }
 
 .form-input > input {
