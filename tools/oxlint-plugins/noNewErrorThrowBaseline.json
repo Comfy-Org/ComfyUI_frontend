@@ -1,0 +1,439 @@
+{
+  "src/base/assert.ts": {
+    "new Error ( formatted )": 1
+  },
+  "src/base/common/downloadUtil.ts": {
+    "new Error ( 'Invalid URL provided for download' )": 1,
+    "new Error ( `Failed to fetch ${ url }: ${ response . status }` )": 1
+  },
+  "src/composables/auth/useAuthActions.ts": {
+    "new Error ( t ( 'auth.signOut.saveFailed' , { workflow : workflow . path } ) )": 1,
+    "new Error ( t ( 'toastMessages.failedToAccessBillingPortal' , { error : 'No billing portal URL returned' } ) )": 1,
+    "new Error ( t ( 'toastMessages.failedToPurchaseCredits' , { error : 'No checkout URL returned' } ) )": 1
+  },
+  "src/composables/billing/useBillingContext.ts": {
+    "new Error ( 'Top-up amount must be a positive whole-dollar cent value' )": 1
+  },
+  "src/composables/maskeditor/brushDrawingUtils.ts": {
+    "new Error ( 'Unable to create 2D canvas context for brush texture' )": 1,
+    "new Error ( `Invalid brush radius: ${ radius }` )": 1
+  },
+  "src/composables/maskeditor/useBrushDrawing.ts": {
+    "new Error ( 'Canvas contexts are required' )": 2
+  },
+  "src/composables/maskeditor/useCanvasManager.ts": {
+    "new Error ( 'Canvas elements or contexts not available' )": 1
+  },
+  "src/composables/maskeditor/useGPUResources.ts": {
+    "new Error ( 'GPU resources not ready' )": 1
+  },
+  "src/composables/maskeditor/useImageLoader.ts": {
+    "new Error ( 'Canvas elements or contexts not available' )": 1,
+    "new Error ( 'No input data available in dataStore' )": 1
+  },
+  "src/composables/maskeditor/useMaskEditorLoader.ts": {
+    "new Error ( 'Image URL missing filename parameter' )": 1,
+    "new Error ( 'Image URL missing filename parameter' , { cause : error } )": 1,
+    "new Error ( 'Node has no images' )": 1,
+    "new Error ( 'Node is null or undefined' )": 1,
+    "new Error ( 'Unable to get image URL from node' )": 1,
+    "new Error ( 'nodeOutputStore image missing filename' )": 1,
+    "new Error ( `Invalid image URL: ${ url }` , { cause : e } )": 1
+  },
+  "src/composables/maskeditor/useMaskEditorSaver.ts": {
+    "new Error ( 'Canvas not initialized' )": 1,
+    "new Error ( 'No source node or input data' )": 1,
+    "new Error ( `Failed to upload ${ layer . ref . filename } (${ response . status }${ body ? `: ${ body }` : '' })` )": 1,
+    "new Error ( `Invalid upload response for ${ layer . ref . filename }: ${ error instanceof Error ? error . message : String ( error ) }` , { cause : error } )": 1,
+    "new Error ( `Upload response missing 'name' for ${ layer . ref . filename }` )": 1
+  },
+  "src/composables/painter/usePainter.ts": {
+    "new Error ( detail )": 1,
+    "new Error ( err )": 1,
+    "new Error ( err , { cause : e } )": 2
+  },
+  "src/core/graph/subgraph/migration/proxyWidgetMigration.ts": {
+    "new Error ( 'SubgraphInput.connect returned no link' )": 1,
+    "new Error ( `target node ${ snap . targetNodeId } disappeared mid-mutation` )": 1,
+    "new Error ( `target node ${ target . targetNodeId } disappeared` )": 1,
+    "new Error ( `target slot ${ target . targetSlot } disappeared` )": 1
+  },
+  "src/core/graph/widgets/dynamicWidgets.ts": {
+    "new Error ( \"Dynamic widget doesn't exist on node\" )": 1,
+    "new Error ( 'Failed to find input socket for ' + widget . name )": 1,
+    "new Error ( 'Not Reachable' )": 1,
+    "new Error ( 'invalid Autogrow spec' )": 1,
+    "new Error ( 'invalid DynamicCombo spec' )": 1,
+    "new Error ( 'invalid connection' )": 2
+  },
+  "src/lib/litegraph/src/LGraph.ts": {
+    "new Error ( 'Can only unpack Subgraph Nodes' )": 1,
+    "new Error ( 'Cannot convert to subgraph: nothing to convert' )": 1,
+    "new Error ( 'Failed to create bounding rect for subgraph' )": 1,
+    "new Error ( 'Failed to create subgraph node' )": 1,
+    "new Error ( 'Name and type are required for subgraph input' )": 1,
+    "new Error ( 'Name and type are required for subgraph output' )": 1,
+    "new Error ( 'Root graph is required' )": 1,
+    "new Error ( `Cannot unpack: node type \"${ n_info . type }\" is not registered` )": 1,
+    "new Error ( `Node [${ nodeId }] is not a SubgraphNode.  ID Path: ${ nodeIds . join ( ':' ) }` )": 1,
+    "new Error ( `Node [${ nodeId }] not found.  ID Path: ${ nodeIds . join ( ':' ) }` )": 1
+  },
+  "src/lib/litegraph/src/LGraphNode.ts": {
+    "new Error ( '[connectFloatingReroute] Floating link not found' )": 1,
+    "new Error ( '[connectFloatingReroute] Parent reroute not found' )": 1
+  },
+  "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
+    "new Error ( `Creating DraggingRenderLink for link [${ link . id }] failed: Input node [${ inputNodeId }] not found.` )": 1,
+    "new Error ( `Creating DraggingRenderLink for link [${ link . id }] failed: Input slot [${ inputIndex }] not found.` )": 1,
+    "new Error ( `Creating DraggingRenderLink for link [${ link . id }] failed: Output node [${ outputNodeId }] not found.` )": 1,
+    "new Error ( `Creating DraggingRenderLink for link [${ link . id }] failed: Output slot [${ outputIndex }] not found.` )": 1
+  },
+  "src/lib/litegraph/src/canvas/MovingInputLink.ts": {
+    "new Error ( 'MovingInputLink cannot connect to a subgraph input.' )": 1,
+    "new Error ( 'MovingInputLink cannot connect to an output.' )": 2
+  },
+  "src/lib/litegraph/src/canvas/MovingLinkBase.ts": {
+    "new Error ( `Creating DraggingRenderLink for link [${ link . id }] failed: Input node [${ inputNodeId }] not found.` )": 1,
+    "new Error ( `Creating DraggingRenderLink for link [${ link . id }] failed: Input slot [${ inputIndex }] not found.` )": 1,
+    "new Error ( `Creating MovingRenderLink for link [${ link . id }] failed: Output node [${ outputNodeId }] not found.` )": 1,
+    "new Error ( `Creating MovingRenderLink for link [${ link . id }] failed: Output slot [${ outputIndex }] not found.` )": 1
+  },
+  "src/lib/litegraph/src/canvas/MovingOutputLink.ts": {
+    "new Error ( 'MovingOutputLink cannot connect to a subgraph output.' )": 1,
+    "new Error ( 'MovingOutputLink cannot connect to an input.' )": 2
+  },
+  "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts": {
+    "new Error ( 'Not implemented' )": 1,
+    "new Error ( 'ToInputRenderLink cannot connect to a subgraph input.' )": 1,
+    "new Error ( 'ToInputRenderLink cannot connect to an output.' )": 2,
+    "new Error ( `Creating render link for node [${ this . node . id }] failed: Slot index not found.` )": 1
+  },
+  "src/lib/litegraph/src/canvas/ToInputRenderLink.ts": {
+    "new Error ( 'ToInputRenderLink cannot connect to a subgraph input.' )": 1,
+    "new Error ( 'ToInputRenderLink cannot connect to an output.' )": 2,
+    "new Error ( `Creating render link for node [${ this . node . id }] failed: Slot index not found.` )": 1
+  },
+  "src/lib/litegraph/src/canvas/ToOutputFromIoNodeLink.ts": {
+    "new Error ( 'Not implemented' )": 1,
+    "new Error ( 'ToOutputRenderLink cannot connect to a subgraph output.' )": 1,
+    "new Error ( 'ToOutputRenderLink cannot connect to an input.' )": 2,
+    "new Error ( `Creating render link for node [${ this . node . id }] failed: Slot index not found.` )": 1
+  },
+  "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts": {
+    "new Error ( 'ToOutputRenderLink cannot connect to a subgraph output.' )": 1,
+    "new Error ( 'ToOutputRenderLink cannot connect to an input.' )": 2,
+    "new Error ( `Creating render link for node [${ this . node . id }] failed: Slot index not found.` )": 1
+  },
+  "src/lib/litegraph/src/litegraphInstance.ts": {
+    "new Error ( 'LiteGraph singleton accessed before initialisation' )": 1
+  },
+  "src/lib/litegraph/src/node/slotLinks.ts": {
+    "new Error ( 'A link may only be assigned to one input slot' )": 1,
+    "new Error ( 'An input slot may only appear once in the final layout' )": 1,
+    "new Error ( 'Cannot assign input links to a node without a graph' )": 1,
+    "new Error ( 'Input layout changed after it was captured' )": 1
+  },
+  "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
+    "new Error ( `No DTO found for virtual source node [${ virtualSource . node . id }]` )": 1,
+    "new Error ( `No inner node DTO found for id [${ innerNodeExecutionId }]` )": 1,
+    "new Error ( `No input node DTO found for id [${ inputNode . id }]` )": 1,
+    "new Error ( `No output node DTO found for id [${ outputNodeExecutionId }]` )": 1,
+    "new Error ( `No output node found for id [${ this . id }] slot [${ slot }] ${ output . name }` )": 1,
+    "new Error ( `No subgraph node DTO found for id [${ subgraphNodeExecutionId }]` )": 1
+  },
+  "src/lib/litegraph/src/subgraph/SubgraphInputNode.ts": {
+    "new Error ( 'Invalid slot indices.' )": 1
+  },
+  "src/lib/litegraph/src/subgraph/SubgraphOutput.ts": {
+    "new Error ( 'Slot is not an output of the given node' )": 1
+  },
+  "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts": {
+    "new Error ( 'Node ID space exhausted' )": 1
+  },
+  "src/platform/assets/composables/useMediaAssetActions.ts": {
+    "new Error ( 'Unable to extract job ID from asset' )": 1,
+    "new Error ( t ( 'mediaAsset.deletingImportedFilesCloudOnly' ) )": 1
+  },
+  "src/platform/assets/services/assetService.ts": {
+    "new Error ( 'Invalid data URL: expected a string starting with \"data:\"' )": 1,
+    "new Error ( `${ EXPERIMENTAL_WARNING }Invalid asset response against zod schema:\\n${ error }` )": 2,
+    "new Error ( `${ EXPERIMENTAL_WARNING }Unable to load ${ context }: Server returned ${ res . status }. Please try again.` )": 1,
+    "new Error ( `${ EXPERIMENTAL_WARNING }Unable to load asset details for ${ id }: Server returned ${ res . status }. Please try again.` )": 1,
+    "new Error ( `Failed to create asset export: ${ res . status }` )": 1,
+    "new Error ( `Failed to get export download URL: ${ res . status }` )": 1,
+    "new Error ( `Failed to upload asset from base64: ${ res . status } ${ res . statusText }` )": 1,
+    "new Error ( `Unable to add tags to asset ${ id }: Server returned ${ res . status }` )": 1,
+    "new Error ( `Unable to delete asset ${ id }: Server returned ${ res . status }` )": 1,
+    "new Error ( `Unable to remove tags from asset ${ id }: Server returned ${ res . status }` )": 1,
+    "new Error ( `Unable to start asset scan: Server returned ${ res . status }` )": 1,
+    "new Error ( `Unable to update asset ${ id }: Invalid response - ${ newAsset . error }` )": 1,
+    "new Error ( `Unable to update asset ${ id }: Server returned ${ res . status }` )": 1,
+    "new Error ( getLocalizedErrorMessage ( code ) )": 1,
+    "new Error ( getLocalizedErrorMessage ( data . validation ?. errors ?. [ 0 ] ?. code || 'UNKNOWN_ERROR' ) )": 1,
+    "new Error ( st ( 'assetBrowser.errorUploadFailed' , 'Failed to parse async upload response. Please try again.' ) )": 1,
+    "new Error ( st ( 'assetBrowser.errorUploadFailed' , 'Failed to parse sync upload response. Please try again.' ) )": 1,
+    "new Error ( st ( 'assetBrowser.errorUploadFailed' , 'Failed to upload asset. Please try again.' ) )": 3
+  },
+  "src/platform/auth/session/useSessionCookie.ts": {
+    "new Error ( 'No Firebase token available for session creation' )": 1,
+    "new Error ( 'No authenticated user available for session creation' )": 1,
+    "new Error ( 'Session identity changed before creation' )": 1,
+    "new Error ( 'Session identity changed during creation' )": 2,
+    "new Error ( await readSessionError ( response ) )": 2
+  },
+  "src/platform/cloud/oauth/oauthApi.ts": {
+    "new Error ( 'OAuth consent challenge is invalid' )": 2,
+    "new Error ( 'OAuth consent challenge redirect_uri is not a valid URL' , { cause : err } )": 1,
+    "new Error ( 'OAuth consent redirect_url does not match the registered redirect_uri' )": 1,
+    "new Error ( 'OAuth consent redirect_url has an unsafe scheme' )": 2,
+    "new Error ( 'OAuth consent redirect_url is not a valid URL' , { cause : err } )": 1,
+    "new Error ( 'OAuth consent response did not include redirect_url' )": 1
+  },
+  "src/platform/cloud/subscription/components/CreditsTile.vue": {
+    "new Error ( customerEventsService . error . value ?? 'Fetching customer events failed' )": 1
+  },
+  "src/platform/cloud/subscription/composables/useSubscription.ts": {
+    "new Error ( t ( 'toastMessages.failedToInitiateSubscription' , { error : 'No checkout URL returned' } ) )": 1
+  },
+  "src/platform/cloud/subscription/launchCancellationFlow.ts": {
+    "new Error ( getErrorMessage ( error ) ?? t ( 'subscription.cancelDialog.failed' ) , { cause : error } )": 1,
+    "new Error ( t ( 'subscription.cancelDialog.workspaceChanged' ) )": 1
+  },
+  "src/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil.ts": {
+    "new Error ( 'Team subscription needs a payment method but no payment URL was returned' )": 1
+  },
+  "src/platform/keybindings/keybindingStore.ts": {
+    "new Error ( `Keybinding on ${ keybinding . combo } already exists on ${ target . value [ keybinding . combo . serialize ( ) ] . commandId }` )": 1
+  },
+  "src/platform/keybindings/presetService.ts": {
+    "new Error ( t ( 'g.keybindingPresets.deletePresetFailed' , { name } ) )": 1,
+    "new Error ( t ( 'g.keybindingPresets.invalidPresetFile' ) )": 1,
+    "new Error ( t ( 'g.keybindingPresets.invalidPresetFile' ) + ': ' + fromZodError ( result . error ) . message )": 2,
+    "new Error ( t ( 'g.keybindingPresets.invalidPresetName' ) )": 1,
+    "new Error ( t ( 'g.keybindingPresets.loadPresetFailed' , { name } ) )": 1
+  },
+  "src/platform/nodeReplacement/nodeReplacementService.ts": {
+    "new Error ( `Failed to fetch node replacements: ${ response . status } ${ response . statusText }` )": 1
+  },
+  "src/platform/settings/settingStore.ts": {
+    "new Error ( 'Setting values must be loaded before any setting is registered.' )": 1,
+    "new Error ( 'Settings must have an ID' )": 1
+  },
+  "src/platform/tasks/services/taskService.ts": {
+    "new Error ( `Failed to get task ${ taskId }: ${ res . status }` )": 1,
+    "new Error ( `Task not found: ${ taskId }` )": 1,
+    "new Error ( fromZodError ( result . error ) . message )": 1
+  },
+  "src/platform/workflow/management/stores/comfyWorkflow.ts": {
+    "new Error ( `Workflow content is empty for '${ this . path }'` )": 1,
+    "new Error ( `[ASSERT] Workflow content should be loaded for '${ this . path }'` )": 1
+  },
+  "src/platform/workflow/sharing/composables/useComfyHubProfileGate.ts": {
+    "new Error ( 'Unable to determine current workspace' )": 3
+  },
+  "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts": {
+    "new Error ( 'ComfyHub profile is required before publishing' )": 1,
+    "new Error ( 'No active workflow file available for publishing' )": 1
+  },
+  "src/platform/workflow/sharing/services/comfyHubService.ts": {
+    "new Error ( await parseErrorMessage ( response , 'Failed to create ComfyHub profile' ) )": 1,
+    "new Error ( await parseErrorMessage ( response , 'Failed to fetch hub labels' ) )": 1,
+    "new Error ( await parseErrorMessage ( response , 'Failed to load ComfyHub profile' ) )": 1,
+    "new Error ( await parseErrorMessage ( response , 'Failed to publish workflow' ) )": 1,
+    "new Error ( await parseErrorMessage ( response , 'Failed to request upload URL' ) )": 1,
+    "new Error ( fallbackMessage )": 1,
+    "new Error ( message )": 1
+  },
+  "src/platform/workflow/sharing/services/workflowShareService.ts": {
+    "new Error ( 'Failed to load shared workflow: invalid response' )": 1,
+    "new Error ( 'Failed to publish workflow: invalid response' )": 1,
+    "new Error ( `Failed to fetch hub workflow details: ${ response . status }` )": 1,
+    "new Error ( `Failed to fetch publish status: ${ response . status } ${ response . statusText }` )": 1,
+    "new Error ( `Failed to import assets: ${ response . status }` )": 1,
+    "new Error ( `Failed to publish workflow: ${ response . status }` )": 1
+  },
+  "src/platform/workspace/auth/WorkspaceAuthGate.vue": {
+    "new Error ( 'Failed to initialize unified cloud auth' )": 1,
+    "new Error ( 'Failed to initialize workspace context' )": 1,
+    "new Error ( 'Failed to load authenticated remote config' )": 1,
+    "new Error ( 'Unified cloud auth was cleared during workspace setup' )": 1
+  },
+  "src/platform/workspace/composables/useDowngradeToPersonal.ts": {
+    "new Error ( membersToRemove . length > 0 ? t ( 'subscription.downgrade.failedAfterMemberRemoval' ) : t ( 'subscription.downgrade.failed' ) )": 1,
+    "new Error ( preview ?. reason || t ( 'subscription.downgrade.notAllowed' ) )": 2,
+    "new Error ( t ( 'subscription.downgrade.memberRemovalFailed' , { email : member . email } ) , { cause : error } )": 1,
+    "new Error ( t ( 'subscription.downgrade.notAllowed' ) )": 2,
+    "new Error ( t ( 'subscription.downgrade.paymentMethodRequired' ) )": 1,
+    "new Error ( t ( 'subscription.downgrade.paymentPageBlocked' ) )": 1
+  },
+  "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
+    "new Error ( freshPreview ?. reason || t ( 'subscription.subscribeFailed' ) )": 1,
+    "new Error ( response ?. reason || t ( 'subscription.subscribeFailed' ) )": 1,
+    "new Error ( t ( 'subscription.preview.applyQuoteBeforeContinuing' ) )": 2,
+    "new Error ( t ( 'subscription.preview.stripeUnavailable' ) )": 1,
+    "new Error ( t ( 'toastMessages.failedToAccessBillingPortal' , { error : t ( 'toastMessages.invalidBillingPortalUrl' ) } ) )": 1
+  },
+  "src/platform/workspace/composables/useWorkspaceBilling.ts": {
+    "new Error ( operation . errorMessage ?? 'Failed to cancel subscription' )": 1,
+    "new Error ( operation . errorMessage ?? 'Failed to resubscribe' )": 1
+  },
+  "src/platform/workspace/stores/teamWorkspaceStore.ts": {
+    "new Error ( \"Cannot change the workspace creator's role\" )": 1,
+    "new Error ( 'Cannot delete personal workspace' )": 1,
+    "new Error ( 'Invite not found' )": 1,
+    "new Error ( 'No active workspace' )": 2,
+    "new Error ( 'No workspace to delete' )": 1,
+    "new Error ( 'No workspaces available' )": 2,
+    "new Error ( 'Workspace authentication did not switch' )": 1,
+    "new Error ( 'Workspace not found or access denied' )": 1,
+    "new Error ( 'Workspace not found' )": 1
+  },
+  "src/platform/workspace/stores/workspaceAuthStore.ts": {
+    "new Error ( 'Workspace identity changed during switch' )": 1
+  },
+  "src/renderer/core/canvas/canvasStore.ts": {
+    "new Error ( 'getCanvas: canvas is null' )": 1
+  },
+  "src/renderer/core/layout/slots/slotIdentifier.ts": {
+    "new Error ( 'Missing required parameters for slot key generation' )": 1
+  },
+  "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
+    "new Error ( '2d context unavailable' )": 1
+  },
+  "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts": {
+    "new Error ( log )": 2
+  },
+  "src/renderer/extensions/layerEditor/engine/nodeKind.ts": {
+    "new Error ( `Unknown node kind: ${ kind }` )": 1
+  },
+  "src/renderer/extensions/layerEditor/engine/tool.ts": {
+    "new Error ( `Unknown tool: ${ id }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts": {
+    "new Error ( `Invalid input data: ${ inputSpec }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts": {
+    "new Error ( `Unexpected widget type: ${ rawWidget . type }` )": 1,
+    "new Error ( `Unexpected widget type: ${ subWidget . type }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useChartWidget.ts": {
+    "new Error ( 'Invalid input spec for chart widget' )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.ts": {
+    "new Error ( `Expected combo widget but received ${ widget . type }` )": 3,
+    "new Error ( `Invalid input data: ${ inputSpec }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts": {
+    "new Error ( `Unexpected widget type: ${ rawWidget . type }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts": {
+    "new Error ( `Unexpected widget type: ${ rawWidget . type }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts": {
+    "new Error ( `Invalid input data: ${ inputSpec }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.ts": {
+    "new Error ( 'Image upload widget requires imageInputName augmentation' )": 1,
+    "new Error ( `Widget \"${ imageInputName }\" not found on node` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts": {
+    "new Error ( `Invalid input data: ${ inputSpec }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useRangeWidget.ts": {
+    "new Error ( `Unexpected widget type: ${ rawWidget . type }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.ts": {
+    "new Error ( `Invalid input data: ${ inputSpec }` )": 1
+  },
+  "src/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts": {
+    "new Error ( `Unexpected widget type: ${ rawWidget . type }` )": 1
+  },
+  "src/renderer/glsl/useGLSLRenderer.ts": {
+    "new Error ( 'Failed to create fallback texture' )": 1,
+    "new Error ( 'Failed to create ping-pong framebuffer' )": 1,
+    "new Error ( 'Failed to create ping-pong texture' )": 1,
+    "new Error ( 'Failed to create shader' )": 1,
+    "new Error ( 'Renderer not initialized' )": 3,
+    "new Error ( `Input index ${ index } out of range (max ${ maxInputs - 1 })` )": 1,
+    "new Error ( `Ping-pong framebuffer incomplete: ${ status }` )": 1,
+    "new Error ( log )": 1
+  },
+  "src/renderer/three/RendererView.ts": {
+    "new Error ( 'Failed to create 2D context for 3D view' )": 1
+  },
+  "src/services/audioService.ts": {
+    "new Error ( err )": 1
+  },
+  "src/services/colorPaletteService.ts": {
+    "new Error ( `Color palette ${ colorPaletteId } not found` )": 2,
+    "new Error ( `Invalid color palette against zod schema:\\n${ error }` )": 1
+  },
+  "src/services/gateway/registrySearchGateway.ts": {
+    "new Error ( 'No available search providers' )": 1,
+    "new Error ( `All search providers failed. Last error: ${ lastError ?. message || 'Unknown error' }` )": 1
+  },
+  "src/services/litegraphService.ts": {
+    "new Error ( 'Could not get canvas context' )": 1,
+    "new Error ( 'Failed to add subgraph blueprint' )": 1,
+    "new Error ( 'Subgraph blueprint was added, but failed to resolve a subgraph Node' )": 1
+  },
+  "src/services/nodeHelpService.ts": {
+    "new Error ( 'Invalid custom node module' )": 1,
+    "new Error ( doc . errorText ?? 'Help not found' )": 1,
+    "new Error ( lastError ?? 'Help not found' )": 1
+  },
+  "src/services/nodeOrganizationService.ts": {
+    "new Error ( `Unknown grouping strategy: ${ groupBy }` )": 1,
+    "new Error ( `Unknown sorting strategy: ${ sortBy }` )": 1
+  },
+  "src/stores/apiKeyAuthStore.ts": {
+    "new Error ( t ( 'auth.login.noAssociatedUser' ) )": 1
+  },
+  "src/stores/assetsStore.ts": {
+    "new Error ( 'Failed to fetch input files' )": 1
+  },
+  "src/stores/authStore.ts": {
+    "new Error ( 'Cannot create customer: User not authenticated' )": 1
+  },
+  "src/stores/commandStore.ts": {
+    "new Error ( `Command ${ commandId } not found` )": 1
+  },
+  "src/stores/extensionStore.ts": {
+    "new Error ( \"Extensions must have a 'name' property.\" )": 1,
+    "new Error ( `Extension named '${ extension . name }' already registered.` )": 1
+  },
+  "src/stores/nodeBookmarkStore.ts": {
+    "new Error ( 'Cannot delete non-folder node' )": 1,
+    "new Error ( 'Cannot rename non-folder node' )": 1,
+    "new Error ( 'Folder name cannot contain \"/\"' )": 1,
+    "new Error ( `Folder name \"${ newNodePath }\" already exists` )": 1
+  },
+  "src/stores/subgraphStore.ts": {
+    "new Error ( 'Invalid Subgraph Blueprint' )": 1,
+    "new Error ( 'Loaded subgraph blueprint does not contain valid subgraph' )": 1,
+    "new Error ( 'The root graph of a subgraph blueprint must consist of only a single subgraph node' )": 2,
+    "new Error ( 'not yet loaded' )": 3,
+    "new Error ( `Global blueprint '${ v . name }' (${ k }) returned empty content` )": 1
+  },
+  "src/stores/userFileStore.ts": {
+    "new Error ( `Failed to delete file '${ this . path }': ${ resp . status } ${ resp . statusText }` )": 1,
+    "new Error ( `Failed to load file '${ this . path }': ${ resp . status } ${ resp . statusText }` )": 1,
+    "new Error ( `Failed to rename file '${ this . path }': ${ resp . status } ${ resp . statusText }` )": 1
+  },
+  "src/stores/userStore.ts": {
+    "new Error ( data . error ?? 'Error creating user: ' + resp . status + ' ' + resp . statusText )": 1
+  },
+  "src/stores/workspace/colorPaletteStore.ts": {
+    "new Error ( `Palette with id ${ id } does not exist` )": 1,
+    "new Error ( `Palette with id ${ palette . id } already exists` )": 1
+  },
+  "src/types/widgetId.ts": {
+    "new Error ( 'Invalid widget id' )": 1
+  },
+  "src/utils/litegraphUtil.ts": {
+    "new Error ( 'Infinite loop detected' )": 1
+  },
+  "src/utils/migration/migrateReroute.ts": {
+    "new Error ( 'No reroute nodes found' )": 1
+  }
+}

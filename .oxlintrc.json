@@ -128,6 +128,23 @@
   },
   "overrides": [
     {
+      "files": ["src/**/*.{ts,tsx,vue}"],
+      "excludeFiles": [
+        "src/**/*.d.ts",
+        "src/**/*.{test,spec,stories}.{ts,tsx,vue}",
+        "src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**",
+        "src/**/{generated,vendor}/**",
+        "src/__ecs_matrix__/**",
+        "src/extensions/core/**",
+        "src/scripts/**",
+        "src/types/generatedManagerTypes.ts",
+        "src/types/vue-shim.d.ts"
+      ],
+      "rules": {
+        "comfy/no-new-error-throw": "error"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
