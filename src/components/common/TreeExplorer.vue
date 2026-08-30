@@ -30,7 +30,13 @@
           :style="{
             paddingLeft: `calc(var(--comfy-tree-explorer-item-padding) + ${(item.level - 1) * 16}px)`
           }"
-          @click="onNodeContentClick($event, item.value)"
+          @click="
+            onNodeContentClick(
+              $event,
+              item.value,
+              item.hasChildren ? handleToggle : undefined
+            )
+          "
           @contextmenu="handleContextMenu($event, item.value)"
         >
           <button
@@ -51,7 +57,11 @@
             />
           </button>
           <span v-else class="size-5 shrink-0" />
-          <i :class="cn(item.value.icon, 'size-4 shrink-0')" />
+          <i
+            :class="
+              cn(item.value.icon, 'tree-explorer-node-icon size-4 shrink-0')
+            "
+          />
           <div class="flex min-w-0 flex-1 items-center">
             <slot
               v-if="item.value.type === 'folder'"
@@ -194,8 +204,10 @@ const fillNodeInfo = (
 }
 const onNodeContentClick = async (
   e: MouseEvent,
-  node: RenderedTreeExplorerNode<T>
+  node: RenderedTreeExplorerNode<T>,
+  handleToggle?: () => void
 ) => {
+  handleToggle?.()
   if (node.handleClick) {
     await node.handleClick(e)
   }
