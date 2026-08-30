@@ -6,13 +6,18 @@
     @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
-      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
+      <Tag
+        v-if="setting.id === 'Comfy.Locale'"
+        severity="primary"
+        class="pi pi-language"
+      />
       <Tag
         v-if="setting.experimental"
         v-tooltip="{
           value: $t('g.experimental'),
           showDelay: 600
         }"
+        severity="primary"
       >
         <template #icon>
           <i-material-symbols:experiment-outline />
