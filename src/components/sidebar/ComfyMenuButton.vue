@@ -141,7 +141,11 @@ function onLogoMenuClick(event: MouseEvent) {
     button_id: 'sidebar_comfy_menu_opened',
     element_group: 'sidebar'
   })
-  menuRef.value?.toggle(event)
+  if (document.querySelector('.comfy-command-menu')) {
+    menuRef.value?.hide()
+  } else {
+    menuRef.value?.show(event)
+  }
 }
 
 const translateMenuItem = (item: MenuItem): MenuItem => {
