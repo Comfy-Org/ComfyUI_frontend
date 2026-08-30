@@ -28,7 +28,17 @@ const editorFiles = {
     },
     {
       path: 'v2/nodes/checkerboard.py',
-      content: '# checkerboard starter\n',
+      content: 'import torch\nfrom comfy_api.latest import io\n',
+      editable: true
+    },
+    {
+      path: 'v2/pyproject.toml',
+      content: '[project]\nname = "new-custom-node"\nversion = "0.1.0"\n',
+      editable: true
+    },
+    {
+      path: 'v2/secure-nodes.json',
+      content: '{\n  "format": "comfy-secure-nodes-v1"\n}\n',
       editable: true
     },
     {
@@ -99,6 +109,19 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
     await closeStartupDialogs(page)
     await openCustomNodeEditor(page, comfyPage)
 
+    await expect(
+      page.locator('.monaco-tree-editor-opened-tab-item-active')
+    ).toContainText('checkerboard.py')
+    await expect(
+      page.locator('.monaco-editor .view-lines').last()
+    ).toContainText('import torch')
+    await expect(
+      page.getByText('pyproject.toml', { exact: true }).first()
+    ).toBeVisible()
+    await expect(
+      page.getByText('secure-nodes.json', { exact: true }).first()
+    ).toBeVisible()
+
     const treeHeader = await page
       .locator('.custom-node-tree-editor')
       .evaluate((root) => {
@@ -130,6 +153,8 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
     expect(treeHeader.nameBottom).toBeLessThanOrEqual(treeHeader.rowBottom)
 
     await page.getByText('README.md', { exact: true }).first().click()
+    const editorContent = page.locator('.monaco-editor .view-lines').last()
+    await expect(editorContent).toContainText('# New Custom Node')
     await page
       .getByRole('button', { name: 'Close Node Agent', exact: true })
       .click()
