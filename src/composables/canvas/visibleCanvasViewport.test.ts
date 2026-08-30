@@ -41,7 +41,7 @@ describe('visibleCanvasViewport', () => {
     ).toEqual([0, 0, 800, 450])
   })
 
-  it('subtracts the inset from the visible canvas', () => {
+  it('subtracts a single edge inset from the visible canvas', () => {
     const canvasElement = document.createElement('canvas')
     canvasElement.getBoundingClientRect = vi
       .fn()
@@ -49,12 +49,22 @@ describe('visibleCanvasViewport', () => {
 
     expect(
       visibleCanvasViewport({ canvas: canvasElement } as LGraphCanvas, {
-        top: 20,
-        right: 200,
-        bottom: 30,
-        left: 40
+        right: 200
       })
-    ).toEqual([40, 20, 560, 400])
+    ).toEqual([0, 0, 600, 450])
+  })
+
+  it('subtracts an occluding rect from the visible canvas', () => {
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getBoundingClientRect = vi
+      .fn()
+      .mockReturnValue(new DOMRect(10, 20, 800, 450))
+
+    expect(
+      visibleCanvasViewport({ canvas: canvasElement } as LGraphCanvas, {
+        occlusions: [[600, 0, 200, 450]]
+      })
+    ).toEqual([0, 0, 600, 450])
   })
 
   it('clamps negative and degenerate insets to the canvas bounds', () => {
