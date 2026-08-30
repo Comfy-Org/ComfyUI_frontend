@@ -7701,15 +7701,15 @@ const translations = {
     'zh-CN': '存储'
   },
   'platform.pricing.storage.standardUnder1tb': {
-    en: 'Standard network storage, under 1 TB',
+    en: 'Network storage — standard, under 1 TB',
     'zh-CN': '网络存储——标准，1 TB 以下'
   },
   'platform.pricing.storage.standardOver1tb': {
-    en: 'Standard network storage, 1 TB and above',
+    en: 'Network storage — standard, 1 TB and above',
     'zh-CN': '网络存储——标准，1 TB 及以上'
   },
   'platform.pricing.storage.highPerformance': {
-    en: 'High-performance network storage',
+    en: 'Network storage — high performance',
     'zh-CN': '网络存储——高性能'
   },
   'platform.pricing.storage.containerDisk': {
@@ -7717,7 +7717,7 @@ const translations = {
     'zh-CN': '容器磁盘'
   },
   'platform.pricing.storageNote': {
-    en: "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
+    en: "Models live on network storage — persistent and shared across a deployment's workers. Container disk is each worker's own local filesystem, billed separately.",
     'zh-CN':
       '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
   },

@@ -70,46 +70,44 @@ const storageRates = [
       </template>
     </SectionHeader>
 
-    <div class="mx-auto mt-8 max-w-6xl rounded-4xl border border-white/10 p-2">
-      <div class="grid gap-2 lg:grid-cols-2">
-        <article
-          class="bg-transparency-white-t4 flex min-w-0 flex-col overflow-hidden rounded-3xl"
-        >
+    <div
+      class="bg-transparency-white-t4 mx-auto mt-8 max-w-6xl overflow-hidden rounded-4xl px-4 py-6 lg:px-8"
+    >
+      <div class="grid gap-x-12 gap-y-8 lg:grid-cols-2">
+        <article class="flex min-w-0 flex-col">
           <div class="scrollbar-none overflow-x-auto">
-            <table class="w-full min-w-130 text-left text-xs">
+            <table class="w-full min-w-130 text-left text-sm">
               <thead>
-                <tr
-                  class="border-b border-white/8 text-[10px] tracking-wider uppercase"
-                >
+                <tr class="uppercase">
                   <th
-                    class="px-5 py-4 font-bold text-primary-comfy-canvas"
+                    class="px-2 py-4 font-medium text-primary-warm-white"
                     scope="col"
                   >
                     {{ t('platform.pricing.gpuColumn', locale) }}
                   </th>
                   <th
-                    class="p-4 font-bold text-primary-comfy-canvas"
+                    class="p-4 font-medium text-primary-warm-white"
                     scope="col"
                   >
                     {{ t('platform.pricing.vramColumn', locale) }}
                   </th>
                   <th
-                    class="p-4 text-right font-bold text-primary-comfy-canvas"
+                    class="p-4 text-right font-medium text-primary-warm-white"
                     scope="col"
                   >
                     {{ t('platform.pricing.priceColumn', locale) }}
                   </th>
                   <th
-                    class="px-5 py-4 text-right font-bold text-primary-comfy-canvas"
+                    class="px-2 py-4 text-right font-medium text-primary-warm-white"
                     scope="col"
                   >
                     {{ t('platform.pricing.creditsColumn', locale) }}
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="text-xs">
                 <tr v-for="rate in gpuRates" :key="rate.gpu">
-                  <td class="px-5 py-3.5 text-primary-warm-white">
+                  <td class="px-2 py-3.5 text-primary-comfy-canvas">
                     {{ rate.gpu }}
                   </td>
                   <td class="px-4 py-3.5 text-primary-comfy-canvas">
@@ -120,50 +118,48 @@ const storageRates = [
                   >
                     {{ rate.price }}
                   </td>
-                  <td class="px-5 py-3.5 text-right font-mono text-smoke-700">
+                  <td
+                    class="px-2 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                  >
                     {{ rate.credits }}
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p class="mt-auto px-5 py-3 text-2xs text-primary-warm-gray">
+          <p class="mt-auto px-2 pt-6 text-xs text-primary-warm-gray">
             {{ t('platform.pricing.billedPerSecond', locale) }}
           </p>
         </article>
 
-        <article
-          class="bg-transparency-white-t4 flex min-w-0 flex-col overflow-hidden rounded-3xl"
-        >
+        <article class="flex min-w-0 flex-col">
           <div class="scrollbar-none overflow-x-auto">
-            <table class="w-full min-w-130 text-left text-xs">
+            <table class="w-full min-w-130 text-left text-sm">
               <thead>
-                <tr
-                  class="border-b border-white/8 text-[10px] tracking-wider uppercase"
-                >
+                <tr class="uppercase">
                   <th
-                    class="px-5 py-4 font-bold text-primary-comfy-canvas"
+                    class="px-2 py-4 font-medium text-primary-warm-white"
                     scope="col"
                   >
                     {{ t('platform.pricing.storageColumn', locale) }}
                   </th>
                   <th
-                    class="p-4 text-right font-bold text-primary-comfy-canvas"
+                    class="p-4 text-right font-medium text-primary-warm-white"
                     scope="col"
                   >
                     {{ t('platform.pricing.priceColumn', locale) }}
                   </th>
                   <th
-                    class="px-5 py-4 text-right font-bold text-primary-comfy-canvas"
+                    class="px-2 py-4 text-right font-medium text-primary-warm-white"
                     scope="col"
                   >
                     {{ t('platform.pricing.creditsColumn', locale) }}
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody class="text-xs">
                 <tr v-for="rate in storageRates" :key="rate.key">
-                  <td class="px-5 py-3.5 text-primary-warm-white">
+                  <td class="max-w-56 px-2 py-3.5 text-primary-comfy-canvas">
                     {{ t(`platform.pricing.storage.${rate.key}`, locale) }}
                   </td>
                   <td
@@ -171,14 +167,16 @@ const storageRates = [
                   >
                     {{ rate.price }}
                   </td>
-                  <td class="px-5 py-3.5 text-right font-mono text-smoke-700">
+                  <td
+                    class="px-2 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                  >
                     {{ rate.credits }}
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p class="mt-auto px-5 py-3 text-2xs/relaxed text-primary-warm-gray">
+          <p class="mt-auto px-2 pt-6 text-xs/relaxed text-primary-warm-gray">
             {{ t('platform.pricing.storageNote', locale) }}
           </p>
         </article>
