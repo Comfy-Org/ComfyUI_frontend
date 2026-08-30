@@ -1,22 +1,20 @@
 <template>
-  <Button
-    v-tooltip.top="$t('manager.tryUpdateTooltip')"
-    variant="primary"
-    :size
-    :disabled="isUpdating"
-    @click="tryUpdate"
-  >
-    <DotSpinner
-      v-if="isUpdating"
-      duration="1s"
-      :size="size === 'sm' ? 12 : 16"
-    />
-    <i v-else class="icon-[lucide--refresh-cw]" />
-    <span>{{ isUpdating ? t('g.updating') : t('manager.tryUpdate') }}</span>
-  </Button>
+  <Tooltip :config="$t('manager.tryUpdateTooltip')" side="top">
+    <Button variant="primary" :size :disabled="isUpdating" @click="tryUpdate">
+      <DotSpinner
+        v-if="isUpdating"
+        duration="1s"
+        :size="size === 'sm' ? 12 : 16"
+      />
+      <i v-else class="icon-[lucide--refresh-cw]" />
+      <span>{{ isUpdating ? t('g.updating') : t('manager.tryUpdate') }}</span>
+    </Button>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

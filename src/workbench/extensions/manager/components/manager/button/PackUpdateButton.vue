@@ -1,22 +1,28 @@
 <template>
-  <Button
-    v-tooltip.top="
+  <Tooltip
+    :config="
       hasDisabledUpdatePacks ? $t('manager.disabledNodesWontUpdate') : null
     "
-    variant="primary"
-    :size
-    :disabled="isUpdating"
-    @click="updateAllPacks"
+    side="top"
   >
-    <DotSpinner v-if="isUpdating" duration="1s" />
-    <i v-else class="icon-[lucide--refresh-cw]" />
-    <span>{{
-      nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
-    }}</span>
-  </Button>
+    <Button
+      variant="primary"
+      :size
+      :disabled="isUpdating"
+      @click="updateAllPacks"
+    >
+      <DotSpinner v-if="isUpdating" duration="1s" />
+      <i v-else class="icon-[lucide--refresh-cw]" />
+      <span>{{
+        nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
+      }}</span>
+    </Button>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { ref } from 'vue'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
