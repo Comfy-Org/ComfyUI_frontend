@@ -47,6 +47,9 @@ function show(event: Event) {
   document.dispatchEvent(
     new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' })
   )
+  document.dispatchEvent(
+    new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' })
+  )
   void nextTick(() => {
     if (request !== showRequest.value) return
     showTimer.value = window.setTimeout(() => {
