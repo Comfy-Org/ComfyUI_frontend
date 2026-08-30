@@ -17,7 +17,7 @@ import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 
 type NodeRootAction = 'add' | 'update' | 'delete'
-type MutationsForTarget =
+export type MutationsForTarget =
   | GraphMutations
   | ((workflowId: string) => GraphMutations)
 

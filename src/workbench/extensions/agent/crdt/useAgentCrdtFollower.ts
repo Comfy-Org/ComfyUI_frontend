@@ -1,13 +1,13 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import type { GraphMutations } from '@/core/graph/graphMutations'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
+import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
@@ -84,7 +84,7 @@ export const apiTransport: DocFrameTransport = {
 
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
-  graphMutations: GraphMutations
+  graphMutations: MutationsForTarget
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
