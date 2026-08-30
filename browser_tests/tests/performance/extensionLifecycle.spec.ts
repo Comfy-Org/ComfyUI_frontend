@@ -4,6 +4,10 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { recordMeasurement } from '@e2e/fixtures/utils/perfReporter'
 
+const FRAME_COUNT = 120
+const REFRESH_INTERVAL = 30
+const EXPECTED_REFRESH_COUNT = Math.ceil(FRAME_COUNT / REFRESH_INTERVAL)
+
 test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
   test('clean extension combined draw lifecycle', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
@@ -106,7 +110,7 @@ test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
     })
 
     await comfyPage.perf.startMeasuring()
-    for (let frame = 0; frame < 120; frame++) {
+    for (let frame = 0; frame < FRAME_COUNT; frame++) {
       await comfyPage.page.evaluate(
         (dispatchRefresh) => {
           const app = window.app
@@ -116,7 +120,7 @@ test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
             app.canvas.canvas.dispatchEvent(new Event('extension-perf-refresh'))
           }
         },
-        frame % 30 === 0
+        frame % REFRESH_INTERVAL === 0
       )
       await comfyPage.nextFrame()
     }
@@ -148,7 +152,7 @@ test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
     expect(counters.labelMeasurements).toBeGreaterThan(0)
     expect(counters.rerouteFacadeReads).toBeGreaterThan(0)
     expect(counters.dirtyTimerTicks).toBeGreaterThan(0)
-    expect(counters.listenerCalls).toBe(4)
+    expect(counters.listenerCalls).toBe(EXPECTED_REFRESH_COUNT)
     expect(counters.restored).toBe(true)
   })
 
@@ -257,7 +261,7 @@ test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
     })
 
     await comfyPage.perf.startMeasuring()
-    for (let frame = 0; frame < 120; frame++) {
+    for (let frame = 0; frame < FRAME_COUNT; frame++) {
       await comfyPage.page.evaluate(
         (dispatchRefresh) => {
           const app = window.app
@@ -267,7 +271,7 @@ test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
             app.canvas.canvas.dispatchEvent(new Event('extension-perf-refresh'))
           }
         },
-        frame % 30 === 0
+        frame % REFRESH_INTERVAL === 0
       )
       await comfyPage.nextFrame()
     }
@@ -300,7 +304,7 @@ test.describe('Extension lifecycle performance', { tag: ['@perf'] }, () => {
     expect(counters.labelMeasurements).toBeGreaterThan(0)
     expect(counters.rerouteFacadeReads).toBeGreaterThan(0)
     expect(counters.dirtyTimerTicks).toBeGreaterThan(0)
-    expect(counters.listenerCalls).toBe(4)
+    expect(counters.listenerCalls).toBe(EXPECTED_REFRESH_COUNT)
     expect(counters.restored).toBe(true)
     expect(counters.wrapperDepth).toBe(0)
   })
