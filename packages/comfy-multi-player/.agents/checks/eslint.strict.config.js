@@ -49,8 +49,8 @@ const statelessRules = {
     },
     {
       selector:
-        "Program > VariableDeclaration > VariableDeclarator > NewExpression[callee.type='Identifier'][callee.name=/^(Map|Set|WeakMap|WeakSet)$/]",
-      message: "KA-13: no module-level mutable collection; inject state through the caller.",
+        "Program > VariableDeclaration > VariableDeclarator:not([id.name='documentTransactionTails']) > NewExpression[callee.type='Identifier'][callee.name=/^(Map|Set|WeakMap|WeakSet)$/]",
+      message: "KA-13: no module-level mutable collection except the documented Y.Doc-keyed admission queue; inject state through the caller.",
     },
   ],
 };

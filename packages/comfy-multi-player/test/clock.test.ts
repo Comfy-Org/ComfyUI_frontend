@@ -65,6 +65,21 @@ describe("creator-owned Lamport counter", () => {
     expect(await persistLamportTick(store, { workflow_id: "w", lineage_id: "l", producer_id: "agent:next" }, [])).toBe(3);
   });
 
+  it("shares serialization across independently constructed stores for one document", async () => {
+    const doc = mint({ nodes: [], links: [] }, catalog);
+    const stores = [new DocDerivedLamportClockStore(doc), new DocDerivedLamportClockStore(doc)];
+    const producers = [
+      { workflow_id: "w", lineage_id: "l", producer_id: "agent:one" },
+      { workflow_id: "w", lineage_id: "l", producer_id: "agent:two" },
+    ];
+
+    const counters = await Promise.all(stores.map((store, index) => persistLamportTick(store, producers[index]!, [])));
+
+    expect(counters).toEqual([1, 2]);
+    expect(observedDocCounter(doc)).toBe(2);
+    expect(doc.getMap("__stamps").size).toBe(2);
+  });
+
   it("fails closed when the document stamp ledger is malformed", async () => {
     const doc = mint({ nodes: [], links: [] }, catalog);
     doc.getMap<unknown>("__stamps").set("bad", [Number.NaN, "agent:bad", "c".repeat(32)]);

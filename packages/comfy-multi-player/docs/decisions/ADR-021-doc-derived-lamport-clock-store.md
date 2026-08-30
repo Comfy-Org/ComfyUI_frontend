@@ -23,12 +23,12 @@ caller Y.Doc / __stamps -> max observed counter -> producer tick -> op stamp
           (no package-owned counter or database)
 ```
 
-The store validates every ledger entry and fails closed on malformed counters. Calls submitted to
-the same store instance are serialized. After a successful callback and counter validation, the
-store writes a reserved clock row to `__stamps` before returning; this makes the advanced floor
+The store validates every ledger entry and fails closed on malformed counters. Calls submitted
+through any store wrapping the same `Y.Doc` are serialized by a document-scoped queue. After a
+successful callback and counter validation, the store writes a reserved clock row to `__stamps`
+before returning; this makes the advanced floor
 visible to the next transaction and durable in a Yjs snapshot. The row is not a semantic graph
-operation. Independently constructed stores wrapping one Y.Doc do not share this queue and are not
-a coordinated admission path. A caller that has not observed any authoritative stamp may require
+operation. A caller that has not observed any authoritative stamp may require
 a seed with `persistLamportTick(..., { requireSeed: true })`.
 
 ## Acceptance gate
@@ -44,7 +44,8 @@ and is not exported or used by the applier.
 
 - Restart/reconnect can reseed from committed document state without package-owned persistence.
 - DQ-11 remains load-bearing: old-incarnation stamps cannot compete with a new-incarnation write.
-- Calls that must share a counter sequence must use one store instance. A successful tick reserves
+- Calls wrapping the same document share a counter sequence even across separate store instances.
+  A successful tick reserves
   its counter in `__stamps` even before the semantic operation is applied; an unapplied operation
   remains a caller recovery concern.
 - Cross-document monotonicity is not promised. The floor is scoped to one document lineage.
@@ -76,5 +77,14 @@ The adversarial CLK-1 finding was fixed in comfy-multi-player commit
 The regression test exercises two concurrent `persistLamportTick` admissions through one
 `DocDerivedLamportClockStore`, verifies counters `1` and `2`, checks the two committed reservation
 rows and document floor, and verifies the next admission receives `3`. The shipped guarantee is
-limited to that shared-store admission boundary; it does not coordinate separately constructed
-stores.
+limited to the document-scoped admission boundary.
+
+## Amendment: CLK-2 document-scoped serialization
+
+The serialization boundary is keyed by `Y.Doc` identity in a module-level `WeakMap`, so separately
+constructed stores cannot bypass admission ordering for the same document. The two-instance
+regression test concurrently admits one tick through each store and verifies counters `1` and `2`,
+two reservation rows, and document floor `2`. Different documents remain independent. KA-13's
+static gate permits only the named `documentTransactionTails` weak registry; all other module-level
+mutable collections remain rejected. Weak keys keep the queue scoped to caller-owned document
+identity and do not create durable or cross-document package state.

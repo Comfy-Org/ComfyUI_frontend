@@ -19,6 +19,9 @@ export interface LamportClockStore {
   ): Promise<T>;
 }
 
+/** All stores wrapping one document share its admission serialization boundary. */
+const documentTransactionTails = new WeakMap<Y.Doc, Promise<void>>();
+
 /**
  * A caller-owned Lamport store whose floor is derived from this document's
  * winning stamp ledger on every transaction. The package keeps no producer
@@ -33,15 +36,13 @@ export interface LamportClockStore {
  * transaction observes it even before the producer's semantic op is applied.
  */
 export class DocDerivedLamportClockStore implements LamportClockStore {
-  private transactionTail: Promise<void> = Promise.resolve();
-
   public constructor(private readonly doc: Y.Doc) {}
 
   public async transaction<T>(
     identity: Omit<LamportProducerClock, "counter">,
     update: (stored: number | undefined) => Promise<{ counter: number; value: T }>,
   ): Promise<T> {
-    const transaction = this.transactionTail.then(async () => {
+    const transaction = (documentTransactionTails.get(this.doc) ?? Promise.resolve()).then(async () => {
       const floor = observedDocCounter(this.doc);
       const result = await update(floor);
       validateLamportCounter(result.counter);
@@ -51,7 +52,7 @@ export class DocDerivedLamportClockStore implements LamportClockStore {
       this.commitCounter(identity, result.counter);
       return result.value;
     });
-    this.transactionTail = transaction.then(() => undefined, () => undefined);
+    documentTransactionTails.set(this.doc, transaction.then(() => undefined, () => undefined));
     return transaction;
   }
 
