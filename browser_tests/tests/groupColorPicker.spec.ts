@@ -20,11 +20,11 @@ test.describe(
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       // The right-click Color menu on a group is only routed through the
-      // PrimeVue menu (useGroupContextMenu) when Vue Nodes is enabled;
+      // application menu (useGroupContextMenu) when Vue Nodes is enabled;
       // otherwise litegraph's own canvas-rendered context menu is used,
       // which nests "Color" under an "Edit Group" submenu instead of
       // exposing it as a top-level item, and never matches
-      // comfyPage.contextMenu.primeVueMenu ('.p-contextmenu, .p-menu').
+      // the application context menu.
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('groups/two_groups')
     })
@@ -80,7 +80,7 @@ test.describe(
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
 
       await comfyPage.page.getByText('Color', { exact: true }).click()
       const redSwatch = comfyPage.page.getByTitle('Red')
@@ -112,7 +112,7 @@ test.describe(
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
       await comfyPage.page.getByText('Color', { exact: true }).click()
       await expect(redSwatch.first()).toBeVisible()
 

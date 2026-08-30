@@ -83,7 +83,7 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
       { fixture: loadImageOutput, node: loadImageOutputNode }
     ]
 
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
 
     await test.step('hide local media for all linked core loaders', async () => {
       for (const { fixture } of imageLoaders) {
@@ -147,7 +147,7 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
 
       for (const actionName of imageActionNames) {
         await expect(
-          comfyPage.contextMenu.primeVueMenu.getByText(actionName, {
+          comfyPage.contextMenu.applicationMenu.getByText(actionName, {
             exact: true
           })
         ).toHaveCount(0)
@@ -164,7 +164,7 @@ test.describe('linked core media selectors', { tag: '@vue-nodes' }, () => {
 
       for (const actionName of imageActionNames) {
         await expect(
-          comfyPage.contextMenu.primeVueMenu.getByText(actionName, {
+          comfyPage.contextMenu.applicationMenu.getByText(actionName, {
             exact: true
           })
         ).toBeVisible()

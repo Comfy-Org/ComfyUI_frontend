@@ -170,7 +170,7 @@ test.describe('Node library sidebar', () => {
 
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
 
@@ -337,7 +337,7 @@ test.describe('Node library sidebar', () => {
     await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
     await comfyPage.nextFrame()
