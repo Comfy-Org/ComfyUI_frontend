@@ -543,6 +543,73 @@ describe('LGraphCanvas selectOnly', () => {
     expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
   })
 
+  it('a picking click does not select a group after the mode ends', () => {
+    const { canvas, graph } = createHarness()
+    const group = new LGraphGroup('Group')
+    group._bounding.set([600, 300, 100, 100])
+    graph.add(group)
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.selectOnly = true
+    const event = { canvasX: 610, canvasY: 310 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](event, undefined)
+    canvas.selectOnly = false
+    canvas.pointer.onClick?.(event)
+
+    expect(canvas.selectedItems.has(group)).toBe(false)
+    expect(group.selected).toBeFalsy()
+  })
+
+  it('a picking classic marquee does not select a group after the mode ends', () => {
+    const { canvas, graph } = createHarness()
+    const group = new LGraphGroup('Group')
+    group._bounding.set([600, 300, 100, 100])
+    graph.add(group)
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.selectOnly = true
+    const press = { canvasX: 590, canvasY: 290 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](press, undefined)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+    canvas.dragging_rectangle![2] = 120
+    canvas.dragging_rectangle![3] = 120
+    canvas.selectOnly = false
+    canvas.pointer.onDragEnd?.({
+      canvasX: 710,
+      canvasY: 410,
+      shiftKey: false,
+      altKey: false
+    } as CanvasPointerEvent)
+
+    expect(canvas.selectedItems.has(group)).toBe(false)
+    expect(group.selected).toBeFalsy()
+  })
+
+  it('a picking live marquee does not select a group after the mode ends', () => {
+    const { canvas, graph } = createHarness()
+    const group = new LGraphGroup('Group')
+    group._bounding.set([600, 300, 100, 100])
+    graph.add(group)
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.liveSelection = true
+    canvas.selectOnly = true
+    const press = { canvasX: 590, canvasY: 290 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](press, undefined)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+    canvas.selectOnly = false
+    canvas.pointer.onDrag?.({
+      canvasX: 710,
+      canvasY: 410,
+      shiftKey: false,
+      altKey: false
+    } as CanvasPointerEvent)
+    canvas.pointer.onDragEnd?.({} as CanvasPointerEvent)
+
+    expect(canvas.selectedItems.has(group)).toBe(false)
+    expect(group.selected).toBeFalsy()
+  })
+
   it('live-selects additively through the full gesture without churning', () => {
     const { canvas, graph, firstNode, secondNode } = createHarness()
     LiteGraph.leftMouseClickBehavior = 'select'

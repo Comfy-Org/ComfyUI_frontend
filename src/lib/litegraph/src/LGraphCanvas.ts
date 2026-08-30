@@ -4551,7 +4551,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
     for (const item of desired) {
       if (!this.selectedItems.has(item)) {
-        this.select(item)
+        this.select(item, pickingMode)
         // Count only a select that actually landed: select() refuses some
         // items (groups while picking), and re-marking them every
         // pointermove churned onSelectionChange + setDirty.
@@ -4597,7 +4597,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (e.shiftKey) {
       // Add to selection
-      for (const item of itemsInRect) this.select(item)
+      for (const item of itemsInRect) this.select(item, pickingMode)
     } else if (e.altKey) {
       // Remove from selection
       for (const item of itemsInRect) this.deselect(item)
@@ -4605,13 +4605,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Picking is additive: a marquee that misses an already-picked node
       // must not unpick it, so the replace branch is never taken for a
       // gesture that started in the mode (snapshot, not the live flag).
-      for (const item of itemsInRect) this.select(item)
+      for (const item of itemsInRect) this.select(item, pickingMode)
     } else {
       // Replace selection
       for (const item of selectedItems.values()) {
         if (!itemsInRect.has(item)) this.deselect(item)
       }
-      for (const item of itemsInRect) this.select(item)
+      for (const item of itemsInRect) this.select(item, pickingMode)
     }
 
     this.onSelectionChange?.(this.selected_nodes)
@@ -4645,7 +4645,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!eitherModifier || this.multi_select) this.deselectAll()
     } else if (!item.selected || !this.selectedItems.has(item)) {
       if (!modifySelection) this.deselectAll(item)
-      this.select(item)
+      this.select(item, picking)
     } else if (modifySelection && !sticky) {
       // Modifier-click toggles only the clicked item, not its children.
       // Cascade on select is a convenience; cascade on deselect would
@@ -4670,11 +4670,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /**
    * Selects a {@link Positionable} item.
    * @param item The canvas item to add to the selection.
+   * @param selectOnly Whether to restrict the selection to nodes.
    */
   select<TPositionable extends Positionable = LGraphNode>(
-    item: TPositionable
+    item: TPositionable,
+    selectOnly: boolean = this.selectOnly
   ): void {
-    if (this.selectOnly && !(item instanceof LGraphNode)) return
+    if (selectOnly && !(item instanceof LGraphNode)) return
     if (item.selected && this.selectedItems.has(item)) return
 
     item.selected = true
