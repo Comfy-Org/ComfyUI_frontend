@@ -107,12 +107,12 @@
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
-        size="icon"
-        class="shrink-0 text-base-foreground"
+        size="unset"
+        class="size-8 shrink-0 rounded-lg p-2 text-base-foreground"
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i class="icon-[lucide--message-square-text]" />
+        <i class="icon-[hugeicons--megaphone-03] size-4" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />

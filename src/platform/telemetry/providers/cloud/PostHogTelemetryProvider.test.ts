@@ -87,6 +87,15 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
 })
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
+import type {
+  AgentEntryButtonClickedMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentMessageSentMetadata,
+  AgentNodeTaggedMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentWorkflowAppliedMetadata
+} from '@/platform/telemetry/types'
 
 function createProvider(
   config: Partial<typeof window.__CONFIG__> = {}
@@ -100,6 +109,8 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
+    // A developer's real .env token must never leak into these tests.
+    vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', '')
     hoisted.refs.remoteConfig.value = null
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
@@ -117,6 +128,52 @@ describe('PostHogTelemetryProvider', () => {
       provider.trackSignupOpened()
 
       expect(hoisted.mockCapture).not.toHaveBeenCalled()
+    })
+
+    it('prefers the server-injected token over the env token', async () => {
+      vi.stubEnv('DEV', true)
+      vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', 'phc_env_token')
+
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.any(Object)
+      )
+    })
+
+    it('falls back to the env token in dev builds', async () => {
+      vi.stubEnv('DEV', true)
+      vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', 'phc_env_token')
+
+      createProvider({ posthog_project_token: undefined })
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_env_token',
+        expect.any(Object)
+      )
+    })
+
+    it('ignores the env token outside dev builds', async () => {
+      vi.stubEnv('DEV', false)
+      vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', 'phc_env_token')
+
+      createProvider({ posthog_project_token: undefined })
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).not.toHaveBeenCalled()
+    })
+
+    it('disables PostHog on an empty injected token instead of falling back', async () => {
+      vi.stubEnv('DEV', true)
+      vi.stubEnv('VITE_POSTHOG_PROJECT_TOKEN', 'phc_env_token')
+
+      createProvider({ posthog_project_token: '' })
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).not.toHaveBeenCalled()
     })
 
     it('calls posthog.init with the token and default config', async () => {
@@ -152,6 +209,29 @@ describe('PostHogTelemetryProvider', () => {
           debug: true,
           api_host: 'https://custom.host.com'
         })
+      )
+    })
+
+    it("lets the server's person_profiles win over the client default", async () => {
+      hoisted.refs.remoteConfig.value = {
+        posthog_config: { person_profiles: 'always' }
+      }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'always' })
+      )
+    })
+
+    it('defaults person_profiles to identified_only when the server omits it', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'identified_only' })
       )
     })
 
@@ -1242,12 +1322,11 @@ describe('PostHogTelemetryProvider', () => {
       expect(result.$set_once).toHaveProperty('plan', 'free')
     })
 
-    it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
+    it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {
       const remoteBefore_send = vi.fn()
       hoisted.refs.remoteConfig.value = {
         posthog_config: {
-          before_send: remoteBefore_send,
-          person_profiles: 'always'
+          before_send: remoteBefore_send
         }
       }
 
@@ -1257,7 +1336,128 @@ describe('PostHogTelemetryProvider', () => {
       const initConfig = hoisted.mockInit.mock.calls[0][1]
 
       expect(initConfig.before_send).not.toBe(remoteBefore_send)
-      expect(initConfig.person_profiles).toBe('identified_only')
+
+      const piiEvent = {
+        properties: { email: 'user@example.com', workflow_name: 'wf' },
+        $set: { email: 'user@example.com' },
+        $set_once: { user_email: 'user@example.com', plan: 'free' }
+      }
+      const sent = initConfig.before_send(piiEvent)
+
+      expect(sent.properties).not.toHaveProperty('email')
+      expect(sent.properties).toHaveProperty('workflow_name', 'wf')
+      expect(sent.$set).not.toHaveProperty('email')
+      expect(sent.$set_once).not.toHaveProperty('user_email')
+      expect(sent.$set_once).toHaveProperty('plan', 'free')
     })
+  })
+
+  describe('agent event names', () => {
+    const cases: Array<{
+      eventName: string
+      expected: Record<string, unknown>
+      invoke: (provider: PostHogTelemetryProvider) => void
+    }> = [
+      {
+        eventName: 'app:agent_message_feedback',
+        expected: {
+          message_id: 'm1',
+          vote: 'up',
+          workflow_id: null
+        } satisfies AgentMessageFeedbackMetadata,
+        invoke: (provider) =>
+          provider.trackAgentMessageFeedback({
+            message_id: 'm1',
+            vote: 'up',
+            workflow_id: null
+          })
+      },
+      {
+        eventName: 'app:agent_panel_opened',
+        expected: {
+          source: 'topbar_button'
+        } satisfies AgentPanelOpenedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentPanelOpened({ source: 'topbar_button' })
+      },
+      {
+        eventName: 'app:agent_panel_closed',
+        expected: {
+          source: 'close_button',
+          open_duration_ms: 1200
+        } satisfies AgentPanelClosedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentPanelClosed({
+            source: 'close_button',
+            open_duration_ms: 1200
+          })
+      },
+      {
+        eventName: 'app:agent_entry_button_clicked',
+        expected: {
+          resulting_state: 'opened'
+        } satisfies AgentEntryButtonClickedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentEntryButtonClicked({ resulting_state: 'opened' })
+      },
+      {
+        eventName: 'app:agent_close_button_clicked',
+        expected: {},
+        invoke: (provider) => provider.trackAgentCloseButtonClicked()
+      },
+      {
+        eventName: 'app:agent_message_sent',
+        expected: {
+          attachment_count: 1,
+          node_tag_count: 2
+        } satisfies AgentMessageSentMetadata,
+        invoke: (provider) =>
+          provider.trackAgentMessageSent({
+            attachment_count: 1,
+            node_tag_count: 2
+          })
+      },
+      {
+        eventName: 'app:agent_node_tagged',
+        expected: {
+          source: 'mention_picker'
+        } satisfies AgentNodeTaggedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentNodeTagged({ source: 'mention_picker' })
+      },
+      {
+        eventName: 'app:agent_attach_button_clicked',
+        expected: {},
+        invoke: (provider) => provider.trackAgentAttachButtonClicked()
+      },
+      {
+        eventName: 'app:agent_workflow_applied',
+        expected: {
+          workflow_id: 'w1',
+          target: 'new_tab'
+        } satisfies AgentWorkflowAppliedMetadata,
+        invoke: (provider) =>
+          provider.trackAgentWorkflowApplied({
+            workflow_id: 'w1',
+            target: 'new_tab'
+          })
+      }
+    ]
+
+    it.for(cases)(
+      '$eventName is captured exactly once with its payload',
+      async ({ eventName, expected, invoke }) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+
+        invoke(provider)
+
+        const calls = hoisted.mockCapture.mock.calls.filter(
+          ([capturedName]) => capturedName === eventName
+        )
+        expect(calls).toHaveLength(1)
+        expect(calls[0]).toEqual([eventName, expected])
+      }
+    )
   })
 })

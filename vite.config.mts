@@ -3,9 +3,6 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { execSync } from 'child_process'
 import { config as dotenvConfig } from 'dotenv'
-import type { IncomingMessage, ServerResponse } from 'http'
-import { Readable } from 'stream'
-import type { ReadableStream as NodeReadableStream } from 'stream/web'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
@@ -18,6 +15,7 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+import { handleGcsRedirect } from './build/plugins/gcsRedirect.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 
 dotenvConfig()
@@ -175,71 +173,6 @@ const DEV_SERVER_COMFYUI_URL =
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
-
-function handleGcsRedirect(
-  proxyRes: IncomingMessage,
-  req: IncomingMessage,
-  res: ServerResponse
-) {
-  const location = proxyRes.headers.location
-  const isGcsRedirect =
-    proxyRes.statusCode === 302 &&
-    location?.includes('storage.googleapis.com') &&
-    proxyRes.headers.via?.includes('google')
-
-  // Not a GCS redirect - pass through normally
-  if (!isGcsRedirect || !location) {
-    Object.keys(proxyRes.headers).forEach((key) => {
-      const value = proxyRes.headers[key]
-      if (value !== undefined) {
-        res.setHeader(key, value)
-      }
-    })
-    res.writeHead(proxyRes.statusCode || 200)
-    proxyRes.pipe(res)
-    return
-  }
-
-  // GCS redirect detected - fetch server-side to avoid CORS. Range headers
-  // are forwarded and the partial-content response relayed so ranged reads
-  // behave like production, where the browser talks to GCS directly.
-  const rangeHeader = req.headers.range
-  fetch(location, rangeHeader ? { headers: { range: rangeHeader } } : undefined)
-    .then(async (gcsResponse) => {
-      if (!gcsResponse.body) {
-        res.statusCode = 500
-        res.end('Empty response from GCS')
-        return
-      }
-
-      // Set response headers from GCS
-      res.statusCode = gcsResponse.status
-      res.setHeader(
-        'Content-Type',
-        gcsResponse.headers.get('content-type') || 'application/octet-stream'
-      )
-
-      for (const header of [
-        'content-length',
-        'content-range',
-        'accept-ranges'
-      ]) {
-        const value = gcsResponse.headers.get(header)
-        if (value) {
-          res.setHeader(header, value)
-        }
-      }
-
-      // Convert Web ReadableStream to Node.js stream and pipe to client
-      const readable = Readable.fromWeb(gcsResponse.body as NodeReadableStream)
-      readable.pipe(res)
-    })
-    .catch((error) => {
-      console.error('Error fetching from GCS:', error)
-      res.statusCode = 500
-      res.end('Error fetching media')
-    })
-}
 
 const gcsRedirectProxyConfig: ProxyOptions = {
   target: DEV_SERVER_COMFYUI_URL,
@@ -800,7 +733,8 @@ export default defineConfig({
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       provider: 'v8',
