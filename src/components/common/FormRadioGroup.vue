@@ -1,41 +1,49 @@
 <template>
-  <div class="flex flex-row gap-4">
+  <RadioGroup
+    v-model="selectedValue"
+    :name="id"
+    orientation="horizontal"
+    class="flex-row gap-4"
+  >
     <div
       v-for="option in normalizedOptions"
       :key="option.value"
       class="flex items-center"
     >
-      <RadioButton
-        :input-id="`${id}-${option.value}`"
-        :name="id"
-        :value="option.value"
-        :model-value="modelValue"
+      <RadioGroupItem
+        :id="`${id}-${option.value}`"
+        :value="String(option.value)"
         :aria-describedby="`${option.text}-label`"
-        @update:model-value="$emit('update:modelValue', $event)"
       />
-      <label :for="`${id}-${option.value}`" class="ml-2 cursor-pointer">
+      <label
+        :id="`${option.text}-label`"
+        :for="`${id}-${option.value}`"
+        class="ml-2 cursor-pointer"
+      >
         {{ option.text }}
       </label>
     </div>
-  </div>
+  </RadioGroup>
 </template>
 
-<script setup lang="ts" generic="T extends string | number | boolean | null">
-import RadioButton from 'primevue/radiobutton'
+<script setup lang="ts">
 import { computed } from 'vue'
 
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { SettingOption } from '@/platform/settings/types'
 
+type RadioValue = string | number | null
+
 const props = defineProps<{
-  modelValue: T
+  modelValue: RadioValue
   options?: (string | SettingOption | Record<string, string>)[]
   optionLabel?: string
   optionValue?: string
   id?: string
 }>()
 
-defineEmits<{
-  'update:modelValue': [value: T]
+const emit = defineEmits<{
+  'update:modelValue': [value: RadioValue]
 }>()
 
 const normalizedOptions = computed<SettingOption[]>(() => {
@@ -58,5 +66,15 @@ const normalizedOptions = computed<SettingOption[]>(() => {
       value: option[props.optionValue || 'value']
     }
   })
+})
+
+const selectedValue = computed({
+  get: () => (props.modelValue === null ? undefined : String(props.modelValue)),
+  set: (value: string) => {
+    const option = normalizedOptions.value.find(
+      (option) => String(option.value) === value
+    )
+    if (option) emit('update:modelValue', option.value ?? option.text)
+  }
 })
 </script>
