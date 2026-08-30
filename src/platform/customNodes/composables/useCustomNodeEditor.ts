@@ -143,6 +143,8 @@ interface CreateCustomNodeEditorSession {
   mode: CustomNodeEditorMode
   name: string
   revisionId?: string
+  /** Seeds the workspace with a named pass-through node. */
+  nodeName?: string
 }
 
 const toSession = (
@@ -270,7 +272,8 @@ export function useCustomNodeEditor() {
   const createSession = async ({
     mode,
     name,
-    revisionId
+    revisionId,
+    nodeName
   }: CreateCustomNodeEditorSession): Promise<CustomNodeEditorSession> =>
     readSession(
       await api.fetchApi('/customnodes/editor/sessions', {
@@ -279,7 +282,8 @@ export function useCustomNodeEditor() {
         body: JSON.stringify({
           mode,
           name: name.trim(),
-          ...(revisionId ? { revision_id: revisionId } : {})
+          ...(revisionId ? { revision_id: revisionId } : {}),
+          ...(nodeName?.trim() ? { node_name: nodeName.trim() } : {})
         })
       })
     )

@@ -531,6 +531,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import {
   computed,
   nextTick,
+  onMounted,
   onUnmounted,
   ref,
   shallowRef,
@@ -561,10 +562,12 @@ import {
 import CustomNodeCodeEditor from './CustomNodeCodeEditor.vue'
 import CustomNodeTreeEditor from './CustomNodeTreeEditor.vue'
 
-const { sessionId, agentEnabled, packName } = defineProps<{
+const { sessionId, agentEnabled, packName, initialPrompt } = defineProps<{
   sessionId: string
   agentEnabled: boolean
   packName: string
+  /** Sent as the agent's first instruction once the editor is open. */
+  initialPrompt?: string
 }>()
 const agentOpen = defineModel<boolean>('agentOpen', { default: true })
 const explorerOpen = defineModel<boolean>('explorerOpen', { default: true })
@@ -979,6 +982,15 @@ watch(editorStateKey, (key) => {
 
 watch(agentOpen, (isOpen) => {
   updateCustomNodeEditorState(editorStateKey.value, { agentOpen: isOpen })
+})
+
+// A first instruction from the create dialog starts the agent immediately;
+// with no prompt the editor simply opens on the new node's file.
+onMounted(() => {
+  const seed = initialPrompt?.trim()
+  if (!seed || !agentEnabled) return
+  instruction.value = seed
+  void askAgent()
 })
 
 onUnmounted(() => {

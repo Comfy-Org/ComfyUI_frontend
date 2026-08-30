@@ -14,12 +14,18 @@ export function useCustomNodeEditorDialog() {
 
   const show = (
     session: CustomNodeEditorSession,
-    onSubmitted: () => void | Promise<void>
+    onSubmitted: () => void | Promise<void>,
+    options: { initialPrompt?: string } = {}
   ) => {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: CustomNodeEditorDialog,
-      props: { initialSession: session, onClose: hide, onSubmitted },
+      props: {
+        initialSession: session,
+        onClose: hide,
+        onSubmitted,
+        initialPrompt: options.initialPrompt
+      },
       dialogComponentProps: {
         renderer: 'reka',
         headless: true,

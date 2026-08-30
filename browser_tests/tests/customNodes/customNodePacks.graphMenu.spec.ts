@@ -94,6 +94,11 @@ test.describe('Custom node graph menu', { tag: ['@cloud', '@ui'] }, () => {
 
     await createItem.click()
 
+    await page
+      .getByTestId('custom-node-create-dialog')
+      .getByRole('button', { name: 'Create', exact: true })
+      .click()
+
     await expect(page.getByTestId('custom-node-workbench')).toBeVisible()
   })
 
@@ -118,6 +123,11 @@ test.describe('Custom node graph menu', { tag: ['@cloud', '@ui'] }, () => {
     ).toBeVisible()
     await expect(page.getByText('In Alpha Pack', { exact: true })).toBeVisible()
     await page.getByText('In Beta Pack', { exact: true }).click()
+
+    await page
+      .getByTestId('custom-node-create-dialog')
+      .getByRole('button', { name: 'Create', exact: true })
+      .click()
 
     await expect(page.getByTestId('custom-node-workbench')).toBeVisible()
   })

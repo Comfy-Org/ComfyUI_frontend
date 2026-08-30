@@ -10,6 +10,7 @@ import { useCustomNodeEditor } from './composables/useCustomNodeEditor'
 import { useCustomNodeEditorDialog } from './composables/useCustomNodeEditorDialog'
 import type { UploadedNodePack } from './composables/useCustomNodePacks'
 import { useCustomNodePacks } from './composables/useCustomNodePacks'
+import { useCustomNodeCreateFlow } from './composables/useCustomNodeCreateFlow'
 import { findOwnedPackForModule } from './utils/packIdentity'
 
 let isStartingEditor = false
@@ -39,20 +40,12 @@ async function openEditorSession(
   }
 }
 
-function availableStarterName(packs: readonly UploadedNodePack[]): string {
-  const baseName = t('customNodePacks.editor.starterName')
-  const existingNames = new Set(packs.map((pack) => pack.name))
-  if (!existingNames.has(baseName)) return baseName
-  for (let suffix = 2; ; suffix += 1) {
-    const candidate = `${baseName} ${suffix}`
-    if (!existingNames.has(candidate)) return candidate
-  }
+async function createNodeInNewPack() {
+  await useCustomNodeCreateFlow().startCreateFlow()
 }
 
-async function createNodeInNewPack() {
-  const { packs, refresh } = useCustomNodePacks()
-  await refresh().catch(() => undefined)
-  await openEditorSession('create', availableStarterName(packs.value))
+async function createNodeInPack(pack: UploadedNodePack) {
+  await useCustomNodeCreateFlow().startCreateFlow(pack)
 }
 
 /** Menu builders exported for tests; menus must be assembled synchronously. */
@@ -90,7 +83,7 @@ export function customNodeCanvasMenuItems(): IContextMenuValue[] {
                 name: pack.name
               }),
               callback: () => {
-                void openEditorSession('edit', pack.name, pack.revisionId)
+                void createNodeInPack(pack)
               }
             })
           )

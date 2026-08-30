@@ -120,6 +120,10 @@ test.describe(
           .getByRole('button', { name: 'Custom Nodes', exact: true })
           .click()
         await page.getByRole('button', { name: 'Create', exact: true }).click()
+        await page
+          .getByTestId('custom-node-create-dialog')
+          .getByRole('button', { name: 'Create', exact: true })
+          .click()
         await expect(page.getByTestId('custom-node-workbench')).toBeVisible()
         expect(sessionId).toBeTruthy()
 

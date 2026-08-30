@@ -69,6 +69,10 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
       .getByRole('button', { name: 'Custom Nodes', exact: true })
       .click()
     await page.getByRole('button', { name: 'Create', exact: true }).click()
+    await page
+      .getByTestId('custom-node-create-dialog')
+      .getByRole('button', { name: 'Create', exact: true })
+      .click()
     await expect(page.getByTestId('custom-node-workbench')).toBeVisible()
     await expect(page.getByTestId('node-agent-start')).toContainText(
       'I can build new nodes, change behavior, answer questions about this pack, and test and debug your changes.'

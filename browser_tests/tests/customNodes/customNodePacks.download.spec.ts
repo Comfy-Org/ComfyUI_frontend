@@ -67,7 +67,9 @@ test.describe('Custom node packs', { tag: ['@cloud', '@ui'] }, () => {
     ).toBeVisible()
     const pack = page.getByRole('listitem').filter({ hasText: 'Echo Pack' })
     await expect(pack.getByText('Echo Pack', { exact: true })).toBeVisible()
-    const downloadButton = pack.getByRole('button', {
+    // Row actions live in the pack's overflow menu.
+    await pack.getByRole('button', { name: 'Actions for Echo Pack' }).click()
+    const downloadButton = page.getByRole('menuitem', {
       name: 'Download',
       exact: true
     })

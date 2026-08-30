@@ -3,7 +3,6 @@
     "customNodes": "Custom Nodes",
     "title": "Custom node packs",
     "description": "Create, edit, download, or upload a private V2 custom node pack (.zip) for this workspace. Its nodes appear in the node library and run in an isolated process when used.",
-    "create": "Create",
     "edit": "Edit",
     "download": "Download",
     "downloadFailed": "Download failed",
@@ -125,6 +124,27 @@
       "editNode": "Edit Node",
       "inNewPack": "In a new pack…",
       "inPack": "In {name}"
+    },
+    "createNode": "Create node",
+    "packActions": "Actions for {name}",
+    "create": "Create",
+    "createDialog": {
+      "title": "Create a custom node",
+      "titleExisting": "Add a node to this pack",
+      "packName": "Pack name",
+      "nodeName": "Node name",
+      "addingTo": "Adding a node to {name}.",
+      "promptLabel": "What should this node do? (optional)",
+      "promptPlaceholder": "For example: blur the image by an adjustable radius",
+      "promptHint": "Leave empty to start from an image pass-through node you can edit yourself.",
+      "confirm": "Create",
+      "packRequired": "Enter a pack name.",
+      "nodeRequired": "Enter a node name.",
+      "invalidName": "Use 1-80 letters, numbers, spaces, dots, dashes, underscores, or parentheses, starting with a letter or number.",
+      "packTaken": "You already have a pack with this name.",
+      "defaultPackName": "New Node Pack",
+      "defaultNodeName": "New Node",
+      "nodeTaken": "This pack already has a node with this name."
     }
   },
   "g": {

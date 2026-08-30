@@ -169,6 +169,7 @@
         :session-id="session.id"
         :agent-enabled="session.agentEnabled"
         :pack-name="session.name"
+        :initial-prompt="props.initialPrompt"
       />
 
       <iframe
@@ -244,6 +245,8 @@ const props = defineProps<{
   initialSession: CustomNodeEditorSession
   onClose: () => void
   onSubmitted: () => void | Promise<void>
+  /** Sent as the Node Agent's first instruction when the editor opens. */
+  initialPrompt?: string
 }>()
 
 const { t } = useI18n()

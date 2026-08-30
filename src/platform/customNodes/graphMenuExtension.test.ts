@@ -4,6 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
+  startCreateFlow: vi.fn(),
   fromLGraphNode: vi.fn(),
   packs: {
     value: [] as { revisionId: string; name: string; uploadedAt: string }[]
@@ -37,6 +38,10 @@ vi.mock('./composables/useCustomNodeEditor', () => ({
   useCustomNodeEditor: () => ({ createSession: mocks.createSession })
 }))
 
+vi.mock('./composables/useCustomNodeCreateFlow', () => ({
+  useCustomNodeCreateFlow: () => ({ startCreateFlow: mocks.startCreateFlow })
+}))
+
 vi.mock('./composables/useCustomNodeEditorDialog', () => ({
   useCustomNodeEditorDialog: () => ({ show: mocks.show })
 }))
@@ -61,6 +66,7 @@ describe('customNodeCanvasMenuItems', () => {
     mocks.refresh.mockReset().mockResolvedValue(undefined)
     mocks.createSession.mockReset().mockResolvedValue({ id: 'session-1' })
     mocks.show.mockReset()
+    mocks.startCreateFlow.mockReset().mockResolvedValue(undefined)
     mocks.fromLGraphNode.mockReset()
   })
 
@@ -72,12 +78,7 @@ describe('customNodeCanvasMenuItems', () => {
 
     await (items[0].callback as () => void | Promise<void>)()
     await vi.waitFor(() => {
-      expect(mocks.createSession).toHaveBeenCalledWith({
-        mode: 'create',
-        name: 'customNodePacks.editor.starterName',
-        revisionId: undefined
-      })
-      expect(mocks.show).toHaveBeenCalled()
+      expect(mocks.startCreateFlow).toHaveBeenCalledWith()
     })
   })
 
@@ -101,10 +102,10 @@ describe('customNodeCanvasMenuItems', () => {
 
     options[1].callback()
     await vi.waitFor(() => {
-      expect(mocks.createSession).toHaveBeenCalledWith({
-        mode: 'edit',
+      expect(mocks.startCreateFlow).toHaveBeenCalledWith({
+        revisionId: 'alpha-x01234567',
         name: 'Alpha Pack',
-        revisionId: 'alpha-x01234567'
+        uploadedAt: ''
       })
     })
   })
@@ -118,6 +119,7 @@ describe('customNodeNodeMenuItems', () => {
     mocks.refresh.mockReset().mockResolvedValue(undefined)
     mocks.createSession.mockReset().mockResolvedValue({ id: 'session-1' })
     mocks.show.mockReset()
+    mocks.startCreateFlow.mockReset().mockResolvedValue(undefined)
     mocks.fromLGraphNode.mockReset()
   })
 

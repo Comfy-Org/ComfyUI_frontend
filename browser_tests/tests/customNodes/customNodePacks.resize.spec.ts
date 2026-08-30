@@ -104,6 +104,10 @@ test.describe(
         })
       await customNodesButton.click()
       await page.getByRole('button', { name: 'Create', exact: true }).click()
+      await page
+        .getByTestId('custom-node-create-dialog')
+        .getByRole('button', { name: 'Create', exact: true })
+        .click()
 
       const dialog = page.getByRole('dialog')
       const editorFrame = page.getByTitle('Custom node code editor')

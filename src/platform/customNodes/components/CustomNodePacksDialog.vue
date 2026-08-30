@@ -107,43 +107,42 @@
               pack.uploadedAt
             }}</span>
           </div>
-          <div class="flex shrink-0 flex-wrap items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              :disabled="isBusy"
-              @click="onEdit(pack)"
-            >
-              <i class="icon-[lucide--code-2] size-4" />
-              {{ $t('customNodePacks.edit') }}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              :loading="downloadingRevisionId === pack.revisionId"
-              :disabled="isBusy"
-              @click="onDownload(pack)"
-            >
-              <i class="icon-[lucide--download] size-4" />
-              {{ $t('customNodePacks.download') }}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              :disabled="isBusy"
-              @click="replacePack(pack.name)"
-            >
-              {{ $t('customNodePacks.replace') }}
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              :disabled="isBusy"
-              :aria-label="$t('customNodePacks.delete')"
-              @click="onDelete(pack.name)"
-            >
-              <i class="icon-[lucide--trash-2] size-4" />
-            </Button>
+          <div class="flex shrink-0 items-center gap-2">
+            <Popover>
+              <PopoverTrigger as-child>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  :disabled="isBusy"
+                  :aria-label="
+                    $t('customNodePacks.packActions', { name: pack.name })
+                  "
+                >
+                  <i class="icon-[lucide--ellipsis] size-4" />
+                </Button>
+              </PopoverTrigger>
+              <!-- Popovers portal to <body> at z-50, which the modal stack
+                   (z-1700 and up) paints over; lift this one above it. -->
+              <PopoverContent
+                align="end"
+                :side-offset="4"
+                class="z-1800 w-52 p-1"
+              >
+                <div class="flex flex-col" role="menu">
+                  <button
+                    v-for="action in packActions(pack)"
+                    :key="action.label"
+                    type="button"
+                    role="menuitem"
+                    class="flex cursor-pointer appearance-none items-center gap-2 rounded-md border-none bg-transparent px-2 py-1.5 text-left font-inter text-sm text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+                    @click="action.run()"
+                  >
+                    <i :class="action.icon" class="size-4 shrink-0" />
+                    {{ action.label }}
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </li>
       </ul>
@@ -152,11 +151,15 @@
 </template>
 
 <script setup lang="ts">
+import { PopoverTrigger } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { useCustomNodeEditor } from '@/platform/customNodes/composables/useCustomNodeEditor'
+import { useCustomNodeCreateFlow } from '@/platform/customNodes/composables/useCustomNodeCreateFlow'
 import { useCustomNodeEditorDialog } from '@/platform/customNodes/composables/useCustomNodeEditorDialog'
 import { useCustomNodePacks } from '@/platform/customNodes/composables/useCustomNodePacks'
 import type { UploadedNodePack } from '@/platform/customNodes/composables/useCustomNodePacks'
@@ -168,6 +171,7 @@ const { onClose } = defineProps<{ onClose?: () => void }>()
 const { t } = useI18n()
 const toast = useToastStore()
 const editorDialog = useCustomNodeEditorDialog()
+const { startCreateFlow } = useCustomNodeCreateFlow()
 const { createSession } = useCustomNodeEditor()
 const {
   packs,
@@ -237,38 +241,43 @@ const openEditor = async (
   }
 }
 
-function getAvailableStarterName(): string {
-  const baseName = t('customNodePacks.editor.starterName')
-  const existingNames = new Set(packs.value.map((pack) => pack.name))
-  if (!existingNames.has(baseName)) return baseName
-
-  for (let suffix = 2; ; suffix += 1) {
-    const candidate = `${baseName} ${suffix}`
-    if (!existingNames.has(candidate)) return candidate
-  }
-}
-
 const onCreate = async () => {
   isStartingEditor.value = true
   try {
-    await refresh()
-    const session = await createSession({
-      mode: 'create',
-      name: getAvailableStarterName()
-    })
-    editorDialog.show(session, refresh)
-  } catch (error) {
-    reportError(error, { errorType: 'custom_node_editor_start_failed' })
-    toast.add({
-      severity: 'error',
-      summary: t('customNodePacks.editor.openFailed'),
-      detail: error instanceof Error ? error.message : String(error),
-      life: 8000
-    })
+    await startCreateFlow()
   } finally {
     isStartingEditor.value = false
   }
 }
+
+/** Row actions, shown in the pack's overflow menu. */
+const packActions = (pack: UploadedNodePack) => [
+  {
+    label: t('customNodePacks.createNode'),
+    icon: 'icon-[lucide--file-plus-2]',
+    run: () => void startCreateFlow(pack)
+  },
+  {
+    label: t('customNodePacks.edit'),
+    icon: 'icon-[lucide--code-2]',
+    run: () => void onEdit(pack)
+  },
+  {
+    label: t('customNodePacks.download'),
+    icon: 'icon-[lucide--download]',
+    run: () => void onDownload(pack)
+  },
+  {
+    label: t('customNodePacks.replace'),
+    icon: 'icon-[lucide--upload]',
+    run: () => replacePack(pack.name)
+  },
+  {
+    label: t('customNodePacks.delete'),
+    icon: 'icon-[lucide--trash-2]',
+    run: () => void onDelete(pack.name)
+  }
+]
 
 const onEdit = async (pack: UploadedNodePack) => {
   await openEditor('edit', pack.name, pack.revisionId)

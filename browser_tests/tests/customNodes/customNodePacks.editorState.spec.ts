@@ -90,6 +90,10 @@ async function openCustomNodeEditor(page: Page, comfyPage: ComfyPage) {
     page.getByRole('heading', { name: 'Custom node packs', exact: true })
   ).toBeVisible()
   await page.getByRole('button', { name: 'Create', exact: true }).click()
+  await page
+    .getByTestId('custom-node-create-dialog')
+    .getByRole('button', { name: 'Create', exact: true })
+    .click()
   await expect(page.getByTestId('custom-node-workbench')).toBeVisible()
 }
 

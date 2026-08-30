@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 import CustomNodePacksDialog from './CustomNodePacksDialog.vue'
 
 const mocks = vi.hoisted(() => ({
+  startCreateFlow: vi.fn(),
   createSession: vi.fn(),
   showEditor: vi.fn(),
   refresh: vi.fn(),
@@ -42,6 +43,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 vi.mock('@/platform/customNodes/composables/useCustomNodeEditor', () => ({
   useCustomNodeEditor: () => ({ createSession: mocks.createSession })
 }))
+vi.mock('@/platform/customNodes/composables/useCustomNodeCreateFlow', () => ({
+  useCustomNodeCreateFlow: () => ({ startCreateFlow: mocks.startCreateFlow })
+}))
+
 vi.mock('@/platform/customNodes/composables/useCustomNodeEditorDialog', () => ({
   useCustomNodeEditorDialog: () => ({ show: mocks.showEditor })
 }))
@@ -68,6 +73,8 @@ const i18n = createI18n({
         title: 'Custom node packs',
         description: 'Manage custom nodes',
         create: 'Create',
+        createNode: 'Create node',
+        packActions: 'Actions for {name}',
         edit: 'Edit',
         download: 'Download',
         downloadFailed: 'Download failed',
@@ -103,6 +110,13 @@ const readySession = {
   updatedAt: '2026-08-28T12:00:00Z'
 }
 
+/** Row actions live behind the pack's overflow menu. */
+async function openPackMenu() {
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Actions for Echo Pack' })
+  )
+}
+
 describe('CustomNodePacksDialog', () => {
   beforeEach(() => {
     mocks.createSession.mockReset()
@@ -123,49 +137,23 @@ describe('CustomNodePacksDialog', () => {
     ]
   })
 
-  it('opens a new custom node immediately from Create', async () => {
+  it('starts the shared create flow from Create', async () => {
     render(CustomNodePacksDialog, { global: { plugins: [i18n] } })
 
     await userEvent.click(screen.getByRole('button', { name: 'Create' }))
 
     await waitFor(() => {
-      expect(mocks.createSession).toHaveBeenCalledWith({
-        mode: 'create',
-        name: 'New Custom Node'
-      })
+      expect(mocks.startCreateFlow).toHaveBeenCalledWith()
     })
-    expect(mocks.showEditor).toHaveBeenCalledWith(readySession, mocks.refresh)
-  })
-
-  it('chooses an available default pack name', async () => {
-    mocks.packs.value = [
-      {
-        revisionId: 'checkerboard-1',
-        name: 'New Custom Node',
-        uploadedAt: '2026-08-28T12:00:00Z'
-      },
-      {
-        revisionId: 'checkerboard-2',
-        name: 'New Custom Node 2',
-        uploadedAt: '2026-08-28T12:00:00Z'
-      }
-    ]
-    render(CustomNodePacksDialog, { global: { plugins: [i18n] } })
-
-    await userEvent.click(screen.getByRole('button', { name: 'Create' }))
-
-    await waitFor(() => {
-      expect(mocks.createSession).toHaveBeenCalledWith({
-        mode: 'create',
-        name: 'New Custom Node 3'
-      })
-    })
+    // Naming and prompting belong to the flow, not this dialog.
+    expect(mocks.createSession).not.toHaveBeenCalled()
   })
 
   it('edits the exact revision selected from the pack list', async () => {
     render(CustomNodePacksDialog, { global: { plugins: [i18n] } })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    await openPackMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Edit' }))
 
     await waitFor(() => {
       expect(mocks.createSession).toHaveBeenCalledWith({
@@ -180,7 +168,8 @@ describe('CustomNodePacksDialog', () => {
   it('downloads the exact revision selected from the pack list', async () => {
     render(CustomNodePacksDialog, { global: { plugins: [i18n] } })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Download' }))
+    await openPackMenu()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Download' }))
 
     expect(mocks.downloadPack).toHaveBeenCalledWith({
       revisionId: 'echo-pack-x12345678',
