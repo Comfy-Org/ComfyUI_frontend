@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineProps<{
@@ -14,8 +16,8 @@ defineProps<{
       cn('flex gap-2', singleline ? 'items-center justify-between' : 'flex-col')
     "
   >
-    <span
-      v-tooltip.left="
+    <Tooltip
+      :config="
         tooltip
           ? {
               value: tooltip,
@@ -23,21 +25,25 @@ defineProps<{
             }
           : null
       "
-      :class="
-        cn(
-          'group truncate text-sm text-muted-foreground',
-          tooltip ? 'cursor-help' : '',
-          singleline ? 'flex-1' : ''
-        )
-      "
+      side="left"
     >
-      {{ label }}
+      <span
+        :class="
+          cn(
+            'group truncate text-sm text-muted-foreground',
+            tooltip ? 'cursor-help' : '',
+            singleline ? 'flex-1' : ''
+          )
+        "
+      >
+        {{ label }}
 
-      <i
-        v-if="tooltip"
-        class="relative top-px ml-0.5 icon-[lucide--info] size-3 group-hover:text-primary"
-      />
-    </span>
+        <i
+          v-if="tooltip"
+          class="relative top-px ml-0.5 icon-[lucide--info] size-3 group-hover:text-primary"
+        />
+      </span>
+    </Tooltip>
     <slot />
   </div>
 </template>
