@@ -567,7 +567,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
 
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await expect(contextMenu).toBeVisible()
   })
 
@@ -579,7 +579,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Download')).toBeVisible()
@@ -593,7 +593,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Inspect asset')).toBeVisible()
@@ -607,7 +607,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Delete')).toBeVisible()
@@ -621,7 +621,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Copy job ID')).toBeVisible()
@@ -635,7 +635,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
 
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await expect(contextMenu).toBeVisible()
 
     await expect(
@@ -728,7 +728,7 @@ test.describe('Assets sidebar - context menu', () => {
     await expect(tab.selectionFooter).toBeVisible()
 
     // dispatchEvent avoids the selection footer intercepting a right click.
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await cards.first().dispatchEvent('contextmenu', {
       bubbles: true,
       cancelable: true,
@@ -1309,8 +1309,10 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
     await assetsTab.assetCards.nth(index).click({ button: 'right' })
 
-    await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
-    await comfyPage.contextMenu.primeVueMenu.getByText('Insert as node').click()
+    await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
+    await comfyPage.contextMenu.applicationMenu
+      .getByText('Insert as node')
+      .click()
 
     await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')

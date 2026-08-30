@@ -33,11 +33,10 @@ test.describe(
     }) => {
       await comfyPage.page.setViewportSize({ width: 1280, height: 900 })
       const menu = await openMoreOptionsMenu(comfyPage, 'KSampler')
-      const rootList = menu.locator(':scope > ul')
 
       await expect
-        .poll(() => rootList.evaluate((el) => getComputedStyle(el).overflowY))
-        .toBe('visible')
+        .poll(() => menu.evaluate((el) => el.scrollHeight <= el.clientHeight))
+        .toBe(true)
 
       await menu.getByRole('menuitem', { name: 'Shape' }).click()
       await expectShapePopoverVisible(comfyPage)

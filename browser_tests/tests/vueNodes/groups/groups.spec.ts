@@ -328,13 +328,13 @@ test.describe(
         button: 'right'
       })
 
-      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
       await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
       await expect(comfyPage.contextMenu.litegraphMenu).toBeHidden()
 
       // Group-only action confirms it is the group menu.
       await expect(
-        comfyPage.contextMenu.primeVueMenu.getByText('Fit Group To Nodes')
+        comfyPage.contextMenu.applicationMenu.getByText('Fit Group To Nodes')
       ).toBeVisible()
     })
   }
