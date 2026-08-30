@@ -179,11 +179,12 @@ describe('useAgentSession (v1 composition root)', () => {
       .mockResolvedValueOnce({ thread_id: 'th-9', message_id: 'msg-1' })
       .mockResolvedValueOnce({ thread_id: 'th-9', message_id: 'msg-2' })
     const rest = fakeRest({ postMessage })
-    const { source } = fakeEvents()
+    const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
 
     await session.sendMessage('first')
+    emit(doneIn('th-9', 'msg-1'))
     await session.sendMessage('second')
 
     expect(postMessage.mock.calls[0][0]).toBe('new')
@@ -212,7 +213,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(postMessage.mock.calls[1][0]).toBe('th-9')
   })
 
-  it('(b3) a stale stop() from a superseded session leaves the live turn untouched', async () => {
+  it('[08-T9 regression] a stale stop() from a superseded session leaves the live turn untouched', async () => {
     const rest = fakeRest()
     const conversation = useAgentConversationStore()
 
@@ -652,7 +653,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
-  it('(l2) switching threads keeps the turn streaming and re-attaches on return', async () => {
+  it('[08-T7 regression] same-text history cannot collapse the stashed live turn on return', async () => {
     const cancelMessage = vi.fn<
       (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
     >(async () => ({ status: 'cancelling' }))
@@ -679,6 +680,8 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.loadThread('th-1')
     expect(session.isStreaming.value).toBe(true)
     expect(session.entries.value.map((e) => e.role)).toEqual([
+      'user',
+      'assistant',
       'user',
       'assistant'
     ])
@@ -793,6 +796,8 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
     expect(session.entries.value.map((e) => e.role)).toEqual([
       'user',
+      'assistant',
+      'user',
       'assistant'
     ])
     const assistant = session.entries.value.at(-1)
@@ -863,6 +868,8 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(true)
     expect(session.entries.value.map((e) => e.role)).toEqual([
       'user',
+      'assistant',
+      'user',
       'assistant'
     ])
 
@@ -912,7 +919,7 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
   })
 
-  it('(l9) two backgrounded threads accumulate independently and resume live', async () => {
+  it('[08-T8 regression] two backgrounded threads with colliding turn ids route by thread and id', async () => {
     const postMessage = vi
       .fn<
         (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
@@ -1007,7 +1014,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(true)
   })
 
-  it('(l13) newChat during a pending thread load discards that load and keeps the stash', async () => {
+  it('[08-T1 regression] newChat during a pending accepted turn keeps its ack backgrounded', async () => {
     const resolvers: Array<(rows: AgentMessages) => void> = []
     const getMessages = vi.fn(
       (threadId: string): Promise<AgentMessages> =>
@@ -1112,7 +1119,7 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
   })
 
-  it('(l16) a malformed done for a background turn defers to server history on return', async () => {
+  it('(l16) a malformed done without thread identity cannot settle a background turn globally', async () => {
     const getMessages = vi.fn(
       async (threadId: string): Promise<AgentMessages> =>
         threadId === 'th-1'
@@ -1135,12 +1142,16 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(delta('msg-1', 'ated tail that never lands'))
 
     await session.loadThread('th-1')
-    expect(session.isStreaming.value).toBe(false)
+    expect(session.isStreaming.value).toBe(true)
     const assistant = session.entries.value.at(-1)
     expect(assistant?.role).toBe('assistant')
     if (assistant?.role === 'assistant')
       expect(assistant.parts).toEqual([
-        { type: 'text', text: 'server truth', state: 'done' }
+        {
+          type: 'text',
+          text: 'truncated tail that never lands',
+          state: 'streaming'
+        }
       ])
   })
 
@@ -1250,7 +1261,7 @@ describe('useAgentSession (v1 composition root)', () => {
       })
   })
 
-  it('(m) a second send while the first POST is pending posts once and records a busy notice', async () => {
+  it('[08-T6 regression] a second send while a turn is active posts once and records a busy notice', async () => {
     let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
     const postMessage = vi
       .fn<
@@ -1530,7 +1541,7 @@ describe('08-fix1 receipts and pins', () => {
     expect(users).toEqual(['live turn'])
   })
 
-  it('(f2a) a localStorage failure after the ack cannot fail or orphan the accepted turn', async () => {
+  it('[08-T4 regression] a localStorage failure cannot fail or orphan the accepted turn', async () => {
     const rest = fakeRest()
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -1696,7 +1707,7 @@ describe('08-fix1 receipts and pins', () => {
     expect(adopted).toHaveBeenCalledWith('wf-1', context)
   })
 
-  it('(t2b) a resolving prepare gates the post; workflow context is read after the gate', async () => {
+  it('[08-T3 regression] a resolving prepare gates the post and preserves its destination snapshot', async () => {
     vi.useFakeTimers()
     try {
       let release!: () => void
@@ -1890,7 +1901,7 @@ describe('08-fix2 receipts and pins', () => {
     expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
   })
 
-  it('(r2b) a transient boot-hydrate failure never destroys an in-flight turn or the resume pointer', async () => {
+  it('[08-T2 regression] boot hydration never destroys an accepted in-flight turn', async () => {
     localStorage.setItem('Comfy.Agent.ThreadId', 'th-1')
     let rejectHistory!: (error: unknown) => void
     const getMessages = vi.fn(
@@ -1952,7 +1963,7 @@ describe('08-fix2 receipts and pins', () => {
 describe('08-fix3 receipts and pins', () => {
   beforeEach(resetHarness)
 
-  it('(r3a) a send acked while the target load is in flight survives its 404 and resumes on retry', async () => {
+  it('[08-T5 regression] a backgrounded accepted turn survives hydration and resumes with local metadata', async () => {
     let rejectHistory!: (error: unknown) => void
     const getMessages = vi
       .fn<(threadId: string) => Promise<AgentMessages>>()
