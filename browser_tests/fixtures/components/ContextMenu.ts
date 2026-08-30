@@ -64,7 +64,11 @@ export class ContextMenu {
   }
 
   async openForDisabledElement(locator: Locator): Promise<this> {
-    await locator.dispatchEvent('contextmenu', { button: 2 })
+    await locator.dispatchEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      button: 2
+    })
     await expect(this.anyMenu).toBeVisible()
     return this
   }
