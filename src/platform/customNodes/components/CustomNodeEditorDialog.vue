@@ -36,6 +36,16 @@
               @keydown.enter.prevent="nameInputRef?.blur()"
               @keydown.escape.prevent="onNameEscape"
             />
+            <Button
+              variant="secondary"
+              size="icon"
+              :aria-label="$t('customNodePacks.editor.editName')"
+              :title="$t('customNodePacks.editor.editName')"
+              :disabled="!canRename"
+              @click="startNameEdit"
+            >
+              <i class="icon-[lucide--pencil] size-4" aria-hidden="true" />
+            </Button>
           </div>
           <p
             v-if="renameError"
@@ -118,7 +128,14 @@
 
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
-import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -214,6 +231,16 @@ watch(
 const onNameFocus = () => {
   if (!canRename.value || renameState.value.phase !== 'idle') return
   renameState.value = { phase: 'editing', draft: session.value.name }
+}
+
+const startNameEdit = async () => {
+  if (!canRename.value) return
+  if (renameState.value.phase === 'idle') {
+    renameState.value = { phase: 'editing', draft: session.value.name }
+  }
+  await nextTick()
+  nameInputRef.value?.focus()
+  nameInputRef.value?.select()
 }
 
 const commitName = async () => {

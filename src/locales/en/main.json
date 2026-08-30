@@ -27,6 +27,7 @@
       "title": "Editing {name}",
       "editing": "Editing",
       "nameLabel": "Custom node pack name",
+      "editName": "Edit custom node pack name",
       "nameHint": "Press Enter or leave the field to save the pack name.",
       "renaming": "Renaming pack…",
       "renameFailed": "Could not rename custom node pack.",

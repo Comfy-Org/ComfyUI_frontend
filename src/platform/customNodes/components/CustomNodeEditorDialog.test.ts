@@ -71,6 +71,7 @@ const i18n = createI18n({
         editor: {
           abandon: 'Abandon',
           editing: 'Editing',
+          editName: 'Edit custom node pack name',
           frameTitle: 'Custom node code editor',
           invalidName:
             'Use 1–80 letters, numbers, spaces, dots, dashes, or underscores.',
@@ -167,6 +168,30 @@ describe('CustomNodeEditorDialog', () => {
       )
     )
     expect(nameInput).toHaveValue('Gradient Mask')
+  })
+
+  it('selects the complete pack name from the pencil action', async () => {
+    const user = userEvent.setup()
+
+    render(CustomNodeEditorDialog, {
+      props: {
+        initialSession: readySession,
+        onClose: vi.fn(),
+        onSubmitted: vi.fn()
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const nameInput = screen.getByRole<HTMLInputElement>('textbox', {
+      name: 'Custom node pack name'
+    })
+    await user.click(
+      screen.getByRole('button', { name: 'Edit custom node pack name' })
+    )
+
+    expect(nameInput).toHaveFocus()
+    expect(nameInput.selectionStart).toBe(0)
+    expect(nameInput.selectionEnd).toBe(readySession.name.length)
   })
 
   it('keeps an invalid name editable without calling the server', async () => {
