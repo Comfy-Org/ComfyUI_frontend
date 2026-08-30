@@ -92,8 +92,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 1 tool call for 1.3 seconds'
     })
     await expect(firstSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
     await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
 
     pushEvent(ws, INTERMEDIATE_MESSAGE_EVENT)
