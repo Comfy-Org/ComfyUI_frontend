@@ -22,9 +22,7 @@
       data-testid="subgraph-breadcrumb-missing-nodes-icon"
       class="icon-[lucide--triangle-alert] text-warning-background"
     />
-    <span
-      class="p-breadcrumb-item-label max-w-72 truncate px-2"
-    >
+    <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
       {{ item.label }}
     </span>
     <Tag
