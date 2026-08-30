@@ -201,7 +201,7 @@ test.describe('Topbar commands', () => {
             type: 'text',
             defaultValue: 'Hello'
           },
-          selector: '[role="textbox"]'
+          selector: 'input'
         },
         {
           config: {
