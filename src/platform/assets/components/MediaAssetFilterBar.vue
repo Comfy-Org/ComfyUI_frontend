@@ -10,30 +10,35 @@
         "
       />
       <template #actions>
-        <MediaAssetFilterButton
+        <Tooltip
           v-if="isCloud"
-          v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
-          :active="hasActiveFilters"
+          :config="{ value: $t('assetBrowser.filterBy') }"
+          side="top"
         >
-          <template #default>
-            <MediaAssetFilterMenu
-              v-model:date-filter="dateFilter"
-              v-model:media-type-filters="mediaTypeFilters"
-            />
-          </template>
-        </MediaAssetFilterButton>
-        <MediaAssetSettingsButton
-          v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
+          <MediaAssetFilterButton :active="hasActiveFilters">
+            <template #default>
+              <MediaAssetFilterMenu
+                v-model:date-filter="dateFilter"
+                v-model:media-type-filters="mediaTypeFilters"
+              />
+            </template>
+          </MediaAssetFilterButton>
+        </Tooltip>
+        <Tooltip
+          :config="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
+          side="top"
         >
-          <template #default>
-            <MediaAssetSettingsMenu
-              v-model:view-mode="viewMode"
-              v-model:sort-by="sortBy"
-              :show-sort-options="isCloud"
-              :show-generation-time-sort
-            />
-          </template>
-        </MediaAssetSettingsButton>
+          <MediaAssetSettingsButton>
+            <template #default>
+              <MediaAssetSettingsMenu
+                v-model:view-mode="viewMode"
+                v-model:sort-by="sortBy"
+                :show-sort-options="isCloud"
+                :show-generation-time-sort
+              />
+            </template>
+          </MediaAssetSettingsButton>
+        </Tooltip>
       </template>
     </SidebarTopArea>
 
@@ -78,6 +83,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
