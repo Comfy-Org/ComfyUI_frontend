@@ -199,4 +199,33 @@ describe('handleGcsRedirect', () => {
     })
     expect(res.statusCode).toBe(500)
   })
+
+  it('handles errors emitted while streaming the GCS response', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        status: 200,
+        headers: new Headers(),
+        body: new ReadableStream({
+          start(controller) {
+            controller.error(new Error('stream reset'))
+          }
+        })
+      })
+    )
+
+    handleGcsRedirect(
+      createProxyRes(GCS_REDIRECT_HEADERS, 302),
+      createReq(),
+      createRes() as unknown as ServerResponse
+    )
+
+    await vi.waitFor(() => {
+      expect(consoleError).toHaveBeenCalledWith(
+        'Error fetching from GCS:',
+        expect.objectContaining({ message: 'stream reset' })
+      )
+    })
+  })
 })
