@@ -10,10 +10,9 @@
   >
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="node-colors"
+        id="node-colors"
         name="node-colors"
         :model-value="nodeColors"
-        binary
         @update:model-value="
           (value) => $emit('updateOption', 'Comfy.Minimap.NodeColors', value)
         "
@@ -24,10 +23,9 @@
 
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="show-links"
+        id="show-links"
         name="show-links"
         :model-value="showLinks"
-        binary
         @update:model-value="
           (value) => $emit('updateOption', 'Comfy.Minimap.ShowLinks', value)
         "
@@ -38,10 +36,9 @@
 
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="show-groups"
+        id="show-groups"
         name="show-groups"
         :model-value="showGroups"
-        binary
         @update:model-value="
           (value) => $emit('updateOption', 'Comfy.Minimap.ShowGroups', value)
         "
@@ -52,10 +49,9 @@
 
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="render-bypass"
+        id="render-bypass"
         name="render-bypass"
         :model-value="renderBypass"
-        binary
         @update:model-value="
           (value) =>
             $emit('updateOption', 'Comfy.Minimap.RenderBypassState', value)
@@ -67,10 +63,9 @@
 
     <div class="flex items-center gap-2">
       <Checkbox
-        input-id="render-error"
+        id="render-error"
         name="render-error"
         :model-value="renderError"
-        binary
         @update:model-value="
           (value) =>
             $emit('updateOption', 'Comfy.Minimap.RenderErrorState', value)
@@ -83,9 +78,9 @@
 </template>
 
 <script setup lang="ts">
-import Checkbox from 'primevue/checkbox'
 import type { CSSProperties, Ref } from 'vue'
 
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
