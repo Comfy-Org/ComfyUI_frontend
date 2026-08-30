@@ -32,6 +32,24 @@ describe('Menu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('cancels an opening request when hidden in the same event', async () => {
+    render(
+      defineComponent({
+        components: { Menu },
+        setup() {
+          const menu = ref<InstanceType<typeof Menu>>()
+          return { menu }
+        },
+        template:
+          '<button @click="menu?.show($event); menu?.hide()">Open then hide</button><Menu ref="menu" :model="[{ label: \'Run\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open then hide' }))
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
   it('opens a context menu at the pointer and dismisses outside', async () => {
     render(
       defineComponent({
