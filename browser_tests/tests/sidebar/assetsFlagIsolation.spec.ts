@@ -1,7 +1,110 @@
 import { expect } from '@playwright/test'
+import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+
+const contractTest = test.extend<{ assetApiRequests: URL[] }>({
+  assetApiRequests: async ({ page }, use) => {
+    const requests: URL[] = []
+    const outputAsset = {
+      id: 'output-asset',
+      name: 'enabled-output.png',
+      mime_type: 'image/png',
+      tags: ['output'],
+      preview_url: '/api/view?filename=enabled-output.png&type=output',
+      created_at: '2026-08-29T00:00:00.000Z',
+      updated_at: '2026-08-29T00:00:00.000Z'
+    } satisfies Asset
+    const inputAsset = {
+      id: 'input-asset',
+      name: 'enabled-input.png',
+      mime_type: 'image/png',
+      tags: ['input'],
+      preview_url: '/api/view?filename=enabled-input.png&type=input',
+      created_at: '2026-08-29T00:00:00.000Z',
+      updated_at: '2026-08-29T00:00:00.000Z'
+    } satisfies Asset
+
+    await page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
+      const url = new URL(route.request().url())
+      requests.push(url)
+      const assets =
+        url.searchParams.get('include_tags') === 'input'
+          ? [inputAsset]
+          : [outputAsset]
+      const response = {
+        assets,
+        total: assets.length,
+        has_more: false
+      } satisfies ListAssetsResponse
+      await route.fulfill({ json: response })
+    })
+    await use(requests)
+  }
+})
+
+contractTest.describe(
+  'Assets sidebar Asset API contract',
+  { tag: '@oss' },
+  () => {
+    contractTest(
+      'uses the shared query contract when enabled on OSS',
+      async ({ assetApiRequests, comfyPage }) => {
+        await comfyPage.featureFlags.seedFlags({ assets: true })
+        await comfyPage.setup()
+
+        const tab = comfyPage.menu.assetsTab
+        await tab.open()
+        await expect(tab.getAssetCardByName('enabled-output')).toBeVisible()
+        await tab.switchToImported()
+        await expect(tab.getAssetCardByName('enabled-input')).toBeVisible()
+
+        const outputRequest = assetApiRequests.find((url) =>
+          url.searchParams.get('tags_any')?.includes('output')
+        )
+        const inputRequest = assetApiRequests.find(
+          (url) => url.searchParams.get('include_tags') === 'input'
+        )
+        expect(outputRequest?.searchParams.get('tags_any')).toBe('output,temp')
+        expect(outputRequest?.searchParams.get('tags_none')).toBe('missing')
+        expect(inputRequest?.searchParams.get('include_tags')).toBe('input')
+        expect(inputRequest?.searchParams.get('tags_none')).toBe('missing')
+      }
+    )
+  }
+)
+
+contractTest.describe(
+  'Assets sidebar Asset API contract on Cloud',
+  { tag: '@cloud' },
+  () => {
+    contractTest(
+      'uses the shared query contract',
+      async ({ assetApiRequests, comfyPage }) => {
+        await comfyPage.featureFlags.seedFlags({ assets: true })
+        await comfyPage.setup()
+
+        const tab = comfyPage.menu.assetsTab
+        await tab.open()
+        await expect(tab.getAssetCardByName('enabled-output')).toBeVisible()
+        await tab.switchToImported()
+        await expect(tab.getAssetCardByName('enabled-input')).toBeVisible()
+
+        const outputRequest = assetApiRequests.find((url) =>
+          url.searchParams.get('tags_any')?.includes('output')
+        )
+        const inputRequest = assetApiRequests.find(
+          (url) => url.searchParams.get('include_tags') === 'input'
+        )
+        expect(outputRequest?.searchParams.get('tags_any')).toBe('output,temp')
+        expect(outputRequest?.searchParams.get('tags_none')).toBe('missing')
+        expect(inputRequest?.searchParams.get('include_tags')).toBe('input')
+        expect(inputRequest?.searchParams.get('tags_none')).toBe('missing')
+      }
+    )
+  }
+)
 
 test.describe('Assets sidebar flag-off isolation', { tag: '@oss' }, () => {
   test('uses history without requesting the Asset API', async ({
