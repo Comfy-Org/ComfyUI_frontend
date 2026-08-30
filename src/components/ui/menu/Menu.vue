@@ -54,7 +54,7 @@ function show(event: Event) {
     if (request !== showRequest.value) return
     showTimer.value = window.setTimeout(() => {
       document.getElementById(triggerId)?.click()
-    })
+    }, 50)
   })
 }
 
