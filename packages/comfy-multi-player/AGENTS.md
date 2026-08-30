@@ -38,6 +38,14 @@ Mutation testing (`npm run test:mutation`, nightly in `mutation.yml`) is only co
 
 Reviewer-agent concern profiles live in `.agents/checks/`. Apply every relevant profile to semantic, export, dependency, catalog, and replication-boundary changes.
 
+## Permutation and property testing
+
+Use permutation-exhaustive tests when a concurrency surface has a small, explicitly bounded domain: enumerate every legal arrival order and every selected equivalence-class value, assert the exact case count, and include the full case dimensions in assertion messages so a failure is directly reproducible. Prefer this for two-writer register contention, normalized-ID collisions, batch-boundary choices, and short causal interleavings.
+
+Use deterministic `fast-check` properties when the Cartesian product is unbounded or exceeds the review budget. Every property suite must pin both `seed` and `numRuns`; preserve fast-check's shrunk counterexample output, and add vacuity guards proving that the generated run exercised the contested behavior. A fixed seed makes CI replayable, not exhaustive, so describe the bounded domain or sampled coverage honestly.
+
+Keep a new suite below 20,000 evaluated cases and eight minutes in the normal full test run. Do the product math before implementation and record the dimensions in the test or PR. If exhaustive coverage exceeds either cap, reduce the domain by named equivalence classes or switch to fixed-seed property sampling. Never imply that a bounded domain proves every possible workflow or op stream.
+
 ## Review comments
 
 - Use one or two concise prose paragraphs, with the concrete concern first.
