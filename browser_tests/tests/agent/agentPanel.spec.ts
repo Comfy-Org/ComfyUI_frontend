@@ -109,6 +109,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
 
     pushEvent(ws, OPEN_TAB_TOOL_EVENT)
 
@@ -116,8 +118,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 1 tool call for 0.5 seconds'
     })
     await expect(secondSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toHaveCount(0)
@@ -157,7 +159,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
     await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
     await expect(panel.getByText('Opened a new tab')).toBeVisible()
 
     pushEvent(ws, MESSAGE_DONE_EVENT)

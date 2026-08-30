@@ -34,6 +34,7 @@ An Architecture Decision Record captures an important technical decision made al
 | [0022](0022-performance-measurement-and-ci-policy.md)                       | Performance Measurement and CI Policy                          | Proposed | 2026-08-26 |
 | [0023](0023-widget-entities-and-legacy-behavior-boundary.md)                | Widget Entities and Legacy Behavior Boundary                   | Proposed | 2026-08-26 |
 | [0024](0024-in-app-agent-offscreen-graphs.md)                               | Graph Activation and Document Objects for In-App Agent Targets | Proposed | 2026-08-28 |
+| [0025](0025-in-app-agent-crdt-follower-and-distribution.md)                 | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |
 
 ## Creating a New ADR
 
