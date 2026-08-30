@@ -5,13 +5,13 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import 'vue'
 import DOMPurify from 'dompurify'
 
+import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
+
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
 })
 
-afterEach(async () => {
-  const { clearRegisteredLiteGraphTypes } =
-    await import('@/lib/litegraph/src/litegraphInstance')
+afterEach(() => {
   clearRegisteredLiteGraphTypes()
 })
 
