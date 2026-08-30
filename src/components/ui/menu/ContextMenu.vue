@@ -63,7 +63,7 @@ defineExpose({ container: content, hide, show, toggle, visible })
 </script>
 
 <template>
-  <ContextMenuRoot @update:open="updateOpen">
+  <ContextMenuRoot :modal="false" @update:open="updateOpen">
     <ContextMenuTrigger as-child>
       <span ref="trigger" class="pointer-events-none fixed size-px opacity-0" />
     </ContextMenuTrigger>
