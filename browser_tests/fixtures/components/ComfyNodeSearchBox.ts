@@ -19,7 +19,9 @@ class ComfyNodeSearchFilterSelectionPanel {
   }
 
   async selectFilterValue(filterValue: string) {
-    await this.root.getByRole('combobox').click()
+    await this.root
+      .getByRole('combobox', { name: 'Single-select dropdown' })
+      .click()
     await this.page
       .getByRole('option', { name: filterValue, exact: true })
       .click()
