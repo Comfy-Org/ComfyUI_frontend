@@ -82,9 +82,9 @@ const zAgentThinkingData = z
 
 const zAgentToolCallData = z
   .object({
+    tool_call_id: z.string(),
     tool_name: z.string(),
-    status: z.string(),
-    args: z.array(z.string()),
+    status: z.enum(['running', 'success', 'error']),
     duration_ms: z.number().optional(),
     message_id: z.string(),
     thread_id: z.string()
