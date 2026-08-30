@@ -5,7 +5,8 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { ref } from 'vue'
+import { nextTick, ref, useTemplateRef } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -26,7 +27,10 @@ const emit = defineEmits<{
   hide: []
 }>()
 
+const content = useTemplateRef<ComponentPublicInstance>('content')
 const open = ref(false)
+const showTimer = ref<number>()
+const showRequest = ref(0)
 const anchor = ref({ x: 0, y: 0 })
 const visible = open
 const overlayVisible = open
@@ -40,21 +44,38 @@ function show(event: Event) {
     x: mouseEvent?.clientX ?? rect?.left ?? 0,
     y: mouseEvent?.clientY ?? rect?.bottom ?? 0
   }
-  window.setTimeout(() => {
-    open.value = true
+  window.clearTimeout(showTimer.value)
+  open.value = false
+  const request = ++showRequest.value
+  void nextTick(() => {
+    if (request !== showRequest.value) return
+    showTimer.value = window.setTimeout(() => {
+      open.value = true
+    })
   })
 }
 
 function hide() {
+  showRequest.value++
+  window.clearTimeout(showTimer.value)
   open.value = false
 }
 
 function toggle(event: Event) {
-  if (visible.value) hide()
-  else show(event)
+  const element = content.value?.$el
+  if (
+    element instanceof HTMLElement &&
+    element.dataset.state === 'open' &&
+    element.getClientRects().length > 0
+  ) {
+    hide()
+    return
+  }
+  show(event)
 }
 
 function updateOpen(value: boolean) {
+  if (!value) window.clearTimeout(showTimer.value)
   open.value = value
   if (value) emit('show')
   else emit('hide')
@@ -76,6 +97,7 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent
+        ref="content"
         v-bind="$attrs"
         :class="cn(menuContentClass, $attrs.class)"
         :style="contentStyle"
