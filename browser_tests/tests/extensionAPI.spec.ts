@@ -196,7 +196,7 @@ test.describe('Topbar commands', () => {
             type: 'text',
             defaultValue: 'Hello'
           },
-          selector: 'input[type="text"]'
+          selector: '[role="textbox"]'
         },
         {
           config: {
@@ -231,7 +231,11 @@ test.describe('Topbar commands', () => {
             .getByText('TestSetting Test')
             .locator(selector)
 
-          await expect(component).toBeDisabled()
+          if (config.type === 'slider') {
+            await expect(component).toHaveAttribute('aria-disabled', 'true')
+          } else {
+            await expect(component).toBeDisabled()
+          }
         })
       }
     })
