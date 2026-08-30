@@ -40,9 +40,14 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => ({
-    add: mockToastAdd
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   })
 }))
 
@@ -123,17 +128,17 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(mockAcceptInvite).toHaveBeenCalledWith('valid-token')
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: 'Invite Accepted',
-        detail: {
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'custom',
+        expect.any(Object),
+        {
+          title: 'Invite Accepted',
           text: 'You have been added to Test Workspace',
           workspaceId: 'ws-123',
           workspaceName: 'Test Workspace'
         },
-        group: 'invite-accepted',
-        closable: true
-      })
+        { role: 'status' }
+      )
     })
 
     it('shows error toast when invite acceptance fails', async () => {
@@ -144,11 +149,11 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(mockAcceptInvite).toHaveBeenCalledWith('invalid-token')
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to Accept Invite',
-        detail: 'Invalid invite'
-      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        'Failed to Accept Invite',
+        { description: 'Invalid invite' }
+      )
     })
 
     it('cleans up URL after processing invite', async () => {
@@ -203,11 +208,11 @@ describe('useInviteUrlLoader', () => {
 
       // Token is sent to backend, which validates and rejects
       expect(mockAcceptInvite).toHaveBeenCalledWith('any-token-format==')
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to Accept Invite',
-        detail: 'Invalid token'
-      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        'Failed to Accept Invite',
+        { description: 'Invalid token' }
+      )
     })
 
     it('ignores empty invite param', async () => {

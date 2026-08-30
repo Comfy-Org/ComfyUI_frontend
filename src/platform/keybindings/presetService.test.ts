@@ -57,9 +57,14 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
-    add: mockToastAdd
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd,
+    loading: mockToastAdd,
+    custom: mockToastAdd
   })
 }))
 

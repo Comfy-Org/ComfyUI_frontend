@@ -68,7 +68,12 @@ const { mockHandles } = vi.hoisted(() => {
         ) => undefined
       ),
       toastStore: {
-        add: vi.fn()
+        success: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        warning: vi.fn(),
+        loading: vi.fn(),
+        custom: vi.fn()
       },
       assetService: {
         shouldUseAssetBrowser: vi.fn()
@@ -128,8 +133,8 @@ vi.mock('@/platform/missingModel/missingModelScan', () => ({
   ) => mockHandles.verifyAssetSupportedCandidates(candidates, signal)
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => mockHandles.toastStore
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => mockHandles.toastStore
 }))
 
 vi.mock('@/scripts/api', () => ({

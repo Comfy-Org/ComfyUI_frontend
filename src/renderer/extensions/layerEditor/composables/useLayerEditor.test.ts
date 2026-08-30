@@ -16,8 +16,15 @@ vi.mock('@/stores/dialogStore', () => ({
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({ getNodeImageUrls })
 }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: toastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => toastAdd('success', ...args),
+    error: (...args: unknown[]) => toastAdd('error', ...args),
+    info: (...args: unknown[]) => toastAdd('info', ...args),
+    warning: (...args: unknown[]) => toastAdd('warning', ...args),
+    loading: (...args: unknown[]) => toastAdd('loading', ...args),
+    custom: (...args: unknown[]) => toastAdd('custom', ...args)
+  })
 }))
 vi.mock('@/i18n', () => ({
   t: (key: string) => key
@@ -35,10 +42,9 @@ describe('useLayerEditor', () => {
     useLayerEditor().openLayerEditor(node)
     expect(showDialog).not.toHaveBeenCalled()
     expect(toastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'layerEditor.needsTwoImages'
-      })
+      'info',
+      expect.any(String),
+      expect.objectContaining({ description: 'layerEditor.needsTwoImages' })
     )
   })
 

@@ -51,9 +51,14 @@ vi.mock(
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => ({
-    add: mockToastAdd
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd,
+    loading: mockToastAdd,
+    custom: mockToastAdd
   })
 }))
 
@@ -141,10 +146,8 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Template "invalid-template" not found'
+    expect(mockToastAdd).toHaveBeenCalledWith('Error', {
+      description: 'Template "invalid-template" not found'
     })
   })
 
@@ -234,10 +237,8 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load template'
+    expect(mockToastAdd).toHaveBeenCalledWith('Error', {
+      description: 'Failed to load template'
     })
   })
 

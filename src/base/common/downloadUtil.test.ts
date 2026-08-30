@@ -22,8 +22,8 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({ addAlert: vi.fn() }))
+vi.mock('@/components/ui/toast', () => ({
+  useToast: vi.fn(() => ({ warning: vi.fn() }))
 }))
 
 let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>

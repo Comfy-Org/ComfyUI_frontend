@@ -58,9 +58,14 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => ({
-    add: mockToastAdd
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   })
 }))
 
@@ -237,9 +242,7 @@ describe('InviteMemberDialogContent', () => {
     await waitFor(() => expect(mockCreateInvite).toHaveBeenCalledTimes(2))
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain('error')
     expect(mockTrackInviteSent).toHaveBeenCalledWith({
       source: 'settings_members',
       count: 1
@@ -260,9 +263,7 @@ describe('InviteMemberDialogContent', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain('error')
     expect(mockTrackInviteSent).not.toHaveBeenCalled()
     expect(inviteButton()).toBeEnabled()
   })

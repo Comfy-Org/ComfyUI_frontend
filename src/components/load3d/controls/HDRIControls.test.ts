@@ -8,9 +8,9 @@ import { createI18n } from 'vue-i18n'
 import HDRIControls from '@/components/load3d/controls/HDRIControls.vue'
 import type { HDRIConfig } from '@/extensions/core/load3d/interfaces'
 
-const addAlert = vi.fn()
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert })
+const warning = vi.fn()
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({ warning })
 }))
 
 const i18n = createI18n({
@@ -168,7 +168,7 @@ describe('HDRIControls', () => {
       fileInput.dispatchEvent(new Event('change'))
 
       expect(onUpdateHdriFile).toHaveBeenCalledWith(file)
-      expect(addAlert).not.toHaveBeenCalled()
+      expect(warning).not.toHaveBeenCalled()
     })
 
     it('rejects unsupported file extensions with a toast and no emit', async () => {
@@ -183,7 +183,9 @@ describe('HDRIControls', () => {
       fileInput.dispatchEvent(new Event('change'))
 
       expect(onUpdateHdriFile).not.toHaveBeenCalled()
-      expect(addAlert).toHaveBeenCalledWith('Unsupported HDRI format')
+      expect(warning).toHaveBeenCalledWith('Alert', {
+        description: 'Unsupported HDRI format'
+      })
     })
   })
 })

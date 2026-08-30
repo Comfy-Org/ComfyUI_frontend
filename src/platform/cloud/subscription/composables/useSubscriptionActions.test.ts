@@ -17,8 +17,15 @@ vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: mockReportError
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mockToastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  })
 }))
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
@@ -136,10 +143,9 @@ describe('useSubscriptionActions', () => {
 
       expect(isLoadingSupport.value).toBe(false)
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Command failed'
-        })
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Command failed' })
       )
     })
 

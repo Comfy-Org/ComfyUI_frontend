@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 describe('useErrorHandling', () => {
   let errorHandler: ReturnType<typeof useErrorHandling>
@@ -335,13 +335,10 @@ describe('useErrorHandling', () => {
         const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
         await wrapped()
 
-        const toastStore = useToastStore()
-        expect(toastStore.add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'error',
-            detail: t('g.disconnectedFromBackend')
-          })
-        )
+        const toastStore = useToast()
+        expect(toastStore.error).toHaveBeenCalledWith(t('g.error'), {
+          description: t('g.disconnectedFromBackend')
+        })
       })
 
       it('should not treat non-TypeError as network error', async () => {
@@ -352,12 +349,10 @@ describe('useErrorHandling', () => {
         const wrapped = errorHandler.wrapWithErrorHandlingAsync(action)
         await wrapped()
 
-        const toastStore = useToastStore()
-        expect(toastStore.add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: 'Failed to fetch'
-          })
-        )
+        const toastStore = useToast()
+        expect(toastStore.error).toHaveBeenCalledWith(t('g.error'), {
+          description: 'Failed to fetch'
+        })
       })
     })
 

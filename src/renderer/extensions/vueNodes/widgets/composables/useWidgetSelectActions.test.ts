@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
@@ -206,10 +206,10 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('original.png')
 
-      const toastStore = useToastStore()
-      expect(toastStore.addAlert).toHaveBeenCalledWith(
-        '500 - Internal Server Error'
-      )
+      const toastStore = useToast()
+      expect(toastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: '500 - Internal Server Error'
+      })
     })
   })
 })

@@ -85,8 +85,15 @@ vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
   useComfyManagerService: () => ({})
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    loading: vi.fn(),
+    custom: vi.fn()
+  })
 }))
 
 vi.mock('@/components/icons/PuzzleIcon.vue', () => ({

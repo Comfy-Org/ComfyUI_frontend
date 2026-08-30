@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
 
-const { mockFetchApi, mockAddAlert, mockInvalidateInputs } = vi.hoisted(() => ({
+const { mockFetchApi, mockWarning, mockInvalidateInputs } = vi.hoisted(() => ({
   mockFetchApi: vi.fn(),
-  mockAddAlert: vi.fn(),
+  mockWarning: vi.fn(),
   mockInvalidateInputs: vi.fn()
 }))
 
@@ -33,8 +33,8 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: mockAddAlert })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({ warning: mockWarning })
 }))
 
 vi.mock('@/scripts/api', () => ({
@@ -184,7 +184,9 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(mockWarning).toHaveBeenCalledWith('Alert', {
+      description: 'g.uploadAlreadyInProgress'
+    })
 
     await first
   })

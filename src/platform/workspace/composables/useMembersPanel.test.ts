@@ -325,8 +325,15 @@ const {
   }
 })
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  })
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -642,10 +649,9 @@ describe('useMembersPanel', () => {
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockResendInvite).toHaveBeenCalledWith('inv-1')
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'workspacePanel.toast.inviteResent'
-        })
+        'success',
+        'workspacePanel.toast.inviteResent',
+        { duration: 2000 }
       )
     })
 
@@ -654,10 +660,8 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          summary: 'workspacePanel.toast.inviteResendFailed'
-        })
+        'error',
+        'workspacePanel.toast.inviteResendFailed'
       )
     })
   })

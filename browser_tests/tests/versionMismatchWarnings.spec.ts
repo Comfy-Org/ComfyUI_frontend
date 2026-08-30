@@ -102,7 +102,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     await comfyPage.setup()
 
     // Locate the warning toast and dismiss it
-    const warningToast = comfyPage.page.locator('.p-toast-message').filter({
+    const warningToast = comfyPage.page.getByTestId('toast').filter({
       hasText: 'Version Compatibility'
     })
     await warningToast.waitFor({ state: 'visible' })

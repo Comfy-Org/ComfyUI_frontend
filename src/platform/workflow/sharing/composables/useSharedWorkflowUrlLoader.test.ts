@@ -75,9 +75,14 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const mockToastAdd = vi.fn()
-vi.mock('primevue/usetoast', () => ({
+vi.mock('@/components/ui/toast', () => ({
   useToast: () => ({
-    add: mockToastAdd
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   })
 }))
 
@@ -467,9 +472,10 @@ describe('useSharedWorkflowUrlLoader', () => {
       { openSource: 'shared_url', shareId: 'share-id-1' }
     )
     expect(mockToastAdd).toHaveBeenCalledWith(
+      'error',
+      expect.any(String),
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Failed to import workflow assets'
+        description: 'Failed to import workflow assets'
       })
     )
   })
@@ -568,10 +574,8 @@ describe('useSharedWorkflowUrlLoader', () => {
 
     expect(loaded).toBe('failed')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load shared workflow'
+    expect(mockToastAdd).toHaveBeenCalledWith('error', 'Error', {
+      description: 'Failed to load shared workflow'
     })
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(

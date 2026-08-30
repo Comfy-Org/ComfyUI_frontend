@@ -208,12 +208,12 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Choose a Plan' })
     ).toHaveCount(0)
-    await expect(page.locator('.p-toast-message-warn')).toContainText(
-      'Plan inactive'
-    )
-    await expect(page.locator('.p-toast-message-warn')).toContainText(
-      'Contact your Comfy account manager to restore access.'
-    )
+    await expect(
+      page.getByTestId('toast').and(page.locator('[data-toast-kind="warning"]'))
+    ).toContainText('Plan inactive')
+    await expect(
+      page.getByTestId('toast').and(page.locator('[data-toast-kind="warning"]'))
+    ).toContainText('Contact your Comfy account manager to restore access.')
   })
 })
 

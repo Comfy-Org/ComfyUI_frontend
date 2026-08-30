@@ -3,10 +3,10 @@ import { describe, expect, it, vi } from 'vitest'
 import type Load3d from './Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
 
-const { contextMenuMock, addToastMock, addAlertMock } = vi.hoisted(() => ({
+const { contextMenuMock, addToastMock, warningMock } = vi.hoisted(() => ({
   contextMenuMock: vi.fn(),
   addToastMock: vi.fn(),
-  addAlertMock: vi.fn()
+  warningMock: vi.fn()
 }))
 
 vi.mock('@/i18n', () => ({
@@ -14,8 +14,15 @@ vi.mock('@/i18n', () => ({
     vars ? `${key}:${JSON.stringify(vars)}` : key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: addToastMock, addAlert: addAlertMock })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => addToastMock('success', ...args),
+    error: (...args: unknown[]) => addToastMock('error', ...args),
+    info: (...args: unknown[]) => addToastMock('info', ...args),
+    warning: warningMock,
+    loading: (...args: unknown[]) => addToastMock('loading', ...args),
+    custom: (...args: unknown[]) => addToastMock('custom', ...args)
+  })
 }))
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
@@ -115,13 +122,11 @@ describe('createExportMenuItems', () => {
       await vi.waitFor(() => expect(exportModel).toHaveBeenCalledWith(value))
       await vi.waitFor(() =>
         expect(addToastMock).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'success',
-            summary: `toastMessages.exportSuccess:${JSON.stringify({ format: label })}`
-          })
+          'success',
+          `toastMessages.exportSuccess:${JSON.stringify({ format: label })}`
         )
       )
-      expect(addAlertMock).not.toHaveBeenCalled()
+      expect(warningMock).not.toHaveBeenCalled()
     }
   )
 
@@ -142,9 +147,9 @@ describe('createExportMenuItems', () => {
     glb.callback()
 
     await vi.waitFor(() =>
-      expect(addAlertMock).toHaveBeenCalledWith(
-        `toastMessages.failedToExportModel:${JSON.stringify({ format: 'GLB' })}`
-      )
+      expect(warningMock).toHaveBeenCalledWith('Alert', {
+        description: `toastMessages.failedToExportModel:${JSON.stringify({ format: 'GLB' })}`
+      })
     )
     expect(consoleError).toHaveBeenCalledWith(
       'Export failed:',

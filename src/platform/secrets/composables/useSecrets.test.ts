@@ -9,8 +9,15 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mockAdd })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockAdd('success', ...args),
+    error: (...args: unknown[]) => mockAdd('error', ...args),
+    info: (...args: unknown[]) => mockAdd('info', ...args),
+    warning: (...args: unknown[]) => mockAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockAdd('custom', ...args)
+  })
 }))
 
 const mockListSecrets = vi.fn()
@@ -78,10 +85,8 @@ describe('useSecrets', () => {
       await fetchSecrets()
 
       expect(secrets.value).toEqual([])
-      expect(mockAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'g.error',
-        detail: 'Network error'
+      expect(mockAdd).toHaveBeenCalledWith('error', 'g.error', {
+        description: 'Network error'
       })
     })
   })
@@ -124,10 +129,8 @@ describe('useSecrets', () => {
       await deleteSecret(secret)
 
       expect(secrets.value).toHaveLength(1)
-      expect(mockAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'g.error',
-        detail: 'Delete failed'
+      expect(mockAdd).toHaveBeenCalledWith('error', 'g.error', {
+        description: 'Delete failed'
       })
     })
   })
