@@ -212,6 +212,12 @@ describe.each([1])('parameterized collection registration', () => {
 suite.each([1])('parameterized collection registration alias', () => {
   Graph.registerNodeType('suite-each', class {})
 })
+describe.for([1])('parameterized collection registration', () => {
+  Graph.registerNodeType('describe-for', class {})
+})
+suite.for([1])('parameterized collection registration alias', () => {
+  Graph.registerNodeType('suite-for', class {})
+})
 
 afterAll(() => Graph.unregisterNodeType('suite'))
 afterEach(() => Graph.clearRegisteredTypes())
@@ -331,7 +337,7 @@ describe('Vitest cleanup rules', () => {
   it('reports persistent LiteGraph registrations and redundant cleanup', () => {
     expect(
       output.match(/Register LiteGraph node types in beforeEach or a test/g)
-    ).toHaveLength(7)
+    ).toHaveLength(9)
     expect(
       output.match(/LiteGraph\.unregisterNodeType\(\) is redundant/g)
     ).toHaveLength(1)

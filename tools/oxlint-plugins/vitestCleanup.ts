@@ -276,9 +276,10 @@ function isVitestCallbackCall(
   const factoryCall = unwrapChain(call.callee)
   if (factoryCall.type !== 'CallExpression') return false
   const factory = asMemberExpression((factoryCall as CallExpression).callee)
+  const factoryName = factory && staticMemberName(factory)
   return (
     factory !== undefined &&
-    staticMemberName(factory) === 'each' &&
+    (factoryName === 'each' || factoryName === 'for') &&
     isVitestCallback(context, factory.object, callbackImports)
   )
 }
