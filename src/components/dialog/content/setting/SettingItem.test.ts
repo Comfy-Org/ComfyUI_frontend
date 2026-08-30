@@ -1,8 +1,6 @@
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -38,13 +36,12 @@ describe('SettingItem', () => {
   function renderComponent(setting: SettingParams) {
     return render(SettingItem, {
       global: {
-        plugins: [PrimeVue, i18n, createPinia()],
+        plugins: [i18n, createPinia()],
         components: { Tag },
         stubs: {
           FormItem: FormItemStub,
           'i-material-symbols:experiment-outline': true
-        },
-        directives: { tooltip: Tooltip }
+        }
       },
       props: { setting }
     })

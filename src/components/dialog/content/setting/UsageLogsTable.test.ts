@@ -1,6 +1,4 @@
 import { createTestingPinia } from '@pinia/testing'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -94,8 +92,7 @@ const i18n = createI18n({
 })
 
 const globalConfig = {
-  plugins: [PrimeVue, i18n, createTestingPinia()],
-  directives: { tooltip: Tooltip }
+  plugins: [i18n, createTestingPinia()]
 }
 
 async function flushMicrotasks() {
@@ -189,7 +186,7 @@ describe('UsageLogsTable', () => {
       }
     )
     mockCustomerEventsService.getTooltipContent.mockImplementation(
-      () => '<strong>Transaction Id:</strong> txn-123'
+      () => 'Transaction Id: txn-123'
     )
     mockCustomerEventsService.error.value = null
     mockCustomerEventsService.isLoading.value = false

@@ -38,18 +38,22 @@
           <div class="flex items-center gap-1 text-muted">
             <i :class="providerIcon" />
             {{ providerName }}
-            <Button
+            <Tooltip
               v-if="isEmailProvider"
-              v-tooltip="{
+              :config="{
                 value: $t('userSettings.updatePassword'),
                 showDelay: 300
               }"
-              variant="muted-textonly"
-              size="icon-sm"
-              @click="dialogService.showUpdatePasswordDialog()"
+              side="right"
             >
-              <i class="pi pi-pen-to-square" />
-            </Button>
+              <Button
+                variant="muted-textonly"
+                size="icon-sm"
+                @click="dialogService.showUpdatePasswordDialog()"
+              >
+                <i class="pi pi-pen-to-square" />
+              </Button>
+            </Tooltip>
           </div>
         </div>
 
@@ -95,6 +99,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'

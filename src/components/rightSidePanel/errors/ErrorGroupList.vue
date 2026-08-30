@@ -163,21 +163,25 @@
                     : t('rightSidePanel.missingNodePacks.installAll')
                 }}
               </Button>
-              <Button
+              <Tooltip
                 v-else-if="group.type === 'swap_nodes'"
-                v-tooltip.top="
+                :config="
                   t(
                     'nodeReplacement.replaceAllWarning',
                     'Replaces all available nodes in this group.'
                   )
                 "
-                variant="secondary"
-                size="sm"
-                class="shrink-0"
-                @click.stop="handleReplaceAll()"
+                side="top"
               >
-                {{ t('nodeReplacement.replaceAll', 'Replace All') }}
-              </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  class="shrink-0"
+                  @click.stop="handleReplaceAll()"
+                >
+                  {{ t('nodeReplacement.replaceAll', 'Replace All') }}
+                </Button>
+              </Tooltip>
               <Button
                 v-else-if="
                   group.type === 'missing_model' &&
@@ -270,17 +274,21 @@
                 >
                   <div class="flex min-w-0 items-center gap-2">
                     <span class="flex min-w-0 flex-1 items-center gap-1">
-                      <button
-                        v-tooltip.top="{
+                      <Tooltip
+                        :config="{
                           value: item.displayDetails || undefined,
                           showDelay: 300
                         }"
-                        type="button"
-                        class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
-                        @click="handleLocateNode(item.nodeId)"
+                        side="top"
                       >
-                        {{ item.label }}
-                      </button>
+                        <button
+                          type="button"
+                          class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+                          @click="handleLocateNode(item.nodeId)"
+                        >
+                          {{ item.label }}
+                        </button>
+                      </Tooltip>
                       <Button
                         v-if="item.displayDetails"
                         variant="textonly"
@@ -374,6 +382,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'

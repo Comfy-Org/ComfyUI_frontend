@@ -65,18 +65,20 @@
             {{ customerEventService.formatDate(event.createdAt ?? '') }}
           </TableCell>
           <TableCell>
-            <Button
+            <Tooltip
               v-if="customerEventService.hasAdditionalInfo(event)"
-              v-tooltip.top="{
-                escape: false,
-                value: tooltipContentMap.get(event.event_id ?? '') || ''
-              }"
-              variant="textonly"
-              size="icon-sm"
-              :aria-label="$t('credits.additionalInfo')"
+              :config="tooltipContentMap.get(event.event_id ?? '') || ''"
+              content-class="whitespace-pre-line"
+              side="top"
             >
-              <i class="pi pi-info-circle" />
-            </Button>
+              <Button
+                variant="textonly"
+                size="icon-sm"
+                :aria-label="$t('credits.additionalInfo')"
+              >
+                <i class="pi pi-info-circle" />
+              </Button>
+            </Tooltip>
           </TableCell>
         </TableRow>
       </TableBody>
@@ -93,6 +95,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

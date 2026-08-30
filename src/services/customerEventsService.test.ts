@@ -407,10 +407,10 @@ describe('useCustomerEventsService', () => {
 
       const result = service.getTooltipContent(event)
 
-      expect(result).toContain('<strong>Transaction Id:</strong> txn-123')
-      expect(result).toContain('<strong>Duration:</strong> 5,000')
-      expect(result).toContain('<strong>Status:</strong> completed')
-      expect(result).toContain('<br>')
+      expect(result).toContain('Transaction Id: txn-123')
+      expect(result).toContain('Duration: 5,000')
+      expect(result).toContain('Status: completed')
+      expect(result).toContain('\n')
     })
 
     it('should return empty string when no parameters', () => {
