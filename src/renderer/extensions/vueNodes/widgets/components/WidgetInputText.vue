@@ -14,7 +14,9 @@
             WidgetInputBaseClass,
             'h-auto w-full min-w-[4ch] truncate px-4',
             !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
-            size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
+            size === 'large'
+              ? 'pt-[11px] pb-[13px] text-sm'
+              : 'pt-[7px] pb-[9px] text-xs',
             loading && 'pl-9'
           )
         "
