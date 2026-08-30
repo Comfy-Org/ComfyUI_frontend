@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -21,9 +20,6 @@ const CONTROL_LABELS = {
   decrement: 'Decrement Value',
   randomize: 'Randomize Value'
 } as const satisfies Record<ControlOptions, string>
-
-const isHTMLInputElement = (el: HTMLElement): el is HTMLInputElement =>
-  el instanceof HTMLInputElement
 
 const i18n = createI18n({
   legacy: false,
@@ -68,7 +64,7 @@ function renderPopover(modelValue: ControlOptions = 'randomize') {
   })
   const utils = render(Harness, {
     global: {
-      plugins: [PrimeVue, i18n],
+      plugins: [i18n],
       stubs: { Button: ButtonStub }
     }
   })
@@ -118,10 +114,9 @@ describe('ValueControlPopover', () => {
       renderPopover('increment')
       const checked = screen
         .getAllByRole('radio')
-        .filter(isHTMLInputElement)
-        .find((r) => r.checked)
+        .find((radio) => radio.getAttribute('aria-checked') === 'true')
       expect(checked).toBeDefined()
-      expect(checked?.value).toBe('increment')
+      expect(checked).toHaveAttribute('value', 'increment')
     })
 
     it('updates v-model when a different option is selected', async () => {
@@ -130,8 +125,7 @@ describe('ValueControlPopover', () => {
 
       const fixedRadio = screen
         .getAllByRole('radio')
-        .filter(isHTMLInputElement)
-        .find((r) => r.value === 'fixed')
+        .find((radio) => radio.getAttribute('value') === 'fixed')
       expect(fixedRadio).toBeDefined()
 
       await user.click(fixedRadio!)
