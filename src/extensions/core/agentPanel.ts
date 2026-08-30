@@ -1,4 +1,8 @@
 import { useExtensionService } from '@/services/extensionService'
+import {
+  notifyMintPortsAfterGraphConfigure,
+  notifyMintPortsBeforeGraphLoad
+} from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 // The initTelemetry.ts idiom: the guard lives INSIDE the unconditionally
 // retained function, and every agent-specific module is imported dynamically
@@ -11,6 +15,12 @@ export function registerAgentPanelExtension(): void {
   if (!IS_CLOUD_BUILD) return
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
+    beforeLoadGraph() {
+      notifyMintPortsBeforeGraphLoad()
+    },
+    afterConfigureGraph() {
+      notifyMintPortsAfterGraphConfigure()
+    },
     setup() {
       // The service's per-extension catch owns a rejection here, so a
       // failed gate can never surface as an unhandled rejection.
