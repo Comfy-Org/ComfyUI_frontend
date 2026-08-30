@@ -143,6 +143,16 @@
       }
     },
     {
+      "files": [
+        "apps/**/*.test.{ts,tsx}",
+        "packages/object-info-parser/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/no-persistent-litegraph-registration": "off",
+        "comfy/no-redundant-litegraph-cleanup": "off"
+      }
+    },
+    {
       "files": ["tools/test-recorder/**/*.ts"],
       "rules": {
         "no-console": "allow"

@@ -20,6 +20,16 @@
         "comfy/no-redundant-litegraph-cleanup": "error",
         "comfy/no-redundant-vitest-cleanup": "error"
       }
+    },
+    {
+      "files": [
+        "**/apps/**/*.test.{ts,tsx}",
+        "**/packages/object-info-parser/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/no-persistent-litegraph-registration": "off",
+        "comfy/no-redundant-litegraph-cleanup": "off"
+      }
     }
   ]
 }

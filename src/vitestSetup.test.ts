@@ -1,5 +1,32 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode, LiteGraphGlobal } from '@/lib/litegraph/src/litegraph'
+
+let resetLiteGraph: LiteGraphGlobal | undefined
+
+describe('registered LiteGraph type cleanup', () => {
+  it('tracks a singleton registered after a module reset', async () => {
+    vi.resetModules()
+    const { registerLiteGraphInstance } =
+      await import('@/lib/litegraph/src/litegraphInstance')
+    resetLiteGraph = new LiteGraphGlobal()
+    registerLiteGraphInstance(resetLiteGraph)
+    resetLiteGraph.registerNodeType(
+      'test/reset-module',
+      class ResetModuleNode extends LGraphNode {}
+    )
+    expect(
+      resetLiteGraph.registered_node_types['test/reset-module']
+    ).toBeDefined()
+  })
+
+  it('clears registrations from the new singleton', () => {
+    expect(
+      resetLiteGraph?.registered_node_types['test/reset-module']
+    ).toBeUndefined()
+  })
+})
+
 /**
  * Guards the network block installed by `vitest.setup.ts`.
  *

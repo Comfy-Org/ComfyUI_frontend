@@ -190,8 +190,8 @@ const liteGraphFixture = `import {
   beforeAll,
   beforeEach,
   describe,
-  onTestFinished,
-  it
+  it,
+  suite
 } from 'vitest'
 import { LiteGraph as Graph } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph as RelativeGraph } from './litegraph'
@@ -203,10 +203,12 @@ beforeEach(() => Graph.registerNodeType('test', class {}))
 describe('collection registration', () => {
   Graph.registerNodeType('describe', class {})
 })
+suite('collection registration alias', () => {
+  Graph.registerNodeType('suite-alias', class {})
+})
 
 afterAll(() => Graph.unregisterNodeType('suite'))
 afterEach(() => Graph.clearRegisteredTypes())
-onTestFinished(() => Graph.unregisterNodeType('finished'))
 it('allows per-test registration', () => {
   Graph.registerNodeType('inline', class {})
   Graph.unregisterNodeType('inline')
@@ -323,10 +325,10 @@ describe('Vitest cleanup rules', () => {
   it('reports persistent LiteGraph registrations and redundant cleanup', () => {
     expect(
       output.match(/Register LiteGraph node types in beforeEach or a test/g)
-    ).toHaveLength(4)
+    ).toHaveLength(5)
     expect(
       output.match(/LiteGraph\.unregisterNodeType\(\) is redundant/g)
-    ).toHaveLength(2)
+    ).toHaveLength(1)
     expect(
       output.match(/LiteGraph\.clearRegisteredTypes\(\) is redundant/g)
     ).toHaveLength(1)

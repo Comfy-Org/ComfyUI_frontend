@@ -16,8 +16,8 @@ const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
-const BEFORE_TEST_IMPORTS = new Set(['beforeAll', 'describe'])
-const TEARDOWN_IMPORTS = new Set(['afterAll', 'afterEach', 'onTestFinished'])
+const BEFORE_TEST_IMPORTS = new Set(['beforeAll', 'describe', 'suite'])
+const TEARDOWN_IMPORTS = new Set(['afterAll', 'afterEach'])
 const HOOK_IMPORTS = new Set([
   'afterAll',
   'afterEach',
@@ -25,7 +25,7 @@ const HOOK_IMPORTS = new Set([
   'beforeEach'
 ])
 const VI_IMPORTS = new Set(['vi'])
-const VITEST_GLOBALS = new Set([...HOOK_IMPORTS, 'describe', 'vi'])
+const VITEST_GLOBALS = new Set([...HOOK_IMPORTS, ...BEFORE_TEST_IMPORTS, 'vi'])
 
 interface Node {
   readonly type: string
