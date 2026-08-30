@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const messageVariants = cva({
-  base: 'flex w-full items-start gap-2 rounded-lg border p-3 text-sm',
+  base: 'flex w-full items-start gap-2 rounded-lg border px-3 py-2.75 text-sm',
   variants: {
     severity: {
       error:
