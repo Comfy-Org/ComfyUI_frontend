@@ -92,6 +92,17 @@ describe('idAllocation', () => {
     expect(state.lastNodeId).toBe(MINT_ID_MIN - 2)
     expect(Number(state.lastLinkId)).toBe(MINT_ID_MIN - 2)
   })
+
+  it('fails before sequential counters enter the coordination-free range', () => {
+    const state = createLGraphState()
+    state.lastNodeId = MINT_ID_MIN - 2
+    state.lastLinkId = toLinkId(MINT_ID_MIN - 2)
+
+    expect(mintNodeId(state)).toBe(String(MINT_ID_MIN - 1))
+    expect(mintLinkId(state)).toBe(MINT_ID_MIN - 1)
+    expect(() => mintNodeId(state)).toThrow(RangeError)
+    expect(() => mintLinkId(state)).toThrow(RangeError)
+  })
 })
 
 describe('coordination-free (doc-bound) allocation', () => {

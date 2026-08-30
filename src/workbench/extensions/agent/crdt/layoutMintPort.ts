@@ -24,6 +24,7 @@ export interface LayoutChangeView {
   operation: {
     type: string
     actor?: string
+    graphId?: string
     nodeId?: NodeId
     layout?: { position: { x: number; y: number } }
   }
@@ -35,6 +36,8 @@ interface LayoutChangeFeed {
 
 /** The workflow-JSON node snapshot an `add_node` carries, read at mint time. */
 interface MintSnapshotSource {
+  /** Active root graph id; interior graph operations are not root doc ops. */
+  rootGraphId(): string | null
   /** Serialized workflow-JSON node for `id`, or null when unavailable. */
   serializeNode(id: string): WorkflowNode | null
   /** Every node id currently on the graph (clear's authoritative target set). */
@@ -85,9 +88,12 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   function onChange(change: LayoutChangeView): void {
     const operation = change.operation
     const inTeardown = deps.session.inTeardown()
+    const inRootGraph =
+      operation.graphId !== undefined &&
+      operation.graphId === deps.source.rootGraphId()
     switch (operation.type) {
       case 'createNode': {
-        if (!gate(change, inTeardown)) return
+        if (!inRootGraph || !gate(change, inTeardown)) return
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
@@ -111,7 +117,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         return
       }
       case 'deleteNode': {
-        if (!gate(change, inTeardown)) return
+        if (!inRootGraph || !gate(change, inTeardown)) return
         if (operation.nodeId === undefined) return
         deps.enqueue([
           {
@@ -125,7 +131,8 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'clearGraph': {
         const captured = intentionalClearNodes
         intentionalClearNodes = null
-        if (!gate(change, inTeardown || captured === null)) return
+        if (!inRootGraph || !gate(change, inTeardown || captured === null))
+          return
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return
       }

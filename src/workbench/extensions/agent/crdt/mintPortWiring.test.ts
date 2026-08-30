@@ -138,7 +138,12 @@ describe('attachMintPortWiring', () => {
 
     linkStore.deleteLink(ROOT_SCOPE, severed)
     deliverLayoutChange({
-      operation: { type: 'deleteNode', actor: 'user-abc', nodeId: toNodeId(2) }
+      operation: {
+        type: 'deleteNode',
+        actor: 'user-abc',
+        graphId: ROOT_ID,
+        nodeId: toNodeId(2)
+      }
     })
     await afterSweep()
 
@@ -187,19 +192,21 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([])
   })
 
-  it('suppresses mints between the load-bracket hooks, fail-closed on a failed load', () => {
+  it('keeps mints suppressed until every overlapping load bracket closes', () => {
     wiring.onBeforeGraphLoad()
     useLinkStore().registerLink(ROOT_SCOPE, topology(41))
     expect(minted).toEqual([])
 
-    // A failed load never fires afterConfigureGraph: the bracket stays open
-    // (still no mints), and the NEXT load's paired hooks close it.
     wiring.onBeforeGraphLoad()
     useLinkStore().registerLink(ROOT_SCOPE, topology(42))
     expect(minted).toEqual([])
 
     wiring.onAfterGraphConfigure()
     useLinkStore().registerLink(ROOT_SCOPE, topology(43, 4))
+    expect(minted).toEqual([])
+
+    wiring.onAfterGraphConfigure()
+    useLinkStore().registerLink(ROOT_SCOPE, topology(44, 5))
     expect(minted).toHaveLength(1)
   })
 
@@ -221,6 +228,7 @@ describe('attachMintPortWiring', () => {
       operation: {
         type: 'createNode',
         actor: 'user-abc',
+        graphId: ROOT_ID,
         nodeId: toNodeId(5),
         layout: { position: { x: 10, y: 20 } }
       }
