@@ -5,7 +5,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { ref, useTemplateRef } from 'vue'
+import { ref, useId } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -26,12 +26,11 @@ const emit = defineEmits<{
   hide: []
 }>()
 
-const content = useTemplateRef<HTMLElement>('content')
-const open = ref(false)
+const visible = ref(false)
 const anchor = ref({ x: 0, y: 0 })
-const visible = open
-const overlayVisible = open
-const contentStyle = useModalLiftedZIndex(open)
+const triggerId = `${useId()}-trigger`
+const overlayVisible = visible
+const contentStyle = useModalLiftedZIndex(visible)
 
 function show(event: Event) {
   const mouseEvent = event instanceof MouseEvent ? event : undefined
@@ -41,23 +40,24 @@ function show(event: Event) {
     x: mouseEvent?.clientX ?? rect?.left ?? 0,
     y: mouseEvent?.clientY ?? rect?.bottom ?? 0
   }
-  open.value = false
   window.setTimeout(() => {
-    open.value = true
+    document.getElementById(triggerId)?.click()
   })
 }
 
 function hide() {
-  open.value = false
+  document.dispatchEvent(
+    new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' })
+  )
 }
 
 function toggle(event: Event) {
-  if (content.value?.isConnected) hide()
+  if (visible.value) hide()
   else show(event)
 }
 
 function updateOpen(value: boolean) {
-  open.value = value
+  visible.value = value
   if (value) emit('show')
   else emit('hide')
 }
@@ -66,9 +66,10 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
 </script>
 
 <template>
-  <DropdownMenuRoot :open @update:open="updateOpen">
+  <DropdownMenuRoot @update:open="updateOpen">
     <DropdownMenuTrigger as-child>
       <button
+        :id="triggerId"
         type="button"
         tabindex="-1"
         aria-hidden="true"
@@ -78,23 +79,18 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent
-        as-child
+        v-bind="$attrs"
+        :class="cn(menuContentClass, $attrs.class)"
+        :style="contentStyle"
         :side-offset="2"
         align="start"
         @close-auto-focus.prevent
       >
-        <div
-          ref="content"
-          v-bind="$attrs"
-          :class="cn(menuContentClass, $attrs.class)"
-          :style="contentStyle"
-        >
-          <MenuItems :items="model">
-            <template v-if="$slots.item" #item="slotProps">
-              <slot name="item" v-bind="slotProps" />
-            </template>
-          </MenuItems>
-        </div>
+        <MenuItems :items="model">
+          <template v-if="$slots.item" #item="slotProps">
+            <slot name="item" v-bind="slotProps" />
+          </template>
+        </MenuItems>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
