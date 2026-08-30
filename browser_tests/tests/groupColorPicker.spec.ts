@@ -82,10 +82,13 @@ test.describe(
       })
       await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
 
-      await comfyPage.page.getByText('Color', { exact: true }).click()
-      const redSwatch = comfyPage.page.getByTitle('Red')
-      await expect(redSwatch.first()).toBeVisible()
-      await redSwatch.first().click()
+      await comfyPage.contextMenu.menuItem('Color').click()
+      const redSwatch = comfyPage.page.getByRole('menuitem', {
+        name: 'Red',
+        exact: true
+      })
+      await expect(redSwatch).toBeVisible()
+      await redSwatch.click()
       await comfyPage.nextFrame()
 
       const groupColors = await comfyPage.page.evaluate(() => {
@@ -104,17 +107,13 @@ test.describe(
         'right-click Color menu should apply the same shade as the toolbar swatch'
       ).toBe(groupColors.toolbarSwatch)
 
-      // Selecting a swatch closes the submenu popover immediately
-      // (SubmenuPopover#handleSubmenuClick / NodeContextMenu#handleSubmenuSelect),
-      // so the screenshot must come from a fresh open rather than the click
-      // above — otherwise it captures the menu already closed and never
-      // verifies the submenu's swatch rendering at all.
+      // Selecting a swatch closes the menu, so reopen it for the screenshot.
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
       await expect(comfyPage.contextMenu.applicationMenu).toBeVisible()
-      await comfyPage.page.getByText('Color', { exact: true }).click()
-      await expect(redSwatch.first()).toBeVisible()
+      await comfyPage.contextMenu.menuItem('Color').click()
+      await expect(redSwatch).toBeVisible()
 
       await expect(comfyPage.canvas).toHaveScreenshot(
         'group-color-right-click-matches-toolbar-swatch.png'
