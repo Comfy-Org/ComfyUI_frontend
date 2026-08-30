@@ -267,8 +267,13 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   /**
-   * `ok: true` carries the seq of the catch-up snapshot — the gap detector's
-   * baseline. `ok: false` means the server refused: clearing REALITY re-opens
+   * `ok: true` confirms the subscription but does not mean its catch-up update
+   * has already been integrated. The host sends `doc_subscribed(seq=N)` before
+   * `doc_update(seq=N)`, so treating the acknowledgement as the applied
+   * baseline drops the snapshot as stale and leaves a fresh follower empty.
+   * The first actual update establishes the baseline instead.
+   *
+   * `ok: false` means the server refused: clearing REALITY re-opens
    * the intent/reality disagreement so the next `reconcile()` (any status
    * frame) retries, instead of the bridge holding a subscription that does not
    * exist server-side and going silently deaf.
@@ -277,7 +282,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
-    if (subscribed.ok) this.lastSeq = subscribed.seq ?? null
+    if (subscribed.ok) this.lastSeq = null
     else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }

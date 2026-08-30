@@ -409,6 +409,26 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
 })
 
 describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', () => {
+  it('applies the catch-up update when its seq equals the preceding subscribe acknowledgement', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 1)
+    )
+
+    expect(projected).toHaveLength(1)
+    expect(bridge.follower.updatesApplied).toBe(1)
+  })
+
   it('applies contiguous seqs without resubscribing', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true
