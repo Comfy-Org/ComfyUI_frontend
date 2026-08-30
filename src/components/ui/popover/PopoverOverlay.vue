@@ -128,7 +128,7 @@ defineExpose({ show, hide, toggle, container: content, open })
         :style="contentStyle"
         :class="
           cn(
-            'z-1700 rounded-lg border border-interface-stroke bg-interface-panel-surface text-base-foreground shadow-lg outline-none',
+            'z-1700 max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border border-interface-stroke bg-interface-panel-surface text-base-foreground shadow-lg outline-none',
             className,
             contentClass
           )
