@@ -23,12 +23,11 @@
     </div>
   </div>
 
-  <TieredMenu
+  <Menu
     ref="menuRef"
     :model="translatedItems"
     :popup="true"
     class="comfy-command-menu"
-    @show="onMenuShow"
   >
     <template #item="{ item, props }">
       <a
@@ -85,17 +84,16 @@
         />
       </div>
     </template>
-  </TieredMenu>
+  </Menu>
 </template>
 
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
-import TieredMenu from 'primevue/tieredmenu'
-import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
-import { computed, nextTick, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Tag from '@/components/ui/badge/Badge.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
@@ -122,9 +120,7 @@ const settingsDialog = useSettingsDialog()
 const managerState = useManagerState()
 const settingStore = useSettingStore()
 
-const menuRef = ref<
-  ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
->(null)
+const menuRef = ref<InstanceType<typeof Menu> | null>(null)
 
 const nodes2Enabled = computed(
   () => settingStore.get('Comfy.VueNodes.Enabled') ?? false
@@ -256,15 +252,6 @@ const translatedItems = computed(() => {
   return items
 })
 
-const onMenuShow = () => {
-  void nextTick(() => {
-    // Force the menu to show submenus on hover
-    if (menuRef.value) {
-      menuRef.value.dirty = true
-    }
-  })
-}
-
 const isZoomCommand = (item: MenuItem) => {
   return (
     item.comfyCommand?.id === 'Comfy.Canvas.ZoomIn' ||
@@ -273,11 +260,12 @@ const isZoomCommand = (item: MenuItem) => {
 }
 
 const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
-  if (item.comfyCommand) {
+  const commandId = item.comfyCommand?.id
+  if (commandId) {
     whileMouseDown(
       event,
       async () => {
-        await commandStore.execute(item.comfyCommand!.id)
+        await commandStore.execute(commandId)
       },
       50
     )
@@ -301,7 +289,7 @@ const handleItemClick = (item: MenuItem, event: MouseEvent) => {
 
 const hasActiveStateSiblings = (item: MenuItem): boolean => {
   // Check if this item has siblings with active state (either from store or theme items)
-  return (
+  return Boolean(
     item.parentPath &&
     (item.parentPath === 'theme' ||
       menuItemStore.menuItemHasActiveStateChildren[item.parentPath])
@@ -340,24 +328,5 @@ const onNodes2ToggleChange = async (value: boolean) => {
   background: var(--p-content-hover-background);
   border-color: var(--p-content-border-color);
   border-style: solid;
-}
-</style>
-
-<style>
-.comfy-command-menu {
-  --p-tieredmenu-item-focus-background: color-mix(
-    in srgb,
-    var(--fg-color) 15%,
-    transparent
-  );
-  --p-tieredmenu-item-active-background: color-mix(
-    in srgb,
-    var(--fg-color) 10%,
-    transparent
-  );
-}
-
-.comfy-command-menu ul {
-  background-color: var(--comfy-menu-bg) !important;
 }
 </style>
