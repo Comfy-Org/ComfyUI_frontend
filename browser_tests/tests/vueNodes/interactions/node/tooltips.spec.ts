@@ -10,7 +10,7 @@ test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
   })
 
   test('widget value tooltips', async ({ comfyPage }) => {
-    const tooltip = comfyPage.page.locator('.p-tooltip-text')
+    const tooltip = comfyPage.page.getByRole('tooltip')
     await comfyPage.vueNodes.getWidgetByName('load check', 'ckpt_name').hover()
     await expect(tooltip, 'displays for combos').toContainText('v1-5-pruned')
 
