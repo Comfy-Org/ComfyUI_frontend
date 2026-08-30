@@ -96,7 +96,7 @@ export interface CustomNodeEditorDraftTestView {
   id: string
   status: CustomNodeEditorDraftTestDto['status']
   draftDigest: string
-  nodeId: string
+  workflowPath: string
   error?: string
   result?: CustomNodeEditorDraftTestResult
   createdAt: string
@@ -252,7 +252,7 @@ const readDraftTest = async (
     id: data.id,
     status: data.status,
     draftDigest: data.draft_digest,
-    nodeId: data.node_id,
+    workflowPath: data.workflow_path,
     error: data.error,
     result: data.result,
     createdAt: data.created_at,

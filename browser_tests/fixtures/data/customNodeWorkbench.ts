@@ -47,7 +47,7 @@ export const testedNodeAgentProposal = {
   ],
   test: {
     status: 'passed',
-    summary: 'Draft node executed successfully with 1 output.',
+    summary: 'Ephemeral test workflow completed with 1 output.',
     test_id: 'draft-test-1',
     phase: 'complete',
     sandbox: 'seatbelt',

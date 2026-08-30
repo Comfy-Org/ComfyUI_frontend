@@ -243,7 +243,7 @@ describe('useCustomNodeEditor', () => {
             ],
             test: {
               status: 'passed',
-              summary: 'Draft node executed successfully with 1 output.',
+              summary: 'Ephemeral test workflow completed with 1 output.',
               test_id: 'test-1',
               phase: 'complete',
               sandbox: 'seatbelt',
@@ -294,7 +294,7 @@ describe('useCustomNodeEditor', () => {
     expect(proposal.changes[0].kind).toBe('modified')
     expect(proposal.test).toEqual({
       status: 'passed',
-      summary: 'Draft node executed successfully with 1 output.',
+      summary: 'Ephemeral test workflow completed with 1 output.',
       testId: 'test-1',
       phase: 'complete',
       sandbox: 'seatbelt',
@@ -343,7 +343,7 @@ describe('useCustomNodeEditor', () => {
       id: 'test-1',
       status: 'queued' as const,
       draft_digest: 'draft-digest',
-      node_id: 'CheckerboardMask',
+      workflow_path: 'v2/tests/workflows/checkerboard.json',
       created_at: '2026-08-29T12:00:00Z',
       updated_at: '2026-08-29T12:00:00Z'
     }
@@ -351,7 +351,7 @@ describe('useCustomNodeEditor', () => {
       ...queued,
       status: 'passed' as const,
       result: {
-        format: 'comfy-draft-test/1' as const,
+        format: 'comfy-ephemeral-pack-test/1' as const,
         status: 'passed' as const,
         phase: 'complete' as const,
         stdout: '',
@@ -368,20 +368,15 @@ describe('useCustomNodeEditor', () => {
       {
         path: 'v2/nodes/checkerboard.py',
         content: '# unsaved browser buffer\n'
+      },
+      {
+        path: 'v2/tests/workflows/checkerboard.json',
+        content: '{"1":{"class_type":"CheckerboardMask","inputs":{}}}\n'
       }
     ]
     const input = {
       files,
-      node_id: 'CheckerboardMask',
-      inputs: {
-        image: {
-          $fixture: 'image',
-          width: 64,
-          height: 64,
-          pattern: 'gradient'
-        },
-        square_size: 8
-      }
+      workflow_path: 'v2/tests/workflows/checkerboard.json'
     }
     const { createDraftTest, getDraftTest, deleteDraftTest } =
       useCustomNodeEditor()

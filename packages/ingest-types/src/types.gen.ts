@@ -3298,6 +3298,7 @@ export type CustomNodeEditorDraftTestOutput = {
   max?: number | null
   mean?: number | null
   min?: number | null
+  node_id?: string
   shape?: Array<number>
   summary?: string
   value?: unknown
@@ -3375,7 +3376,7 @@ export type CustomNodeEditorFiles = {
 export type CustomNodeEditorDraftTestResult = {
   duration_ms?: number
   error?: CustomNodeEditorDraftTestError
-  format: 'comfy-draft-test/1'
+  format: 'comfy-ephemeral-pack-test/1'
   guest_pid?: number
   outputs: Array<CustomNodeEditorDraftTestOutput>
   phase:
@@ -3403,16 +3404,13 @@ export type CustomNodeEditorDraftTestRequest = {
     path: string
   }>
   /**
-   * Scalar inputs or bounded image and mask fixture descriptors.
-   */
-  inputs: {
-    [key: string]: unknown
-  }
-  node_id: string
-  /**
    * Optional client-computed digest used to reject a corrupted snapshot.
    */
   snapshot_digest?: string
+  /**
+   * API-format workflow JSON stored inside the pack's v2 tree.
+   */
+  workflow_path: string
 }
 
 export type CustomNodeEditorDraftTest = {
@@ -3423,7 +3421,6 @@ export type CustomNodeEditorDraftTest = {
    */
   error?: string
   id: string
-  node_id: string
   result?: CustomNodeEditorDraftTestResult
   status:
     | 'queued'
@@ -3433,6 +3430,7 @@ export type CustomNodeEditorDraftTest = {
     | 'failed'
     | 'cancelled'
   updated_at: string
+  workflow_path: string
 }
 
 /**
@@ -7800,7 +7798,7 @@ export type CreateCustomNodeEditorDraftTestData = {
 
 export type CreateCustomNodeEditorDraftTestErrors = {
   /**
-   * Invalid draft snapshot or test inputs
+   * Invalid ephemeral pack or packaged workflow
    */
   400: unknown
   /**

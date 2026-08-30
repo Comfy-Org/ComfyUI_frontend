@@ -1960,6 +1960,7 @@ export const zCustomNodeEditorDraftTestOutput = z.object({
   max: z.number().nullish(),
   mean: z.number().nullish(),
   min: z.number().nullish(),
+  node_id: z.string().optional(),
   shape: z.array(z.number().int()).optional(),
   summary: z.string().optional(),
   value: z.unknown().optional(),
@@ -2065,7 +2066,7 @@ export const zCustomNodeEditorFiles = z.object({
 export const zCustomNodeEditorDraftTestResult = z.object({
   duration_ms: z.number().int().gte(0).optional(),
   error: zCustomNodeEditorDraftTestError.optional(),
-  format: z.enum(['comfy-draft-test/1']),
+  format: z.enum(['comfy-ephemeral-pack-test/1']),
   guest_pid: z.number().int().optional(),
   outputs: z.array(zCustomNodeEditorDraftTestOutput).max(64),
   phase: z.enum([
@@ -2095,9 +2096,8 @@ export const zCustomNodeEditorDraftTestRequest = z.object({
     )
     .min(1)
     .max(256),
-  inputs: z.record(z.unknown()),
-  node_id: z.string(),
-  snapshot_digest: z.string().optional()
+  snapshot_digest: z.string().optional(),
+  workflow_path: z.string()
 })
 
 export const zCustomNodeEditorDraftTest = z.object({
@@ -2105,7 +2105,6 @@ export const zCustomNodeEditorDraftTest = z.object({
   draft_digest: z.string(),
   error: z.string().optional(),
   id: z.string(),
-  node_id: z.string(),
   result: zCustomNodeEditorDraftTestResult.optional(),
   status: z.enum([
     'queued',
@@ -2115,7 +2114,8 @@ export const zCustomNodeEditorDraftTest = z.object({
     'failed',
     'cancelled'
   ]),
-  updated_at: z.string().datetime()
+  updated_at: z.string().datetime(),
+  workflow_path: z.string()
 })
 
 /**

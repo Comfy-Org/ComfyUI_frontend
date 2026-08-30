@@ -76,7 +76,7 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
     const testResult = page.getByTestId('node-agent-test-result')
     await expect(testResult).toContainText('Backend test passed')
     await expect(testResult).toContainText(
-      'Draft node executed successfully with 1 output.'
+      'Ephemeral test workflow completed with 1 output.'
     )
     await expect(testResult).toContainText('Completed in 2184 ms')
     await expect(testResult).toContainText('Phase: complete')

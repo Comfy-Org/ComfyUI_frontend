@@ -185,7 +185,7 @@ describe('CustomNodeWorkbench', () => {
       ],
       test: {
         status: 'passed',
-        summary: 'Draft node executed successfully with 1 output.',
+        summary: 'Ephemeral test workflow completed with 1 output.',
         testId: 'test-1',
         phase: 'complete',
         sandbox: 'seatbelt',
@@ -252,7 +252,7 @@ describe('CustomNodeWorkbench', () => {
     expect(screen.getByText('Added a configurable color.')).toBeVisible()
     expect(screen.getByText('Backend test passed')).toBeVisible()
     expect(
-      screen.getByText('Draft node executed successfully with 1 output.')
+      screen.getByText('Ephemeral test workflow completed with 1 output.')
     ).toBeVisible()
     expect(screen.getByText('Completed in 842 ms')).toBeVisible()
     expect(screen.getByText('Phase: complete')).toBeVisible()
