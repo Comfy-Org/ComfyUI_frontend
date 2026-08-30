@@ -260,7 +260,7 @@ defineExpose({
   width: 100%;
   display: flex;
   align-items: center;
-  margin-left: var(--p-tree-node-gap);
+  margin-left: 0.5rem;
   flex-grow: 1;
 }
 
@@ -280,7 +280,7 @@ defineExpose({
   left: 0;
   right: 0;
   bottom: 0;
-  border: 1px solid var(--p-content-color);
+  border: 1px solid var(--base-foreground);
   pointer-events: none;
 }
 </style>

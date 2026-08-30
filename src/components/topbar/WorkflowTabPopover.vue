@@ -7,22 +7,26 @@
     ref="popoverRef"
     side="top"
     :side-offset="8"
-    content-class="workflow-popover-fade w-fit border-none bg-transparent p-0"
+    content-class="workflow-popover-fade w-fit rounded-xl border-none bg-transparent p-0 shadow-lg transition-opacity duration-150 ease-out"
     @mouseleave="hidePopover"
   >
-    <div class="workflow-preview-content">
+    <div
+      class="flex max-w-62.5 flex-col overflow-hidden rounded-xl bg-interface-menu-surface text-text-primary"
+    >
       <div
         v-if="thumbnailUrl && !isActiveTab"
-        class="workflow-preview-thumbnail relative"
+        class="workflow-preview-thumbnail relative p-2"
       >
         <img
           :src="thumbnailUrl"
-          class="block h-[200px] rounded-lg object-cover p-2"
+          class="bg-interface-menu-component-surface block h-50 rounded-lg object-cover p-2 shadow-lg"
           :style="{ width: `${POPOVER_WIDTH}px` }"
         />
       </div>
-      <div class="workflow-preview-footer">
-        <span class="workflow-preview-name">{{ workflowFilename }}</span>
+      <div class="px-3 pt-1 pb-2">
+        <span class="block truncate text-sm font-medium text-text-primary">
+          {{ workflowFilename }}
+        </span>
       </div>
     </div>
   </Popover>
@@ -89,60 +93,3 @@ defineExpose({
   togglePopover
 })
 </script>
-
-<style scoped>
-.workflow-preview-content {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-radius: var(--radius-xl);
-  max-width: var(--popover-width);
-  background-color: var(--comfy-menu-bg);
-  color: var(--fg-color);
-}
-
-.workflow-preview-thumbnail {
-  position: relative;
-  padding: calc(var(--spacing) * 2);
-}
-
-.workflow-preview-thumbnail img {
-  box-shadow: var(--shadow-md);
-  background-color: color-mix(in srgb, var(--comfy-menu-bg) 70%, black);
-}
-
-.dark-theme .workflow-preview-thumbnail img {
-  box-shadow: var(--shadow-lg);
-}
-
-.workflow-preview-footer {
-  padding-top: calc(var(--spacing) * 1);
-  padding-right: calc(var(--spacing) * 3);
-  padding-bottom: calc(var(--spacing) * 2);
-  padding-left: calc(var(--spacing) * 3);
-}
-
-.workflow-preview-name {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--text-sm);
-  line-height: var(--tw-leading, var(--text-sm--line-height));
-  font-weight: var(--font-weight-medium);
-  color: var(--fg-color);
-}
-</style>
-
-<style>
-.workflow-popover-fade {
-  border-radius: var(--radius-xl);
-  background-color: transparent;
-  box-shadow: var(--shadow-lg);
-  transition: opacity 0.15s ease-out;
-}
-
-.dark-theme .workflow-popover-fade {
-  box-shadow: var(--shadow-2xl);
-}
-</style>

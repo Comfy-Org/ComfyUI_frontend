@@ -11,11 +11,9 @@
       )
     "
     :style="{
-      '--p-breadcrumb-gap': `0px`,
-      '--p-breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
-      '--p-breadcrumb-item-min-width': `${MIN_WIDTH}px`,
-      '--p-breadcrumb-item-padding': `${ITEM_PADDING}px`,
-      '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
+      '--breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
+      '--breadcrumb-item-min-width': `${MIN_WIDTH}px`,
+      '--breadcrumb-item-padding': `${ITEM_PADDING}px`
     }"
   >
     <WorkflowActionsDropdown
@@ -231,7 +229,7 @@ onUpdated(() => {
   align-items: center;
   overflow: hidden;
   height: calc(var(--spacing) * 8);
-  min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
+  min-width: calc(var(--breadcrumb-item-min-width) + 1rem);
   border: 1px solid transparent;
   background-color: transparent;
   transition: all 0.2s;
@@ -243,12 +241,12 @@ onUpdated(() => {
   border: 1px solid transparent;
   background-color: transparent;
   display: flex;
-  padding: 0 var(--p-breadcrumb-item-margin);
+  padding: 0 var(--breadcrumb-item-margin);
 }
 
 :deep(.p-breadcrumb-item-link) {
   padding: 0
-    calc(var(--p-breadcrumb-item-margin) + var(--p-breadcrumb-item-padding));
+    calc(var(--breadcrumb-item-margin) + var(--breadcrumb-item-padding));
 }
 
 :deep(.p-breadcrumb-item:hover) {
@@ -258,7 +256,7 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb-item:has(.p-breadcrumb-item-link-icon-visible)) {
-  min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem + 20px);
+  min-width: calc(var(--breadcrumb-item-min-width) + 1rem + 20px);
 }
 
 :deep(.p-breadcrumb-item:first-child) {
@@ -266,7 +264,7 @@ onUpdated(() => {
   flex-shrink: 5000;
 
   .p-breadcrumb-item-link {
-    padding-left: var(--p-breadcrumb-item-padding);
+    padding-left: var(--breadcrumb-item-padding);
   }
 }
 

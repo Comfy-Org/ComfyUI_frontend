@@ -2,7 +2,7 @@
   <ContextMenu
     ref="contextMenu"
     :model="menuItems"
-    class="max-h-[80vh] overflow-y-auto md:max-h-none md:overflow-y-visible"
+    class="max-h-[calc(100vh-1rem)] overflow-y-auto"
     @show="onMenuShow"
     @hide="onMenuHide"
   >
@@ -280,32 +280,8 @@ function handleSubmenuSelect(subOption: SubMenuOption) {
   hide()
 }
 
-function constrainMenuHeight() {
-  const menuInstance = contextMenu.value as unknown as {
-    container?: HTMLElement
-  }
-  const rootList = menuInstance?.container?.querySelector(
-    ':scope > ul'
-  ) as HTMLElement | null
-  if (!rootList) return
-
-  const rect = rootList.getBoundingClientRect()
-  const availableHeight = window.innerHeight - rect.top - 8
-  if (availableHeight <= 0) return
-
-  // Setting overflow-y to auto/scroll on the root <ul> coerces overflow-x
-  // to a non-visible value too (CSS spec), which clips horizontally-opening
-  // submenus like Shape. Only apply the constraint when content truly
-  // overflows so the common case keeps overflow visible.
-  if (rootList.scrollHeight <= availableHeight) return
-
-  rootList.style.maxHeight = `${availableHeight}px`
-  rootList.style.overflowY = 'auto'
-}
-
 function onMenuShow() {
   isOpen.value = true
-  requestAnimationFrame(constrainMenuHeight)
 }
 
 function onMenuHide() {

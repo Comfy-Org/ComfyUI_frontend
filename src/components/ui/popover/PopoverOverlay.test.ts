@@ -36,6 +36,7 @@ describe('PopoverOverlay', () => {
 
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
   })
 
   it('dismisses on an outside press', async () => {
