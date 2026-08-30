@@ -1,64 +1,17 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import {
+  clickExactMenuItem,
+  getNodeRef,
+  getNodeWrapper,
+  openContextMenu,
+  openMultiNodeContextMenu
+} from '@e2e/fixtures/utils/contextMenuTestHelpers'
 
 const BYPASS_CLASS = /before:bg-bypass\/60/
-
-async function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
-  await comfyPage.contextMenu.clickMenuItemExact(name)
-  await expect(comfyPage.contextMenu.primeVueMenu).toBeHidden()
-}
-
-async function openContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
-  const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
-  await comfyPage.contextMenu.openForVueNode(fixture.header)
-  return comfyPage.contextMenu.primeVueMenu
-}
-
-async function openMultiNodeContextMenu(
-  comfyPage: ComfyPage,
-  titles: string[]
-) {
-  // deselectAll via evaluate — clearSelection() clicks at a fixed position
-  // which can hit nodes or the toolbar overlay
-  await comfyPage.page.evaluate(() => window.app!.canvas.deselectAll())
-  await comfyPage.nextFrame()
-
-  for (const title of titles) {
-    const fixture = await comfyPage.vueNodes.getFixtureByTitle(title)
-    await fixture.header.click({ modifiers: ['ControlOrMeta'] })
-  }
-  await comfyPage.nextFrame()
-
-  const firstFixture = await comfyPage.vueNodes.getFixtureByTitle(titles[0])
-  const box = await firstFixture.header.boundingBox()
-  if (!box) throw new Error(`Header for "${titles[0]}" not found`)
-  await comfyPage.page.mouse.click(
-    box.x + box.width / 2,
-    box.y + box.height / 2,
-    { button: 'right' }
-  )
-
-  const menu = comfyPage.contextMenu.primeVueMenu
-  await menu.waitFor({ state: 'visible' })
-  return menu
-}
-
-function getNodeWrapper(comfyPage: ComfyPage, nodeTitle: string): Locator {
-  return comfyPage.vueNodes
-    .getNodeByTitle(nodeTitle)
-    .getByTestId(TestIds.node.innerWrapper)
-}
-
-async function getNodeRef(comfyPage: ComfyPage, nodeTitle: string) {
-  const refs = await comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-  return refs[0]
-}
 
 test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
   test.describe('Single Node Actions', () => {
