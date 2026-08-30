@@ -212,10 +212,7 @@ describe('ReplyAssetGroup', () => {
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'data:image/png;base64,gen')
-    expect(generateModelThumbnail).toHaveBeenCalledWith(
-      'https://x/mesh.glb',
-      'mesh.glb'
-    )
+    expect(generateModelThumbnail).toHaveBeenCalledWith('https://x/mesh.glb')
   })
 
   it('refreshes the tile thumbnail after the viewer closes', async () => {
@@ -260,5 +257,26 @@ describe('ReplyAssetGroup', () => {
     await userEvent.click(toggle()!)
     expect(thumbs()).toHaveLength(12)
     expect(toggle()).toHaveTextContent('Show more')
+  })
+
+  it('[11-T7 regression] generates thumbnails only for currently visible 3D entries', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const models = Array.from({ length: 13 }, (_, n) => ({
+      ...model,
+      url: `https://x/mesh-${n}.glb`,
+      filename: `mesh-${n}.glb`
+    }))
+    renderGroup(models)
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalled())
+    expect(generateModelThumbnail).not.toHaveBeenCalledWith(
+      'https://x/mesh-12.glb'
+    )
+
+    await userEvent.click(toggle()!)
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledWith(
+        'https://x/mesh-12.glb'
+      )
+    )
   })
 })
