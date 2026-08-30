@@ -151,10 +151,29 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
   })
 }
 
+async function mockAssetApiFiles(page: Page) {
+  await page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      json: {
+        assets: generatedJobs.map((job, index) => ({
+          id: job.id,
+          name: job.preview_output!.filename,
+          job_id: `00000000-0000-4000-a000-${String(index + 1).padStart(12, '0')}`,
+          mime_type: 'image/png',
+          tags: ['output'],
+          preview_url: `/api/view?filename=${job.preview_output!.filename}&type=output`,
+          created_at: new Date(job.create_time).toISOString(),
+          updated_at: new Date(job.create_time).toISOString()
+        })),
+        total: generatedJobs.length,
+        has_more: false
+      }
+    })
+  })
+}
 async function verifyMobileTouchActions(comfyPage: ComfyPage) {
   const tab = comfyPage.menu.assetsTab
 
-  await comfyPage.setup()
   await tab.open()
 
   await tab.getAssetCardByName('alpha').tap()
@@ -193,6 +212,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   test.beforeEach(async ({ jobsRoutes, page }) => {
     await jobsRoutes.mockJobsQueue([])
     await jobsRoutes.mockJobsHistory(generatedJobs)
+    await mockAssetApiFiles(page)
     await mockInputFiles(page, ['imported.png'])
     await mockViewFiles(page, viewFiles)
   })
@@ -277,7 +297,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await verifyMobileTouchActions(comfyPage)
   })
 
-  test('@mobile-ios touch selection keeps actions reachable', async ({
+  test('@mobile-ios @cloud touch selection keeps actions reachable', async ({
     comfyPage
   }) => {
     await verifyMobileTouchActions(comfyPage)
