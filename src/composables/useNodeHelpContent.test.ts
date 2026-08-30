@@ -2,7 +2,7 @@
 // dompurify is inert under happy-dom — see the tripwire note in
 // vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -20,7 +20,7 @@ const i18n = createI18n({
 function useNodeHelpContent(
   nodeRef: Parameters<typeof useNodeHelpContentComposable>[0]
 ) {
-  let result!: ReturnType<typeof useNodeHelpContentComposable>
+  let result: ReturnType<typeof useNodeHelpContentComposable> | undefined
   const Wrapper = defineComponent({
     setup() {
       result = useNodeHelpContentComposable(nodeRef)
@@ -28,6 +28,7 @@ function useNodeHelpContent(
     }
   })
   render(Wrapper, { global: { plugins: [i18n] } })
+  assert(result)
   return result
 }
 
