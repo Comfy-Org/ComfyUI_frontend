@@ -15,8 +15,8 @@
             'h-auto w-full min-w-[4ch] truncate px-4',
             !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
             size === 'large'
-              ? 'pt-[11px] pb-[13px] text-sm'
-              : 'pt-[7px] pb-[9px] text-xs',
+              ? 'pt-[13px] pb-[11px] text-sm'
+              : 'pt-[9px] pb-[7px] text-xs',
             loading && 'pl-9'
           )
         "
