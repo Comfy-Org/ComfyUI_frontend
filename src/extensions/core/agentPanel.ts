@@ -60,7 +60,8 @@ export function registerAgentPanelExtension(): void {
             agentPanelStore ??= useAgentPanelStore()
             agentPanelStore.enabled = true
             agentPanelStore.gateSettled = true
-            disposeTracker ??= registerWorkflowTabActivityTracker(featureEnabled)
+            disposeTracker ??=
+              registerWorkflowTabActivityTracker(featureEnabled)
           } else if (agentPanelStore) {
             agentPanelStore.enabled = false
             disposeTracker?.()
