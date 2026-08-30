@@ -40,6 +40,21 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       for (const widgetName of HIDDEN_PAINTER_WIDGET_NAMES) {
         await expect(node.getByLabel(widgetName, { exact: true })).toBeHidden()
       }
+
+      await comfyPage.page.evaluate(() => {
+        const painter = window.app!.graph.nodes.find(
+          (candidate) => candidate.type === 'Painter'
+        )
+        if (!painter) throw new Error('Painter node not found')
+        window.app!.canvas.selectNode(painter)
+      })
+      await comfyPage.actionbar.propertiesButton.click()
+      const parameters = comfyPage.menu.propertiesPanel.root
+      for (const widgetName of HIDDEN_PAINTER_WIDGET_NAMES) {
+        await expect(
+          parameters.getByLabel(widgetName, { exact: true })
+        ).toBeHidden()
+      }
     })
   })
 
