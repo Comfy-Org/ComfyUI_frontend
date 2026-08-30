@@ -175,6 +175,7 @@ test.describe('Queue overlay', () => {
       const ws = await getWebSocket()
       const execution = new ExecutionHelper(comfyPage, ws)
 
+      await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
       await comfyPage.settings.setSetting(
         'Comfy.Workflow.WorkflowTabsPosition',
         'Sidebar'
