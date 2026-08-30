@@ -5,6 +5,8 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
+import { isLegacyHiddenWidgetType } from '@/types/widgetVisibility'
+import type { WidgetVisibility } from '@/types/widgetVisibility'
 import type { UUID } from '@/utils/uuid'
 
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
@@ -55,6 +57,18 @@ export function deriveWidgetRenderState(
     hasLayoutSize: typeof widget.computeLayoutSize === 'function',
     isDOMWidget: isDOMBackedWidget(widget),
     tooltip: widget.tooltip
+  }
+}
+
+export function deriveWidgetVisibility(
+  widget: Readonly<IBaseWidget>
+): WidgetVisibility {
+  return {
+    hidden:
+      widget.hidden ??
+      widget.options?.hidden ??
+      isLegacyHiddenWidgetType(widget.type),
+    hideInPanel: widget.options?.hideInPanel ?? false
   }
 }
 

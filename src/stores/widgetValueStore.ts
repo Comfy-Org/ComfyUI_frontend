@@ -8,6 +8,8 @@ import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+import { isLegacyHiddenWidgetType } from '@/types/widgetVisibility'
+import type { WidgetVisibility } from '@/types/widgetVisibility'
 
 export interface WidgetRenderState {
   advanced?: boolean
@@ -30,6 +32,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetStates = ref(new Map<UUID, Map<WidgetId, WidgetState>>())
   const graphWidgetRenderStates = ref(
     new Map<UUID, Map<WidgetId, WidgetRenderState>>()
+  )
+  const graphWidgetVisibilities = ref(
+    new Map<UUID, Map<WidgetId, WidgetVisibility>>()
   )
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
   const graphWidgetRestorations = new Map<
@@ -100,6 +105,19 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return nextWidgetRenderStates
   }
 
+  function getGraphWidgetVisibilities(
+    graphId: UUID
+  ): Map<WidgetId, WidgetVisibility> {
+    const widgetVisibilities = graphWidgetVisibilities.value.get(graphId)
+    if (widgetVisibilities) return widgetVisibilities
+
+    const nextWidgetVisibilities = reactive(
+      new Map<WidgetId, WidgetVisibility>()
+    )
+    graphWidgetVisibilities.value.set(graphId, nextWidgetVisibilities)
+    return nextWidgetVisibilities
+  }
+
   function getGraphNodeWidgetOrders(graphId: UUID): Map<NodeId, WidgetId[]> {
     const widgetOrders = graphNodeWidgetOrders.value.get(graphId)
     if (widgetOrders) return widgetOrders
@@ -140,7 +158,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function registerWidget<TValue extends WidgetValue = WidgetValue>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>,
-    renderState: WidgetRenderState = {}
+    renderState: WidgetRenderState = {},
+    visibility: WidgetVisibility = {
+      hidden:
+        init.options.hidden ?? isLegacyHiddenWidgetType(String(init.type)),
+      hideInPanel: init.options.hideInPanel ?? false
+    }
   ): WidgetState<TValue> | undefined {
     if (!isWidgetId(widgetId)) {
       console.warn(
@@ -154,8 +177,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const { graphId, nodeId, name: storageName } = parseWidgetId(widgetId)
     if (existing && existing.type !== init.type) {
       getGraphWidgetRenderStates(graphId).delete(widgetId)
+      getGraphWidgetVisibilities(graphId).delete(widgetId)
     }
     registerWidgetRenderState(widgetId, renderState)
+    registerWidgetVisibility(widgetId, visibility)
     // WidgetId is `graphId:nodeId:name`. A node replacement can reuse the same
     // numeric nodeId, so a stale entry from the previous occupant may survive in
     // the store under the same key. The type check distinguishes a live
@@ -203,6 +228,23 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return widgetRenderStates.get(widgetId) as WidgetRenderState
   }
 
+  function registerWidgetVisibility(
+    widgetId: WidgetId,
+    init: WidgetVisibility
+  ): WidgetVisibility {
+    const { graphId } = parseWidgetId(widgetId)
+    const widgetVisibilities = getGraphWidgetVisibilities(graphId)
+    const existing = widgetVisibilities.get(widgetId)
+    if (existing) {
+      Object.assign(existing, init)
+      return existing
+    }
+
+    const visibility = { ...init }
+    widgetVisibilities.set(widgetId, visibility)
+    return widgetVisibilities.get(widgetId) as WidgetVisibility
+  }
+
   function getWidget(widgetId: WidgetId): WidgetState | undefined {
     if (!isWidgetId(widgetId)) return undefined
 
@@ -217,6 +259,15 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const { graphId } = parseWidgetId(widgetId)
     return graphWidgetRenderStates.value.get(graphId)?.get(widgetId)
+  }
+
+  function getWidgetVisibility(
+    widgetId: WidgetId
+  ): WidgetVisibility | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
+    const { graphId } = parseWidgetId(widgetId)
+    return graphWidgetVisibilities.value.get(graphId)?.get(widgetId)
   }
 
   function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
@@ -239,6 +290,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   ): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
+    const visibility = getWidgetVisibility(widgetId)
+    if (visibility) {
+      if (options.hidden !== undefined) visibility.hidden = options.hidden
+      if (options.hideInPanel !== undefined) {
+        visibility.hideInPanel = options.hideInPanel
+      }
+    }
     state.options = { ...state.options, ...options }
     return true
   }
@@ -248,6 +306,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const { graphId } = parseWidgetId(widgetId)
     graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
+    graphWidgetVisibilities.value.get(graphId)?.delete(widgetId)
     removeNodeWidgetOrder(widgetId)
     return graphWidgetStates.value.get(graphId)?.delete(widgetId) ?? false
   }
@@ -272,16 +331,20 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const renderStates = getGraphWidgetRenderStates(graphId)
     const renderState = renderStates.get(oldId)
+    const visibilities = getGraphWidgetVisibilities(graphId)
+    const visibility = visibilities.get(oldId)
     const order = getNodeWidgetOrder(graphId, nodeId)
     const index = order.indexOf(oldId)
 
     widgetStates.delete(oldId)
     renderStates.delete(oldId)
+    visibilities.delete(oldId)
     if (index !== -1) order.splice(index, 1)
 
     state.name = name
     widgetStates.set(newId, state)
     if (renderState) renderStates.set(newId, renderState)
+    if (visibility) visibilities.set(newId, visibility)
     if (index !== -1) order.splice(index, 0, newId)
     else if (!order.includes(newId)) order.push(newId)
 
@@ -375,6 +438,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       for (const widgetId of order) {
         graphWidgetStates.value.get(graphId)?.delete(widgetId)
         graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
+        graphWidgetVisibilities.value.get(graphId)?.delete(widgetId)
       }
     }
     graphOrders.delete(localNodeId)
@@ -384,16 +448,21 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgetStates = graphWidgetStates.value.get(graphId)
     const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)
+    const widgetVisibilities = graphWidgetVisibilities.value.get(graphId)
     if (widgetStates) {
       for (const [id, state] of widgetStates) {
         if (state.nodeId !== nodeId) continue
         widgetStates.delete(id)
         widgetRenderStates?.delete(id)
+        widgetVisibilities?.delete(id)
       }
       if (widgetStates.size === 0) graphWidgetStates.value.delete(graphId)
     }
     if (widgetRenderStates?.size === 0) {
       graphWidgetRenderStates.value.delete(graphId)
+    }
+    if (widgetVisibilities?.size === 0) {
+      graphWidgetVisibilities.value.delete(graphId)
     }
 
     const widgetOrders = graphNodeWidgetOrders.value.get(graphId)
@@ -404,6 +473,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
+    graphWidgetVisibilities.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
   }
@@ -415,6 +485,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getPositionalRestoredWidgetValue,
     getWidget,
     getWidgetRenderState,
+    getWidgetVisibility,
     setValue,
     setLabel,
     updateOptions,

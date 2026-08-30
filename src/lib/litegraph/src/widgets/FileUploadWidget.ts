@@ -12,8 +12,6 @@ export class FileUploadWidget
   extends BaseWidget<IFileUploadWidget>
   implements IFileUploadWidget
 {
-  override type = 'fileupload' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this

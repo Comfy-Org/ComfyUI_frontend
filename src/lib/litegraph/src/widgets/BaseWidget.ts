@@ -17,11 +17,19 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
-import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import {
+  deriveWidgetRenderState,
+  deriveWidgetVisibility
+} from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
+import {
+  isLegacyHiddenWidgetType,
+  isLegacyWidgetHidingType
+} from '@/types/widgetVisibility'
+import type { WidgetVisibility } from '@/types/widgetVisibility'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -107,7 +115,34 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   options: TWidget['options']
-  type: TWidget['type']
+  private _type!: TWidget['type']
+  get type(): TWidget['type'] {
+    return this._type
+  }
+  set type(value: TWidget['type']) {
+    this.setWidgetType(value)
+  }
+
+  private setWidgetType(value: TWidget['type']): void {
+    const wasLegacyHidden =
+      this._type !== undefined && isLegacyWidgetHidingType(this._type)
+    this._type = value
+    if (isLegacyHiddenWidgetType(value)) this.hidden = true
+    else if (wasLegacyHidden) this.hidden = false
+  }
+
+  private installTypeVisibilityShim(): void {
+    const descriptor = Object.getOwnPropertyDescriptor(this, 'type')
+    if (!descriptor || descriptor.get || descriptor.set) return
+
+    this._type = this.type
+    Object.defineProperty(this, 'type', {
+      configurable: true,
+      enumerable: true,
+      get: () => this._type,
+      set: (value: TWidget['type']) => this.setWidgetType(value)
+    })
+  }
   y: number = 0
   last_y?: number
   width?: number
@@ -124,7 +159,17 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.label = value
   }
 
-  hidden?: boolean
+  private _visibility: WidgetVisibility = {
+    hidden: false,
+    hideInPanel: false
+  }
+
+  get hidden(): boolean {
+    return this._visibility.hidden
+  }
+  set hidden(value: boolean | undefined) {
+    this._visibility.hidden = value ?? false
+  }
   advanced?: boolean
 
   get disabled(): boolean | undefined {
@@ -174,6 +219,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * Once set, value reads/writes will be delegated to the store.
    */
   setNodeId(nodeId: NodeId): void {
+    this.installTypeVisibilityShim()
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
     if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
@@ -190,9 +236,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         value: this.value,
         y: this.y
       },
-      deriveWidgetRenderState(this)
+      deriveWidgetRenderState(this),
+      deriveWidgetVisibility(this)
     )
-    if (registered) this._state = registered
+    if (!registered) return
+    this._state = registered
+    const visibility = useWidgetValueStore().getWidgetVisibility(
+      widgetId(graphId, nodeId, this.name)
+    )
+    if (visibility) this._visibility = visibility
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
@@ -201,11 +253,41 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // Private fields
     this._node = node ?? widget.node
 
+    this._visibility = deriveWidgetVisibility(widget)
+
     // The set and get functions for DOM widget values are hacked on to the options object;
     // attempting to set value before options will throw.
     // https://github.com/Comfy-Org/ComfyUI_frontend/blob/df86da3d672628a452baed3df3347a52c0c8d378/src/scripts/domWidget.ts#L125
     this.name = widget.name
-    this.options = widget.options
+    this.options = new Proxy(widget.options, {
+      get: (target, property, receiver) => {
+        if (property === 'hidden') return this.hidden
+        if (property === 'hideInPanel') return this._visibility.hideInPanel
+        return Reflect.get(target, property, receiver)
+      },
+      set: (target, property, value, receiver) => {
+        if (property === 'hidden') {
+          this.hidden = value === true
+          return true
+        }
+        if (property === 'hideInPanel') {
+          this._visibility.hideInPanel = value === true
+          return true
+        }
+        return Reflect.set(target, property, value, receiver)
+      },
+      deleteProperty: (target, property) => {
+        if (property === 'hidden') {
+          this.hidden = false
+          return Reflect.deleteProperty(target, property)
+        }
+        if (property === 'hideInPanel') {
+          this._visibility.hideInPanel = false
+          return Reflect.deleteProperty(target, property)
+        }
+        return Reflect.deleteProperty(target, property)
+      }
+    })
     this.type = widget.type
 
     // `node` has no setter - Object.assign will throw.
@@ -234,6 +316,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       disabled,
       value,
       linkedWidgets,
+      name: _name,
+      options: _options,
+      type: _type,
       ...safeValues
     } = widget
 

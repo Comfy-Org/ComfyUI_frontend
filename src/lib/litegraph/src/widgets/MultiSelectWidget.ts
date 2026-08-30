@@ -12,8 +12,6 @@ export class MultiSelectWidget
   extends BaseWidget<IMultiSelectWidget>
   implements IMultiSelectWidget
 {
-  override type = 'multiselect' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this

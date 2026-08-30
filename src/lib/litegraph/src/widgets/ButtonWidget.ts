@@ -8,7 +8,6 @@ export class ButtonWidget
   extends BaseWidget<IButtonWidget>
   implements IButtonWidget
 {
-  override type = 'button' as const
   clicked: boolean
 
   constructor(widget: IButtonWidget, node: LGraphNode) {

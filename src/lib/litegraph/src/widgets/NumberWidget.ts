@@ -8,8 +8,6 @@ export class NumberWidget
   extends BaseSteppedWidget<INumericWidget>
   implements INumericWidget
 {
-  override type = 'number' as const
-
   override get _displayValue() {
     if (this.computedDisabled) return ''
     return Number(this.value).toFixed(

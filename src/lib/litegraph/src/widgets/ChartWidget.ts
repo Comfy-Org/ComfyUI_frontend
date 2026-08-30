@@ -12,8 +12,6 @@ export class ChartWidget
   extends BaseWidget<IChartWidget>
   implements IChartWidget
 {
-  override type = 'chart' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this

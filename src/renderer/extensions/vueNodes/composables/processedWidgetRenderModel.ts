@@ -160,11 +160,11 @@ function getHostNode(
 }
 
 function isWidgetVisible(
+  hidden: boolean,
   options: IWidgetOptions,
   showAdvanced: boolean,
   ignoreAdvanced = false
 ): boolean {
-  const hidden = options.hidden ?? false
   const advanced = options.advanced ?? false
   return !hidden && (!advanced || showAdvanced || ignoreAdvanced)
 }
@@ -361,6 +361,7 @@ function processWidget(
   const liveWidget = ctx.liveWidgets.get(id)
   const type = liveWidget?.type ?? widgetState.type
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
+  const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
   const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
   if (options.advanced === undefined) options.advanced = renderState?.advanced
   if (!shouldRenderAsVue({ type, options })) return null
@@ -370,6 +371,7 @@ function processWidget(
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
   const visible = isWidgetVisible(
+    visibility?.hidden ?? false,
     options,
     ctx.showAdvanced,
     slotInfo?.linked || slotInfo?.promoted

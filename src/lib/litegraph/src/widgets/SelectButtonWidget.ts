@@ -12,8 +12,6 @@ export class SelectButtonWidget
   extends BaseWidget<ISelectButtonWidget>
   implements ISelectButtonWidget
 {
-  override type = 'selectbutton' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this

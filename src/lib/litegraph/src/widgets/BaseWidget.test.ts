@@ -42,11 +42,14 @@ class MutableTypeWidget extends BaseWidget<IBaseWidget<number, string>> {
   onClick(_options: WidgetEventOptions): void {}
 }
 
-function createMutableTypeWidget(node: LGraphNode): MutableTypeWidget {
+function createMutableTypeWidget(
+  node: LGraphNode,
+  name = 'typeChangedWidget'
+): MutableTypeWidget {
   return new MutableTypeWidget(
     {
       type: 'number',
-      name: 'typeChangedWidget',
+      name,
       value: 42,
       options: { min: 0, max: 100 },
       y: 0
@@ -134,6 +137,41 @@ describe('BaseWidget store integration', () => {
       expect(widget.advanced).toBe(true)
     })
 
+    it('maps legacy visibility APIs to the visibility component', () => {
+      const widget = createMutableTypeWidget(node, 'visibleWidget')
+      widget.setNodeId(toNodeId(1))
+      const id = widgetId(graph.id, toNodeId(1), 'visibleWidget')
+
+      widget.options.hidden = true
+      expect(store.getWidgetVisibility(id)?.hidden).toBe(true)
+      expect(widget.hidden).toBe(true)
+
+      widget.hidden = false
+      expect(store.getWidgetVisibility(id)?.hidden).toBe(false)
+      expect(widget.options.hidden).toBe(false)
+
+      widget.type = 'smZhidden'
+      expect(store.getWidgetVisibility(id)?.hidden).toBe(true)
+      widget.type = 'number'
+      expect(store.getWidgetVisibility(id)?.hidden).toBe(false)
+
+      widget.options.hideInPanel = true
+      expect(store.getWidgetVisibility(id)?.hideInPanel).toBe(true)
+      delete widget.options.hideInPanel
+      expect(store.getWidgetVisibility(id)?.hideInPanel).toBe(false)
+    })
+
+    it('clears stale hidden state when a converted widget is restored', () => {
+      const widget = createMutableTypeWidget(node, 'convertedWidget')
+      widget.setNodeId(toNodeId(1))
+
+      widget.type = 'converted-widget'
+      widget.hidden = true
+      widget.type = 'number'
+
+      expect(widget.hidden).toBe(false)
+    })
+
     it('syncs value with store', () => {
       const widget = createTestWidget(node, { name: 'valueWidget', value: 42 })
       widget.setNodeId(toNodeId(1))
@@ -190,7 +228,7 @@ describe('BaseWidget store integration', () => {
       expect(state?.disabled).toBe(false)
       expect(state?.label).toBeUndefined()
 
-      expect(widget.hidden).toBeUndefined()
+      expect(widget.hidden).toBe(false)
       expect(widget.advanced).toBeUndefined()
     })
 

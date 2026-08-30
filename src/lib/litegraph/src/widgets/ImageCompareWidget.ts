@@ -12,8 +12,6 @@ export class ImageCompareWidget
   extends BaseWidget<IImageCompareWidget>
   implements IImageCompareWidget
 {
-  override type = 'imagecompare' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this

@@ -39,11 +39,8 @@ const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
       const advancedWidgets = widgets
         .filter(
           (w) =>
-            !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              w.options?.hideInPanel
-            ) && w.options?.advanced
+            !(w.options?.canvasOnly || w.hidden || w.options?.hideInPanel) &&
+            w.options?.advanced
         )
         .map((widget) => ({ node, widget }))
       return { widgets: advancedWidgets, node }

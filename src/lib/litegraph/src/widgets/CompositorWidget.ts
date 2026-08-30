@@ -10,8 +10,6 @@ export class CompositorWidget
   extends BaseWidget<ICompositorWidget>
   implements ICompositorWidget
 {
-  override type = 'compositor' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'Compositor')
   }

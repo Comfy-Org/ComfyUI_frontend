@@ -352,6 +352,19 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
+    it('maps legacy option updates to the visibility component', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 100))
+
+      expect(
+        store.updateOptions(seedA, { hidden: true, hideInPanel: true })
+      ).toBe(true)
+      expect(store.getWidgetVisibility(seedA)).toEqual({
+        hidden: true,
+        hideInPanel: true
+      })
+    })
+
     it('deleteWidget removes registered widgets from node order', () => {
       const store = useWidgetValueStore()
       const steps = widgetId(graphA, toNodeId('node-1'), 'steps')

@@ -12,8 +12,6 @@ export class MarkdownWidget
   extends BaseWidget<IMarkdownWidget>
   implements IMarkdownWidget
 {
-  override type = 'markdown' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this
