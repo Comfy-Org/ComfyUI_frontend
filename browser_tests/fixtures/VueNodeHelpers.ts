@@ -261,11 +261,8 @@ export class VueNodeHelpers {
       .filter({ has: widgetLabel })
   }
 
-  /**
-   * Get the visible widget tooltip text element (PrimeVue tooltip portal).
-   */
   getVisibleWidgetTooltip(): Locator {
-    return this.page.locator('.p-tooltip-text:visible')
+    return this.page.getByRole('tooltip')
   }
 
   /**

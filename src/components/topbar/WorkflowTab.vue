@@ -384,9 +384,3 @@ onUnmounted(() => {
   popoverRef.value?.hidePopover()
 })
 </script>
-
-<style>
-.p-tooltip.workflow-tab-tooltip {
-  z-index: 1200 !important;
-}
-</style>
