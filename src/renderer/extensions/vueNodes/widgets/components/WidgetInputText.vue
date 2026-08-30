@@ -12,9 +12,9 @@
         :class="
           cn(
             WidgetInputBaseClass,
-            'block h-auto w-full min-w-[4ch] truncate px-4 text-comfy-input-foreground',
+            'h-auto w-full min-w-[4ch] truncate px-4 text-sm',
             !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
-            size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
+            size === 'large' ? 'py-3' : 'py-2',
             loading && 'pl-9'
           )
         "
