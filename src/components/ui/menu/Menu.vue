@@ -5,7 +5,8 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { nextTick, ref, useId } from 'vue'
+import { nextTick, ref, useTemplateRef } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -26,13 +27,14 @@ const emit = defineEmits<{
   hide: []
 }>()
 
-const visible = ref(false)
+const content = useTemplateRef<ComponentPublicInstance>('content')
+const open = ref(false)
 const showTimer = ref<number>()
 const showRequest = ref(0)
 const anchor = ref({ x: 0, y: 0 })
-const triggerId = `${useId()}-trigger`
-const overlayVisible = visible
-const contentStyle = useModalLiftedZIndex(visible)
+const visible = open
+const overlayVisible = open
+const contentStyle = useModalLiftedZIndex(open)
 
 function show(event: Event) {
   const mouseEvent = event instanceof MouseEvent ? event : undefined
@@ -43,36 +45,38 @@ function show(event: Event) {
     y: mouseEvent?.clientY ?? rect?.bottom ?? 0
   }
   window.clearTimeout(showTimer.value)
+  open.value = false
   const request = ++showRequest.value
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' })
-  )
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' })
-  )
   void nextTick(() => {
     if (request !== showRequest.value) return
     showTimer.value = window.setTimeout(() => {
-      document.getElementById(triggerId)?.click()
-    }, 50)
+      open.value = true
+    })
   })
 }
 
 function hide() {
   showRequest.value++
   window.clearTimeout(showTimer.value)
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' })
-  )
+  open.value = false
 }
 
 function toggle(event: Event) {
-  if (visible.value) hide()
-  else show(event)
+  const element = content.value?.$el
+  if (
+    element instanceof HTMLElement &&
+    element.dataset.state === 'open' &&
+    element.getClientRects().length > 0
+  ) {
+    hide()
+    return
+  }
+  show(event)
 }
 
 function updateOpen(value: boolean) {
-  visible.value = value
+  if (!value) window.clearTimeout(showTimer.value)
+  open.value = value
   if (value) emit('show')
   else emit('hide')
 }
@@ -81,10 +85,9 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
 </script>
 
 <template>
-  <DropdownMenuRoot @update:open="updateOpen">
+  <DropdownMenuRoot :open @update:open="updateOpen">
     <DropdownMenuTrigger as-child>
       <button
-        :id="triggerId"
         type="button"
         tabindex="-1"
         aria-hidden="true"
@@ -94,6 +97,7 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent
+        ref="content"
         v-bind="$attrs"
         :class="cn(menuContentClass, $attrs.class)"
         :style="contentStyle"
