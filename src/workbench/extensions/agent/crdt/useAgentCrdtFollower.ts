@@ -88,7 +88,8 @@ export const apiTransport: DocFrameTransport = {
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
-  userId: () => string | null = () => null
+  userId: () => string | null = () => null,
+  isTargetActive: Ref<boolean> = ref(true)
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -226,6 +227,7 @@ export function useAgentCrdtFollower(
 
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
+    if (!isTargetActive.value) return
     const ok = event.detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
@@ -243,27 +245,23 @@ export function useAgentCrdtFollower(
     }
   }
   const onUpdate: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const update = event.detail as DocUpdate
+    if (
+      !isTargetActive.value ||
+      update.workflowId !== subscribedWorkflowId.value
+    )
+      return
     if (staleProbeTimer !== null) armStaleProbe()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    if (event instanceof CustomEvent) {
-      adapter.applyFrame(event.detail as DocUpdate)
-    }
-    if (event instanceof CustomEvent) {
-      const detail = event.detail as {
-        workflowId?: string
-        seq?: number
-        update?: Uint8Array
-        actor?: string
-      } | null
-      recordDevEvent('doc_update', {
-        workflowId: detail?.workflowId,
-        seq: detail?.seq,
-        actor: detail?.actor,
-        bytes:
-          detail?.update instanceof Uint8Array ? detail.update.length : null
-      })
-    }
+    adapter.applyFrame(update)
+    recordDevEvent('doc_update', {
+      workflowId: update.workflowId,
+      seq: update.seq,
+      actor: update.actor,
+      bytes: update.update instanceof Uint8Array ? update.update.length : null
+    })
     const ids = currentDocNodeIds()
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
@@ -287,6 +285,11 @@ export function useAgentCrdtFollower(
             seq?: number
           })
         : undefined
+    if (
+      !isTargetActive.value ||
+      detail?.workflowId !== subscribedWorkflowId.value
+    )
+      return
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail?.actor ?? 'agent-reset',
@@ -306,7 +309,12 @@ export function useAgentCrdtFollower(
   }
   const onFollowerReplaced: EventListener = () => {
     const workflowId = bridge.subscribedWorkflowId
-    if (workflowId !== null) adapter.bind(workflowId, bridge.follower)
+    if (
+      isTargetActive.value &&
+      workflowId !== null &&
+      workflowId === subscribedWorkflowId.value
+    )
+      adapter.bind(workflowId, bridge.follower)
   }
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
@@ -364,12 +372,22 @@ export function useAgentCrdtFollower(
   let initialBind = true
   let boundWorkflowId: string | null = null
   watch(
-    workflowId,
-    (next) => {
+    [workflowId, isTargetActive],
+    ([next, active]) => {
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
+      if (!active) {
+        if (next !== null) initialBind = false
+        if (boundWorkflowId !== null) {
+          adapter.unbind(boundWorkflowId)
+          boundWorkflowId = null
+        }
+        subscribedWorkflowId.value = null
+        bridge.unsubscribe()
+        return
+      }
       if (next === null) {
         const persisted = initialBind ? readPersistedDocId() : null
         initialBind = false

@@ -8,7 +8,7 @@
  */
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
@@ -109,22 +109,32 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 
-function mountFollower(initial: string | null = null): {
+function mountFollower(
+  initial: string | null = null,
+  initiallyActive = true
+): {
   unmount: () => void
   workflowId: Ref<string | null>
+  isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
 } {
   const workflowId = ref<string | null>(initial)
+  const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(workflowId, graphMutations)
+      const { status } = useAgentCrdtFollower(
+        workflowId,
+        graphMutations,
+        () => null,
+        isTargetActive
+      )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, status: exposedStatus }
+  return { unmount, workflowId, isTargetActive, status: exposedStatus }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -306,12 +316,29 @@ describe('useAgentCrdtFollower', () => {
     const { unmount, status } = mountFollower('wf-1')
     bridge().follower.updatesApplied = 3
 
-    const update = { seq: 7 }
+    const update = { workflowId: 'wf-1', seq: 7 }
     dispatchFrame('doc_update', update)
 
     expect(status().updatesApplied).toBe(3)
     expect(status().lastFrameType).toBe('doc_update')
     expect(adapterState.applyFrame).toHaveBeenCalledWith(update)
+    unmount()
+  })
+
+  it('suspends a background target and catches up only after it becomes active', async () => {
+    const { unmount, isTargetActive } = mountFollower('wf-a', false)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    dispatchFrame('doc_update', { workflowId: 'wf-a', seq: 7 })
+    expect(adapterState.applyFrame).not.toHaveBeenCalled()
+
+    isTargetActive.value = true
+    await nextTick()
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-a')
+
+    const catchUp = { workflowId: 'wf-a', seq: 8 }
+    dispatchFrame('doc_update', catchUp)
+    expect(adapterState.applyFrame).toHaveBeenCalledWith(catchUp)
     unmount()
   })
 
@@ -369,7 +396,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: true })
 
     vi.advanceTimersByTime(STALE_AFTER_MS - 1000)
-    dispatchFrame('doc_update', { seq: 2 })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
     vi.advanceTimersByTime(STALE_AFTER_MS - 1000)
     expect(bridge().resubscribe).not.toHaveBeenCalled()
 

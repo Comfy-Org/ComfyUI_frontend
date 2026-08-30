@@ -368,12 +368,25 @@ const {
   }
 })
 
+const isBoundWorkflowActive = computed(() => {
+  const bound = boundWorkflowId.value
+  const active = workflowStore.activeWorkflow
+  return (
+    bound !== null &&
+    active !== null &&
+    boundTabFor(bound)?.path === active.path
+  )
+})
+
 // The CRDT follower is the inbound content channel: subscribes to the
-// session's bound workflow and projects doc updates onto the canvas.
+// session's bound workflow while its tab is active. Suspending the background
+// subscription makes reopening pull state-vector catch-up only after the
+// workflow's serialized activeState has hydrated the transient stores.
 const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
-  () => resolvedUserInfo.value?.id ?? null
+  () => resolvedUserInfo.value?.id ?? null,
+  isBoundWorkflowActive
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
