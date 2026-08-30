@@ -9,73 +9,79 @@
     }"
   >
     <template v-for="row in renderedRows" :key="row.widget.renderKey">
-      <div
-        :data-testid="row.testId"
-        :class="
-          cn(
-            'group col-span-full grid grid-cols-subgrid items-stretch',
-            row.showsControl && 'lg-node-widget'
-          )
-        "
+      <Tooltip
+        :config="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
+        side="left"
       >
         <div
+          :data-testid="row.testId"
           :class="
             cn(
-              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-              row.widget.slotMetadata?.linked && 'opacity-100'
+              'group col-span-full grid grid-cols-subgrid items-stretch',
+              row.showsControl && 'lg-node-widget'
             )
           "
         >
-          <InputSlot
-            v-if="row.widget.slotMetadata"
-            :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
-            :slot-data="{
-              name: row.widget.simplified.name,
-              type: row.widget.slotMetadata.type,
-              boundingRect: [0, 0, 0, 0]
-            }"
-            :node-id
-            :has-error="row.widget.hasError"
-            :index="row.widget.slotMetadata.index"
-            :socketless="row.widget.simplified.spec?.socketless"
-            :standalone="row.standalone"
-            dot-only
-          />
-        </div>
-        <AppInput
-          v-if="row.showsControl"
-          :widget-id="row.widget.widgetId"
-          :name="row.widget.simplified.name"
-          :enable="canSelectInputs && !row.widget.simplified.options?.disabled"
-        >
-          <component
-            :is="row.widget.vueComponent"
-            v-tooltip.left="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
-            :model-value="row.widget.simplified.value"
-            :widget="row.widget.simplified"
-            :node-id
-            :node-type
-            :invalid="row.widget.hasError"
-            :aria-invalid="row.widget.hasError || undefined"
+          <div
             :class="
               cn(
-                'col-span-2',
-                row.widget.hasError && 'font-bold text-node-stroke-error'
+                'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+                row.widget.slotMetadata?.linked && 'opacity-100'
               )
             "
-            @update:model-value="row.widget.updateHandler"
-            @contextmenu="row.widget.handleContextMenu"
-          />
-        </AppInput>
-      </div>
+          >
+            <InputSlot
+              v-if="row.widget.slotMetadata"
+              :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
+              :slot-data="{
+                name: row.widget.simplified.name,
+                type: row.widget.slotMetadata.type,
+                boundingRect: [0, 0, 0, 0]
+              }"
+              :node-id
+              :has-error="row.widget.hasError"
+              :index="row.widget.slotMetadata.index"
+              :socketless="row.widget.simplified.spec?.socketless"
+              :standalone="row.standalone"
+              dot-only
+            />
+          </div>
+          <AppInput
+            v-if="row.showsControl"
+            :widget-id="row.widget.widgetId"
+            :name="row.widget.simplified.name"
+            :enable="canSelectInputs && !row.widget.simplified.options?.disabled"
+          >
+            <component
+              :is="row.widget.vueComponent"
+              :model-value="row.widget.simplified.value"
+              :widget="row.widget.simplified"
+              :node-id
+              :node-type
+              :invalid="row.widget.hasError"
+              :aria-invalid="row.widget.hasError || undefined"
+              :class="
+                cn(
+                  'col-span-2',
+                  row.widget.hasError && 'font-bold text-node-stroke-error'
+                )
+              "
+              @update:model-value="row.widget.updateHandler"
+              @contextmenu="row.widget.handleContextMenu"
+            />
+          </AppInput>
+        </div>
+      </Tooltip>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { TooltipOptions } from 'primevue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, useTemplateRef, watch } from 'vue'
 
+import type { TooltipConfig } from '@/components/ui/tooltip'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
@@ -87,7 +93,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
-const EMPTY_TOOLTIP: TooltipOptions = {}
+const EMPTY_TOOLTIP: TooltipConfig = {}
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>

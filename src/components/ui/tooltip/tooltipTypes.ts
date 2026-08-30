@@ -5,6 +5,7 @@ export interface TooltipConfig {
   showDelay?: number
   hideDelay?: number
   disabled?: boolean
+  contentClass?: string
 }
 
 export type TooltipValue = string | string[] | TooltipConfig | null | undefined
