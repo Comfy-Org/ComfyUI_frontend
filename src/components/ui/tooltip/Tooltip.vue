@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TooltipRootEmits, TooltipRootProps } from 'reka-ui'
 import { TooltipRoot } from 'reka-ui'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import TooltipContent from './TooltipContent.vue'
 import TooltipProvider from './TooltipProvider.vue'
@@ -66,6 +66,10 @@ function handleClick() {
   if (openOnClick) setOpen(true)
 }
 
+watch(isDisabled, (disabled) => {
+  if (disabled) setOpen(false)
+})
+
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer)
 })
@@ -87,7 +91,7 @@ onBeforeUnmount(() => {
       <TooltipContent
         :side
         :side-offset
-        :class="contentClass"
+        :class="contentClass ?? normalizedConfig?.contentClass"
         :aria-label="suppressDescription ? ' ' : undefined"
       >
         <slot name="content">{{ text }}</slot>

@@ -1,4 +1,3 @@
-import type { TooltipOptions } from 'primevue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -83,7 +82,7 @@ function createGraphWithNode(
 }
 
 const noopUi = {
-  getTooltipConfig: () => ({}) as TooltipOptions,
+  getTooltipConfig: () => ({}),
   handleNodeRightClick: () => {}
 }
 

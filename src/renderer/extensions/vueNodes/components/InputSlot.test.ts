@@ -1,10 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
-import type { DirectiveBinding } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -70,43 +70,38 @@ function renderInputSlot(slotData: INodeSlot, nodeType = nodeDef.name) {
   vi.spyOn(settingStore, 'get').mockImplementation(
     <K extends keyof Settings>(key: K): Settings[K] => {
       if (key === 'Comfy.EnableTooltips') return true as Settings[K]
-      if (key === 'LiteGraph.Node.TooltipDelay') return 500 as Settings[K]
+      if (key === 'LiteGraph.Node.TooltipDelay') return 0 as Settings[K]
       return undefined as Settings[K]
     }
   )
   useNodeDefStore(pinia).addNodeDef(nodeDef)
-  const tooltipDirective = {
-    mounted: vi.fn((_element: Element, _binding: DirectiveBinding) => {})
-  }
-
   render(InputSlot, {
     props: { slotData, index: 0, nodeType },
     global: {
       plugins: [i18n, pinia],
-      directives: { tooltip: tooltipDirective },
       stubs: { SlotConnectionDot: SlotConnectionDotStub }
     }
   })
 
-  return tooltipDirective
+  return userEvent.setup()
 }
 
 describe('InputSlot', () => {
-  it('resolves metadata tooltips by raw input name', () => {
-    const tooltipDirective = renderInputSlot({
+  it('resolves metadata tooltips by raw input name', async () => {
+    const user = renderInputSlot({
       name: 'raw_seed',
       localized_name: 'Localized Seed',
       type: 'INT'
     } as INodeSlot)
 
-    expect(screen.getByText('Localized Seed')).toBeInTheDocument()
-    expect(tooltipDirective.mounted.mock.calls[0]?.[1].value).toEqual(
-      expect.objectContaining({ value: 'Metadata seed tooltip' })
+    await user.hover(screen.getByText('Localized Seed'))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Metadata seed tooltip'
     )
   })
 
-  it('uses the localized display name in the translated fallback', () => {
-    const tooltipDirective = renderInputSlot(
+  it('uses the localized display name in the translated fallback', async () => {
+    const user = renderInputSlot(
       {
         name: 'raw_count',
         localized_name: 'Localized Count',
@@ -115,10 +110,9 @@ describe('InputSlot', () => {
       'UnknownNode'
     )
 
-    expect(tooltipDirective.mounted.mock.calls[0]?.[1].value).toEqual(
-      expect.objectContaining({
-        value: 'Translated input: Localized Count'
-      })
+    await user.hover(screen.getByText('Localized Count'))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Translated input: Localized Count'
     )
   })
 })

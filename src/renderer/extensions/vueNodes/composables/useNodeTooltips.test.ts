@@ -112,9 +112,7 @@ describe('useNodeTooltips', () => {
 
     // Without a whitespace-preserving rule the \n\n separator collapses to a
     // space and the label runs into the value (BUG-020).
-    const pt = config.pt as { text?: { class?: string } } | undefined
-    const textClass = pt?.text?.class ?? ''
-    expect(textClass).toContain('whitespace-pre-line')
+    expect(config.contentClass).toContain('whitespace-pre-line')
     expect(config.value).toContain('\n\n')
   })
 

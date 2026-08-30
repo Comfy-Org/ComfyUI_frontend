@@ -9,73 +9,78 @@
     }"
   >
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
-      <div
+      <Tooltip
         v-if="shouldRenderRow(widget)"
-        :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
-        :class="
-          cn(
-            'group col-span-full grid grid-cols-subgrid items-stretch',
-            !isConvertedWidget(widget) && 'lg-node-widget'
-          )
-        "
+        :config="widget.tooltipConfig ?? EMPTY_TOOLTIP"
+        side="left"
       >
         <div
+          :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
           :class="
             cn(
-              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-              widget.slotMetadata?.linked && 'opacity-100'
+              'group col-span-full grid grid-cols-subgrid items-stretch',
+              !isConvertedWidget(widget) && 'lg-node-widget'
             )
           "
         >
-          <InputSlot
-            v-if="widget.slotMetadata"
-            :key="`widget-slot-${widget.simplified.name}-${widget.slotMetadata.index}`"
-            :slot-data="{
-              name: widget.simplified.name,
-              type: widget.slotMetadata.type,
-              boundingRect: [0, 0, 0, 0]
-            }"
-            :node-id
-            :has-error="widget.hasError"
-            :index="widget.slotMetadata.index"
-            :socketless="widget.simplified.spec?.socketless"
-            dot-only
-          />
-        </div>
-        <AppInput
-          v-if="!isConvertedWidget(widget)"
-          :widget-id="widget.widgetId"
-          :name="widget.simplified.name"
-          :enable="canSelectInputs && !widget.simplified.options?.disabled"
-        >
-          <component
-            :is="widget.vueComponent"
-            v-tooltip.left="widget.tooltipConfig ?? EMPTY_TOOLTIP"
-            :model-value="widget.simplified.value"
-            :widget="widget.simplified"
-            :node-id
-            :node-type
-            :invalid="widget.hasError"
-            :aria-invalid="widget.hasError || undefined"
+          <div
             :class="
               cn(
-                'col-span-2',
-                widget.hasError && 'font-bold text-node-stroke-error'
+                'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+                widget.slotMetadata?.linked && 'opacity-100'
               )
             "
-            @update:model-value="widget.updateHandler"
-            @contextmenu="widget.handleContextMenu"
-          />
-        </AppInput>
-      </div>
+          >
+            <InputSlot
+              v-if="widget.slotMetadata"
+              :key="`widget-slot-${widget.simplified.name}-${widget.slotMetadata.index}`"
+              :slot-data="{
+                name: widget.simplified.name,
+                type: widget.slotMetadata.type,
+                boundingRect: [0, 0, 0, 0]
+              }"
+              :node-id
+              :has-error="widget.hasError"
+              :index="widget.slotMetadata.index"
+              :socketless="widget.simplified.spec?.socketless"
+              dot-only
+            />
+          </div>
+          <AppInput
+            v-if="!isConvertedWidget(widget)"
+            :widget-id="widget.widgetId"
+            :name="widget.simplified.name"
+            :enable="canSelectInputs && !widget.simplified.options?.disabled"
+          >
+            <component
+              :is="widget.vueComponent"
+              :model-value="widget.simplified.value"
+              :widget="widget.simplified"
+              :node-id
+              :node-type
+              :invalid="widget.hasError"
+              :aria-invalid="widget.hasError || undefined"
+              :class="
+                cn(
+                  'col-span-2',
+                  widget.hasError && 'font-bold text-node-stroke-error'
+                )
+              "
+              @update:model-value="widget.updateHandler"
+              @contextmenu="widget.handleContextMenu"
+            />
+          </AppInput>
+        </div>
+      </Tooltip>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { TooltipOptions } from 'primevue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { computed, useTemplateRef, watch } from 'vue'
 
+import type { TooltipConfig } from '@/components/ui/tooltip'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
@@ -87,7 +92,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
-const EMPTY_TOOLTIP: TooltipOptions = {}
+const EMPTY_TOOLTIP: TooltipConfig = {}
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>

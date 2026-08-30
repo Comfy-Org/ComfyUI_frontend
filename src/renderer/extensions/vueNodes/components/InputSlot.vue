@@ -1,60 +1,62 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div
-    v-else
-    v-tooltip.left="tooltipConfig"
-    :class="
-      cn(
-        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
-        'cursor-crosshair',
-        dotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
-        {
-          'lg-slot--connected': props.connected,
-          'lg-slot--compatible': props.compatible,
-          'opacity-40': shouldDim
-        },
-        props.socketless && 'pointer-events-none invisible'
-      )
-    "
-  >
-    <!-- Connection Dot -->
-    <SlotConnectionDot
-      :slot-key
+  <Tooltip v-else :config="tooltipConfig" side="left">
+    <div
       :class="
         cn(
-          'w-3 -translate-x-1/2',
-          hasError &&
-            'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
+          'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
+          'cursor-crosshair',
+          dotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
+          {
+            'lg-slot--connected': props.connected,
+            'lg-slot--compatible': props.compatible,
+            'opacity-40': shouldDim
+          },
+          props.socketless && 'pointer-events-none invisible'
         )
       "
-      :slot-data
-      @click="onClick"
-      @dblclick="onDoubleClick"
-      @pointerdown="onPointerDown"
-    />
-
-    <!-- Slot Name -->
-    <div class="flex h-full min-w-0 items-center">
-      <span
-        v-if="!props.dotOnly && !hasNoLabel"
+    >
+      <!-- Connection Dot -->
+      <SlotConnectionDot
+        :slot-key
         :class="
           cn(
-            'truncate text-node-component-slot-text',
-            hasError && 'font-medium text-error'
+            'w-3 -translate-x-1/2',
+            hasError &&
+              'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
           )
         "
-      >
-        {{
-          slotData.label ||
-          slotData.localized_name ||
-          (slotData.name ?? `Input ${index}`)
-        }}
-      </span>
+        :slot-data
+        @click="onClick"
+        @dblclick="onDoubleClick"
+        @pointerdown="onPointerDown"
+      />
+
+      <!-- Slot Name -->
+      <div class="flex h-full min-w-0 items-center">
+        <span
+          v-if="!props.dotOnly && !hasNoLabel"
+          :class="
+            cn(
+              'truncate text-node-component-slot-text',
+              hasError && 'font-medium text-error'
+            )
+          "
+        >
+          {{
+            slotData.label ||
+            slotData.localized_name ||
+            (slotData.name ?? `Input ${index}`)
+          }}
+        </span>
+      </div>
     </div>
-  </div>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

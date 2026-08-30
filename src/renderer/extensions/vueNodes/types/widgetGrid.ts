@@ -1,6 +1,6 @@
-import type { TooltipOptions } from 'primevue'
 import type { Component } from 'vue'
 
+import type { TooltipConfig } from '@/components/ui/tooltip'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
@@ -28,7 +28,7 @@ export interface WidgetGridItem {
   hasError?: boolean
   widgetId?: WidgetId
   slotMetadata?: WidgetSlotMetadata
-  tooltipConfig?: TooltipOptions
+  tooltipConfig?: TooltipConfig
   updateHandler?: (value: WidgetValue) => void
   handleContextMenu?: (e: PointerEvent) => void
 }
