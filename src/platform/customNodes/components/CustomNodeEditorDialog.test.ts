@@ -70,6 +70,9 @@ const i18n = createI18n({
       customNodePacks: {
         editor: {
           abandon: 'Abandon',
+          actionFailed: 'Could not run editor action',
+          controlsUnavailable:
+            'VS Code tools are still starting. Try again in a moment.',
           editing: 'Editing',
           editName: 'Edit custom node pack name',
           frameTitle: 'Custom node code editor',
@@ -83,7 +86,9 @@ const i18n = createI18n({
           sessionEndedDetail:
             'This editor is no longer running. Open Create or Edit again to start a fresh session.',
           status: { ready: 'Ready' },
-          title: 'Editing {name}'
+          submit: 'Submit Node',
+          title: 'Editing {name}',
+          validate: 'Validate Node'
         }
       }
     }
@@ -192,6 +197,21 @@ describe('CustomNodeEditorDialog', () => {
     expect(nameInput).toHaveFocus()
     expect(nameInput.selectionStart).toBe(0)
     expect(nameInput.selectionEnd).toBe(readySession.name.length)
+  })
+
+  it('shows validation and submission beside abandon in the top bar', () => {
+    render(CustomNodeEditorDialog, {
+      props: {
+        initialSession: readySession,
+        onClose: vi.fn(),
+        onSubmitted: vi.fn()
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('button', { name: 'Validate Node' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Submit Node' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Abandon' })).toBeVisible()
   })
 
   it('keeps an invalid name editable without calling the server', async () => {

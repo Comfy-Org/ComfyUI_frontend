@@ -1,9 +1,9 @@
 <template>
   <div class="flex size-full min-h-0 flex-col bg-base-background">
     <header
-      class="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border-default px-4"
+      class="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border-default px-4 py-2"
     >
-      <div class="flex min-w-0 flex-1 items-center gap-3">
+      <div class="flex min-w-0 flex-1 basis-72 items-center gap-3">
         <i class="icon-[lucide--code-2] size-5 shrink-0" />
         <div class="min-w-0 flex-1">
           <h2 class="sr-only">
@@ -42,6 +42,7 @@
               :aria-label="$t('customNodePacks.editor.editName')"
               :title="$t('customNodePacks.editor.editName')"
               :disabled="!canRename"
+              @mousedown.prevent
               @click="startNameEdit"
             >
               <i class="icon-[lucide--pencil] size-4" aria-hidden="true" />
@@ -64,17 +65,43 @@
           </p>
         </div>
       </div>
-      <Button
+      <div
         v-if="session.status !== 'submitted'"
-        variant="secondary"
-        size="sm"
-        :loading="isAbandoning"
-        :disabled="session.status === 'submitting' || isNameSaving"
-        @click="onAbandon"
+        class="ml-auto flex shrink-0 items-center gap-2"
       >
-        <i class="icon-[lucide--x] size-4" />
-        {{ $t('customNodePacks.editor.abandon') }}
-      </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          :disabled="!canRename"
+          @mousedown.prevent
+          @click="invokeEditorCommand(editorStatusCommandIds.validate)"
+        >
+          <i class="icon-[lucide--check-check] size-4" aria-hidden="true" />
+          {{ $t('customNodePacks.editor.validate') }}
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          :loading="session.status === 'submitting'"
+          :disabled="!canRename"
+          @mousedown.prevent
+          @click="invokeEditorCommand(editorStatusCommandIds.submit)"
+        >
+          <i class="icon-[lucide--cloud-upload] size-4" aria-hidden="true" />
+          {{ $t('customNodePacks.editor.submit') }}
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          :loading="isAbandoning"
+          :disabled="session.status === 'submitting' || isNameSaving"
+          @mousedown.prevent
+          @click="onAbandon"
+        >
+          <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+          {{ $t('customNodePacks.editor.abandon') }}
+        </Button>
+      </div>
     </header>
 
     <div
@@ -88,6 +115,7 @@
     <main class="relative min-h-0 min-w-0 flex-1 overflow-hidden">
       <iframe
         v-if="isEditorVisible && session.editorUrl"
+        ref="editorFrameRef"
         class="block size-full min-h-0 min-w-0 border-0 bg-base-background"
         :src="session.editorUrl"
         :title="$t('customNodePacks.editor.frameTitle')"
@@ -152,6 +180,11 @@ import type {
   CustomNodeEditorSession,
   CustomNodeEditorStatus
 } from '../composables/useCustomNodeEditor'
+import {
+  editorStatusCommandIds,
+  invokeEditorStatusCommand
+} from '../utils/editorStatusCommands'
+import type { EditorStatusCommandId } from '../utils/editorStatusCommands'
 
 const props = defineProps<{
   initialSession: CustomNodeEditorSession
@@ -171,6 +204,8 @@ const isAbandoning = ref(false)
 const pollError = ref<string | null>(null)
 const terminalHandled = ref(false)
 const nameInputRef = useTemplateRef<InstanceType<typeof Input>>('nameInputRef')
+const editorFrameRef = useTemplateRef<HTMLIFrameElement>('editorFrameRef')
+let pendingRename: Promise<void> | null = null
 
 type RenameState =
   | { phase: 'idle'; draft: string }
@@ -244,6 +279,10 @@ const startNameEdit = async () => {
 }
 
 const commitName = async () => {
+  if (pendingRename) {
+    await pendingRename
+    return
+  }
   if (renameState.value.phase !== 'editing') return
   const draft = renameState.value.draft
   const name = draft.trim()
@@ -260,24 +299,56 @@ const commitName = async () => {
     return
   }
   renameState.value = { phase: 'saving', draft: name }
-  try {
-    const renamed = await renameSession(session.value.id, name)
-    session.value = renamed
-    renameState.value = { phase: 'idle', draft: renamed.name }
-  } catch (error) {
-    if (error instanceof CustomNodeEditorRequestError && error.status === 404) {
-      closeExpiredSession()
-      return
+  pendingRename = (async () => {
+    try {
+      const renamed = await renameSession(session.value.id, name)
+      session.value = renamed
+      renameState.value = { phase: 'idle', draft: renamed.name }
+    } catch (error) {
+      if (
+        error instanceof CustomNodeEditorRequestError &&
+        error.status === 404
+      ) {
+        closeExpiredSession()
+        return
+      }
+      reportError(error, { errorType: 'custom_node_editor_rename_failed' })
+      renameState.value = {
+        phase: 'editing',
+        draft,
+        error:
+          error instanceof Error
+            ? error.message
+            : t('customNodePacks.editor.renameFailed')
+      }
     }
-    reportError(error, { errorType: 'custom_node_editor_rename_failed' })
-    renameState.value = {
-      phase: 'editing',
-      draft,
-      error:
+  })()
+  try {
+    await pendingRename
+  } finally {
+    pendingRename = null
+  }
+}
+
+const invokeEditorCommand = async (commandId: EditorStatusCommandId) => {
+  await commitName()
+  if (!canRename.value || renameState.value.phase !== 'idle') return
+
+  try {
+    if (!invokeEditorStatusCommand(editorFrameRef.value, commandId)) {
+      throw new Error(t('customNodePacks.editor.controlsUnavailable'))
+    }
+  } catch (error) {
+    reportError(error, { errorType: 'custom_node_editor_action_failed' })
+    toast.add({
+      severity: 'error',
+      summary: t('customNodePacks.editor.actionFailed'),
+      detail:
         error instanceof Error
           ? error.message
-          : t('customNodePacks.editor.renameFailed')
-    }
+          : t('customNodePacks.editor.unknownError'),
+      life: 5000
+    })
   }
 }
 
