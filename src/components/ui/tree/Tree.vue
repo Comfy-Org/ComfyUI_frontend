@@ -5,7 +5,7 @@
     :items
     :get-key
     :get-children
-    :class="cn('m-0 min-w-0 list-none p-0', className)"
+    :class="cn('m-0 min-h-px min-w-0 list-none p-0', className)"
   >
     <template #default="{ flattenItems }">
       <slot :items="flattenItems" />

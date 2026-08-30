@@ -2,9 +2,12 @@
   <div ref="container" class="model-lib-node-container size-full">
     <TreeExplorerTreeNode :node="node">
       <template #before-label>
-        <span v-if="modelPreviewUrl" class="model-lib-model-icon-container">
+        <span
+          v-if="modelPreviewUrl"
+          class="relative inline-block h-6 w-0 align-top"
+        >
           <span
-            class="model-lib-model-icon"
+            class="relative -top-0.5 -left-9 inline-block size-7 bg-cover bg-center align-top"
             :style="{ backgroundImage: `url(${modelPreviewUrl})` }"
           />
         </span>
@@ -102,7 +105,7 @@ const handleMouseLeave = () => {
 }
 onMounted(async () => {
   modelContentElement.value =
-    container.value?.closest('.p-tree-node-content') ?? undefined
+    container.value?.closest('.tree-explorer-item') ?? undefined
   modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
   await modelDef.value.load()
@@ -113,25 +116,3 @@ onUnmounted(() => {
   modelContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
 })
 </script>
-
-<style scoped>
-.model-lib-model-icon-container {
-  display: inline-block;
-  position: relative;
-  left: 0;
-  height: 1.5rem;
-  vertical-align: top;
-  width: 0;
-}
-.model-lib-model-icon {
-  background-size: cover;
-  background-position: center;
-  display: inline-block;
-  position: relative;
-  left: -2.2rem;
-  top: -0.1rem;
-  height: 1.7rem;
-  width: 1.7rem;
-  vertical-align: top;
-}
-</style>

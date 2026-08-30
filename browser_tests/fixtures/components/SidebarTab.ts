@@ -229,8 +229,12 @@ export class ModelLibrarySidebarTab extends SidebarTab {
     this.loadAllFoldersButton = page.getByRole('button', {
       name: 'Load All Folders'
     })
-    this.folderNodes = this.modelTree.locator('.tree-folder')
-    this.leafNodes = this.modelTree.locator('.tree-leaf')
+    this.folderNodes = this.modelTree
+      .getByRole('treeitem')
+      .and(this.modelTree.locator('[aria-expanded]'))
+    this.leafNodes = this.modelTree.locator(
+      '[role="treeitem"]:not([aria-expanded])'
+    )
     this.modelPreview = page.locator('.model-lib-model-preview')
   }
 
@@ -240,26 +244,15 @@ export class ModelLibrarySidebarTab extends SidebarTab {
   }
 
   getFolderByLabel(label: string) {
-    return this.modelTree
-      .locator('.tree-folder')
-      .filter({ hasText: label })
-      .first()
+    return this.modelTree.getByRole('treeitem', { name: label }).first()
   }
 
   getLeafByLabel(label: string) {
-    return this.modelTree
-      .locator('.tree-leaf')
-      .filter({ hasText: label })
-      .first()
+    return this.modelTree.getByRole('treeitem', { name: label }).first()
   }
 
   getFolderRowByLabel(label: string) {
-    return this.modelTree
-      .locator('.tree-explorer-item')
-      .filter({
-        has: this.modelTree.locator('.tree-folder').filter({ hasText: label })
-      })
-      .first()
+    return this.getFolderByLabel(label)
   }
 }
 
