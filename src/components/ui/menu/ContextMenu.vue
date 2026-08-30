@@ -23,21 +23,30 @@ const { id: providedId, model } = defineProps<{
 }>()
 const emit = defineEmits<{ show: []; hide: [] }>()
 
-const trigger = useTemplateRef('trigger')
 const content = useTemplateRef('content')
 const visible = ref(false)
 const generatedId = useId()
+const triggerId = `${generatedId}-trigger`
 const contentStyle = useModalLiftedZIndex(visible)
 
 function show(event: Event) {
-  if (!(event instanceof MouseEvent)) return
-  const syntheticEvent = new MouseEvent('contextmenu', {
-    bubbles: true,
-    cancelable: true,
-    clientX: event.clientX,
-    clientY: event.clientY
+  const mouseEvent = event instanceof MouseEvent ? event : undefined
+  const target = event.currentTarget ?? event.target
+  const rect = target instanceof Element ? target.getBoundingClientRect() : null
+  const clientX = mouseEvent?.clientX ?? rect?.left ?? 0
+  const clientY = mouseEvent?.clientY ?? rect?.top ?? 0
+  window.setTimeout(() => {
+    document.getElementById(triggerId)?.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        button: 2,
+        buttons: 2,
+        clientX,
+        clientY
+      })
+    )
   })
-  trigger.value?.dispatchEvent(syntheticEvent)
 }
 
 function hide() {
@@ -64,15 +73,22 @@ defineExpose({ container: content, hide, show, toggle, visible })
 
 <template>
   <ContextMenuRoot :modal="false" @update:open="updateOpen">
-    <ContextMenuTrigger as-child>
-      <span ref="trigger" class="pointer-events-none fixed size-px opacity-0" />
-    </ContextMenuTrigger>
+    <ContextMenuTrigger
+      :id="triggerId"
+      class="pointer-events-none fixed size-px opacity-0"
+    />
     <ContextMenuPortal>
       <ContextMenuContent as-child>
         <div
           :id="providedId ?? generatedId"
           ref="content"
-          :class="cn(menuContentClass, $attrs.class)"
+          :class="
+            cn(
+              menuContentClass,
+              'max-h-(--reka-context-menu-content-available-height)',
+              $attrs.class
+            )
+          "
           :style="contentStyle"
         >
           <ContextMenuItems :items="model">
