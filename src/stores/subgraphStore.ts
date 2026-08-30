@@ -156,10 +156,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       const loaded = await super.load({ force })
       if (!loaded) return
       const st = loaded.activeState
-      const sg = (st.definitions?.subgraphs ?? []).find(
-        (sg) => sg.id == st.nodes[0].type
-      )
-      if (!sg) {
+      const rootNode = st.nodes.length === 1 ? st.nodes[0] : undefined
+      const sg = rootNode
+        ? (st.definitions?.subgraphs ?? []).find(
+            (subgraph) => subgraph.id == rootNode.type
+          )
+        : undefined
+      if (!rootNode || !sg) {
         console.error(
           new Error('Loaded subgraph blueprint does not contain valid subgraph')
         )
@@ -168,7 +171,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         this.originalContent = previousOriginalContent
         return
       }
-      sg.name = st.nodes[0].title = this.filename
+      sg.name = rootNode.title = this.filename
 
       // Copy blueprint metadata from workflow extra to subgraph extra
       // so it's available when editing via canvas.subgraph.extra
