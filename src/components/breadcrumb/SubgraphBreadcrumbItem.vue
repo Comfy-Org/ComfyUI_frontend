@@ -64,14 +64,13 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import type { MenuState } from 'primevue/menu'
-import Menu from 'primevue/menu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Input from '@/components/ui/input/Input.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -102,7 +101,7 @@ const hasMissingNodes = computed(
 )
 
 const { t } = useI18n()
-const menu = ref<InstanceType<typeof Menu> & MenuState>()
+const menu = ref<InstanceType<typeof Menu>>()
 const dialogService = useDialogService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()

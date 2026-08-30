@@ -47,10 +47,10 @@
 
 <script setup lang="ts">
 import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
+import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
 import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
@@ -184,9 +184,6 @@ function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
     originalOption: option
   }
 
-  // Submenus opened via popover (color, shape) deliberately omit `items` so
-  // PrimeVue does not render a nested <ul> inside the scrollable root list,
-  // which would be clipped when the menu overflows the viewport (FE-570).
   if (option.hasSubmenu && option.submenu && !usesPopover) {
     item.items = option.submenu.map((sub) => ({
       label: sub.label,
