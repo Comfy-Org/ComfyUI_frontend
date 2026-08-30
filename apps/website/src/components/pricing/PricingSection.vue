@@ -22,11 +22,15 @@ import PricingTeamCard from './PricingTeamCard.vue'
 const {
   locale = 'en',
   headingLevel = 'h1',
-  defaultBillingCycle = 'yearly'
+  defaultBillingCycle = 'yearly',
+  titleKey = 'pricing.title',
+  subtitleKey = 'pricing.subtitle'
 } = defineProps<{
   locale?: Locale
   headingLevel?: 'h1' | 'h2'
   defaultBillingCycle?: BillingCycle
+  titleKey?: TranslationKey
+  subtitleKey?: TranslationKey
 }>()
 
 const slots = useSlots()
@@ -75,12 +79,12 @@ const planCards = computed(() =>
         :is="headingLevel"
         class="font-formula text-4xl font-light text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t('pricing.title', locale) }}
+        {{ t(titleKey, locale) }}
       </component>
       <p
         class="mx-auto mt-3 max-w-xl text-base text-pretty text-primary-comfy-canvas"
       >
-        {{ t('pricing.subtitle', locale) }}
+        {{ t(subtitleKey, locale) }}
       </p>
     </div>
 

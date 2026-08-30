@@ -109,7 +109,7 @@ onUnmounted(() => {
 
           <!-- Drill-down sub-panel -->
           <div
-            class="absolute inset-0 bg-primary-comfy-ink transition-transform duration-300 ease-out"
+            class="absolute inset-0 bg-nav-bg transition-transform duration-300 ease-out"
             :class="
               activeItem
                 ? 'translate-x-0'
@@ -122,6 +122,7 @@ onUnmounted(() => {
               <Button
                 type="button"
                 variant="link"
+                class="text-nav-accent"
                 @click="activeSection = null"
               >
                 <template #prepend>
@@ -137,7 +138,7 @@ onUnmounted(() => {
                   class="flex flex-col gap-y-3"
                 >
                   <p
-                    class="text-primary-warm-gray text-base font-bold tracking-wider uppercase"
+                    class="text-nav-fg-muted text-base font-bold tracking-wider uppercase"
                   >
                     {{ column.header }}
                   </p>
@@ -156,10 +157,10 @@ onUnmounted(() => {
               </div>
             </div>
             <div
-              class="pointer-events-none absolute inset-x-0 top-0 h-8 bg-linear-to-b from-primary-comfy-ink to-transparent"
+              class="pointer-events-none absolute inset-x-0 top-0 h-8 bg-linear-to-b from-nav-bg to-transparent"
             />
             <div
-              class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-primary-comfy-ink to-transparent"
+              class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-nav-bg to-transparent"
             />
           </div>
         </div>

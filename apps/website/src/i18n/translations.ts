@@ -2200,6 +2200,364 @@ const translations = {
       '我们尽力为经历面试流程的候选人提供有意义的反馈。由于申请量较大，在简历筛选阶段可能无法提供详细反馈。'
   },
 
+  // Developers page – Meta
+  'developers.meta.title': {
+    en: 'Comfy Developer Platform - Run ComfyUI Workflows as APIs',
+    'zh-CN': 'Comfy 开发者平台 - 将 ComfyUI 工作流作为 API 运行'
+  },
+  'developers.meta.description': {
+    en: 'Turn the ComfyUI workflow that works on your machine into an API that scales. Deploy on Comfy Cloud or serverless GPUs, call it from the Python or TypeScript SDK, and keep builds reproducible.',
+    'zh-CN':
+      '把在你机器上已经跑通的 ComfyUI 工作流变成可扩展的 API。部署到 Comfy Cloud 或无服务器 GPU，通过 Python 或 TypeScript SDK 调用，并保持构建可复现。'
+  },
+  'developers.breadcrumb': {
+    en: 'Developer platform',
+    'zh-CN': '开发者平台'
+  },
+
+  // Developers page – Hero
+  'developers.hero.title': {
+    en: 'Developer platform',
+    'zh-CN': '开发者平台'
+  },
+  'developers.hero.lead': {
+    en: 'Take the ComfyUI workflow that already works on your machine and run it as an API that scales. Same build, anywhere. Run it on Comfy Cloud or your own serverless deployment, call it from the SDK, and let us manage the build if your team needs it governed.',
+    'zh-CN':
+      '把在你机器上已经跑通的 ComfyUI 工作流，作为可扩展的 API 运行。同一套构建，随处可用。在 Comfy Cloud 或你自己的无服务器部署上运行，通过 SDK 调用；如果团队需要受控管理，也可以交由我们托管构建。'
+  },
+  'developers.hero.ctaPrimary': {
+    en: 'Try developer platform',
+    'zh-CN': '试用开发者平台'
+  },
+  'developers.hero.ctaSecondary': {
+    en: 'Read the doc',
+    'zh-CN': '阅读文档'
+  },
+  'developers.hero.footnote': {
+    en: 'Beta access is going to teams already running real workloads.',
+    'zh-CN': '内测名额优先提供给已经在运行真实工作负载的团队。'
+  },
+  'developers.hero.panel.title': {
+    en: 'Make your first call',
+    'zh-CN': '发起你的第一次调用'
+  },
+  'developers.hero.panel.subtitle': {
+    en: 'Uses the Comfy SDK. The cURL tab is the same call over raw HTTP.',
+    'zh-CN': '使用 Comfy SDK。cURL 标签页是同一次调用的原始 HTTP 形式。'
+  },
+  'developers.hero.panel.env.cloud': {
+    en: 'Comfy Cloud',
+    'zh-CN': 'Comfy Cloud'
+  },
+  'developers.hero.panel.env.local': {
+    en: 'Local',
+    'zh-CN': '本地'
+  },
+  'developers.hero.panel.env.serverless': {
+    en: 'Serverless',
+    'zh-CN': '无服务器'
+  },
+
+  // Developers page – Product cards
+  'developers.cards.cloudApi.title': {
+    en: 'Cloud\nAPI',
+    'zh-CN': '云端\nAPI'
+  },
+  'developers.cards.cloudApi.description': {
+    en: 'Turn any workflow into a production endpoint. Trigger generation from code, inject inputs at runtime, and scale on Comfy Cloud.',
+    'zh-CN':
+      '把任意工作流变成生产级 API 端点。用代码触发生成，在运行时注入输入，并在 Comfy Cloud 上弹性扩展。'
+  },
+  'developers.cards.cloudApi.cta': {
+    en: 'Try now',
+    'zh-CN': '立即试用'
+  },
+  'developers.cards.serverlessApi.title': {
+    en: 'Serverless\nAPI',
+    'zh-CN': '无服务器\nAPI'
+  },
+  'developers.cards.serverlessApi.description': {
+    en: 'Deploy a ComfyUI build with your own custom nodes and models, then run any workflow on it. Scales with traffic, down to zero. In limited beta.',
+    'zh-CN':
+      '部署包含你自己的自定义节点和模型的 ComfyUI 构建，然后在上面运行任意工作流。随流量弹性伸缩，闲时可降到零。目前为限量内测。'
+  },
+  'developers.cards.serverlessApi.cta': {
+    en: 'Join beta',
+    'zh-CN': '加入内测'
+  },
+  'developers.cards.sdk.title': {
+    en: 'SDK',
+    'zh-CN': 'SDK'
+  },
+  'developers.cards.sdk.description': {
+    en: 'Call ComfyUI workflows from your own code in Python or TypeScript. Running on Comfy Cloud today.',
+    'zh-CN':
+      '用 Python 或 TypeScript 在你自己的代码中调用 ComfyUI 工作流。现已可在 Comfy Cloud 上运行。'
+  },
+  'developers.cards.sdk.cta': {
+    en: 'Try now',
+    'zh-CN': '立即试用'
+  },
+  'developers.cards.router.title': {
+    en: 'Comfy\nRouter',
+    'zh-CN': 'Comfy\nRouter'
+  },
+  'developers.cards.router.description': {
+    en: 'Call every partner model in ComfyUI by ID. Veo, Kling, Nano Banana, Flux. One API key, one credit balance, no per-provider accounts.',
+    'zh-CN':
+      '在 ComfyUI 中通过 ID 调用每一个合作伙伴模型：Veo、Kling、Nano Banana、Flux。一个 API 密钥、一份点数余额，无需为每家服务商单独开户。'
+  },
+  'developers.cards.router.cta': {
+    en: 'Try now',
+    'zh-CN': '立即试用'
+  },
+
+  // Developers page – The problem this solves
+  'developers.problem.title': {
+    en: 'The problem this solves',
+    'zh-CN': '这解决了什么问题'
+  },
+  'developers.problem.lead': {
+    en: 'Custom nodes installed in the right order. Checkpoints in the right folders. Python dependencies that only work on one machine. A box someone keeps warm.',
+    'zh-CN':
+      '自定义节点要按正确顺序安装，检查点要放在正确的目录，Python 依赖只在某一台机器上跑得通，还得有人一直让那台机器开着。'
+  },
+  'developers.problem.today.label': {
+    en: 'Today',
+    'zh-CN': '现状'
+  },
+  'developers.problem.today.body': {
+    en: 'A workflow that runs on one workstation. Custom nodes installed by hand, checkpoints in folders someone remembers, Python dependencies that break when anything moves. To run it anywhere else, you rebuild it — and to keep it available, someone keeps a box warm.',
+    'zh-CN':
+      '工作流只能在一台工作站上跑：自定义节点靠手工安装，检查点放在某个人记得的目录里，Python 依赖只要有任何变动就会失效。想换个地方运行，就得重新搭一遍；想让它随时可用，就得有人一直让机器开着。'
+  },
+  'developers.problem.platform.label': {
+    en: 'With the platform',
+    'zh-CN': '使用开发者平台'
+  },
+  'developers.problem.platform.body': {
+    en: 'The same build, deployed. Nodes, models, and dependencies resolved once and carried with it. Run it locally, on a server, or as a serverless endpoint that scales with traffic and drops to zero when nothing is running.',
+    'zh-CN':
+      '同一套构建，直接部署。节点、模型和依赖只解析一次，并随构建一起带走。可以在本地、服务器上运行，也可以作为无服务器端点运行——随流量伸缩，闲时降到零。'
+  },
+
+  // Developers page – How it works
+  'developers.how.title': {
+    en: 'How it works',
+    'zh-CN': '它是如何运作的'
+  },
+  'developers.how.lead': {
+    en: 'Four moving parts. A Distribution freezes your environment. A Deployment runs it on serverless GPUs and gives you a URL. The SDK is how your app calls that URL.',
+    'zh-CN':
+      '四个组成部分。Distribution 冻结你的运行环境，Deployment 把它跑在无服务器 GPU 上并给你一个 URL，SDK 则是你的应用调用这个 URL 的方式。'
+  },
+  'developers.how.step1.title': {
+    en: 'Workflow',
+    'zh-CN': '工作流'
+  },
+  'developers.how.step1.description': {
+    en: 'Your ComfyUI graph, exported in API format',
+    'zh-CN': '你的 ComfyUI 图，以 API 格式导出'
+  },
+  'developers.how.step2.title': {
+    en: 'Managed Builds',
+    'zh-CN': '托管构建'
+  },
+  'developers.how.step2.description': {
+    en: 'A reproducible environment: version + models + nodes.',
+    'zh-CN': '一个可复现的环境：版本 + 模型 + 节点。'
+  },
+  'developers.how.step3.title': {
+    en: 'Deployment',
+    'zh-CN': '部署'
+  },
+  'developers.how.step3.description': {
+    en: 'That environment on autoscaling GPUs, with a URL.',
+    'zh-CN': '把该环境跑在自动伸缩的 GPU 上，并提供一个 URL。'
+  },
+  'developers.how.step4.title': {
+    en: 'Comfy SDK',
+    'zh-CN': 'Comfy SDK'
+  },
+  'developers.how.step4.description': {
+    en: 'Your app submits, polls, and gets outputs.',
+    'zh-CN': '你的应用提交任务、轮询状态并获取输出。'
+  },
+  'developers.how.step4.linkLabel': {
+    en: 'Try SDK',
+    'zh-CN': '试用 SDK'
+  },
+
+  // Developers page – Same build, anywhere
+  'developers.build.title': {
+    en: 'Same build, anywhere',
+    'zh-CN': '同一套构建，随处可用'
+  },
+  'developers.build.item1.term': {
+    en: 'Stop managing builds',
+    'zh-CN': '不必再操心构建'
+  },
+  'developers.build.item1.description': {
+    en: 'Custom nodes installed correctly, checkpoints in the right place, Python dependencies you can still customize. The Builder Agent fixes builds that break.',
+    'zh-CN':
+      '自定义节点正确安装，检查点放在该放的位置，Python 依赖仍然可以自定义。构建出问题时，Builder Agent 会负责修复。'
+  },
+  'developers.build.item2.term': {
+    en: 'Build once, deploy anywhere',
+    'zh-CN': '一次构建，随处部署'
+  },
+  'developers.build.item2.description': {
+    en: 'Local GPU workstations, server deployments, the serverless API. One build, different targets.',
+    'zh-CN':
+      '本地 GPU 工作站、服务器部署、无服务器 API——同一套构建，面向不同的运行目标。'
+  },
+  'developers.build.item3.term': {
+    en: 'Scale from zero',
+    'zh-CN': '从零开始伸缩'
+  },
+  'developers.build.item3.description': {
+    en: 'The serverless API scales up and down with traffic. Configure your tolerance for cold starts and pick your GPU.',
+    'zh-CN':
+      '无服务器 API 随流量自动扩缩。你可以设置对冷启动的容忍度，并选择所用的 GPU。'
+  },
+
+  // Developers page – Built with SDK showcase
+  'developers.showcase.eyebrow': {
+    en: 'Built with SDK',
+    'zh-CN': '基于 SDK 构建'
+  },
+  'developers.showcase.slide1.title': {
+    en: 'See it running in a real store',
+    'zh-CN': '看看它在真实门店中的运行'
+  },
+  'developers.showcase.slide1.body': {
+    en: 'A creative technologist wired a Shopify catalog to a ComfyUI workflow. Product images and video generated per item, published straight back to the store. The workflow runs as an endpoint and the app calls it — a few hundred lines against the SDK.',
+    'zh-CN':
+      '一位创意技术专家把 Shopify 商品目录接到了 ComfyUI 工作流上：为每件商品生成产品图和视频，并直接回传到店铺。工作流作为端点运行，应用直接调用它——只用了几百行基于 SDK 的代码。'
+  },
+  'developers.showcase.slide1.mediaAlt': {
+    en: 'Screen recording of a Shopify catalog generating product media through a ComfyUI workflow',
+    'zh-CN': '屏幕录像：Shopify 商品目录通过 ComfyUI 工作流生成产品素材'
+  },
+  'developers.showcase.ctaPrimary': {
+    en: 'Try SDK',
+    'zh-CN': '试用 SDK'
+  },
+  'developers.showcase.ctaSecondary': {
+    en: 'Read the doc',
+    'zh-CN': '阅读文档'
+  },
+
+  // Developers page – ObserveSection
+  // The newlines are the design's own breaks (Figma 12065:46564). Keep them
+  // between sentences only — a mid-sentence break would stop the column
+  // wrapping to its own width.
+  'developers.observe.title': {
+    en: 'Observe\nand manage',
+    'zh-CN': '观测\n与管理'
+  },
+  'developers.observe.body': {
+    en: 'Logs, spend, and API keys across the team workspace.\nControl which models, nodes, and ComfyUI versions your team runs.',
+    'zh-CN':
+      '在团队工作区中统一查看日志、支出和 API 密钥。\n掌控团队可以使用哪些模型、节点和 ComfyUI 版本。'
+  },
+  'developers.observe.imageAlt': {
+    en: 'The Comfy Cloud dashboard showing credit spend per day, broken down by product.',
+    'zh-CN': 'Comfy Cloud 控制台，按产品细分展示每日积分消耗。'
+  },
+
+  // Developers page – FAQ
+  // q1–q9 and a1 are transcribed from the Figma frame (12340:60437). a2–a9 do
+  // not exist in the design and ship as the placeholder below in both locales;
+  // it must be gone before /developers merges (issue 10).
+  'developers.faq.title': {
+    en: 'Q&As',
+    'zh-CN': '常见问题'
+  },
+  'developers.faq.q1': {
+    en: 'What is the Comfy Developer Platform?',
+    'zh-CN': 'Comfy 开发者平台是什么？'
+  },
+  'developers.faq.a1': {
+    en: 'For Claude Code, Claude Desktop, or Codex, add https://cloud.comfy.org/mcp as a custom connector or remote MCP server in any client, then sign in when prompted. For any other agents, you need to connect with an API key. Send the docs https://docs.comfy.org/agent-tools/cloud to your agent and it will figure out the installation for you.',
+    'zh-CN':
+      '在 Claude Code、Claude Desktop 或 Codex 中，把 https://cloud.comfy.org/mcp 添加为自定义连接器或远程 MCP 服务器，然后按提示登录。对于其他智能体，你需要使用 API 密钥连接：把文档 https://docs.comfy.org/agent-tools/cloud 发给你的智能体，它会自行完成安装配置。'
+  },
+  'developers.faq.q2': {
+    en: 'Can I call a ComfyUI workflow as an API from my own app?',
+    'zh-CN': '我能从自己的应用里以 API 的方式调用 ComfyUI 工作流吗？'
+  },
+  'developers.faq.a2': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q3': {
+    en: 'Do I have to rewrite my workflow to deploy it?',
+    'zh-CN': '部署工作流时需要重写它吗？'
+  },
+  'developers.faq.a3': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q4': {
+    en: 'Can I use my own custom nodes, models, and LoRAs?',
+    'zh-CN': '我可以使用自己的自定义节点、模型和 LoRA 吗？'
+  },
+  'developers.faq.a4': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q5': {
+    en: 'What happens when custom nodes have conflicting Python dependencies?',
+    'zh-CN': '当自定义节点的 Python 依赖发生冲突时会怎样？'
+  },
+  'developers.faq.a5': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q6': {
+    en: 'How do I monitor runs and manage team access?',
+    'zh-CN': '我如何监控运行任务并管理团队访问权限？'
+  },
+  'developers.faq.a6': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q7': {
+    en: 'What does it cost?',
+    'zh-CN': '费用是多少？'
+  },
+  'developers.faq.a7': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q8': {
+    en: 'How do I join the beta, and when is it generally available?',
+    'zh-CN': '我如何加入 Beta 测试？正式版什么时候发布？'
+  },
+  'developers.faq.a8': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+  'developers.faq.q9': {
+    en: 'How is this different from running ComfyUI on RunPod or Modal myself?',
+    'zh-CN': '这和我自己在 RunPod 或 Modal 上运行 ComfyUI 有什么区别？'
+  },
+  'developers.faq.a9': {
+    en: 'TODO: answer pending content review.',
+    'zh-CN': 'TODO: answer pending content review.'
+  },
+
+  // Developers page – PricingSection
+  'developers.pricing.title': {
+    en: 'Pricing Plan',
+    'zh-CN': '价格方案'
+  },
+  'developers.pricing.lead': {
+    en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
+    'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
+  },
+
   // MCP – Meta
   'mcp.meta.title': {
     en: 'Comfy MCP - Drive ComfyUI from any AI agent',

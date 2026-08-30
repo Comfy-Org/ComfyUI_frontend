@@ -1,0 +1,32 @@
+---
+import ReasonsSplit02 from '../../components/blocks/ReasonsSplit02.vue'
+import type { SplitReason } from '../../components/blocks/ReasonsSplit02.vue'
+import { developersCtas } from '../../data/developers'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+interface Props {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+
+const steps: SplitReason[] = ([1, 2, 3, 4] as const).map((step) => ({
+  id: `step${step}`,
+  number: String(step),
+  title: t(`developers.how.step${step}.title`, locale),
+  description: t(`developers.how.step${step}.description`, locale)
+}))
+
+/* Only the SDK step carries a link out to the docs. */
+steps[3].link = {
+  label: t('developers.how.step4.linkLabel', locale),
+  href: developersCtas.sdkDocs
+}
+---
+
+<ReasonsSplit02
+  heading={t('developers.how.title', locale)}
+  lead={t('developers.how.lead', locale)}
+  reasons={steps}
+/>

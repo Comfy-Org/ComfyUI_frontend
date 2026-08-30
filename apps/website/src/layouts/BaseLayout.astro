@@ -30,6 +30,7 @@ interface Props {
   breadcrumbs?: Crumb[]
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
+  theme?: 'subbrand'
 }
 
 const {
@@ -42,6 +43,7 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
+  theme,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
@@ -109,7 +111,10 @@ const structuredData = shouldNoindex
     <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#211927" />
+    <meta
+      name="theme-color"
+      content={theme === 'subbrand' ? '#f0efed' : '#211927'}
+    />
     <link rel="canonical" href={canonicalURL.href} />
     {
       !shouldNoindex && (
@@ -194,7 +199,10 @@ const structuredData = shouldNoindex
       </script>
     )}
   </head>
-  <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
+  <body
+    class="bg-page-bg text-page-fg font-formula antialiased overflow-x-clip"
+    data-page-theme={theme}
+  >
     {gtmEnabled && (
       <noscript>
         <iframe

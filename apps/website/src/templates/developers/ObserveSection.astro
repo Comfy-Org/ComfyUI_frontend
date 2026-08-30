@@ -1,0 +1,24 @@
+---
+import FeatureSplit01 from '../../components/blocks/FeatureSplit01.vue'
+import type { SplitImage } from '../../components/blocks/FeatureSplit01.vue'
+import { observeImage } from '../../data/developers'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+interface Props {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+
+const image: SplitImage = {
+  src: observeImage,
+  alt: t('developers.observe.imageAlt', locale),
+}
+---
+
+<FeatureSplit01
+  heading={t('developers.observe.title', locale)}
+  body={t('developers.observe.body', locale)}
+  image={image}
+/>

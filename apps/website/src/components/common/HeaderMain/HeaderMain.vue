@@ -33,7 +33,7 @@ const ctaButtons = [
 
 <template>
   <nav
-    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
+    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-nav-bg px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
     <a
@@ -74,6 +74,11 @@ const ctaButtons = [
         as="a"
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
+        :class="
+          cta.primary
+            ? undefined
+            : 'text-nav-cta hover:bg-nav-cta hover:text-nav-bg'
+        "
         :aria-label="cta.ariaLabel"
       >
         <span>

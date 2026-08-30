@@ -7,6 +7,7 @@ const baseRoutes = {
   cloudPricing: '/cloud/pricing',
   cloudEnterprise: '/cloud/enterprise',
   api: '/api',
+  developers: '/developers',
   gallery: '/gallery',
   launches: '/launches',
   events: '/events',

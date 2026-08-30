@@ -26,7 +26,12 @@ defineProps<{ featured: NavFeatured }>()
         {{ featured.title }}
       </p>
       <div class="mt-1">
-        <ButtonPill as="span" icon-position="left" variant="ghost">
+        <ButtonPill
+          as="span"
+          icon-position="left"
+          variant="ghost"
+          class="text-nav-accent"
+        >
           {{ featured.cta.label }}
         </ButtonPill>
       </div>
