@@ -50,6 +50,27 @@ describe('Menu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('reopens when internal state outlives rendered content', async () => {
+    render(
+      defineComponent({
+        components: { Menu },
+        setup() {
+          const menu = ref<InstanceType<typeof Menu>>()
+          return { menu }
+        },
+        template:
+          '<button @click="menu?.show($event)">Open</button><Menu ref="menu" :model="[{ label: \'Run\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const trigger = screen.getByRole('button', { name: 'Open' })
+
+    await user.click(trigger)
+    await screen.findByRole('menu')
+    await user.click(trigger)
+    expect(await screen.findByRole('menuitem', { name: 'Run' })).toBeVisible()
+  })
+
   it('opens a context menu at the pointer and dismisses outside', async () => {
     render(
       defineComponent({
