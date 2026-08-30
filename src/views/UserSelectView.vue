@@ -21,8 +21,8 @@
             >{{ $t('userSelect.existingUser') }}:</label
           >
           <SingleSelect
-            v-model="selectedUserId"
             id="existing-user-select"
+            v-model="selectedUserId"
             class="w-full"
             :options="userOptions"
             :label="$t('userSelect.selectUser')"
