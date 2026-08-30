@@ -43,7 +43,7 @@
               :class="
                 cn(
                   'size-2 rounded-full',
-                  isActiveTab ? 'bg-white' : 'bg-smoke-800'
+                  isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
                 )
               "
             />

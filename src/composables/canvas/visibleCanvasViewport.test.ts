@@ -1,37 +1,75 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
-
 describe('visibleCanvasViewport', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    setActivePinia(createPinia())
-    vi.stubGlobal('devicePixelRatio', 2)
+  afterEach(() => {
+    document.body.replaceChildren()
   })
 
-  it('uses the full CSS-pixel canvas while the Agent panel is closed', () => {
+  it('returns the graph panel bounds relative to the canvas', () => {
+    vi.stubGlobal('devicePixelRatio', 1.5)
+    const canvasElement = document.createElement('canvas')
+    canvasElement.width = 2000
+    canvasElement.height = 1400
+    canvasElement.getBoundingClientRect = vi
+      .fn()
+      .mockReturnValue(new DOMRect(10, 20, 1000, 700))
+    const graphPanel = document.createElement('div')
+    graphPanel.className = 'graph-canvas-panel'
+    graphPanel.getBoundingClientRect = vi
+      .fn()
+      .mockReturnValue(new DOMRect(260, 80, 700, 500))
+    document.body.append(graphPanel)
     const canvas = {
-      canvas: { width: 1600, height: 900 }
+      canvas: canvasElement
     } as LGraphCanvas
 
-    expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 800, 450])
+    expect(visibleCanvasViewport(canvas)).toEqual([250, 60, 700, 500])
   })
 
-  it('excludes the docked Agent panel width from the visible canvas', () => {
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.isOpen = true
-    panel.setWidth(500)
-    const canvas = {
-      canvas: { width: 1600, height: 900 }
-    } as LGraphCanvas
+  it('uses the full canvas when the inset is empty', () => {
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getBoundingClientRect = vi
+      .fn()
+      .mockReturnValue(new DOMRect(10, 20, 800, 450))
 
-    expect(visibleCanvasViewport(canvas)).toEqual([0, 0, 300, 450])
+    expect(
+      visibleCanvasViewport({ canvas: canvasElement } as LGraphCanvas, {})
+    ).toEqual([0, 0, 800, 450])
+  })
+
+  it('subtracts the inset from the visible canvas', () => {
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getBoundingClientRect = vi
+      .fn()
+      .mockReturnValue(new DOMRect(10, 20, 800, 450))
+
+    expect(
+      visibleCanvasViewport({ canvas: canvasElement } as LGraphCanvas, {
+        top: 20,
+        right: 200,
+        bottom: 30,
+        left: 40
+      })
+    ).toEqual([40, 20, 560, 400])
+  })
+
+  it('clamps negative and degenerate insets to the canvas bounds', () => {
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getBoundingClientRect = vi
+      .fn()
+      .mockReturnValue(new DOMRect(10, 20, 800, 450))
+
+    expect(
+      visibleCanvasViewport({ canvas: canvasElement } as LGraphCanvas, {
+        top: -20,
+        right: -200,
+        bottom: 500,
+        left: 900
+      })
+    ).toEqual([800, 0, 0, 0])
   })
 })

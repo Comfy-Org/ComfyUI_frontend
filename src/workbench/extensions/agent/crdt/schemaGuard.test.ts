@@ -1,6 +1,9 @@
 import { SCHEMA_VERSION, mint } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
+
+const reportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -13,6 +16,10 @@ function docAtVersion(version: unknown): Y.Doc {
 }
 
 describe('assertReadableSchema (KA-11, fail-closed on read)', () => {
+  beforeEach(() => {
+    reportError.mockClear()
+  })
+
   it('accepts a doc the shared package minted at the build version', () => {
     const doc = mint({ nodes: [], links: [] }, { types: {} })
     expect(() => assertReadableSchema(doc)).not.toThrow()
@@ -34,31 +41,26 @@ describe('assertReadableSchema (KA-11, fail-closed on read)', () => {
   })
 
   it('fails closed on a doc with no schema version at all', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const doc = new Y.Doc()
     expect(() => assertReadableSchema(doc)).toThrow(FollowerSchemaError)
   })
 
   it('fails closed on a version of the wrong type (strict equality)', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const doc = docAtVersion(String(SCHEMA_VERSION))
     expect(() => assertReadableSchema(doc)).toThrow(FollowerSchemaError)
   })
 
   it('routes the refusal through the central invariant channel', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     expect(() => assertReadableSchema(docAtVersion(99))).toThrow(
       FollowerSchemaError
     )
-    expect(consoleError).toHaveBeenCalledWith(
-      expect.stringContaining('schema_version=99')
-    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(FollowerSchemaError), {
+      errorType: 'agent_crdt_schema_rejection',
+      context: { found: 99, expected: SCHEMA_VERSION }
+    })
   })
 
   it('never writes the doc it refuses (KA-6: the follower is read-only)', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const doc = docAtVersion(99)
     const before = Y.encodeStateVector(doc)
     expect(() => assertReadableSchema(doc)).toThrow(FollowerSchemaError)

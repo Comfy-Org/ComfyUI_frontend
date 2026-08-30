@@ -39,6 +39,20 @@ describe('mintOpId', () => {
     expect(b).toMatch(/^[0-9a-f]{32}$/)
     expect(a).not.toBe(b)
   })
+
+  it('works when randomUUID is unavailable on an insecure origin', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(crypto, 'randomUUID')
+    Object.defineProperty(crypto, 'randomUUID', {
+      configurable: true,
+      value: undefined
+    })
+
+    try {
+      expect(mintOpId()).toMatch(/^[0-9a-f]{32}$/)
+    } finally {
+      if (descriptor) Object.defineProperty(crypto, 'randomUUID', descriptor)
+    }
+  })
 })
 
 describe('mintWireOps', () => {

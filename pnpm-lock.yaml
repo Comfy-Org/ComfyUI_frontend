@@ -21,6 +21,9 @@ catalogs:
     '@astrojs/vue':
       specifier: ^7.0.2
       version: 7.0.2
+    '@comfyorg/comfyui-desktop-bridge-types':
+      specifier: 0.2.0
+      version: 0.2.0
     '@comfyorg/comfyui-electron-types':
       specifier: 0.6.2
       version: 0.6.2
@@ -473,8 +476,8 @@ importers:
         specifier: github:Comfy-Org/comfy-multi-player#f8c1638e6534b5f5b995fd4a63a66ab223e281bb
         version: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/f8c1638e6534b5f5b995fd4a63a66ab223e281bb
       '@comfyorg/comfyui-desktop-bridge-types':
-        specifier: workspace:*
-        version: link:packages/comfyui-desktop-bridge-types
+        specifier: 'catalog:'
+        version: 0.2.0
       '@comfyorg/comfyui-electron-types':
         specifier: 'catalog:'
         version: 0.6.2
@@ -1017,6 +1020,9 @@ importers:
       astro:
         specifier: 'catalog:'
         version: 7.2.1(@astrojs/markdown-remark@7.2.2)(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(@types/node@25.9.5)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
+      happy-dom:
+        specifier: 'catalog:'
+        version: 20.9.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.2
@@ -1031,12 +1037,10 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@25.9.5)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(happy-dom@20.10.6)(jsdom@29.1.1)(vite@8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.10(@types/node@25.9.5)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(happy-dom@20.9.0)(jsdom@29.1.1)(vite@8.2.1(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       vue-component-type-helpers:
         specifier: 'catalog:'
         version: 3.3.9
-
-  packages/comfyui-desktop-bridge-types: {}
 
   packages/design-system:
     dependencies:
@@ -1592,6 +1596,9 @@ packages:
   '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/f8c1638e6534b5f5b995fd4a63a66ab223e281bb':
     resolution: {gitHosted: true, tarball: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/f8c1638e6534b5f5b995fd4a63a66ab223e281bb}
     version: 0.2.0
+
+  '@comfyorg/comfyui-desktop-bridge-types@0.2.0':
+    resolution: {integrity: sha512-V5Wj5KXDzTDm5GJAa0xBISjmndNIY5P79pRHQbLkkqJxgp/GPb/QGvcI+xG4ogol0ODJ4j/UBnUmkzpSafw8Aw==}
 
   '@comfyorg/comfyui-electron-types@0.6.2':
     resolution: {integrity: sha512-r3By5Wbizq8jagUrhtcym79HYUTinsvoBnYkFFWbUmrURBWIaC0HduFVkRkI1PNdI76piW+JSOJJnw00YCVXeg==}
@@ -10063,6 +10070,8 @@ snapshots:
   '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/f8c1638e6534b5f5b995fd4a63a66ab223e281bb':
     dependencies:
       yjs: 13.6.31
+
+  '@comfyorg/comfyui-desktop-bridge-types@0.2.0': {}
 
   '@comfyorg/comfyui-electron-types@0.6.2': {}
 

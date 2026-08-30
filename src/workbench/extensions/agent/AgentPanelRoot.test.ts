@@ -244,8 +244,18 @@ vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: () => executionErrors
 }))
 
+// The era's viewport derives from live DOM rects; pin it so the fit
+// assertions stay about the framing behavior, not the rect plumbing.
+vi.mock('@/composables/canvas/visibleCanvasViewport', () => ({
+  visibleCanvasViewport: () => [0, 0, 1500, 1000]
+}))
+
 vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => ({
+    userDisplayName: { value: 'Jo Rivera' },
+    // The era's history store scopes its persistence by resolved identity.
+    resolvedUserInfo: { value: undefined }
+  })
 }))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
@@ -2014,9 +2024,9 @@ describe('AgentPanelRoot transcript copy', () => {
       zAgentWsEventForTest({
         type: 'agent_tool_call',
         data: {
+          tool_call_id: 'call-1',
           tool_name: 'add_node',
-          status: 'ok',
-          args: [],
+          status: 'success',
           message_id: 'turn-1',
           thread_id: 'th-1'
         }

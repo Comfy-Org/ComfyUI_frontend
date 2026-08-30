@@ -105,6 +105,30 @@ describe('handleGcsRedirect', () => {
     expect(res.statusCode).toBe(200)
   })
 
+  it('omits compressed content length after fetch decodes the body', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        gcsResponse({
+          'content-encoding': 'gzip',
+          'content-length': '20'
+        })
+      )
+    )
+    const res = createRes()
+
+    handleGcsRedirect(
+      createProxyRes(GCS_REDIRECT_HEADERS, 302),
+      createReq(),
+      res as unknown as ServerResponse
+    )
+
+    await vi.waitFor(() => {
+      expect(res.statusCode).toBe(200)
+    })
+    expect(res.setHeader).not.toHaveBeenCalledWith('content-length', '20')
+  })
+
   it('treats a 302 to a non-GCS host as a plain pass-through', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
@@ -125,6 +149,24 @@ describe('handleGcsRedirect', () => {
     )
     expect(res.writeHead).toHaveBeenCalledWith(302)
     expect(pipe).toHaveBeenCalledExactlyOnceWith(res)
+  })
+
+  it.for([
+    'https://storage.googleapis.com.attacker.example/obj',
+    'http://127.0.0.1/?next=storage.googleapis.com',
+    'http://storage.googleapis.com/bucket/object.mp4'
+  ])('does not server-fetch an untrusted redirect URL: %s', (location) => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const proxyRes = createProxyRes({ location, via: '1.1 google' }, 302)
+
+    handleGcsRedirect(
+      proxyRes,
+      createReq(),
+      createRes() as unknown as ServerResponse
+    )
+
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('treats a 302 with no location at all as a plain pass-through', () => {
@@ -177,7 +219,8 @@ describe('handleGcsRedirect', () => {
 
     await vi.waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(GCS_REDIRECT_HEADERS.location, {
-        headers: { range: 'bytes=0-1' }
+        headers: { range: 'bytes=0-1' },
+        redirect: 'manual'
       })
     })
   })
@@ -198,5 +241,34 @@ describe('handleGcsRedirect', () => {
       expect(endSpy).toHaveBeenCalledWith('Error fetching media')
     })
     expect(res.statusCode).toBe(500)
+  })
+
+  it('handles errors emitted while streaming the GCS response', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        status: 200,
+        headers: new Headers(),
+        body: new ReadableStream({
+          start(controller) {
+            controller.error(new Error('stream reset'))
+          }
+        })
+      })
+    )
+
+    handleGcsRedirect(
+      createProxyRes(GCS_REDIRECT_HEADERS, 302),
+      createReq(),
+      createRes() as unknown as ServerResponse
+    )
+
+    await vi.waitFor(() => {
+      expect(consoleError).toHaveBeenCalledWith(
+        'Error fetching from GCS:',
+        expect.objectContaining({ message: 'stream reset' })
+      )
+    })
   })
 })

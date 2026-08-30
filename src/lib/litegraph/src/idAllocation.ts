@@ -68,6 +68,11 @@ export function mintCoordinationFreeId(
 export function mintNodeId(state: LGraphState): NodeId {
   if (coordinationFreeStates.has(state))
     return toNodeId(mintCoordinationFreeId())
+  if (state.lastNodeId + 1 >= MINT_ID_MIN) {
+    throw new RangeError(
+      'Node id counter exhausted below coordination-free range'
+    )
+  }
   return toNodeId(++state.lastNodeId)
 }
 
@@ -78,6 +83,11 @@ export function mintGroupId(state: LGraphState): GroupId {
 export function mintLinkId(state: LGraphState): LinkId {
   if (coordinationFreeStates.has(state))
     return toLinkId(mintCoordinationFreeId())
+  if (Number(state.lastLinkId) + 1 >= MINT_ID_MIN) {
+    throw new RangeError(
+      'Link id counter exhausted below coordination-free range'
+    )
+  }
   state.lastLinkId = toLinkId(Number(state.lastLinkId) + 1)
   return state.lastLinkId
 }

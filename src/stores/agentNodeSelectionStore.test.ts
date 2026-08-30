@@ -12,6 +12,12 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ dialogStack })
 }))
 
+// The era's viewport derives from live DOM rects; pin it so the framing
+// assertions stay about the selection behavior, not the rect plumbing.
+vi.mock('@/composables/canvas/visibleCanvasViewport', () => ({
+  visibleCanvasViewport: () => [0, 0, 1600, 900]
+}))
+
 const settings = vi.hoisted(() => {
   const values = new Map<string, unknown>()
   return {

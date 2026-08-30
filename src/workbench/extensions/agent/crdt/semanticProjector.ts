@@ -9,6 +9,8 @@
  */
 import type * as Y from 'yjs'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import { diffSnapshots } from './diffSnapshots'
 import type { DocSnapshot } from './docSchema'
 import { EMPTY_SNAPSHOT, readDocSnapshot } from './docSchema'
@@ -42,11 +44,18 @@ export class SemanticProjector {
     // partway, the snapshot still describes the pre-batch canvas, so the next
     // `project` re-derives the remaining delta instead of diffing an
     // unchanged document to zero mutations and stranding the canvas.
-    this.mutator.applyBatch({
-      source: 'agent-remote',
-      actor: this.options.actor ?? 'agent',
-      mutations
-    })
+    try {
+      this.mutator.applyBatch({
+        source: 'agent-remote',
+        actor: this.options.actor ?? 'agent',
+        mutations
+      })
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_crdt_semantic_projection_failure'
+      })
+      throw error
+    }
     this.snapshot = next
     return mutations.length
   }

@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
@@ -10,6 +11,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -73,6 +75,38 @@ function widget(
 ): IBaseWidget {
   return fromPartial<IBaseWidget>({ name: 'widget', ...overrides })
 }
+
+describe('selection-only promotion guards', () => {
+  function createPromotionTarget() {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const node = new LGraphNode('Source')
+    subgraph.add(node)
+    const input = node.addInput('value', 'STRING')
+    const sourceWidget = node.addWidget('text', 'value', '', () => {})
+    input.widget = { name: sourceWidget.name }
+    return { host, node, sourceWidget }
+  }
+
+  it('does not promote while the canvas is selection-only', () => {
+    const { host, node, sourceWidget } = createPromotionTarget()
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({ selectOnly: true })
+
+    promoteWidget(node, sourceWidget, [host])
+
+    expect(host.subgraph.inputs).toHaveLength(0)
+  })
+
+  it('does not demote while the canvas is selection-only', () => {
+    const { host, node, sourceWidget } = createPromotionTarget()
+    promoteValueWidgetViaSubgraphInput(host, node, sourceWidget)
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({ selectOnly: true })
+
+    demoteWidget(node, sourceWidget, [host])
+
+    expect(host.subgraph.inputs).toHaveLength(1)
+  })
+})
 
 /**
  * Builds a host SubgraphNode whose subgraph contains two source nodes that

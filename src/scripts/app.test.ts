@@ -93,6 +93,8 @@ const {
   mockNodeOutputStore: {
     refreshNodeOutputs: vi.fn(),
     replaceOutputsFromLegacy: vi.fn(),
+    setOutputFromLegacy: vi.fn(),
+    removeOutputFromLegacy: vi.fn(),
     resetAllOutputsAndPreviews: vi.fn(),
     stashPreviewsForWorkflow: vi.fn(),
     restorePreviewsForWorkflow: vi.fn(),
@@ -385,6 +387,13 @@ describe('ComfyApp', () => {
       await app.loadApiJson({}, 'empty.json').catch(() => undefined)
 
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls
+          .map(([hook]) => hook)
+          .filter((hook) =>
+            ['beforeLoadGraph', 'afterLoadGraph'].includes(hook)
+          )
+      ).toEqual(['beforeLoadGraph'])
     })
 
     it('notifies extensions once on each side of a graph load, in order', async () => {
@@ -440,54 +449,91 @@ describe('ComfyApp', () => {
       const output = { images: [{ filename: 'legacy.png' }] }
 
       app.nodeOutputs['1'] = output
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '1',
+        output
+      )
       expect(
         mockNodeOutputStore.replaceOutputsFromLegacy
-      ).toHaveBeenNthCalledWith(1, { '1': output })
+      ).not.toHaveBeenCalled()
 
       delete app.nodeOutputs['1']
+      expect(mockNodeOutputStore.removeOutputFromLegacy).toHaveBeenCalledWith(
+        '1'
+      )
       expect(
         mockNodeOutputStore.replaceOutputsFromLegacy
-      ).toHaveBeenNthCalledWith(2, {})
+      ).not.toHaveBeenCalled()
     })
 
     it('commits nested legacy output mutations to the output store', () => {
       app.vueAppReady = true
       app.nodeOutputs['1'] = { images: [{ filename: 'first.png' }] }
-      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
 
       const output = app.nodeOutputs['1']
       output.images = [{ filename: 'second.png' }]
-      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
-        {
-          '1': { images: [{ filename: 'second.png' }] }
-        }
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '1',
+        { images: [{ filename: 'second.png' }] }
       )
 
-      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
       const images = output.images
       images?.push({ filename: 'third.png' })
-      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '1',
         {
-          '1': {
-            images: [{ filename: 'second.png' }, { filename: 'third.png' }]
-          }
+          images: [{ filename: 'second.png' }, { filename: 'third.png' }]
         }
       )
       expect(app.nodeOutputs['1']).toBe(output)
       expect(output.images).toBe(images)
 
-      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
       const image = images?.[0]
       if (!image) throw new Error('Expected a legacy output image')
       image.filename = 'mutated.png'
-      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '1',
         {
-          '1': {
-            images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
-          }
+          images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
         }
       )
       expect(images?.[0]).toBe(image)
+    })
+
+    it('commits shared output mutations to the accessed entry', () => {
+      app.vueAppReady = true
+      const shared = { images: [{ filename: 'first.png' }] }
+      app.nodeOutputs['1'] = shared
+      app.nodeOutputs['2'] = shared
+      void app.nodeOutputs['1']
+      const second = app.nodeOutputs['2']
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
+
+      second.images = [{ filename: 'second.png' }]
+
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledOnce()
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '2',
+        shared
+      )
+    })
+
+    it('commits only the changed entry after whole-record assignment', () => {
+      app.vueAppReady = true
+      app.nodeOutputs = { '1': { images: [{ filename: 'first.png' }] } }
+      mockNodeOutputStore.setOutputFromLegacy.mockClear()
+
+      const second = { images: [{ filename: 'second.png' }] }
+      app.nodeOutputs['2'] = second
+
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledOnce()
+      expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+        '2',
+        second
+      )
     })
   })
 
@@ -1285,6 +1331,23 @@ describe('ComfyApp', () => {
         expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
         expect(mockCanvas.graph).toBe(graph)
         expect(mockCanvas.subgraph).toBeNull()
+        expect(
+          mockExtensionService.invokeExtensionsAsync.mock.calls
+            .map(([hook]) => hook)
+            .filter((hook) =>
+              [
+                'beforeLoadGraph',
+                'beforeConfigureGraph',
+                'afterConfigureGraph',
+                'afterLoadGraph'
+              ].includes(hook)
+            )
+        ).toEqual([
+          'beforeLoadGraph',
+          'beforeConfigureGraph',
+          'afterConfigureGraph',
+          'afterLoadGraph'
+        ])
       } finally {
         LiteGraph.unregisterNodeType(nodeType)
       }
@@ -1686,7 +1749,7 @@ describe('ComfyApp', () => {
       })
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
-          beforeGraphClear?.()
+          await beforeGraphClear?.()
           return 'imported'
         }
       )
@@ -2058,6 +2121,21 @@ describe('ComfyApp', () => {
   })
 
   describe('handleFile', () => {
+    it('does not paste legacy templates while the canvas is picking-only', () => {
+      const pasteFromClipboard = vi.fn()
+      app.canvas = {
+        ...mockCanvas,
+        selectOnly: true,
+        pasteFromClipboard
+      } as unknown as LGraphCanvas
+
+      app.loadTemplateData({
+        templates: [{ data: JSON.stringify({ reroutes: [] }) }]
+      })
+
+      expect(pasteFromClipboard).not.toHaveBeenCalled()
+    })
+
     it('should handle image files by creating LoadImage node', async () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
 
@@ -2325,7 +2403,7 @@ describe('ComfyApp', () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
-          beforeGraphClear?.()
+          await beforeGraphClear?.()
           return 'imported'
         }
       )
@@ -2351,10 +2429,30 @@ describe('ComfyApp', () => {
       expect(
         mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
       ).toBeLessThan(vi.mocked(mockCanvas.setGraph).mock.invocationCallOrder[0])
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'beforeLoadGraph'
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'beforeConfigureGraph',
+        graph,
+        parameters
+      )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterLoadGraph')
       expect(settled).toBe(false)
 
       resolveAfterLoad?.()
       await handleFile
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'afterConfigureGraph',
+        parameters,
+        undefined,
+        graph
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'afterLoadGraph'
+      )
       expect(settled).toBe(true)
     })
   })
@@ -2377,6 +2475,35 @@ describe('ComfyApp', () => {
       expect(event.defaultPrevented).toBe(true)
       expect(adjustMouseEvent).not.toHaveBeenCalled()
       expect(vi.mocked(extractFilesFromDragEvent)).not.toHaveBeenCalled()
+    })
+
+    it('ignores extracted files when the target canvas is replaced', async () => {
+      app.canvas = {
+        ...mockCanvas,
+        selectOnly: false,
+        graph_mouse: [0, 0],
+        adjustMouseEvent: vi.fn()
+      } as unknown as LGraphCanvas
+      let finishExtraction: (files: File[]) => void = () => {}
+      vi.mocked(extractFilesFromDragEvent).mockReturnValue(
+        new Promise((resolve) => {
+          finishExtraction = resolve
+        })
+      )
+      const handleFile = vi
+        .spyOn(app, 'handleFile')
+        .mockResolvedValue(undefined)
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+      await vi.waitFor(() =>
+        expect(extractFilesFromDragEvent).toHaveBeenCalled()
+      )
+      app.canvas = { ...mockCanvas } as unknown as LGraphCanvas
+      finishExtraction([createTestFile('workflow.json', 'application/json')])
+      await Promise.resolve()
+
+      expect(handleFile).not.toHaveBeenCalled()
     })
 
     it('syncs the drop position and waits for the replacement workflow before restoring warnings', async () => {

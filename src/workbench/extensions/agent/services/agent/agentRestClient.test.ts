@@ -63,6 +63,26 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('GET')
   })
 
+  it('gets and puts the run-mode preference using the API contract', async () => {
+    const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
+    respond(jsonResponse(200, preference))
+
+    await expect(createAgentRestClient().getRunMode()).resolves.toEqual(
+      preference
+    )
+    expect(lastCall()).toMatchObject({
+      route: '/agent/run-mode',
+      init: { method: 'GET' }
+    })
+
+    respond(jsonResponse(200, preference))
+    await createAgentRestClient().putRunMode(preference)
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/run-mode')
+    expect(init.method).toBe('PUT')
+    expect(JSON.parse(init.body as string)).toEqual(preference)
+  })
+
   it('cancelMessage POSTs the cancel path with an empty JSON body', async () => {
     respond(jsonResponse(202, { status: 'cancelling' }))
     await createAgentRestClient().cancelMessage('t7', 'm3')
@@ -74,23 +94,23 @@ describe('agentRestClient route + method', () => {
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
-    const page = (data: unknown[], hasMore: boolean) =>
+    const page = (offset: number, data: unknown[], hasMore: boolean) =>
       jsonResponse(200, {
         data,
         pagination: {
-          offset: 0,
+          offset,
           limit: 100,
           total: data.length,
           has_more: hasMore
         }
       })
-    respond(page([{ id: 'wf-1', name: 'one' }], true))
-    respond(page([{ id: 'wf-2', name: 'two' }], false))
+    respond(page(0, [{ id: 'wf-1', name: 'one' }], true))
+    respond(page(1, [{ id: 'wf-2', name: 'two' }], false))
 
     const workflows = await createAgentRestClient().listCloudWorkflows()
 
     expect(fetchApi.mock.calls[0][0]).toBe('/workflows?limit=100&offset=0')
-    expect(fetchApi.mock.calls[1][0]).toBe('/workflows?limit=100&offset=100')
+    expect(fetchApi.mock.calls[1][0]).toBe('/workflows?limit=100&offset=1')
     expect(workflows.map((w) => w.id)).toEqual(['wf-1', 'wf-2'])
   })
 

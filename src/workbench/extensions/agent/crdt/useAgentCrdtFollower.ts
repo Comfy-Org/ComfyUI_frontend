@@ -10,6 +10,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocOp } from './docFrameClient'
@@ -88,6 +89,17 @@ export interface AgentCrdtStatus {
   workflowId: string | null
   updatesApplied: number
   lastFrameType: string | null
+}
+
+function boundFrameDetail(
+  event: Event,
+  workflowId: string | null
+): Record<string, unknown> | null {
+  if (!(event instanceof CustomEvent) || workflowId === null) return null
+  const detail: unknown = event.detail
+  if (typeof detail !== 'object' || detail === null) return null
+  const frame = detail as Record<string, unknown>
+  return frame.workflowId === workflowId ? frame : null
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -198,7 +210,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
-  const tabId = crypto.randomUUID()
+  const tabId = createUuidv4()
   // Highest doc_update seq seen — used as base_version for human-minted ops.
   // The ws path has no ceiling gate; this only feeds LWW stamps, so a slightly
   // stale value is safe (ties break by [base_version, actor, op_id]).
@@ -336,11 +348,12 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
 
   const onSubscribed: EventListener = (event) => {
-    if (!(event instanceof CustomEvent)) return
-    const ok = event.detail?.ok === true
+    const detail = boundFrameDetail(event, subscribedWorkflowId.value)
+    if (detail === null) return
+    const ok = detail.ok === true
     connected.value = ok
     lastFrameType.value = event.type
-    recordDevEvent('doc_subscribed', event.detail ?? null)
+    recordDevEvent('doc_subscribed', detail)
     if (ok) {
       clearSubscribeRetry()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth acting on after a
@@ -358,6 +371,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     }
   }
   const onUpdate: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     if (staleProbeTimer !== null) armStaleProbe()
     // An update proves the binding is live: the retry budget and the
     // silent-server failsafe must not outlive it.
@@ -391,6 +405,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     if (staleProbeTimer !== null) armStaleProbe()
     lastFrameType.value = event.type
     if (event instanceof CustomEvent) {
@@ -399,6 +414,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     }
   }
   const onDocReset: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     // Lineage break: the bridge already dropped its doc and resubscribed with
     // an empty state vector. The PROJECTOR is retained: its snapshot records
     // what is on the canvas, so diffing it against the refetched state applies
@@ -410,9 +426,6 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     updatesApplied.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
-    // The projector is retained (its snapshot records the canvas; the
-    // refetch diffs incrementally) - only the dev panel's known-id set
-    // rebuilds, because the lineage broke.
     knownDocNodeIds = new Set()
     recordDevEvent(
       'doc_reset',
@@ -420,6 +433,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     )
   }
   const onSchemaError: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
@@ -442,8 +456,12 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
+    // The server might never acknowledge this subscribe. Keep probing until a
+    // bound frame confirms the channel or lifecycle teardown cancels it.
+    armStaleProbe()
   }
   const onFrameError: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     // The bridge already requested the same-lineage replay; this surfaces the
     // failure as its own status instead of a silent stall.
     lastFrameType.value = event.type
@@ -478,18 +496,18 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   // with the previous mount — rebind from sessionStorage) from a later null
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
+  let projectedWorkflowId: string | null = null
   watch(
     workflowId,
     (next) => {
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
-      projector.reset()
-      knownDocNodeIds = new Set()
       if (next === null) {
         const persisted = initialBind ? readPersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
+          projectedWorkflowId = persisted
           recordDevEvent('rebind', { workflowId: persisted })
           subscribedWorkflowId.value = persisted
           bridge.subscribe(persisted)
@@ -503,6 +521,14 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
         return
       }
       initialBind = false
+      // A detach does not clear the user's active graph, so retaining this
+      // snapshot prevents a same-workflow rebind from re-adding every node.
+      // A true workflow change replaces the canvas and needs a fresh baseline.
+      if (projectedWorkflowId !== null && projectedWorkflowId !== next) {
+        projector.reset()
+        knownDocNodeIds = new Set()
+      }
+      projectedWorkflowId = next
       subscribedWorkflowId.value = next
       bridge.subscribe(next)
       // Doc-bound workflows allocate contract-scheme (coordination-free) node

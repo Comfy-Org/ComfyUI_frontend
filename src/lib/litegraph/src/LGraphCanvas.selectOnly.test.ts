@@ -94,6 +94,43 @@ describe('LGraphCanvas selectOnly', () => {
     expect(group.selected).toBeFalsy()
   })
 
+  it('does not emit selection changes for refused non-node picks', () => {
+    const { canvas } = createHarness()
+    const group = new LGraphGroup('Group')
+    const selectionChange = vi.fn()
+    const setDirty = vi.spyOn(canvas, 'setDirty')
+    canvas.onSelectionChange = selectionChange
+    canvas.selectOnly = true
+
+    canvas.processSelect(group, undefined, false, true)
+
+    expect(selectionChange).not.toHaveBeenCalled()
+    expect(setDirty).not.toHaveBeenCalled()
+  })
+
+  it('aborts an active item drag when selection-only mode is armed', () => {
+    const { canvas, firstNode } = createHarness()
+    canvas.pointer.isDown = true
+    canvas.pointer.eDown = {} as CanvasPointerEvent
+    canvas['_startDraggingItems'](firstNode, canvas.pointer)
+
+    canvas.selectOnly = true
+
+    expect(canvas.pointer.isDown).toBe(false)
+    expect(canvas.isDragging).toBe(false)
+  })
+
+  it('aborts an active link gesture when selection-only mode is armed', () => {
+    const { canvas } = createHarness()
+    canvas.pointer.isDown = true
+    canvas.linkConnector.state.connectingTo = 'input'
+
+    canvas.selectOnly = true
+
+    expect(canvas.pointer.isDown).toBe(false)
+    expect(canvas.linkConnector.isConnecting).toBe(false)
+  })
+
   it('keeps collapse clicks as node selection clicks', () => {
     const { canvas, firstNode } = createHarness()
     const event = { canvasX: 110, canvasY: 80 } as CanvasPointerEvent
@@ -132,9 +169,9 @@ describe('LGraphCanvas selectOnly', () => {
       clientY: 140
     })
     Object.defineProperty(event, 'isPrimary', { value: true })
+    canvas.selectOnly = true
     canvas.pointer.isDown = true
     vi.spyOn(canvas.pointer, 'down').mockImplementation(() => {})
-    canvas.selectOnly = true
 
     canvas.processMouseDown(event)
 
@@ -541,6 +578,73 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.pointer.onClick?.(event)
 
     expect(canvas.selectedItems).toEqual(new Set([firstNode, secondNode]))
+  })
+
+  it('a picking click does not select a group after the mode ends', () => {
+    const { canvas, graph } = createHarness()
+    const group = new LGraphGroup('Group')
+    group._bounding.set([600, 300, 100, 100])
+    graph.add(group)
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.selectOnly = true
+    const event = { canvasX: 610, canvasY: 310 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](event, undefined)
+    canvas.selectOnly = false
+    canvas.pointer.onClick?.(event)
+
+    expect(canvas.selectedItems.has(group)).toBe(false)
+    expect(group.selected).toBeFalsy()
+  })
+
+  it('a picking classic marquee does not select a group after the mode ends', () => {
+    const { canvas, graph } = createHarness()
+    const group = new LGraphGroup('Group')
+    group._bounding.set([600, 300, 100, 100])
+    graph.add(group)
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.selectOnly = true
+    const press = { canvasX: 590, canvasY: 290 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](press, undefined)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+    canvas.dragging_rectangle![2] = 120
+    canvas.dragging_rectangle![3] = 120
+    canvas.selectOnly = false
+    canvas.pointer.onDragEnd?.({
+      canvasX: 710,
+      canvasY: 410,
+      shiftKey: false,
+      altKey: false
+    } as CanvasPointerEvent)
+
+    expect(canvas.selectedItems.has(group)).toBe(false)
+    expect(group.selected).toBeFalsy()
+  })
+
+  it('a picking live marquee does not select a group after the mode ends', () => {
+    const { canvas, graph } = createHarness()
+    const group = new LGraphGroup('Group')
+    group._bounding.set([600, 300, 100, 100])
+    graph.add(group)
+    LiteGraph.leftMouseClickBehavior = 'select'
+    canvas.liveSelection = true
+    canvas.selectOnly = true
+    const press = { canvasX: 590, canvasY: 290 } as CanvasPointerEvent
+
+    canvas['_processPrimaryButton'](press, undefined)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+    canvas.selectOnly = false
+    canvas.pointer.onDrag?.({
+      canvasX: 710,
+      canvasY: 410,
+      shiftKey: false,
+      altKey: false
+    } as CanvasPointerEvent)
+    canvas.pointer.onDragEnd?.({} as CanvasPointerEvent)
+
+    expect(canvas.selectedItems.has(group)).toBe(false)
+    expect(group.selected).toBeFalsy()
   })
 
   it('live-selects additively through the full gesture without churning', () => {

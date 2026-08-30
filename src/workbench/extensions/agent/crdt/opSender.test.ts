@@ -99,6 +99,18 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(2)
   })
 
+  it('orders same-base writes from one actor by their op ids', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    const firstId = sent[0].ops[0].op_id
+
+    ackInFlight()
+
+    expect(sent[1].ops[0].base_version).toBe(sent[0].ops[0].base_version)
+    expect(sent[1].ops[0].actor).toBe(sent[0].ops[0].actor)
+    expect(sent[1].ops[0].op_id > firstId).toBe(true)
+  })
+
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
@@ -116,6 +128,18 @@ describe('createOpSender', () => {
       settled[0].state === 'acknowledged' &&
         settled[0].ops.map((op) => op.op_id)
     ).toEqual(firstIds)
+  })
+
+  it('cancels a pending transport retry when the batch settles', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    transportUp = true
+    vi.advanceTimersByTime(500)
+
+    expect(settled).toHaveLength(1)
+    expect(sent).toHaveLength(0)
   })
 
   it('settles undeliverable after the transport retry budget', () => {
@@ -239,6 +263,19 @@ describe('createOpSender', () => {
     resultListener?.({ ok: false, applied: [], skipped: [] })
     resultListener?.({ ok: false, applied: [], skipped: [] })
 
+    sender.enqueue([addNode(2)])
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled).toHaveLength(2)
+    expect(settled[1].state).toBe('acknowledged')
+  })
+
+  it('expires stale anonymous credits before a later batch', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(20_000)
+    expect(settled[0].state).toBe('unacknowledged')
+
+    vi.advanceTimersByTime(10_001)
     sender.enqueue([addNode(2)])
     resultListener?.({ ok: false, applied: [], skipped: [] })
 

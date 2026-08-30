@@ -1,4 +1,4 @@
-# 24. In-App Agent CRDT Follower and Distribution-Resolved Boundaries
+# 25. In-App Agent CRDT Follower and Distribution-Resolved Boundaries
 
 Date: 2026-08-21
 
@@ -14,8 +14,9 @@ The In-App Agent runs server-side and needs to read a user's live workflow and w
 graph changes back into the canvas. On the frontend this arrives as a Yjs document
 update produced by a single authoritative writer (the agent's doc-host, running the
 shared `@comfyorg/comfy-multi-player` applier). The frontend's job is to **follow**:
-integrate that update into frontend state and re-render. It does not author semantic
-operations in V1.
+integrate that update into frontend state and re-render. This follower apply path never
+writes the shared document; concurrent human edits take the separate semantic `doc_ops`
+write path described in the Amendment below.
 
 The POC (originally branch `poc/fe-crdt-follower`, to be mounted with the
 flag-gated agent panel when that slice lands) ships an interim follower that diffs the
@@ -121,7 +122,7 @@ riding `api.socket` and connects to the agent directly.
 **Enforcement.** Guard the seams with the centralized `assert(cond, msg)` from
 `src/base/assert.ts` (DEV throws, prod reports to Sentry); the message must name the
 broken invariant and link this ADR (for example: "breaks CRDT follower invariant:
-followers never write the shared doc — see ADR-0024"). A `.agents/checks/` profile should
+followers never write the shared doc — see ADR-0025"). A `.agents/checks/` profile should
 flag direct shared-doc mutation, peer raw-update ingestion, optimistic-overlay-as-update,
 layout fields written into the shared semantic doc, and `op_id` regeneration. Keep the
 op-layer package DOM/litegraph-free via the import-graph guard.
