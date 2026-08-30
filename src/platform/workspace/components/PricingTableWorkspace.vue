@@ -1,31 +1,17 @@
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex justify-center">
-      <SelectButton
+      <ToggleGroup
         v-model="currentBillingCycle"
-        :options="billingCycleOptions"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        unstyled
-        :pt="{
-          root: {
-            class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-          },
-          pcToggleButton: {
-            root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-              class: [
-                'w-36  h-8 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-                context.active
-                  ? 'bg-base-foreground text-base-background'
-                  : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-              ]
-            }),
-            label: { class: 'flex items-center gap-2 ' }
-          }
-        }"
+        type="single"
+        class="rounded-lg bg-secondary-background p-1.5"
       >
-        <template #option="{ option }">
+        <ToggleGroupItem
+          v-for="option in billingCycleOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 w-36 flex-none text-muted-foreground data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+        >
           <div class="flex items-center gap-2">
             <span>{{ option.label }}</span>
             <div
@@ -35,8 +21,8 @@
               -20%
             </div>
           </div>
-        </template>
-      </SelectButton>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
     <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
@@ -298,12 +284,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import Popover from 'primevue/popover'
-import SelectButton from 'primevue/selectbutton'
-import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
