@@ -298,7 +298,7 @@ interface BuildNodeDefTreeOptions {
 export function buildNodeDefTree(
   nodeDefs: ComfyNodeDefImpl[],
   options: BuildNodeDefTreeOptions = {}
-): TreeNode {
+): TreeNode<ComfyNodeDefImpl> {
   const { pathExtractor } = options
   const defaultPathExtractor = (nodeDef: ComfyNodeDefImpl) =>
     nodeDef.nodePath.split('/')

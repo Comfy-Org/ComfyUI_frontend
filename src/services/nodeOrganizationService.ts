@@ -216,8 +216,8 @@ class NodeOrganizationService {
     myBlueprints: ComfyNodeDefImpl[],
     comfyBlueprints: ComfyNodeDefImpl[],
     pathExtractor: (nodeDef: ComfyNodeDefImpl) => string[]
-  ): TreeNode {
-    const children: TreeNode[] = []
+  ): TreeNode<ComfyNodeDefImpl> {
+    const children: TreeNode<ComfyNodeDefImpl>[] = []
     if (myBlueprints.length > 0) {
       const tree = unwrapTreeRoot(
         buildNodeDefTree(myBlueprints, { pathExtractor })
@@ -244,7 +244,7 @@ class NodeOrganizationService {
   organizeNodes(
     nodes: ComfyNodeDefImpl[],
     options: NodeOrganizationOptions = {}
-  ): TreeNode {
+  ): TreeNode<ComfyNodeDefImpl> {
     const { groupBy = DEFAULT_GROUPING_ID, sortBy = DEFAULT_SORTING_ID } =
       options
 

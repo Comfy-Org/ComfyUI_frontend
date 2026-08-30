@@ -117,6 +117,8 @@
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
     "selectAll": "Select All",
+    "expand": "Expand",
+    "collapse": "Collapse",
     "more": "More",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
