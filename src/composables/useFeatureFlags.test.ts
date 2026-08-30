@@ -261,6 +261,26 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('assetsEnabled', () => {
+    it.for([
+      ['stable cohort without the flag', undefined, false],
+      ['beta cohort with the flag', true, true],
+      ['beta cohort after the kill switch', false, false]
+    ] as const)(
+      'maps the %s response to the expected state',
+      ([, servedValue, expected]) => {
+        vi.mocked(api.getServerFeature).mockImplementation(
+          (path, defaultValue) =>
+            path === 'assets' && servedValue !== undefined
+              ? servedValue
+              : defaultValue
+        )
+
+        expect(useFeatureFlags().flags.assetsEnabled).toBe(expected)
+      }
+    )
+  })
+
   describe('partnerNodeGovernanceEnabled', () => {
     afterEach(() => {
       remoteConfig.value = {}
