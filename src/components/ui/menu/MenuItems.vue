@@ -73,6 +73,7 @@ function select(item: MenuItem, event: Event) {
         <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
         <i
           v-if="item.checked || item.comfyCommand?.active"
+          data-testid="menu-item-indicator"
           :class="
             cn(
               'ml-auto icon-[lucide--check] size-4',
