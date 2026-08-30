@@ -44,6 +44,11 @@ export default defineConfig({
   testIgnore: [
     // Untransformed recorder output — still bare codegen, not a runnable spec
     '**/*.raw.spec.ts',
+    // Live specs intentionally call paid/external services and local sandbox
+    // infrastructure. They are opt-in rather than part of the normal suite.
+    ...(process.env.CUSTOM_NODE_AGENT_LIVE === '1'
+      ? []
+      : ['**/*.live.spec.ts']),
     // The recorder's scratch spec calls page.pause(), so collecting it outside
     // a recording session hangs the suite. comfy-test opts back in.
     ...(process.env.COMFY_TEST_RECORDING
