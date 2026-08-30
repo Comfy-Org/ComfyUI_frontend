@@ -93,6 +93,18 @@ export class LayoutFollowerBridge extends EventTarget {
     return this.schemaError
   }
 
+  /**
+   * The gap detector's baseline, exposed as the ONLY legitimate source for
+   * `base_version` on human-minted ops (FEB-3). It is scoped to the current
+   * subscribe — nulled whenever a subscribe frame leaves, re-baselined from
+   * the `doc_subscribed` ack — so a stamp can never be minted from a dead
+   * binding's high-water mark (DQ-11 stamp-domination family). `null` means
+   * "no post-subscribe baseline yet"; callers floor it to 0.
+   */
+  get lastKnownSeq(): number | null {
+    return this.lastSeq
+  }
+
   /** True while intent and reality disagree — i.e. a retry is still owed. */
   get hasPendingSubscribe(): boolean {
     return (

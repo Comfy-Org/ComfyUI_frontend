@@ -468,3 +468,112 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 })
+
+describe('FEB-3 — base_version baseline is scoped to the current subscribe', () => {
+  // `bridge.lastKnownSeq` is what human-minted ops stamp as `base_version`.
+  // A baseline that survives a workflow switch or a doc_reset mints stamps
+  // from a DEAD lineage's high-water mark, and those stamps dominate every
+  // fresh-lineage op (LWW ties break by [base_version, actor, op_id]) — the
+  // DQ-11 stamp-domination family. These tests pin the scoping: the baseline
+  // is nulled whenever a subscribe leaves and re-baselined only by the new
+  // binding's ack and in-order updates.
+
+  it('baselines from the subscribe ack and advances with in-order updates', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    expect(bridge.lastKnownSeq).toBeNull()
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 41
+    })
+    expect(bridge.lastKnownSeq).toBe(41)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 42)
+    )
+    expect(bridge.lastKnownSeq).toBe(42)
+  })
+
+  it('a workflow switch nulls the baseline — no stamp minted from the dead binding', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 41
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 42)
+    )
+    expect(bridge.lastKnownSeq).toBe(42)
+
+    // Switch to a different workflow: the old high-water mark must not
+    // survive into the new binding's stamps.
+    bridge.subscribe('wf-2')
+    expect(bridge.lastKnownSeq).toBeNull()
+
+    // The new binding baselines from ITS ack, not the dead doc's seq 42.
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-2',
+      ok: true,
+      seq: 3
+    })
+    expect(bridge.lastKnownSeq).toBe(3)
+  })
+
+  it('a doc_reset nulls the baseline through the resubscribe', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 41
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 42)
+    )
+    expect(bridge.lastKnownSeq).toBe(42)
+
+    // Lineage break: the host re-minted the document. The resubscribe leaves
+    // immediately (socket open), so the baseline is nulled with it — seq 42
+    // belongs to the dead lineage and may not stamp post-reset ops.
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+    expect(bridge.lastKnownSeq).toBeNull()
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 5
+    })
+    expect(bridge.lastKnownSeq).toBe(5)
+  })
+
+  it('an unacked subscribe leaves the baseline null (base_version floors to 0)', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 41
+    })
+    bridge.subscribe('wf-2')
+
+    // No ack for wf-2 yet: a stamp minted NOW must floor to 0, never reuse 41.
+    expect(bridge.lastKnownSeq).toBeNull()
+  })
+})

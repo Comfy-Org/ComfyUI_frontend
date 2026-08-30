@@ -139,10 +139,15 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
   const tabId = crypto.randomUUID()
-  // Highest doc_update seq seen — used as base_version for human-minted ops.
-  // The ws path has no ceiling gate; this only feeds LWW stamps, so a slightly
-  // stale value is safe (ties break by [base_version, actor, op_id]).
-  let lastSeq = 0
+  // base_version for human-minted ops derives from the bridge's per-subscribe
+  // seq baseline (`bridge.lastKnownSeq`), NOT a composable-lifetime counter: a
+  // parallel counter survives workflow switches and doc_resets, so it minted
+  // stamps from a dead lineage's high-water mark and those stamps dominated
+  // every fresh-lineage op (FEB-3, DQ-11 stamp-domination family). The ws path
+  // has no ceiling gate; this only feeds LWW stamps, so a slightly stale value
+  // within the SAME lineage is safe (ties break by [base_version, actor,
+  // op_id]).
+  const currentBaseVersion = (): number => bridge.lastKnownSeq ?? 0
   let lastOpsResult: unknown = null
   // Post-ECS main removed the global layout source scope
   // (`LayoutSource.External` / `layoutStore.setSource`), so remote batches
@@ -226,8 +231,6 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const onUpdate: EventListener = (event) => {
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
-      lastSeq = Math.max(lastSeq, event.detail.seq)
     projector.project(bridge.follower.doc)
     if (event instanceof CustomEvent) {
       const detail = event.detail as {
@@ -437,7 +440,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
         ? { ...serialized, id: nodeId, type: classType, pos }
         : { id: nodeId, type: classType, pos, size: [270, 100] }
     }
-    const baseVersion = lastSeq
+    const baseVersion = currentBaseVersion()
     const op: DocOp = {
       op: 'add_node',
       op_id: mintOpId(),
@@ -461,7 +464,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   ): DocOp => {
     const userId = useAuthStore().userId ?? 'anonymous'
     const actor = `human:${userId}:${tabId}`
-    const baseVersion = lastSeq
+    const baseVersion = currentBaseVersion()
     const op: DocOp = {
       op: 'delete_node',
       op_id: mintOpId(),
@@ -494,7 +497,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     project: () => projector.project(bridge.follower.doc),
     tabId,
     get lastSeq() {
-      return lastSeq
+      return currentBaseVersion()
     },
     get lastOpsResult() {
       return lastOpsResult
