@@ -162,7 +162,7 @@ catalog:
 cleanupUnusedCatalogs: true
 
 allowBuilds:
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/58e2333ce3bb6375fd2efbc1e9d7df17327f37e0': true
+  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/c91a89566811ca72f2d3376cfb94a367b49485ea': true
   '@firebase/util': false
   '@sentry/cli': true
   '@tailwindcss/oxide': true
