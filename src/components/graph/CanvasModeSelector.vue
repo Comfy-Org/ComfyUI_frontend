@@ -24,12 +24,9 @@
 
   <Popover
     ref="popover"
-    :auto-z-index="true"
-    :base-z-index="1000"
-    :dismissable="true"
-    :close-on-escape="true"
-    unstyled
-    :pt="popoverPt"
+    side="top"
+    :side-offset="8"
+    content-class="min-w-39 select-none border-interface-stroke bg-nav-background p-2 px-3 text-text-primary"
     @show="onPopoverShow"
     @hide="onPopoverHide"
   >
@@ -89,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import Popover from 'primevue/popover'
+import Popover from '@/components/ui/popover/PopoverOverlay.vue'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
@@ -179,21 +176,4 @@ function getMenuItems(event: KeyboardEvent): HTMLElement[] {
   if (!menu) return []
   return Array.from(menu.querySelectorAll('[role="menuitemradio"]'))
 }
-
-const popoverPt = computed(() => ({
-  root: {
-    class: 'absolute z-50 -translate-y-2'
-  },
-  content: {
-    class: [
-      'mb-2 text-text-primary',
-      'shadow-lg border border-interface-stroke',
-      'bg-nav-background',
-      'rounded-lg',
-      'p-2 px-3',
-      'min-w-39',
-      'select-none'
-    ]
-  }
-}))
 </script>
