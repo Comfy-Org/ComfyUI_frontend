@@ -124,6 +124,9 @@ explorerOpen.value = restoredState?.explorerOpen ?? explorerOpen.value
 const editorStateRestored = ref(false)
 let saveQueue: Promise<void> = Promise.resolve()
 let editorChangeListener: monaco.IDisposable | undefined
+const modelCreationListener = monaco.editor.onDidCreateModel(
+  synchronizeModelLanguage
+)
 
 const editorTheme = computed(() =>
   colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
@@ -350,17 +353,19 @@ function restoreEditorState() {
     .onDidChangeModelContent(scheduleSave)
 }
 
-function synchronizeModelLanguages() {
-  for (const file of files.value) {
-    const model = monaco.editor
-      .getModels()
-      .find((candidate) => candidate.uri.path === relativeEditorPath(file.path))
-    if (!model) continue
-    const language = languageForCustomNodePath(file.path)
-    if (model.getLanguageId() !== language) {
-      monaco.editor.setModelLanguage(model, language)
-    }
+function synchronizeModelLanguage(model: monaco.editor.ITextModel) {
+  const file = files.value.find(
+    (candidate) => relativeEditorPath(candidate.path) === model.uri.path
+  )
+  if (!file) return
+  const language = languageForCustomNodePath(file.path)
+  if (model.getLanguageId() !== language) {
+    monaco.editor.setModelLanguage(model, language)
   }
+}
+
+function synchronizeModelLanguages() {
+  monaco.editor.getModels().forEach(synchronizeModelLanguage)
 }
 
 function handleFileTreeLoaded() {
@@ -412,6 +417,7 @@ onUnmounted(() => {
   stopExplorerModelWatcher()
   stopExplorerPanelWatcher()
   editorChangeListener?.dispose()
+  modelCreationListener.dispose()
   for (const file of files.value) {
     monaco.editor
       .getModels()

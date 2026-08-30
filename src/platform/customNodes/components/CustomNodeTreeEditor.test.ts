@@ -26,6 +26,13 @@ const mocks = vi.hoisted(() => ({
   getValue: vi.fn(),
   hasChanged: vi.fn(),
   lightTheme: false,
+  modelCreated: undefined as
+    | undefined
+    | ((model: {
+        dispose: () => void
+        getLanguageId: () => string
+        uri: { path: string }
+      }) => void),
   models: [] as Array<{
     dispose: () => void
     getLanguageId: () => string
@@ -41,6 +48,7 @@ const mocks = vi.hoisted(() => ({
   setModelLanguage: vi.fn(),
   setOpenedFiles: vi.fn(),
   stopFileTreeListener: vi.fn(),
+  stopModelCreationListener: vi.fn(),
   switchCurrentLeftSiderBar: vi.fn()
 }))
 
@@ -161,6 +169,10 @@ vi.mock('./customNodeMonaco', () => ({
   monaco: {
     editor: {
       getModels: () => mocks.models,
+      onDidCreateModel: (callback: NonNullable<typeof mocks.modelCreated>) => {
+        mocks.modelCreated = callback
+        return { dispose: mocks.stopModelCreationListener }
+      },
       setModelLanguage: mocks.setModelLanguage
     }
   }
@@ -237,6 +249,7 @@ describe('CustomNodeTreeEditor', () => {
     mocks.getValue.mockReset()
     mocks.hasChanged.mockReset().mockReturnValue(false)
     mocks.lightTheme = false
+    mocks.modelCreated = undefined
     mocks.models = [
       {
         dispose: vi.fn(),
@@ -259,6 +272,7 @@ describe('CustomNodeTreeEditor', () => {
     mocks.setModelLanguage.mockReset()
     mocks.setOpenedFiles.mockReset()
     mocks.stopFileTreeListener.mockReset()
+    mocks.stopModelCreationListener.mockReset()
     mocks.switchCurrentLeftSiderBar
       .mockReset()
       .mockImplementation(
@@ -296,6 +310,16 @@ describe('CustomNodeTreeEditor', () => {
     )
     expect(mocks.setModelLanguage).toHaveBeenCalledWith(
       mocks.models[1],
+      'python'
+    )
+    const newlyCreatedPythonModel = {
+      dispose: vi.fn(),
+      getLanguageId: () => 'plaintext',
+      uri: { path: '/v2/nodes/checkerboard.py' }
+    }
+    mocks.modelCreated?.(newlyCreatedPythonModel)
+    expect(mocks.setModelLanguage).toHaveBeenCalledWith(
+      newlyCreatedPythonModel,
       'python'
     )
     expect(screen.queryByText(/Getting Started/i)).not.toBeInTheDocument()

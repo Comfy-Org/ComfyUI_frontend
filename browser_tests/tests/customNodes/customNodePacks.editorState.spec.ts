@@ -28,7 +28,17 @@ const editorFiles = {
     },
     {
       path: 'v2/nodes/checkerboard.py',
-      content: 'import torch\nfrom comfy_api.latest import io\n',
+      content: [
+        'import torch',
+        'from comfy_api.latest import io',
+        '',
+        'class CheckerboardMask(io.ComfyNode):',
+        '    @classmethod',
+        '    async def execute(cls, image: torch.Tensor) -> io.NodeOutput:',
+        '        enabled = True',
+        '        return io.NodeOutput(image if enabled else None)',
+        ''
+      ].join('\n'),
       editable: true
     },
     {
@@ -131,7 +141,7 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
               new Set(
                 Array.from(
                   line.querySelectorAll<HTMLElement>('span[class*="mtk"]')
-                ).map((token) => token.className)
+                ).map((token) => getComputedStyle(token).color)
               ).size
           )
       )
