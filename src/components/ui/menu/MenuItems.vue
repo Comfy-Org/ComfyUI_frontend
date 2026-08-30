@@ -20,13 +20,22 @@ defineProps<{
   items: MenuItem[]
 }>()
 
+const emit = defineEmits<{
+  select: []
+}>()
+
 function select(item: MenuItem, event: Event) {
   if (!item.command) {
     event.preventDefault()
     return
   }
-  if (item.comfyCommand?.active) event.preventDefault()
-  void item.command?.({ originalEvent: event, item })
+  if (item.comfyCommand?.active) {
+    event.preventDefault()
+    void item.command({ originalEvent: event, item })
+    return
+  }
+  void item.command({ originalEvent: event, item })
+  emit('select')
 }
 </script>
 
@@ -57,7 +66,7 @@ function select(item: MenuItem, event: Event) {
           :side-offset="2"
           :align-offset="-5"
         >
-          <MenuItems :items="item.items" />
+          <MenuItems :items="item.items" @select="emit('select')" />
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
     </DropdownMenuSub>
