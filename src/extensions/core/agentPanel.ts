@@ -1,9 +1,11 @@
 import { storeToRefs } from 'pinia'
+import { watch } from 'vue'
 
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -79,6 +81,14 @@ async function setupFlagGate(): Promise<void> {
   const settle = (): void => {
     agentPanelStore.gateSettled = true
   }
+
+  watch(
+    api.serverFeatureFlagsReceived,
+    (delivered) => {
+      agentPanelStore.flagDelivered = delivered
+    },
+    { immediate: true }
+  )
   try {
     const [
       { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },

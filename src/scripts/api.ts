@@ -409,6 +409,9 @@ export class ComfyApi extends EventTarget {
    */
   serverFeatureFlags = ref<Record<string, unknown>>({})
 
+  /** Whether the server has delivered its first authoritative feature flag map. */
+  serverFeatureFlagsReceived = ref(false)
+
   /**
    * The auth token for the comfy org account if the user is logged in.
    * This is only used for {@link queuePrompt} now. It is not directly
@@ -916,6 +919,7 @@ export class ComfyApi extends EventTarget {
               break
             case 'feature_flags':
               this.serverFeatureFlags.value = msg.data
+              this.serverFeatureFlagsReceived.value = true
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:

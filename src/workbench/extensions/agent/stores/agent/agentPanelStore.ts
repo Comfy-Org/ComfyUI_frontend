@@ -16,6 +16,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  const flagDelivered = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
 
@@ -67,6 +68,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     enabled,
     isOpen,
     gateSettled,
+    flagDelivered,
     width,
     isMaximized,
     dismissedSelectionSignature,

@@ -37,6 +37,7 @@ describe('API Feature Flags', () => {
 
     // Reset API state
     api.serverFeatureFlags.value = {}
+    api.serverFeatureFlagsReceived.value = false
 
     // Mock getClientFeatureFlags to return test feature flags
     vi.spyOn(api, 'getClientFeatureFlags').mockReturnValue({
@@ -103,6 +104,7 @@ describe('API Feature Flags', () => {
         max_upload_size: 104857600,
         capabilities: ['isolated_nodes', 'dynamic_models']
       })
+      expect(api.serverFeatureFlagsReceived.value).toBe(true)
     })
 
     it('should handle server without feature flags support', async () => {
