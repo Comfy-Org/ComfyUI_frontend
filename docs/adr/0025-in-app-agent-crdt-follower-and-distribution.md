@@ -121,7 +121,7 @@ riding `api.socket` and connects to the agent directly.
 **Enforcement.** Guard the seams with the centralized `assert(cond, msg)` from
 `src/base/assert.ts` (DEV throws, prod reports to Sentry); the message must name the
 broken invariant and link this ADR (for example: "breaks CRDT follower invariant:
-followers never write the shared doc — see ADR-0024"). A `.agents/checks/` profile should
+followers never write the shared doc — see ADR-0025"). A `.agents/checks/` profile should
 flag direct shared-doc mutation, peer raw-update ingestion, optimistic-overlay-as-update,
 layout fields written into the shared semantic doc, and `op_id` regeneration. Keep the
 op-layer package DOM/litegraph-free via the import-graph guard.
