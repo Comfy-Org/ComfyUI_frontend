@@ -11,6 +11,14 @@ export interface DocUpdate {
   seq: number
   update: Uint8Array
   actor?: string
+  /**
+   * Authoritative per-op effect attribution (DQ-9): the `op_id`s whose effects
+   * this update frame carries. Absent on catch-up frames (which legally fold
+   * many ops into one snapshot) and on hosts that predate DQ-9 — absence means
+   * "unattributed", never "no ops". A frame missing or malforming this field
+   * still applies; attribution is diagnostic, not a gate.
+   */
+  opIds?: string[]
 }
 
 export interface DocSubscribed {
@@ -85,6 +93,7 @@ interface WireData {
   workflow_id?: unknown
   seq?: unknown
   update_b64?: unknown
+  op_ids?: unknown
   actor?: unknown
   ok?: unknown
   code?: unknown
@@ -109,6 +118,16 @@ export function encodeBase64(value: Uint8Array): string {
 
 function parseWireData(value: unknown): WireData | null {
   return typeof value === 'object' && value !== null ? value : null
+}
+
+/**
+ * Tolerant `op_ids` guard: anything other than an array of strings — absent,
+ * non-array, or an array with a non-string member — reads as "unattributed"
+ * rather than rejecting the frame. Update bytes are the contract; attribution
+ * is best-effort metadata a malformed field must never take down.
+ */
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }
 
 function parseRecord(value: unknown): Record<string, unknown> | null {
@@ -139,7 +158,8 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         workflowId: data.workflow_id,
         seq: data.seq,
         update: decodeBase64(data.update_b64),
-        ...(typeof data.actor === 'string' && { actor: data.actor })
+        ...(typeof data.actor === 'string' && { actor: data.actor }),
+        ...(isStringArray(data.op_ids) && { opIds: [...data.op_ids] })
       }
     }
   }

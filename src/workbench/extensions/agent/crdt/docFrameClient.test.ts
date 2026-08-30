@@ -55,6 +55,50 @@ describe('doc frame client', () => {
     )
   })
 
+  it('parses well-formed doc_update op_ids into opIds (DQ-9 attribution)', () => {
+    const source = new Y.Doc()
+    source.getMap('nodes').set('one', { x: 10 })
+    const frame = parseServerDocFrame({
+      type: 'doc_update',
+      data: {
+        v: 1,
+        workflow_id: 'wf-1',
+        seq: 1,
+        update_b64: encodeBase64(Y.encodeStateAsUpdate(source)),
+        op_ids: ['op-1', 'op-2']
+      }
+    })
+    if (frame?.type !== 'doc_update') throw new Error('Expected doc_update')
+    expect(frame.data.opIds).toEqual(['op-1', 'op-2'])
+  })
+
+  it('reads absent or malformed op_ids as unattributed, never rejecting the frame', () => {
+    const source = new Y.Doc()
+    source.getMap('nodes').set('one', { x: 10 })
+    const update_b64 = encodeBase64(Y.encodeStateAsUpdate(source))
+    const base = { v: 1, workflow_id: 'wf-1', seq: 1, update_b64 }
+
+    // Catch-up frames and pre-DQ-9 hosts legally omit the field entirely.
+    for (const op_ids of [
+      undefined,
+      'op-1', // non-array
+      42,
+      { 0: 'op-1' },
+      ['op-1', 7], // mixed-type array
+      [null]
+    ]) {
+      const frame = parseServerDocFrame({
+        type: 'doc_update',
+        data: op_ids === undefined ? base : { ...base, op_ids }
+      })
+      expect(frame?.type).toBe('doc_update')
+      if (frame?.type !== 'doc_update') throw new Error('Expected doc_update')
+      expect(frame.data.opIds).toBeUndefined()
+      // The update bytes still ride along untouched.
+      expect(frame.data.update.length).toBeGreaterThan(0)
+    }
+  })
+
   it('replaying an update is idempotent', () => {
     const source = new Y.Doc()
     source.getArray('items').push(['a'])

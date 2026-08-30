@@ -168,6 +168,24 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
   })
 })
 
+describe('DQ-9 — op attribution rides the re-dispatched frame', () => {
+  it('opIds pass through the bridge to doc_update listeners untouched', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    transport.deliver('doc_update', {
+      ...docUpdateFrame(hostDocUpdate()),
+      op_ids: ['op-1', 'op-2']
+    })
+
+    expect(projected).toHaveLength(1)
+    expect(projected[0].opIds).toEqual(['op-1', 'op-2'])
+    // Attribution is metadata: the update itself was still applied.
+    expect(bridge.follower.updatesApplied).toBe(1)
+  })
+})
+
 describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
   it('releases every transport listener and the doc when unsubscribe cannot send', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
