@@ -114,5 +114,3 @@ export function createAgentRuntime(options: AgentRuntimeOptions) {
     retarget
   }
 }
-
-export type AgentRuntime = NonNullable<ReturnType<typeof createAgentRuntime>>
