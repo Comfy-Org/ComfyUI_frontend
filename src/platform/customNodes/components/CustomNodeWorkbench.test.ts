@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import {
@@ -104,6 +105,24 @@ const i18n = createI18n({
       }
     }
   }
+})
+
+const WorkbenchHarness = defineComponent({
+  components: { CustomNodeWorkbench },
+  setup() {
+    return { agentOpen: ref(false) }
+  },
+  template: `
+    <button type="button" @click="agentOpen = !agentOpen">
+      Toggle Node Agent
+    </button>
+    <CustomNodeWorkbench
+      v-model:agent-open="agentOpen"
+      session-id="session-1"
+      :agent-enabled="true"
+      pack-name="Checkerboard Mask"
+    />
+  `
 })
 
 describe('CustomNodeWorkbench', () => {
@@ -214,12 +233,7 @@ describe('CustomNodeWorkbench', () => {
     const key = customNodeEditorStateKey('workspace-1', 'Checkerboard Mask')
     updateCustomNodeEditorState(key, { agentOpen: false })
 
-    render(CustomNodeWorkbench, {
-      props: {
-        sessionId: 'session-1',
-        agentEnabled: true,
-        packName: 'Checkerboard Mask'
-      },
+    render(WorkbenchHarness, {
       global: { plugins: [i18n] }
     })
 
@@ -230,6 +244,7 @@ describe('CustomNodeWorkbench', () => {
     await waitFor(() => {
       expect(readCustomNodeEditorState(key)).toMatchObject({ agentOpen: true })
     })
+    expect(agent).toHaveAttribute('data-open', 'true')
   })
 
   it('moves the local editor state when the pack is renamed', async () => {

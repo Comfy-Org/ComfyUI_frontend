@@ -1,6 +1,7 @@
 <template>
   <div class="flex size-full min-h-0 flex-col bg-base-background">
     <header
+      data-testid="custom-node-editor-toolbar"
       class="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border-default px-4 py-2"
     >
       <div class="flex min-w-0 flex-1 basis-72 items-center gap-3">
@@ -70,6 +71,27 @@
         class="ml-auto flex shrink-0 items-center gap-2"
       >
         <Button
+          v-if="session.editorKind === 'workbench'"
+          variant="secondary"
+          size="sm"
+          :aria-expanded="agentOpen"
+          aria-controls="custom-node-agent-panel"
+          :aria-label="$t('customNodePacks.editor.workbench.toggleAgent')"
+          @click="agentOpen = !agentOpen"
+        >
+          <i
+            v-if="agentOpen"
+            class="icon-[lucide--panel-right-close] size-4"
+            aria-hidden="true"
+          />
+          <i
+            v-else
+            class="icon-[lucide--panel-right] size-4"
+            aria-hidden="true"
+          />
+          {{ $t('customNodePacks.editor.agent.title') }}
+        </Button>
+        <Button
           variant="secondary"
           size="sm"
           :loading="activeAction === 'validate'"
@@ -121,6 +143,7 @@
       <CustomNodeWorkbench
         v-if="isEditorVisible && session.editorKind === 'workbench'"
         ref="workbenchRef"
+        v-model:agent-open="agentOpen"
         :session-id="session.id"
         :agent-enabled="session.agentEnabled"
         :pack-name="session.name"
@@ -215,6 +238,7 @@ const {
 const session = ref<CustomNodeEditorSession>({ ...props.initialSession })
 const isPolling = ref(false)
 const isAbandoning = ref(false)
+const agentOpen = ref(true)
 const activeAction = ref<CustomNodeEditorAction | null>(null)
 const pollError = ref<string | null>(null)
 const terminalHandled = ref(false)

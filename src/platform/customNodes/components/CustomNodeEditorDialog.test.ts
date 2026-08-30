@@ -41,8 +41,10 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 vi.mock('@/components/ui/button/Button.vue', () => ({
   default: {
     name: 'Button',
+    inheritAttrs: false,
     props: ['disabled', 'loading'],
-    template: '<button :disabled="disabled || loading"><slot /></button>'
+    template:
+      '<button v-bind="$attrs" :disabled="disabled || loading"><slot /></button>'
   }
 }))
 vi.mock('@/platform/telemetry/reportError', () => ({
@@ -57,9 +59,11 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('./CustomNodeWorkbench.vue', () => ({
   default: {
     name: 'CustomNodeWorkbench',
-    props: ['sessionId', 'agentEnabled', 'packName'],
+    props: ['sessionId', 'agentEnabled', 'packName', 'agentOpen'],
+    emits: ['update:agentOpen'],
     methods: { saveAll: mocks.saveAll },
-    template: '<div data-testid="custom-node-workbench" />'
+    template:
+      '<div data-testid="custom-node-workbench" :data-agent-open="agentOpen" />'
   }
 }))
 vi.mock('../composables/useCustomNodeEditor', () => ({
@@ -104,7 +108,9 @@ const i18n = createI18n({
           validate: 'Validate Node',
           validated: 'Custom node is valid',
           validatedDetail: 'The custom node passed validation.',
-          validating: 'Validating node…'
+          validating: 'Validating node…',
+          workbench: { toggleAgent: 'Toggle Node Agent' },
+          agent: { title: 'Node Agent' }
         }
       }
     }
@@ -232,6 +238,32 @@ describe('CustomNodeEditorDialog', () => {
     expect(screen.getByRole('button', { name: 'Validate Node' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Submit Node' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Abandon' })).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Toggle Node Agent' })
+    ).toBeVisible()
+  })
+
+  it('toggles the Node Agent sidebar from the top bar', async () => {
+    const user = userEvent.setup()
+    render(CustomNodeEditorDialog, {
+      props: {
+        initialSession: readySession,
+        onClose: vi.fn(),
+        onSubmitted: vi.fn()
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const toggle = screen.getByRole('button', { name: 'Toggle Node Agent' })
+    const workbench = screen.getByTestId('custom-node-workbench')
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(toggle).toHaveAttribute('aria-controls', 'custom-node-agent-panel')
+    expect(workbench).toHaveAttribute('data-agent-open', 'true')
+
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(workbench).toHaveAttribute('data-agent-open', 'false')
   })
 
   it('submits through the editor action API and closes after refresh', async () => {

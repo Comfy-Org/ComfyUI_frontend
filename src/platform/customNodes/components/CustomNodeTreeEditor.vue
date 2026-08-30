@@ -119,12 +119,9 @@ const loadError = ref<string | null>(null)
 const saveError = ref<string | null>(null)
 const restoredState = readCustomNodeEditorState(stateKey)
 const explorerWidth = ref(restoredState?.explorerWidth ?? 180)
-const explorerPreference = ref(restoredState?.explorerOpen ?? true)
 const editorStateRestored = ref(false)
 let saveQueue: Promise<void> = Promise.resolve()
 let editorChangeListener: monaco.IDisposable | undefined
-let explorerCollapsedForWidth = false
-let changingExplorerForLayout = false
 
 const editorTheme = computed(() =>
   colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
@@ -316,7 +313,7 @@ function persistEditorState() {
   updateCustomNodeEditorState(stateKey, {
     activePath,
     openedPaths,
-    explorerOpen: explorerPreference.value,
+    explorerOpen: true,
     explorerWidth: explorerWidth.value
   })
 }
@@ -324,13 +321,7 @@ function persistEditorState() {
 function restoreEditorState() {
   if (editorStateRestored.value || !initialPath.value) return
   const state = readCustomNodeEditorState(stateKey)
-  explorerPreference.value = state?.explorerOpen ?? true
-  changingExplorerForLayout = true
-  globalSettings.commands.switchCurrentLeftSiderBar(
-    explorerPreference.value ? 'Explorer' : undefined,
-    false
-  )
-  changingExplorerForLayout = false
+  globalSettings.commands.switchCurrentLeftSiderBar('Explorer', false)
 
   const openedPaths = (state?.openedPaths ?? []).flatMap((storedPath) => {
     const path = storedFilePath(storedPath)
@@ -366,34 +357,9 @@ const stopCurrentPathWatcher = watch(
   monacoEditor.states.currentPath,
   persistEditorState
 )
-const stopExplorerWatcher = watch(
-  globalSettings.states.opendLeftSiderBar,
-  (openPanel) => {
-    if (!editorStateRestored.value || changingExplorerForLayout) return
-    explorerPreference.value = openPanel === 'Explorer'
-    persistEditorState()
-  },
-  { flush: 'sync' }
-)
 
-useResizeObserver(rootElement, (entries) => {
+useResizeObserver(rootElement, () => {
   editorElement.value?.resize()
-  const width = entries[0]?.contentRect.width ?? 0
-  const isNarrow = width > 0 && width < 704
-  if (
-    isNarrow &&
-    globalSettings.states.opendLeftSiderBar.value === 'Explorer'
-  ) {
-    changingExplorerForLayout = true
-    globalSettings.commands.switchCurrentLeftSiderBar(undefined)
-    changingExplorerForLayout = false
-    explorerCollapsedForWidth = true
-  } else if (!isNarrow && explorerCollapsedForWidth) {
-    changingExplorerForLayout = true
-    globalSettings.commands.switchCurrentLeftSiderBar('Explorer', false)
-    changingExplorerForLayout = false
-    explorerCollapsedForWidth = false
-  }
 })
 
 onUnmounted(() => {
@@ -402,7 +368,6 @@ onUnmounted(() => {
   stopFileTreeListener()
   stopOpenedFilesWatcher()
   stopCurrentPathWatcher()
-  stopExplorerWatcher()
   editorChangeListener?.dispose()
   for (const file of files.value) {
     monaco.editor
@@ -442,12 +407,22 @@ defineExpose({ replaceFiles, saveAll })
 }
 
 .custom-node-tree-editor :deep(.monaco-tree-editor-area-empty),
-.custom-node-tree-editor
-  :deep(.left-sider-bar > [data-type='context-menu']:last-child),
 .custom-node-tree-editor :deep(label[title='New Folder..']),
 .custom-node-tree-editor :deep(label[title='Rename']),
 .custom-node-tree-editor :deep(label[title='Delete']) {
   display: none;
+}
+
+.custom-node-tree-editor :deep(.left-sider-bar) {
+  display: none;
+}
+
+.custom-node-tree-editor :deep(.monaco-tree-editor-list-file-item-row),
+.custom-node-tree-editor :deep(.monaco-tree-editor-list-file-item-row span) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .custom-node-tree-editor
@@ -458,21 +433,5 @@ defineExpose({ replaceFiles, saveAll })
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-@container (max-width: 44rem) {
-  .custom-node-tree-editor :deep(.monaco-tree-editor-list-wrapper) {
-    position: absolute;
-    z-index: 20;
-    top: 0;
-    bottom: 0;
-    left: 50px;
-    max-width: calc(100cqw - 50px);
-    box-shadow: 0.5rem 0 1.5rem rgb(0 0 0 / 35%);
-  }
-
-  .custom-node-tree-editor :deep(.monaco-tree-editor-drag) {
-    display: none;
-  }
 }
 </style>

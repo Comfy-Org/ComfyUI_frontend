@@ -42,6 +42,11 @@ const editorFiles = {
       editable: true
     },
     {
+      path: 'v2/nodes/checkerboard_mask_with_a_long_filename.py',
+      content: '# Additional node module\n',
+      editable: true
+    },
+    {
       path: 'v2/web/js/checkerboard.js',
       content: '// checkerboard extension\n',
       editable: true
@@ -99,7 +104,7 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
     })
   })
 
-  test('restores open tabs, the active file, and Node Agent visibility', async ({
+  test('keeps the workbench compact and restores its editor state', async ({
     page,
     request
   }) => {
@@ -121,6 +126,43 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
     await expect(
       page.getByText('secure-nodes.json', { exact: true }).first()
     ).toBeVisible()
+
+    const toolbar = page.getByTestId('custom-node-editor-toolbar')
+    const agentToggle = toolbar.getByRole('button', {
+      name: 'Toggle Node Agent'
+    })
+    const agentPanel = page.locator('.agent-panel')
+    await expect(agentToggle).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Toggle Node Agent' })
+    ).toHaveCount(1)
+    await expect(page.locator('.left-sider-bar')).toBeHidden()
+
+    await agentToggle.click()
+    await expect(agentPanel).toHaveAttribute('data-open', 'false')
+    await agentToggle.click()
+    await expect(agentPanel).toHaveAttribute('data-open', 'true')
+
+    const longFileName = page
+      .getByText('checkerboard_mask_with_a_long_filename.py', { exact: true })
+      .first()
+    await expect(longFileName).toBeVisible()
+    const longFileLayout = await longFileName.evaluate((element) => {
+      const row = element.closest<HTMLElement>(
+        '.monaco-tree-editor-list-file-item-row'
+      )!
+      return {
+        clipped: element.scrollWidth > element.clientWidth,
+        labelHeight: Math.round(element.getBoundingClientRect().height),
+        rowHeight: Math.round(row.getBoundingClientRect().height),
+        whiteSpace: getComputedStyle(element).whiteSpace
+      }
+    })
+    expect(longFileLayout.whiteSpace).toBe('nowrap')
+    expect(longFileLayout.clipped).toBe(true)
+    expect(longFileLayout.labelHeight).toBeLessThanOrEqual(
+      longFileLayout.rowHeight
+    )
 
     const treeHeader = await page
       .locator('.custom-node-tree-editor')
@@ -161,7 +203,6 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
 
     const activeTab = page.locator('.monaco-tree-editor-opened-tab-item-active')
     await expect(activeTab).toContainText('README.md')
-    const agentPanel = page.locator('.agent-panel')
     await expect(agentPanel).toHaveAttribute('data-open', 'false')
 
     await page.reload()

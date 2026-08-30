@@ -266,7 +266,7 @@ describe('CustomNodeTreeEditor', () => {
     expect(screen.queryByText(/Getting Started/i)).not.toBeInTheDocument()
   })
 
-  it('translates package paths when saving and responds to container width', async () => {
+  it('translates package paths and keeps Explorer available while resizing', async () => {
     const user = userEvent.setup()
     render(CustomNodeTreeEditor, {
       props: {
@@ -292,13 +292,11 @@ describe('CustomNodeTreeEditor', () => {
 
     mocks.resizeCallback?.([{ contentRect: { width: 640 } }])
     expect(mocks.resize).toHaveBeenCalled()
-    expect(mocks.switchCurrentLeftSiderBar).toHaveBeenCalledWith(undefined)
-
-    mocks.resizeCallback?.([{ contentRect: { width: 900 } }])
     expect(mocks.switchCurrentLeftSiderBar).toHaveBeenLastCalledWith(
       'Explorer',
       false
     )
+    expect(mocks.switchCurrentLeftSiderBar).not.toHaveBeenCalledWith(undefined)
   })
 
   it('uses Monaco light mode when the active Comfy palette is light', async () => {
@@ -318,7 +316,7 @@ describe('CustomNodeTreeEditor', () => {
     )
   })
 
-  it('restores open files, the active file, and explorer layout for the pack', async () => {
+  it('restores open files, the active file, and Explorer width for the pack', async () => {
     updateCustomNodeEditorState('editor-state-key', {
       activePath: 'README.md',
       openedPaths: ['README.md', 'v2/nodes/checkerboard.py'],
@@ -348,7 +346,7 @@ describe('CustomNodeTreeEditor', () => {
       expect(mocks.openOrFocusPath).toHaveBeenCalledWith('/README.md')
     })
     expect(mocks.switchCurrentLeftSiderBar).toHaveBeenCalledWith(
-      undefined,
+      'Explorer',
       false
     )
   })

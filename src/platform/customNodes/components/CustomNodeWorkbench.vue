@@ -4,21 +4,6 @@
     data-testid="custom-node-workbench"
   >
     <div
-      class="flex h-10 shrink-0 items-center justify-end gap-2 border-b border-border-default px-2"
-    >
-      <Button
-        variant="secondary"
-        size="sm"
-        :aria-expanded="agentOpen"
-        :aria-label="$t('customNodePacks.editor.workbench.toggleAgent')"
-        @click="agentOpen = !agentOpen"
-      >
-        <i class="icon-[lucide--sparkles] size-4" aria-hidden="true" />
-        {{ $t('customNodePacks.editor.agent.title') }}
-      </Button>
-    </div>
-
-    <div
       class="workbench-grid relative grid min-h-0 min-w-0 flex-1"
       :data-agent-open="agentOpen"
     >
@@ -40,6 +25,7 @@
       </main>
 
       <aside
+        id="custom-node-agent-panel"
         class="agent-panel min-h-0 min-w-0 flex-col border-l border-border-default bg-secondary-background"
         :data-open="agentOpen"
         :aria-label="$t('customNodePacks.editor.agent.title')"
@@ -202,6 +188,7 @@ const props = defineProps<{
   agentEnabled: boolean
   packName: string
 }>()
+const agentOpen = defineModel<boolean>('agentOpen', { default: true })
 
 const { t } = useI18n()
 const colorPaletteStore = useColorPaletteStore()
@@ -213,9 +200,8 @@ const treeEditorRef =
 const editorStateKey = computed(() =>
   customNodeEditorStateKey(teamWorkspaceStore.activeWorkspaceId, props.packName)
 )
-const agentOpen = ref(
-  readCustomNodeEditorState(editorStateKey.value)?.agentOpen ?? true
-)
+agentOpen.value =
+  readCustomNodeEditorState(editorStateKey.value)?.agentOpen ?? agentOpen.value
 const instruction = ref('')
 const proposal = ref<CustomNodeEditorProposal | null>(null)
 const selectedChangePath = ref('')
