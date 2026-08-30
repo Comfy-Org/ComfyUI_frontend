@@ -20,6 +20,7 @@ describe('execution output projection', () => {
     const appWithApiHandlers = app as unknown as {
       addApiUpdateHandlers: () => void
     }
+    vi.spyOn(api, 'init').mockImplementation(() => {})
     appWithApiHandlers.addApiUpdateHandlers()
 
     const output: ExecutedWsMessage['output'] = {
