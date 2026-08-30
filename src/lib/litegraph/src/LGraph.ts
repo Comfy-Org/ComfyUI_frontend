@@ -80,6 +80,7 @@ import {
   beginNamedValuesShadowDiffLoad,
   endNamedValuesShadowDiffLoad
 } from './utils/namedValuesShadowDiffTelemetry'
+import { computeLayeredGraphLayout } from './utils/layeredGraphLayout'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -1110,34 +1111,12 @@ export class LGraph
     margin = margin || 100
 
     const nodes = this.computeExecutionOrder(false, true)
-    const columns: LGraphNode[][] = []
-    for (const node of nodes) {
-      const col = node._level || 1
-      columns[col] ||= []
-      columns[col].push(node)
-    }
-
-    let x = margin
-
-    for (const column of columns) {
-      if (!column) continue
-
-      let max_size = 100
-      let y = margin + LiteGraph.NODE_TITLE_HEIGHT
-      for (const node of column) {
-        node.setPos(
-          layout == LiteGraph.VERTICAL_LAYOUT ? y : x,
-          layout == LiteGraph.VERTICAL_LAYOUT ? x : y
-        )
-        const max_size_index = layout == LiteGraph.VERTICAL_LAYOUT ? 1 : 0
-        if (node.size[max_size_index] > max_size) {
-          max_size = node.size[max_size_index]
-        }
-        const node_size_index = layout == LiteGraph.VERTICAL_LAYOUT ? 0 : 1
-        y += node.size[node_size_index] + margin + LiteGraph.NODE_TITLE_HEIGHT
-      }
-      x += max_size + margin
-    }
+    const positions = computeLayeredGraphLayout(nodes, this.links.values(), {
+      margin,
+      titleHeight: LiteGraph.NODE_TITLE_HEIGHT,
+      vertical: layout == LiteGraph.VERTICAL_LAYOUT
+    })
+    for (const { node, newPos } of positions) node.setPos(newPos.x, newPos.y)
 
     this.setDirtyCanvas(true, true)
   }
