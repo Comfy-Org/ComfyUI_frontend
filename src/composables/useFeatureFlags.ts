@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedAgentPanelEnabled,
   cachedBillingControlEnabled,
   cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
@@ -42,7 +43,8 @@ export enum ServerFeatureFlag {
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
+  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience'
 }
 
 /**
@@ -209,6 +211,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
         cachedBillingControlEnabled
+      )
+    },
+    get agentPanelEnabled() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
+        remoteConfig.value['agent-in-app-experience'],
+        cachedAgentPanelEnabled
       )
     },
     get legacyBillingMigrationEnabled() {

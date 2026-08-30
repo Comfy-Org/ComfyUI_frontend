@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-import { refreshRemoteConfig } from './refreshRemoteConfig'
 import {
+  invalidateRemoteConfig,
+  refreshRemoteConfig
+} from './refreshRemoteConfig'
+import {
+  cachedAgentPanelEnabled,
   cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigErrorStatus,
@@ -79,6 +83,30 @@ describe('refreshRemoteConfig', () => {
       await refreshRemoteConfig()
 
       expect(cachedLegacyBillingMigrationEnabled.value).toBe(true)
+    })
+
+    it('keeps the cached agent panel flag across failed refreshes, until invalidate', async () => {
+      cachedAgentPanelEnabled.value = undefined
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        mockSuccessResponse({ 'agent-in-app-experience': true })
+      )
+      await refreshRemoteConfig()
+      expect(cachedAgentPanelEnabled.value).toBe(true)
+
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        mockErrorResponse(500, 'Internal Server Error')
+      )
+      await refreshRemoteConfig()
+      expect(remoteConfigState.value).toBe('error')
+      expect(cachedAgentPanelEnabled.value).toBe(true)
+
+      vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('network down'))
+      await refreshRemoteConfig()
+      expect(remoteConfigState.value).toBe('error')
+      expect(cachedAgentPanelEnabled.value).toBe(true)
+
+      invalidateRemoteConfig()
+      expect(cachedAgentPanelEnabled.value).toBeUndefined()
     })
 
     it('passes an AbortSignal on the authenticated branch', async () => {

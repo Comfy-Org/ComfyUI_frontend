@@ -12,15 +12,9 @@ import { jsonRoute } from './utils/jsonRoute'
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 function agentFeatures(agentFlag: boolean): RemoteConfig {
-  return {
-    posthog_project_token: 'phc_e2e_agent_panel',
-    posthog_config: {
-      advanced_disable_flags: true,
-      bootstrap: {
-        featureFlags: { 'agent-in-app-experience': agentFlag }
-      }
-    }
-  }
+  // The flag rides the /features payload itself now (server-evaluated),
+  // exactly as the ingest service exports it.
+  return { 'agent-in-app-experience': agentFlag }
 }
 
 async function mockAgentBoot(
@@ -41,12 +35,6 @@ async function mockAgentBoot(
     has_more: false
   }
   await page.route('**/api/assets**', (r) => r.fulfill(jsonRoute(emptyAssets)))
-  // The bootstrapped project token makes PostHogTelemetryProvider run a real
-  // posthog.init(); route its ingest host so CI never emits live third-party
-  // traffic under the fabricated token.
-  await page.route('**://t.comfy.org/**', (r) =>
-    r.fulfill(jsonRoute({ status: 1 }))
-  )
 }
 
 type AgentFixtures = {

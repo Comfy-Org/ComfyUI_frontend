@@ -61,6 +61,12 @@ export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
 
 export const cachedLegacyBillingMigrationEnabled = ref<boolean | undefined>()
 
+// In-memory only, never storage: a fresh page load starts undefined and
+// fails closed, so a cross-session stale true can never mount the agent
+// panel; within the session it carries the last authenticated value across
+// auth-window reopenings (e.g. a transient /features poll failure).
+export const cachedAgentPanelEnabled = ref<boolean | undefined>()
+
 export const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
   'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
   undefined

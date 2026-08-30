@@ -123,6 +123,7 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
+  'agent-in-app-experience'?: boolean
   billing_control_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean

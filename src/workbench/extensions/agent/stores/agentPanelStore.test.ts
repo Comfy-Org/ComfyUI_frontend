@@ -60,10 +60,9 @@ describe('agentPanelStore open-state persistence', () => {
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
   })
 
-  it('starts unsettled and does not plant a storage key for flag-off users', () => {
-    const store = useAgentPanelStore()
+  it('does not plant a storage key for flag-off users', () => {
+    useAgentPanelStore()
 
-    expect(store.gateSettled).toBe(false)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
 })
