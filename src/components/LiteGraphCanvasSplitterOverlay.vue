@@ -21,13 +21,7 @@
         <SplitterGroup
           :key="splitterRefreshKey"
           class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
-          :auto-save-id="
-            isSelectMode
-              ? sidebarLocation === 'left'
-                ? 'builder-splitter'
-                : 'builder-splitter-right'
-              : sidebarStateKey
-          "
+          @layout="saveMainSplitterLayout"
         >
           <SplitterPanel
             v-if="firstPanelShown"
@@ -35,16 +29,13 @@
             :order="1"
             :class="
               sidebarLocation === 'left'
-                ? cn(
-                    'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                    sidebarPanelVisible && 'min-w-78'
-                  )
+                ? 'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
                 : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
             "
             :min-size="
               sidebarLocation === 'left' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
             "
-            :default-size="SIDE_PANEL_SIZE"
+            :default-size="firstPanelDefaultSize"
             :role="sidebarLocation === 'left' ? 'complementary' : undefined"
             :aria-label="
               sidebarLocation === 'left' ? t('sideToolbar.sidebar') : undefined
@@ -67,7 +58,7 @@
           <SplitterPanel
             id="main-panel"
             :order="2"
-            :default-size="centerPanelDefaultSize"
+            :default-size="mainPanelDefaultSize"
             class="flex flex-col"
           >
             <slot name="topmenu" :sidebar-panel-visible />
@@ -75,11 +66,12 @@
             <SplitterGroup
               class="pointer-events-none mx-1 mb-1 h-auto flex-1 border-none bg-transparent"
               direction="vertical"
-              auto-save-id="bottom-panel-splitter"
+              @layout="saveBottomPanelLayout"
             >
               <SplitterPanel
                 id="graph-canvas-panel"
                 :order="1"
+                :default-size="bottomPanelDefaultSizes[0]"
                 class="graph-canvas-panel relative overflow-visible"
               >
                 <slot name="graph-canvas-panel" />
@@ -96,6 +88,7 @@
                 v-show="bottomPanelVisible && !focusMode"
                 id="bottom-panel"
                 :order="2"
+                :default-size="bottomPanelDefaultSizes[1]"
                 class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-border-default bg-comfy-menu-bg focus-visible:outline-hidden"
               >
                 <slot name="bottom-panel" />
@@ -113,16 +106,13 @@
             :order="3"
             :class="
               sidebarLocation === 'right'
-                ? cn(
-                    'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden',
-                    sidebarPanelVisible && 'min-w-78'
-                  )
+                ? 'side-bar-panel pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
                 : 'pointer-events-auto bg-comfy-menu-bg focus-visible:outline-hidden'
             "
             :min-size="
               sidebarLocation === 'right' ? SIDEBAR_MIN_SIZE : BUILDER_MIN_SIZE
             "
-            :default-size="SIDE_PANEL_SIZE"
+            :default-size="lastPanelDefaultSize"
             :role="sidebarLocation === 'right' ? 'complementary' : undefined"
             :aria-label="
               sidebarLocation === 'right' ? t('sideToolbar.sidebar') : undefined
@@ -153,6 +143,10 @@ import {
   SplitterPanel,
   SplitterResizeHandle
 } from '@/components/ui/splitter'
+import {
+  loadSplitterSizes,
+  saveSplitterSizes
+} from '@/components/ui/splitter/persistence'
 import { useAppMode } from '@/composables/useAppMode'
 import {
   BUILDER_MIN_SIZE,
@@ -235,6 +229,43 @@ const sidebarStateKey = computed(() => {
   const suffix = showOffsideSplitter.value ? '-with-offside' : ''
   return `${base}-${sidebarLocation.value}${suffix}`
 })
+
+const mainSplitterStateKey = computed(() =>
+  isSelectMode.value
+    ? sidebarLocation.value === 'left'
+      ? 'builder-splitter'
+      : 'builder-splitter-right'
+    : sidebarStateKey.value
+)
+const mainPanelCount = computed(
+  () => 1 + Number(firstPanelShown.value) + Number(lastPanelShown.value)
+)
+const savedMainPanelSizes = computed(() =>
+  loadSplitterSizes(mainSplitterStateKey.value, mainPanelCount.value)
+)
+const firstPanelDefaultSize = computed(
+  () => savedMainPanelSizes.value?.[0] ?? SIDE_PANEL_SIZE
+)
+const mainPanelDefaultSize = computed(() => {
+  const index = firstPanelShown.value ? 1 : 0
+  return savedMainPanelSizes.value?.[index] ?? centerPanelDefaultSize.value
+})
+const lastPanelDefaultSize = computed(
+  () => savedMainPanelSizes.value?.[mainPanelCount.value - 1] ?? SIDE_PANEL_SIZE
+)
+
+function saveMainSplitterLayout(sizes: number[]) {
+  saveSplitterSizes(mainSplitterStateKey.value, sizes)
+}
+
+const bottomPanelStateKey = 'bottom-panel-splitter'
+const bottomPanelDefaultSizes = loadSplitterSizes(bottomPanelStateKey, 2) ?? [
+  50, 50
+]
+
+function saveBottomPanelLayout(sizes: number[]) {
+  saveSplitterSizes(bottomPanelStateKey, sizes)
+}
 
 const splitterRefreshKey = computed(() => {
   return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`

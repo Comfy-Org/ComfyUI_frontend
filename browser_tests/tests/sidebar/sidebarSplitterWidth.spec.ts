@@ -19,9 +19,7 @@ test.describe('Sidebar splitter width independence', () => {
   }
 
   async function dragGutter(comfyPage: ComfyPage, deltaX: number) {
-    const gutter = comfyPage.page
-      .locator('.p-splitter-gutter:not(.hidden)')
-      .first()
+    const gutter = comfyPage.page.getByRole('separator').first()
     await expect(gutter).toBeVisible()
     await expect.poll(() => gutter.boundingBox()).not.toBeNull()
     const box = (await gutter.boundingBox())!
