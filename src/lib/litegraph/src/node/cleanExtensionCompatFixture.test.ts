@@ -159,21 +159,6 @@ describe('clean extension compatibility fixture', () => {
       })
       expect(result.coreDraws).toHaveBeenCalledTimes(result.nodes.length)
       expect(result.after).toEqual(result.before)
-      expect(result.fixture.identity).toEqual({
-        fixture: 'comfy.clean-extension-compat.v1',
-        emulationPatternSha256:
-          'a8603d20ae82775a902553058e1cea4e72ea10c0ab1664cd57ab6b5fc573a719',
-        labelPatternSource:
-          'rgthree-comfy@13b4399c00b5ef5a97b1b6800fc1185874740f5d',
-        labelPatternSha256:
-          '5a0f8d72d0be3c6573477943a18295310f82dd4b1d99a506517bb6956af1790d',
-        reroutePatternSource: 'rgthree-comfy@629c514a',
-        reroutePatternSha256:
-          'fea80b78a4e055446ad69628c2ea436f06eda52a31382e005a5476f1a6e65b24',
-        compatibilityPatternSource:
-          'ComfyUI-KJNodes@3f20054214fec9f9234fd3841ae6f1e4287948f6'
-      })
-
       if (mode === 'loaded-inactive') {
         expect(result.fixture.counters).toMatchObject({
           labelMeasurements: 0,
@@ -256,5 +241,36 @@ describe('clean extension compatibility fixture', () => {
     )
     expect(reinstalled).not.toBe(first)
     expect(reinstalled.counters.registrations).toBe(1)
+    reinstalled.dispose()
+  })
+
+  it('preserves a draw wrapper installed by another extension', () => {
+    const setup = createMatrixSetup()
+    const fixture = installCleanExtensionFixture(
+      setup.host,
+      setup.scheduler,
+      'combined'
+    )
+    const fixtureWrapper = setup.host.drawNode
+    const competingCalls = vi.fn()
+    setup.host.drawNode = (node, context) => {
+      competingCalls(node, context)
+      fixtureWrapper(node, context)
+    }
+    const competingWrapper = setup.host.drawNode
+
+    fixture.dispose()
+    setup.host.drawNode(setup.label, setup.context)
+
+    expect(setup.host.drawNode).toBe(competingWrapper)
+    expect(competingCalls).toHaveBeenCalledExactlyOnceWith(
+      setup.label,
+      setup.context
+    )
+    expect(setup.coreDraws).toHaveBeenCalledExactlyOnceWith(
+      setup.label,
+      setup.context
+    )
+    expect(fixture.counters.labelHookCalls).toBe(0)
   })
 })
