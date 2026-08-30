@@ -105,11 +105,6 @@ export const useAuthStore = defineStore('auth', () => {
   const lastTokenUserId = ref<string | null>(null)
 
   /**
-   * The uid present before the latest auth-state change, so a clear can be
-   * distinguished from the initial unauthenticated boot (no prior user).
-   */
-  const previousUid = ref<string | null>(null)
-  /**
    * Set true immediately before an intentional Firebase auth-state clear —
    * a user-initiated `signOut`, or the signup-rollback `user.delete()` — and
    * read in the `onAuthStateChanged` null branch to tell those apart from a
@@ -183,7 +178,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   onAuthStateChanged(auth, (user) => {
-    const previousUserId = previousUid.value
+    // The uid present before this change, so a clear can be distinguished from
+    // the initial unauthenticated boot (no prior user).
+    const previousUserId = currentUser.value?.uid ?? null
     const identityChanged =
       previousUserId !== null && previousUserId !== (user?.uid ?? null)
 
@@ -205,7 +202,6 @@ export const useAuthStore = defineStore('auth', () => {
 
     currentUser.value = user
     isInitialized.value = true
-    previousUid.value = user?.uid ?? null
     if (user === null) {
       if (isCloud && previousUserId !== null) {
         reportAuthStateCleared(previousUserId)
