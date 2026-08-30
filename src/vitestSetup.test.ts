@@ -20,8 +20,10 @@ describe('registered LiteGraph type cleanup', () => {
   })
 
   it('clears registrations from the new singleton', () => {
+    if (!resetLiteGraph)
+      throw new Error('LiteGraph singleton was not registered')
     expect(
-      resetLiteGraph?.registered_node_types['test/reset-module']
+      resetLiteGraph.registered_node_types['test/reset-module']
     ).toBeUndefined()
   })
 })
