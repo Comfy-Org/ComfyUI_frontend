@@ -65,6 +65,17 @@ export interface AgentCrdtStatus {
   lastFrameType: string | null
 }
 
+function boundFrameDetail(
+  event: Event,
+  workflowId: string | null
+): Record<string, unknown> | null {
+  if (!(event instanceof CustomEvent) || workflowId === null) return null
+  const detail: unknown = event.detail
+  if (typeof detail !== 'object' || detail === null) return null
+  const frame = detail as Record<string, unknown>
+  return frame.workflowId === workflowId ? frame : null
+}
+
 export const apiTransport: DocFrameTransport = {
   send(frame) {
     // Never throws: a closed socket is a recoverable state, not an error. See
@@ -170,8 +181,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
 
   const onSubscribed: EventListener = (event) => {
-    if (!(event instanceof CustomEvent)) return
-    const ok = event.detail?.ok === true
+    const detail = boundFrameDetail(event, subscribedWorkflowId.value)
+    if (detail === null) return
+    const ok = detail.ok === true
     connected.value = ok
     lastFrameType.value = event.type
     if (ok) {
@@ -187,16 +199,19 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     }
   }
   const onUpdate: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     if (staleProbeTimer !== null) armStaleProbe()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     projector.project(bridge.follower.doc)
   }
   const onOpsResult: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     if (staleProbeTimer !== null) armStaleProbe()
     lastFrameType.value = event.type
   }
   const onDocReset: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     // Lineage break: the bridge already dropped its doc and resubscribed with
     // an empty state vector. The PROJECTOR is retained: its snapshot records
     // what is on the canvas, so diffing it against the refetched state applies
@@ -210,6 +225,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     clearStaleProbe()
   }
   const onSchemaError: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
@@ -224,10 +240,13 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // EMPTY -> full against the already-materialized canvas and let LiteGraph
     // reassign IDs for duplicate adds.
     connected.value = false
-    clearStaleProbe()
     bridge.resubscribe()
+    // The server might never acknowledge this subscribe. Keep probing until a
+    // bound frame confirms the channel or lifecycle teardown cancels it.
+    armStaleProbe()
   }
   const onFrameError: EventListener = (event) => {
+    if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     // The bridge already requested the same-lineage replay; this surfaces the
     // failure as its own status instead of a silent stall.
     lastFrameType.value = event.type
@@ -262,17 +281,18 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   // with the previous mount — rebind from sessionStorage) from a later null
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
+  let projectedWorkflowId: string | null = null
   watch(
     workflowId,
     (next) => {
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
-      projector.reset()
       if (next === null) {
         const persisted = initialBind ? readPersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
+          projectedWorkflowId = persisted
           subscribedWorkflowId.value = persisted
           bridge.subscribe(persisted)
           return
@@ -283,6 +303,12 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
         return
       }
       initialBind = false
+      // A detach does not clear the user's active graph, so retaining this
+      // snapshot prevents a same-workflow rebind from re-adding every node.
+      // A true workflow change replaces the canvas and needs a fresh baseline.
+      if (projectedWorkflowId !== null && projectedWorkflowId !== next)
+        projector.reset()
+      projectedWorkflowId = next
       subscribedWorkflowId.value = next
       bridge.subscribe(next)
     },

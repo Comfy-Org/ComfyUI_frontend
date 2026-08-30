@@ -224,18 +224,25 @@ function recordedFiveOpStream(): Uint8Array[] {
 }
 
 describe('follower seam integration (real applier → real seam → real LGraph)', () => {
+  const registeredBySuite = new Set<string>()
+
   beforeAll(() => {
-    if (!LiteGraph.registered_node_types[TEST_NODE_TYPE])
+    if (!LiteGraph.registered_node_types[TEST_NODE_TYPE]) {
       LiteGraph.registerNodeType(TEST_NODE_TYPE, FollowerSeamE2eNode)
-    if (!LiteGraph.registered_node_types[SOURCE_TYPE])
+      registeredBySuite.add(TEST_NODE_TYPE)
+    }
+    if (!LiteGraph.registered_node_types[SOURCE_TYPE]) {
       LiteGraph.registerNodeType(SOURCE_TYPE, StreamSourceNode)
-    if (!LiteGraph.registered_node_types[SINK_TYPE])
+      registeredBySuite.add(SOURCE_TYPE)
+    }
+    if (!LiteGraph.registered_node_types[SINK_TYPE]) {
       LiteGraph.registerNodeType(SINK_TYPE, StreamSinkNode)
+      registeredBySuite.add(SINK_TYPE)
+    }
   })
   afterAll(() => {
-    LiteGraph.unregisterNodeType(TEST_NODE_TYPE)
-    LiteGraph.unregisterNodeType(SOURCE_TYPE)
-    LiteGraph.unregisterNodeType(SINK_TYPE)
+    for (const type of registeredBySuite) LiteGraph.unregisterNodeType(type)
+    registeredBySuite.clear()
   })
 
   it('paints a real applier-produced add_node into a real LGraph', () => {

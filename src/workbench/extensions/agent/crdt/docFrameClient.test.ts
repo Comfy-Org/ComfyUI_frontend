@@ -29,6 +29,21 @@ function updateAfter(doc: Y.Doc, mutate: () => void): Uint8Array {
   return Y.encodeStateAsUpdate(doc, before)
 }
 
+interface SentFrame {
+  type: string
+  data: Record<string, unknown>
+}
+
+function parseSentFrame(frame: string): SentFrame {
+  const value: unknown = JSON.parse(frame)
+  if (typeof value !== 'object' || value === null)
+    throw new Error('Expected frame')
+  const { type, data } = value as Record<string, unknown>
+  if (typeof type !== 'string' || typeof data !== 'object' || data === null)
+    throw new Error('Expected typed frame')
+  return { type, data: data as Record<string, unknown> }
+}
+
 describe('doc frame client', () => {
   it('decodes a base64 doc_update that converges through Y.applyUpdate', () => {
     const source = new Y.Doc()
@@ -97,7 +112,7 @@ describe('doc frame client', () => {
     ])
     client.unsubscribe('wf-1')
 
-    expect(transport.sent.map((frame) => JSON.parse(frame))).toEqual([
+    expect(transport.sent.map(parseSentFrame)).toEqual([
       {
         type: 'doc_subscribe',
         data: {
@@ -137,6 +152,7 @@ describe('doc frame client', () => {
       seq: 1,
       update_b64: encodeBase64(update)
     })
+    const retainedStateVector = encodeBase64(bridge.follower.stateVector())
     bridge.resubscribe()
     bridge.unsubscribe()
     bridge.subscribe('wf-1')
@@ -147,11 +163,11 @@ describe('doc frame client', () => {
       update_b64: encodeBase64(update)
     })
 
-    const frames = transport.sent.map((frame) => JSON.parse(frame))
+    const frames = transport.sent.map(parseSentFrame)
     expect(frames.filter((frame) => frame.type === 'doc_ops')).toHaveLength(0)
-    expect(
-      frames.filter((frame) => frame.type === 'doc_subscribe')
-    ).toHaveLength(3)
+    const subscribes = frames.filter((frame) => frame.type === 'doc_subscribe')
+    expect(subscribes).toHaveLength(3)
+    expect(subscribes[1].data.state_vector_b64).toBe(retainedStateVector)
     // The bridge holds semantic state in its FollowerDoc; SemanticProjector
     // (ADR-009) renders it to the canvas. It must never write into layoutStore.
     expect(bridge.follower.doc.getMap('nodes').toJSON()).toEqual({ one: 1 })
@@ -176,7 +192,8 @@ describe('doc frame client', () => {
           ok: true,
           seq: 3,
           applied: ['op-1'],
-          skipped: []
+          skipped: [],
+          failed: { op_id: 'op-2', code: 'invalid_op', message: 'bad op' }
         }
       })
     ).toEqual({
@@ -186,8 +203,23 @@ describe('doc frame client', () => {
         ok: true,
         seq: 3,
         applied: ['op-1'],
-        skipped: []
+        skipped: [],
+        failed: { op_id: 'op-2', code: 'invalid_op', message: 'bad op' }
       }
+    })
+    expect(
+      parseServerDocFrame({
+        type: 'doc_ops_result',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          ok: false,
+          failed: []
+        }
+      })
+    ).toEqual({
+      type: 'doc_ops_result',
+      data: { workflowId: 'wf-1', ok: false, applied: [], skipped: [] }
     })
     expect(
       parseServerDocFrame({

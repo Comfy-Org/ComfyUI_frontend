@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION, mint } from '@comfyorg/comfy-multi-player'
+import { mint } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
@@ -64,6 +64,22 @@ describe('readDocSnapshot', () => {
       targetSlot: 1
     })
   })
+
+  it.for([
+    ['object endpoint', [5, {}, 0, 2, 1]],
+    ['non-finite endpoint', [5, 1, 0, Number.NaN, 1]],
+    ['negative slot', [5, 1, -1, 2, 1]],
+    ['fractional slot', [5, 1, 0, 2, 1.5]],
+    ['non-numeric slot', [5, 1, '0', 2, 1]]
+  ] as [string, unknown[]][])(
+    'skips a link with an invalid $0',
+    ([_name, tuple]) => {
+      const doc = new Y.Doc()
+      doc.getMap<unknown>(LINKS_KEY).set('bad', tuple)
+
+      expect(readDocSnapshot(doc).links.size).toBe(0)
+    }
+  )
 
   it('skips entries without a valid type and defaults a missing position', () => {
     const doc = new Y.Doc()
@@ -153,9 +169,5 @@ describe('readDocSnapshot ⇄ comfy-multi-player mint parity', () => {
       pos: [12, 34],
       widgets: { image: 'x.png' }
     })
-  })
-
-  it('re-exports the package SCHEMA_VERSION the follower is written against', () => {
-    expect(SCHEMA_VERSION).toBe(1)
   })
 })

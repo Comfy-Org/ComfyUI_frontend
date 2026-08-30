@@ -118,8 +118,14 @@ function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
   return current
 }
 
-function dispatchFrame(type: string, detail: unknown): void {
-  bridge().dispatchEvent(new CustomEvent(type, { detail }))
+function dispatchFrame(
+  type: string,
+  detail: Record<string, unknown>,
+  workflowId = 'wf-1'
+): void {
+  bridge().dispatchEvent(
+    new CustomEvent(type, { detail: { workflowId, ...detail } })
+  )
 }
 
 describe('useAgentCrdtFollower', () => {
@@ -180,6 +186,17 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('ignores a subscription result for a foreign workflow', () => {
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: true }, 'wf-foreign')
+
+    expect(status().connected).toBe(false)
+    expect(status().lastFrameType).toBeNull()
+    expect(sessionStorage.getItem('Comfy.Agent.CrdtDocId')).toBeNull()
     unmount()
   })
 
@@ -280,6 +297,20 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
+  it('retains the projector across detach and same-workflow rebind', async () => {
+    const { unmount, workflowId } = mountFollower('wf-1')
+    projectorState.current?.reset.mockClear()
+
+    workflowId.value = null
+    await nextTick()
+    workflowId.value = 'wf-1'
+    await nextTick()
+
+    expect(projectorState.current?.reset).not.toHaveBeenCalled()
+    expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-1')
+    unmount()
+  })
+
   it('re-drives subscription intent on every status frame', () => {
     const { unmount } = mountFollower('wf-1')
 
@@ -359,7 +390,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('never probes an unconfirmed binding (refused subscribe, switch, reconnect)', async () => {
+  it('probes reconnects but not unconfirmed or switched bindings', async () => {
     vi.useFakeTimers()
     const { unmount, workflowId } = mountFollower('wf-1')
 
@@ -375,14 +406,14 @@ describe('useAgentCrdtFollower', () => {
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
     expect(bridge().resubscribe).not.toHaveBeenCalled()
 
-    // Confirmed then reconnected: the reconnect's own resubscribe path owns
-    // recovery; the heartbeat stays disarmed until the next confirm.
+    // Confirmed then reconnected: the first resubscribe is immediate, and an
+    // unanswered subscribe remains covered by the stale-channel probe.
     dispatchFrame('doc_subscribed', { ok: true })
     bridge().resubscribe.mockClear()
     apiState.target.dispatchEvent(new Event('reconnected'))
-    const reconnectResubscribes = bridge().resubscribe.mock.calls.length
-    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
-    expect(bridge().resubscribe.mock.calls.length).toBe(reconnectResubscribes)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
     unmount()
   })
 

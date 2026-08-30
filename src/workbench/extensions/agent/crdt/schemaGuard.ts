@@ -23,7 +23,7 @@
 import { SCHEMA_VERSION, readSchemaVersion } from '@comfyorg/comfy-multi-player'
 import type * as Y from 'yjs'
 
-import { assert } from '@/base/assert'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /** Thrown by {@link assertReadableSchema}; carries the version actually found. */
 export class FollowerSchemaError extends Error {
@@ -55,16 +55,10 @@ export function assertReadableSchema(doc: Y.Doc): void {
     `CRDT follower: doc meta.schema_version=${String(found)} is not the ` +
     `v${SCHEMA_VERSION} layout this build reads — refusing to project it ` +
     `(fail-closed, keep-alive invariant KA-11).`
-
-  try {
-    // Route through the repo's central invariant channel: console.error in
-    // every environment, Sentry reporter in production.
-    assert(false, message)
-  } catch {
-    // Swallowed on purpose. `assert` throws only under DEV, so it is NOT a
-    // fail-closed mechanism by itself — outside DEV it returns normally and
-    // the caller would carry on projecting an unreadable doc. The typed throw
-    // below is what actually closes the gate, in every environment.
-  }
-  throw new FollowerSchemaError(found, message)
+  const error = new FollowerSchemaError(found, message)
+  reportError(error, {
+    errorType: 'agent_crdt_schema_rejection',
+    context: { found, expected: SCHEMA_VERSION }
+  })
+  throw error
 }

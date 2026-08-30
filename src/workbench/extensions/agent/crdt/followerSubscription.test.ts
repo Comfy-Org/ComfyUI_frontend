@@ -23,6 +23,9 @@ import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
+const reportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+
 import type { DocFrameTransport, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -170,7 +173,6 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
 
 describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
   it('releases every transport listener and the doc when unsubscribe cannot send', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -193,11 +195,9 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
     transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
     expect(projected).toHaveLength(0)
     expect(bridge.follower.updatesApplied).toBe(0)
-    warn.mockRestore()
   })
 
   it('a doc_update delivered mid-teardown cannot resurrect the follower', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -215,7 +215,6 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
 
     expect(projected).toHaveLength(0)
     expect(second.projected).toHaveLength(1)
-    warn.mockRestore()
   })
 })
 
@@ -281,7 +280,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
   })
 
   it('a reset on a dead socket still drops the doc; the resubscribe lands on the next reconcile', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, bridge } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -299,7 +297,6 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     bridge.reconcile()
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
-    warn.mockRestore()
   })
 })
 
@@ -428,6 +425,61 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     )
   })
 
+  it('refetches from zero when a retained-doc catch-up omits its lineage seq', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 41
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 42)
+    )
+    const oldLineage = bridge.follower
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 44)
+    )
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true
+    })
+
+    expect(bridge.follower).not.toBe(oldLineage)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(3)
+    expect(subscribes[2].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+  })
+
+  it('does not forward a subscription result for another workflow', () => {
+    const { transport, bridge } = wire()
+    const subscribed: unknown[] = []
+    bridge.addEventListener('doc_subscribed', (event) => {
+      if (event instanceof CustomEvent) subscribed.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-foreign',
+      ok: true,
+      seq: 99
+    })
+
+    expect(subscribed).toHaveLength(0)
+  })
+
   it('a duplicate or stale seq is still applied and provokes no resubscribe', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true
@@ -532,7 +584,6 @@ describe('workflow switch and lost-frame recovery', () => {
 
   it('a doc_update whose bytes fail to apply reports frame_error and replays', () => {
     const { transport, bridge } = wire()
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const failures: unknown[] = []
     bridge.addEventListener('frame_error', (event) => {
       if (event instanceof CustomEvent) failures.push(event.detail)
@@ -552,7 +603,41 @@ describe('workflow switch and lost-frame recovery', () => {
     ])
     expect(bridge.follower).toBe(doc)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
-    warn.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_remote_update_apply_failure',
+      tags: { workflow_id: WORKFLOW_ID }
+    })
+  })
+
+  it('stops replaying and surfaces exhaustion after repeated bad frames', () => {
+    const { transport, bridge } = wire()
+    const failures: { reason?: string }[] = []
+    bridge.addEventListener('frame_error', (event) => {
+      if (event instanceof CustomEvent) failures.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      transport.deliver('doc_update', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: attempt + 1,
+        update_b64: '@@@not-base64@@@'
+      })
+    }
+
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(4)
+    expect(
+      failures.filter((failure) => failure.reason === 'recovery_exhausted')
+    ).toHaveLength(1)
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_recovery_exhausted',
+      tags: {
+        workflow_id: WORKFLOW_ID,
+        recovery_reason: 'decode_failed'
+      }
+    })
   })
 })
 
@@ -570,7 +655,6 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
   })
 
   it('refuses to project a doc whose schema_version is newer than this build', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -585,12 +669,9 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     // …and the failure is distinguishable, not a silent "disconnected".
     expect(schemaErrors).toEqual([{ workflowId: WORKFLOW_ID, found: 2 }])
     expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
-    expect(error).toHaveBeenCalled()
-    error.mockRestore()
   })
 
   it('refuses a doc that declares no schema_version at all', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
@@ -607,11 +688,9 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(schemaErrors).toEqual([
       { workflowId: WORKFLOW_ID, found: undefined }
     ])
-    error.mockRestore()
   })
 
   it('reads the version through the package public API, not a local copy', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const doc = mint({ nodes: [], links: [] }, { types: {} })
     expect(() => {
       assertReadableSchema(doc)
@@ -624,6 +703,5 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(() => {
       assertReadableSchema(doc)
     }).toThrow(/KA-11/)
-    error.mockRestore()
   })
 })

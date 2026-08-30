@@ -5,6 +5,8 @@ severity-default: high
 tools: [Read, Grep, glob]
 ---
 
+# Follower boundary
+
 Check changes under `src/workbench/extensions/agent/**` (and anything importing
 `@comfyorg/comfy-multi-player` or the agent CRDT seam) against the follower invariants in
 [ADR 0025](../../docs/adr/0025-in-app-agent-crdt-follower-and-distribution.md) and the CRDT
