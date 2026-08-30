@@ -1,24 +1,28 @@
 <template>
   <div class="relative">
-    <Button
-      v-tooltip.top="{
+    <Tooltip
+      :config="{
         value: localizedCurrentColorName ?? t('color.noColor'),
         showDelay: 1000
       }"
-      data-testid="color-picker-button"
-      variant="muted-textonly"
-      :aria-label="t('g.color')"
-      @click="() => (showColorPicker = !showColorPicker)"
+      side="top"
     >
-      <div class="flex items-center gap-1 px-0">
-        <i
-          class="pi pi-circle-fill"
-          data-testid="color-picker-current-color"
-          :style="{ color: currentColor ?? '' }"
-        />
-        <i class="icon-[lucide--chevron-down]" />
-      </div>
-    </Button>
+      <Button
+        data-testid="color-picker-button"
+        variant="muted-textonly"
+        :aria-label="t('g.color')"
+        @click="() => (showColorPicker = !showColorPicker)"
+      >
+        <div class="flex items-center gap-1 px-0">
+          <i
+            class="pi pi-circle-fill"
+            data-testid="color-picker-current-color"
+            :style="{ color: currentColor ?? '' }"
+          />
+          <i class="icon-[lucide--chevron-down]" />
+        </div>
+      </Button>
+    </Tooltip>
     <div
       v-if="showColorPicker"
       class="absolute -top-10 left-1/2 -translate-x-1/2"
@@ -35,14 +39,15 @@
           :aria-label="option.localizedName"
           class="color-picker-option flex-none"
         >
-          <i
-            v-tooltip.top="option.localizedName"
-            class="pi pi-circle-fill"
-            :style="{
-              color: isLightTheme ? option.value.light : option.value.dark
-            }"
-            :data-testid="option.name"
-          />
+          <Tooltip :config="option.localizedName" side="top">
+            <i
+              class="pi pi-circle-fill"
+              :style="{
+                color: isLightTheme ? option.value.light : option.value.dark
+              }"
+              :data-testid="option.name"
+            />
+          </Tooltip>
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
@@ -50,6 +55,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
