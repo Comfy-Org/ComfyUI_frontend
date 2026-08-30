@@ -184,6 +184,35 @@ vi.spyOn()
 vi.stubGlobal()
 `
 
+const liteGraphFixture = `import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  it
+} from 'vitest'
+import { LiteGraph as Graph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph as RelativeGraph } from './litegraph'
+
+Graph.registerNodeType('module', class {})
+RelativeGraph.registerNodeType('relative-module', class {})
+beforeAll(() => Graph.registerNodeType('suite', class {}))
+beforeEach(() => Graph.registerNodeType('test', class {}))
+
+afterAll(() => Graph.unregisterNodeType('suite'))
+it('allows per-test registration', () => {
+  Graph.registerNodeType('inline', class {})
+})
+
+const LiteGraph = {
+  registerNodeType() {},
+  unregisterNodeType() {},
+  clearRegisteredTypes() {}
+}
+LiteGraph.registerNodeType()
+LiteGraph.unregisterNodeType()
+LiteGraph.clearRegisteredTypes()
+`
+
 function expectReportsAt(output: string, lines: readonly number[]) {
   const plainOutput = stripVTControlCharacters(output)
   for (const line of lines) {
@@ -198,6 +227,7 @@ describe('Vitest cleanup rules', () => {
   beforeAll(() => {
     workDir = mkdtempSync(path.join(tmpdir(), 'comfy-vitest-cleanup-'))
     writeFileSync(path.join(workDir, 'invalid.test.ts'), invalidFixture)
+    writeFileSync(path.join(workDir, 'litegraph.test.ts'), liteGraphFixture)
     writeFileSync(path.join(workDir, 'unrelated.test.ts'), unrelatedFixture)
     writeFileSync(path.join(workDir, 'playwright.spec.ts'), invalidFixture)
     writeFileSync(
@@ -209,6 +239,8 @@ describe('Vitest cleanup rules', () => {
             files: ['**/*.test.ts'],
             rules: {
               'comfy/no-module-scope-vitest-mocks': 'warn',
+              'comfy/no-persistent-litegraph-registration': 'warn',
+              'comfy/no-redundant-litegraph-cleanup': 'warn',
               'comfy/no-redundant-vitest-cleanup': 'warn'
             }
           }
@@ -223,6 +255,7 @@ describe('Vitest cleanup rules', () => {
         '--config',
         path.join(workDir, '.oxlintrc.json'),
         'invalid.test.ts',
+        'litegraph.test.ts',
         'unrelated.test.ts',
         'playwright.spec.ts'
       ],
@@ -275,6 +308,15 @@ describe('Vitest cleanup rules', () => {
 
   it('reports stubs and spies installed at module scope or in beforeAll', () => {
     expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131, 136, 137, 138])
+  })
+
+  it('reports persistent LiteGraph registrations and redundant cleanup', () => {
+    expect(
+      output.match(/Register LiteGraph node types in beforeEach or a test/g)
+    ).toHaveLength(3)
+    expect(
+      output.match(/LiteGraph\.unregisterNodeType\(\) is redundant/g)
+    ).toHaveLength(1)
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {

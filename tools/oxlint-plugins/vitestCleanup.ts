@@ -9,6 +9,10 @@ const REDUNDANT_TIMER_CLEANUP_METHODS = new Set([
   'clearAllTimers',
   'useRealTimers'
 ])
+const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
+  'clearRegisteredTypes',
+  'unregisterNodeType'
+])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
@@ -169,6 +173,27 @@ function isVitestImport(
   })
 }
 
+function isLiteGraphSingleton(
+  context: RuleContext,
+  expression: Expression
+): boolean {
+  const identifier = asIdentifier(expression)
+  if (!identifier) return false
+  const variable = resolvedVariable(context, identifier)
+  if (!variable) return false
+
+  return variable.defs.some((definition) => {
+    const source = definition.parent?.source?.value
+    return (
+      definition.type === 'ImportBinding' &&
+      definition.node.imported?.name === 'LiteGraph' &&
+      typeof source === 'string' &&
+      ((source.startsWith('.') && source.endsWith('/litegraph')) ||
+        /(?:^|\/)lib\/litegraph(?:\/src)?\/litegraph$/.test(source))
+    )
+  })
+}
+
 function isVitestNamespaceMember(
   context: RuleContext,
   expression: Expression,
@@ -195,6 +220,15 @@ function vitestMethodName(
   if (isVitestNamespaceMember(context, member.object, 'vi')) {
     return methodName
   }
+}
+
+function liteGraphMethodName(
+  context: RuleContext,
+  call: CallExpression
+): string | undefined {
+  const member = asMemberExpression(call.callee)
+  if (!member || !isLiteGraphSingleton(context, member.object)) return
+  return staticMemberName(member)
 }
 
 function isFunction(node: Node): boolean {
@@ -303,6 +337,46 @@ export const noModuleScopeVitestMocks = {
         context.report({
           node,
           message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes earlier mock installations before assertions run.`
+        })
+      }
+    }
+  }
+}
+
+export const noPersistentLiteGraphRegistration = {
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        if (
+          liteGraphMethodName(context, node) !== 'registerNodeType' ||
+          !runsBeforeTests(context, node)
+        ) {
+          return
+        }
+        context.report({
+          node,
+          message:
+            'Register LiteGraph node types in beforeEach or a test because automatic cleanup clears the registry after every test.'
+        })
+      }
+    }
+  }
+}
+
+export const noRedundantLiteGraphCleanup = {
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        const methodName = liteGraphMethodName(context, node)
+        if (
+          !methodName ||
+          !REDUNDANT_LITEGRAPH_CLEANUP_METHODS.has(methodName)
+        ) {
+          return
+        }
+        context.report({
+          node,
+          message: `LiteGraph.${methodName}() is redundant because the project test setup clears registered node types after every test.`
         })
       }
     }

@@ -18,6 +18,10 @@ export function registerLiteGraphInstance(value: LiteGraphGlobal): void {
   instance = value
 }
 
+export function clearRegisteredLiteGraphTypes(): void {
+  instance?.clearRegisteredTypes()
+}
+
 export function litegraph(): LiteGraphGlobal {
   if (!instance) {
     throw new Error('LiteGraph singleton accessed before initialisation')

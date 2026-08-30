@@ -2023,7 +2023,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       )
     } finally {
       LGraph.proxyWidgetMigrationFlush = previous
-      LiteGraph.unregisterNodeType(subgraph.id)
       warn.mockRestore()
     }
   })
