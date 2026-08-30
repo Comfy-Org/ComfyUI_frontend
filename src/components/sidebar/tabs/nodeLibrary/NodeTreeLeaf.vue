@@ -199,7 +199,7 @@ const handleMouseLeave = () => {
 }
 onMounted(() => {
   nodeContentElement.value =
-    container.value?.closest('.p-tree-node-content') ?? null
+    container.value?.closest('.tree-explorer-item') ?? null
   nodeContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   nodeContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
 })
