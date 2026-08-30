@@ -30,12 +30,7 @@
     </div>
   </button>
 
-  <Menu
-    ref="menuRef"
-    :model="translatedItems"
-    :popup="true"
-    class="comfy-command-menu"
-  >
+  <Menu ref="menuRef" :model="translatedItems" class="comfy-command-menu">
     <template #item="{ item, props }">
       <a
         v-if="item.key !== 'nodes-2.0-toggle'"
