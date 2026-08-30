@@ -66,14 +66,17 @@ export function handleGcsRedirect(
         gcsResponse.headers.get('content-type') || 'application/octet-stream'
       )
 
-      for (const header of [
-        'content-length',
+      const responseHeaders = [
+        ...(gcsResponse.headers.has('content-encoding')
+          ? []
+          : ['content-length']),
         'content-range',
         'accept-ranges',
         'cache-control',
         'etag',
         'last-modified'
-      ]) {
+      ]
+      for (const header of responseHeaders) {
         const value = gcsResponse.headers.get(header)
         if (value) {
           res.setHeader(header, value)
