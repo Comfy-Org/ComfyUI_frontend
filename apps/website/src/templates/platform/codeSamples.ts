@@ -8,7 +8,6 @@ const PROMPTS = [
   'a holographic sticker of a koi fish'
 ]
 const OUTPUTS = ['reef.mp4', 'koi.png']
-const PROVIDERS = ['default', 'fal', 'replicate']
 
 export const modelsApiCodeTabs: Record<string, CodeTab> = {
   python: {
@@ -18,8 +17,6 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
       { values: MODELS, highlight: true },
       '",\n    prompt="',
       { values: PROMPTS },
-      '",\n    provider="',
-      { values: PROVIDERS, highlight: true },
       '",\n)\nresult.to_file("',
       { values: OUTPUTS },
       '")'
@@ -32,8 +29,6 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
       { values: MODELS, highlight: true },
       "', {\n  prompt: '",
       { values: PROMPTS },
-      "',\n  provider: '",
-      { values: PROVIDERS, highlight: true },
       "'\n})\nawait result.toFile('",
       { values: OUTPUTS },
       "')"
@@ -56,8 +51,6 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
     segments: [
       '$ comfy generate --model ',
       { values: MODELS, highlight: true },
-      ' \\\n    --provider ',
-      { values: PROVIDERS, highlight: true },
       ' \\\n    --prompt "',
       { values: PROMPTS },
       '" \\\n    --output ',
