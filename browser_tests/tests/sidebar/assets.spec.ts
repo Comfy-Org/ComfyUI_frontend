@@ -798,7 +798,7 @@ test.describe('Assets sidebar - bulk actions', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    const gutter = comfyPage.page.locator('.p-splitter-gutter').first()
+    const gutter = comfyPage.page.getByRole('separator').first()
     await expect(gutter).toBeVisible()
     const gutterBox = await gutter.boundingBox()
     if (!gutterBox) {
