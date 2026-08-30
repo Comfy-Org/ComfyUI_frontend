@@ -105,6 +105,30 @@ describe('handleGcsRedirect', () => {
     expect(res.statusCode).toBe(200)
   })
 
+  it('omits compressed content length after fetch decodes the body', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        gcsResponse({
+          'content-encoding': 'gzip',
+          'content-length': '20'
+        })
+      )
+    )
+    const res = createRes()
+
+    handleGcsRedirect(
+      createProxyRes(GCS_REDIRECT_HEADERS, 302),
+      createReq(),
+      res as unknown as ServerResponse
+    )
+
+    await vi.waitFor(() => {
+      expect(res.statusCode).toBe(200)
+    })
+    expect(res.setHeader).not.toHaveBeenCalledWith('content-length', '20')
+  })
+
   it('treats a 302 to a non-GCS host as a plain pass-through', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
