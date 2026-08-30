@@ -54,6 +54,17 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: toastAdd,
+    error: toastAdd,
+    info: toastAdd,
+    warning: toastAdd,
+    loading: toastAdd,
+    custom: toastAdd
+  })
+}))
+
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useDowngradeToPersonal'),
   () => ({
@@ -410,11 +421,9 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'Outstanding balance'
-      })
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ description: 'Outstanding balance' })
     )
     expect(
       vi.mocked(useDialogStore().showDialog<Component, typeof DowngradeContent>)
@@ -427,8 +436,9 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error', detail: 'network' })
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ description: 'network' })
     )
     expect(
       vi.mocked(useDialogStore().showDialog<Component, typeof DowngradeContent>)
@@ -441,11 +451,9 @@ describe('showDowngradeToPersonalDialog', () => {
 
     await useDialogService().showDowngradeToPersonalDialog(options)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'Outstanding balance'
-      })
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ description: 'Outstanding balance' })
     )
     expect(
       vi.mocked(useDialogStore().showDialog<Component, typeof DowngradeContent>)

@@ -2,7 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 const {
   extensions,
@@ -81,9 +81,9 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
+let mockAddAlert: ReturnType<typeof useToast>['addAlert']
 beforeEach(() => {
-  mockAddAlert = useToastStore().addAlert
+  mockAddAlert = useToast().warning
 })
 
 vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({

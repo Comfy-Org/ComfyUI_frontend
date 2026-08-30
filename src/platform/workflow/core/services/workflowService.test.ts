@@ -16,7 +16,7 @@ import type {
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { defaultGraph } from '@/scripts/defaultGraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -411,7 +411,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
         return key === 'Comfy.Workflow.Persist'
       })
-      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      const addToastSpy = vi.spyOn(useToast(), 'error')
       vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockReturnValue(false)
       const activeWorkflow = createModeTestWorkflow({
         path: 'workflows/test.json'
@@ -421,10 +421,9 @@ describe('useWorkflowService', () => {
       useWorkflowService().beforeLoadNewGraph()
 
       expect(addToastSpy).toHaveBeenCalledWith(
+        t('g.error'),
         expect.objectContaining({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('toastMessages.failedToSaveDraft')
+          description: t('toastMessages.failedToSaveDraft')
         })
       )
     })
@@ -433,7 +432,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
         return key === 'Comfy.Workflow.Persist'
       })
-      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      const addToastSpy = vi.spyOn(useToast(), 'error')
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
@@ -454,10 +453,9 @@ describe('useWorkflowService', () => {
           error
         )
         expect(addToastSpy).toHaveBeenCalledWith(
+          t('g.error'),
           expect.objectContaining({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('toastMessages.failedToSaveDraft')
+            description: t('toastMessages.failedToSaveDraft')
           })
         )
       } finally {
@@ -2724,12 +2722,12 @@ describe('useWorkflowService', () => {
 
   describe('saveWorkflow', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
-    let toastStore: ReturnType<typeof useToastStore>
+    let toastStore: ReturnType<typeof useToast>
     let service: ReturnType<typeof useWorkflowService>
 
     beforeEach(() => {
       workflowStore = useWorkflowStore()
-      toastStore = useToastStore()
+      toastStore = useToast()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
@@ -2784,20 +2782,20 @@ describe('useWorkflowService', () => {
     })
 
     it('shows toast only when rename occurs', async () => {
-      const addSpy = vi.spyOn(toastStore, 'add')
+      const addSpy = vi.spyOn(toastStore, 'info')
 
       const workflow = createSaveableWorkflow('workflows/test.json')
       workflow.initialMode = 'app'
 
       await service.saveWorkflow(workflow)
 
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'info' })
-      )
+      expect(
+        addSpy.mock.calls.some(([title]) => typeof title === 'string')
+      ).toBe(true)
     })
 
     it('does not show toast when no rename occurs', async () => {
-      const addSpy = vi.spyOn(toastStore, 'add')
+      const addSpy = vi.spyOn(toastStore, 'info')
 
       const workflow = createSaveableWorkflow('workflows/test.app.json')
       workflow.initialMode = 'app'

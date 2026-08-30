@@ -101,12 +101,16 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd,
+    loading: mockToastAdd,
+    custom: mockToastAdd
   })
-)
+}))
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
@@ -331,9 +335,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       })
     )
     expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        summary: 'Failed to open the billing portal. Please try again.'
-      })
+      'Failed to open the billing portal. Please try again.',
+      { duration: 5000 }
     )
   })
 
@@ -353,8 +356,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     await waitFor(() =>
       expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.any(String),
         expect.objectContaining({
-          detail:
+          description:
             'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
         })
       )
@@ -594,10 +598,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
     )
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Purchase Failed',
-      detail: 'Failed to purchase credits: An unknown error occurred'
+    expect(mockToastAdd).toHaveBeenCalledWith('Purchase Failed', {
+      description: 'Failed to purchase credits: An unknown error occurred'
     })
     expect(mockTrackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',

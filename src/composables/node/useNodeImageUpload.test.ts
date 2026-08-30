@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeImageUpload } from './useNodeImageUpload'
 import type { Mock } from 'vitest'
@@ -187,9 +187,9 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.uploadAlreadyInProgress'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'g.uploadAlreadyInProgress'
+    })
 
     await first
   })

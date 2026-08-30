@@ -7,6 +7,20 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { useLayerEditor } from './useLayerEditor'
 
+const { toastAdd } = vi.hoisted(() => ({ toastAdd: vi.fn() }))
+
+
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => toastAdd('success', ...args),
+    error: (...args: unknown[]) => toastAdd('error', ...args),
+    info: (...args: unknown[]) => toastAdd('info', ...args),
+    warning: (...args: unknown[]) => toastAdd('warning', ...args),
+    loading: (...args: unknown[]) => toastAdd('loading', ...args),
+    custom: (...args: unknown[]) => toastAdd('custom', ...args)
+  })
+}))
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
@@ -31,11 +45,10 @@ describe('useLayerEditor', () => {
     ])
     useLayerEditor().openLayerEditor(node)
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'layerEditor.needsTwoImages'
-      })
+    expect(toastAdd).toHaveBeenCalledWith(
+      'info',
+      expect.any(String),
+      expect.objectContaining({ description: 'layerEditor.needsTwoImages' })
     )
   })
 

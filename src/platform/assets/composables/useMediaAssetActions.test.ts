@@ -6,7 +6,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
@@ -35,16 +35,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'),
-
-  () => {
-    const add = vi.fn()
-    return {
-      useToast: () => ({ add })
-    }
+vi.mock<unknown>(import('@/components/ui/toast'), () => {
+  const success = vi.fn()
+  const error = vi.fn()
+  const info = vi.fn()
+  const warning = vi.fn()
+  return {
+    useToast: () => ({ success, error, info, warning })
   }
-)
+})
 
 const mockShowDialog = vi.hoisted(() => vi.fn())
 
@@ -461,7 +460,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).not.toHaveBeenCalled()
+      expect(useToast().success).not.toHaveBeenCalled()
     })
 
     it('shows a success toast on successful export', async () => {
@@ -470,9 +469,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(useToast().success).toHaveBeenCalled()
     })
 
     it('shows an error toast on actual failure', async () => {
@@ -481,9 +478,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
     })
 
     it('shows a warning toast when the workflow is missing', async () => {
@@ -492,9 +487,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn' })
-      )
+      expect(useToast().warning).toHaveBeenCalled()
     })
 
     it('shows no toast when every asset in a bulk export is cancelled', async () => {
@@ -506,7 +499,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().add).not.toHaveBeenCalled()
+      expect(useToast().success).not.toHaveBeenCalled()
     })
 
     it('shows a success toast for the succeeded subset when some bulk exports are cancelled', async () => {
@@ -520,9 +513,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(useToast().success).toHaveBeenCalled()
     })
 
     it('shows a partial-success warning toast when some bulk exports fail outright', async () => {
@@ -536,9 +527,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn' })
-      )
+      expect(useToast().warning).toHaveBeenCalled()
     })
   })
 
@@ -1090,11 +1079,12 @@ describe('useMediaAssetActions', () => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
       })
 
-      const { add } = useToast()
+      const { info } = useToast()
       await vi.waitFor(() => {
-        expect(add).toHaveBeenCalledWith(
+        expect(info).toHaveBeenCalledWith(
+          'exportToast.exportStarted',
           expect.objectContaining({
-            detail: i18n.global.t(
+            description: i18n.global.t(
               'mediaAsset.selection.exportStarted',
               { count },
               count

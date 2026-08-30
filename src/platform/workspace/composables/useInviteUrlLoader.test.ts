@@ -44,14 +44,16 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   })
-)
+}))
 
 const apps: App<Element>[] = []
 
@@ -143,20 +145,18 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
 
-      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
-        'valid-token'
-      )
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: 'Invite Accepted',
-        detail: {
+      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith('valid-token')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'custom',
+        expect.any(Object),
+        {
+          title: 'Invite Accepted',
           text: 'You have been added to Test Workspace',
           workspaceId: 'ws-123',
           workspaceName: 'Test Workspace'
         },
-        group: 'invite-accepted',
-        closable: true
-      })
+        { role: 'status' }
+      )
     })
 
     it('shows error toast when invite acceptance fails', async () => {
@@ -168,14 +168,12 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await loadInviteFromUrl()
 
-      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
-        'invalid-token'
+      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith('invalid-token')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        'Failed to Accept Invite',
+        { description: 'Invalid invite' }
       )
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to Accept Invite',
-        detail: 'Invalid invite'
-      })
     })
 
     it('cleans up URL after processing invite', async () => {
@@ -233,14 +231,12 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       // Token is sent to backend, which validates and rejects
-      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
-        'any-token-format=='
+      expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith('any-token-format==')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'error',
+        'Failed to Accept Invite',
+        { description: 'Invalid token' }
       )
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to Accept Invite',
-        detail: 'Invalid token'
-      })
     })
 
     it('ignores empty invite param', async () => {

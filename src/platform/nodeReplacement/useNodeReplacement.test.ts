@@ -1,6 +1,6 @@
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -235,7 +235,7 @@ function seedMissingNodeTypes(types: MissingNodeType[]): void {
 }
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().add).mockImplementation(mockToastAdd)
 })
 
 describe('useNodeReplacement', () => {
@@ -795,9 +795,7 @@ describe('useNodeReplacement', () => {
         expect(result).toEqual([])
         expect(graph._nodes[0]).toBe(placeholder)
         expect(placeholder.onRemoved).not.toHaveBeenCalled()
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
-        )
+        expect(mockToastAdd.mock.calls.map(([kind]) => kind)).toContain('error')
       }
     )
 

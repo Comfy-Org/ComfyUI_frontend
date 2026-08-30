@@ -13,22 +13,28 @@ import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
 const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
+vi.mock('primevue', () => ({
+  useToast: () => ({
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd,
+    loading: mockToastAdd,
+    custom: mockToastAdd
   })
 )
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
 
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
+vi.mock('@/components/ui/toast', () => ({
+  useToast: () => ({
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd,
+    loading: mockToastAdd,
+    custom: mockToastAdd
   })
 )
 

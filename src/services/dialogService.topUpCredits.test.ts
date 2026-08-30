@@ -59,6 +59,17 @@ vi.mock<unknown>(
   })
 )
 
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    loading: vi.fn(),
+    custom: vi.fn()
+  })
+}))
+
 const showSubscriptionDialog = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
