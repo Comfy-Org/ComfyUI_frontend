@@ -11,6 +11,7 @@
         <CustomNodeTreeEditor
           v-show="!selectedChange"
           ref="treeEditorRef"
+          v-model:explorer-open="explorerOpen"
           :session-id="sessionId"
           :state-key="editorStateKey"
           :pack-name="packName"
@@ -189,6 +190,7 @@ const props = defineProps<{
   packName: string
 }>()
 const agentOpen = defineModel<boolean>('agentOpen', { default: true })
+const explorerOpen = defineModel<boolean>('explorerOpen', { default: true })
 
 const { t } = useI18n()
 const colorPaletteStore = useColorPaletteStore()

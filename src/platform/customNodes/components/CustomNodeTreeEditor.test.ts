@@ -301,10 +301,11 @@ describe('CustomNodeTreeEditor', () => {
     expect(screen.queryByText(/Getting Started/i)).not.toBeInTheDocument()
   })
 
-  it('translates package paths and keeps Explorer available while resizing', async () => {
+  it('translates package paths and toggles Explorer while resizing', async () => {
     const user = userEvent.setup()
-    render(CustomNodeTreeEditor, {
+    const view = render(CustomNodeTreeEditor, {
       props: {
+        explorerOpen: true,
         sessionId: 'session-1',
         stateKey: 'editor-state-key',
         packName: 'New Custom Node'
@@ -327,11 +328,18 @@ describe('CustomNodeTreeEditor', () => {
 
     mocks.resizeCallback?.([{ contentRect: { width: 640 } }])
     expect(mocks.resize).toHaveBeenCalled()
+
+    await view.rerender({ explorerOpen: false })
+    expect(mocks.switchCurrentLeftSiderBar).toHaveBeenLastCalledWith(
+      undefined,
+      false
+    )
+
+    await view.rerender({ explorerOpen: true })
     expect(mocks.switchCurrentLeftSiderBar).toHaveBeenLastCalledWith(
       'Explorer',
       false
     )
-    expect(mocks.switchCurrentLeftSiderBar).not.toHaveBeenCalledWith(undefined)
   })
 
   it('uses Monaco light mode when the active Comfy palette is light', async () => {
@@ -381,7 +389,7 @@ describe('CustomNodeTreeEditor', () => {
       expect(mocks.openOrFocusPath).toHaveBeenCalledWith('/README.md')
     })
     expect(mocks.switchCurrentLeftSiderBar).toHaveBeenCalledWith(
-      'Explorer',
+      undefined,
       false
     )
   })

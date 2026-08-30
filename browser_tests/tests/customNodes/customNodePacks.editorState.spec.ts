@@ -144,15 +144,33 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
     ).toBeVisible()
 
     const toolbar = page.getByTestId('custom-node-editor-toolbar')
+    const explorerToggle = toolbar.getByRole('button', {
+      name: 'Toggle Explorer'
+    })
     const agentToggle = toolbar.getByRole('button', {
       name: 'Toggle Node Agent'
     })
+    const explorerPanel = page.locator('.monaco-tree-editor-list-wrapper')
     const agentPanel = page.locator('.agent-panel')
+    await expect(explorerToggle).toBeVisible()
     await expect(agentToggle).toBeVisible()
+    await expect(explorerToggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(agentToggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(explorerPanel).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Toggle Explorer' })
+    ).toHaveCount(1)
     await expect(
       page.getByRole('button', { name: 'Toggle Node Agent' })
     ).toHaveCount(1)
     await expect(page.locator('.left-sider-bar')).toBeHidden()
+
+    await explorerToggle.click()
+    await expect(explorerToggle).toHaveAttribute('aria-expanded', 'false')
+    await expect(explorerPanel).toBeHidden()
+    await explorerToggle.click()
+    await expect(explorerToggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(explorerPanel).toBeVisible()
 
     await agentToggle.click()
     await expect(agentPanel).toHaveAttribute('data-open', 'false')
@@ -216,10 +234,12 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
     await page
       .getByRole('button', { name: 'Close Node Agent', exact: true })
       .click()
+    await explorerToggle.click()
 
     const activeTab = page.locator('.monaco-tree-editor-opened-tab-item-active')
     await expect(activeTab).toContainText('README.md')
     await expect(agentPanel).toHaveAttribute('data-open', 'false')
+    await expect(explorerPanel).toBeHidden()
 
     await page.reload()
     await comfyPage.waitForAppReady()
@@ -231,5 +251,7 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
       page.locator('.monaco-tree-editor-opened-tab-item')
     ).toContainText(['checkerboard.py', 'README.md'])
     await expect(agentPanel).toHaveAttribute('data-open', 'false')
+    await expect(explorerPanel).toBeHidden()
+    await expect(explorerToggle).toHaveAttribute('aria-expanded', 'false')
   })
 })

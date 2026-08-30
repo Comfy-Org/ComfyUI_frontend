@@ -59,11 +59,17 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('./CustomNodeWorkbench.vue', () => ({
   default: {
     name: 'CustomNodeWorkbench',
-    props: ['sessionId', 'agentEnabled', 'packName', 'agentOpen'],
-    emits: ['update:agentOpen'],
+    props: [
+      'sessionId',
+      'agentEnabled',
+      'packName',
+      'agentOpen',
+      'explorerOpen'
+    ],
+    emits: ['update:agentOpen', 'update:explorerOpen'],
     methods: { saveAll: mocks.saveAll },
     template:
-      '<div data-testid="custom-node-workbench" :data-agent-open="agentOpen" />'
+      '<div data-testid="custom-node-workbench" :data-agent-open="agentOpen" :data-explorer-open="explorerOpen" />'
   }
 }))
 vi.mock('../composables/useCustomNodeEditor', () => ({
@@ -109,7 +115,10 @@ const i18n = createI18n({
           validated: 'Custom node is valid',
           validatedDetail: 'The custom node passed validation.',
           validating: 'Validating node…',
-          workbench: { toggleAgent: 'Toggle Node Agent' },
+          workbench: {
+            toggleAgent: 'Toggle Node Agent',
+            toggleExplorer: 'Toggle Explorer'
+          },
           agent: { title: 'Node Agent' }
         }
       }
@@ -241,9 +250,12 @@ describe('CustomNodeEditorDialog', () => {
     expect(
       screen.getByRole('button', { name: 'Toggle Node Agent' })
     ).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Toggle Explorer' })
+    ).toBeVisible()
   })
 
-  it('toggles the Node Agent sidebar from the top bar', async () => {
+  it('toggles both editor sidebars from the top bar', async () => {
     const user = userEvent.setup()
     render(CustomNodeEditorDialog, {
       props: {
@@ -254,16 +266,29 @@ describe('CustomNodeEditorDialog', () => {
       global: { plugins: [i18n] }
     })
 
-    const toggle = screen.getByRole('button', { name: 'Toggle Node Agent' })
+    const explorerToggle = screen.getByRole('button', {
+      name: 'Toggle Explorer'
+    })
+    const agentToggle = screen.getByRole('button', {
+      name: 'Toggle Node Agent'
+    })
     const workbench = screen.getByTestId('custom-node-workbench')
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    expect(toggle).toHaveAttribute('aria-controls', 'custom-node-agent-panel')
+    expect(explorerToggle).toHaveAttribute('aria-expanded', 'true')
+    expect(agentToggle).toHaveAttribute('aria-expanded', 'true')
+    expect(agentToggle).toHaveAttribute(
+      'aria-controls',
+      'custom-node-agent-panel'
+    )
     expect(workbench).toHaveAttribute('data-agent-open', 'true')
+    expect(workbench).toHaveAttribute('data-explorer-open', 'true')
 
-    await user.click(toggle)
+    await user.click(explorerToggle)
+    await user.click(agentToggle)
 
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(explorerToggle).toHaveAttribute('aria-expanded', 'false')
+    expect(agentToggle).toHaveAttribute('aria-expanded', 'false')
     expect(workbench).toHaveAttribute('data-agent-open', 'false')
+    expect(workbench).toHaveAttribute('data-explorer-open', 'false')
   })
 
   it('submits through the editor action API and closes after refresh', async () => {

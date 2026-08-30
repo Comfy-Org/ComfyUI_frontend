@@ -56,6 +56,7 @@
       "refreshFailed": "The node was stored, but the node library could not refresh. Reload the app to see it.",
       "workbench": {
         "explorer": "Explorer",
+        "toggleExplorer": "Toggle Explorer",
         "toggleAgent": "Toggle Node Agent",
         "loading": "Opening checkerboard template…",
         "loadFailed": "Could not open the project files.",

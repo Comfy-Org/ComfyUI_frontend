@@ -100,6 +100,7 @@ const { sessionId, stateKey, packName } = defineProps<{
   stateKey: string
   packName: string
 }>()
+const explorerOpen = defineModel<boolean>('explorerOpen', { default: true })
 
 const { t } = useI18n()
 const { getFiles, saveFiles } = useCustomNodeEditor()
@@ -119,6 +120,7 @@ const loadError = ref<string | null>(null)
 const saveError = ref<string | null>(null)
 const restoredState = readCustomNodeEditorState(stateKey)
 const explorerWidth = ref(restoredState?.explorerWidth ?? 180)
+explorerOpen.value = restoredState?.explorerOpen ?? explorerOpen.value
 const editorStateRestored = ref(false)
 let saveQueue: Promise<void> = Promise.resolve()
 let editorChangeListener: monaco.IDisposable | undefined
@@ -313,7 +315,7 @@ function persistEditorState() {
   updateCustomNodeEditorState(stateKey, {
     activePath,
     openedPaths,
-    explorerOpen: true,
+    explorerOpen: explorerOpen.value,
     explorerWidth: explorerWidth.value
   })
 }
@@ -321,7 +323,10 @@ function persistEditorState() {
 function restoreEditorState() {
   if (editorStateRestored.value || !initialPath.value) return
   const state = readCustomNodeEditorState(stateKey)
-  globalSettings.commands.switchCurrentLeftSiderBar('Explorer', false)
+  globalSettings.commands.switchCurrentLeftSiderBar(
+    explorerOpen.value ? 'Explorer' : undefined,
+    false
+  )
 
   const openedPaths = (state?.openedPaths ?? []).flatMap((storedPath) => {
     const path = storedFilePath(storedPath)
@@ -375,6 +380,24 @@ const stopCurrentPathWatcher = watch(
   monacoEditor.states.currentPath,
   persistEditorState
 )
+const stopExplorerModelWatcher = watch(
+  explorerOpen,
+  (isOpen) => {
+    globalSettings.commands.switchCurrentLeftSiderBar(
+      isOpen ? 'Explorer' : undefined,
+      false
+    )
+    persistEditorState()
+  },
+  { flush: 'sync' }
+)
+const stopExplorerPanelWatcher = watch(
+  globalSettings.states.opendLeftSiderBar,
+  (openPanel) => {
+    explorerOpen.value = openPanel === 'Explorer'
+  },
+  { flush: 'sync' }
+)
 
 useResizeObserver(rootElement, () => {
   editorElement.value?.resize()
@@ -386,6 +409,8 @@ onUnmounted(() => {
   stopFileTreeListener()
   stopOpenedFilesWatcher()
   stopCurrentPathWatcher()
+  stopExplorerModelWatcher()
+  stopExplorerPanelWatcher()
   editorChangeListener?.dispose()
   for (const file of files.value) {
     monaco.editor

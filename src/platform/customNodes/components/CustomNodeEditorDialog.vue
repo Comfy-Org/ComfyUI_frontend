@@ -5,7 +5,28 @@
       class="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border-default px-4 py-2"
     >
       <div class="flex min-w-0 flex-1 basis-72 items-center gap-3">
-        <i class="icon-[lucide--code-2] size-5 shrink-0" />
+        <Button
+          v-if="session.editorKind === 'workbench'"
+          variant="secondary"
+          size="icon"
+          class="shrink-0"
+          :aria-expanded="explorerOpen"
+          :aria-label="$t('customNodePacks.editor.workbench.toggleExplorer')"
+          :title="$t('customNodePacks.editor.workbench.toggleExplorer')"
+          @click="explorerOpen = !explorerOpen"
+        >
+          <i
+            v-if="explorerOpen"
+            class="icon-[lucide--panel-left-close] size-4"
+            aria-hidden="true"
+          />
+          <i
+            v-else
+            class="icon-[lucide--panel-left] size-4"
+            aria-hidden="true"
+          />
+        </Button>
+        <i v-else class="icon-[lucide--code-2] size-5 shrink-0" />
         <div class="min-w-0 flex-1">
           <h2 class="sr-only">
             {{ $t('customNodePacks.editor.title', { name: session.name }) }}
@@ -73,10 +94,11 @@
         <Button
           v-if="session.editorKind === 'workbench'"
           variant="secondary"
-          size="sm"
+          size="icon"
           :aria-expanded="agentOpen"
           aria-controls="custom-node-agent-panel"
           :aria-label="$t('customNodePacks.editor.workbench.toggleAgent')"
+          :title="$t('customNodePacks.editor.workbench.toggleAgent')"
           @click="agentOpen = !agentOpen"
         >
           <i
@@ -89,7 +111,6 @@
             class="icon-[lucide--panel-right] size-4"
             aria-hidden="true"
           />
-          {{ $t('customNodePacks.editor.agent.title') }}
         </Button>
         <Button
           variant="secondary"
@@ -144,6 +165,7 @@
         v-if="isEditorVisible && session.editorKind === 'workbench'"
         ref="workbenchRef"
         v-model:agent-open="agentOpen"
+        v-model:explorer-open="explorerOpen"
         :session-id="session.id"
         :agent-enabled="session.agentEnabled"
         :pack-name="session.name"
@@ -239,6 +261,7 @@ const session = ref<CustomNodeEditorSession>({ ...props.initialSession })
 const isPolling = ref(false)
 const isAbandoning = ref(false)
 const agentOpen = ref(true)
+const explorerOpen = ref(true)
 const activeAction = ref<CustomNodeEditorAction | null>(null)
 const pollError = ref<string | null>(null)
 const terminalHandled = ref(false)
