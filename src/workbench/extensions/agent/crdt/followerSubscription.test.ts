@@ -468,3 +468,38 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 })
+
+describe('s3-opt-6 — sendHumanOps propagates the transport boolean', () => {
+  const humanOp = { op_id: 'a'.repeat(32), actor: 'human:u:t' }
+
+  it('returns false when no subscription is live or the batch is empty', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+
+    // No subscribe yet: the op has no workflow to land on.
+    expect(bridge.sendHumanOps('tab-1', [humanOp])).toBe(false)
+
+    bridge.subscribe(WORKFLOW_ID)
+    expect(bridge.sendHumanOps('tab-1', [])).toBe(false)
+    expect(transport.framesOfType('doc_ops')).toHaveLength(0)
+  })
+
+  it('returns false on a closed socket instead of throwing — the held-batch signal', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.open = false
+
+    expect(bridge.sendHumanOps('tab-1', [humanOp])).toBe(false)
+    expect(transport.framesOfType('doc_ops')).toHaveLength(0)
+  })
+
+  it('returns true when the frame actually left the client', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    expect(bridge.sendHumanOps('tab-1', [humanOp])).toBe(true)
+    expect(transport.framesOfType('doc_ops')).toHaveLength(1)
+  })
+})

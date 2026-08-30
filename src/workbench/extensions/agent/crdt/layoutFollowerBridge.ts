@@ -141,10 +141,18 @@ export class LayoutFollowerBridge extends EventTarget {
     this.reconcile()
   }
 
-  sendHumanOps(tab: string, ops: DocOp[]): void {
+  /**
+   * Hand a human-minted op batch to the transport. Returns whether the frame
+   * actually left this client: false when no subscription is live, the batch
+   * is empty, or the socket refused/was closed. The s3-opt-6 dispatch boundary
+   * uses this to decide between marking the batch in flight and holding it for
+   * an identical-id retry — a silently dropped send is exactly the failure
+   * mode the pending ledger exists to make impossible.
+   */
+  sendHumanOps(tab: string, ops: DocOp[]): boolean {
     const workflowId = this.sentWorkflowId
-    if (workflowId === null || ops.length === 0) return
-    trySend(() => this.client.sendOps(workflowId, tab, ops))
+    if (workflowId === null || ops.length === 0) return false
+    return trySend(() => this.client.sendOps(workflowId, tab, ops))
   }
 
   /**

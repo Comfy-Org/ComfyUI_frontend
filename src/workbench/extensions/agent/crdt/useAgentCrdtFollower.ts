@@ -10,8 +10,12 @@ import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocOp } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { resolveFollowerEnabled } from './followerGate'
+import { createHumanOpDispatcher } from './humanOpDispatcher'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { LitegraphMutator } from './litegraphMutator'
+import { createPendingOpLedger } from './pendingOpLedger'
+import type { ShadowTarget } from './pendingOpShadow'
+import { createPendingOpShadowSurface } from './pendingOpShadow'
 import { SemanticProjector } from './semanticProjector'
 
 // Resolved once per page load ("per session"): build-time env, overridable at
@@ -155,6 +159,44 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   })
   const projector = new SemanticProjector(mutator, { actor: tabId })
 
+  // ── s3-opt-6: pending ledger + shadow at the dispatch boundary ────────────
+  // Every human-minted op is registered and shadowed BEFORE the transport is
+  // attempted, and `sendHumanOps`'s boolean decides between in-flight and a
+  // bounded identical-id retry. The ledger/shadow instances are shared state
+  // for the s3-opt-2 result reconciler and s3-opt-3 clear-on-effect wiring.
+  const pendingLedger = createPendingOpLedger<DocOp>()
+  const pendingShadow = createPendingOpShadowSurface()
+  const dispatcher = createHumanOpDispatcher<DocOp>({
+    ledger: pendingLedger,
+    shadow: pendingShadow,
+    send: (ops) => bridge.sendHumanOps(tabId, [...ops])
+  })
+  const shadowTargetsFor = (op: DocOp): ShadowTarget[] => {
+    const nodeId = (op as Record<string, unknown>).node_id
+    return nodeId == null ? [] : [{ kind: 'node', nodeId: String(nodeId) }]
+  }
+  const dispatchHumanOps = (ops: DocOp[]): boolean => {
+    const targets = new Map(ops.map((op) => [op.op_id, shadowTargetsFor(op)]))
+    const result = dispatcher.dispatch(ops, targets)
+    if (!result.accepted) {
+      recordDevEvent('human_ops_rejected', {
+        reason: result.reason,
+        opIds: result.opIds
+      })
+      return false
+    }
+    return result.sent
+  }
+  // Re-drive held batches whenever a send might newly succeed. `retryUnsent`
+  // is a no-op on empty, and the subscribed-workflow guard keeps a still-
+  // unsubscribed socket from burning the bounded attempts.
+  const retryPendingOps = (): void => {
+    if (bridge.subscribedWorkflowId === null) return
+    const summary = dispatcher.retryUnsent()
+    if (summary.resent.length > 0 || summary.reverted.length > 0)
+      recordDevEvent('human_ops_retry', summary)
+  }
+
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
@@ -219,6 +261,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
         persistDocId(subscribedWorkflowId.value)
+      // s3-opt-6: a confirmed subscription is the definitive "sends can now
+      // succeed" signal — drain any batches held while the transport was down.
+      retryPendingOps()
     } else {
       scheduleSubscribeRetry()
     }
@@ -268,6 +313,10 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     lastFrameType.value = event.type
     projector.reset()
     knownDocNodeIds = new Set()
+    // s3-opt-6 / FEB-5: pending ops were minted against the dead lineage —
+    // drop batches, ledger entries, and shadows rather than retry them into
+    // a doc they no longer describe.
+    dispatcher.reset()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -305,6 +354,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
    */
   const onSocketActivity: EventListener = () => {
     bridge.reconcile()
+    // s3-opt-6: the socket demonstrably carries frames again — re-attempt any
+    // held human-op batches with their identical op ids.
+    retryPendingOps()
   }
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
@@ -355,6 +407,8 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // "client.destroy() always runs" guarantee local and readable.
     try {
       clearSubscribeRetry()
+      // s3-opt-6 / FEB-5: no pending entry outlives its composable.
+      dispatcher.reset()
       delete (window as unknown as Record<string, unknown>).__agentCrdtPoc
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
@@ -449,7 +503,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       pos,
       node
     }
-    bridge.sendHumanOps(tabId, [op])
+    dispatchHumanOps([op])
     return op
   }
   // Same envelope/actor path as pocAddNode, for the delete_node op. The host
@@ -471,7 +525,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       node_id: nodeId,
       removed_links: removedLinks
     }
-    bridge.sendHumanOps(tabId, [op])
+    dispatchHumanOps([op])
     return op
   }
   const pocGlobal = window as unknown as Record<string, unknown>
@@ -488,7 +542,13 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       subscribedWorkflowId.value = id
       bridge.subscribe(id)
     },
-    sendOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops),
+    sendOps: (ops: DocOp[]) => dispatchHumanOps(ops),
+    pendingOps: () => ({
+      ledger: pendingLedger.entries(),
+      shadows: pendingShadow.pendingShadows(),
+      sentBatches: dispatcher.sentBatches(),
+      unsentBatches: dispatcher.unsentBatches()
+    }),
     resubscribe: () => bridge.resubscribe(),
     reconcile: () => bridge.reconcile(),
     project: () => projector.project(bridge.follower.doc),
@@ -533,6 +593,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     status: readonly(status),
     // The semantic canvas-command adapter will call this after it moves to
     // @comfyorg/comfy-multi-player. Raw Yjs client updates are never sent.
-    sendHumanOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops)
+    // Routed through the s3-opt-6 dispatcher: pending-ledger registration and
+    // overlay shadow happen before the send, and a false return means "held
+    // for bounded identical-id retry", never "silently dropped".
+    sendHumanOps: (ops: DocOp[]) => dispatchHumanOps(ops)
   }
 }

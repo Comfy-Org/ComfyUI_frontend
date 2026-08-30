@@ -18,6 +18,8 @@ export type DevEventKind =
   | 'subscribe_retry'
   | 'doc_nodes_changed'
   | 'rebind'
+  | 'human_ops_rejected'
+  | 'human_ops_retry'
 
 export interface DevEvent {
   seq: number
