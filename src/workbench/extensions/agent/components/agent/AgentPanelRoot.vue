@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="agent-panel-root"
-    class="flex size-full flex-col bg-base-background text-base-foreground"
+    class="flex size-full flex-col bg-base-background text-sm text-base-foreground"
   >
     <div
       class="flex items-center justify-between border-b border-interface-stroke py-2 pr-2 pl-3"
