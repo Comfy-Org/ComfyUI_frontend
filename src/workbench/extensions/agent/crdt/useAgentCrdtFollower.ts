@@ -10,6 +10,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAuthStore } from '@/stores/authStore'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocOp } from './docFrameClient'
@@ -177,7 +178,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
-  const tabId = crypto.randomUUID()
+  const tabId = createUuidv4()
   // Highest doc_update seq seen — used as base_version for human-minted ops.
   // The ws path has no ceiling gate; this only feeds LWW stamps, so a slightly
   // stale value is safe (ties break by [base_version, actor, op_id]).

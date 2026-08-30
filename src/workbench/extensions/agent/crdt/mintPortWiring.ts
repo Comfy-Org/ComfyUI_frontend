@@ -3,8 +3,8 @@
  * (workbench must not import renderer); link/widget adapt via Pinia $onAction,
  * which fires synchronously around each action. A replace maps to PLACED and
  * never DELETED (the store displaces incumbents internally). Load brackets
- * are a fail-closed boolean over beforeLoadGraph/afterConfigureGraph: a
- * failed load leaves mints suppressed until the next load's pair recloses.
+ * are depth-counted over beforeLoadGraph/afterConfigureGraph so overlapping
+ * loads cannot reopen minting while either graph is still configuring.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -134,6 +134,10 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
     source: {
+      rootGraphId() {
+        const graph = deps.getGraph()
+        return graph ? String(graph.rootGraph?.id ?? graph.id) : null
+      },
       serializeNode(id) {
         const node = deps.getGraph()?.getNodeById(id)
         return node ? serializeForMint(node) : null
@@ -208,8 +212,6 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     })
   })
 
-  let loadBracketOpen = false
-
   return {
     session,
     runRemoteScope(apply) {
@@ -221,13 +223,9 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       return layoutPort.runIntentionalClear(fn)
     },
     onBeforeGraphLoad() {
-      if (loadBracketOpen) return
-      loadBracketOpen = true
       session.beginGraphTeardown()
     },
     onAfterGraphConfigure() {
-      if (!loadBracketOpen) return
-      loadBracketOpen = false
       session.endGraphTeardown()
     },
     detach() {

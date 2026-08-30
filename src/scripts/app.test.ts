@@ -386,6 +386,13 @@ describe('ComfyApp', () => {
       await app.loadApiJson({}, 'empty.json').catch(() => undefined)
 
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls
+          .map(([hook]) => hook)
+          .filter((hook) =>
+            ['beforeLoadGraph', 'afterLoadGraph'].includes(hook)
+          )
+      ).toEqual(['beforeLoadGraph'])
     })
 
     it('notifies extensions once on each side of a graph load, in order', async () => {
@@ -1323,6 +1330,23 @@ describe('ComfyApp', () => {
         expect(mockCanvas.setGraph).toHaveBeenCalledWith(graph)
         expect(mockCanvas.graph).toBe(graph)
         expect(mockCanvas.subgraph).toBeNull()
+        expect(
+          mockExtensionService.invokeExtensionsAsync.mock.calls
+            .map(([hook]) => hook)
+            .filter((hook) =>
+              [
+                'beforeLoadGraph',
+                'beforeConfigureGraph',
+                'afterConfigureGraph',
+                'afterLoadGraph'
+              ].includes(hook)
+            )
+        ).toEqual([
+          'beforeLoadGraph',
+          'beforeConfigureGraph',
+          'afterConfigureGraph',
+          'afterLoadGraph'
+        ])
       } finally {
         LiteGraph.unregisterNodeType(nodeType)
       }
@@ -1724,7 +1748,7 @@ describe('ComfyApp', () => {
       })
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
-          beforeGraphClear?.()
+          await beforeGraphClear?.()
           return 'imported'
         }
       )
@@ -2363,7 +2387,7 @@ describe('ComfyApp', () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
       mockImportA1111.mockImplementation(
         async (_graph, _parameters, beforeGraphClear) => {
-          beforeGraphClear?.()
+          await beforeGraphClear?.()
           return 'imported'
         }
       )
@@ -2389,10 +2413,30 @@ describe('ComfyApp', () => {
       expect(
         mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
       ).toBeLessThan(vi.mocked(mockCanvas.setGraph).mock.invocationCallOrder[0])
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'beforeLoadGraph'
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'beforeConfigureGraph',
+        graph,
+        parameters
+      )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterLoadGraph')
       expect(settled).toBe(false)
 
       resolveAfterLoad?.()
       await handleFile
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'afterConfigureGraph',
+        parameters,
+        undefined,
+        graph
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'afterLoadGraph'
+      )
       expect(settled).toBe(true)
     })
   })

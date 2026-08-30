@@ -18,7 +18,7 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { GraphOperation } from './graphOperations'
-import { chunkWireOps, mintWireOps } from './opEnvelope'
+import { chunkWireOps, mintOrderedOpId, mintWireOps } from './opEnvelope'
 
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
@@ -127,13 +127,15 @@ interface QueuedBatch {
 interface InFlight extends QueuedBatch {
   opIds: Set<string>
   resent: boolean
-  timer: ReturnType<typeof setTimeout> | null
+  resultTimer: ReturnType<typeof setTimeout> | null
+  deliveryTimer: ReturnType<typeof setTimeout> | null
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: QueuedBatch[] = []
   let inFlight: InFlight | null = null
   let detached = false
+  let opOrder = 0
   // Late-result credits: a batch that settled 'unacknowledged' was
   // transmitted twice, so up to two of its results may still arrive - as
   // ANONYMOUS failures (empty id lists, no failure op_id) they are
@@ -141,17 +143,31 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // beats mis-attribution: a swallowed own-result only costs the idempotent
   // resend cycle, while a mis-attributed settle poisons everything
   // downstream of this seam.
-  let staleAnonymousBudget = 0
+  const staleAnonymousExpiries: number[] = []
+
+  function consumeStaleAnonymousCredit(): boolean {
+    const now = Date.now()
+    while (
+      staleAnonymousExpiries.length > 0 &&
+      staleAnonymousExpiries[0] <= now
+    ) {
+      staleAnonymousExpiries.shift()
+    }
+    if (staleAnonymousExpiries.length === 0) return false
+    staleAnonymousExpiries.shift()
+    return true
+  }
 
   function settle(outcome: BatchOutcome): void {
-    if (inFlight?.timer) clearTimeout(inFlight.timer)
+    if (inFlight?.resultTimer) clearTimeout(inFlight.resultTimer)
+    if (inFlight?.deliveryTimer) clearTimeout(inFlight.deliveryTimer)
     inFlight = null
     deps.onBatchSettled(outcome)
     pump()
   }
 
   function transmit(batch: QueuedBatch, attempt: number): void {
-    if (detached) return
+    if (detached || inFlight?.ops !== batch.ops) return
     // Delivery is document-scoped: the batch carries the workflow it was
     // minted for, and a rebind since then invalidates it rather than routing
     // the old doc's ops (and base_version) to the new workflow.
@@ -161,7 +177,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
     if (!deps.sendOps(batch.workflowId, deps.tab, batch.ops)) {
       if (attempt < SEND_RETRY_LIMIT) {
-        setTimeout(() => transmit(batch, attempt + 1), SEND_RETRY_INTERVAL_MS)
+        inFlight.deliveryTimer = setTimeout(() => {
+          if (inFlight?.ops !== batch.ops) return
+          inFlight.deliveryTimer = null
+          transmit(batch, attempt + 1)
+        }, SEND_RETRY_INTERVAL_MS)
       } else {
         settleUndeliverable(batch)
       }
@@ -178,10 +198,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function armResultTimeout(batch: QueuedBatch): void {
     if (inFlight?.ops !== batch.ops) return
-    inFlight.timer = setTimeout(() => {
+    inFlight.resultTimer = setTimeout(() => {
       if (inFlight?.ops !== batch.ops) return
       if (inFlight.resent) {
-        staleAnonymousBudget += 2
+        const expiry = Date.now() + RESULT_TIMEOUT_MS
+        staleAnonymousExpiries.push(expiry, expiry)
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
@@ -201,7 +222,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       workflowId: batch.workflowId,
       opIds: new Set(batch.ops.map((op) => op.op_id)),
       resent: false,
-      timer: null
+      resultTimer: null,
+      deliveryTimer: null
     }
     transmit(inFlight, 0)
   }
@@ -218,7 +240,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (!inFlight) {
       // A late result with no batch waiting: drain a credit if one is
       // outstanding so it cannot swallow a future batch's own result.
-      if (staleAnonymousBudget > 0) staleAnonymousBudget--
+      consumeStaleAnonymousCredit()
       return
     }
     const identified = [...result.applied, ...result.skipped]
@@ -230,10 +252,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
     // Anonymous failure (empty lists, no failure op_id): only attribute it
     // to the in-flight batch once no stale credit could explain it.
-    if (staleAnonymousBudget > 0) {
-      staleAnonymousBudget--
-      return
-    }
+    if (consumeStaleAnonymousCredit()) return
     settle({ state: 'acknowledged', ops: inFlight.ops, result })
   })
 
@@ -243,7 +262,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       const workflowId = deps.workflowId()
       const minted = mintWireOps(operations, {
         actor: deps.actor(),
-        baseVersion: deps.baseVersion()
+        baseVersion: deps.baseVersion(),
+        nextOpId: () => mintOrderedOpId(++opOrder)
       })
       queue.push(...chunkWireOps(minted).map((ops) => ({ ops, workflowId })))
       pump()
@@ -253,7 +273,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     detach() {
       detached = true
-      if (inFlight?.timer) clearTimeout(inFlight.timer)
+      if (inFlight?.resultTimer) clearTimeout(inFlight.resultTimer)
+      if (inFlight?.deliveryTimer) clearTimeout(inFlight.deliveryTimer)
       inFlight = null
       queue.length = 0
       unsubscribe()
