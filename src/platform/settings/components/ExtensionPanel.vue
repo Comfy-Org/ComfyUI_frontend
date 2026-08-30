@@ -20,12 +20,15 @@
       </div>
     </Message>
     <div class="mb-3 flex gap-2">
-      <SelectButton
-        v-model="filterType"
-        :options="filterTypes"
-        option-label="label"
-        option-value="value"
-      />
+      <ToggleGroup v-model="filterType" type="single">
+        <ToggleGroupItem
+          v-for="option in filterTypes"
+          :key="option.value"
+          :value="option.value"
+        >
+          {{ option.label }}
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
     <DataTable
       v-model:selection="selectedExtensions"
@@ -83,7 +86,6 @@ import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
 import ContextMenu from 'primevue/contextmenu'
 import DataTable from 'primevue/datatable'
-import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -92,6 +94,7 @@ import Tag from '@/components/ui/badge/Badge.vue'
 import Message from '@/components/ui/message/Message.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'

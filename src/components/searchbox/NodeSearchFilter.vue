@@ -1,13 +1,18 @@
 <template>
   <div class="flex flex-col gap-2">
-    <SelectButton
-      v-model="selectedFilter"
+    <ToggleGroup
+      v-model="selectedFilterName"
+      type="single"
       class="filter-type-select"
-      :options="filters"
-      :allow-empty="false"
-      option-label="name"
-      @change="updateSelectedFilterValue"
-    />
+    >
+      <ToggleGroupItem
+        v-for="filter in filters"
+        :key="filter.name"
+        :value="filter.name"
+      >
+        {{ filter.name }}
+      </ToggleGroupItem>
+    </ToggleGroup>
     <SingleSelect
       v-model="selectedFilterValue"
       class="filter-value-select"
@@ -20,17 +25,24 @@
 </template>
 
 <script setup lang="ts">
-import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
 const filters = computed(() => nodeDefStore.nodeSearchService.nodeFilters)
 const selectedFilter = ref<FuseFilter<ComfyNodeDefImpl, string>>()
+const selectedFilterName = computed({
+  get: () => selectedFilter.value?.name,
+  set: (name: string) => {
+    selectedFilter.value = filters.value.find((filter) => filter.name === name)
+    updateSelectedFilterValue()
+  }
+})
 const filterValues = computed(() =>
   (selectedFilter.value?.fuseSearch.data ?? []).map((value) => ({
     name: value,

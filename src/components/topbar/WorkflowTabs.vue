@@ -25,16 +25,18 @@
         class="workflow-tabs-scroll flex size-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden p-0"
         @wheel="handleWheel"
       >
-        <SelectButton
+        <ToggleGroup
           :class="cn('workflow-tabs bg-transparent', props.class)"
-          :model-value="selectedWorkflow"
-          :options
-          option-label="label"
-          data-key="value"
-          :allow-empty="false"
+          :model-value="selectedWorkflow?.value"
+          type="single"
           @click="onWorkflowClick"
         >
-          <template #option="{ option, index }">
+          <ToggleGroupItem
+            v-for="(option, index) in options"
+            :key="option.value"
+            :value="option.value"
+            class="h-full flex-none p-0"
+          >
             <WorkflowTab
               :workflow-option="option"
               :is-first="index === 0"
@@ -50,8 +52,8 @@
                 ])
               "
             />
-          </template>
-        </SelectButton>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
     </div>
     <Button
@@ -120,13 +122,13 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
-import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
