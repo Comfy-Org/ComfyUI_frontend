@@ -1,15 +1,22 @@
 <template>
-  <div
+  <button
     v-tooltip="{
       value: t('sideToolbar.labels.menu'),
       showDelay: 300,
       hideDelay: 300
     }"
-    class="comfy-menu-button-wrapper flex shrink-0 cursor-pointer flex-col items-center justify-center p-2 transition-colors"
-    :class="{
-      'comfy-menu-button-active': menuRef?.visible
-    }"
     data-testid="comfy-menu-button"
+    type="button"
+    :aria-label="t('sideToolbar.labels.menu')"
+    :aria-expanded="menuRef?.visible"
+    aria-haspopup="menu"
+    :class="
+      cn(
+        'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-2 transition-colors hover:bg-interface-panel-hover-surface',
+        menuRef?.visible &&
+          'bg-interface-panel-selected-surface hover:bg-interface-panel-selected-surface'
+      )
+    "
     @click="onLogoMenuClick($event)"
   >
     <div class="grid place-items-center-safe gap-0.5">
@@ -22,7 +29,7 @@
         mode="fill"
       />
     </div>
-  </div>
+  </button>
 
   <Menu
     ref="menuRef"
@@ -33,7 +40,7 @@
     <template #item="{ item, props }">
       <a
         v-if="item.key !== 'nodes-2.0-toggle'"
-        class="p-menubar-item-link px-4 py-2"
+        class="flex w-full items-center gap-2 px-4 py-2"
         v-bind="props.action"
         :href="item.url"
         target="_blank"
@@ -45,17 +52,17 @@
       >
         <i
           v-if="hasActiveStateSiblings(item)"
-          class="p-menubar-item-icon pi pi-check text-sm"
+          class="icon-[lucide--check] size-4"
           :class="{ invisible: !item.comfyCommand?.active?.() }"
         />
         <span
           v-else-if="
             item.icon && item.comfyCommand?.id !== 'Comfy.NewBlankWorkflow'
           "
-          class="p-menubar-item-icon text-sm"
+          class="size-4"
           :class="item.icon"
         />
-        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <span class="text-nowrap">{{ item.label }}</span>
         <i
           v-if="item.comfyCommand?.id === 'Comfy.NewBlankWorkflow'"
           class="ml-auto"
@@ -63,11 +70,14 @@
         />
         <span
           v-if="item?.comfyCommand?.keybinding"
-          class="keybinding-tag ml-auto rounded-sm border border-surface p-1 text-xs text-nowrap text-muted"
+          class="ml-auto rounded-sm border border-border-default bg-interface-menu-component-surface-hovered p-1 text-xs text-nowrap text-muted"
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>
-        <i v-if="item.items" class="pi pi-angle-right ml-auto" />
+        <i
+          v-if="item.items"
+          class="ml-auto icon-[lucide--chevron-right] size-4"
+        />
       </a>
       <div
         v-else
@@ -77,7 +87,7 @@
         @mousedown.prevent
         @click.stop="onNodes2ToggleChange(!nodes2Enabled)"
       >
-        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <span class="text-nowrap">{{ item.label }}</span>
         <Switch
           :model-value="nodes2Enabled"
           class="pointer-events-none ml-4"
@@ -93,6 +103,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
@@ -305,25 +317,3 @@ const onNodes2ToggleChange = async (value: boolean) => {
   })
 }
 </script>
-
-<style scoped>
-.comfy-menu-button-wrapper {
-  width: var(--sidebar-width);
-  height: var(--sidebar-item-height);
-}
-
-.comfy-menu-button-wrapper:hover {
-  background: var(--interface-panel-hover-surface);
-}
-
-.comfy-menu-button-active,
-.comfy-menu-button-active:hover {
-  background: var(--interface-panel-selected-surface);
-}
-
-.keybinding-tag {
-  background: var(--p-content-hover-background);
-  border-color: var(--p-content-border-color);
-  border-style: solid;
-}
-</style>
