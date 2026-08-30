@@ -93,6 +93,11 @@ function onInteractOutside(event: FocusOutsideEvent | PointerDownOutsideEvent) {
   }
 }
 
+function onCloseAutoFocus(event: Event) {
+  event.preventDefault()
+  anchor.value?.focus()
+}
+
 defineExpose({ show, hide, toggle, container: content, open })
 </script>
 
@@ -129,6 +134,7 @@ defineExpose({ show, hide, toggle, container: content, open })
           )
         "
         @escape-key-down="!closeOnEscape && $event.preventDefault()"
+        @close-auto-focus="onCloseAutoFocus"
         @interact-outside="onInteractOutside"
       >
         <slot />
