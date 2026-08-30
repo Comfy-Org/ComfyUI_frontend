@@ -169,6 +169,26 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
     expect(bridge.subscribedWorkflowId).toBe('wf-b')
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
   })
+
+  it('drops retained state when a detached follower binds a different workflow', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe('wf-a')
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate(), 'wf-a'))
+    const oldDoc = bridge.follower
+
+    bridge.unsubscribe()
+    bridge.subscribe('wf-b')
+
+    expect(bridge.follower).not.toBe(oldDoc)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+  })
 })
 
 describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
@@ -658,16 +678,20 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
+    const reportsBefore = reportError.mock.calls.length
 
     const v2 = hostDocUpdate((doc) =>
       doc.getMap('meta').set('schema_version', 2)
     )
     transport.deliver('doc_update', docUpdateFrame(v2))
+    transport.deliver('doc_update', docUpdateFrame(v2, WORKFLOW_ID, 2))
 
     // Fail CLOSED: the frame is never re-dispatched, so nothing renders.
     expect(projected).toHaveLength(0)
     // …and the failure is distinguishable, not a silent "disconnected".
     expect(schemaErrors).toEqual([{ workflowId: WORKFLOW_ID, found: 2 }])
+    expect(reportError.mock.calls).toHaveLength(reportsBefore + 1)
+    expect(bridge.follower.updatesApplied).toBe(1)
     expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
   })
 

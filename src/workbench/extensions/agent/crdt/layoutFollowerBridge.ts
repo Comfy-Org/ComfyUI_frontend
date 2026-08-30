@@ -51,6 +51,8 @@ export class LayoutFollowerBridge extends EventTarget {
    * its state vector.
    */
   private followerDoc = new FollowerDoc()
+  /** The workflow whose lineage is currently held by {@link followerDoc}. */
+  private docWorkflowId: string | null = null
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -126,16 +128,14 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   subscribe(workflowId: string): void {
-    if (
-      this.desiredWorkflowId !== null &&
-      this.desiredWorkflowId !== workflowId
-    ) {
+    if (this.docWorkflowId !== null && this.docWorkflowId !== workflowId) {
       // A workflow change is a lineage change: keeping the old doc would send
       // workflow A's state vector for workflow B and merge B's updates into
       // A's document. Document and projection state are replaced together -
       // the composition root resets the projector on the same watch.
       this.dropDocForNewLineage()
     }
+    this.docWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     this.reconcile()
   }
@@ -205,6 +205,7 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('frame_error', this.onFrameError)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
+      this.docWorkflowId = null
       this.followerDoc.destroy()
     }
   }
@@ -213,6 +214,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
+    if (this.schemaError) return
 
     // Seq is the contract's gap detector (crdt.go): the pub/sub relay is
     // best-effort, so a jump means a frame was dropped. An ordinary gap is
