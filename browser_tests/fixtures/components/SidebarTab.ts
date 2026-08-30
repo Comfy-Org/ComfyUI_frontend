@@ -83,8 +83,9 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   getNodeInFolder(nodeName: string, folderName: string) {
-    return this.getFolder(folderName)
-      .locator('xpath=ancestor::li')
+    return this.nodeLibraryTree
+      .getByRole('treeitem')
+      .and(this.nodeLibraryTree.locator(`[data-parent-label="${folderName}"]`))
       .locator(`[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`)
   }
 }
@@ -231,10 +232,10 @@ export class ModelLibrarySidebarTab extends SidebarTab {
     })
     this.folderNodes = this.modelTree
       .getByRole('treeitem')
-      .and(this.modelTree.locator('[aria-expanded]'))
-    this.leafNodes = this.modelTree.locator(
-      '[role="treeitem"]:not([aria-expanded])'
-    )
+      .and(this.modelTree.locator('[data-tree-node-type="folder"]'))
+    this.leafNodes = this.modelTree
+      .getByRole('treeitem')
+      .and(this.modelTree.locator('[data-tree-node-type="node"]'))
     this.modelPreview = page.locator('.model-lib-model-preview')
   }
 

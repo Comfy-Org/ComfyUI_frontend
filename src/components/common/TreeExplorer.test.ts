@@ -87,7 +87,14 @@ describe('TreeExplorer', () => {
 
     await user.click(screen.getByRole('treeitem', { name: /Folder/ }))
 
-    expect(screen.getByRole('treeitem', { name: 'Leaf' })).toBeInTheDocument()
+    expect(screen.getByRole('treeitem', { name: /Folder/ })).toHaveAttribute(
+      'data-tree-node-type',
+      'folder'
+    )
+    expect(screen.getByRole('treeitem', { name: 'Leaf' })).toHaveAttribute(
+      'data-parent-label',
+      'Folder'
+    )
   })
 
   it('lets a folder click handler own expansion', async () => {
