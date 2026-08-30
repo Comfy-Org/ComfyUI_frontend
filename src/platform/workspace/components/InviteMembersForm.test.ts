@@ -18,14 +18,18 @@ const { mockToastAdd } = vi.hoisted(() => ({
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
+
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   })
-)
+}))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -231,9 +235,7 @@ describe('InviteMembersForm', () => {
     )
     expect(screen.getByText('fail@x.com')).toBeInTheDocument()
     expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain('error')
     expect(emitted().submitted).toBeUndefined()
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
       source: 'post_upgrade_success',
@@ -267,9 +269,7 @@ describe('InviteMembersForm', () => {
     )
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain('error')
     expect(emitted().submitted).toBeUndefined()
     expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
     expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()

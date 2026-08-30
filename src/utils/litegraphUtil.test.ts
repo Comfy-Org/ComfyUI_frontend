@@ -28,6 +28,10 @@ vi.mock(
   })
 )
 
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({ warning: vi.fn() })
+}))
+
 describe('resolveNode', () => {
   it('returns undefined when graph is null', () => {
     expect(resolveNode(1, null)).toBeUndefined()

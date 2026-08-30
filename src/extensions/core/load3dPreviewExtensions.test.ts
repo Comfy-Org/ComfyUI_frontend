@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyApp } from '@/scripts/app'
+import { useToast } from '@/components/ui/toast'
 import { app } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
@@ -363,9 +363,9 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     await splatExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
   })
 })
 

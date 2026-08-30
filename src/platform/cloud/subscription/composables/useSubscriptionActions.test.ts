@@ -1,5 +1,3 @@
-import { useDialogService } from '@/services/dialogService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,6 +5,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
+const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
   async () => undefined
 )
@@ -21,10 +20,24 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  })
+}))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
+  useDialogService: () => ({
+    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
+  })
+}))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 const {
@@ -55,7 +68,6 @@ Object.defineProperty(window, 'open', {
 })
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
   vi.mocked(useCommandStore().execute).mockImplementation(mockExecute)
 })
 
@@ -68,7 +80,7 @@ describe('useSubscriptionActions', () => {
     it('should call showTopUpCreditsDialog', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
-      expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
       expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
         source: 'settings_billing_panel'
       })
@@ -120,10 +132,9 @@ describe('useSubscriptionActions', () => {
 
       expect(isLoadingSupport.value).toBe(false)
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Command failed'
-        })
+        'error',
+        expect.any(String),
+        expect.objectContaining({ description: 'Command failed' })
       )
     })
 

@@ -45,6 +45,19 @@ vi.mock<unknown>(
   }
 )
 
+
+
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: mocks.toastAdd,
+    error: mocks.toastAdd,
+    info: mocks.toastAdd,
+    warning: mocks.toastAdd,
+    loading: mocks.toastAdd,
+    custom: mocks.toastAdd
+  })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

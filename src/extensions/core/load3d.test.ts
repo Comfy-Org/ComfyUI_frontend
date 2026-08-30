@@ -5,7 +5,7 @@ import { defineComponent } from 'vue'
 import type { useLoad3d } from '@/composables/useLoad3d'
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
@@ -455,9 +455,9 @@ describe('Comfy.Preview3D.nodeCreated', () => {
     await preview3DExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
   })
 })
 
@@ -1015,9 +1015,9 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 })

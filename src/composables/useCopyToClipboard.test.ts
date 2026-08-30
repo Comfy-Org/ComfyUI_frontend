@@ -3,15 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockWriteText = vi.fn()
 const mockToastAdd = vi.fn()
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    useToast: vi.fn(() => ({
-      add: mockToastAdd
-    }))
-  })
-)
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: vi.fn(() => ({
+    success: (...args: unknown[]) => mockToastAdd('success', ...args),
+    error: (...args: unknown[]) => mockToastAdd('error', ...args),
+    info: (...args: unknown[]) => mockToastAdd('info', ...args),
+    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
+    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
+    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
+  }))
+}))
 
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
@@ -34,8 +35,8 @@ describe('useCopyToClipboard', () => {
     await copyToClipboard('hello')
 
     expect(mockWriteText).toHaveBeenCalledWith('hello')
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+      'success'
     )
   })
 
@@ -47,8 +48,8 @@ describe('useCopyToClipboard', () => {
     await copyToClipboard('hello')
 
     expect(document.execCommand).toHaveBeenCalledWith('copy')
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+      'success'
     )
   })
 
@@ -59,9 +60,7 @@ describe('useCopyToClipboard', () => {
     const { copyToClipboard } = useCopyToClipboard()
     await copyToClipboard('hello')
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain('error')
   })
 
   it('falls through to legacy when clipboard API is unavailable', async () => {
@@ -76,8 +75,8 @@ describe('useCopyToClipboard', () => {
 
     expect(mockWriteText).not.toHaveBeenCalled()
     expect(document.execCommand).toHaveBeenCalledWith('copy')
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+      'success'
     )
   })
 })

@@ -5,7 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type { useAudioService } from '@/services/audioService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 const {
   extensions,
@@ -72,9 +72,9 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
+let mockAddAlert: ReturnType<typeof useToast>['addAlert']
 beforeEach(() => {
-  mockAddAlert = useToastStore().addAlert
+  mockAddAlert = useToast().warning
 })
 
 vi.mock(

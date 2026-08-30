@@ -19,7 +19,7 @@ interface ViewportInstance {
   }
 }
 
-const { ViewportMock, instances } = vi.hoisted(() => {
+const { ViewportMock, instances, warning } = vi.hoisted(() => {
   const instances: ViewportInstance[] = []
   const ViewportMock = vi.fn(function (...ctorArgs: unknown[]) {
     const instance: ViewportInstance = {
@@ -38,7 +38,7 @@ const { ViewportMock, instances } = vi.hoisted(() => {
     instances.push(instance)
     return instance
   })
-  return { ViewportMock, instances }
+  return { ViewportMock, instances, warning: vi.fn() }
 })
 
 vi.mock<unknown>(
@@ -47,6 +47,9 @@ vi.mock<unknown>(
     CameraInfoViewport: ViewportMock
   })
 )
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({ warning })
+}))
 
 import { useCameraInfo } from './useCameraInfo'
 
@@ -81,6 +84,7 @@ function nodeRef(node: FakeNode) {
 beforeEach(() => {
   instances.length = 0
   ViewportMock.mockClear()
+  warning.mockClear()
 })
 
 describe('useCameraInfo', () => {
@@ -117,7 +121,7 @@ describe('useCameraInfo', () => {
     const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()
-    expect(useToastStore().addAlert).toHaveBeenCalledOnce()
+    expect(warning).toHaveBeenCalledOnce()
 
     consoleError.mockRestore()
   })

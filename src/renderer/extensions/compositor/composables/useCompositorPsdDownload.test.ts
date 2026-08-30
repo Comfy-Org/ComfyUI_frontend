@@ -32,7 +32,16 @@ vi.mock(
   })
 )
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: (...args: unknown[]) => toastAdd('success', ...args),
+    error: (...args: unknown[]) => toastAdd('error', ...args),
+    info: (...args: unknown[]) => toastAdd('info', ...args),
+    warning: (...args: unknown[]) => toastAdd('warning', ...args),
+    loading: (...args: unknown[]) => toastAdd('loading', ...args),
+    custom: (...args: unknown[]) => toastAdd('custom', ...args)
+  })
+}))
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -115,11 +124,10 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'layerEditor.webglUnavailable'
-      })
+    expect(toastAdd).toHaveBeenCalledWith(
+      'error',
+      expect.any(String),
+      expect.objectContaining({ description: 'layerEditor.webglUnavailable' })
     )
     expect(session.dispose).toHaveBeenCalledTimes(1)
   })
