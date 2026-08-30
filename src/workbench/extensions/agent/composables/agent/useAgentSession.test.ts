@@ -16,6 +16,7 @@ import { zAgentWsEvent } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  OpenTabsSnapshot,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -72,6 +73,12 @@ function fakeEvents() {
     emit: (raw: unknown) => listener?.(raw),
     status: (live: boolean) => statusListener?.(live)
   }
+}
+
+function resetHarness() {
+  setActivePinia(createPinia())
+  useAgentSession({ rest: fakeRest(), events: fakeEvents().source }).newChat()
+  localStorage.clear()
 }
 
 const wire = (raw: unknown): unknown => zAgentWsEvent.parse(raw)

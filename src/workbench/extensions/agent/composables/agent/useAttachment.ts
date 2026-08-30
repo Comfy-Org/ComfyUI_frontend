@@ -63,7 +63,14 @@ export function useAttachment(options: UseAttachmentOptions) {
     resolve: () => Promise<File | undefined>
   ): Promise<File | undefined> {
     const id = stage(name)
-    const file = await resolve()
+    let file: File | undefined
+    try {
+      file = await resolve()
+    } catch {
+      options.remove(id)
+      options.onError?.(i18n.global.t('agent.attachmentUploadFailed', { name }))
+      return undefined
+    }
     if (!file) {
       options.remove(id)
       return undefined
@@ -77,10 +84,10 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   async function addFiles(files: Iterable<File>): Promise<void> {
-    for (const file of files) {
-      if (isTooLarge(file)) continue
-      await uploadStagedFile(stage(file.name), file)
-    }
+    const staged = [...files]
+      .filter((file) => !isTooLarge(file))
+      .map((file) => ({ file, id: stage(file.name) }))
+    await Promise.all(staged.map(({ id, file }) => uploadStagedFile(id, file)))
   }
 
   return { addDeferredFile, addFiles }

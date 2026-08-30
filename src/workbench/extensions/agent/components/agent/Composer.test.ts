@@ -137,13 +137,18 @@ describe('Composer', () => {
 
   it('shows Stop instead of a spinner while submitting and emits stop', async () => {
     const { emitted } = mount({ submitting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'keep this{Enter}')
+    expect(emitted().stop).toHaveLength(1)
+    expect(emitted().send).toBeUndefined()
+    expect(box).toHaveValue('keep this')
     const stop = screen.getByRole('button', { name: 'Stop' })
     await userEvent.click(stop)
-    expect(emitted().stop).toHaveLength(1)
+    expect(emitted().stop).toHaveLength(2)
     expect(emitted().send).toBeUndefined()
   })
 
-  describe('run permissions popover', () => {
+  describe.skip('run permissions popover pending enforced API support', () => {
     beforeEach(() => {
       localStorage.clear()
     })
@@ -272,6 +277,16 @@ describe('Composer', () => {
         await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
       ).toBeChecked()
     })
+  })
+
+  it('[12-T7 regression] hides unenforced run-mode promises', () => {
+    mount()
+    expect(
+      screen.queryByRole('button', { name: 'Ask' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Choose when the agent needs your consent')
+    ).not.toBeInTheDocument()
   })
 
   describe('typed @ mention', () => {
