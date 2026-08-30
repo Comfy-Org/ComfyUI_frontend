@@ -187,13 +187,15 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       await expect(select).toBeEnabled()
 
       await select.click()
-      await expect(select).toHaveAttribute('aria-expanded', 'true')
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
-      await comfyPage.page
-        .getByRole('option', { name: targetValue, exact: true })
-        .click()
+      const targetOption = comfyPage.page.getByRole('option', {
+        name: targetValue,
+        exact: true
+      })
+      await expect(targetOption).toBeVisible()
+      await targetOption.click()
 
       await expect
         .poll(() => comfyPage.settings.getSetting<string>(settingId))
