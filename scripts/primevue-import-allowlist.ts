@@ -133,7 +133,6 @@ export const primeVueImportAllowlist = [
   'src/platform/workspace/composables/useWorkspaceMenuItems.ts',
   'src/platform/workspace/stores/billingOperationStore.ts',
   'src/renderer/extensions/linearMode/MobileDisplay.vue',
-  'src/renderer/extensions/minimap/MiniMapPanel.vue',
   'src/renderer/extensions/vueNodes/VideoPreview.vue',
   'src/renderer/extensions/vueNodes/components/WidgetGrid.vue',
   'src/renderer/extensions/vueNodes/composables/processedWidgetRenderModel.ts',
