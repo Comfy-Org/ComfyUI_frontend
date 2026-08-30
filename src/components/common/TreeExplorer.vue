@@ -207,9 +207,10 @@ const onNodeContentClick = async (
   node: RenderedTreeExplorerNode<T>,
   handleToggle?: () => void
 ) => {
-  handleToggle?.()
   if (node.handleClick) {
     await node.handleClick(e)
+  } else {
+    handleToggle?.()
   }
   emit('nodeClick', node, e)
 }
