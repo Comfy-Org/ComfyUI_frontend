@@ -139,15 +139,19 @@
                   :entries="menuEntries"
                 >
                   <template #button>
-                    <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                      variant="secondary"
-                      size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
-                      :aria-label="$t('g.moreOptions')"
+                    <Tooltip
+                      :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      side="right"
                     >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon-lg"
+                        class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                        :aria-label="$t('g.moreOptions')"
+                      >
+                        <i class="pi pi-ellipsis-h" />
+                      </Button>
+                    </Tooltip>
                   </template>
                 </DropdownMenu>
               </div>
@@ -199,15 +203,19 @@
                   :entries="menuEntries"
                 >
                   <template #button>
-                    <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                      variant="secondary"
-                      size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
-                      :aria-label="$t('g.moreOptions')"
+                    <Tooltip
+                      :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      side="right"
                     >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon-lg"
+                        class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                        :aria-label="$t('g.moreOptions')"
+                      >
+                        <i class="pi pi-ellipsis-h" />
+                      </Button>
+                    </Tooltip>
                   </template>
                 </DropdownMenu>
               </div>
@@ -296,15 +304,19 @@
                   :entries="menuEntries"
                 >
                   <template #button>
-                    <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                      variant="secondary"
-                      size="icon-lg"
-                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
-                      :aria-label="$t('g.moreOptions')"
+                    <Tooltip
+                      :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      side="right"
                     >
-                      <i class="pi pi-ellipsis-h" />
-                    </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon-lg"
+                        class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                        :aria-label="$t('g.moreOptions')"
+                      >
+                        <i class="pi pi-ellipsis-h" />
+                      </Button>
+                    </Tooltip>
                   </template>
                 </DropdownMenu>
               </div>
@@ -396,6 +408,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
