@@ -187,6 +187,11 @@ vi.mock('@/stores/workspace/searchBoxStore', () => ({
   useSearchBoxStore: () => ({ toggleVisible: mockToggleSearchBox })
 }))
 
+const mockOpenRightSidePanel = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
+  useRightSidePanelStore: () => ({ openPanel: mockOpenRightSidePanel })
+}))
+
 const mockUnpackSubgraph = vi.hoisted(() => vi.fn())
 vi.mock(
   '@/composables/graph/useSubgraphOperations',
@@ -666,6 +671,14 @@ describe('useCoreCommands', () => {
       expect(mockTryToggleWidgetPromotion).toHaveBeenCalledOnce()
     })
 
+    it('does not open subgraph widget editing in selection-only mode', async () => {
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Graph.EditSubgraphWidgets').function()
+
+      expect(mockOpenRightSidePanel).not.toHaveBeenCalled()
+    })
+
     it('does not fit groups to contents in selection-only mode', async () => {
       const group = new LGraphGroup('Group')
       app.canvas.selectedItems = new Set([
@@ -795,6 +808,27 @@ describe('useCoreCommands', () => {
         expect(mockSubgraph.extra.BlueprintDescription).toBeUndefined()
         expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
       })
+
+      it('does not set a description when picking starts during the prompt', async () => {
+        app.canvas.subgraph = mockSubgraph
+        let finishPrompt: (value: string) => void = () => {}
+        mockDialogService.prompt.mockReturnValue(
+          new Promise((resolve) => {
+            finishPrompt = resolve
+          })
+        )
+        const command = useCoreCommands().find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
+        )!
+
+        const pending = command.function()
+        app.canvas.selectOnly = true
+        finishPrompt('Test description')
+        await pending
+
+        expect(mockSubgraph.extra.BlueprintDescription).toBeUndefined()
+        expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
+      })
     })
 
     describe('SetSearchAliases command', () => {
@@ -872,6 +906,27 @@ describe('useCoreCommands', () => {
         )!
 
         await setAliasesCommand.function()
+
+        expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
+        expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
+      })
+
+      it('does not set aliases when picking starts during the prompt', async () => {
+        app.canvas.subgraph = mockSubgraph
+        let finishPrompt: (value: string) => void = () => {}
+        mockDialogService.prompt.mockReturnValue(
+          new Promise((resolve) => {
+            finishPrompt = resolve
+          })
+        )
+        const command = useCoreCommands().find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        const pending = command.function()
+        app.canvas.selectOnly = true
+        finishPrompt('alias')
+        await pending
 
         expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
         expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()

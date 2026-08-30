@@ -709,7 +709,8 @@ export class ComfyApp {
         event.preventDefault()
         event.stopPropagation()
 
-        if (isSelectOnly(this.canvas)) {
+        const dropCanvas: LGraphCanvas = this.canvas
+        if (isSelectOnly(dropCanvas)) {
           this.dragOverNode = null
           return
         }
@@ -717,9 +718,9 @@ export class ComfyApp {
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it
         // from the drop event so nodes created below land at the cursor.
-        this.canvas.adjustMouseEvent(event)
-        this.canvas.graph_mouse[0] = event.canvasX
-        this.canvas.graph_mouse[1] = event.canvasY
+        dropCanvas.adjustMouseEvent(event)
+        dropCanvas.graph_mouse[0] = event.canvasX
+        dropCanvas.graph_mouse[1] = event.canvasY
 
         const n = this.dragOverNode
         this.dragOverNode = null
@@ -729,6 +730,7 @@ export class ComfyApp {
 
         const files = await extractFilesFromDragEvent(event)
         if (files.length === 0) return
+        if (this.canvas !== dropCanvas || isSelectOnly(dropCanvas)) return
 
         const workspace = useWorkspaceStore()
         try {
@@ -1198,6 +1200,7 @@ export class ComfyApp {
   loadTemplateData(templateData: {
     templates?: { name?: string; data?: string }[]
   }): void {
+    if (isSelectOnly(this.canvas)) return
     if (!templateData?.templates) {
       return
     }

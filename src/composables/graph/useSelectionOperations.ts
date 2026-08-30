@@ -120,6 +120,7 @@ export function useSelectionOperations() {
         message: t('g.enterNewName'),
         defaultValue: currentTitle
       })
+      if (isSelectOnly(app.canvas)) return
 
       if (newTitle && newTitle !== currentTitle) {
         if ('title' in item) {
@@ -140,6 +141,7 @@ export function useSelectionOperations() {
         message: t('g.enterBaseName'),
         defaultValue: 'Item'
       })
+      if (isSelectOnly(app.canvas)) return
 
       if (baseTitle) {
         selectedItems.forEach((item, index) => {
