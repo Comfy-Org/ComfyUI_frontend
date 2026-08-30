@@ -11,13 +11,13 @@ const BYPASS_CLASS = /before:bg-bypass\/60/
 
 async function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
   await comfyPage.contextMenu.clickMenuItemExact(name)
-  await expect(comfyPage.contextMenu.primeVueMenu).toBeHidden()
+  await expect(comfyPage.contextMenu.applicationMenu).toBeHidden()
 }
 
 async function openContextMenu(comfyPage: ComfyPage, nodeTitle: string) {
   const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
   await comfyPage.contextMenu.openForVueNode(fixture.header)
-  return comfyPage.contextMenu.primeVueMenu
+  return comfyPage.contextMenu.applicationMenu
 }
 
 async function openMultiNodeContextMenu(
@@ -44,7 +44,7 @@ async function openMultiNodeContextMenu(
     { button: 'right' }
   )
 
-  const menu = comfyPage.contextMenu.primeVueMenu
+  const menu = comfyPage.contextMenu.applicationMenu
   await menu.waitFor({ state: 'visible' })
   return menu
 }
