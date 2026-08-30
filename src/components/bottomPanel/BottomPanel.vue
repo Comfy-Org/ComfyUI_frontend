@@ -1,45 +1,27 @@
 <template>
   <div class="flex h-full flex-col">
-    <Tabs
-      :key="$i18n.locale"
-      v-model:value="bottomPanelStore.activeBottomPanelTabId"
-      style="--p-tabs-tablist-background: var(--comfy-menu-bg)"
-    >
-      <TabList
-        pt:tab-list="border-none h-full flex items-center py-2 border-b-1 border-solid"
-        class="bg-transparent"
+    <Tabs :key="$i18n.locale" v-model="bottomPanelStore.activeBottomPanelTabId">
+      <TabsList
+        class="size-full border-b border-solid border-interface-stroke bg-transparent py-2"
       >
         <div class="flex w-full justify-between">
           <div class="tabs-container font-inter">
-            <Tab
+            <TabsTrigger
               v-for="tab in bottomPanelStore.bottomPanelTabs"
               :key="tab.id"
               :value="tab.id"
-              class="m-1 mx-2 border-none font-inter"
-              :class="{
-                'tab-list-single-item':
-                  bottomPanelStore.bottomPanelTabs.length === 1
-              }"
-              :pt:root="
-                (x: TabPassThroughMethodOptions) => ({
-                  class: {
-                    'p-3 rounded-lg': true,
-                    'pointer-events-none':
-                      bottomPanelStore.bottomPanelTabs.length === 1,
-                    'bg-secondary-background text-secondary-foreground':
-                      x.context.active &&
-                      bottomPanelStore.bottomPanelTabs.length > 1,
-                    'text-muted-foreground':
-                      !x.context.active ||
-                      bottomPanelStore.bottomPanelTabs.length <= 1
-                  }
-                })
+              :class="
+                cn(
+                  'm-1 mx-2 rounded-lg p-3 font-inter text-muted-foreground',
+                  bottomPanelStore.bottomPanelTabs.length === 1 &&
+                    'pointer-events-none data-[state=active]:bg-transparent data-[state=active]:text-muted-foreground'
+                )
               "
             >
               <span class="font-normal">
                 {{ getTabDisplayTitle(tab) }}
               </span>
-            </Tab>
+            </TabsTrigger>
           </div>
           <div class="flex items-center gap-2">
             <Button
@@ -62,9 +44,8 @@
             </Button>
           </div>
         </div>
-      </TabList>
+      </TabsList>
     </Tabs>
-    <!-- h-0 to force the div to grow -->
     <div class="h-0 grow">
       <ExtensionSlot
         v-if="
@@ -78,18 +59,16 @@
 </template>
 
 <script setup lang="ts">
-import Tab from 'primevue/tab'
-import type { TabPassThroughMethodOptions } from 'primevue/tab'
-import TabList from 'primevue/tablist'
-import Tabs from 'primevue/tabs'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const bottomPanelStore = useBottomPanelStore()
 const settingsDialog = useSettingsDialog()
@@ -120,13 +99,3 @@ const closeBottomPanel = () => {
   bottomPanelStore.activePanel = null
 }
 </script>
-
-<style scoped>
-:deep(.p-tablist-active-bar) {
-  display: none;
-}
-
-:deep(.p-tab-active) {
-  color: inherit;
-}
-</style>
