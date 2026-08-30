@@ -115,7 +115,10 @@ test.describe('Support', () => {
       )
 
     const popupPromise = comfyPage.page.waitForEvent('popup')
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
+    await comfyPage.menu.topbar.triggerTopbarCommand([
+      'Help',
+      'Contact Support'
+    ])
     const popup = await popupPromise
 
     const url = new URL(popup.url())
