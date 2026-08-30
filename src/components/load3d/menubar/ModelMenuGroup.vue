@@ -1,15 +1,16 @@
 <template>
   <Popover v-model:open="upDirectionOpen">
     <PopoverTrigger as-child>
-      <button
-        v-tooltip.bottom="tip(t('load3d.menuBar.upDirection'))"
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.upDirection') : undefined"
-      >
-        <i class="icon-[lucide--move-3d] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.upDirection') }}</span>
-      </button>
+      <Tooltip :config="tip(t('load3d.menuBar.upDirection'))" side="bottom">
+        <button
+          :class="actionClass(false)"
+          type="button"
+          :aria-label="compact ? t('load3d.menuBar.upDirection') : undefined"
+        >
+          <i class="icon-[lucide--move-3d] size-4" />
+          <span v-if="!compact">{{ t('load3d.menuBar.upDirection') }}</span>
+        </button>
+      </Tooltip>
     </PopoverTrigger>
     <PopoverContent
       side="bottom"
@@ -31,15 +32,16 @@
 
   <Popover v-if="materialModes.length" v-model:open="materialOpen">
     <PopoverTrigger as-child>
-      <button
-        v-tooltip.bottom="tip(t('load3d.menuBar.material'))"
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.material') : undefined"
-      >
-        <i class="icon-[lucide--box] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.material') }}</span>
-      </button>
+      <Tooltip :config="tip(t('load3d.menuBar.material'))" side="bottom">
+        <button
+          :class="actionClass(false)"
+          type="button"
+          :aria-label="compact ? t('load3d.menuBar.material') : undefined"
+        >
+          <i class="icon-[lucide--box] size-4" />
+          <span v-if="!compact">{{ t('load3d.menuBar.material') }}</span>
+        </button>
+      </Tooltip>
     </PopoverTrigger>
     <PopoverContent
       side="bottom"
@@ -59,21 +61,27 @@
     </PopoverContent>
   </Popover>
 
-  <button
+  <Tooltip
     v-if="hasSkeleton"
-    v-tooltip.bottom="tip(t('load3d.menuBar.skeleton'))"
-    :class="actionClass(showSkeleton)"
-    :aria-pressed="showSkeleton"
-    type="button"
-    :aria-label="compact ? t('load3d.menuBar.skeleton') : undefined"
-    @click="toggleSkeleton"
+    :config="tip(t('load3d.menuBar.skeleton'))"
+    side="bottom"
   >
-    <i class="icon-[lucide--bone] size-4" />
-    <span v-if="!compact">{{ t('load3d.menuBar.skeleton') }}</span>
-  </button>
+    <button
+      :class="actionClass(showSkeleton)"
+      :aria-pressed="showSkeleton"
+      type="button"
+      :aria-label="compact ? t('load3d.menuBar.skeleton') : undefined"
+      @click="toggleSkeleton"
+    >
+      <i class="icon-[lucide--bone] size-4" />
+      <span v-if="!compact">{{ t('load3d.menuBar.skeleton') }}</span>
+    </button>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
