@@ -339,7 +339,10 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await expect(
         page.getByText(ACCOUNT_B.email, { exact: true })
       ).toBeVisible()
-      await page.keyboard.press('Escape')
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await expect(
+        page.getByText(ACCOUNT_B.email, { exact: true })
+      ).toBeHidden()
       await expect
         .poll(() => workspaceMintOwners, { timeout: 15_000 })
         .toContain(ACCOUNT_B.id)
