@@ -320,6 +320,26 @@ test.describe('Assets sidebar - view mode', () => {
       )
       .toBe('grid-small')
 
+    const generatedAssetIds = await tab.assetCards.evaluateAll((cards) =>
+      cards.map((card) => card.getAttribute('data-asset-id'))
+    )
+    expect(new Set(generatedAssetIds).size).toBe(generatedAssetIds.length)
+
+    await tab.close()
+    await expect(tab.generatedTab).toBeHidden()
+    await tab.open()
+
+    await expect
+      .poll(() => tab.getFirstGridItemWidth())
+      .toBeLessThan(largeCardWidth)
+    await expect
+      .poll(() =>
+        tab.assetCards.evaluateAll((cards) =>
+          cards.map((card) => card.getAttribute('data-asset-id'))
+        )
+      )
+      .toEqual(generatedAssetIds)
+
     await tab.switchToImported()
 
     await expect(tab.assetCards.first()).toBeVisible()
