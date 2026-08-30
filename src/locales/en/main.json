@@ -73,7 +73,7 @@
       },
       "agent": {
         "title": "Node Agent",
-        "diff": "Node Agent proposed changes",
+        "diff": "Node Agent changes",
         "close": "Close Node Agent",
         "description": "I can build new nodes, change behavior, answer questions about this pack, and test and debug your changes.",
         "samplePrompt": "Add a color input and use it for the dark checkerboard squares",
@@ -105,8 +105,8 @@
         "stderr": "stderr",
         "testOutput": "Output {index}: {kind}",
         "testPreview": "Draft test preview for output {output}",
-        "failed": "Node Agent could not create a proposal.",
-        "applyFailed": "Could not apply the proposal.",
+        "failed": "Node Agent could not complete this change.",
+        "applyFailed": "Could not apply the changes.",
         "structuralChange": "This operation changes the project tree and does not need a source diff.",
         "unavailable": "Node Agent is not configured for this environment.",
         "unavailableDetail": "A server-owned hosted-model API key is required. Do not enter personal credentials here."

@@ -121,7 +121,7 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
     await page
       .getByRole('button', { name: 'v2/nodes/checkerboard.py', exact: true })
       .click()
-    await expect(page.getByLabel('Node Agent proposed changes')).toBeVisible()
+    await expect(page.getByLabel('Node Agent changes')).toBeVisible()
 
     await page
       .getByRole('button', { name: 'Restore the files from this point' })
