@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import type { ComposerAttachment } from './useComposer'
-import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
+import {
+  MAX_ATTACHMENT_BYTES,
+  MAX_VIDEO_ATTACHMENT_BYTES,
+  useAttachment
+} from './useAttachment'
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
@@ -57,6 +63,41 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledOnce()
     expect(onError).toHaveBeenCalledWith('huge.png is larger than 20MB')
+  })
+
+  it('uses the server-declared limit for video up to 200MB', async () => {
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(
+      MAX_VIDEO_ATTACHMENT_BYTES
+    )
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+    const movie = fileOfSize(
+      'movie.mp4',
+      MAX_VIDEO_ATTACHMENT_BYTES,
+      'video/mp4'
+    )
+
+    await addFiles([movie])
+
+    expect(api.getServerFeature).toHaveBeenCalledWith(
+      'max_upload_size',
+      MAX_VIDEO_ATTACHMENT_BYTES
+    )
+    expect(upload).toHaveBeenCalledWith(movie)
+  })
+
+  it('rejects video above the server-declared limit', async () => {
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(125 * 1024 * 1024)
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onError, ...registry })
+
+    await addFiles([fileOfSize('huge.mp4', 125 * 1024 * 1024 + 1, 'video/mp4')])
+
+    expect(upload).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledWith('huge.mp4 is larger than 125MB')
   })
 
   it('uses the resolved limit for each file', async () => {
