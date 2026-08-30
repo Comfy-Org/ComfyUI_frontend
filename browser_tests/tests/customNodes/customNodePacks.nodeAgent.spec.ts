@@ -24,6 +24,9 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
     await page.route('**/api/customnodes/editor/sessions**', async (route) => {
       const path = new URL(route.request().url()).pathname
       if (path.endsWith('/agent/proposals')) {
+        // Give the animated activity indicator a deterministic window to be
+        // observed before the proposal lands.
+        await new Promise((resolve) => setTimeout(resolve, 700))
         await route.fulfill({ status: 201, json: testedNodeAgentProposal })
         return
       }
@@ -83,6 +86,10 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
     await prompt.fill('Add a configurable checkerboard color and test it')
     await page.getByRole('button', { name: 'Send', exact: true }).click()
 
+    const activity = page.getByTestId('node-agent-activity')
+    await expect(activity).toBeVisible()
+    await expect(activity).toContainText('Building and testing…')
+
     await expect(page.getByTestId('node-agent-start')).toBeHidden()
     await expect(page.getByTestId('node-agent-conversation')).toContainText(
       'Add a configurable checkerboard color and test it'
@@ -122,5 +129,6 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
     await expect(page.getByTestId('node-agent-conversation')).toContainText(
       'Files restored to this point.'
     )
+    await expect(activity).toBeHidden()
   })
 })

@@ -132,18 +132,7 @@
                 {{ message.content }}
               </div>
               <div v-else class="min-w-0 flex-1 text-sm/5">
-                <div
-                  v-if="message.kind === 'working'"
-                  class="flex items-center gap-2 text-muted-foreground"
-                >
-                  <i
-                    class="icon-[lucide--loader-circle] size-3.5 shrink-0 animate-spin"
-                    aria-hidden="true"
-                  />
-                  <p class="m-0">{{ message.content }}</p>
-                </div>
                 <p
-                  v-else
                   :class="
                     cn(
                       'm-0 wrap-break-word whitespace-pre-wrap',
@@ -403,6 +392,26 @@
           </ol>
         </div>
 
+        <div
+          v-if="activityLabel"
+          class="flex shrink-0 items-center gap-2 px-3 pt-1 pb-2 text-xs text-muted-foreground"
+          data-testid="node-agent-activity"
+          role="status"
+        >
+          <span class="flex items-center gap-1" aria-hidden="true">
+            <span
+              class="agent-activity-dot size-1.5 rounded-full bg-primary-background"
+            />
+            <span
+              class="agent-activity-dot size-1.5 rounded-full bg-primary-background"
+            />
+            <span
+              class="agent-activity-dot size-1.5 rounded-full bg-primary-background"
+            />
+          </span>
+          {{ activityLabel }}
+        </div>
+
         <form
           v-if="agentEnabled"
           class="shrink-0 border-t border-border-default p-3"
@@ -508,7 +517,7 @@ const promptInputRef =
   useTemplateRef<InstanceType<typeof Textarea>>('promptInputRef')
 const conversationRef = useTemplateRef<HTMLDivElement>('conversationRef')
 
-type AgentMessageKind = 'message' | 'working' | 'error' | 'stopped'
+type AgentMessageKind = 'message' | 'error' | 'stopped'
 
 interface AgentChatMessage {
   id: string
@@ -522,6 +531,7 @@ interface AgentChatMessage {
 type AgentRunState =
   | { phase: 'idle' }
   | { phase: 'asking'; controller: AbortController }
+  | { phase: 'applying' }
   | { phase: 'restoring'; messageId: string }
 
 const editorStateKey = computed(() =>
@@ -539,6 +549,20 @@ let messageSequence = 0
 const editorTheme = computed(() =>
   colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
 )
+// The single animated busy element: rendered whenever the agent is doing
+// anything, gone the moment it is idle.
+const activityLabel = computed(() => {
+  switch (runState.value.phase) {
+    case 'asking':
+      return t('customNodePacks.editor.agent.working')
+    case 'applying':
+      return t('customNodePacks.editor.agent.applying')
+    case 'restoring':
+      return t('customNodePacks.editor.agent.restoring')
+    default:
+      return null
+  }
+})
 const selectedChange = computed(() =>
   selectedChangeIndex.value < 0
     ? undefined
@@ -565,10 +589,8 @@ async function scrollConversation() {
   conversationRef.value.scrollTop = conversationRef.value.scrollHeight
 }
 
-function replaceMessage(id: string, replacement: Omit<AgentChatMessage, 'id'>) {
-  messages.value = messages.value.map((message) =>
-    message.id === id ? { id, ...replacement } : message
-  )
+function appendMessage(message: Omit<AgentChatMessage, 'id'>) {
+  messages.value = [...messages.value, { id: nextMessageId(), ...message }]
 }
 
 async function askAgent() {
@@ -576,24 +598,9 @@ async function askAgent() {
   if (!requestedChange || runState.value.phase !== 'idle') return
 
   const controller = new AbortController()
-  const responseMessageId = nextMessageId()
   runState.value = { phase: 'asking', controller }
   instruction.value = ''
-  messages.value = [
-    ...messages.value,
-    {
-      id: nextMessageId(),
-      role: 'user',
-      content: requestedChange,
-      kind: 'message'
-    },
-    {
-      id: responseMessageId,
-      role: 'assistant',
-      content: t('customNodePacks.editor.agent.working'),
-      kind: 'working'
-    }
-  ]
+  appendMessage({ role: 'user', content: requestedChange, kind: 'message' })
   await scrollConversation()
 
   try {
@@ -604,23 +611,30 @@ async function askAgent() {
       controller.signal
     )
     if (controller.signal.aborted) return
-    replaceMessage(responseMessageId, {
-      role: 'assistant',
-      content: proposal.summary,
-      kind: 'message',
-      proposal
-    })
+    const responseMessageId = nextMessageId()
+    messages.value = [
+      ...messages.value,
+      {
+        id: responseMessageId,
+        role: 'assistant',
+        content: proposal.summary,
+        kind: 'message',
+        proposal
+      }
+    ]
+    runState.value = { phase: 'applying' }
+    await scrollConversation()
     await applyProposal(responseMessageId, proposal)
   } catch (error) {
     if (isAbortError(error)) {
-      replaceMessage(responseMessageId, {
+      appendMessage({
         role: 'assistant',
         content: t('customNodePacks.editor.agent.stopped'),
         kind: 'stopped'
       })
     } else {
       reportError(error, { errorType: 'custom_node_agent_request_failed' })
-      replaceMessage(responseMessageId, {
+      appendMessage({
         role: 'assistant',
         content:
           error instanceof Error
@@ -630,12 +644,7 @@ async function askAgent() {
       })
     }
   } finally {
-    if (
-      runState.value.phase === 'asking' &&
-      runState.value.controller === controller
-    ) {
-      runState.value = { phase: 'idle' }
-    }
+    runState.value = { phase: 'idle' }
     await scrollConversation()
     promptInputRef.value?.focus()
   }
@@ -852,6 +861,42 @@ defineExpose({ saveAll })
 <style scoped>
 .custom-node-workbench {
   container-type: inline-size;
+}
+
+/* Busy dots: one left-to-right wave, a clear rest, then the next wave —
+   deliberately more legible than a continuous bounce. */
+.agent-activity-dot {
+  opacity: 0.4;
+  animation: agent-activity-wave 1.6s ease-in-out infinite;
+}
+
+.agent-activity-dot:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+.agent-activity-dot:nth-child(3) {
+  animation-delay: 280ms;
+}
+
+@keyframes agent-activity-wave {
+  0%,
+  30%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+
+  15% {
+    transform: translateY(-0.3125rem);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-activity-dot {
+    animation: none;
+    opacity: 0.8;
+  }
 }
 
 .workbench-grid[data-agent-open='true'] {

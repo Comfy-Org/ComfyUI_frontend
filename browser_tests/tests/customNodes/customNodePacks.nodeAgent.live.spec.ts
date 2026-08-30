@@ -138,6 +138,9 @@ test.describe(
           )
         await page.getByRole('button', { name: 'Send', exact: true }).click()
 
+        const activity = page.getByTestId('node-agent-activity')
+        await expect(activity).toBeVisible()
+
         const firstTestResult = page.getByTestId('node-agent-test-result')
         await expect(firstTestResult).toContainText('Backend test passed', {
           timeout: 360_000
@@ -166,6 +169,7 @@ test.describe(
             { timeout: 30_000 }
           )
           .toEqual({ changed: true, containsVerification: true })
+        await expect(activity).toBeHidden()
 
         await page
           .getByRole('textbox', {
@@ -175,6 +179,7 @@ test.describe(
             `Keep the existing verification line in README.md and append another final line containing exactly: ${refinementLine} Test the complete refined candidate before returning it.`
           )
         await page.getByRole('button', { name: 'Send', exact: true }).click()
+        await expect(activity).toBeVisible()
 
         const testResults = page.getByTestId('node-agent-test-result')
         await expect(testResults).toHaveCount(2, { timeout: 360_000 })

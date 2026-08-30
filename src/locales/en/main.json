@@ -87,6 +87,8 @@
         "restored": "Files restored to this point.",
         "restoreFailed": "Could not restore the files.",
         "working": "Building and testing…",
+        "applying": "Applying changes…",
+        "restoring": "Restoring files…",
         "testStatus": {
           "passed": "Backend test passed",
           "failed": "Backend test failed",

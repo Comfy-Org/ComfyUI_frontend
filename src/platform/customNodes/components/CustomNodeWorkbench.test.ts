@@ -103,6 +103,8 @@ const i18n = createI18n({
             restored: 'Files restored to this point.',
             restoreFailed: 'Could not restore the files.',
             working: 'Building and testing…',
+            applying: 'Applying changes…',
+            restoring: 'Restoring files…',
             testStatus: {
               passed: 'Backend test passed',
               failed: 'Backend test failed',
@@ -288,6 +290,7 @@ describe('CustomNodeWorkbench', () => {
       screen.getByRole('textbox', { name: 'Describe a node change' })
     ).toBeVisible()
     expect(screen.getByText('Changes applied')).toBeVisible()
+    expect(screen.queryByTestId('node-agent-activity')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Apply changes' })
     ).not.toBeInTheDocument()
@@ -488,9 +491,15 @@ describe('CustomNodeWorkbench', () => {
       'Try a long-running change'
     )
     await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    const activity = await screen.findByTestId('node-agent-activity')
+    expect(activity).toBeVisible()
+    expect(activity).toHaveTextContent('Building and testing…')
+
     await user.click(await screen.findByRole('button', { name: 'Stop' }))
 
     expect(await screen.findByText('Stopped.')).toBeVisible()
+    expect(screen.queryByTestId('node-agent-activity')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Send' })).toBeVisible()
     expect(mocks.applyAgentProposal).not.toHaveBeenCalled()
     expect(mocks.reportError).not.toHaveBeenCalled()
@@ -579,7 +588,13 @@ describe('CustomNodeWorkbench', () => {
       initialPath: 'README.md',
       digest: 'digest-restored'
     }
-    mocks.restoreCheckpoint.mockResolvedValue(restoredFiles)
+    let resolveRestore!: (files: typeof restoredFiles) => void
+    mocks.restoreCheckpoint.mockImplementation(
+      () =>
+        new Promise<typeof restoredFiles>((resolve) => {
+          resolveRestore = resolve
+        })
+    )
 
     render(CustomNodeWorkbench, {
       props: {
@@ -600,6 +615,11 @@ describe('CustomNodeWorkbench', () => {
       screen.getByRole('button', { name: 'Restore the files from this point' })
     )
 
+    const activity = await screen.findByTestId('node-agent-activity')
+    expect(activity).toBeVisible()
+    expect(activity).toHaveTextContent('Restoring files…')
+    resolveRestore(restoredFiles)
+
     await waitFor(() => {
       expect(mocks.restoreCheckpoint).toHaveBeenCalledWith(
         'session-1',
@@ -608,6 +628,7 @@ describe('CustomNodeWorkbench', () => {
       expect(mocks.replaceFiles).toHaveBeenLastCalledWith(restoredFiles)
     })
     expect(screen.getByText('Files restored to this point.')).toBeVisible()
+    expect(screen.queryByTestId('node-agent-activity')).not.toBeInTheDocument()
     expect(mocks.reportError).not.toHaveBeenCalled()
   })
 
