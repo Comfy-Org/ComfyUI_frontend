@@ -2,7 +2,10 @@
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', label } = defineProps<{
+  locale?: Locale
+  label?: string
+}>()
 </script>
 
 <template>
@@ -19,7 +22,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       class="bg-primary-comfy-yellow flex h-full items-center text-2xl leading-none tracking-[-0.02em] uppercase md:text-[37.8px]"
     >
       <span class="translate-y-0.5">
-        {{ t('platform.hero.badge', locale) }}
+        {{ label ?? t('platform.hero.badge', locale) }}
       </span>
     </span>
     <img

@@ -6,6 +6,7 @@ import { t } from '../../i18n/translations'
 import CodeTabs from './CodeTabs.vue'
 import { modelsApiCodeTabs } from './codeSamples'
 import { platformCtas } from './ctas'
+import PlatformHeroBadge from './PlatformHeroBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -20,6 +21,8 @@ const ctas = platformCtas(locale)
     :badge-text="t('platform.hero.badge', locale)"
     :badge-show-logo="false"
     :title="t('platform.products.models.title', locale)"
+    title-class="sr-only"
+    media-wrapper-class="hidden min-w-0 lg:block"
     :subtitle="t('platform.products.models.description', locale)"
     :primary-cta="ctas.getStarted"
     :secondary-cta="{
@@ -28,10 +31,26 @@ const ctas = platformCtas(locale)
       target: '_blank'
     }"
   >
+    <template #badge>
+      <PlatformHeroBadge
+        :locale="locale"
+        :label="t('platform.products.models.title', locale)"
+      />
+    </template>
+    <template #aboveCtas>
+      <div class="mt-8 lg:hidden">
+        <CodeTabs
+          :tabs="modelsApiCodeTabs"
+          :label="t('platform.products.models.title', locale)"
+          content-class="bg-[#2a2230]"
+        />
+      </div>
+    </template>
     <template #media>
       <CodeTabs
         :tabs="modelsApiCodeTabs"
         :label="t('platform.products.models.title', locale)"
+        content-class="bg-[#2a2230]"
       />
     </template>
   </HeroSplit01>

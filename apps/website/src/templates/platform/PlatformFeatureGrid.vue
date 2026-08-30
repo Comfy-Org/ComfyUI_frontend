@@ -39,9 +39,9 @@ const { columns = 3 } = defineProps<{
       <article
         v-for="card in cards"
         :key="card.title"
-        class="rounded-3xl border border-white/10 bg-transparency-white-t4 p-5 lg:p-6"
+        class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6"
       >
-        <h3 class="text-base font-normal text-primary-warm-white">
+        <h3 class="text-base font-normal text-primary-comfy-canvas">
           {{ card.title }}
         </h3>
         <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">

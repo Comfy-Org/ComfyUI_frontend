@@ -24,9 +24,14 @@ export interface CodeTab {
 
 const CYCLE_INTERVAL_MS = 3000
 
-const { tabs, label } = defineProps<{
+const {
+  tabs,
+  label,
+  contentClass = 'bg-primary-comfy-ink'
+} = defineProps<{
   tabs: Record<string, CodeTab>
   label: string
+  contentClass?: string
 }>()
 
 const activeTab = ref(Object.keys(tabs)[0])
@@ -115,8 +120,13 @@ function cycleValue(values: string[]): string {
       class="mt-4 block"
     >
       <pre
-        class="scrollbar-none overflow-auto rounded-3xl bg-primary-comfy-ink p-4 font-mono text-[10px]/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:p-6 lg:text-sm/relaxed"
-        :style="{ height: codePanelHeight }"
+        :class="
+          cn(
+            'h-[calc(var(--code-panel-h)*0.9)] scrollbar-none overflow-auto rounded-3xl p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:h-(--code-panel-h) lg:p-6 lg:text-sm/relaxed',
+            contentClass
+          )
+        "
+        :style="{ '--code-panel-h': codePanelHeight }"
       ><code><template
           v-for="(segment, index) in tab.segments"
           :key="index"
