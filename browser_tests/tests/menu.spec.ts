@@ -136,9 +136,10 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await comfyPage.menu.topbar.openTopbarMenu()
       const workflowMenuItem = comfyPage.menu.topbar.getMenuItem('File')
       await workflowMenuItem.hover()
-      const exportTag = comfyPage.page.locator('.keybinding-tag', {
-        hasText: 'Ctrl + s'
-      })
+      const exportTag = comfyPage.menu.topbar
+        .getVisibleSubmenu()
+        .getByRole('menuitem', { name: 'Save', exact: true })
+        .getByText('Ctrl + s', { exact: true })
       await expect(exportTag).toHaveCount(1)
     })
 
