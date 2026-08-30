@@ -1,19 +1,84 @@
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
+import { computed } from 'vue'
 
-export type AgentRunMode = 'ask' | 'auto' | 'auto-limit'
+import { zAgentRunMode } from '../../schemas/agentApiSchema'
+import type {
+  AgentRunMode,
+  AgentRunModePreference
+} from '../../schemas/agentApiSchema'
+export type { AgentRunMode } from '../../schemas/agentApiSchema'
+import {
+  AgentApiError,
+  createAgentRestClient
+} from '../../services/agent/agentRestClient'
 
-// FE slice of the run-permissions control (DES-525). The persisted choice is
-// not enforced yet - run gating ships with BE-3135.
+const DEFAULT_PREFERENCE: AgentRunModePreference = {
+  mode: 'ask_approval',
+  credit_limit: null
+}
+
 export const useAgentRunModeStore = defineStore('agentRunMode', () => {
-  const mode = useLocalStorage<AgentRunMode>('Comfy.Agent.RunMode', 'ask')
-  const creditLimit = useLocalStorage('Comfy.Agent.RunCreditLimit', 300)
+  const api = createAgentRestClient()
+  const preference = useLocalStorage<AgentRunModePreference>(
+    'Comfy.Agent.RunModePreference',
+    DEFAULT_PREFERENCE,
+    {
+      serializer: {
+        read: (value) => {
+          try {
+            return zAgentRunMode
+              .catch(DEFAULT_PREFERENCE)
+              .parse(JSON.parse(value))
+          } catch {
+            return DEFAULT_PREFERENCE
+          }
+        },
+        write: JSON.stringify
+      }
+    }
+  )
+  const mode = computed(() => preference.value.mode)
+  const creditLimit = computed(() => preference.value.credit_limit)
 
-  function save(nextMode: AgentRunMode, nextLimit: number): void {
-    mode.value = nextMode
-    const floored = Math.floor(nextLimit)
-    if (Number.isFinite(floored) && floored > 0) creditLimit.value = floored
+  function apply(nextPreference: AgentRunModePreference): void {
+    preference.value = nextPreference
   }
 
-  return { mode, creditLimit, save }
+  function localPreference(): AgentRunModePreference {
+    const parsed = zAgentRunMode.safeParse(preference.value)
+    if (parsed.success) return parsed.data
+
+    apply(DEFAULT_PREFERENCE)
+    return DEFAULT_PREFERENCE
+  }
+
+  async function load(): Promise<void> {
+    try {
+      apply(await api.getRunMode())
+    } catch (error) {
+      if (!(error instanceof AgentApiError && error.status === 404)) throw error
+      localPreference()
+    }
+  }
+
+  async function save(
+    nextMode: AgentRunMode,
+    nextLimit: number | null
+  ): Promise<void> {
+    const preference = zAgentRunMode.parse({
+      mode: nextMode,
+      credit_limit: nextLimit
+    })
+    try {
+      apply(await api.putRunMode(preference))
+    } catch (error) {
+      if (!(error instanceof AgentApiError && error.status === 404)) throw error
+      apply(preference)
+    }
+  }
+
+  localPreference()
+
+  return { mode, creditLimit, load, save }
 })

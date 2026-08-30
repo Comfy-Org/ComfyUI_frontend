@@ -60,6 +60,26 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('GET')
   })
 
+  it('gets and puts the run-mode preference using the API contract', async () => {
+    const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
+    respond(jsonResponse(200, preference))
+
+    await expect(createAgentRestClient().getRunMode()).resolves.toEqual(
+      preference
+    )
+    expect(lastCall()).toMatchObject({
+      route: '/agent/run-mode',
+      init: { method: 'GET' }
+    })
+
+    respond(jsonResponse(200, preference))
+    await createAgentRestClient().putRunMode(preference)
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/run-mode')
+    expect(init.method).toBe('PUT')
+    expect(JSON.parse(init.body as string)).toEqual(preference)
+  })
+
   it('cancelMessage POSTs the cancel path with an empty JSON body', async () => {
     respond(jsonResponse(202, { status: 'cancelling' }))
     await makeClient().cancelMessage('t7', 'm3')
