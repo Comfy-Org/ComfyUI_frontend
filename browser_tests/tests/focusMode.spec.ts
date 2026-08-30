@@ -31,7 +31,10 @@ test.describe('Focus Mode', { tag: '@ui' }, () => {
   })
 
   test('Focus mode hides topbar', async ({ comfyPage }) => {
-    const topMenu = comfyPage.page.locator('.comfy-menu-button-wrapper')
+    const topMenu = comfyPage.page.getByRole('button', {
+      name: 'Menu',
+      exact: true
+    })
     await expect(topMenu).toBeVisible()
 
     await comfyPage.setFocusMode(true)

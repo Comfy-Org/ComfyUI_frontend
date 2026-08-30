@@ -172,7 +172,11 @@ export class Topbar {
   async openSubmenu(menuItemLabel: string): Promise<Locator> {
     const menuItem = this.getMenuItem(menuItemLabel)
     await menuItem.hover()
-    const submenu = this.getVisibleSubmenu()
+    const submenuId = await menuItem.getAttribute('aria-controls')
+    if (!submenuId) {
+      throw new Error(`Menu item "${menuItemLabel}" has no submenu`)
+    }
+    const submenu = this.page.locator(`#${submenuId}`)
     await submenu.waitFor({ state: 'visible' })
     return submenu
   }
@@ -214,24 +218,17 @@ export class Topbar {
       return
     }
 
-    await topLevelMenuItem.hover()
-
-    // Hover over top-level menu with retry logic for flaky submenu appearance
-    const submenu = this.getVisibleSubmenu()
+    let submenu: Locator
     try {
-      await submenu.waitFor({ state: 'visible', timeout: 1000 })
+      submenu = await this.openSubmenu(tabName)
     } catch {
-      // Click outside to reset, then reopen menu
       await this.page.locator('body').click({ position: { x: 500, y: 300 } })
       await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
       await this.menuTrigger.click()
       await this.menuLocator.waitFor({ state: 'visible' })
-      // Re-hover on top-level menu to trigger submenu
-      await topLevelMenuItem.hover()
-      await submenu.waitFor({ state: 'visible', timeout: 1000 })
+      submenu = await this.openSubmenu(tabName)
     }
 
-    let currentMenu = topLevelMenuItem
     for (let i = 1; i < path.length; i++) {
       const commandName = path[i]
       const menuItem = submenu.getByRole('menuitem', {
@@ -246,10 +243,13 @@ export class Topbar {
         return
       }
 
-      // Otherwise, hover to open nested submenu
       await menuItem.hover()
-      currentMenu = menuItem
+      const submenuId = await menuItem.getAttribute('aria-controls')
+      if (!submenuId) {
+        throw new Error(`Menu item "${commandName}" has no submenu`)
+      }
+      submenu = this.page.locator(`#${submenuId}`)
+      await submenu.waitFor({ state: 'visible' })
     }
-    await currentMenu.click()
   }
 }
