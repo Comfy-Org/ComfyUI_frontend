@@ -1,5 +1,6 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
@@ -69,8 +70,10 @@ import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import {
+  findNodeInHierarchy,
   getAllNonIoNodesInSubgraph,
-  getExecutionIdsForSelectedNodes
+  getExecutionIdsForSelectedNodes,
+  getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
@@ -140,6 +143,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
   const dialogStore = useDialogStore()
   const maskEditorStore = useMaskEditorStore()
+  const { focusNodeInstance } = useFocusNode()
 
   const { getSelectedNodes, getSelectedNodesShallow, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
@@ -451,6 +455,41 @@ export function useCoreCommands(): ComfyCommand[] {
         app.canvas.fitViewToSelectionAnimated({
           viewport: visibleCanvasViewport(app.canvas)
         })
+      }
+    },
+    {
+      id: 'Comfy.Canvas.GoToNode',
+      icon: 'icon-[lucide--map-pin]',
+      label: 'Go to Node',
+      menubarLabel: 'Go to Node',
+      category: 'view-controls' as const,
+      versionAdded: '1.62.0',
+      function: async (metadata?: Record<string, unknown>) => {
+        let nodeId =
+          metadata?.nodeId != null ? String(metadata.nodeId).trim() : null
+        if (nodeId === null) {
+          const input = await dialogService.prompt({
+            title: t('g.goToNode'),
+            message: t('g.goToNodePrompt')
+          })
+          if (input === null) return
+          nodeId = input.trim()
+        }
+        if (!nodeId) return
+
+        // Colon-delimited ids (e.g. "12:5" from execution error messages)
+        // address nodes through subgraph instances; plain ids are searched
+        // across the whole graph hierarchy.
+        const graphNode = nodeId.includes(':')
+          ? getNodeByExecutionId(app.rootGraph, nodeId)
+          : findNodeInHierarchy(app.rootGraph, nodeId)
+
+        if (!graphNode) {
+          toast.error(t('toastMessages.nodeNotFound', { nodeId }))
+          return
+        }
+
+        await focusNodeInstance(graphNode)
       }
     },
     {

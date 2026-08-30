@@ -31,6 +31,10 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  findNodeInHierarchy,
+  getNodeByExecutionId
+} from '@/utils/graphTraversalUtil'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
@@ -119,6 +123,13 @@ vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+
+const mockFocusNodeInstance = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
+  useFocusNode: vi.fn(() => ({ focusNodeInstance: mockFocusNodeInstance }))
+}))
+
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
 )
@@ -280,6 +291,71 @@ describe('useCoreCommands', () => {
     useSettingStore().settingValues['Comfy.ConfirmClear'] = false
 
     global.confirm = vi.fn().mockReturnValue(true)
+  })
+
+  describe('GoToNode command', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    beforeEach(() => {
+      vi.mocked(findNodeInHierarchy).mockReset()
+      vi.mocked(getNodeByExecutionId).mockReset()
+    })
+
+    it('prompts for an id and focuses the found node', async () => {
+      const node = createMockLGraphNode({ id: 5 })
+      vi.mocked(useDialogService().prompt).mockResolvedValue('5')
+      vi.mocked(findNodeInHierarchy).mockReturnValue(node)
+
+      await findCmd('Comfy.Canvas.GoToNode').function()
+
+      expect(useDialogService().prompt).toHaveBeenCalled()
+      expect(findNodeInHierarchy).toHaveBeenCalledWith(app.rootGraph, '5')
+      expect(mockFocusNodeInstance).toHaveBeenCalledWith(node)
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
+
+    it('uses metadata.nodeId without prompting', async () => {
+      const node = createMockLGraphNode({ id: 7 })
+      vi.mocked(findNodeInHierarchy).mockReturnValue(node)
+
+      await findCmd('Comfy.Canvas.GoToNode').function({ nodeId: 7 })
+
+      expect(useDialogService().prompt).not.toHaveBeenCalled()
+      expect(findNodeInHierarchy).toHaveBeenCalledWith(app.rootGraph, '7')
+      expect(mockFocusNodeInstance).toHaveBeenCalledWith(node)
+    })
+
+    it('resolves colon-delimited ids as execution ids', async () => {
+      const node = createMockLGraphNode({ id: 3 })
+      vi.mocked(getNodeByExecutionId).mockReturnValue(node)
+
+      await findCmd('Comfy.Canvas.GoToNode').function({ nodeId: '12:3' })
+
+      expect(getNodeByExecutionId).toHaveBeenCalledWith(app.rootGraph, '12:3')
+      expect(findNodeInHierarchy).not.toHaveBeenCalled()
+      expect(mockFocusNodeInstance).toHaveBeenCalledWith(node)
+    })
+
+    it('shows an error toast when the node is not found', async () => {
+      vi.mocked(useDialogService().prompt).mockResolvedValue('999')
+      vi.mocked(findNodeInHierarchy).mockReturnValue(null)
+
+      await findCmd('Comfy.Canvas.GoToNode').function()
+
+      expect(useToast().error).toHaveBeenCalled()
+      expect(mockFocusNodeInstance).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when the prompt is cancelled', async () => {
+      vi.mocked(useDialogService().prompt).mockResolvedValue(null)
+
+      await findCmd('Comfy.Canvas.GoToNode').function()
+
+      expect(findNodeInHierarchy).not.toHaveBeenCalled()
+      expect(mockFocusNodeInstance).not.toHaveBeenCalled()
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
   })
 
   describe('ClearWorkflow command', () => {
