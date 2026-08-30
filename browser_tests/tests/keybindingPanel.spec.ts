@@ -27,8 +27,6 @@ function getCommandRow(page: Page, commandId: string): Locator {
 }
 
 function getExpansionContent(page: Page, commandId: string): Locator {
-  // PrimeVue renders the expansion row as the next sibling <tr> of the
-  // expanded row. Scoping by sibling avoids matching unrelated expanded rows.
   return getCommandRow(page, commandId)
     .locator('xpath=following-sibling::tr[1]')
     .getByTestId('keybinding-expansion-content')
@@ -566,7 +564,7 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
       ).toBeInViewport()
 
       const hasHorizontalScroll = await page
-        .locator('.keybinding-panel .p-datatable-table-container')
+        .getByTestId('keybinding-table-container')
         .evaluate((el) => el.scrollWidth > el.clientWidth + 1)
       expect(hasHorizontalScroll).toBe(false)
     })
