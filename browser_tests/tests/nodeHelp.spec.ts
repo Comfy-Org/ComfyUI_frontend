@@ -167,7 +167,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
 
       // Verify loading spinner is shown
       const helpPage = await openSelectionToolboxHelp(comfyPage)
-      await expect(helpPage.locator('.p-progressspinner')).toBeVisible()
+      await expect(helpPage.getByRole('status')).toBeVisible()
 
       // Wait for content to load
       await expect(helpPage).toContainText('Test Help Content')
