@@ -141,7 +141,12 @@ function onLogoMenuClick(event: MouseEvent) {
     button_id: 'sidebar_comfy_menu_opened',
     element_group: 'sidebar'
   })
-  if (document.querySelector('.comfy-command-menu')) {
+  const renderedMenu = document.querySelector('.comfy-command-menu')
+  if (
+    renderedMenu instanceof HTMLElement &&
+    renderedMenu.dataset.state === 'open' &&
+    renderedMenu.checkVisibility()
+  ) {
     menuRef.value?.hide()
   } else {
     menuRef.value?.show(event)
