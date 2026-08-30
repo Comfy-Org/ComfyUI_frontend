@@ -37,7 +37,7 @@
             v-for="(option, index) in options"
             :key="option.value"
             :value="option.value"
-            class="workflow-tab-button group/tab relative h-full min-w-[90px] flex-[0_1_auto] rounded-none border-0 border-r border-solid border-interface-stroke bg-transparent p-0 font-[inherit] leading-[normal] font-medium first:border-l hover:bg-transparent data-[state=off]:text-text-muted data-[state=off]:opacity-75 data-[state=on]:border-b data-[state=on]:border-b-primary-background data-[state=on]:bg-transparent [&:hover_.close-button]:visible [&[data-state=on]_.close-button]:visible"
+            class="workflow-tab-button group/tab relative h-full min-w-[90px] flex-[0_1_auto] rounded-none border-0 border-r border-solid border-interface-stroke bg-transparent p-0 font-[inherit] leading-[normal] font-medium first:border-l hover:bg-transparent data-[state=off]:text-text-muted data-[state=off]:opacity-75 data-[state=on]:border-b data-[state=on]:border-b-text-primary data-[state=on]:bg-transparent sm:data-[state=on]:border-b-primary-background [&:hover_.close-button]:visible [&[data-state=on]_.close-button]:visible"
           >
             <span
               class="relative inline-flex max-w-full items-center justify-center gap-2 group-data-[state=off]/tab:-top-px sm:group-data-[state=off]/tab:top-0"
