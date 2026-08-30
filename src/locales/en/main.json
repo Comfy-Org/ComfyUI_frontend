@@ -115,6 +115,7 @@
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
+    "selectAll": "Select All",
     "more": "More",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
