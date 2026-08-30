@@ -14,12 +14,15 @@ const randomStorage = new Uint32Array(31)
  * Original implementation from https://gist.github.com/jed/982883?permalink_comment_id=852670#gistcomment-852670
  *
  * Prefers the {@link crypto.randomUUID} method if available, falling back to
- * {@link crypto.getRandomValues}, then finally the legacy {@link Math.random} method.
+ * {@link crypto.getRandomValues} for insecure contexts.
  */
 export function createUuidv4(): UUID {
-  if (typeof crypto?.randomUUID === 'function') return crypto.randomUUID()
-  if (typeof crypto?.getRandomValues === 'function') {
-    const random = crypto.getRandomValues(randomStorage)
+  const webCrypto = globalThis.crypto
+  if (typeof webCrypto?.randomUUID === 'function') {
+    return webCrypto.randomUUID()
+  }
+  if (typeof webCrypto?.getRandomValues === 'function') {
+    const random = webCrypto.getRandomValues(randomStorage)
     let i = 0
     return '10000000-1000-4000-8000-100000000000'.replaceAll(/[018]/g, (a) =>
       (
@@ -28,7 +31,5 @@ export function createUuidv4(): UUID {
       ).toString(16)
     )
   }
-  return '10000000-1000-4000-8000-100000000000'.replaceAll(/[018]/g, (a) =>
-    (Number(a) ^ ((Math.random() * 16) >> (Number(a) * 0.25))).toString(16)
-  )
+  throw new Error('Web Crypto is required to generate a UUID')
 }
