@@ -218,7 +218,6 @@
   --text-secondary: var(--color-smoke-800);
   --text-primary: var(--color-charcoal-700);
   --input-surface: rgb(0 0 0 / 0.15);
-  --workflow-tab-active-indicator: #60a5fa;
 
   /* Semantic tokens - light mode */
   --muted-foreground: var(--color-charcoal-200);
@@ -530,7 +529,6 @@
   --color-text-secondary: var(--text-secondary);
   --color-text-primary: var(--text-primary);
   --color-input-surface: var(--input-surface);
-  --color-workflow-tab-active-indicator: var(--workflow-tab-active-indicator);
 
   /* Component/Node design tokens */
   --color-component-node-background: var(--component-node-background);
