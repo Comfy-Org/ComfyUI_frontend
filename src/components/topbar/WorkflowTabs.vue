@@ -22,7 +22,7 @@
         @wheel="handleWheel"
       >
         <ToggleGroup
-          :class="cn('workflow-tabs bg-transparent', props.class)"
+          :class="cn('workflow-tabs h-full gap-0 bg-transparent', props.class)"
           :model-value="selectedWorkflow?.value"
           type="single"
           @update:model-value="onWorkflowChange"
@@ -31,7 +31,7 @@
             v-for="(option, index) in options"
             :key="option.value"
             :value="option.value"
-            class="h-full flex-none p-0"
+            class="workflow-tab-button h-full flex-none rounded-none p-0"
           >
             <WorkflowTab
               :workflow-option="option"
@@ -279,7 +279,7 @@ const ensureActiveTabVisible = async (
   if (!containerElement) return
 
   const activeTabElement = containerElement.querySelector(
-    '.p-togglebutton-checked'
+    '.workflow-tab-button[data-state="on"]'
   )
   if (!activeTabElement) return
 
@@ -359,7 +359,7 @@ onUpdated(() => {
   background-color: var(--comfy-menu-bg);
 }
 
-:deep(.p-togglebutton) {
+:deep(.workflow-tab-button) {
   position: relative;
   flex-shrink: 1;
   border: 0;
@@ -381,51 +381,39 @@ onUpdated(() => {
   opacity: 0.25;
 }
 
-:deep(.p-togglebutton > .p-togglebutton-content) {
-  max-width: 100%;
-}
-
 :deep(.workflow-tab) {
   max-width: 100%;
 }
 
-:deep(.p-togglebutton::before) {
-  display: none;
-}
-
-:deep(.p-togglebutton:first-child) {
+:deep(.workflow-tab-button:first-child) {
   border-left-style: solid;
   border-left-width: 1px;
   border-left-color: var(--border-color);
 }
 
-:deep(.p-togglebutton:not(:first-child)) {
+:deep(.workflow-tab-button:not(:first-child)) {
   border-left-width: 0;
 }
 
-:deep(.p-togglebutton.p-togglebutton-checked) {
+:deep(.workflow-tab-button[data-state='on']) {
   height: 100%;
   border-bottom-style: solid;
   border-bottom-width: 1px;
   border-bottom-color: var(--p-button-text-primary-color);
+  background-color: transparent;
 }
 
-:deep(.p-togglebutton:not(.p-togglebutton-checked)) {
+:deep(.workflow-tab-button[data-state='off']) {
   opacity: 0.75;
 }
 
-:deep(.p-togglebutton-checked) .close-button,
-:deep(.p-togglebutton:hover) .close-button {
+:deep(.workflow-tab-button[data-state='on']) .close-button,
+:deep(.workflow-tab-button:hover) .close-button {
   visibility: visible;
 }
 
 :deep(.workflow-tabs) {
   display: flex;
-}
-
-:deep(.p-selectbutton) {
-  height: 100%;
-  border-radius: 0;
 }
 
 .workflow-tabs-container-desktop {

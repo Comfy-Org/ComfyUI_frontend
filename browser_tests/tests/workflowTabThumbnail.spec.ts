@@ -14,7 +14,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
 
   async function getTab(comfyPage: ComfyPage, index: number) {
     const tab = comfyPage.page
-      .locator(`.workflow-tabs .p-togglebutton`)
+      .locator('.workflow-tabs .workflow-tab-button')
       .nth(index)
     return tab
   }
