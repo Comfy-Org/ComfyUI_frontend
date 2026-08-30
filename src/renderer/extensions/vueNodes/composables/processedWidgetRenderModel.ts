@@ -459,7 +459,7 @@ export function computeProcessedWidgets({
   forceDisabled = false,
   isGraphReady,
   rootGraph,
-  ui,
+  ui
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData) return []
 
@@ -512,7 +512,7 @@ export function computeProcessedWidgets({
     missingModelStore,
     missingMediaStore,
     nodeDefStore,
-    ui,
+    ui
   }
 
   return Array.from(new Set(ids))
