@@ -1,10 +1,12 @@
 import { render } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, onBeforeUnmount } from 'vue'
 import type { Ref } from 'vue'
 
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+
+import type { TurnId } from '../../schemas/agentApiSchema'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -87,11 +89,29 @@ function seedUserScopedState() {
   const drafts = useAgentDraftStore()
   conversation.setThreadId('th-1')
   composer.draft = 'half-typed prompt'
-  composer.attachments = [{ id: 'a1', name: 'cat.png', ref: 'cat.png' }]
+  composer.attachments = [
+    {
+      id: 'a1',
+      name: 'cat.png',
+      ref: 'cat.png',
+      previewUrl: 'blob:cat-preview'
+    }
+  ]
   localStorage.setItem(THREAD_STORAGE_KEY, 'th-1')
   bindings.bind('wf-1', 'workflows/a.json')
   drafts.bind('wf-1')
   return { conversation, composer, bindings, drafts }
+}
+
+const disposers: Array<() => void> = []
+
+// One disposal path for the whole file: an inline dispose() that never runs
+// because its test failed earlier leaks a live watcher into the next test,
+// which then reports a second red for one defect.
+function startLifetimes(): () => void {
+  const dispose = registerAgentLifetimes()
+  disposers.push(dispose)
+  return dispose
 }
 
 beforeEach(() => {
@@ -100,24 +120,36 @@ beforeEach(() => {
   hostWorkflow.store.activeWorkflow = null
   hostWorkflow.store.openWorkflows = []
   setUser(null)
+  global.URL.revokeObjectURL = vi.fn()
+})
+
+afterEach(() => {
+  while (disposers.length > 0) disposers.pop()?.()
 })
 
 describe('registerAgentLifetimes (app scope)', () => {
   it('clears the unseen dot when its tab becomes active, with no panel mounted', async () => {
     const activity = useWorkflowTabActivityStore()
     activity.markModified('workflows/a.json')
-    const dispose = registerAgentLifetimes()
+    startLifetimes()
 
     hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
     await nextTick()
 
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(false)
-    dispose()
+
+    activity.markModified('workflows/b.json')
+    const markSeen = vi.spyOn(activity, 'markSeen')
+    hostWorkflow.store.activeWorkflow = null
+    await nextTick()
+
+    expect(markSeen).not.toHaveBeenCalled()
+    expect(activity.unseenModifiedPaths.has('workflows/b.json')).toBe(true)
   })
 
   it('prunes activity state when a tab closes, with no panel mounted', async () => {
     const activity = useWorkflowTabActivityStore()
-    const dispose = registerAgentLifetimes()
+    startLifetimes()
     hostWorkflow.store.openWorkflows = [
       { path: 'workflows/a.json' },
       { path: 'workflows/b.json' }
@@ -131,28 +163,34 @@ describe('registerAgentLifetimes (app scope)', () => {
 
     expect(activity.editingTabPath).toBeNull()
     expect(activity.unseenModifiedPaths.has('workflows/b.json')).toBe(false)
-    dispose()
   })
 
   it('stops every app-scope watcher once its disposer runs', async () => {
     const activity = useWorkflowTabActivityStore()
-    const dispose = registerAgentLifetimes()
+    const dispose = startLifetimes()
     setUser('user-a')
+    hostWorkflow.store.openWorkflows = [
+      { path: 'workflows/a.json' },
+      { path: 'workflows/b.json' }
+    ]
     await nextTick()
     activity.markModified('workflows/a.json')
+    activity.setEditing('workflows/b.json')
     localStorage.setItem(THREAD_STORAGE_KEY, 'th-1')
 
     dispose()
     hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
+    hostWorkflow.store.openWorkflows = [{ path: 'workflows/a.json' }]
     setUser('user-b')
     await nextTick()
 
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(true)
     expect(localStorage.getItem(THREAD_STORAGE_KEY)).toBe('th-1')
+    expect(activity.editingTabPath).toBe('workflows/b.json')
   })
 
   it('purges user-scoped agent state when the user id changes, with no panel mounted', async () => {
-    const dispose = registerAgentLifetimes()
+    startLifetimes()
     localStorage.setItem(THREAD_STORAGE_KEY, 'th-0')
     setUser('user-a')
     await nextTick()
@@ -169,11 +207,10 @@ describe('registerAgentLifetimes (app scope)', () => {
     expect(localStorage.getItem(THREAD_STORAGE_KEY)).toBeNull()
     expect(bindings.tabPathFor('wf-1')).toBeUndefined()
     expect(drafts.workflowId).toBeNull()
-    dispose()
   })
 
   it('changes nothing when the same user id re-emits (token refresh guard)', async () => {
-    const dispose = registerAgentLifetimes()
+    startLifetimes()
     setUser('user-a')
     await nextTick()
     const { conversation, composer, bindings, drafts } = seedUserScopedState()
@@ -186,11 +223,57 @@ describe('registerAgentLifetimes (app scope)', () => {
     expect(localStorage.getItem(THREAD_STORAGE_KEY)).toBe('th-1')
     expect(bindings.tabPathFor('wf-1')).toBe('workflows/a.json')
     expect(drafts.workflowId).toBe('wf-1')
-    dispose()
+  })
+
+  it('settles the outgoing turns before reset on a user change', async () => {
+    startLifetimes()
+    setUser('user-a')
+    await nextTick()
+    const conversation = useAgentConversationStore()
+    const abortActiveTurn = vi.spyOn(conversation, 'abortActiveTurn')
+    const dropBackgroundTurns = vi.spyOn(conversation, 'dropBackgroundTurns')
+
+    setUser('user-b')
+    await nextTick()
+
+    expect(abortActiveTurn).toHaveBeenCalledTimes(1)
+    expect(dropBackgroundTurns).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves the outgoing background turn unreachable after a switch', async () => {
+    startLifetimes()
+    setUser('user-a')
+    await nextTick()
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    conversation.startBackgroundTurn(
+      'th-1',
+      'turn-1' as TurnId,
+      'user A prompt'
+    )
+
+    setUser('user-b')
+    await nextTick()
+    conversation.setThreadId('th-1')
+    conversation.resumeBackgroundTurn()
+
+    expect(conversation.activeTurnId).toBeNull()
+  })
+
+  it('revokes blob previews before clearing the composer', async () => {
+    startLifetimes()
+    setUser('user-a')
+    await nextTick()
+    seedUserScopedState()
+
+    setUser('user-b')
+    await nextTick()
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:cat-preview')
   })
 
   it('purges on logout through the same switch path', async () => {
-    const dispose = registerAgentLifetimes()
+    startLifetimes()
     setUser('user-a')
     await nextTick()
     const { conversation, drafts } = seedUserScopedState()
@@ -201,7 +284,6 @@ describe('registerAgentLifetimes (app scope)', () => {
     expect(conversation.threadId).toBeNull()
     expect(localStorage.getItem(THREAD_STORAGE_KEY)).toBeNull()
     expect(drafts.workflowId).toBeNull()
-    dispose()
   })
 })
 
@@ -210,6 +292,17 @@ describe('useAgentLifetime (panel scope)', () => {
     const { session } = fakeSession()
 
     mountPanel(session)
+
+    expect(session.start).toHaveBeenCalledTimes(1)
+    expect(session.stop).not.toHaveBeenCalled()
+  })
+
+  it('does not restart the session when the user resolves after mount', async () => {
+    const { session } = fakeSession()
+
+    mountPanel(session)
+    setUser('user-a')
+    await nextTick()
 
     expect(session.start).toHaveBeenCalledTimes(1)
     expect(session.stop).not.toHaveBeenCalled()
@@ -269,7 +362,7 @@ describe('useAgentLifetime (panel scope)', () => {
   })
 
   it('purges, stops, then starts in order on a user change while mounted', async () => {
-    const dispose = registerAgentLifetimes()
+    startLifetimes()
     setUser('user-a')
     await nextTick()
     const order: string[] = []
@@ -288,11 +381,10 @@ describe('useAgentLifetime (panel scope)', () => {
 
     expect(order).toEqual(['purge', 'stop', 'start'])
     expect(docWorkflowId()).toBeNull()
-    dispose()
   })
 
   it('does not restart the session or touch the doc binding on a tab switch', async () => {
-    const dispose = registerAgentLifetimes()
+    startLifetimes()
     const { session } = fakeSession()
     const drafts = useAgentDraftStore()
     hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
@@ -305,11 +397,10 @@ describe('useAgentLifetime (panel scope)', () => {
     expect(session.start).toHaveBeenCalledTimes(1)
     expect(session.stop).not.toHaveBeenCalled()
     expect(docWorkflowId()).toBe('wf-1')
-    dispose()
   })
 
   it('leaves the binding untouched when the tab bound to the live doc closes (pins the recorded no-op pending CHRISTIAN QUESTION Q2)', async () => {
-    const dispose = registerAgentLifetimes()
+    startLifetimes()
     const { session } = fakeSession()
     const drafts = useAgentDraftStore()
     const bindings = useAgentWorkflowTabBindingStore()
@@ -327,7 +418,6 @@ describe('useAgentLifetime (panel scope)', () => {
 
     expect(bindings.tabPathFor('wf-1')).toBe('workflows/b.json')
     expect(docWorkflowId()).toBe('wf-1')
-    dispose()
   })
 
   it('leaks no session control after unmount', async () => {
@@ -354,13 +444,12 @@ describe('useAgentLifetime (panel scope)', () => {
     setUser('user-a')
     const addEventListener = vi.spyOn(window, 'addEventListener')
 
-    const dispose = registerAgentLifetimes()
+    startLifetimes()
     const { session } = fakeSession()
     const { unmount } = mountPanel(session)
     setUser('user-b')
     await nextTick()
     unmount()
-    dispose()
 
     expect(addEventListener).not.toHaveBeenCalled()
   })

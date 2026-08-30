@@ -21,9 +21,21 @@ export function registerAgentPanelExtension(): void {
 }
 
 async function registerLifetimes(): Promise<void> {
-  const { registerAgentLifetimes } =
-    await import('@/workbench/extensions/agent/composables/agent/useAgentLifetime')
-  registerAgentLifetimes()
+  // This slot now carries the cross-account purge, so a silent failure here
+  // is a fully working panel with no purge and no signal at all.
+  try {
+    const { registerAgentLifetimes } =
+      await import('@/workbench/extensions/agent/composables/agent/useAgentLifetime')
+    registerAgentLifetimes()
+  } catch (error) {
+    console.error('[Comfy.AgentPanel] agent lifetimes failed to load', error)
+    try {
+      const { reportError } = await import('@/platform/telemetry/reportError')
+      reportError(error, { errorType: 'agent_lifetime_load_failure' })
+    } catch {
+      // Telemetry chunk unavailable; the console line above already records it.
+    }
+  }
 }
 
 async function setupFlagGate(): Promise<void> {

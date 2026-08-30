@@ -12,6 +12,10 @@ import type {
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
+import {
+  THREAD_STORAGE_KEY,
+  forgetAgentSessionMemory
+} from './agentSessionMemory'
 
 export interface SessionNotice {
   level: 'error'
@@ -57,16 +61,7 @@ export interface AgentSessionDeps {
   }
 }
 
-const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
-
-export function forgetAgentSessionMemory(): void {
-  try {
-    localStorage.removeItem(THREAD_STORAGE_KEY)
-  } catch (error) {
-    console.warn('[agent] failed to remove the thread id', error)
-  }
-}
 
 let sessionGeneration = 0
 

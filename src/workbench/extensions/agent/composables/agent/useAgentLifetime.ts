@@ -8,7 +8,7 @@ import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
-import { forgetAgentSessionMemory } from './useAgentSession'
+import { forgetAgentSessionMemory } from './agentSessionMemory'
 
 /**
  * Structural on purpose: the adapter never imports useAgentSession's return
@@ -27,9 +27,27 @@ export interface AgentLifetime {
   docWorkflowId: Readonly<Ref<string | null>>
 }
 
+/**
+ * Deliberately incomplete, and precisely so. The panel-OPEN case is closed
+ * here: draftStore.reset() drives the follower's real-detach
+ * (clearPersistedDocId). The panel-CLOSED case - a live CRDT document left
+ * bound with no panel mounted to detach it - remains CHRISTIAN QUESTION Q1
+ * and is undecided at this layer.
+ */
 function purgeUserScopedAgentState(): void {
-  useAgentConversationStore().reset()
+  const conversation = useAgentConversationStore()
+  // Order is load-bearing: settle the outgoing user's in-flight turn and drop
+  // its background turns BEFORE reset(), because reset() only clears the
+  // active slot. Dropping first also empties the retained set, so reset's
+  // dropAttachmentPreviews revokes every preview it still owns.
+  conversation.abortActiveTurn()
+  conversation.dropBackgroundTurns()
+  conversation.reset()
   const composer = useAgentComposerStore()
+  for (const attachment of composer.attachments) {
+    if (attachment.previewUrl?.startsWith('blob:'))
+      URL.revokeObjectURL(attachment.previewUrl)
+  }
   composer.draft = ''
   composer.attachments = []
   forgetAgentSessionMemory()
@@ -93,8 +111,11 @@ export function useAgentLifetime(deps: AgentLifetimeDeps): AgentLifetime {
     tabActivity.setEditing(null)
     tabActivity.setCreating(false)
   })
-  // Sourcing the doc ref here forces useAgentLifetime() to be called before
-  // useAgentCrdtFollower(docWorkflowId), so session.stop() registers, and
-  // runs, before the follower's own teardown hook.
+  // The follower must receive THIS ref rather than computing its own from
+  // draftStore, because consuming it forces useAgentLifetime() to run before
+  // useAgentCrdtFollower(docWorkflowId). That call order IS the teardown
+  // contract: onBeforeUnmount hooks fire in registration order, so
+  // session.stop() registers first and therefore runs before the follower
+  // tears its own subscription down.
   return { docWorkflowId: computed(() => draftStore.workflowId) }
 }
