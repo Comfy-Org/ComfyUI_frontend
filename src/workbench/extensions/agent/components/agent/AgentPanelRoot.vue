@@ -6,7 +6,7 @@
     <div
       class="flex items-center justify-between border-b border-interface-stroke py-2 pr-2 pl-3"
     >
-      <h2 id="agent-panel-title" class="text-sm font-medium">
+      <h2 id="agent-panel-title" class="text-xs font-medium">
         {{ t('agent.title') }}
       </h2>
       <Button
