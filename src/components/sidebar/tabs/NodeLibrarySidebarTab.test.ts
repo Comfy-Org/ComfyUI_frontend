@@ -125,7 +125,7 @@ vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('primevue/popover'), // eslint-disable-line primevue-removal/no-imports
+  import('@/components/ui/popover/PopoverOverlay.vue'),
   () => ({
     default: {
       name: 'Popover',

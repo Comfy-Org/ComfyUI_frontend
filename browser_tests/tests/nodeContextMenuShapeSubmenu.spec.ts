@@ -16,7 +16,7 @@ test.describe(
 
     async function expectShapePopoverVisible(comfyPage: ComfyPage) {
       const popover = comfyPage.page
-        .locator('.p-popover')
+        .getByRole('menu')
         .filter({ hasText: 'Default' })
       await expect(popover).toBeVisible()
       await expect(popover).toContainText('Box')

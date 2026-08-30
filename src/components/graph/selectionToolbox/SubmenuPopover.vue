@@ -1,25 +1,11 @@
 <template>
   <Popover
     ref="popoverRef"
-    :auto-z-index="true"
-    :base-z-index="1100"
-    :dismissable="true"
-    :close-on-escape="true"
-    unstyled
-    :pt="{
-      root: {
-        class: 'p-popover absolute z-60'
-      },
-      content: {
-        class: [
-          'text-base-foreground rounded-lg',
-          'shadow-lg border border-base-background',
-          'bg-interface-panel-surface'
-        ]
-      }
-    }"
+    align="start"
+    content-class="border-base-background"
   >
     <div
+      role="menu"
       :class="
         isColorSubmenu
           ? 'flex flex-col gap-1 p-2'
@@ -29,6 +15,7 @@
       <div
         v-for="subOption in option.submenu"
         :key="subOption.label"
+        role="menuitem"
         :class="
           cn(
             'cursor-pointer rounded-sm hover:bg-secondary-background-hover',
@@ -63,7 +50,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import Popover from 'primevue/popover'
+import Popover from '@/components/ui/popover/PopoverOverlay.vue'
 import { computed, ref } from 'vue'
 
 import type {

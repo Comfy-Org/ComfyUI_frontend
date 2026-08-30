@@ -40,11 +40,9 @@ test.describe(
       )[0]
 
       await openMoreOptions(comfyPage)
-      // Shape now opens via body-appended popover (FE-570); a hover no
-      // longer reveals the submenu — match the Color flow and click.
       await comfyPage.page.getByText('Shape', { exact: true }).click()
       const shapePopover = comfyPage.page
-        .locator('.p-popover')
+        .getByRole('menu')
         .filter({ hasText: 'Default' })
       await expect(shapePopover.getByText('Box', { exact: true })).toBeVisible()
       await shapePopover.getByText('Box', { exact: true }).click()
@@ -97,7 +95,6 @@ test.describe(
       const renameItem = comfyPage.page.getByText('Rename', { exact: true })
       await expect(renameItem).toBeVisible()
 
-      // Wait for multiple frames to allow PrimeVue's outside click handler to initialize
       for (let i = 0; i < 30; i++) {
         await comfyPage.nextFrame()
       }

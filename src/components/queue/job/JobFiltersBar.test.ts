@@ -5,8 +5,7 @@ import { createI18n } from 'vue-i18n'
 import { defineComponent } from 'vue'
 
 vi.mock<unknown>(
-  import('primevue/popover'), // eslint-disable-line primevue-removal/no-imports
-
+  import('@/components/ui/popover/PopoverOverlay.vue'),
   () => {
     const PopoverStub = defineComponent({
       name: 'Popover',
