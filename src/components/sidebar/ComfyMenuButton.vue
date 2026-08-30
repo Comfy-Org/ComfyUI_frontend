@@ -52,6 +52,7 @@
       >
         <i
           v-if="hasActiveStateSiblings(item)"
+          data-testid="menu-item-indicator"
           class="icon-[lucide--check] size-4"
           :class="{ invisible: !item.comfyCommand?.active?.() }"
         />
