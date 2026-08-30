@@ -3,6 +3,18 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
 
+function isTrustedGcsUrl(location: string | undefined): location is string {
+  if (!location) return false
+  try {
+    const url = new URL(location)
+    return (
+      url.protocol === 'https:' && url.hostname === 'storage.googleapis.com'
+    )
+  } catch {
+    return false
+  }
+}
+
 /**
  * Dev-only (cloud distribution): the ComfyUI proxy answers media requests
  * with a 302 to GCS; the browser cannot follow it cross-origin, so the dev
@@ -16,7 +28,7 @@ export function handleGcsRedirect(
   const location = proxyRes.headers.location
   const isGcsRedirect =
     proxyRes.statusCode === 302 &&
-    location?.includes('storage.googleapis.com') &&
+    isTrustedGcsUrl(location) &&
     proxyRes.headers.via?.includes('google')
 
   // Not a GCS redirect - pass through normally
@@ -36,7 +48,10 @@ export function handleGcsRedirect(
   // are forwarded and the partial-content response relayed so ranged reads
   // behave like production, where the browser talks to GCS directly.
   const rangeHeader = req.headers.range
-  fetch(location, rangeHeader ? { headers: { range: rangeHeader } } : undefined)
+  fetch(location, {
+    headers: rangeHeader ? { range: rangeHeader } : undefined,
+    redirect: 'manual'
+  })
     .then(async (gcsResponse) => {
       if (!gcsResponse.body) {
         res.statusCode = 500
