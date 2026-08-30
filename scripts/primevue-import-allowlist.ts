@@ -8,8 +8,6 @@ export const primeVueImportAllowlist = [
   'src/components/dialog/GlobalDialog.vue',
   'src/components/dialog/bodyPointerEventsRestore.test.ts',
   'src/components/dialog/content/UpdatePasswordContent.vue',
-  'src/components/dialog/content/setting/SettingItem.test.ts',
-  'src/components/dialog/content/setting/UsageLogsTable.test.ts',
   'src/components/dialog/content/signin/ApiKeyForm.test.ts',
   'src/components/dialog/content/signin/ApiKeyForm.vue',
   'src/components/dialog/content/signin/PasswordFields.vue',

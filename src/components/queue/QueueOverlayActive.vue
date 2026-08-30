@@ -43,18 +43,22 @@
               t('sideToolbar.queueProgressOverlay.running')
             }}</span>
           </span>
-          <Button
+          <Tooltip
             v-if="runningCount > 0"
-            v-tooltip.top="cancelJobTooltip"
-            variant="destructive"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
-            @click="$emit('interruptAll')"
+            :config="cancelJobTooltip"
+            side="top"
           >
-            <i
-              class="icon-[lucide--x] block size-4 leading-none text-text-primary"
-            />
-          </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
+              @click="$emit('interruptAll')"
+            >
+              <i
+                class="icon-[lucide--x] block size-4 leading-none text-text-primary"
+              />
+            </Button>
+          </Tooltip>
         </div>
 
         <div class="flex items-center gap-2">
@@ -64,18 +68,22 @@
               t('sideToolbar.queueProgressOverlay.queuedSuffix')
             }}</span>
           </span>
-          <Button
+          <Tooltip
             v-if="queuedCount > 0"
-            v-tooltip.top="clearQueueTooltip"
-            variant="destructive"
-            size="icon"
-            :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
-            @click="$emit('clearQueued')"
+            :config="clearQueueTooltip"
+            side="top"
           >
-            <i
-              class="icon-[lucide--list-x] block size-4 leading-none text-text-primary"
-            />
-          </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+              @click="$emit('clearQueued')"
+            >
+              <i
+                class="icon-[lucide--list-x] block size-4 leading-none text-text-primary"
+              />
+            </Button>
+          </Tooltip>
         </div>
       </div>
 
@@ -92,6 +100,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
