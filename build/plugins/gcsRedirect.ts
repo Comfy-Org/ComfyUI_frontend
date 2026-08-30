@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
 
 /**
@@ -66,11 +67,11 @@ export function handleGcsRedirect(
 
       // Convert Web ReadableStream to Node.js stream and pipe to client
       const readable = Readable.fromWeb(gcsResponse.body as NodeReadableStream)
-      readable.pipe(res)
+      await pipeline(readable, res)
     })
     .catch((error) => {
       console.error('Error fetching from GCS:', error)
-      res.statusCode = 500
-      res.end('Error fetching media')
+      if (!res.headersSent) res.statusCode = 500
+      if (!res.writableEnded && !res.destroyed) res.end('Error fetching media')
     })
 }
