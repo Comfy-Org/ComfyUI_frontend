@@ -99,6 +99,36 @@ test.describe('Custom node editor state', { tag: ['@cloud', '@ui'] }, () => {
     await closeStartupDialogs(page)
     await openCustomNodeEditor(page, comfyPage)
 
+    const treeHeader = await page
+      .locator('.custom-node-tree-editor')
+      .evaluate((root) => {
+        const title = root.querySelector<HTMLElement>(
+          '.monaco-tree-editor-list-title'
+        )!
+        const projectRow = root.querySelector<HTMLElement>(
+          '.monaco-tree-editor-list-title + .monaco-tree-editor-list-split'
+        )!
+        const projectName =
+          projectRow.querySelector<HTMLElement>(':scope > span')!
+        const titleBox = title.getBoundingClientRect()
+        const rowBox = projectRow.getBoundingClientRect()
+        const nameBox = projectName.getBoundingClientRect()
+        return {
+          name: projectName.textContent,
+          nameBottom: Math.round(nameBox.bottom),
+          nameTop: Math.round(nameBox.top),
+          rowBottom: Math.round(rowBox.bottom),
+          rowTop: Math.round(rowBox.top),
+          titleBottom: Math.round(titleBox.bottom),
+          whiteSpace: getComputedStyle(projectName).whiteSpace
+        }
+      })
+    expect(treeHeader.name).toBe('New Custom Node')
+    expect(treeHeader.whiteSpace).toBe('nowrap')
+    expect(treeHeader.titleBottom).toBeLessThanOrEqual(treeHeader.rowTop)
+    expect(treeHeader.nameTop).toBeGreaterThanOrEqual(treeHeader.rowTop)
+    expect(treeHeader.nameBottom).toBeLessThanOrEqual(treeHeader.rowBottom)
+
     await page.getByText('README.md', { exact: true }).first().click()
     await page
       .getByRole('button', { name: 'Close Node Agent', exact: true })

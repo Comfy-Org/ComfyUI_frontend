@@ -52,7 +52,7 @@ vi.mock('@/components/ui/button/Button.vue', () => ({
 vi.mock('./CustomNodeTreeEditor.vue', () => ({
   default: {
     name: 'CustomNodeTreeEditor',
-    props: ['sessionId', 'stateKey'],
+    props: ['sessionId', 'stateKey', 'packName'],
     methods: {
       replaceFiles: mocks.replaceFiles,
       saveAll: mocks.saveAll

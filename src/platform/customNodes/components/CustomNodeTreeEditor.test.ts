@@ -97,7 +97,7 @@ vi.mock('monaco-tree-editor', async () => {
           type="button"
           @click="$emit(
             'saveFile',
-            '/' + monacoId + '/v2/nodes/checkerboard.py',
+            Object.keys(files)[0] + '/v2/nodes/checkerboard.py',
             '# changed\\n',
             () => undefined,
             () => undefined
@@ -242,14 +242,18 @@ describe('CustomNodeTreeEditor', () => {
 
   it('loads the tree, follows the app theme, and opens checkerboard.py', async () => {
     render(CustomNodeTreeEditor, {
-      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
+      props: {
+        sessionId: 'session-1',
+        stateKey: 'editor-state-key',
+        packName: 'New Custom Node'
+      },
       global: { plugins: [i18n] }
     })
 
     const editor = await screen.findByTestId('library-editor')
     await waitFor(() => {
       expect(editor).toHaveTextContent(
-        '/custom-node-session-1/v2/nodes/checkerboard.py'
+        '/New Custom Node/v2/nodes/checkerboard.py'
       )
       expect(mocks.restoreModel).toHaveBeenCalledWith(
         '/v2/nodes/checkerboard.py'
@@ -265,7 +269,11 @@ describe('CustomNodeTreeEditor', () => {
   it('translates package paths when saving and responds to container width', async () => {
     const user = userEvent.setup()
     render(CustomNodeTreeEditor, {
-      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
+      props: {
+        sessionId: 'session-1',
+        stateKey: 'editor-state-key',
+        packName: 'New Custom Node'
+      },
       global: { plugins: [i18n] }
     })
 
@@ -296,7 +304,11 @@ describe('CustomNodeTreeEditor', () => {
   it('uses Monaco light mode when the active Comfy palette is light', async () => {
     mocks.lightTheme = true
     render(CustomNodeTreeEditor, {
-      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
+      props: {
+        sessionId: 'session-1',
+        stateKey: 'editor-state-key',
+        packName: 'New Custom Node'
+      },
       global: { plugins: [i18n] }
     })
 
@@ -315,7 +327,11 @@ describe('CustomNodeTreeEditor', () => {
     })
 
     render(CustomNodeTreeEditor, {
-      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
+      props: {
+        sessionId: 'session-1',
+        stateKey: 'editor-state-key',
+        packName: 'New Custom Node'
+      },
       global: { plugins: [i18n] }
     })
 
@@ -339,7 +355,11 @@ describe('CustomNodeTreeEditor', () => {
 
   it('persists tab navigation without storing source content', async () => {
     render(CustomNodeTreeEditor, {
-      props: { sessionId: 'session-1', stateKey: 'editor-state-key' },
+      props: {
+        sessionId: 'session-1',
+        stateKey: 'editor-state-key',
+        packName: 'New Custom Node'
+      },
       global: { plugins: [i18n] }
     })
 

@@ -95,9 +95,10 @@ import { monaco } from './customNodeMonaco'
 
 import 'monaco-tree-editor/index.css'
 
-const { sessionId, stateKey } = defineProps<{
+const { sessionId, stateKey, packName } = defineProps<{
   sessionId: string
   stateKey: string
+  packName: string
 }>()
 
 const { t } = useI18n()
@@ -105,7 +106,7 @@ const { getFiles, saveFiles } = useCustomNodeEditor()
 const colorPaletteStore = useColorPaletteStore()
 const globalSettings = useGlobalSettings()
 const monacoId = `custom-node-${sessionId}`
-const projectRoot = `/${monacoId}`
+const projectRoot = computed(() => `/${packName}`)
 const monacoEditor = useMonaco(monaco, monacoId)
 const rootElement = useTemplateRef<HTMLDivElement>('rootElement')
 const editorElement =
@@ -131,14 +132,14 @@ const editorTheme = computed(() =>
 
 const treeFiles = computed<Files>(() => {
   const result: Files = {
-    [projectRoot]: {
+    [projectRoot.value]: {
       isFile: false,
       isFolder: true,
       readonly: true
     }
   }
   for (const file of files.value) {
-    result[`${projectRoot}/${file.path}`] = {
+    result[`${projectRoot.value}/${file.path}`] = {
       content: file.content,
       isFile: true,
       isFolder: false,
@@ -154,7 +155,7 @@ function relativeEditorPath(path: string): string {
 
 function projectFilePath(path: string): string | null {
   const normalized = path.replaceAll('\\', '/')
-  const prefix = `${projectRoot}/`
+  const prefix = `${projectRoot.value}/`
   if (!normalized.startsWith(prefix)) return null
   return normalized.slice(prefix.length)
 }
@@ -447,6 +448,16 @@ defineExpose({ replaceFiles, saveAll })
 .custom-node-tree-editor :deep(label[title='Rename']),
 .custom-node-tree-editor :deep(label[title='Delete']) {
   display: none;
+}
+
+.custom-node-tree-editor
+  :deep(
+    .monaco-tree-editor-list-title + .monaco-tree-editor-list-split > span
+  ) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @container (max-width: 44rem) {

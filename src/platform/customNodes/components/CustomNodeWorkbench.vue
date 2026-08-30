@@ -28,6 +28,7 @@
           ref="treeEditorRef"
           :session-id="sessionId"
           :state-key="editorStateKey"
+          :pack-name="packName"
         />
         <CustomNodeCodeEditor
           v-if="selectedChange"
