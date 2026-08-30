@@ -28,6 +28,7 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -137,6 +138,28 @@ describe('LGraphNode', () => {
     node.configure(configureData)
     expect(Array.from(node.pos)).toEqual([50, 60])
     expect(Array.from(node.size)).toEqual([70, 80])
+  })
+
+  test('does not add a reroute when a floating chain has no link', () => {
+    const graph = new LGraph()
+    node.addOutput('output', '*')
+    graph.add(node)
+    const parentId = toRerouteId(1)
+    graph.setReroute({
+      id: parentId,
+      pos: [0, 0],
+      linkIds: [],
+      floating: { slotType: 'output' }
+    })
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      node.connectFloatingReroute([10, 10], node.outputs[0], parentId)
+    ).toBeUndefined()
+
+    expect(graph.reroutes.size).toBe(1)
+    expect(graph.floatingLinks.size).toBe(0)
+    expect(error).toHaveBeenCalledWith(expect.any(Error))
   })
 
   test('should configure inputs correctly', () => {
