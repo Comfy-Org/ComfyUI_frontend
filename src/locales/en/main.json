@@ -5141,6 +5141,11 @@
     "dragAndDropAssets": "Drag and drop assets here",
     "focusNode": "Show on canvas",
     "focusNodeLabel": "Show {node} on canvas",
+    "nodeSelection": {
+      "bannerTitle": "Add nodes from graph",
+      "bannerSubtitle": "Select one or many nodes to add as reference",
+      "exit": "Exit mode"
+    },
     "placeholder": "Describe ideas, {'@'} to reference,\nadd nodes from graph or drag in assets",
     "remove": "Remove",
     "removeNodeLabel": "Remove {node} reference",

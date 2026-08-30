@@ -11,6 +11,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
@@ -68,6 +69,7 @@ describe('Composer', () => {
     expect(hintButton).toHaveFocus()
     await userEvent.keyboard('{Enter}')
 
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
     expect(emitted().selectNodes).toHaveLength(1)
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
