@@ -51,6 +51,17 @@ const storageRates = [
     credits: '27.43/GB/mo'
   }
 ] as const
+
+const mobileGpuRows = gpuRates.map((rate) => ({
+  ...rate,
+  vramLabel: `${rate.vram} VRAM`,
+  creditsLabel: rate.credits.replace('/hr', ' credits/hr')
+}))
+
+const mobileStorageRows = storageRates.map((rate) => ({
+  ...rate,
+  creditsLabel: `${rate.credits.replace('/GB/mo', '')} credits`
+}))
 </script>
 
 <template>
@@ -70,8 +81,78 @@ const storageRates = [
       </template>
     </SectionHeader>
 
+    <div class="mx-auto mt-8 flex max-w-6xl flex-col gap-4 lg:hidden">
+      <article class="bg-transparency-white-t4 rounded-4xl px-5 py-6">
+        <p
+          class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+        >
+          {{ t('platform.pricing.gpuColumn', locale) }}
+        </p>
+        <ul class="mt-5 space-y-5">
+          <li
+            v-for="rate in mobileGpuRows"
+            :key="rate.gpu"
+            class="flex items-start justify-between gap-4"
+          >
+            <div>
+              <p class="text-sm text-primary-warm-white">{{ rate.gpu }}</p>
+              <p class="mt-0.5 text-xs text-primary-warm-gray">
+                {{ rate.vramLabel }}
+              </p>
+            </div>
+            <div class="text-right font-mono">
+              <p class="text-sm text-primary-warm-white">{{ rate.price }}</p>
+              <p class="mt-0.5 text-xs text-primary-warm-gray">
+                {{ rate.creditsLabel }}
+              </p>
+            </div>
+          </li>
+        </ul>
+        <p class="mt-6 text-xs text-primary-warm-gray">
+          {{ t('platform.pricing.billedPerSecond', locale) }}
+        </p>
+      </article>
+
+      <article class="bg-transparency-white-t4 rounded-4xl px-5 py-6">
+        <p
+          class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+        >
+          {{ t('platform.pricing.storageColumn', locale) }}
+        </p>
+        <ul class="mt-5 space-y-5">
+          <li
+            v-for="rate in mobileStorageRows"
+            :key="rate.key"
+            class="flex items-start justify-between gap-4"
+          >
+            <div>
+              <p class="text-sm text-primary-warm-white">
+                {{
+                  rate.key === 'containerDisk'
+                    ? t('platform.pricing.storage.containerDisk', locale)
+                    : t('platform.pricing.storage.networkTitle', locale)
+                }}
+              </p>
+              <p class="mt-0.5 text-xs text-primary-warm-gray">
+                {{ t(`platform.pricing.storage.sub.${rate.key}`, locale) }}
+              </p>
+            </div>
+            <div class="shrink-0 text-right font-mono">
+              <p class="text-sm text-primary-warm-white">{{ rate.price }}</p>
+              <p class="mt-0.5 text-xs text-primary-warm-gray">
+                {{ rate.creditsLabel }}
+              </p>
+            </div>
+          </li>
+        </ul>
+        <p class="mt-6 text-xs/relaxed text-primary-warm-gray">
+          {{ t('platform.pricing.storageNote', locale) }}
+        </p>
+      </article>
+    </div>
+
     <div
-      class="bg-transparency-white-t4 mx-auto mt-8 max-w-6xl overflow-hidden rounded-4xl px-4 py-6 lg:px-8"
+      class="bg-transparency-white-t4 mx-auto mt-8 hidden max-w-6xl overflow-hidden rounded-4xl px-4 py-6 lg:block lg:px-8"
     >
       <div class="grid gap-x-12 gap-y-8 lg:grid-cols-2">
         <article class="flex min-w-0 flex-col">

@@ -256,7 +256,7 @@ watch(
     :data-phase="phase"
     :data-reset-indicator-progress="resetIndicatorProgress"
     :data-reset-indicator-height="resetIndicatorHeight"
-    class="relative aspect-16/7 min-h-72 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink"
+    class="relative aspect-16/7 min-h-[207px] w-full overflow-hidden rounded-3xl bg-primary-comfy-ink lg:min-h-72"
   >
     <svg
       viewBox="0 0 760 360"

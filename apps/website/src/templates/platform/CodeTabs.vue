@@ -96,13 +96,13 @@ function cycleValue(values: string[]): string {
   >
     <TabsList
       :aria-label="label"
-      class="inline-flex max-w-full scrollbar-none overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1"
+      class="flex w-full max-w-full scrollbar-none overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:inline-flex sm:w-auto"
     >
       <TabsTrigger
         v-for="(tab, tabId) in tabs"
         :key="tabId"
         :value="tabId"
-        class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-secondary-mauve cursor-pointer rounded-xl px-5 py-2 text-xs font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-warm-white"
+        class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-secondary-mauve flex-1 cursor-pointer rounded-xl px-1 py-2 text-center text-[10px] font-bold tracking-normal whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-warm-white sm:flex-none sm:px-5 sm:text-xs sm:tracking-wider"
       >
         {{ tab.name }}
       </TabsTrigger>
@@ -115,7 +115,7 @@ function cycleValue(values: string[]): string {
       class="mt-4 block"
     >
       <pre
-        class="scrollbar-none overflow-auto rounded-3xl bg-primary-comfy-ink p-5 font-mono text-xs/relaxed text-primary-comfy-canvas lg:p-6 lg:text-sm/relaxed"
+        class="scrollbar-none overflow-auto rounded-3xl bg-primary-comfy-ink p-4 font-mono text-[10px]/relaxed whitespace-pre-wrap text-primary-comfy-canvas sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:p-6 lg:text-sm/relaxed"
         :style="{ height: codePanelHeight }"
       ><code><template
           v-for="(segment, index) in tab.segments"

@@ -25,11 +25,17 @@ const ctas = platformCtas(locale)
       :subtitle="t('platform.hero.subtitle', locale)"
       subtitle-class="mt-6 max-w-md whitespace-pre-line text-sm leading-relaxed"
       cta-wrapper-class="mt-6"
+      media-wrapper-class="hidden lg:block"
       :primary-cta="ctas.getStarted"
       :secondary-cta="ctas.docs"
     >
       <template #badge>
         <PlatformHeroBadge :locale="locale" />
+      </template>
+      <template #aboveCtas>
+        <div class="mt-8 lg:hidden">
+          <DeployTerminal :locale="locale" />
+        </div>
       </template>
       <template #media>
         <DeployTerminal :locale="locale" />

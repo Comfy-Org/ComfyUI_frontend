@@ -38,7 +38,7 @@ const lines: TerminalLine[] = [
           aria-hidden="true"
           v-text="line.kind === 'command' ? '$' : '✔'"
         />
-        <span class="whitespace-nowrap">{{ line.text }}</span>
+        <span class="lg:whitespace-nowrap">{{ line.text }}</span>
       </p>
     </div>
   </div>
