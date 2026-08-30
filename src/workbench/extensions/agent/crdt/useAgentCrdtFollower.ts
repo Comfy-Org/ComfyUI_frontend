@@ -1,12 +1,17 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
-import type { DocFrameTransport, DocUpdate } from './docFrameClient'
+import type {
+  DocFrameTransport,
+  DocOpsResult,
+  DocUpdate
+} from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
@@ -52,6 +57,17 @@ function clearPersistedDocId(): void {
   }
 }
 
+function failureView(failed: unknown): OpsResultView['failure'] | undefined {
+  if (
+    typeof failed !== 'object' ||
+    failed === null ||
+    !('op_id' in failed) ||
+    typeof failed.op_id !== 'string'
+  )
+    return undefined
+  return { op_id: failed.op_id }
+}
+
 /**
  * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
  * delivers NO doc-scoped frame for this long gets ONE active probe - a
@@ -61,12 +77,24 @@ function clearPersistedDocId(): void {
  */
 export const STALE_AFTER_MS = 30_000
 
+export interface OpNack {
+  workflowId: string
+  code: string | null
+  message: string | null
+  failed: unknown
+  applied: number
+  skipped: number
+}
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
   updatesApplied: number
   lastFrameType: string | null
+  opNacks: number
+  lastOpNack: OpNack | null
+  projectionErrors: number
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -96,6 +124,9 @@ export function useAgentCrdtFollower(
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  const opNacks = ref(0)
+  const lastOpNack = ref<OpNack | null>(null)
+  const projectionErrors = ref(0)
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
@@ -123,19 +154,19 @@ export function useAgentCrdtFollower(
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = createUuidv4()
+
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
+        const detail = event.detail as DocOpsResult
+        const failure = failureView(detail.failed)
         listener({
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed as OpsResultView['failure'] }
-            : {})
+          ...(failure && { failure })
         })
       }
       bridge.addEventListener('doc_ops_result', handler)
@@ -256,7 +287,21 @@ export function useAgentCrdtFollower(
     if (staleProbeTimer !== null) armStaleProbe()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    adapter.applyFrame(update)
+    try {
+      adapter.applyFrame(update)
+    } catch (error) {
+      projectionErrors.value += 1
+      const failure = {
+        workflowId: update.workflowId,
+        seq: update.seq,
+        message: error instanceof Error ? error.message : String(error)
+      }
+      recordDevEvent('projection_error', failure)
+      reportError(error, {
+        errorType: 'agent_crdt_projection_failure',
+        tags: { workflow_id: update.workflowId, sequence: update.seq }
+      })
+    }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -273,9 +318,34 @@ export function useAgentCrdtFollower(
   const onOpsResult: EventListener = (event) => {
     if (staleProbeTimer !== null) armStaleProbe()
     lastFrameType.value = event.type
-    if (event instanceof CustomEvent) {
-      recordDevEvent('doc_ops_result', event.detail ?? null)
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as DocOpsResult
+    recordDevEvent('doc_ops_result', detail)
+    if (detail.ok) return
+
+    const nack: OpNack = {
+      workflowId: detail.workflowId,
+      code: detail.code ?? null,
+      message: detail.message ?? null,
+      failed: detail.failed ?? null,
+      applied: detail.applied.length,
+      skipped: detail.skipped.length
     }
+    opNacks.value += 1
+    lastOpNack.value = nack
+    recordDevEvent('op_nack', nack)
+    reportError(
+      new Error(nack.message ?? nack.code ?? 'Host rejected CRDT operations'),
+      {
+        errorType: 'agent_crdt_host_operation_rejected',
+        tags: {
+          workflow_id: nack.workflowId,
+          applied_ops: nack.applied,
+          skipped_ops: nack.skipped
+        },
+        context: { failed: nack.failed }
+      }
+    )
   }
   const onDocReset: EventListener = (event) => {
     const detail =
@@ -451,7 +521,10 @@ export function useAgentCrdtFollower(
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
-    lastFrameType: lastFrameType.value
+    lastFrameType: lastFrameType.value,
+    opNacks: opNacks.value,
+    lastOpNack: lastOpNack.value,
+    projectionErrors: projectionErrors.value
   }))
 
   return {

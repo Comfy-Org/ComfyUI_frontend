@@ -15,6 +15,8 @@ import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
 
+const reportErrorMock = vi.hoisted(() => vi.fn())
+
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
     subscribe = vi.fn()
@@ -96,6 +98,10 @@ vi.mock('./ecsFollowerAdapter', () => ({
 
 vi.mock('./devPanelLog', () => ({
   recordDevEvent: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: reportErrorMock
 }))
 
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
@@ -322,6 +328,56 @@ describe('useAgentCrdtFollower', () => {
     expect(status().updatesApplied).toBe(3)
     expect(status().lastFrameType).toBe('doc_update')
     expect(adapterState.applyFrame).toHaveBeenCalledWith(update)
+    unmount()
+  })
+
+  it('surfaces a rejected human operation batch without rolling it back', () => {
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: ['op-1'],
+      skipped: ['duplicate-op'],
+      code: 'invalid_node_payload',
+      message: 'node payload failed schema check',
+      failed: { op_id: 'op-2', code: 'invalid_node_payload' }
+    })
+
+    expect(status()).toMatchObject({
+      opNacks: 1,
+      lastOpNack: {
+        workflowId: 'wf-1',
+        code: 'invalid_node_payload',
+        message: 'node payload failed schema check',
+        applied: 1,
+        skipped: 1
+      }
+    })
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_host_operation_rejected'
+      })
+    )
+    unmount()
+  })
+
+  it('reports an ECS projection failure and keeps listening for updates', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    adapterState.applyFrame.mockImplementationOnce(() => {
+      throw new Error('mutation batch failed')
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 8 })
+
+    expect(status().projectionErrors).toBe(1)
+    expect(adapterState.applyFrame).toHaveBeenCalledTimes(2)
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_crdt_projection_failure' })
+    )
     unmount()
   })
 
