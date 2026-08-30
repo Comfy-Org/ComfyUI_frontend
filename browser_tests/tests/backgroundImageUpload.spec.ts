@@ -202,7 +202,7 @@ test.describe('Background Image Upload', () => {
     })
     await uploadButton.hover()
 
-    const uploadTooltip = comfyPage.page.locator('.p-tooltip:visible')
+    const uploadTooltip = comfyPage.page.getByRole('tooltip')
     await expect(uploadTooltip).toBeVisible()
 
     // Move away to hide tooltip
@@ -219,7 +219,7 @@ test.describe('Background Image Upload', () => {
     })
     await clearButton.hover()
 
-    const clearTooltip = comfyPage.page.locator('.p-tooltip:visible')
+    const clearTooltip = comfyPage.page.getByRole('tooltip')
     await expect(clearTooltip).toBeVisible()
   })
 
