@@ -7431,12 +7431,12 @@ const translations = {
       '轻松打包你现有的 ComfyUI 环境——或单个工作流——并部署到 Serverless API。'
   },
   'platform.serverlessDeploy.tabInstall': {
-    en: 'Start with your installation',
-    'zh-CN': '从你的安装开始'
+    en: 'Start with installation',
+    'zh-CN': '从安装开始'
   },
   'platform.serverlessDeploy.tabWorkflow': {
-    en: 'Start with your workflow',
-    'zh-CN': '从你的工作流开始'
+    en: 'Start with workflow',
+    'zh-CN': '从工作流开始'
   },
   'platform.serverlessScale.heading': {
     en: 'Engineered for scale',

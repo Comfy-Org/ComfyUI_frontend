@@ -22,12 +22,18 @@ const ctas = platformCtas(locale)
     :subtitle="t('platform.products.serverless.description', locale)"
     :primary-cta="ctas.getStarted"
     :secondary-cta="ctas.docs"
+    media-wrapper-class="hidden lg:block"
   >
     <template #badge>
       <PlatformHeroBadge
         :locale="locale"
         :label="t('platform.products.serverless.title', locale)"
       />
+    </template>
+    <template #aboveCtas>
+      <div class="mt-8 h-[186px] overflow-hidden rounded-3xl lg:hidden">
+        <ServerlessIsometricStudy :locale />
+      </div>
     </template>
     <template #media>
       <ServerlessIsometricStudy :locale />
