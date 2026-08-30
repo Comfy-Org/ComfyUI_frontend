@@ -2,6 +2,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
 export type CustomNodeEditorMode = 'create' | 'edit'
+export type CustomNodeEditorAction = 'submit' | 'validate'
 export type CustomNodeEditorStatus =
   | 'creating'
   | 'ready'
@@ -138,6 +139,21 @@ export function useCustomNodeEditor() {
       )
     )
 
+  const runSessionAction = async (
+    id: string,
+    action: CustomNodeEditorAction
+  ): Promise<CustomNodeEditorSession> =>
+    readSession(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}/actions`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action })
+        }
+      )
+    )
+
   const refreshNodeDefinitions = async (id: string): Promise<void> => {
     const response = await api.fetchApi(
       `/customnodes/editor/sessions/${encodeURIComponent(id)}/refresh`,
@@ -151,6 +167,7 @@ export function useCustomNodeEditor() {
     createSession,
     getSession,
     renameSession,
+    runSessionAction,
     abandonSession,
     refreshNodeDefinitions
   }

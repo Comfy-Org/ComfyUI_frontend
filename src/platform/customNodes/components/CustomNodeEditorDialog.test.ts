@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   pause: vi.fn(),
   refreshNodeDefinitions: vi.fn(),
   renameSession: vi.fn(),
+  runSessionAction: vi.fn(),
   reportError: vi.fn(),
   toast: vi.fn()
 }))
@@ -58,6 +59,7 @@ vi.mock('../composables/useCustomNodeEditor', () => ({
     abandonSession: mocks.abandonSession,
     getSession: mocks.getSession,
     renameSession: mocks.renameSession,
+    runSessionAction: mocks.runSessionAction,
     refreshNodeDefinitions: mocks.refreshNodeDefinitions
   })
 }))
@@ -87,8 +89,13 @@ const i18n = createI18n({
             'This editor is no longer running. Open Create or Edit again to start a fresh session.',
           status: { ready: 'Ready' },
           submit: 'Submit Node',
+          submitted: 'Custom node submitted',
+          submittedDetail: 'The new revision is stored and ready to use.',
           title: 'Editing {name}',
-          validate: 'Validate Node'
+          validate: 'Validate Node',
+          validated: 'Custom node is valid',
+          validatedDetail: 'The custom node passed validation.',
+          validating: 'Validating node…'
         }
       }
     }
@@ -112,6 +119,7 @@ describe('CustomNodeEditorDialog', () => {
     mocks.pause.mockReset()
     mocks.refreshNodeDefinitions.mockReset()
     mocks.renameSession.mockReset()
+    mocks.runSessionAction.mockReset()
     mocks.reportError.mockReset()
     mocks.toast.mockReset()
   })
@@ -212,6 +220,35 @@ describe('CustomNodeEditorDialog', () => {
     expect(screen.getByRole('button', { name: 'Validate Node' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Submit Node' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Abandon' })).toBeVisible()
+  })
+
+  it('submits through the editor action API and closes after refresh', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    const onSubmitted = vi.fn()
+    mocks.runSessionAction.mockResolvedValueOnce({
+      ...readySession,
+      status: 'submitted',
+      revisionId: 'echo-pack-x87654321'
+    })
+    mocks.refreshNodeDefinitions.mockResolvedValueOnce(undefined)
+
+    render(CustomNodeEditorDialog, {
+      props: { initialSession: readySession, onClose, onSubmitted },
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Submit Node' }))
+
+    await waitFor(() =>
+      expect(mocks.runSessionAction).toHaveBeenCalledWith(
+        'expired-session',
+        'submit'
+      )
+    )
+    expect(mocks.refreshNodeDefinitions).toHaveBeenCalledWith('expired-session')
+    expect(onSubmitted).toHaveBeenCalledOnce()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('keeps an invalid name editable without calling the server', async () => {

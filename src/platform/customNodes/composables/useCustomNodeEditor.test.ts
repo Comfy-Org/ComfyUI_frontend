@@ -99,6 +99,30 @@ describe('useCustomNodeEditor', () => {
     expect(renamed.name).toBe('Gradient Mask')
   })
 
+  it('runs editor actions through the authenticated session route', async () => {
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse({
+        ...sessionDto,
+        status: 'submitted' as const,
+        revision_id: 'echo-pack-x87654321'
+      })
+    )
+
+    const { runSessionAction } = useCustomNodeEditor()
+    const submitted = await runSessionAction('session-1', 'submit')
+
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/customnodes/editor/sessions/session-1/actions',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'submit' })
+      }
+    )
+    expect(submitted.status).toBe('submitted')
+    expect(submitted.revisionId).toBe('echo-pack-x87654321')
+  })
+
   it('refreshes the deployment before reloading browser node definitions', async () => {
     fetchApi.mockResolvedValueOnce(jsonResponse({ status: 'refreshed' }))
 

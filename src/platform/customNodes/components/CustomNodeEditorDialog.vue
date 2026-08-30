@@ -72,9 +72,10 @@
         <Button
           variant="secondary"
           size="sm"
-          :disabled="!canRename"
+          :loading="activeAction === 'validate'"
+          :disabled="!canRunEditorAction"
           @mousedown.prevent
-          @click="invokeEditorCommand(editorStatusCommandIds.validate)"
+          @click="runEditorAction('validate')"
         >
           <i class="icon-[lucide--check-check] size-4" aria-hidden="true" />
           {{ $t('customNodePacks.editor.validate') }}
@@ -82,10 +83,12 @@
         <Button
           variant="primary"
           size="sm"
-          :loading="session.status === 'submitting'"
-          :disabled="!canRename"
+          :loading="
+            activeAction === 'submit' || session.status === 'submitting'
+          "
+          :disabled="!canRunEditorAction"
           @mousedown.prevent
-          @click="invokeEditorCommand(editorStatusCommandIds.submit)"
+          @click="runEditorAction('submit')"
         >
           <i class="icon-[lucide--cloud-upload] size-4" aria-hidden="true" />
           {{ $t('customNodePacks.editor.submit') }}
@@ -94,7 +97,9 @@
           variant="secondary"
           size="sm"
           :loading="isAbandoning"
-          :disabled="session.status === 'submitting' || isNameSaving"
+          :disabled="
+            session.status === 'submitting' || isNameSaving || !!activeAction
+          "
           @mousedown.prevent
           @click="onAbandon"
         >
@@ -115,7 +120,6 @@
     <main class="relative min-h-0 min-w-0 flex-1 overflow-hidden">
       <iframe
         v-if="isEditorVisible && session.editorUrl"
-        ref="editorFrameRef"
         class="block size-full min-h-0 min-w-0 border-0 bg-base-background"
         :src="session.editorUrl"
         :title="$t('customNodePacks.editor.frameTitle')"
@@ -177,14 +181,10 @@ import {
   useCustomNodeEditor
 } from '../composables/useCustomNodeEditor'
 import type {
+  CustomNodeEditorAction,
   CustomNodeEditorSession,
   CustomNodeEditorStatus
 } from '../composables/useCustomNodeEditor'
-import {
-  editorStatusCommandIds,
-  invokeEditorStatusCommand
-} from '../utils/editorStatusCommands'
-import type { EditorStatusCommandId } from '../utils/editorStatusCommands'
 
 const props = defineProps<{
   initialSession: CustomNodeEditorSession
@@ -195,16 +195,21 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useToastStore()
 const dialogService = useDialogService()
-const { getSession, renameSession, abandonSession, refreshNodeDefinitions } =
-  useCustomNodeEditor()
+const {
+  getSession,
+  renameSession,
+  runSessionAction,
+  abandonSession,
+  refreshNodeDefinitions
+} = useCustomNodeEditor()
 
 const session = ref<CustomNodeEditorSession>({ ...props.initialSession })
 const isPolling = ref(false)
 const isAbandoning = ref(false)
+const activeAction = ref<CustomNodeEditorAction | null>(null)
 const pollError = ref<string | null>(null)
 const terminalHandled = ref(false)
 const nameInputRef = useTemplateRef<InstanceType<typeof Input>>('nameInputRef')
-const editorFrameRef = useTemplateRef<HTMLIFrameElement>('editorFrameRef')
 let pendingRename: Promise<void> | null = null
 
 type RenameState =
@@ -242,12 +247,24 @@ const canRename = computed(
   () =>
     session.value.status === 'ready' &&
     !isAbandoning.value &&
-    !isNameSaving.value
+    !isNameSaving.value &&
+    !activeAction.value
+)
+const canRunEditorAction = computed(
+  () =>
+    session.value.status === 'ready' &&
+    !isAbandoning.value &&
+    !isNameSaving.value &&
+    !activeAction.value
 )
 const statusLabel = computed(() =>
   isNameSaving.value
     ? t('customNodePacks.editor.renaming')
-    : t(statusKeys[session.value.status])
+    : activeAction.value === 'validate'
+      ? t('customNodePacks.editor.validating')
+      : activeAction.value === 'submit'
+        ? t('customNodePacks.editor.status.submitting')
+        : t(statusKeys[session.value.status])
 )
 const isEditorVisible = computed(
   () =>
@@ -330,15 +347,28 @@ const commitName = async () => {
   }
 }
 
-const invokeEditorCommand = async (commandId: EditorStatusCommandId) => {
+const runEditorAction = async (action: CustomNodeEditorAction) => {
   await commitName()
-  if (!canRename.value || renameState.value.phase !== 'idle') return
+  if (!canRunEditorAction.value || renameState.value.phase !== 'idle') return
 
+  activeAction.value = action
   try {
-    if (!invokeEditorStatusCommand(editorFrameRef.value, commandId)) {
-      throw new Error(t('customNodePacks.editor.controlsUnavailable'))
+    session.value = await runSessionAction(session.value.id, action)
+    pollError.value = null
+    if (action === 'validate') {
+      toast.add({
+        severity: 'success',
+        summary: t('customNodePacks.editor.validated'),
+        detail: t('customNodePacks.editor.validatedDetail'),
+        life: 5000
+      })
     }
+    await finishTerminalState()
   } catch (error) {
+    if (error instanceof CustomNodeEditorRequestError && error.status === 404) {
+      closeExpiredSession()
+      return
+    }
     reportError(error, { errorType: 'custom_node_editor_action_failed' })
     toast.add({
       severity: 'error',
@@ -349,6 +379,8 @@ const invokeEditorCommand = async (commandId: EditorStatusCommandId) => {
           : t('customNodePacks.editor.unknownError'),
       life: 5000
     })
+  } finally {
+    activeAction.value = null
   }
 }
 
