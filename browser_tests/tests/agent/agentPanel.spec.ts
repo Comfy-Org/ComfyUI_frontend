@@ -55,6 +55,9 @@ test.describe('In-App Agent panel shell', { tag: '@cloud' }, () => {
     const panelRoot = page.getByTestId('agent-panel-root')
     await expect(panelRoot).toBeVisible()
     await expect(panelRoot).toHaveCSS('font-size', '14px')
+    await expect(
+      panel.getByRole('heading', { name: enMessages.agent.title })
+    ).toHaveCSS('font-size', '12px')
 
     await panel.getByRole('button', { name: enMessages.g.close }).click()
     await expect(panel).toHaveCount(0)
