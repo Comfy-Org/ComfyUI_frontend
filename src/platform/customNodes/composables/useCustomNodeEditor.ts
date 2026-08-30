@@ -115,6 +115,21 @@ export function useCustomNodeEditor() {
       )
     )
 
+  const renameSession = async (
+    id: string,
+    name: string
+  ): Promise<CustomNodeEditorSession> =>
+    readSession(
+      await api.fetchApi(
+        `/customnodes/editor/sessions/${encodeURIComponent(id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim() })
+        }
+      )
+    )
+
   const abandonSession = async (id: string): Promise<CustomNodeEditorSession> =>
     readSession(
       await api.fetchApi(
@@ -135,6 +150,7 @@ export function useCustomNodeEditor() {
   return {
     createSession,
     getSession,
+    renameSession,
     abandonSession,
     refreshNodeDefinitions
   }

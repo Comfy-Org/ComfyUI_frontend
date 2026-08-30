@@ -1,4 +1,5 @@
-import { render, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import type * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   intervalCallback: null as null | (() => Promise<void>),
   pause: vi.fn(),
   refreshNodeDefinitions: vi.fn(),
+  renameSession: vi.fn(),
   reportError: vi.fn(),
   toast: vi.fn()
 }))
@@ -55,6 +57,7 @@ vi.mock('../composables/useCustomNodeEditor', () => ({
   useCustomNodeEditor: () => ({
     abandonSession: mocks.abandonSession,
     getSession: mocks.getSession,
+    renameSession: mocks.renameSession,
     refreshNodeDefinitions: mocks.refreshNodeDefinitions
   })
 }))
@@ -67,7 +70,14 @@ const i18n = createI18n({
       customNodePacks: {
         editor: {
           abandon: 'Abandon',
+          editing: 'Editing',
           frameTitle: 'Custom node code editor',
+          invalidName:
+            'Use 1–80 letters, numbers, spaces, dots, dashes, or underscores.',
+          nameHint: 'Press Enter or leave the field to save the pack name.',
+          nameLabel: 'Custom node pack name',
+          renameFailed: 'Could not rename custom node pack.',
+          renaming: 'Renaming pack…',
           sessionEnded: 'Editor session ended',
           sessionEndedDetail:
             'This editor is no longer running. Open Create or Edit again to start a fresh session.',
@@ -95,6 +105,7 @@ describe('CustomNodeEditorDialog', () => {
     mocks.intervalCallback = null
     mocks.pause.mockReset()
     mocks.refreshNodeDefinitions.mockReset()
+    mocks.renameSession.mockReset()
     mocks.reportError.mockReset()
     mocks.toast.mockReset()
   })
@@ -125,5 +136,60 @@ describe('CustomNodeEditorDialog', () => {
       })
     )
     expect(mocks.reportError).not.toHaveBeenCalled()
+  })
+
+  it('renames the pack from the top bar', async () => {
+    const user = userEvent.setup()
+    mocks.renameSession.mockResolvedValueOnce({
+      ...readySession,
+      name: 'Gradient Mask'
+    })
+
+    render(CustomNodeEditorDialog, {
+      props: {
+        initialSession: readySession,
+        onClose: vi.fn(),
+        onSubmitted: vi.fn()
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const nameInput = screen.getByRole('textbox', {
+      name: 'Custom node pack name'
+    })
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Gradient Mask{Enter}')
+
+    await waitFor(() =>
+      expect(mocks.renameSession).toHaveBeenCalledWith(
+        'expired-session',
+        'Gradient Mask'
+      )
+    )
+    expect(nameInput).toHaveValue('Gradient Mask')
+  })
+
+  it('keeps an invalid name editable without calling the server', async () => {
+    const user = userEvent.setup()
+    render(CustomNodeEditorDialog, {
+      props: {
+        initialSession: readySession,
+        onClose: vi.fn(),
+        onSubmitted: vi.fn()
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const nameInput = screen.getByRole('textbox', {
+      name: 'Custom node pack name'
+    })
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Invalid/Pack{Enter}')
+
+    expect(mocks.renameSession).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Use 1–80 letters, numbers, spaces, dots, dashes, or underscores.'
+    )
+    expect(nameInput).toHaveValue('Invalid/Pack')
   })
 })

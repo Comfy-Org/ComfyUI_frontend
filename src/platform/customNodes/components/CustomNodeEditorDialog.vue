@@ -3,13 +3,53 @@
     <header
       class="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border-default px-4"
     >
-      <div class="flex min-w-0 items-center gap-3">
+      <div class="flex min-w-0 flex-1 items-center gap-3">
         <i class="icon-[lucide--code-2] size-5 shrink-0" />
-        <div class="min-w-0">
-          <h2 class="m-0 truncate text-sm font-medium">
+        <div class="min-w-0 flex-1">
+          <h2 class="sr-only">
             {{ $t('customNodePacks.editor.title', { name: session.name }) }}
           </h2>
-          <p class="m-0 text-xs text-muted-foreground">
+          <div class="flex min-w-0 items-center gap-2">
+            <label
+              for="custom-node-editor-pack-name"
+              class="shrink-0 text-sm font-medium"
+            >
+              {{ $t('customNodePacks.editor.editing') }}
+            </label>
+            <Input
+              id="custom-node-editor-pack-name"
+              ref="nameInputRef"
+              v-model="nameDraft"
+              class="h-8 max-w-80 min-w-0 flex-1 px-2 py-1 font-medium"
+              type="text"
+              maxlength="80"
+              autocomplete="off"
+              spellcheck="false"
+              :aria-label="$t('customNodePacks.editor.nameLabel')"
+              aria-describedby="custom-node-editor-name-status"
+              :aria-busy="isNameSaving"
+              :aria-invalid="renameError ? 'true' : undefined"
+              :title="$t('customNodePacks.editor.nameHint')"
+              :disabled="!canRename"
+              @focus="onNameFocus"
+              @blur="onNameBlur"
+              @keydown.enter.prevent="nameInputRef?.blur()"
+              @keydown.escape.prevent="onNameEscape"
+            />
+          </div>
+          <p
+            v-if="renameError"
+            id="custom-node-editor-name-status"
+            class="m-0 truncate text-xs text-destructive-background"
+            role="alert"
+          >
+            {{ renameError }}
+          </p>
+          <p
+            v-else
+            id="custom-node-editor-name-status"
+            class="m-0 text-xs text-muted-foreground"
+          >
             {{ statusLabel }}
           </p>
         </div>
@@ -19,7 +59,7 @@
         variant="secondary"
         size="sm"
         :loading="isAbandoning"
-        :disabled="session.status === 'submitting'"
+        :disabled="session.status === 'submitting' || isNameSaving"
         @click="onAbandon"
       >
         <i class="icon-[lucide--x] size-4" />
@@ -78,10 +118,11 @@
 
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
@@ -104,7 +145,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const toast = useToastStore()
 const dialogService = useDialogService()
-const { getSession, abandonSession, refreshNodeDefinitions } =
+const { getSession, renameSession, abandonSession, refreshNodeDefinitions } =
   useCustomNodeEditor()
 
 const session = ref<CustomNodeEditorSession>({ ...props.initialSession })
@@ -112,6 +153,18 @@ const isPolling = ref(false)
 const isAbandoning = ref(false)
 const pollError = ref<string | null>(null)
 const terminalHandled = ref(false)
+const nameInputRef = useTemplateRef<InstanceType<typeof Input>>('nameInputRef')
+
+type RenameState =
+  | { phase: 'idle'; draft: string }
+  | { phase: 'editing'; draft: string; error?: string }
+  | { phase: 'saving'; draft: string }
+
+const renameState = ref<RenameState>({
+  phase: 'idle',
+  draft: session.value.name
+})
+const packNamePattern = /^[A-Za-z0-9][A-Za-z0-9 ._-]{0,79}$/
 
 const statusKeys: Record<CustomNodeEditorStatus, string> = {
   creating: 'customNodePacks.editor.status.creating',
@@ -122,11 +175,94 @@ const statusKeys: Record<CustomNodeEditorStatus, string> = {
   failed: 'customNodePacks.editor.status.failed'
 }
 
-const statusLabel = computed(() => t(statusKeys[session.value.status]))
+const isNameSaving = computed(() => renameState.value.phase === 'saving')
+const renameError = computed(() =>
+  renameState.value.phase === 'editing' ? renameState.value.error : undefined
+)
+const nameDraft = computed({
+  get: () => renameState.value.draft,
+  set: (draft: string) => {
+    if (renameState.value.phase === 'saving') return
+    renameState.value = { phase: 'editing', draft }
+  }
+})
+const canRename = computed(
+  () =>
+    session.value.status === 'ready' &&
+    !isAbandoning.value &&
+    !isNameSaving.value
+)
+const statusLabel = computed(() =>
+  isNameSaving.value
+    ? t('customNodePacks.editor.renaming')
+    : t(statusKeys[session.value.status])
+)
 const isEditorVisible = computed(
   () =>
     session.value.status === 'ready' || session.value.status === 'submitting'
 )
+
+watch(
+  () => session.value.name,
+  (name) => {
+    if (renameState.value.phase === 'idle') {
+      renameState.value = { phase: 'idle', draft: name }
+    }
+  }
+)
+
+const onNameFocus = () => {
+  if (!canRename.value || renameState.value.phase !== 'idle') return
+  renameState.value = { phase: 'editing', draft: session.value.name }
+}
+
+const commitName = async () => {
+  if (renameState.value.phase !== 'editing') return
+  const draft = renameState.value.draft
+  const name = draft.trim()
+  if (name === session.value.name) {
+    renameState.value = { phase: 'idle', draft: session.value.name }
+    return
+  }
+  if (!packNamePattern.test(name)) {
+    renameState.value = {
+      phase: 'editing',
+      draft,
+      error: t('customNodePacks.editor.invalidName')
+    }
+    return
+  }
+  renameState.value = { phase: 'saving', draft: name }
+  try {
+    const renamed = await renameSession(session.value.id, name)
+    session.value = renamed
+    renameState.value = { phase: 'idle', draft: renamed.name }
+  } catch (error) {
+    if (error instanceof CustomNodeEditorRequestError && error.status === 404) {
+      closeExpiredSession()
+      return
+    }
+    reportError(error, { errorType: 'custom_node_editor_rename_failed' })
+    renameState.value = {
+      phase: 'editing',
+      draft,
+      error:
+        error instanceof Error
+          ? error.message
+          : t('customNodePacks.editor.renameFailed')
+    }
+  }
+}
+
+const onNameBlur = () => {
+  void commitName()
+}
+
+const onNameEscape = () => {
+  if (renameState.value.phase === 'saving') return
+  renameState.value = { phase: 'idle', draft: session.value.name }
+  nameInputRef.value?.blur()
+}
 
 const closeExpiredSession = () => {
   if (terminalHandled.value) return

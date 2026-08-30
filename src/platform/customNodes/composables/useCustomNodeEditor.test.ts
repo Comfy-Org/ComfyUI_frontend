@@ -80,6 +80,25 @@ describe('useCustomNodeEditor', () => {
     expect(abandoned.status).toBe('abandoned')
   })
 
+  it('renames a session through its owner-scoped route', async () => {
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse({ ...sessionDto, name: 'Gradient Mask' })
+    )
+
+    const { renameSession } = useCustomNodeEditor()
+    const renamed = await renameSession('session-1', ' Gradient Mask ')
+
+    expect(fetchApi).toHaveBeenCalledWith(
+      '/customnodes/editor/sessions/session-1',
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Gradient Mask' })
+      }
+    )
+    expect(renamed.name).toBe('Gradient Mask')
+  })
+
   it('refreshes the deployment before reloading browser node definitions', async () => {
     fetchApi.mockResolvedValueOnce(jsonResponse({ status: 'refreshed' }))
 

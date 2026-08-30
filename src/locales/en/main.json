@@ -25,6 +25,12 @@
     "close": "Close",
     "editor": {
       "title": "Editing {name}",
+      "editing": "Editing",
+      "nameLabel": "Custom node pack name",
+      "nameHint": "Press Enter or leave the field to save the pack name.",
+      "renaming": "Renaming pack…",
+      "renameFailed": "Could not rename custom node pack.",
+      "invalidName": "Use 1–80 letters, numbers, spaces, dots, dashes, or underscores.",
       "frameTitle": "Custom node code editor",
       "starting": "Starting the code editor…",
       "startingDetail": "Preparing a private workspace with Python and JavaScript support.",
