@@ -72,9 +72,11 @@ const S = {
   close: 'Close',
   hide: 'Hide until re-enabled',
   open: 'Open CRDT debug panel',
+  restore: 'Show CRDT debug',
   tabStatus: 'Status',
   tabLog: 'Log',
   tabMerge: 'Merge lab',
+  simulated: 'Simulated — not this session',
   none: '—',
   yes: 'yes',
   no: 'no',
@@ -401,6 +403,11 @@ function dismiss() {
   dismissed.value = true
 }
 
+function restore() {
+  setCrdtDebugEnabled(true)
+  dismissed.value = false
+}
+
 const proxyTarget = computed(() => api.apiURL(''))
 
 const chipLabel = computed(
@@ -431,12 +438,21 @@ function fmtTime(at: number): string {
 </script>
 
 <template>
-  <div
-    v-if="!dismissed"
-    class="relative flex max-h-1/2 min-h-0 flex-col font-mono text-xs"
-  >
+  <div class="relative flex max-h-1/2 min-h-0 flex-col font-mono text-xs">
     <button
-      v-if="!open"
+      v-if="dismissed"
+      type="button"
+      :title="S.restore"
+      class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border px-2 transition-colors"
+      data-testid="crdt-dev-panel-restore"
+      @click="restore"
+    >
+      <span class="icon-[lucide--eye] size-3" />
+      {{ S.restore }}
+    </button>
+
+    <button
+      v-else-if="!open"
       type="button"
       :title="S.open"
       class="text-agent-fg-muted border-agent-border bg-agent-surface-raised hover:text-agent-fg hover:bg-agent-surface-hover mr-4 mb-1 flex h-6 cursor-pointer items-center gap-1 self-end rounded-full border px-2 transition-colors"
@@ -650,6 +666,13 @@ function fmtTime(at: number): string {
         </template>
 
         <template v-else>
+          <div
+            class="border-agent-border bg-agent-surface-raised text-agent-fg-muted rounded-sm border px-2 py-1 font-bold"
+            data-testid="crdt-dev-panel-simulation-label"
+          >
+            {{ S.simulated }}
+          </div>
+
           <select
             class="border-agent-border bg-agent-surface-raised w-full rounded-sm border p-1"
             data-testid="crdt-dev-panel-scenario"

@@ -36,6 +36,7 @@ function renderPanel() {
 
 const chip = () => screen.queryByTestId('crdt-dev-panel-chip')
 const sheet = () => screen.queryByTestId('crdt-dev-panel')
+const restore = () => screen.queryByTestId('crdt-dev-panel-restore')
 
 describe('CrdtDevPanel', () => {
   beforeEach(() => {
@@ -65,7 +66,7 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toBeNull()
   })
 
-  it('removes the whole instrument when hidden, not just the sheet', async () => {
+  it('replaces the instrument with a way to restore it when hidden', async () => {
     const user = userEvent.setup()
     renderPanel()
     await user.click(chip()!)
@@ -74,10 +75,17 @@ describe('CrdtDevPanel', () => {
 
     expect(chip()).toBeNull()
     expect(sheet()).toBeNull()
+    expect(restore()).toBeTruthy()
     expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('false')
+
+    await user.click(restore()!)
+
+    expect(chip()).toBeTruthy()
+    expect(restore()).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
   })
 
-  it('stays hidden across a remount, not just for the current one', async () => {
+  it('keeps the restore affordance across a remount', async () => {
     const user = userEvent.setup()
     const first = renderPanel()
     await user.click(chip()!)
@@ -91,6 +99,7 @@ describe('CrdtDevPanel', () => {
 
     expect(chip()).toBeNull()
     expect(sheet()).toBeNull()
+    expect(restore()).toBeTruthy()
   })
 
   it('filters the event log by the layer an event came from', async () => {
@@ -144,6 +153,11 @@ describe('CrdtDevPanel', () => {
 
     await user.click(chip()!)
     await user.click(screen.getByTestId('crdt-dev-panel-tab-merge'))
+
+    expect(
+      screen.getByTestId('crdt-dev-panel-simulation-label')
+    ).toHaveTextContent('Simulated — not this session')
+
     await user.click(screen.getByTestId('crdt-dev-panel-run'))
 
     const trace = screen.getByTestId('crdt-dev-panel-trace').textContent
