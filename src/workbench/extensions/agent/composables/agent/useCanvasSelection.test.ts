@@ -21,6 +21,23 @@ describe('useCanvasSelection', () => {
     expect(staged.value).toEqual([nodeA])
   })
 
+  it('does not track selection while the agent flag is disabled', () => {
+    const selection = ref<SelectedNode[]>([nodeA])
+    const enabled = ref(false)
+    const { staged } = useCanvasSelection({
+      selection,
+      isLive: ref(true),
+      enabled
+    })
+
+    expect(staged.value).toEqual([])
+    selection.value = [nodeB]
+    expect(staged.value).toEqual([])
+
+    enabled.value = true
+    expect(staged.value).toEqual([nodeB])
+  })
+
   it('clears on submit and does not re-stage the same selection', async () => {
     const selection = ref<SelectedNode[]>([nodeA])
     const { staged, consume } = useCanvasSelection({

@@ -178,6 +178,7 @@ const {
   replace: replaceSelectionTags
 } = useCanvasSelection({
   selection: selectedNodes,
+  enabled: agentEnabled,
   isLive: () => agentPanelStore.isOpen,
   isTracking: () => agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,

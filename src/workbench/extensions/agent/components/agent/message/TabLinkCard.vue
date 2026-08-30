@@ -3,14 +3,17 @@ import { useEventListener } from '@vueuse/core'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useAgentFeatureGate } from '../../../composables/agent/useAgentFeatureGate'
+import { useAgentTargetNavigation } from '../../../composables/agent/useAgentTargetNavigation'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { useAgentWorkflowTabBindingStore } from '../../../stores/agent/agentWorkflowTabBindingStore'
 
-const { workflowId, name } = defineProps<{
+const { workflowId, locatorId, name } = defineProps<{
   workflowId: string
+  locatorId?: string
   name?: string
 }>()
 
@@ -18,6 +21,8 @@ const { t } = useI18n()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
+const agentEnabled = useAgentFeatureGate()
+const targetNavigation = useAgentTargetNavigation()
 
 const tab = computed(() => {
   const path = bindingStore.tabPathFor(workflowId)
@@ -51,13 +56,15 @@ useEventListener(
 
 async function open(): Promise<void> {
   const target = tab.value
-  if (target) await workflowService.openWorkflow(target)
+  if (!target) return
+  if (locatorId === undefined) await workflowService.openWorkflow(target)
+  else await targetNavigation.navigate({ workflowId, locatorId })
 }
 </script>
 
 <template>
   <button
-    v-if="tab"
+    v-if="agentEnabled && tab"
     type="button"
     :aria-label="t('agent.openWorkflowTab', { name: label })"
     :aria-describedby="nodeCount === undefined ? undefined : nodeCountId"

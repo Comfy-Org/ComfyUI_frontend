@@ -84,10 +84,20 @@ function delta(text: string): AgentChatEvent {
   }
 }
 
-function activeTab(workflow_id: string, name?: string): AgentChatEvent {
+function activeTab(
+  workflow_id: string,
+  name?: string,
+  node_locator_id?: string
+): AgentChatEvent {
   return {
     type: 'agent_active_tab',
-    data: { workflow_id, name, message_id: 'm', thread_id: 't' }
+    data: {
+      workflow_id,
+      name,
+      node_locator_id,
+      message_id: 'm',
+      thread_id: 't'
+    }
   }
 }
 
@@ -336,10 +346,10 @@ describe('agentEventTransport settle lifecycle', () => {
     expect(toolParts(message)).toHaveLength(0)
   })
 
-  it('records an in-line tab link when the agent switches workflow tabs', () => {
+  it('records an explicitly targeted node link when the agent switches workflow tabs', () => {
     const message = drive([
       delta('opening it now'),
-      activeTab('wf-1', 'Portrait upscale'),
+      activeTab('wf-1', 'Portrait upscale', 'root-a:42'),
       delta('and here it is')
     ])
 
@@ -353,6 +363,7 @@ describe('agentEventTransport settle lifecycle', () => {
     expect(parts(message)[1]).toEqual({
       type: 'tabLink',
       workflowId: 'wf-1',
+      locatorId: 'root-a:42',
       name: 'Portrait upscale'
     })
   })

@@ -119,6 +119,7 @@ const zAgentMessageDoneData = z
 const zAgentActiveTabData = z
   .object({
     workflow_id: z.string(),
+    node_locator_id: z.string().optional(),
     name: z.string().optional(),
     thread_id: z.string().optional(),
     message_id: z.string().optional()

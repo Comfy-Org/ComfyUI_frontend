@@ -18,7 +18,22 @@ const mocks = vi.hoisted(() => ({
   api: new EventTarget(),
   activeWorkflow: undefined as FakeTab | undefined,
   openWorkflow: vi.fn(),
-  openWorkflows: [] as unknown[]
+  navigate: vi.fn(),
+  openWorkflows: [] as unknown[],
+  agentEnabled: true
+}))
+
+vi.mock('../../../composables/agent/useAgentFeatureGate', () => ({
+  useAgentFeatureGate: () => ({
+    __v_isRef: true,
+    get value() {
+      return mocks.agentEnabled
+    }
+  })
+}))
+
+vi.mock('../../../composables/agent/useAgentTargetNavigation', () => ({
+  useAgentTargetNavigation: () => ({ navigate: mocks.navigate })
 }))
 
 vi.mock('@/scripts/api', () => ({ api: mocks.api }))
@@ -58,7 +73,9 @@ describe('TabLinkCard', () => {
     setActivePinia(createPinia())
     useAgentWorkflowTabBindingStore().setSubject('user-1')
     mocks.openWorkflow.mockClear()
+    mocks.navigate.mockClear()
     mocks.activeWorkflow = undefined
+    mocks.agentEnabled = true
     openTabs()
   })
 
@@ -182,5 +199,39 @@ describe('TabLinkCard', () => {
     mount('wf-unbound', 'Never opened')
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('renders no reference and performs no action while the flag is off', () => {
+    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    openTabs(tab)
+    useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
+    mocks.agentEnabled = false
+
+    mount('wf-1', 'Portrait upscale')
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(mocks.openWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('navigates an explicit node reference through its target workflow', async () => {
+    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    openTabs(tab)
+    useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
+
+    render(TabLinkCard, {
+      props: {
+        workflowId: 'wf-1',
+        locatorId: 'root-a:42',
+        name: 'Portrait upscale'
+      },
+      global: { plugins: [i18n] }
+    })
+    await userEvent.click(screen.getByRole('button'))
+
+    expect(mocks.navigate).toHaveBeenCalledWith({
+      workflowId: 'wf-1',
+      locatorId: 'root-a:42'
+    })
+    expect(mocks.openWorkflow).not.toHaveBeenCalled()
   })
 })

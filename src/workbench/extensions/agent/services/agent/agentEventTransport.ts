@@ -106,6 +106,7 @@ export function createAgentEventTransport(
         message.parts.push({
           type: 'tabLink',
           workflowId: event.data.workflow_id,
+          locatorId: event.data.node_locator_id,
           name: event.data.name
         })
         break
