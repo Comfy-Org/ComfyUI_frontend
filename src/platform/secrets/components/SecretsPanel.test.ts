@@ -88,7 +88,6 @@ function renderPanel() {
     global: {
       plugins: [i18n],
       stubs: {
-        TabPanel: { template: '<div><slot /></div>' },
         Divider: true,
         Button: {
           template:
