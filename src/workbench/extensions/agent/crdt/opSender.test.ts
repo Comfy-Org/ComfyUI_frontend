@@ -104,10 +104,12 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(1)])
     expect(sent).toHaveLength(0)
 
+    boundWorkflow = 'wf-2'
     transportUp = true
     vi.advanceTimersByTime(500)
 
     expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe(WORKFLOW)
     const firstIds = sent[0].ops.map((op) => op.op_id)
 
     ackInFlight()
@@ -116,6 +118,16 @@ describe('createOpSender', () => {
       settled[0].state === 'acknowledged' &&
         settled[0].ops.map((op) => op.op_id)
     ).toEqual(firstIds)
+  })
+
+  it('keeps queued batches addressed to the workflow active when they were minted', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    boundWorkflow = 'wf-2'
+
+    ackInFlight()
+
+    expect(sent[1].workflowId).toBe(WORKFLOW)
   })
 
   it('settles undeliverable after the transport retry budget', () => {

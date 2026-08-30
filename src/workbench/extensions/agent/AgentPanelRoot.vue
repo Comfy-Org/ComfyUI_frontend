@@ -390,7 +390,7 @@ const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => boundWorkflowId.value !== null,
+  isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),

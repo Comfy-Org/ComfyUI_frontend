@@ -66,6 +66,7 @@ export interface OpSender {
 }
 
 interface InFlight {
+  workflowId: string
   ops: Op[]
   opIds: Set<string>
   resent: boolean
@@ -73,7 +74,7 @@ interface InFlight {
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
-  const queue: Op[][] = []
+  const queue: Array<{ workflowId: string; ops: Op[] }> = []
   let inFlight: InFlight | null = null
   let detached = false
   // Late-result credits: a batch that settled 'unacknowledged' was
@@ -92,14 +93,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     pump()
   }
 
-  function transmit(batch: Op[], attempt: number): void {
-    if (detached) return
-    const workflowId = deps.workflowId()
-    if (workflowId === null) {
-      settleUndeliverable(batch)
-      return
-    }
-    if (!deps.sendOps(workflowId, deps.tab, batch)) {
+  function transmit(batch: InFlight, attempt: number): void {
+    if (detached || inFlight !== batch) return
+    if (!deps.sendOps(batch.workflowId, deps.tab, batch.ops)) {
       if (attempt < SEND_RETRY_LIMIT) {
         setTimeout(() => transmit(batch, attempt + 1), SEND_RETRY_INTERVAL_MS)
       } else {
@@ -110,39 +106,40 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     armResultTimeout(batch)
   }
 
-  function settleUndeliverable(batch: Op[]): void {
-    if (inFlight?.ops === batch) {
-      settle({ state: 'undeliverable', ops: batch })
+  function settleUndeliverable(batch: InFlight): void {
+    if (inFlight === batch) {
+      settle({ state: 'undeliverable', ops: batch.ops })
     }
   }
 
-  function armResultTimeout(batch: Op[]): void {
-    if (inFlight?.ops !== batch) return
-    inFlight.timer = setTimeout(() => {
-      if (inFlight?.ops !== batch) return
-      if (inFlight.resent) {
+  function armResultTimeout(batch: InFlight): void {
+    if (inFlight !== batch) return
+    batch.timer = setTimeout(() => {
+      if (inFlight !== batch) return
+      if (batch.resent) {
         staleAnonymousBudget += 2
-        settle({ state: 'unacknowledged', ops: batch })
+        settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
       // One silent-result resend of the SAME minted ops: idempotent at the
       // applier through the op_id gate.
-      inFlight.resent = true
+      batch.resent = true
       transmit(batch, 0)
     }, RESULT_TIMEOUT_MS)
   }
 
   function pump(): void {
     if (detached || inFlight !== null) return
-    const batch = queue.shift()
-    if (!batch) return
+    const queued = queue.shift()
+    if (!queued) return
     inFlight = {
-      ops: batch,
-      opIds: new Set(batch.map((op) => op.op_id)),
+      workflowId: queued.workflowId,
+      ops: queued.ops,
+      opIds: new Set(queued.ops.map((op) => op.op_id)),
       resent: false,
       timer: null
     }
-    transmit(batch, 0)
+    transmit(inFlight, 0)
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
@@ -175,7 +172,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         actor: deps.actor(),
         baseVersion: deps.baseVersion()
       })
-      queue.push(...chunkWireOps(minted))
+      const workflowId = deps.workflowId()
+      if (workflowId === null) {
+        deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+        return
+      }
+      queue.push(...chunkWireOps(minted).map((ops) => ({ workflowId, ops })))
       pump()
     },
     pending() {
