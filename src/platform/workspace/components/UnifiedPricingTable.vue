@@ -3,15 +3,16 @@
     <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
          on top of the content area — outside it, attached with no gap (DES QA). -->
     <div class="flex justify-center">
-      <SelectButton
-        v-model="planMode"
-        :options="planScopeOptions"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        unstyled
-        :pt="planScopeButtonPt"
-      />
+      <ToggleGroup v-model="planMode" type="single">
+        <ToggleGroupItem
+          v-for="option in planScopeOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 flex-none rounded-b-none bg-base-background px-4 text-base-foreground opacity-50 hover:opacity-100 data-[state=on]:opacity-100"
+        >
+          {{ option.label }}
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
 
     <!-- Content well: a borderless base-background area (DES-197 "Personal Plan,
@@ -60,16 +61,17 @@
       <!-- Billing-cycle toggle: drives both the personal tier cards and the
            team credit slider (team monthly halves the yearly discount). -->
       <div class="flex justify-center">
-        <SelectButton
+        <ToggleGroup
           v-model="currentBillingCycle"
-          :options="billingCycleOptions"
-          option-label="label"
-          option-value="value"
-          :allow-empty="false"
-          unstyled
-          :pt="toggleButtonPt"
+          type="single"
+          class="rounded-lg bg-secondary-background p-1.5"
         >
-          <template #option="{ option }">
+          <ToggleGroupItem
+            v-for="option in billingCycleOptions"
+            :key="option.value"
+            :value="option.value"
+            class="h-8 min-w-44 flex-none px-5 text-muted-foreground data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+          >
             <div class="flex items-center gap-2">
               <span>{{ option.label }}</span>
               <div
@@ -83,8 +85,8 @@
                 }}
               </div>
             </div>
-          </template>
-        </SelectButton>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <!-- PERSONAL PLANS: tier cards (data-driven via the billing facade,
@@ -407,13 +409,12 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import SelectButton from 'primevue/selectbutton'
-import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
@@ -522,49 +523,6 @@ interface PricingTierConfig {
   featuresHeader: string
   features: string[]
   isPopular?: boolean
-}
-
-// Billing-cycle toggle: the active option is a solid white pill (DES-197).
-const toggleButtonPt = {
-  root: {
-    class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-  },
-  pcToggleButton: {
-    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-      class: [
-        // min-w keeps Yearly (with its discount badge) and Monthly the same
-        // width so the active pill doesn't resize when toggling (DES QA).
-        'h-8 min-w-44 px-5 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-        context.active
-          ? 'bg-base-foreground text-base-background'
-          : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-      ]
-    }),
-    label: { class: 'flex items-center gap-2 ' }
-  }
-}
-
-// Plan-scope toggle (For Personal / For Teams): active is a subtle raised pill,
-// not the solid white of the billing toggle (DES-197 2951:592113).
-const planScopeButtonPt = {
-  // No pill container (DES "Plan Type Tabs" 2812:818371 has no bg) — just the
-  // tabs, so the active base-background tab sits flush on top of the content area.
-  root: {
-    class: 'flex gap-1'
-  },
-  pcToggleButton: {
-    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-      class: [
-        'h-8 px-4 rounded-t-md transition cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-        // Inactive tab is the active tab at half opacity (DES QA) — same fill
-        // and text, faded as one, not a separate muted colour.
-        context.active
-          ? 'bg-base-background text-base-foreground'
-          : 'bg-base-background text-base-foreground opacity-50 hover:opacity-100'
-      ]
-    }),
-    label: { class: 'flex items-center gap-2' }
-  }
 }
 
 const allPlanScopeOptions: PlanScopeOption[] = [

@@ -21,15 +21,18 @@
         class="workflow-tabs-scroll flex size-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden p-0"
         @wheel="handleWheel"
       >
-        <SelectButton
+        <ToggleGroup
           :class="cn('workflow-tabs bg-transparent', props.class)"
-          :model-value="selectedWorkflow"
-          :options="options"
-          option-label="label"
-          data-key="value"
+          :model-value="selectedWorkflow?.value"
+          type="single"
           @update:model-value="onWorkflowChange"
         >
-          <template #option="{ option, index }">
+          <ToggleGroupItem
+            v-for="(option, index) in options"
+            :key="option.value"
+            :value="option.value"
+            class="h-full flex-none p-0"
+          >
             <WorkflowTab
               :workflow-option="option"
               :is-first="index === 0"
@@ -44,8 +47,8 @@
                 ])
               "
             />
-          </template>
-        </SelectButton>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
     </div>
     <Button
@@ -121,7 +124,6 @@
 
 <script setup lang="ts">
 import { useScroll } from '@vueuse/core'
-import SelectButton from 'primevue/selectbutton'
 import {
   computed,
   nextTick,
@@ -138,6 +140,7 @@ import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -212,7 +215,11 @@ const selectedWorkflow = computed<WorkflowOption | null>(() =>
     : null
 )
 
-const onWorkflowChange = async (option: WorkflowOption) => {
+const onWorkflowChange = async (value: unknown) => {
+  if (typeof value !== 'string') {
+    return
+  }
+  const option = options.value.find((option) => option.value === value)
   // Prevent unselecting the current workflow
   if (!option) {
     return

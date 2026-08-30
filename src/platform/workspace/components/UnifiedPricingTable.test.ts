@@ -83,7 +83,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: { template: '<div />' },
         // Clicking moves the v-model selection to a different stop ($200) so
         // tests can move off the current stop.
         CreditSlider: {
