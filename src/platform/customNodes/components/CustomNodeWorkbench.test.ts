@@ -285,6 +285,16 @@ describe('CustomNodeWorkbench', () => {
       screen.queryByRole('button', { name: 'Apply changes' })
     ).not.toBeInTheDocument()
 
+    expect(
+      screen.getByRole('img', { name: 'Draft test preview for output 1' })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('img', { name: 'Draft test preview for output 1' })
+    ).toHaveAttribute(
+      'src',
+      '/api/customnodes/editor/sessions/session-1/tests/test-1/artifacts/output-0-0.png'
+    )
+
     expect(screen.getByText('Backend test passed')).toBeVisible()
     expect(
       screen.getByText('Ephemeral test workflow completed with 1 output.')
@@ -298,12 +308,6 @@ describe('CustomNodeWorkbench', () => {
     expect(screen.getByText('Sandbox: seatbelt')).toBeVisible()
     expect(screen.getByTestId('node-agent-test-outputs')).toHaveTextContent(
       'Output 1: IMAGE'
-    )
-    expect(
-      screen.getByRole('img', { name: 'Draft test preview for output 1' })
-    ).toHaveAttribute(
-      'src',
-      '/api/customnodes/editor/sessions/session-1/tests/test-1/artifacts/output-0-0.png'
     )
 
     expect(screen.queryByTestId('proposal-diff')).not.toBeInTheDocument()

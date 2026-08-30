@@ -184,9 +184,10 @@ test.describe(
         await expect(refinedTestResult).toContainText('Phase: complete')
         await expect(refinedTestResult).toContainText('Sandbox: seatbelt')
         await expect(
-          refinedTestResult.getByRole('img', {
-            name: 'Draft test preview for output 1'
-          })
+          page
+            .getByTestId('node-agent-test-images')
+            .last()
+            .getByRole('img', { name: 'Draft test preview for output 1' })
         ).toBeVisible()
 
         await expect

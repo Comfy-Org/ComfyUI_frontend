@@ -86,6 +86,11 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
     await expect(prompt).toBeVisible()
     const testResult = page.getByTestId('node-agent-test-result')
     await expect(testResult).toContainText('Backend test passed')
+    await expect(
+      page
+        .getByTestId('node-agent-test-images')
+        .getByRole('img', { name: 'Draft test preview for output 1' })
+    ).toBeVisible()
     const testDetail = testResult.getByText(
       'Ephemeral test workflow completed with 1 output.'
     )
@@ -96,11 +101,6 @@ test.describe('Custom node Node Agent', { tag: ['@cloud', '@ui'] }, () => {
     await expect(testResult).toContainText('Phase: complete')
     await expect(testResult).toContainText('Sandbox: seatbelt')
     await expect(testResult).toContainText('Output 1: IMAGE')
-    await expect(
-      testResult.getByRole('img', {
-        name: 'Draft test preview for output 1'
-      })
-    ).toBeVisible()
     await expect(page.getByTestId('node-agent-conversation')).toContainText(
       'Changes applied'
     )

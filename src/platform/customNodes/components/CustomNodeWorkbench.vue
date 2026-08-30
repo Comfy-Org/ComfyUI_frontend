@@ -313,30 +313,29 @@
                           >
                             {{ plainOutputValue(output.value) }}
                           </p>
-                          <div
-                            v-if="
-                              output.artifacts.some((artifact) => artifact.url)
-                            "
-                            class="mt-1.5 grid grid-cols-2 gap-2"
-                          >
-                            <img
-                              v-for="artifact in output.artifacts.filter(
-                                (candidate) => candidate.url
-                              )"
-                              :key="artifact.name"
-                              :src="artifact.url"
-                              :alt="
-                                $t('customNodePacks.editor.agent.testPreview', {
-                                  output: output.index + 1
-                                })
-                              "
-                              class="aspect-square w-full rounded-md border border-border-subtle object-contain"
-                            />
-                          </div>
                         </div>
                       </div>
                     </div>
                   </details>
+
+                  <div
+                    v-if="testImages(message.proposal.test).length > 0"
+                    class="flex flex-wrap gap-2 px-1.5 py-1"
+                    data-testid="node-agent-test-images"
+                  >
+                    <img
+                      v-for="image in testImages(message.proposal.test)"
+                      :key="`${image.outputIndex}:${image.name}`"
+                      :src="image.url"
+                      :alt="
+                        $t('customNodePacks.editor.agent.testPreview', {
+                          output: image.outputIndex + 1
+                        })
+                      "
+                      :title="image.name"
+                      class="size-24 rounded-md border border-border-subtle object-cover"
+                    />
+                  </div>
 
                   <button
                     v-for="(change, index) in message.proposal.changes"
@@ -729,6 +728,31 @@ function testResultIcon(status: CustomNodeEditorTestStatus): string {
 function plainOutputValue(value: unknown): string {
   if (typeof value === 'string') return value
   return JSON.stringify(value, null, 2) ?? ''
+}
+
+interface AgentTestImage {
+  outputIndex: number
+  name: string
+  url: string
+}
+
+function testImages(
+  test: CustomNodeEditorProposalView['test']
+): AgentTestImage[] {
+  if (!test) return []
+  return test.outputs.flatMap((output) =>
+    output.artifacts.flatMap((artifact) =>
+      artifact.url
+        ? [
+            {
+              outputIndex: output.index,
+              name: artifact.name,
+              url: artifact.url
+            }
+          ]
+        : []
+    )
+  )
 }
 
 watch(
