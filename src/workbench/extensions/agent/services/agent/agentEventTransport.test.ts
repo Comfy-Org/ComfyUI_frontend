@@ -70,10 +70,20 @@ function thinking(delta: string): AgentChatEvent {
   }
 }
 
-function toolCall(tool_name: string, status: string): AgentChatEvent {
+function toolCall(
+  tool_name: string,
+  status: 'running' | 'success' | 'error',
+  tool_call_id = `call-${tool_name}`
+): AgentChatEvent {
   return {
     type: 'agent_tool_call',
-    data: { tool_name, status, args: [], message_id: 'm', thread_id: 't' }
+    data: {
+      tool_call_id,
+      tool_name,
+      status,
+      message_id: 'm',
+      thread_id: 't'
+    }
   }
 }
 
@@ -162,7 +172,7 @@ describe('agentEventTransport thinking chip', () => {
   it('thinking after prior text and tools reopens the status', () => {
     const message = drive([
       delta('before'),
-      toolCall('run', 'ok'),
+      toolCall('run', 'success'),
       delta('after'),
       thinking('Planning the next step')
     ])
@@ -194,7 +204,7 @@ describe('agentEventTransport thinking narration', () => {
       .mockReturnValueOnce(2300)
     const message = drive([
       thinking('Adding a node'),
-      toolCall('add_node', 'ok')
+      toolCall('add_node', 'success')
     ])
     now.mockRestore()
     expect(message.thinkingText).toBeUndefined()
@@ -211,7 +221,7 @@ describe('agentEventTransport thinking narration', () => {
   it('a tool call after thinking clears the thinking status', () => {
     const message = drive([
       thinking('Adding a node'),
-      toolCall('add_node', 'ok')
+      toolCall('add_node', 'success')
     ])
     expect(message.thinking).toBe(false)
   })
@@ -249,21 +259,26 @@ describe('agentEventTransport thinking narration', () => {
     transport.ingest(thinking('First'))
     const first = emit.mock.calls.at(-1)![0]
     const firstPartsLength = first.parts.length
-    transport.ingest(toolCall('add_node', 'ok'))
+    transport.ingest(toolCall('add_node', 'success'))
     const second = emit.mock.calls.at(-1)![0]
 
     expect(second).not.toBe(first)
     expect(second.parts).not.toBe(first.parts)
     expect(first.parts).toHaveLength(firstPartsLength)
+    expect(first.parts[0]).toEqual({
+      type: 'thinking',
+      text: 'First',
+      state: 'streaming'
+    })
   })
 
   it('retains alternating reasoning and tool events in transcript order', () => {
     const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
     const message = drive([
       thinking('Inspecting the graph'),
-      toolCall('list_slots', 'ok'),
+      toolCall('list_slots', 'success'),
       thinking('Applying the edit'),
-      toolCall('set_widget', 'ok')
+      toolCall('set_widget', 'success')
     ])
     now.mockRestore()
 
@@ -297,7 +312,7 @@ describe('agentEventTransport text and tool parts', () => {
   it('delta -> tool -> delta yields text, tool, text as three parts', () => {
     const message = drive([
       delta('before'),
-      toolCall('run', 'ok'),
+      toolCall('run', 'success'),
       delta('after')
     ])
     expect(parts(message).map((p) => p.type)).toEqual(['text', 'tool', 'text'])
@@ -310,6 +325,24 @@ describe('agentEventTransport text and tool parts', () => {
       state: 'done',
       ok: false
     })
+  })
+
+  it('folds running and success frames into one tool lifecycle', () => {
+    const message = drive([
+      toolCall('run', 'running', 'call-1'),
+      toolCall('run', 'success', 'call-1')
+    ])
+
+    expect(toolParts(message)).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'run',
+        state: 'done',
+        ok: true,
+        durationMs: undefined
+      }
+    ])
   })
 })
 
@@ -348,7 +381,7 @@ describe('agentEventTransport settle lifecycle', () => {
     const callsAfterSettle = emit.mock.calls.length
 
     transport.ingest(delta(' late'))
-    transport.ingest(toolCall('late_tool', 'ok'))
+    transport.ingest(toolCall('late_tool', 'success'))
 
     expect(emit.mock.calls.length).toBe(callsAfterSettle)
     expect(textParts(message)[0]).toMatchObject({
@@ -383,7 +416,7 @@ describe('agentEventTransport settle lifecycle', () => {
     const message = drive([
       activeTab('wf-1', 'First'),
       delta('adding the nodes'),
-      toolCall('add_node', 'ok'),
+      toolCall('add_node', 'success'),
       activeTab('wf-1', 'First')
     ])
 

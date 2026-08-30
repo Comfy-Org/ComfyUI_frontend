@@ -32,7 +32,7 @@ export function createAgentEventTransport(
   let openText: TextPart | null = null
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
-  let toolCount = 0
+  const tools = new Map<string, ToolPart>()
   let settled = false
   let lastTabWorkflowId: string | undefined
 
@@ -85,15 +85,23 @@ export function createAgentEventTransport(
         closeOpenThinking()
         message.thinking = false
         message.thinkingText = undefined
-        const part: ToolPart = {
-          type: 'tool',
-          callId: `tool_${toolCount++}`,
-          name: event.data.tool_name,
-          state: 'done',
-          ok: event.data.status === 'ok',
-          durationMs: event.data.duration_ms
+        let part = tools.get(event.data.tool_call_id)
+        if (!part) {
+          part = {
+            type: 'tool',
+            callId: event.data.tool_call_id,
+            name: event.data.tool_name,
+            state: 'streaming'
+          }
+          tools.set(event.data.tool_call_id, part)
+          message.parts.push(part)
         }
-        message.parts.push(part)
+        part.name = event.data.tool_name
+        if (event.data.status !== 'running') {
+          part.state = 'done'
+          part.ok = event.data.status === 'success'
+          part.durationMs = event.data.duration_ms
+        }
         break
       }
       case 'agent_active_tab': {
