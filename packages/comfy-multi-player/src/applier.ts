@@ -1207,6 +1207,7 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): Succe
   // this branch is where a wire op that says otherwise is disposed of — and it
   // is disposed of exactly as before, `grow` winning and `to_slot` unread.
   if (op.grow != null && op.grow.promoted === true) {
+    if (!claimLinkIdentity(doc, op)) return "lww-dropped";
     // A promoted subgraph input (Amendment A15) is ONE register named by the
     // definition, so it is gated and claimed like a concrete input — before the
     // source is consulted, for the same reason the concrete branch does it.
@@ -1217,6 +1218,7 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): Succe
     // Autogrow is NOT a shared register: every grow mints its own slot keyed by
     // `grow_id`, so two concurrent grows onto one base both survive and there
     // is nothing to gate (vocabulary §1.2 / amendment v1.2's carve-out).
+    if (!claimLinkIdentity(doc, op)) return "lww-dropped";
     if (!src) return "no-op"; // source concurrently deleted → no-op (delete wins)
     toIdx = growInputSlot(doc, dst, op, catalog);
   } else {
@@ -1235,6 +1237,8 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): Succe
     if (!(slot instanceof Y.Map)) {
       throw new OpRejectedError("input_slot_missing", `connect: input slot ${toIdx} is not a slot record`);
     }
+
+    if (!claimLinkIdentity(doc, op)) return "lww-dropped";
 
     // ---- The concrete-input LWW register (op-vocabulary-v1.md amendment v1.2)
     //
@@ -1294,6 +1298,22 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): Succe
     apush(outLinks as Y.Array<unknown>, op.link_id);
   }
   return "applied";
+}
+
+/** Claim the normalized complete-tuple link register (schema Amendment A18). */
+function claimLinkIdentity(doc: Y.Doc, op: ConnectOp): boolean {
+  const stamps = stampsMap(doc);
+  const normalizedId = String(op.link_id);
+  const targetKey = JSON.stringify(["link", normalizedId]);
+  const prior = stamps.get(targetKey) as StampKey | undefined;
+  const key = stampKey(op);
+  if (prior != null && compareStampKeys(key, prior) <= 0) return false;
+
+  const links = linksMap(doc);
+  if (links.has(normalizedId)) mdel(links, normalizedId);
+  scrubLinkRefs(doc, (candidate) => candidate != null && String(candidate) === normalizedId);
+  mset(stamps, targetKey, key);
+  return true;
 }
 
 /**

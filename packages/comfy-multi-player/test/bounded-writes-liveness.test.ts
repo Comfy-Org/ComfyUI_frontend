@@ -196,7 +196,7 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     expect(running).toEqual([3, 6, 9, 12]);
   });
 
-  it("charges an autogrow connect exactly seven, including its canonicalization ledger rows", () => {
+  it("charges an autogrow connect exactly eight, including link ownership and canonicalization ledger rows", () => {
     // Reaches both `apush` sites, which `deleteHubCost` never does: wiring the
     // link id into the source output port's list, and appending the grown input
     // slot itself. Itemized precisely because this is an exact-accounting test:
@@ -218,8 +218,8 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     } as unknown as ConnectOp;
     _resetMutationCount(doc);
     expect(applyOps(doc, [op], catalog).outcomes.some((o) => o.outcome === "rejected")).toBe(false);
-    expect(_getMutationCount(doc)).toBe(7);
-    expect(stampsMap(doc).size, "autogrow records stamp + request for canonicalization (A7)").toBe(2);
+    expect(_getMutationCount(doc)).toBe(8);
+    expect(stampsMap(doc).size, "autogrow records link ownership plus stamp + request (A7/A18)").toBe(3);
   });
 
   it("charges the array delete when a delete strands an output link", () => {

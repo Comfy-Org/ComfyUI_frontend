@@ -144,6 +144,11 @@ merge behavior.
 (replaced whole on rewire): a link is created/retired atomically, never
 field-edited, so there is nothing to merge inside one.
 
+The normalized key is also a scalar link-identity register. Distinct `connect`
+ops whose ids share `String(link_id)` contend on `("link", String(link_id))`;
+the greatest embedded `[base_version, actor, op_id]` owns the complete tuple
+and every coherent endpoint reference. See Amendment A18.
+
 ### 1.4 Meta
 
 | Key | Semantics |
@@ -442,6 +447,7 @@ so a raw key gave `7` and `"7"` two registers for one node.
 | `connect` (concrete slot) | `("input", String(to_node), to_slot)` | **yes (A1)** |
 | `connect` (autogrow) | `("input", String(to_node), "grow", base_name)` | no — identity only, canonicalized by stamp (A7) |
 | `connect` (promoted input, A15) | `("input", String(to_node), "grow", name)` with the FULL declared name (names may contain dots — `images.image0`), matching comfy-cli `_write_target` at amendment v1.5 (`ba0b0b92abcc86b01e8a6704d07088f92afe7aa7`); only an ordinary autogrow keys by base name | **yes (A15)** — one register named by the definition |
+| every `connect` (link identity, A18) | `("link", String(link_id))` | **yes (A18)** — greatest stamp owns the complete tuple and coherent endpoint references |
 | `add_node` / `delete_node` (presence) | `("node", String(node_id))` | **yes (A7)** |
 | `clear` (one row per entry in `removed_nodes`) | `("node", String(node_id))` | **yes (A7)** |
 | `delete_node` (severance of the link ids in `removed_links`) | none | no — monotonic, ungated (A7) |
@@ -812,6 +818,10 @@ the epoch; cross-epoch struct updates never merge.
 ---
 
 ## 11. Op kind → bounded key writes (§6.2 conformance)
+
+Amendment A18 adds exactly one `__stamps` mutation to every successful
+`connect`; the autogrow liveness case therefore moves from seven to eight
+Y-level mutations and from two to three stamp rows.
 
 Y-level mutation counts measured by the spike's instrumented applier across
 all three sessions (positional-widgets prototype; the name-keyed map (§1.2)
@@ -2017,3 +2027,20 @@ This is a direct private-alpha semantic change, not a v2→v3 migration.
 Amendment A16's incarnation-qualified target keys remain byte-for-byte the
 register namespace, including legacy incarnation token `"0"`. Same-lineage
 reconnect continues to use state-vector delta replay.
+
+---
+
+## Amendment A18 — 2026-08-30 — normalized stamped link identity
+
+Every `connect` claims `("link", String(link_id))`. Distinct raw ids such as
+`700` and `"700"` therefore contend for one scalar register. The greatest
+embedded `[base_version, actor, op_id]` stamp owns the complete LiteGraph tuple
+and all coherent input/output references; fields never merge across writers.
+
+The gate runs before endpoint mutation. A loser is dropped whole. A new winner
+first removes the prior normalized tuple and every normalized-id endpoint
+reference, then installs its own tuple and exactly its own references. The
+separate input register still decides whether that identity may occupy the
+requested destination; losing that gate leaves no tuple or dangling reference.
+This adds an internal `__stamps` key, not a root-layout change, so
+`SCHEMA_VERSION` remains 2.

@@ -329,6 +329,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
     // sharing the connect's stamp (schema §8.3, vocabulary §8.4). Pinned
     // directly below so the two cases cannot be conflated again.
     expect([...doc.getMap("__stamps").keys()]).toEqual([
+      JSON.stringify(["link", "100"]),
       JSON.stringify(["grow", "1", "100", "images"]),
       JSON.stringify(["grow_request", "1", "100", "images"]),
     ]);
@@ -357,6 +358,7 @@ describe("#17 group 2: invalid states the wire still accepts (behaviour pinned, 
     );
     expect(result.outcomes.some((o) => o.outcome === "rejected")).toBe(false);
     expect([...doc.getMap("__stamps").keys()]).toEqual([
+      JSON.stringify(["link", "101"]),
       JSON.stringify(["grow", "1", "101", "images"]),
       JSON.stringify(["grow_request", "1", "101", "images"]),
       JSON.stringify(["widget", "1", "0", "steps"]),
