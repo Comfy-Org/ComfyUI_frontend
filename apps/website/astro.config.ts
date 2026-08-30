@@ -24,6 +24,14 @@ export default defineConfig({
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
       '/customers/series-entertainment/',
     '/zh-CN/terms-of-service': '/terms-of-service/',
+    '/api': '/platform/',
+    '/platform/router': '/platform/models/',
+    '/zh-CN/platform/router': '/zh-CN/platform/models/',
+    '/cloud/enterprise': '/enterprise/',
+    '/cloud/pricing': '/pricing/',
+    '/zh-CN/cloud/pricing': '/zh-CN/pricing/',
+    '/zh-CN/cloud/enterprise': '/zh-CN/enterprise/',
+    '/zh-CN/api': '/zh-CN/platform/',
     '/minimax': { status: 307, destination: '/minimax-h3/' },
     '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
   },

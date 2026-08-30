@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { AnchorHTMLAttributes } from 'vue'
 
 import Button from '../ui/button/Button.vue'
@@ -16,12 +18,20 @@ type TermsLink = {
   href: string
 }
 
-const { heading, subtitle, primaryCta, secondaryCta, termsLink } = defineProps<{
+const {
+  heading,
+  subtitle,
+  primaryCta,
+  secondaryCta,
+  termsLink,
+  compact = false
+} = defineProps<{
   heading: string
   subtitle?: string
   primaryCta: Cta
   secondaryCta?: Cta
   termsLink?: TermsLink
+  compact?: boolean
 }>()
 </script>
 
@@ -30,7 +40,14 @@ const { heading, subtitle, primaryCta, secondaryCta, termsLink } = defineProps<{
     class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
   >
     <h2
-      class="max-w-3xl text-4xl/snug font-light tracking-tight text-pretty whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/snug"
+      :class="
+        cn(
+          'max-w-3xl font-light tracking-tight text-pretty whitespace-pre-line text-primary-comfy-canvas',
+          compact
+            ? 'text-2xl/snug lg:text-4xl/snug'
+            : 'text-4xl/snug lg:text-6xl/snug'
+        )
+      "
     >
       {{ heading }}
     </h2>
@@ -49,7 +66,7 @@ const { heading, subtitle, primaryCta, secondaryCta, termsLink } = defineProps<{
         :target="primaryCta.target"
         :rel="resolveRel(primaryCta)"
         variant="default"
-        size="lg"
+        :size="compact ? 'default' : 'lg'"
       >
         {{ primaryCta.label }}
       </Button>
@@ -60,7 +77,7 @@ const { heading, subtitle, primaryCta, secondaryCta, termsLink } = defineProps<{
         :target="secondaryCta.target"
         :rel="resolveRel(secondaryCta)"
         variant="outline"
-        size="lg"
+        :size="compact ? 'default' : 'lg'"
       >
         {{ secondaryCta.label }}
       </Button>

@@ -384,6 +384,10 @@ const translations = {
     en: 'SEE DESKTOP FEATURES',
     'zh-CN': '查看桌面版属性'
   },
+  'products.ctaShort': {
+    en: 'SEE FEATURES',
+    'zh-CN': '查看属性'
+  },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
     'zh-CN': 'Comfy\nCloud'
@@ -396,17 +400,17 @@ const translations = {
     en: 'SEE CLOUD FEATURES',
     'zh-CN': '查看云端属性'
   },
-  'products.api.title': {
-    en: 'Comfy\nAPI',
-    'zh-CN': 'Comfy\nAPI'
+  'products.platform.title': {
+    en: 'Developer\nPlatform',
+    'zh-CN': '开发者\n平台'
   },
-  'products.api.description': {
-    en: 'Turn workflows into production endpoints.',
-    'zh-CN': '将工作流转化为生产级 API 端点。'
+  'products.platform.description': {
+    en: 'Deploy and scale ComfyUI workflows.',
+    'zh-CN': '部署并扩展 ComfyUI 工作流。'
   },
-  'products.api.cta': {
-    en: 'SEE API FEATURES',
-    'zh-CN': '查看 API 属性'
+  'products.platform.cta': {
+    en: 'SEE PLATFORM FEATURES',
+    'zh-CN': '查看平台功能'
   },
   'products.enterprise.title': {
     en: 'Comfy\nEnterprise',
@@ -3368,7 +3372,6 @@ const translations = {
   'nav.company': { en: 'Company', 'zh-CN': '公司' },
   'nav.comfyLocal': { en: 'Comfy Desktop', 'zh-CN': 'Comfy 桌面版' },
   'nav.comfyCloud': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
-  'nav.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'nav.comfyEnterprise': {
     en: 'Comfy Enterprise',
     'zh-CN': 'Comfy 企业版'
@@ -3417,6 +3420,7 @@ const translations = {
   },
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
+  'nav.badgeBeta': { en: 'BETA', 'zh-CN': 'BETA' },
   // Column headers used in HeaderMainDesktop dropdowns
   'nav.mcpServer': { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
   'nav.supportedModels': { en: 'Supported Models', 'zh-CN': '支持的模型' },
@@ -7311,6 +7315,836 @@ const translations = {
   'fdct.closing.title': {
     en: 'Build your custom workflows with Comfy experts.',
     'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'
+  },
+
+  // ── Managed Builds (/enterprise + /enterprise/managed-builds) ──
+  'enterprise.platformBand.label': {
+    en: 'DEVELOPER PLATFORM',
+    'zh-CN': '开发者平台'
+  },
+  'enterprise.platformBand.text': {
+    en: 'Deploy and scale ComfyUI workflows — Serverless API, Models API, and Builder behind one API key. Now in limited beta.',
+    'zh-CN':
+      '部署并扩展 ComfyUI 工作流——Serverless API、Models API 和 Builder 共用一个 API 密钥。现已开启有限测试。'
+  },
+  'enterprise.platformBand.cta': {
+    en: 'Explore the Developer Platform',
+    'zh-CN': '了解开发者平台'
+  },
+  'enterprise.managedBuilds.heading': {
+    en: 'Managed Builds',
+    'zh-CN': '托管构建'
+  },
+  'enterprise.managedBuilds.subtitle': {
+    en: 'Govern every ComfyUI environment your organization runs — approved models, vetted nodes, pinned dependencies — shared to your team in one click.',
+    'zh-CN':
+      '治理你的组织运行的每一个 ComfyUI 环境——经批准的模型、经审核的节点、锁定的依赖——一键共享给团队。'
+  },
+  'enterprise.managedBuilds.hero.subtitle': {
+    en: 'Full governance over ComfyUI used in your organization: use only legal-approved models, and distribute the same environment to every artist or server.',
+    'zh-CN':
+      '全面治理组织内使用的 ComfyUI：只使用法务批准的模型，并将同一环境分发给每位创作者或服务器。'
+  },
+  'enterprise.managedBuilds.explore': {
+    en: 'Explore Managed Builds',
+    'zh-CN': '了解托管构建'
+  },
+  'enterprise.managedBuilds.talkToUs': {
+    en: 'Contact sales',
+    'zh-CN': '联系销售'
+  },
+  'enterprise.managedBuilds.aboutBuilder': {
+    en: 'About Builder',
+    'zh-CN': '了解 Builder'
+  },
+  'enterprise.managedBuilds.1.title': {
+    en: 'Open Source Models',
+    'zh-CN': '开源模型'
+  },
+  'enterprise.managedBuilds.1.description': {
+    en: 'Only allow open source models approved by your organization. Observe which models are used by your team.',
+    'zh-CN': '只允许组织批准的开源模型，并观察团队实际在使用哪些模型。'
+  },
+  'enterprise.managedBuilds.2.title': {
+    en: 'Custom Nodes',
+    'zh-CN': '自定义节点'
+  },
+  'enterprise.managedBuilds.2.description': {
+    en: 'Ensure your team only uses vetted custom nodes and their exact versions. Effortlessly build and use your own private custom nodes in builds.',
+    'zh-CN':
+      '确保团队只使用经过审核的自定义节点及其确切版本。还能毫不费力地在构建中制作并使用你自己的私有自定义节点。'
+  },
+  'enterprise.managedBuilds.3.title': {
+    en: 'Partner Models',
+    'zh-CN': '合作伙伴模型'
+  },
+  'enterprise.managedBuilds.3.description': {
+    en: 'Dynamically control which ',
+    'zh-CN': '动态控制团队可以使用哪些'
+  },
+  'enterprise.managedBuilds.3.linkLabel': {
+    en: 'partner models',
+    'zh-CN': '合作伙伴模型'
+  },
+  'enterprise.managedBuilds.3.linkSuffix': {
+    en: ' are available to your team (e.g. Seedance, GPT-Image-2). Run models with your own key (BYOK).',
+    'zh-CN':
+      '（如 Seedance、GPT-Image-2），还可以用你自己的密钥运行模型（BYOK）。'
+  },
+  'enterprise.managedBuilds.4.title': {
+    en: 'Security Patches',
+    'zh-CN': '安全补丁'
+  },
+  'enterprise.managedBuilds.4.description': {
+    en: 'Control which versions of ComfyUI and Python dependencies are used in builds. Easily apply security patches or improvements to your whole team.',
+    'zh-CN':
+      '控制构建中使用的 ComfyUI 版本和 Python 依赖。轻松将安全补丁或改进应用到整个团队。'
+  },
+  'enterprise.managedBuilds.5.title': {
+    en: 'Easy Installation',
+    'zh-CN': '轻松安装'
+  },
+  'enterprise.managedBuilds.5.description': {
+    en: 'Teammates sign into Comfy Desktop with their work email and see only the builds they have been granted.',
+    'zh-CN': '队友用工作邮箱登录 Comfy Desktop，只会看到分配给自己的构建。'
+  },
+  'enterprise.managedBuilds.6.title': {
+    en: 'Deployment management',
+    'zh-CN': '部署管理'
+  },
+  'enterprise.managedBuilds.6.description': {
+    en: 'Decide which builds are used for the duration of your project, whether used locally or on ',
+    'zh-CN': '决定项目周期内使用哪些构建——无论在本地运行，还是部署到'
+  },
+  'enterprise.managedBuilds.6.linkLabel': {
+    en: 'Serverless API',
+    'zh-CN': 'Serverless API'
+  },
+  'enterprise.managedBuilds.6.linkSuffix': {
+    en: '.',
+    'zh-CN': '。'
+  },
+  'enterprise.managedBuilds.builderNote.title': {
+    en: 'Powered by Builder',
+    'zh-CN': '由 Builder 驱动'
+  },
+  'enterprise.managedBuilds.builderNote.description': {
+    en: 'Builder creates consistent, immutable builds of ComfyUI with your exact models, custom nodes, and Python dependencies — private custom nodes and models included.',
+    'zh-CN':
+      'Builder 会用你指定的模型、自定义节点和 Python 依赖，构建一致且不可变的 ComfyUI 构建——私有自定义节点和模型同样支持。'
+  },
+  'enterprise.managedBuilds.gridSubtitle': {
+    en: 'On top of that, Managed Builds gives your admins the ability to control:',
+    'zh-CN': '在此之上，托管构建让管理员能够控制：'
+  },
+  'enterprise.managedBuilds.gridHeading': {
+    en: 'What your admins control',
+    'zh-CN': '管理员可控的一切'
+  },
+  'enterprise.managedBuilds.closing.heading': {
+    en: 'Govern the fleet. Keep the speed.',
+    'zh-CN': '治理整个集群，保持全速前进。'
+  },
+  // ── Developer Platform landing page (/platform) ───────────────────
+  'nav.developerPlatform': {
+    en: 'Developer Platform',
+    'zh-CN': '开发者平台'
+  },
+  'platform.meta.title': {
+    en: 'Developer Platform',
+    'zh-CN': '开发者平台'
+  },
+  'platform.meta.description': {
+    en: 'Deploy and scale ComfyUI workflows. Your workflows. Every model. One API.',
+    'zh-CN': '部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。'
+  },
+  'platform.terminal.buildResolved': {
+    en: 'Build resolved by Builder (nodes · models · pinned deps)',
+    'zh-CN': 'Builder 已解析构建（节点 · 模型 · 锁定依赖）'
+  },
+  'platform.terminal.deployed': {
+    en: 'Deployed → https://your-build.run.comfy.app',
+    'zh-CN': '已部署 → https://your-build.run.comfy.app'
+  },
+  'enterprise.managedBuilds.badge': {
+    en: 'Enterprise',
+    'zh-CN': '企业版'
+  },
+  'platform.hero.badge': {
+    en: 'DEVELOPER PLATFORM',
+    'zh-CN': '开发者平台'
+  },
+  'platform.hero.heading': {
+    en: 'Comfy Developer Platform',
+    'zh-CN': 'Comfy 开发者平台'
+  },
+  'platform.hero.subtitle': {
+    en: 'The fastest way from ComfyUI workflow to production endpoint.',
+    'zh-CN': '从 ComfyUI 工作流到生产端点的最快路径。'
+  },
+  'platform.hero.getStarted': {
+    en: 'Get Started',
+    'zh-CN': '立即开始'
+  },
+  'platform.hero.readDocs': {
+    en: 'Read the docs',
+    'zh-CN': '阅读文档'
+  },
+  'platform.serverless.codeHeading': {
+    en: 'Call your endpoint',
+    'zh-CN': '调用你的端点'
+  },
+  'platform.serverless.codeSubtitle': {
+    en: 'The SDK is the front door; plain HTTP works too.',
+    'zh-CN': 'SDK 是首选入口，纯 HTTP 同样可用。'
+  },
+  'platform.serverlessDeploy.heading': {
+    en: 'Ship in minutes',
+    'zh-CN': '几分钟内上线'
+  },
+  'platform.serverlessDeploy.subtitle': {
+    en: 'Easily package up your existing ComfyUI environment — or a single workflow — and deploy to Serverless.',
+    'zh-CN':
+      '轻松打包你现有的 ComfyUI 环境——或单个工作流——并部署到 Serverless。'
+  },
+  'platform.serverlessDeploy.tabInstall': {
+    en: 'Start with your installation',
+    'zh-CN': '从你的安装开始'
+  },
+  'platform.serverlessDeploy.tabWorkflow': {
+    en: 'Start with your workflow',
+    'zh-CN': '从你的工作流开始'
+  },
+  'platform.serverlessScale.heading': {
+    en: 'Engineered for scale',
+    'zh-CN': '为规模而生'
+  },
+  'platform.serverlessScale.subtitle': {
+    en: 'Deploy on the Developer Platform across thousands of GPUs — autoscaling, logs, and performance controls built in.',
+    'zh-CN':
+      '在开发者平台上跨数千块 GPU 部署——自动扩缩、日志和性能控制开箱即用。'
+  },
+  'platform.serverlessScale.1.title': {
+    en: 'Autoscaling',
+    'zh-CN': '自动扩缩'
+  },
+  'platform.serverlessScale.1.description': {
+    en: 'Endpoints scale with request volume. Set minimum and maximum workers, and keep warm workers where cold starts matter.',
+    'zh-CN':
+      '端点随请求量自动扩缩。设置最小和最大工作节点数，在冷启动敏感的场景保留常驻节点。'
+  },
+  'platform.serverlessScale.2.title': {
+    en: 'Logs & events',
+    'zh-CN': '日志与事件'
+  },
+  'platform.serverlessScale.2.description': {
+    en: 'Stream deployment logs and job events straight from the CLI or the console.',
+    'zh-CN': '直接从 CLI 或控制台实时查看部署日志和任务事件。'
+  },
+  'platform.serverlessScale.3.title': {
+    en: 'Run any workflow & model',
+    'zh-CN': '运行任何工作流与模型'
+  },
+  'platform.serverlessScale.3.description': {
+    en: 'Supports the thousands of open source models, custom nodes, and partner models available in the ComfyUI ecosystem.',
+    'zh-CN': '支持 ComfyUI 生态中数以千计的开源模型、自定义节点和合作伙伴模型。'
+  },
+  'platform.products.serverless.title': {
+    en: 'Serverless API',
+    'zh-CN': 'Serverless API'
+  },
+  'platform.products.serverless.description': {
+    en: "Scale from 0 to millions of generations on Comfy's serverless engine. No GPUs to configure, no cold starts — only pay for what you use.",
+    'zh-CN':
+      '在 Comfy 无服务器引擎上从 0 扩展到数百万次生成。无需配置 GPU，没有冷启动——只为实际用量付费。'
+  },
+  'platform.serverlessVisual.ariaLabel': {
+    en: 'Animated diagram showing serverless activity moving through B200 GPU workers.',
+    'zh-CN': '动画图示：无服务器活动在 B200 GPU 工作节点之间移动。'
+  },
+  'platform.serverlessVisual.client': {
+    en: 'Client request',
+    'zh-CN': '客户端请求'
+  },
+  'platform.serverlessVisual.gateway': {
+    en: 'API gateway',
+    'zh-CN': 'API 网关'
+  },
+  'platform.serverlessVisual.functions': {
+    en: 'Serverless functions',
+    'zh-CN': '无服务器函数'
+  },
+  'platform.serverlessVisual.database': {
+    en: 'Database  B200s',
+    'zh-CN': '数据库  B200s'
+  },
+  'platform.serverlessVisual.worker': {
+    en: 'B200s',
+    'zh-CN': 'B200s'
+  },
+  'platform.products.builder.title': {
+    en: 'Builder',
+    'zh-CN': 'Builder'
+  },
+  'platform.products.builder.description': {
+    en: 'Package your custom nodes, models, and pinned dependencies into an immutable build. Deploy builds on Serverless or to local workstations. Enterprises govern the fleet with the Managed Builds dashboard.',
+    'zh-CN':
+      '把你的自定义节点、模型和锁定依赖打包成一个不可变构建。构建可部署到 Serverless，也可部署到本地工作站。企业可通过托管构建仪表盘治理整个集群。'
+  },
+  'platform.products.builder.enterpriseCta': {
+    en: 'Enterprise: Managed Builds',
+    'zh-CN': '企业版：托管构建'
+  },
+  'platform.products.models.title': {
+    en: 'Models API',
+    'zh-CN': 'Models API'
+  },
+  'platform.products.models.description': {
+    en: 'Call partner models including Seedance, Minimax H3, Nano Banana, and GPT-Image-2. Access the latest models with a single API key.',
+    'zh-CN':
+      '调用合作伙伴模型——Seedance、Minimax H3、Nano Banana、GPT-Image-2——用一个 API 密钥即可访问最新模型。'
+  },
+  'platform.examples.heading': {
+    en: 'Built on the Developer Platform',
+    'zh-CN': '基于开发者平台构建'
+  },
+  'platform.examples.subtitle': {
+    en: 'Every example is a running endpoint with the code to prove it.',
+    'zh-CN': '每个示例都是一个真实运行的端点，并附有可验证的代码。'
+  },
+  'platform.examples.cookbook': {
+    en: 'View the docs',
+    'zh-CN': '查看文档'
+  },
+  'platform.examples.viewAll': {
+    en: 'View all examples',
+    'zh-CN': '查看全部示例'
+  },
+  'platform.examples.higgsfield.title': {
+    en: 'Build your own Higgsfield',
+    'zh-CN': '打造你自己的 Higgsfield'
+  },
+  'platform.examples.higgsfield.description': {
+    en: 'A cinematic AI video app with camera-controlled generation, partner video models, and your own workflows behind one endpoint.',
+    'zh-CN':
+      '一个电影感 AI 视频应用——镜头运动可控的生成体验，合作伙伴视频模型与你自己的工作流都在同一个端点之后。'
+  },
+  'platform.examples.sprite.title': {
+    en: 'Sprite generator',
+    'zh-CN': '精灵图生成器'
+  },
+  'platform.examples.sprite.description': {
+    en: 'Batch-generate game assets with the submit-and-poll pattern.',
+    'zh-CN': '用提交-轮询模式批量生成游戏素材。'
+  },
+  'platform.examples.discord.title': {
+    en: 'Discord bot',
+    'zh-CN': 'Discord 机器人'
+  },
+  'platform.examples.discord.description': {
+    en: 'Generate from a slash command; outputs delivered by webhook.',
+    'zh-CN': '通过斜杠命令发起生成，结果由 Webhook 送达。'
+  },
+  'platform.examples.hub.title': {
+    en: 'One-click Hub apps',
+    'zh-CN': '一键 Hub 应用'
+  },
+  'platform.examples.hub.description': {
+    en: 'Any shared Hub workflow becomes an app with a running endpoint.',
+    'zh-CN': '任何共享的 Hub 工作流都能一键变成带运行端点的应用。'
+  },
+  'platform.examples.tryOn.title': {
+    en: 'Virtual try-on',
+    'zh-CN': '虚拟试穿'
+  },
+  'platform.examples.tryOn.description': {
+    en: 'A real e-commerce clothing-swap flow behind one endpoint. Built for a business, not a demo.',
+    'zh-CN': '一个真实的电商换装流程，藏在一个端点之后——这是业务，不是演示。'
+  },
+  'platform.examples.emoji.title': {
+    en: 'Emoji generator',
+    'zh-CN': 'Emoji 生成器'
+  },
+  'platform.examples.emoji.description': {
+    en: 'The small, shareable app: instant gratification from a few lines of JS.',
+    'zh-CN': '小巧、易分享的应用：几行 JS 就能带来即时满足。'
+  },
+  'platform.examples.dcc.title': {
+    en: 'DCC plugin',
+    'zh-CN': 'DCC 插件'
+  },
+  'platform.examples.dcc.description': {
+    en: 'ComfyUI as a backend inside Photoshop, Blender, or TouchDesigner.',
+    'zh-CN': '把 ComfyUI 作为 Photoshop、Blender 或 TouchDesigner 内部的后端。'
+  },
+  'platform.examples.agent.title': {
+    en: 'Agent builds & deploys',
+    'zh-CN': '智能体构建并部署'
+  },
+  'platform.examples.agent.description': {
+    en: 'A coding agent takes a workflow from graph to live endpoint with comfy-cli and MCP.',
+    'zh-CN':
+      '编码智能体借助 comfy-cli 和 MCP，把工作流从节点图一路变成线上端点。'
+  },
+  'platform.customers.heading': {
+    en: 'From one GPU to a render farm',
+    'zh-CN': '从一块 GPU 到一整座渲染农场'
+  },
+  'platform.customers.quote': {
+    en: '“10× faster than wiring it together ourselves.”',
+    'zh-CN': '“比我们自己从头拼接快 10 倍。”'
+  },
+  'platform.customers.quoteAttribution': {
+    en: 'Design partner, private beta',
+    'zh-CN': '私测阶段设计合作伙伴'
+  },
+  'platform.customers.solo.title': {
+    en: 'Solo & indie',
+    'zh-CN': '个人与独立开发者'
+  },
+  'platform.customers.solo.description': {
+    en: 'Ship a side project on the same endpoint a studio would use. Pay only for the GPU seconds it burns.',
+    'zh-CN':
+      '用与工作室相同的端点发布你的业余项目，只为实际消耗的 GPU 秒数付费。'
+  },
+  'platform.customers.solo.cta': {
+    en: 'Get started',
+    'zh-CN': '立即开始'
+  },
+  'platform.customers.studio.title': {
+    en: 'Studios & agencies',
+    'zh-CN': '工作室与代理机构'
+  },
+  'platform.customers.studio.description': {
+    en: 'Client workflows behind stable endpoints, with the reproducibility to rerun a delivery months later.',
+    'zh-CN': '把客户工作流放在稳定端点之后，数月后仍能完全复现同一次交付。'
+  },
+  'platform.customers.studio.cta': {
+    en: 'Read customer stories',
+    'zh-CN': '阅读客户故事'
+  },
+  'platform.customers.enterprise.title': {
+    en: 'Enterprise',
+    'zh-CN': '企业'
+  },
+  'platform.customers.enterprise.description': {
+    en: 'Managed Builds: approved checkpoints, vetted nodes, and deployment governance across the fleet. SOC 2 underway.',
+    'zh-CN':
+      '托管构建：经批准的模型检查点、经审核的节点，以及覆盖整个集群的部署治理。SOC 2 认证进行中。'
+  },
+  'platform.customers.enterprise.cta': {
+    en: 'Contact sales',
+    'zh-CN': '联系销售'
+  },
+  'pricing.lookingForElse.heading': {
+    en: 'Looking for something else?',
+    'zh-CN': '在找别的方案？'
+  },
+  'pricing.lookingForElse.community.title': {
+    en: 'Community Edition',
+    'zh-CN': '社区版'
+  },
+  'pricing.lookingForElse.community.description': {
+    en: 'A standard, self-hosted version of ComfyUI is available on GitHub.',
+    'zh-CN': '标准的自托管版 ComfyUI 已在 GitHub 上提供。'
+  },
+  'pricing.lookingForElse.community.github': {
+    en: 'View on GitHub',
+    'zh-CN': '前往 GitHub'
+  },
+  'pricing.lookingForElse.community.docs': {
+    en: 'Self-hosting docs',
+    'zh-CN': '自托管文档'
+  },
+  'pricing.resourceCosts.note': {
+    en: 'Applies to the Serverless API on the Developer Platform.',
+    'zh-CN': '仅适用于开发者平台上的 Serverless API。'
+  },
+  'pricing.resourceCosts.heading': {
+    en: 'Resource costs',
+    'zh-CN': '资源成本'
+  },
+  'platform.pricing.heading': {
+    en: 'Pricing',
+    'zh-CN': '定价'
+  },
+  'platform.pricing.subtitle': {
+    en: 'Only pay for what you use.',
+    'zh-CN': '只为实际用量付费。'
+  },
+  'platform.pricing.idleNote': {
+    en: 'Storage bills continuously; GPU time only while workers are up. Never pay for idle compute.',
+    'zh-CN': '存储持续计费；GPU 只在工作节点运行时计费。绝不为闲置算力付费。'
+  },
+  'platform.pricing.gpuColumn': {
+    en: 'GPU',
+    'zh-CN': 'GPU'
+  },
+  'platform.pricing.vramColumn': {
+    en: 'VRAM',
+    'zh-CN': '显存'
+  },
+  'platform.pricing.priceColumn': {
+    en: 'Price',
+    'zh-CN': '价格'
+  },
+  'platform.pricing.creditsColumn': {
+    en: 'Comfy Credits',
+    'zh-CN': 'Comfy 积分'
+  },
+  'platform.pricing.storageColumn': {
+    en: 'Storage',
+    'zh-CN': '存储'
+  },
+  'platform.pricing.storage.standardUnder1tb': {
+    en: 'Standard network storage, under 1 TB',
+    'zh-CN': '网络存储——标准，1 TB 以下'
+  },
+  'platform.pricing.storage.standardOver1tb': {
+    en: 'Standard network storage, 1 TB and above',
+    'zh-CN': '网络存储——标准，1 TB 及以上'
+  },
+  'platform.pricing.storage.highPerformance': {
+    en: 'High-performance network storage',
+    'zh-CN': '网络存储——高性能'
+  },
+  'platform.pricing.storage.containerDisk': {
+    en: 'Container disk',
+    'zh-CN': '容器磁盘'
+  },
+  'platform.pricing.storageNote': {
+    en: "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
+    'zh-CN':
+      '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
+  },
+  'platform.pricing.billedPerSecond': {
+    en: 'Billed by the GPU second',
+    'zh-CN': '按 GPU 秒计费'
+  },
+  'platform.pricing.storageExample': {
+    en: 'Worked example: 500 GB of models on standard network storage = $45.50/mo + GPU time.',
+    'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $45.50 + GPU 时间。'
+  },
+  'platform.pricing.modelsNote': {
+    en: 'Models API usage shows per-output prices on each model card and draws from the same credit pool.',
+    'zh-CN':
+      'Models API 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
+  },
+  'platform.faq.betaBanner': {
+    en: 'Limited beta: builds can take up to 3 hours and may fail. You get a direct support line while we harden the pipeline.',
+    'zh-CN':
+      '有限测试阶段：构建最长可能需要 3 小时，并且可能失败。在我们加固管线期间，你将获得直达的支持渠道。'
+  },
+  'platform.faq.betaBannerLead': {
+    en: 'Limited beta: builds can take up to 3 hours and may fail.',
+    'zh-CN': '有限测试阶段：构建最长可能需要 3 小时，并且可能失败。'
+  },
+  'platform.faq.betaBannerSupport': {
+    en: 'You get a direct support line while we harden the pipeline.',
+    'zh-CN': '在我们加固管线期间，你将获得直达的支持渠道。'
+  },
+  'platform.faq.heading': {
+    en: 'Frequently asked questions',
+    'zh-CN': '常见问题'
+  },
+  'platform.faq.1.q': {
+    en: 'How is this different from renting a GPU cloud myself?',
+    'zh-CN': '这与我自己租用 GPU 云有什么不同？'
+  },
+  'platform.faq.1.a': {
+    en: 'A bare GPU still leaves the wiring to you: dependency conflicts, checkpoint hunting, cold-start ops. The platform resolves your nodes, models, and pinned dependencies into an immutable build and puts it behind an autoscaling endpoint.',
+    'zh-CN':
+      '裸 GPU 仍然把接线工作留给你：依赖冲突、四处寻找模型检查点、冷启动运维。平台会把你的节点、模型和锁定依赖解析成一个不可变构建，并把它放在自动扩缩的端点之后。'
+  },
+  'platform.faq.2.q': {
+    en: 'Does my workflow need to change?',
+    'zh-CN': '我的工作流需要修改吗？'
+  },
+  'platform.faq.2.a': {
+    en: 'No. Export the API-format JSON of the workflow you already run and deploy it as-is.',
+    'zh-CN': '不需要。导出你现有工作流的 API 格式 JSON，原样部署即可。'
+  },
+  'platform.faq.3.q': {
+    en: 'What about conflicting Python dependencies?',
+    'zh-CN': 'Python 依赖冲突怎么办？'
+  },
+  'platform.faq.3.a': {
+    en: 'Builder resolves them into a pinned, reproducible build. You can override any pin.',
+    'zh-CN': 'Builder 会把它们解析成锁定、可复现的构建。任何锁定项都可以覆盖。'
+  },
+  'platform.faq.4.q': {
+    en: 'Is ComfyUI still open source?',
+    'zh-CN': 'ComfyUI 还是开源的吗？'
+  },
+  'platform.faq.4.a': {
+    en: 'Yes. The engine is unchanged, and builds stay portable. Run them on your own GPU, your own server, or our serverless platform.',
+    'zh-CN':
+      '是的。引擎没有变化，构建保持可移植——可以在你自己的 GPU、你自己的服务器或我们的无服务器平台上运行。'
+  },
+  'platform.faq.5.q': {
+    en: 'How does billing work?',
+    'zh-CN': '如何计费？'
+  },
+  'platform.faq.5.a': {
+    en: 'Pay for what you use, charged by the GPU second. Router usage draws per-output prices from the same credit pool.',
+    'zh-CN':
+      '按用量付费，以 GPU 秒计费。Router 用量按单次输出价格从同一积分池扣费。'
+  },
+  'platform.faq.6.q': {
+    en: 'How long are generated outputs retained?',
+    'zh-CN': '生成结果会保留多久？'
+  },
+  'platform.faq.6.a': {
+    en: 'Outputs are retained for 24 hours. Move them to your own storage.',
+    'zh-CN': '生成结果保留 24 小时——请及时转存到你自己的存储。'
+  },
+  'platform.faq.7.q': {
+    en: 'Is the platform SOC 2 certified?',
+    'zh-CN': '平台通过 SOC 2 认证了吗？'
+  },
+  'platform.faq.7.a': {
+    en: 'SOC 2 is underway. Contact us for current status and security documentation.',
+    'zh-CN': 'SOC 2 认证正在进行中。欢迎联系我们了解最新进展与安全文档。'
+  },
+  'platform.faq.8.q': {
+    en: 'Does it autoscale? What about cold starts?',
+    'zh-CN': '它能自动扩缩吗？冷启动怎么办？'
+  },
+  'platform.faq.8.a': {
+    en: 'Yes. Endpoints scale with your request volume. Set minWorkers above zero to keep warm workers and eliminate cold starts on the endpoints that need it.',
+    'zh-CN':
+      '能——端点会随请求量自动扩缩。把 minWorkers 设为大于零即可保留常驻工作节点，为需要的端点消除冷启动。'
+  },
+  'platform.faq.9.q': {
+    en: 'Do I need a particular plan?',
+    'zh-CN': '需要特定的订阅计划吗？'
+  },
+  'platform.faq.9.a': {
+    en: 'The platform and Builder are included with any Comfy subscription. A Team or Enterprise plan is only needed to share builds with teammates; governance over models and partner nodes is Enterprise-only.',
+    'zh-CN':
+      '任何 Comfy 订阅都包含平台和 Builder。只有与队友共享构建才需要 Team 或 Enterprise 计划；模型与合作伙伴节点的治理功能仅限 Enterprise。'
+  },
+  'platform.faq.10.q': {
+    en: 'What are the limits during beta?',
+    'zh-CN': '测试期间有哪些限制？'
+  },
+  'platform.faq.10.a': {
+    en: 'During beta, the default limits are 10 concurrent workers, 10 builds, 3 deployments, and 500 GB of models per deployment. All limits can be raised on request.',
+    'zh-CN':
+      '测试期间：10 个并发工作节点、10 个构建、3 个部署，每个部署最多 500 GB 模型——均可申请提高。'
+  },
+  'platform.faq.11.q': {
+    en: 'When is general availability?',
+    'zh-CN': '什么时候正式发布？'
+  },
+  'platform.faq.11.a': {
+    en: 'Targeting the end of September 2026.',
+    'zh-CN': '目标是 2026 年 9 月底。'
+  },
+  // ── Serverless API subpage ────────────────────────────────────
+  'platform.serverlessFeatures.heading': {
+    en: 'Everything an endpoint needs',
+    'zh-CN': '一个端点所需的一切'
+  },
+  'platform.serverlessFeatures.1.title': {
+    en: 'Autoscaling with warm workers',
+    'zh-CN': '自动扩缩与常驻工作节点'
+  },
+  'platform.serverlessFeatures.1.description': {
+    en: 'Endpoints scale with request volume. Set minWorkers above zero to keep warm workers on the endpoints that need them.',
+    'zh-CN':
+      '端点随请求量自动扩缩。把 minWorkers 设为大于零，就能为需要的端点保留常驻工作节点。'
+  },
+  'platform.serverlessFeatures.2.title': {
+    en: 'Choose your GPU',
+    'zh-CN': '自选 GPU'
+  },
+  'platform.serverlessFeatures.2.description': {
+    en: 'RTX 5090 to B200 — pick the GPU class each deployment runs on. Billed by the GPU second.',
+    'zh-CN':
+      '从 RTX 5090 到 B200——为每个部署选择运行的 GPU 级别，按 GPU 秒计费。'
+  },
+  'platform.serverlessFeatures.3.title': {
+    en: 'Deploy in one step',
+    'zh-CN': '一步部署'
+  },
+  'platform.serverlessFeatures.3.description': {
+    en: 'Drag a workflow into the console or deploy from comfy-cli. Builder resolves it into an immutable build first.',
+    'zh-CN':
+      '把工作流拖进控制台，或用 comfy-cli 部署。Builder 会先把它解析成一个不可变构建。'
+  },
+  'platform.serverlessFeatures.4.title': {
+    en: 'SDK or plain HTTP',
+    'zh-CN': 'SDK 或纯 HTTP'
+  },
+  'platform.serverlessFeatures.4.description': {
+    en: 'Python and TypeScript SDKs are the front door; a plain POST to your endpoint URL works too.',
+    'zh-CN':
+      'Python 和 TypeScript SDK 是首选入口；直接向端点 URL 发 POST 同样可行。'
+  },
+  'platform.serverlessFeatures.5.title': {
+    en: 'Private by default',
+    'zh-CN': '默认私有'
+  },
+  'platform.serverlessFeatures.5.description': {
+    en: 'Models and code stay in your builds and deployments — delete them anytime. Generated outputs are retained for 24 hours.',
+    'zh-CN':
+      '模型和代码只存在于你的构建与部署中——随时可以删除。生成结果保留 24 小时。'
+  },
+  'platform.serverlessFeatures.6.title': {
+    en: 'Limits that grow with you',
+    'zh-CN': '随你增长的限额'
+  },
+  'platform.serverlessFeatures.6.description': {
+    en: 'Beta limits — 10 concurrent workers, 10 builds, 3 deployments, 500 GB of models per deployment — are all raisable on request.',
+    'zh-CN':
+      '测试期限额——10 个并发工作节点、10 个构建、3 个部署、每个部署 500 GB 模型——均可申请提高。'
+  },
+  // ── Router subpage ────────────────────────────────────────────
+  'platform.modelsCalls.heading': {
+    en: 'Three calls, one queue',
+    'zh-CN': '三种调用，一个队列'
+  },
+  'platform.modelsCalls.subtitle': {
+    en: 'Direct, queued, or fire-and-forget — pick the call shape. The queue makes sure nothing is dropped.',
+    'zh-CN': '直接、排队或即发即忘——选择你要的调用方式。队列确保请求永不丢失。'
+  },
+  'platform.modelsFeatures.heading': {
+    en: 'One key, every frontier model',
+    'zh-CN': '一个密钥，所有前沿模型'
+  },
+  'platform.modelsFeatures.1.title': {
+    en: 'Every frontier media model',
+    'zh-CN': '所有前沿媒体模型'
+  },
+  'platform.modelsFeatures.1.description': {
+    en: '36+ partner providers — Nano Banana, Veo, Kling, Seedance, Flux, Sora, GPT Image, Runway, Luma, ElevenLabs and more — behind stable model IDs.',
+    'zh-CN':
+      '36+ 家合作伙伴——Nano Banana、Veo、Kling、Seedance、Flux、Sora、GPT Image、Runway、Luma、ElevenLabs 等——都在稳定的模型 ID 之后。'
+  },
+  'platform.modelsFeatures.2.title': {
+    en: 'Never dropped',
+    'zh-CN': '永不丢弃'
+  },
+  'platform.modelsFeatures.2.description': {
+    en: 'Queued requests never die with a 429. They hold a queue position against your workspace concurrency and start the moment a slot frees.',
+    'zh-CN':
+      '排队中的请求绝不会以 429 告终。它们在你工作区的并发额度内保留队列位置，一有空位立刻开始。'
+  },
+  'platform.modelsFeatures.3.title': {
+    en: 'One credit pool',
+    'zh-CN': '一个积分池'
+  },
+  'platform.modelsFeatures.3.description': {
+    en: 'Pay per use from the same balance that powers Cloud workflows and serverless GPUs. No subscription floor.',
+    'zh-CN':
+      '按用量付费，与 Cloud 工作流和无服务器 GPU 共用同一余额。没有订阅门槛。'
+  },
+  'platform.modelsFeatures.4.title': {
+    en: 'Costs you can attribute',
+    'zh-CN': '可归因的成本'
+  },
+  'platform.modelsFeatures.4.description': {
+    en: 'Every completed request returns the credits it consumed. Failed provider calls are never billed.',
+    'zh-CN': '每个完成的请求都会返回其消耗的积分。失败的调用绝不计费。'
+  },
+  'platform.modelsFeatures.5.title': {
+    en: 'Schemas to generate against',
+    'zh-CN': '可直接生成代码的 Schema'
+  },
+  'platform.modelsFeatures.5.description': {
+    en: 'Every model publishes its own OpenAPI document — the same one the server validates your call against.',
+    'zh-CN':
+      '每个模型都发布自己的 OpenAPI 文档——服务器校验你的调用时用的正是同一份。'
+  },
+  'platform.modelsFeatures.6.title': {
+    en: 'Cancel anytime',
+    'zh-CN': '随时取消'
+  },
+  'platform.modelsFeatures.6.description': {
+    en: 'A queued request cancels immediately and costs nothing; in-progress calls get a best-effort cancel.',
+    'zh-CN': '排队中的请求立即取消且不产生费用；进行中的调用会尽力取消。'
+  },
+  // ── Builder subpage ───────────────────────────────────────────
+  'platform.builderProblem.heading': {
+    en: 'Teams love using Comfy — and hate managing it',
+    'zh-CN': '团队爱用 Comfy——却讨厌管理它'
+  },
+  'platform.builderProblem.1': {
+    en: 'The same nodes installed a week apart resolve different dependencies — a workflow works on one machine and fails on the next.',
+    'zh-CN':
+      '相隔一周安装的同一批节点会解析出不同的依赖——工作流在一台机器上能跑，在另一台上却失败。'
+  },
+  'platform.builderProblem.2': {
+    en: 'Environments drift mid-production, and outputs silently change.',
+    'zh-CN': '环境在制作中途悄悄漂移，产出也随之悄悄变化。'
+  },
+  'platform.builderProblem.3': {
+    en: 'Workflows get shared over a network drive, but no one can keep everyone on the same version.',
+    'zh-CN': '工作流通过网络硬盘共享，却没人能让所有人保持同一版本。'
+  },
+  'platform.builderProblem.4': {
+    en: 'Whoever runs Comfy for the team spends their time keeping it alive instead of using it.',
+    'zh-CN': '为团队维护 Comfy 的人，把时间都花在维持它运转上，而不是使用它。'
+  },
+  'platform.builderProblem.quote': {
+    en: '“Debugging our GPU cloud has become a bigger job for us than making workflows.”',
+    'zh-CN': '“调试我们的 GPU 云已经变成比制作工作流更大的工作。”'
+  },
+  'platform.builderProblem.quoteAttribution': {
+    en: 'Film production company',
+    'zh-CN': '影视制作公司'
+  },
+  'platform.builderPillars.heading': {
+    en: 'Get everyone on the same Comfy',
+    'zh-CN': '让每个人都用上同一个 Comfy'
+  },
+  'platform.builderPillars.1.title': {
+    en: 'Consistency',
+    'zh-CN': '一致性'
+  },
+  'platform.builderPillars.1.description': {
+    en: 'Ensure your team is using the same consistent build. Deploy exact models, custom nodes, pip dependencies and get consistent results.',
+    'zh-CN':
+      '确保团队使用同一个一致的构建。部署完全一致的模型、自定义节点和 pip 依赖，获得一致的结果。'
+  },
+  'platform.builderPillars.2.title': {
+    en: 'Comfy Desktop',
+    'zh-CN': 'Comfy Desktop'
+  },
+  'platform.builderPillars.2.description': {
+    en: 'Run builds locally on Desktop. Easily reinstall the same working build.',
+    'zh-CN': '在 Desktop 上本地运行构建，随时轻松重装同一个可用构建。'
+  },
+  'platform.builderPillars.3.title': {
+    en: 'Scale on Serverless',
+    'zh-CN': '在 Serverless 上扩展'
+  },
+  'platform.builderPillars.3.description': {
+    en: 'Builds can be deployed to Serverless and run programmatically.',
+    'zh-CN': '构建可以部署到 Serverless，并以编程方式运行。'
+  },
+  'platform.builderPillars.4.title': {
+    en: 'Migrate in minutes',
+    'zh-CN': '几分钟内完成迁移'
+  },
+  'platform.builderPillars.4.description': {
+    en: 'Easily migrate using the UI or your agent via Skills maintained by our team.',
+    'zh-CN':
+      '通过界面轻松迁移，或让你的智能体使用我们团队维护的 Skills 完成迁移。'
+  },
+  'platform.builderEnterprise.heading': {
+    en: 'Need enterprise controls?',
+    'zh-CN': '需要企业级控制？'
+  },
+  'platform.builderEnterprise.subtitle': {
+    en: "Model allowlists, per-partner-node control, and BYOK — run partner models on your organization's own keys. Managed Builds gives your admins governance over every build your organization runs.",
+    'zh-CN':
+      '模型白名单、逐个控制合作伙伴节点、BYOK——用组织自己的密钥运行合作伙伴模型。托管构建让管理员治理组织运行的每一个构建。'
+  },
+  'platform.closing.heading': {
+    en: 'Maximize scale and control on Developer Platform',
+    'zh-CN': '在开发者平台上将规模与控制力最大化'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
