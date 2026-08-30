@@ -1171,7 +1171,7 @@ describe('useAuthStore', () => {
       let bootCallback: (user: User | null) => void = () => {}
       vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
         (_auth, callback) => {
-          bootCallback = callback as (user: User | null) => void
+          if (typeof callback === 'function') bootCallback = callback
           return vi.fn()
         }
       )

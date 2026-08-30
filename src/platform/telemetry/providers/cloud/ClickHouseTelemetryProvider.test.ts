@@ -16,9 +16,13 @@ vi.mock('@/scripts/api', () => ({
 
 const ANALYTICS_ENDPOINT = '/internal/cloud_analytics'
 
-function lastPostedEvent() {
+function lastPostedEvent(): unknown {
   const [, init] = mockFetchApi.mock.lastCall!
-  return JSON.parse(init.body as string)
+  const { body } = init
+  if (typeof body !== 'string') {
+    throw new TypeError(`Expected a string request body, got ${typeof body}`)
+  }
+  return JSON.parse(body)
 }
 
 describe('ClickHouseTelemetryProvider', () => {
