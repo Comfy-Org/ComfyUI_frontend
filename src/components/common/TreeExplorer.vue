@@ -27,6 +27,8 @@
           "
           :data-tree-key="item.value.key"
           :data-parent-key="item.parentItem?.key"
+          :data-parent-label="item.parentItem?.label"
+          :data-tree-node-type="item.value.type"
           :style="{
             paddingLeft: `calc(var(--comfy-tree-explorer-item-padding) + ${(item.level - 1) * 16}px)`
           }"
