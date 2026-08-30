@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { defineComponent } from 'vue'
 
-vi.mock('primevue/popover', () => {
+vi.mock('@/components/ui/popover/PopoverOverlay.vue', () => {
   const PopoverStub = defineComponent({
     name: 'Popover',
     setup(_, { slots, expose }) {

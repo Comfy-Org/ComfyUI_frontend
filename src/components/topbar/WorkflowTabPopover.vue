@@ -5,14 +5,9 @@
   ></div>
   <Popover
     ref="popoverRef"
-    append-to="body"
-    :pt="{
-      root: {
-        class: 'workflow-popover-fade fit-content',
-        'data-popover-id': id
-      }
-    }"
-    @mouseenter="cancelHidePopover"
+    side="top"
+    :side-offset="8"
+    content-class="workflow-popover-fade w-fit border-none bg-transparent p-0"
     @mouseleave="hidePopover"
   >
     <div class="workflow-preview-content">
@@ -34,8 +29,8 @@
 </template>
 
 <script setup lang="ts">
-import Popover from 'primevue/popover'
-import { nextTick, ref, toRefs, useId } from 'vue'
+import Popover from '@/components/ui/popover/PopoverOverlay.vue'
+import { ref, toRefs } from 'vue'
 
 const POPOVER_WIDTH = 250
 
@@ -51,10 +46,8 @@ const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const positionRef = ref<HTMLElement | null>(null)
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let showTimeout: ReturnType<typeof setTimeout> | null = null
-const id = useId()
 
 const showPopover = (event: Event) => {
-  // Clear any existing timeouts
   if (hideTimeout) {
     clearTimeout(hideTimeout)
     hideTimeout = null
@@ -64,56 +57,14 @@ const showPopover = (event: Event) => {
     showTimeout = null
   }
 
-  // Show popover after a short delay
-  showTimeout = setTimeout(async () => {
+  showTimeout = setTimeout(() => {
     if (popoverRef.value && positionRef.value) {
       popoverRef.value.show(event, positionRef.value)
-      await nextTick()
-      // PrimeVue has a bug where when the tabs are scrolled, it positions the element incorrectly
-      // Manually set the position to the middle of the tab and prevent it from going off the left/right edge
-      const el = document.querySelector(
-        `.workflow-popover-fade[data-popover-id="${id}"]`
-      ) as HTMLElement
-      if (el) {
-        const middle = positionRef.value!.getBoundingClientRect().left
-        const popoverWidth = el.getBoundingClientRect().width
-        const halfWidth = popoverWidth / 2
-        let pos = middle - halfWidth
-        let shift = 0
-
-        // Calculate shift when clamping is needed
-        if (pos < 0) {
-          shift = pos - 8 // Negative shift to move arrow left
-          pos = 8
-        } else if (pos + popoverWidth > window.innerWidth) {
-          const newPos = window.innerWidth - popoverWidth - 16
-          shift = pos - newPos // Positive shift to move arrow right
-          pos = newPos
-        }
-
-        if (shift + halfWidth < 0) {
-          shift = -halfWidth + 24
-        }
-
-        el.style.left = `${pos}px`
-        el.style.setProperty('--shift', `${shift}px`)
-      }
     }
-  }, 200) // 200ms delay before showing
-}
-
-const cancelHidePopover = () => {
-  // Temporarily disable this functionality until we need the popover to be interactive:
-  /*
-  if (hideTimeout) {
-    clearTimeout(hideTimeout)
-    hideTimeout = null
-  }
-  */
+  }, 200)
 }
 
 const hidePopover = () => {
-  // Clear show timeout if mouse leaves before popover appears
   if (showTimeout) {
     clearTimeout(showTimeout)
     showTimeout = null
@@ -123,7 +74,7 @@ const hidePopover = () => {
     if (popoverRef.value) {
       popoverRef.value.hide()
     }
-  }, 100) // Minimal delay to allow moving to popover
+  }, 100)
 }
 
 const togglePopover = (event: Event) => {
@@ -185,27 +136,13 @@ defineExpose({
 
 <style>
 .workflow-popover-fade {
-  --p-popover-background: transparent;
-  --p-popover-content-padding: 0;
   border-radius: var(--radius-xl);
   background-color: transparent;
   box-shadow: var(--shadow-lg);
-  transition: opacity 0.15s ease-out !important;
-}
-
-.workflow-popover-fade.p-popover-flipped {
-  transform: translateY(-100%);
+  transition: opacity 0.15s ease-out;
 }
 
 .dark-theme .workflow-popover-fade {
   box-shadow: var(--shadow-2xl);
-}
-
-.workflow-popover-fade.p-popover::after,
-.workflow-popover-fade.p-popover::before {
-  --p-popover-border-color: var(--comfy-menu-secondary-bg);
-  left: 50%;
-  transform: translateX(calc(-50% + var(--shift)));
-  margin-left: 0;
 }
 </style>

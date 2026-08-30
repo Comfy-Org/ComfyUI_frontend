@@ -40,12 +40,8 @@
 
     <Popover
       ref="popover"
-      :show-arrow="false"
-      :pt="{
-        root: {
-          class: 'rounded-lg w-80'
-        }
-      }"
+      align="end"
+      content-class="w-80 overflow-hidden p-0"
       @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace
@@ -61,7 +57,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Popover from 'primevue/popover'
+import Popover from '@/components/ui/popover/PopoverOverlay.vue'
 import Skeleton from 'primevue/skeleton'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
