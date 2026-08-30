@@ -213,7 +213,7 @@ test.describe('Queue overlay', () => {
         )
         .toEqual(output)
 
-      await comfyPage.menu.assetsTab.open()
+      await comfyPage.menu.assetsTab.open({ waitForAssets: false })
       await expect(
         comfyPage.menu.assetsTab.getAssetCardByName('workflow-output')
       ).toBeVisible()
