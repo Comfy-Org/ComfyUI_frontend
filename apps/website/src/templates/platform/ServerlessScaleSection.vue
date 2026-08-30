@@ -31,14 +31,12 @@ const clusterYs = [22, 60, 98]
 
     <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       <!-- Autoscaling: a stepped worker line tracking a dashed demand curve -->
-      <article
-        class="rounded-3xl border border-white/10 bg-transparency-white-t4 p-5 lg:p-6"
-      >
+      <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
         <div
           aria-hidden="true"
           class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4"
         >
-          <svg viewBox="0 0 240 120" class="h-full w-full">
+          <svg viewBox="0 0 240 120" class="size-full">
             <path
               d="M 8 96 C 48 88, 64 44, 96 36 C 128 28, 144 60, 176 52 C 200 46, 216 24, 232 20"
               class="animate-dash-flow fill-none stroke-primary-comfy-canvas/40"
@@ -47,7 +45,7 @@ const clusterYs = [22, 60, 98]
             />
             <path
               d="M 8 104 H 48 V 72 H 88 V 48 H 128 V 64 H 168 V 40 H 208 V 28 H 232"
-              class="fill-none stroke-primary-comfy-yellow"
+              class="stroke-primary-comfy-yellow fill-none"
               stroke-width="2"
             />
             <path
@@ -65,9 +63,7 @@ const clusterYs = [22, 60, 98]
       </article>
 
       <!-- Logs: a console panel streaming rows -->
-      <article
-        class="rounded-3xl border border-white/10 bg-transparency-white-t4 p-5 lg:p-6"
-      >
+      <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
         <div
           aria-hidden="true"
           class="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black/40"
@@ -116,14 +112,12 @@ const clusterYs = [22, 60, 98]
       </article>
 
       <!-- Any workflow & model: the ecosystem converging on one endpoint -->
-      <article
-        class="rounded-3xl border border-white/10 bg-transparency-white-t4 p-5 lg:p-6"
-      >
+      <article class="bg-transparency-white-t4 rounded-3xl p-5 lg:p-6">
         <div
           aria-hidden="true"
           class="flex aspect-video items-center overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4"
         >
-          <svg viewBox="0 0 240 120" class="h-full w-full">
+          <svg viewBox="0 0 240 120" class="size-full">
             <g v-for="y in clusterYs" :key="y">
               <path
                 :d="`M 64 ${y} C 110 ${y}, 130 60, 168 60`"
@@ -190,7 +184,7 @@ const clusterYs = [22, 60, 98]
               cx="188"
               cy="60"
               r="24"
-              class="animate-ripple fill-none stroke-primary-comfy-yellow/40"
+              class="animate-ripple stroke-primary-comfy-yellow/40 fill-none"
             />
             <circle cx="188" cy="60" r="11" class="fill-primary-comfy-yellow" />
           </svg>

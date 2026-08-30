@@ -3,7 +3,8 @@ import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { platformCtas } from './ctas'
-import ServerlessVisual from './ServerlessVisual.vue'
+import PlatformHeroBadge from './PlatformHeroBadge.vue'
+import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -17,12 +18,19 @@ const ctas = platformCtas(locale)
     beta
     :badge-text="t('platform.hero.badge', locale)"
     :title="t('platform.products.serverless.title', locale)"
+    title-class="sr-only"
     :subtitle="t('platform.products.serverless.description', locale)"
     :primary-cta="ctas.getStarted"
     :secondary-cta="ctas.docs"
   >
+    <template #badge>
+      <PlatformHeroBadge
+        :locale="locale"
+        :label="t('platform.products.serverless.title', locale)"
+      />
+    </template>
     <template #media>
-      <ServerlessVisual :locale />
+      <ServerlessIsometricStudy :locale />
     </template>
   </HeroSplit01>
 </template>

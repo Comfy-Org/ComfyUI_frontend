@@ -32,6 +32,7 @@ const {
   tabs: Record<string, CodeTab>
   label: string
   contentClass?: string
+  listClass?: string
 }>()
 
 const activeTab = ref(Object.keys(tabs)[0])
@@ -101,7 +102,12 @@ function cycleValue(values: string[]): string {
   >
     <TabsList
       :aria-label="label"
-      class="flex w-full max-w-full scrollbar-none overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:inline-flex sm:w-auto"
+      :class="
+        cn(
+          'flex w-full max-w-full scrollbar-none overflow-x-auto rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:inline-flex sm:w-auto',
+          listClass
+        )
+      "
     >
       <TabsTrigger
         v-for="(tab, tabId) in tabs"

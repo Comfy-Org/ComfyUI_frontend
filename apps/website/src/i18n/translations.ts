@@ -7426,9 +7426,9 @@ const translations = {
     'zh-CN': '几分钟内上线'
   },
   'platform.serverlessDeploy.subtitle': {
-    en: 'Easily package up your existing ComfyUI environment — or a single workflow — and deploy to Serverless.',
+    en: 'Easily package up your existing ComfyUI environment — or a single workflow — and deploy to Serverless API.',
     'zh-CN':
-      '轻松打包你现有的 ComfyUI 环境——或单个工作流——并部署到 Serverless。'
+      '轻松打包你现有的 ComfyUI 环境——或单个工作流——并部署到 Serverless API。'
   },
   'platform.serverlessDeploy.tabInstall': {
     en: 'Start with your installation',
