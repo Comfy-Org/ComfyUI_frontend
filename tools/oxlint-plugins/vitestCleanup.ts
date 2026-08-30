@@ -251,6 +251,19 @@ function enclosingExecutionBoundaryIndex(ancestors: readonly Node[]): number {
   return ancestors.findLastIndex(isDeferredBoundary)
 }
 
+function isVitestCallback(
+  context: RuleContext,
+  expression: Expression,
+  callbackImports: ReadonlySet<string>
+): boolean {
+  return (
+    isVitestImport(context, expression, callbackImports) ||
+    [...callbackImports].some((callback) =>
+      isVitestNamespaceMember(context, expression, callback)
+    )
+  )
+}
+
 function isVitestCallbackCall(
   context: RuleContext,
   node: Node | undefined,
@@ -258,9 +271,15 @@ function isVitestCallbackCall(
 ): node is CallExpression {
   if (node?.type !== 'CallExpression') return false
   const call = node as CallExpression
-  if (isVitestImport(context, call.callee, callbackImports)) return true
-  return [...callbackImports].some((callback) =>
-    isVitestNamespaceMember(context, call.callee, callback)
+  if (isVitestCallback(context, call.callee, callbackImports)) return true
+
+  const factoryCall = unwrapChain(call.callee)
+  if (factoryCall.type !== 'CallExpression') return false
+  const factory = asMemberExpression((factoryCall as CallExpression).callee)
+  return (
+    factory !== undefined &&
+    staticMemberName(factory) === 'each' &&
+    isVitestCallback(context, factory.object, callbackImports)
   )
 }
 
