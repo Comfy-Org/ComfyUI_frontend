@@ -490,7 +490,7 @@
               rows="1"
               :placeholder="$t('customNodePacks.editor.agent.placeholder')"
               :aria-label="$t('customNodePacks.editor.agent.placeholder')"
-              maxlength="4096"
+              maxlength="16384"
               @keydown.enter.exact.prevent="askAgent"
             />
             <div class="flex items-center justify-end px-1.5 pb-1.5">
