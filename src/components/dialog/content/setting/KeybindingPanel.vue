@@ -51,7 +51,10 @@
           class="min-w-0 overflow-x-hidden"
           @contextmenu.capture="clearContextMenuTarget"
         >
-          <Table class="rounded-lg border border-border-default">
+          <Table
+            data-testid="keybinding-table-container"
+            class="rounded-lg border border-border-default"
+          >
             <TableHeader>
               <TableRow>
                 <TableHead>
