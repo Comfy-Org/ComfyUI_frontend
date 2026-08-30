@@ -1,86 +1,108 @@
 <template>
   <div class="flex flex-col">
-    <Button
-      v-tooltip.right="{ value: t('load3d.gizmo.toggle'), showDelay: 300 }"
-      variant="textonly"
-      size="icon"
-      :class="cn('rounded-full', gizmoEnabled && 'ring-2 ring-white/50')"
-      :aria-label="t('load3d.gizmo.toggle')"
-      @click="toggleGizmo"
+    <Tooltip
+      :config="{ value: t('load3d.gizmo.toggle'), showDelay: 300 }"
+      side="right"
     >
-      <i class="pi pi-compass text-lg text-base-foreground" />
-    </Button>
+      <Button
+        variant="textonly"
+        size="icon"
+        :class="cn('rounded-full', gizmoEnabled && 'ring-2 ring-white/50')"
+        :aria-label="t('load3d.gizmo.toggle')"
+        @click="toggleGizmo"
+      >
+        <i class="pi pi-compass text-lg text-base-foreground" />
+      </Button>
+    </Tooltip>
 
     <template v-if="gizmoEnabled">
-      <Button
-        v-tooltip.right="{
+      <Tooltip
+        :config="{
           value: t('load3d.gizmo.translate'),
           showDelay: 300
         }"
-        variant="textonly"
-        size="icon"
-        :class="
-          cn(
-            'rounded-full',
-            gizmoMode === 'translate' && 'ring-2 ring-white/50'
-          )
-        "
-        :aria-label="t('load3d.gizmo.translate')"
-        @click="setMode('translate')"
+        side="right"
       >
-        <i class="pi pi-arrows-alt text-lg text-base-foreground" />
-      </Button>
+        <Button
+          variant="textonly"
+          size="icon"
+          :class="
+            cn(
+              'rounded-full',
+              gizmoMode === 'translate' && 'ring-2 ring-white/50'
+            )
+          "
+          :aria-label="t('load3d.gizmo.translate')"
+          @click="setMode('translate')"
+        >
+          <i class="pi pi-arrows-alt text-lg text-base-foreground" />
+        </Button>
+      </Tooltip>
 
-      <Button
-        v-tooltip.right="{
+      <Tooltip
+        :config="{
           value: t('load3d.gizmo.rotate'),
           showDelay: 300
         }"
-        variant="textonly"
-        size="icon"
-        :class="
-          cn('rounded-full', gizmoMode === 'rotate' && 'ring-2 ring-white/50')
-        "
-        :aria-label="t('load3d.gizmo.rotate')"
-        @click="setMode('rotate')"
+        side="right"
       >
-        <i class="pi pi-sync text-lg text-base-foreground" />
-      </Button>
+        <Button
+          variant="textonly"
+          size="icon"
+          :class="
+            cn('rounded-full', gizmoMode === 'rotate' && 'ring-2 ring-white/50')
+          "
+          :aria-label="t('load3d.gizmo.rotate')"
+          @click="setMode('rotate')"
+        >
+          <i class="pi pi-sync text-lg text-base-foreground" />
+        </Button>
+      </Tooltip>
 
-      <Button
-        v-tooltip.right="{
+      <Tooltip
+        :config="{
           value: t('load3d.gizmo.scale'),
           showDelay: 300
         }"
-        variant="textonly"
-        size="icon"
-        :class="
-          cn('rounded-full', gizmoMode === 'scale' && 'ring-2 ring-white/50')
-        "
-        :aria-label="t('load3d.gizmo.scale')"
-        @click="setMode('scale')"
+        side="right"
       >
-        <i class="pi pi-expand text-lg text-base-foreground" />
-      </Button>
+        <Button
+          variant="textonly"
+          size="icon"
+          :class="
+            cn('rounded-full', gizmoMode === 'scale' && 'ring-2 ring-white/50')
+          "
+          :aria-label="t('load3d.gizmo.scale')"
+          @click="setMode('scale')"
+        >
+          <i class="pi pi-expand text-lg text-base-foreground" />
+        </Button>
+      </Tooltip>
 
-      <Button
-        v-tooltip.right="{
+      <Tooltip
+        :config="{
           value: t('load3d.gizmo.reset'),
           showDelay: 300
         }"
-        variant="textonly"
-        size="icon"
-        class="rounded-full"
-        :aria-label="t('load3d.gizmo.reset')"
-        @click="resetTransform"
+        side="right"
       >
-        <i class="pi pi-refresh text-lg text-base-foreground" />
-      </Button>
+        <Button
+          variant="textonly"
+          size="icon"
+          class="rounded-full"
+          :aria-label="t('load3d.gizmo.reset')"
+          @click="resetTransform"
+        >
+          <i class="pi pi-refresh text-lg text-base-foreground" />
+        </Button>
+      </Tooltip>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
