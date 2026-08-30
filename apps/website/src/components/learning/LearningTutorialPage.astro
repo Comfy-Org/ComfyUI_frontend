@@ -10,6 +10,7 @@ import type { LearningTutorial } from '../../data/learningTutorials'
 import {
   learningCrumbs,
   tutorialDescription,
+  tutorialMetaTitle,
   youtubeEmbedUrl
 } from '../../data/learningTutorials'
 import type { JsonLdNode } from '../../utils/jsonLd'
@@ -62,7 +63,7 @@ const breadcrumbs = [
 ---
 
 <BaseLayout
-  title={`${title} - Comfy`}
+  title={tutorialMetaTitle(tutorial, locale)}
   description={description}
   ogImage={tutorial.poster}
   mainEntityId={videoId}
