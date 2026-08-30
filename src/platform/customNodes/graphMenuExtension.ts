@@ -71,6 +71,7 @@ export function customNodeCanvasMenuItems(): IContextMenuValue[] {
     return [
       {
         content: t('customNodePacks.graphMenu.createNode'),
+        beforePaste: true,
         callback: newPackItem.callback
       }
     ]
@@ -78,6 +79,7 @@ export function customNodeCanvasMenuItems(): IContextMenuValue[] {
   return [
     {
       content: t('customNodePacks.graphMenu.createNode'),
+      beforePaste: true,
       has_submenu: true,
       submenu: {
         options: [

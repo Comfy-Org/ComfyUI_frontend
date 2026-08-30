@@ -82,6 +82,16 @@ test.describe('Custom node graph menu', { tag: ['@cloud', '@ui'] }, () => {
     })
     const createItem = page.getByText('Create Node', { exact: true })
     await expect(createItem).toBeVisible()
+
+    // Create Node sits above Paste in the canvas menu.
+    const labels = await page.getByRole('menuitem').allInnerTexts()
+    const names = labels.map((label) => label.trim())
+    const createIndex = names.findIndex((name) => name.includes('Create Node'))
+    const pasteIndex = names.findIndex((name) => name.startsWith('Paste'))
+    expect(createIndex).toBeGreaterThan(-1)
+    expect(pasteIndex).toBeGreaterThan(-1)
+    expect(createIndex).toBeLessThan(pasteIndex)
+
     await createItem.click()
 
     await expect(page.getByTestId('custom-node-workbench')).toBeVisible()

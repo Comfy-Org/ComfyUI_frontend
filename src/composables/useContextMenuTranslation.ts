@@ -26,9 +26,19 @@ export const useContextMenuTranslation = () => {
       args
     )
 
-    // Add items from new extension API
+    // Add items from new extension API. Items marked beforePaste slot in
+    // above the built-in Paste entry (contents are still untranslated here);
+    // everything else appends at the end.
     const newApiItems = app.collectCanvasMenuItems(this)
-    for (const item of newApiItems) {
+    const anchored = newApiItems.filter((item) => item?.beforePaste)
+    const appended = newApiItems.filter((item) => !item?.beforePaste)
+    const pasteIndex = res.findIndex((item) => item?.content === 'Paste')
+    if (anchored.length > 0 && pasteIndex !== -1) {
+      res.splice(pasteIndex, 0, ...anchored)
+    } else {
+      appended.unshift(...anchored)
+    }
+    for (const item of appended) {
       res.push(item)
     }
 
