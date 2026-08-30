@@ -99,8 +99,8 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     const existing = exports.value.get(data.task_id)
 
     if (
-      (existing?.status === 'completed' || existing?.status === 'failed') &&
-      existing?.downloadTriggered
+      existing?.status === 'failed' ||
+      (existing?.status === 'completed' && existing.downloadTriggered)
     ) {
       return
     }

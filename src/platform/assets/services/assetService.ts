@@ -838,9 +838,15 @@ function createAssetService() {
    * @throws Error if the request cannot be completed
    */
   async function deleteAsset(id: AssetId): Promise<boolean> {
-    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
-      method: 'DELETE'
-    })
+    let res: Response
+    try {
+      res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (error) {
+      reportError(error, { errorType: 'asset_deletion_request_failure' })
+      throw error
+    }
 
     if (!res.ok) {
       const error = new Error(

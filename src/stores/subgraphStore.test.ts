@@ -160,7 +160,12 @@ describe('useSubgraphStore', () => {
     )
     expect(comfyApp.loadGraphData).not.toHaveBeenCalled()
     expect(api.storeUserData).not.toHaveBeenCalled()
-    expect(error).toHaveBeenCalledTimes(2)
+    expect(error).toHaveBeenCalledWith(
+      `Cannot edit missing subgraph blueprint: ${BLUEPRINT_TYPE_PREFIX}missing`
+    )
+    expect(error).toHaveBeenCalledWith(
+      `Cannot delete missing subgraph blueprint: ${BLUEPRINT_TYPE_PREFIX}missing`
+    )
   })
   it('should allow subgraphs to be added to graph', async () => {
     //mock

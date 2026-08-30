@@ -219,12 +219,16 @@ describe('useNodeHelpContent', () => {
 
   it('should expose infrastructure failures', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockRejectedValueOnce(new Error('Network unavailable'))
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error'
+    })
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('Network unavailable')
+    expect(error.value).toBe('Internal Server Error')
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 

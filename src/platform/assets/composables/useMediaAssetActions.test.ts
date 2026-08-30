@@ -1454,7 +1454,8 @@ describe('useMediaAssetActions', () => {
 
       await actions.deleteAssets(asset)
 
-      await vi.waitFor(() => expect(mockDeleteAsset).toHaveBeenCalled())
+      expect(mockDeleteAsset).toHaveBeenCalled()
+      expect(mockSetAssetDeleting).toHaveBeenCalledWith(asset.id, false)
       expect(mockUpdateInputs).not.toHaveBeenCalled()
       expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
