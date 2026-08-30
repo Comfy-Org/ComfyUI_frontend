@@ -442,6 +442,20 @@ export class DocFrameClient extends EventTarget {
     })
   }
 
+  /** @returns whether the ephemeral awareness frame left the transport. */
+  sendAwareness(
+    workflowId: string,
+    actor: string,
+    state?: Record<string, unknown>
+  ): boolean {
+    return this.send('awareness', {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: workflowId,
+      actor,
+      ...(state !== undefined && { state })
+    })
+  }
+
   destroy(): void {
     for (const [type, listener] of this.listeners)
       this.transport.removeEventListener(type, listener)

@@ -94,7 +94,7 @@ describe('doc frame client', () => {
     )
   })
 
-  it('encodes subscribe, unsubscribe and doc_ops protocol frames', () => {
+  it('encodes client-to-server protocol frames', () => {
     const transport = new TestTransport()
     const client = new DocFrameClient(transport)
     const stateVector = Uint8Array.from([1, 2, 3])
@@ -103,6 +103,11 @@ describe('doc frame client', () => {
     client.sendOps('wf-1', 'tab-a', [
       { op_id: 'op-1', actor: 'human:user:tab-a', type: 'node.move' }
     ])
+    client.sendAwareness('wf-1', 'human:user:tab-a', {
+      cursor: [10, 20],
+      selectedNodeIds: ['node-1']
+    })
+    client.sendAwareness('wf-1', 'human:user:tab-a')
     client.unsubscribe('wf-1')
 
     expect(transport.sent.map((frame) => JSON.parse(frame))).toEqual([
@@ -121,6 +126,26 @@ describe('doc frame client', () => {
           workflow_id: 'wf-1',
           tab: 'tab-a',
           ops: [{ op_id: 'op-1', actor: 'human:user:tab-a', type: 'node.move' }]
+        }
+      },
+      {
+        type: 'awareness',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          actor: 'human:user:tab-a',
+          state: {
+            cursor: [10, 20],
+            selectedNodeIds: ['node-1']
+          }
+        }
+      },
+      {
+        type: 'awareness',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          actor: 'human:user:tab-a'
         }
       },
       {
