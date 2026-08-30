@@ -39,7 +39,10 @@ const selectedFilter = ref<FuseFilter<ComfyNodeDefImpl, string>>()
 const selectedFilterName = computed({
   get: () => selectedFilter.value?.name,
   set: (name: string) => {
-    selectedFilter.value = filters.value.find((filter) => filter.name === name)
+    const filter = filters.value.find((filter) => filter.name === name)
+    if (!filter) return
+
+    selectedFilter.value = filter
     updateSelectedFilterValue()
   }
 })

@@ -1,14 +1,18 @@
 <template>
   <div
     ref="containerRef"
-    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
-    :class="{ 'workflow-tabs-container-desktop': isDesktop }"
+    :class="
+      cn(
+        'workflow-tabs-container flex h-full flex-auto flex-row overflow-hidden bg-comfy-menu-bg',
+        isDesktop ? 'max-w-[env(titlebar-area-width,100vw)]' : 'max-w-full'
+      )
+    "
   >
     <Button
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-left aspect-square h-full w-auto"
+      class="overflow-arrow-left aspect-square h-full w-auto rounded-none px-2 disabled:opacity-25"
       :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
@@ -22,7 +26,9 @@
         @wheel="handleWheel"
       >
         <ToggleGroup
-          :class="cn('workflow-tabs h-full gap-0 bg-transparent', props.class)"
+          :class="
+            cn('workflow-tabs flex h-full gap-0 bg-transparent', props.class)
+          "
           :model-value="selectedWorkflow?.value"
           type="single"
           @update:model-value="onWorkflowChange"
@@ -31,12 +37,13 @@
             v-for="(option, index) in options"
             :key="option.value"
             :value="option.value"
-            class="workflow-tab-button group h-full flex-none rounded-none p-0 font-[inherit] leading-[normal] font-medium data-[state=off]:text-text-muted data-[state=off]:opacity-75 data-[state=on]:border-b-text-primary"
+            class="workflow-tab-button group/tab relative h-full min-w-[90px] flex-[0_1_auto] rounded-none border-0 border-r border-solid border-interface-stroke bg-transparent p-0 font-[inherit] leading-[normal] font-medium first:border-l hover:bg-transparent data-[state=off]:text-text-muted data-[state=off]:opacity-75 data-[state=on]:border-b data-[state=on]:border-b-primary-background data-[state=on]:bg-transparent [&:hover_.close-button]:visible [&[data-state=on]_.close-button]:visible"
           >
             <span
-              class="relative inline-flex items-center justify-center gap-2 group-data-[state=off]:-top-px sm:group-data-[state=off]:top-0"
+              class="relative inline-flex max-w-full items-center justify-center gap-2 group-data-[state=off]/tab:-top-px sm:group-data-[state=off]/tab:top-0"
             >
               <WorkflowTab
+                class="max-w-full"
                 :workflow-option="option"
                 :is-first="index === 0"
                 :is-last="index === options.length - 1"
@@ -59,7 +66,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-right aspect-square h-full w-auto"
+      class="overflow-arrow-right aspect-square h-full w-auto rounded-none px-2 disabled:opacity-25"
       :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
@@ -122,7 +129,10 @@
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
     </div>
-    <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
+    <div
+      v-if="isDesktop"
+      class="window-actions-spacer app-drag min-w-[min(75px,env(titlebar-area-width,0)*9999)] flex-auto shrink-0"
+    />
   </div>
 </template>
 
@@ -357,72 +367,3 @@ onUpdated(() => {
   }
 })
 </script>
-
-<style scoped>
-.workflow-tabs-container {
-  background-color: var(--comfy-menu-bg);
-}
-
-:deep(.workflow-tab-button) {
-  position: relative;
-  flex: 0 1 auto;
-  border: 0;
-  border-right-style: solid;
-  border-right-width: 1px;
-  border-radius: 0;
-  background-color: transparent;
-  padding: 0;
-  border-right-color: var(--border-color);
-  min-width: 90px;
-}
-
-.overflow-arrow {
-  border-radius: 0;
-  padding-inline: calc(var(--spacing) * 2);
-}
-
-.overflow-arrow[disabled] {
-  opacity: 0.25;
-}
-
-:deep(.workflow-tab) {
-  max-width: 100%;
-}
-
-:deep(.workflow-tab-button:first-child) {
-  border-left-style: solid;
-  border-left-width: 1px;
-  border-left-color: var(--border-color);
-}
-
-:deep(.workflow-tab-button:not(:first-child)) {
-  border-left-width: 0;
-}
-
-:deep(.workflow-tab-button[data-state='on']) {
-  height: 100%;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-  background-color: transparent;
-}
-
-:deep(.workflow-tab-button[data-state='on']) .close-button,
-:deep(.workflow-tab-button:hover) .close-button {
-  visibility: visible;
-}
-
-:deep(.workflow-tabs) {
-  display: flex;
-}
-
-.workflow-tabs-container-desktop {
-  max-width: env(titlebar-area-width, 100vw);
-}
-
-.window-actions-spacer {
-  flex: auto;
-  /* If we are using custom titlebar, then we need to add a gap for the user to drag the window */
-  --window-actions-spacer-width: min(75px, env(titlebar-area-width, 0) * 9999);
-  min-width: var(--window-actions-spacer-width);
-}
-</style>
