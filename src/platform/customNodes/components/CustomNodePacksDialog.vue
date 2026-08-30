@@ -129,17 +129,23 @@
                 class="z-1800 w-52 p-1"
               >
                 <div class="flex flex-col" role="menu">
-                  <button
+                  <!-- PopoverClose dismisses the menu as the action runs, so
+                       it cannot linger over the dialog the action opens. -->
+                  <PopoverClose
                     v-for="action in packActions(pack)"
                     :key="action.label"
-                    type="button"
-                    role="menuitem"
-                    class="flex cursor-pointer appearance-none items-center gap-2 rounded-md border-none bg-transparent px-2 py-1.5 text-left font-inter text-sm text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
-                    @click="action.run()"
+                    as-child
                   >
-                    <i :class="action.icon" class="size-4 shrink-0" />
-                    {{ action.label }}
-                  </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="flex cursor-pointer appearance-none items-center gap-2 rounded-md border-none bg-transparent px-2 py-1.5 text-left font-inter text-sm text-base-foreground hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+                      @click="action.run()"
+                    >
+                      <i :class="action.icon" class="size-4 shrink-0" />
+                      {{ action.label }}
+                    </button>
+                  </PopoverClose>
                 </div>
               </PopoverContent>
             </Popover>
@@ -151,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverClose, PopoverTrigger } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

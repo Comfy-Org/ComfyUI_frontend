@@ -174,4 +174,33 @@ test.describe('Custom node create flow', { tag: ['@cloud', '@ui'] }, () => {
     )
     expect(hit.onTop, `covered by ${hit.covering}`).toBe(true)
   })
+
+  test('dismisses the pack menu when an action opens the editor', async ({
+    page,
+    request
+  }) => {
+    const comfyPage = new ComfyPage(page, request)
+    await page.goto(APP_URL)
+    await comfyPage.waitForAppReady()
+    const closeWarning = page
+      .getByRole('alert')
+      .getByRole('button', { name: 'Close' })
+    if (await closeWarning.isVisible()) await closeWarning.click()
+    const closeTemplateDialog = page.getByRole('button', {
+      name: 'Close dialog'
+    })
+    if (await closeTemplateDialog.isVisible()) await closeTemplateDialog.click()
+
+    await comfyPage.menu.nodeLibraryTabV2.open()
+    await comfyPage.menu.nodeLibraryTabV2.sidebarContent
+      .getByRole('button', { name: 'Custom Nodes', exact: true })
+      .click()
+
+    await page.getByRole('button', { name: 'Actions for Alpha Pack' }).click()
+    await page.getByRole('menuitem', { name: 'Edit' }).click()
+
+    // The editor opens and the menu must not linger on top of it.
+    await expect(page.getByTestId('custom-node-workbench')).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Edit' })).toHaveCount(0)
+  })
 })

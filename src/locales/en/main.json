@@ -144,7 +144,9 @@
       "packTaken": "You already have a pack with this name.",
       "defaultPackName": "New Node Pack",
       "defaultNodeName": "New Node",
-      "nodeTaken": "This pack already has a node with this name."
+      "nodeTaken": "This pack already has a node with this name.",
+      "nodeNotReady": "Node is still installing",
+      "nodeNotReadyDetail": "{name} was submitted but has not appeared in the node library yet. It should show up shortly; reload if it does not."
     }
   },
   "g": {

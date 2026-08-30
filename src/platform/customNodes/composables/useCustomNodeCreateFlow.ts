@@ -21,6 +21,9 @@ import type { UploadedNodePack } from './useCustomNodePacks'
 import { useCustomNodePacks } from './useCustomNodePacks'
 
 const CREATE_DIALOG_KEY = 'custom-node-create'
+/** How long to wait for a submitted pack's node to reach the node library. */
+const NODE_REGISTRATION_TIMEOUT_MS = 90_000
+const NODE_REGISTRATION_INTERVAL_MS = 2_000
 
 /** A pack name that does not collide with the workspace's existing packs. */
 function availablePackName(packs: readonly UploadedNodePack[]): string {
@@ -64,7 +67,7 @@ function availableNodeName(targetPack?: UploadedNodePack): string {
  */
 export function useCustomNodeCreateFlow() {
   const dialogStore = useDialogStore()
-  const { createSession } = useCustomNodeEditor()
+  const { createSession, refreshNodeDefinitions } = useCustomNodeEditor()
   const editorDialog = useCustomNodeEditorDialog()
   const packsApi = useCustomNodePacks()
 
@@ -103,12 +106,42 @@ export function useCustomNodeCreateFlow() {
       return result
     })
 
-  /** Drops the freshly created node onto the graph, ready to wire up. */
-  const addCreatedNodeToGraph = (nodeName: string) => {
+  /**
+   * Drops the freshly created node onto the graph, ready to wire up.
+   *
+   * Submitting a pack returns as soon as the manager stores it, but the
+   * runtime needs a few seconds more to install it and publish its node
+   * definition. A single refresh at submit time therefore races the install
+   * and loses: the node is neither placed nor searchable until the page is
+   * reloaded. Keep refreshing until the definition actually shows up.
+   */
+  const addCreatedNodeToGraph = async (sessionId: string, nodeName: string) => {
     const nodeId = nodeClassNameFor(nodeName)
-    const definition = useNodeDefStore().nodeDefsByName[nodeId]
-    if (!definition) return
-    useLitegraphService().addNodeOnGraph(definition)
+    const nodeDefStore = useNodeDefStore()
+    const deadline = Date.now() + NODE_REGISTRATION_TIMEOUT_MS
+    for (;;) {
+      const definition = nodeDefStore.nodeDefsByName[nodeId]
+      if (definition) {
+        useLitegraphService().addNodeOnGraph(definition)
+        return
+      }
+      if (Date.now() >= deadline) {
+        useToastStore().add({
+          severity: 'warn',
+          summary: t('customNodePacks.createDialog.nodeNotReady'),
+          detail: t('customNodePacks.createDialog.nodeNotReadyDetail', {
+            name: nodeName
+          }),
+          life: 8000
+        })
+        return
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, NODE_REGISTRATION_INTERVAL_MS)
+      )
+      // Refreshes the ingest-side catalog too, not just this tab's cache.
+      await refreshNodeDefinitions(sessionId).catch(() => undefined)
+    }
   }
 
   /**
@@ -144,7 +177,7 @@ export function useCustomNodeCreateFlow() {
           session,
           async () => {
             await packsApi.refresh().catch(() => undefined)
-            addCreatedNodeToGraph(request.nodeName)
+            await addCreatedNodeToGraph(session.id, request.nodeName)
           },
           { initialPrompt: request.prompt }
         )

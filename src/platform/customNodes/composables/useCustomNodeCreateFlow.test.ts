@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     value: [] as { revisionId: string; name: string; uploadedAt: string }[]
   },
   refresh: vi.fn(),
+  refreshNodeDefinitions: vi.fn(),
   showDialog: vi.fn(),
   showEditor: vi.fn(),
   toast: vi.fn()
@@ -55,7 +56,10 @@ vi.mock('./useCustomNodePacks', () => ({
 
 vi.mock('./useCustomNodeEditor', () => ({
   CustomNodeEditorRequestError: mocks.RequestError,
-  useCustomNodeEditor: () => ({ createSession: mocks.createSession })
+  useCustomNodeEditor: () => ({
+    createSession: mocks.createSession,
+    refreshNodeDefinitions: mocks.refreshNodeDefinitions
+  })
 }))
 
 import { useCustomNodeCreateFlow } from './useCustomNodeCreateFlow'
@@ -96,6 +100,7 @@ describe('useCustomNodeCreateFlow', () => {
     mocks.closeDialog.mockReset()
     mocks.createSession.mockReset().mockResolvedValue({ id: 'session-1' })
     mocks.refresh.mockReset().mockResolvedValue(undefined)
+    mocks.refreshNodeDefinitions.mockReset().mockResolvedValue(undefined)
     mocks.showDialog.mockReset()
     mocks.showEditor.mockReset()
     mocks.toast.mockReset()
@@ -196,6 +201,56 @@ describe('useCustomNodeCreateFlow', () => {
     await onSubmitted()
 
     expect(mocks.addNodeOnGraph).toHaveBeenCalledWith(definition)
+  })
+
+  it('keeps refreshing until the submitted node is registered', async () => {
+    vi.useFakeTimers()
+    try {
+      answerDialog({ packName: 'Blur Pack', nodeName: 'Cool Blur', prompt: '' })
+      await useCustomNodeCreateFlow().startCreateFlow()
+
+      const definition = {
+        name: 'CoolBlur',
+        python_module: 'custom_nodes.pack_blur_pack_x1.nodes.cool_blur'
+      }
+      // The runtime installs the pack a few seconds after submit returns.
+      mocks.refreshNodeDefinitions.mockImplementation(async () => {
+        if (mocks.refreshNodeDefinitions.mock.calls.length >= 3) {
+          Object.assign(mocks.nodeDefsByName, { CoolBlur: definition })
+        }
+      })
+      const onSubmitted = mocks.showEditor.mock
+        .calls[0][1] as () => Promise<void>
+      const pending = onSubmitted()
+      await vi.advanceTimersByTimeAsync(10_000)
+      await pending
+
+      expect(mocks.refreshNodeDefinitions).toHaveBeenCalledWith('session-1')
+      expect(mocks.addNodeOnGraph).toHaveBeenCalledWith(definition)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('warns instead of failing silently when the node never registers', async () => {
+    vi.useFakeTimers()
+    try {
+      answerDialog({ packName: 'Blur Pack', nodeName: 'Cool Blur', prompt: '' })
+      await useCustomNodeCreateFlow().startCreateFlow()
+
+      const onSubmitted = mocks.showEditor.mock
+        .calls[0][1] as () => Promise<void>
+      const pending = onSubmitted()
+      await vi.advanceTimersByTimeAsync(120_000)
+      await pending
+
+      expect(mocks.addNodeOnGraph).not.toHaveBeenCalled()
+      expect(mocks.toast).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('reopens the dialog when the manager rejects the name', async () => {
