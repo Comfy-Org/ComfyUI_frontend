@@ -1,0 +1,123 @@
+---
+import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
+import ChecklistSplit01 from '../../components/blocks/ChecklistSplit01.vue'
+import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
+import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
+import FeatureGrid02 from '../../components/blocks/FeatureGrid02.vue'
+import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
+import { externalLinks } from '../../config/routes'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { faqAnswerPlainText } from '../../utils/faqAnswer'
+import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
+
+const faqs = [
+  { id: 'what', question: 'What is a ComfyUI Managed Build?', answer: 'A Managed Build is an approved, reproducible ComfyUI environment. It pins the ComfyUI version, custom nodes, models, and dependencies your team needs so the same setup can be assigned and updated across machines.' },
+  { id: 'where', question: 'Where do Managed Builds run?', answer: 'Managed Builds run on your workstations, studio GPU servers, or customer cloud infrastructure. Your Comfy Workflows stay on the machines where they run.' },
+  { id: 'models', question: 'Can we use private models and our own provider keys?', answer: 'Yes. Teams can include private fine-tuned models, govern which models and partner providers are available in a build, and use their own provider keys and contracts.' },
+  { id: 'nodes', question: 'How are custom nodes governed?', answer: 'Administrators choose which custom nodes belong in each build. Nodes can be sourced from GitHub or a ZIP, then pinned with the rest of the environment for controlled rollout.' },
+  { id: 'start', question: 'How do we get started?', answer: 'Request a demo and bring the environments your teams rely on today. We will map the current setup, deployment targets, governance requirements, and a path to the first approved build.' },
+] as const
+
+const { url } = pageContext(Astro.site, Astro.url.pathname, Astro.currentLocale)
+const faqPage = faqPageNode(url, faqs.map((faq) => ({ question: faq.question, answer: faqAnswerPlainText(faq.answer) })))
+---
+
+<BaseLayout
+  title="ComfyUI Managed Builds | Govern ComfyUI across your fleet"
+  description="Create approved, reproducible ComfyUI environments and deploy them across workstations, studios, and customer infrastructure."
+  pageType="WebPage"
+  breadcrumbs={[
+    { name: 'Home', url: absoluteUrl(Astro.site, '/') },
+    { name: 'Enterprise', url: absoluteUrl(Astro.site, '/enterprise/') },
+    { name: 'ComfyUI Managed Builds' },
+  ]}
+  extraJsonLd={[faqPage]}
+>
+  <HeroSplit01
+    badgeText="COMFYUI MANAGED BUILDS"
+    title="Govern the fleet. Keep the speed."
+    subtitle="Turn a working ComfyUI environment into an approved build your teams can reproduce across workstations, studios, and customer infrastructure."
+    features={['Pin ComfyUI, custom nodes, models, and dependencies', 'Control what each team can install and run', 'Keep Comfy Workflows on the machines where they run']}
+    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+  >
+    <div slot="media" class="rounded-[2.5rem] border border-primary-comfy-canvas/15 bg-primary-comfy-canvas p-5 text-primary-comfy-ink lg:p-8">
+      <div class="rounded-3xl bg-primary-comfy-ink p-6 text-primary-comfy-canvas">
+        <div class="flex items-center justify-between border-b border-primary-comfy-canvas/10 pb-5">
+          <div><p class="text-xs font-bold tracking-widest text-primary-comfy-yellow">PRODUCTION BUILD</p><p class="mt-1 text-2xl">Game cinematics</p></div>
+          <span class="rounded-full bg-primary-comfy-yellow px-3 py-1 text-xs font-bold text-primary-comfy-ink">APPROVED</span>
+        </div>
+        <div class="mt-5 space-y-3 text-sm">
+          <div class="flex justify-between rounded-xl bg-primary-comfy-canvas/5 px-4 py-3"><span class="text-primary-comfy-canvas/60">COMFYUI</span><span>PINNED</span></div>
+          <div class="flex justify-between rounded-xl bg-primary-comfy-canvas/5 px-4 py-3"><span class="text-primary-comfy-canvas/60">CUSTOM NODES</span><span>ALLOWLISTED</span></div>
+          <div class="flex justify-between rounded-xl bg-primary-comfy-canvas/5 px-4 py-3"><span class="text-primary-comfy-canvas/60">MODELS</span><span>APPROVED + PRIVATE</span></div>
+          <div class="flex justify-between rounded-xl bg-primary-comfy-canvas/5 px-4 py-3"><span class="text-primary-comfy-canvas/60">PROVIDER ACCESS</span><span>BYOK</span></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 pt-5 text-center text-[0.65rem] font-bold tracking-wide">
+        <div class="rounded-xl border border-primary-comfy-ink/15 p-3">WORKSTATIONS</div>
+        <div class="rounded-xl border border-primary-comfy-ink/15 p-3">GPU SERVERS</div>
+        <div class="rounded-xl border border-primary-comfy-ink/15 p-3">CUSTOMER CLOUD</div>
+      </div>
+    </div>
+  </HeroSplit01>
+
+  <FeatureGrid02
+    heading="Stop rebuilding the same environment on every machine."
+    steps={[
+      { id: 'drift', number: '01', title: 'ENVIRONMENT DRIFT', description: 'A working graph breaks when engine, node, dependency, or model versions diverge.' },
+      { id: 'admin', number: '02', title: 'ADMIN REBUILD TAX', description: 'One technical owner becomes the bottleneck for installs, fixes, and handoffs.' },
+      { id: 'governance', number: '03', title: 'UNGOVERNED SUPPLY CHAIN', description: 'Teams need a deliberate policy for the models and custom nodes entering production.' },
+      { id: 'rollout', number: '04', title: 'ROLLOUT FRICTION', description: 'Moving a proven setup from one artist to a wider team should not become a new project.' },
+    ]}
+  />
+
+  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
+    <div class="max-w-4xl"><p class="text-primary-comfy-yellow text-xs font-bold tracking-[0.2em]">THE OPERATING MODEL</p><h2 class="mt-4 text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl">From one working setup to an approved fleet.</h2></div>
+    <div class="mt-12 grid gap-px overflow-hidden rounded-[2.5rem] bg-primary-comfy-canvas/15 lg:grid-cols-4">
+      {[
+        ['01', 'DEFINE', 'Start from a known-good environment or import a Desktop snapshot.'],
+        ['02', 'BUILD', 'Pin the engine, nodes, models, dependencies, and provider policy.'],
+        ['03', 'ASSIGN', 'Give the approved build to the teams and machines that need it.'],
+        ['04', 'UPDATE', 'Release a new version deliberately without changing work already in flight.'],
+      ].map(([number, title, description]) => (
+        <article class="min-h-72 bg-primary-comfy-ink p-8"><p class="font-mono text-sm text-primary-comfy-yellow">{number}</p><h3 class="mt-8 text-2xl tracking-widest text-primary-comfy-canvas">{title}</h3><p class="mt-5 text-base/relaxed text-primary-comfy-canvas/70">{description}</p></article>
+      ))}
+    </div>
+  </section>
+
+  <ChecklistSplit01
+    heading="What every approved build can control."
+    subheading="A manifest for the environment, a release process for the team."
+    eyebrow="BUILD POLICY"
+    criteria={[
+      { id: 'engine', label: 'Pinned ComfyUI version' },
+      { id: 'nodes', label: 'Approved custom nodes and dependencies' },
+      { id: 'models', label: 'Approved and team-private models' },
+      { id: 'providers', label: 'Allowed partner model providers' },
+      { id: 'keys', label: 'Bring your own provider keys and contracts' },
+      { id: 'identity', label: 'Identity-gated installation and assignment' },
+    ]}
+  />
+
+  <BenefitsGrid01
+    heading="Production control without taking the graph away."
+    benefits={[
+      { id: 'local', title: 'Local by design', description: 'Comfy Workflows stay on the machines where they run.' },
+      { id: 'private', title: 'Private assets', description: 'Include private fine-tuned models in a team-controlled build.' },
+      { id: 'access', title: 'Controlled access', description: 'Assign approved environments through identity-gated installs.' },
+      { id: 'choice', title: 'Provider choice', description: 'Choose the partner models available and bring your own keys.' },
+    ]}
+    footnote="Comfy does not train on customer data. SOC 2 Type II audit in progress."
+    primaryCta={{ label: 'VIEW TRUST CENTER', href: externalLinks.trustCenter, target: '_blank' }}
+  />
+
+  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
+    <div class="grid items-center gap-10 rounded-[2.5rem] bg-primary-comfy-yellow p-8 text-primary-comfy-ink lg:grid-cols-[1fr_auto] lg:p-14">
+      <div><p class="text-xs font-bold tracking-[0.2em]">BUILDERS, NOT ADVISORS</p><h2 class="mt-4 text-3xl font-light tracking-tight lg:text-5xl">Need the production workflow, too?</h2><p class="mt-5 max-w-2xl text-base/relaxed text-primary-comfy-ink/70">Forward Deployed Creatives work alongside your team to build the Comfy Workflows that run inside your approved environments.</p></div>
+      <a href="/forward-deployed-creatives/" class="inline-flex rounded-full bg-primary-comfy-ink px-7 py-4 text-sm font-bold text-primary-comfy-canvas">VIEW THE OFFERING</a>
+    </div>
+  </section>
+
+  <FAQSplit01 id="faq" heading="Managed Builds, answered." faqs={faqs} client:visible />
+  <CtaCenter01 heading={'Your best ComfyUI setup,\nready for the whole team.'} subtitle="Bring us the environment that works today. We will show you how to govern and reproduce it across the fleet." primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }} />
+</BaseLayout>

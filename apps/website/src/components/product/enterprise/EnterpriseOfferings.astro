@@ -1,0 +1,78 @@
+---
+const offerings = [
+  {
+    label: 'LEAD OFFER',
+    title: 'ComfyUI Managed Builds',
+    description:
+      'Create approved, reproducible ComfyUI environments and assign them across workstations, studios, and customer infrastructure.',
+    href: '/enterprise/managed-builds/',
+    cta: 'VIEW MANAGED BUILDS',
+  },
+  {
+    label: 'FOR TEAMS',
+    title: 'Team plans',
+    description:
+      'Give teams a shared credit pool, centralized billing, SSO, and a simpler way to operate Comfy together.',
+    href: '/contact/',
+    cta: 'REQUEST DEMO',
+  },
+  {
+    label: 'COMMERCIAL RIGHTS',
+    title: 'Model licensing',
+    description:
+      'Clear commercial terms for leading models, including MiniMax, through an official licensing partner.',
+    href: '/minimax/license/',
+    cta: 'VIEW MINIMAX LICENSING',
+  },
+  {
+    label: 'HANDS-ON DELIVERY',
+    title: 'Forward Deployed Creatives',
+    description:
+      'Work with builders who design production-ready Comfy Workflows alongside your creative and technical teams.',
+    href: '/forward-deployed-creatives/',
+    cta: 'VIEW THE OFFERING',
+  },
+] as const
+---
+
+<section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
+  <div class="max-w-4xl">
+    <p class="text-primary-comfy-yellow text-xs font-bold tracking-[0.2em] uppercase">
+      ONE ENTERPRISE RELATIONSHIP
+    </p>
+    <h2 class="mt-4 text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl">
+      The open standard for visual AI, ready for your organization.
+    </h2>
+    <p class="mt-6 max-w-2xl text-base/relaxed text-primary-comfy-canvas/75 lg:text-lg/relaxed">
+      Start with the problem you need to solve. Comfy brings the product, commercial terms, and implementation support together.
+    </p>
+  </div>
+
+  <div class="mt-12 grid gap-4 md:grid-cols-2">
+    {
+      offerings.map((offering, index) => (
+        <a
+          href={offering.href}
+          class:list={[
+            'group flex min-h-80 flex-col rounded-[2.5rem] border p-8 transition-colors lg:p-10',
+            index === 0
+              ? 'border-primary-comfy-yellow bg-primary-comfy-yellow text-primary-comfy-ink'
+              : 'border-primary-comfy-canvas/15 bg-primary-comfy-ink text-primary-comfy-canvas hover:border-primary-comfy-yellow/70',
+          ]}
+        >
+          <p class:list={['text-xs font-bold tracking-[0.18em]', index === 0 ? 'text-primary-comfy-ink/65' : 'text-primary-comfy-yellow']}>
+            {offering.label}
+          </p>
+          <h3 class="mt-6 text-3xl font-light tracking-tight lg:text-4xl">{offering.title}</h3>
+          <p class:list={['mt-4 max-w-xl text-base/relaxed', index === 0 ? 'text-primary-comfy-ink/75' : 'text-primary-comfy-canvas/70']}>
+            {offering.description}
+          </p>
+          <span class="mt-auto flex items-center gap-3 pt-10 text-sm font-bold tracking-wide">
+            {offering.cta}
+            <span aria-hidden="true" class="transition-transform group-hover:translate-x-1">→</span>
+          </span>
+        </a>
+      ))
+    }
+  </div>
+</section>

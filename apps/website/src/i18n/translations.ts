@@ -470,20 +470,20 @@ const translations = {
 
   // Enterprise – TeamSection
   'enterprise.team.heading': {
-    en: 'Team workspaces\nand shared assets.',
+    en: 'A team plan built\naround shared usage.',
     'zh-CN': '团队工作区\n与共享资产。'
   },
   'enterprise.team.subtitle': {
-    en: 'Organize workflows, models, and outputs in shared workspaces. Control who builds, who runs, and who deploys.',
+    en: 'Pool credits across the team, centralize billing, and give people the right way to use Comfy for their role.',
     'zh-CN':
       '在共享工作区中组织工作流、模型和输出。控制谁构建、谁运行、谁部署。'
   },
   'enterprise.team.feature1.title': {
-    en: 'Role-based access',
+    en: 'Shared credit pool',
     'zh-CN': '基于角色的访问控制'
   },
   'enterprise.team.feature1.description': {
-    en: 'Control who builds, who runs, and who deploys.',
+    en: 'Give the team one shared balance for Cloud GPU time and partner model usage.',
     'zh-CN': '控制谁构建、谁运行、谁部署。'
   },
   'enterprise.team.feature2.title': {
@@ -491,7 +491,7 @@ const translations = {
     'zh-CN': '单点登录'
   },
   'enterprise.team.feature2.description': {
-    en: 'Enable secure, centralized user authentication across your organization with SSO and SCIM provisioning.',
+    en: 'Enable secure, centralized user authentication across your organization with SSO.',
     'zh-CN': '为您的组织启用集中式安全用户认证，支持 SSO 和 SCIM 配置。'
   },
   'enterprise.team.feature2.cta': {
@@ -503,7 +503,7 @@ const translations = {
     'zh-CN': 'App 模式'
   },
   'enterprise.team.feature3.description': {
-    en: 'Non-technical team members run workflows without touching the node graph.',
+    en: 'Let non-technical teammates run approved experiences without touching the node graph.',
     'zh-CN': '非技术团队成员无需接触节点图即可运行工作流。'
   },
 
@@ -561,16 +561,16 @@ const translations = {
 
   // Enterprise – HeroSection
   'enterprise.hero.heading': {
-    en: 'Your team already runs ComfyUI. Scale it with confidence.',
+    en: 'Govern ComfyUI across every team and runtime.',
     'zh-CN': '你的团队已经在使用 ComfyUI。放心地扩展它。'
   },
   'enterprise.hero.subtitle': {
-    en: 'Comfy Enterprise adds managed infrastructure, team controls, and dedicated support to the workflows your organization already builds.',
+    en: 'Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, team plans, commercial licensing, and hands-on implementation support.',
     'zh-CN':
       'Comfy 企业版为你的组织已有的工作流添加托管基础设施、团队控制和专属支持。'
   },
   'enterprise.hero.contactSales': {
-    en: 'CONTACT SALES',
+    en: 'REQUEST DEMO',
     'zh-CN': '联系销售'
   },
 
@@ -588,18 +588,18 @@ const translations = {
     'zh-CN': '你的条款。'
   },
   'enterprise.ownership.subtitle': {
-    en: 'Your workflows, models, and generated outputs stay within your organization\u2019s environment. Role-based access controls and data isolation built for organizations with the strictest requirements.',
+    en: 'Keep Comfy Workflows on your machines with Managed Builds, use your own provider contracts and keys, and choose the runtime that fits each workload.',
     'zh-CN':
       '你的工作流、模型和生成输出始终保留在你的组织环境中。基于角色的访问控制和数据隔离，为最严格要求的组织而构建。'
   },
 
   // Enterprise – BYOKeySection
   'enterprise.byoKey.heading': {
-    en: 'Bring your own API key',
+    en: 'Bring your own keys. Govern the models.',
     'zh-CN': '自带 API 密钥'
   },
   'enterprise.byoKey.subtitle': {
-    en: 'Use your own contracts with third-party model providers. Comfy orchestrates the pipeline. You choose which models to run and whose API keys to use.',
+    en: 'Use your existing provider contracts and decide which partner and private models are available to each team.',
     'zh-CN':
       '使用你与第三方模型提供商的合约。Comfy 编排管线。你决定运行哪些模型、使用谁的 API 密钥。'
   },
@@ -608,15 +608,15 @@ const translations = {
     'zh-CN': 'API 密钥管理'
   },
   'enterprise.byoKey.card1.description': {
-    en: 'Bring your own API keys from any model provider. Use your existing contracts and pricing.',
+    en: 'Use supported provider keys with the contracts and pricing your organization already has.',
     'zh-CN': '从任何模型提供商导入你自己的 API 密钥。使用你现有的合约和定价。'
   },
   'enterprise.byoKey.card2.title': {
-    en: 'Real-time progress',
+    en: 'Model governance',
     'zh-CN': '实时进度'
   },
   'enterprise.byoKey.card2.description': {
-    en: 'Step-by-step execution updates via WebSocket.',
+    en: 'Choose which partner models, open models, and private assets are approved for each environment.',
     'zh-CN': '通过 WebSocket 逐步更新执行状态。'
   },
 
@@ -651,7 +651,7 @@ const translations = {
     'zh-CN': 'MiniMax 商业许可'
   },
   'enterprise.minimaxBand.text': {
-    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Add full local commercial rights, LoRA training included, to your Enterprise plan.',
+    en: 'Comfy is an official reseller of MiniMax commercial-use licenses. Add local commercial rights, with LoRA training included, to your Enterprise plan.',
     'zh-CN':
       'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。在你的企业版计划之上增加完整的本地商业使用权利，并包含 LoRA 训练。'
   },

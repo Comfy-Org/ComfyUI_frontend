@@ -1,0 +1,73 @@
+---
+import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
+import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
+import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
+import EnterpriseOfferings from '../../components/product/enterprise/EnterpriseOfferings.astro'
+import ManagedBuildsSpotlight from '../../components/product/enterprise/ManagedBuildsSpotlight.astro'
+import BYOKeySection from '../../components/product/enterprise/BYOKeySection.vue'
+import DataOwnershipSection from '../../components/product/enterprise/DataOwnershipSection.vue'
+import HeroSection from '../../components/product/enterprise/HeroSection.vue'
+import TeamSection from '../../components/product/enterprise/TeamSection.vue'
+import { externalLinks } from '../../config/routes'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { faqAnswerPlainText } from '../../utils/faqAnswer'
+import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
+
+const faqs = [
+  {
+    id: 'what-is-enterprise',
+    question: 'What is included in Comfy Enterprise?',
+    answer: 'Enterprise engagements can combine ComfyUI Managed Builds, team plans, commercial model licensing, and Forward Deployed Creatives. We scope the right combination around your production and procurement requirements.',
+  },
+  {
+    id: 'where-runs',
+    question: 'Where can our Comfy Workflows run?',
+    answer: 'Comfy Workflows can run locally, on infrastructure you control, or through the Developer Platform. ComfyUI Managed Builds are designed for approved environments on your machines and infrastructure.',
+  },
+  {
+    id: 'commercial-models',
+    question: 'Can we use models commercially?',
+    answer: 'On Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request. Comfy is also an official reseller for MiniMax commercial licenses.',
+  },
+  {
+    id: 'security',
+    question: 'How does Comfy support security review?',
+    answer: `SSO and a DPA are available. Comfy does not train on customer data, and our SOC 2 Type II audit is in progress. Review current controls in the [Comfy Trust Center](${externalLinks.trustCenter}).`,
+  },
+] as const
+
+const { url } = pageContext(Astro.site, Astro.url.pathname, Astro.currentLocale)
+const faqPage = faqPageNode(url, faqs.map((faq) => ({ question: faq.question, answer: faqAnswerPlainText(faq.answer) })))
+---
+
+<BaseLayout
+  title="Comfy Enterprise | Govern visual AI across every team"
+  description="Standardize ComfyUI across teams and runtimes with Managed Builds, team plans, commercial model licensing, enterprise security, and hands-on delivery."
+  pageType="WebPage"
+  breadcrumbs={[{ name: 'Home', url: absoluteUrl(Astro.site, '/') }, { name: 'Enterprise' }]}
+  extraJsonLd={[faqPage]}
+>
+  <HeroSection client:load />
+  <EnterpriseOfferings />
+  <ManagedBuildsSpotlight />
+  <TeamSection />
+  <DataOwnershipSection client:visible />
+  <BYOKeySection />
+  <BenefitsGrid01
+    heading="A clearer path through security review."
+    benefits={[
+      { id: 'soc2', title: 'SOC 2', description: 'Type II audit in progress.' },
+      { id: 'sso', title: 'Identity', description: 'Single Sign-On is available for enterprise teams.' },
+      { id: 'data', title: 'Customer data', description: 'Your data is not used to train models.' },
+      { id: 'dpa', title: 'Procurement', description: 'A DPA and enterprise agreement are available.' },
+    ]}
+    footnote="Processing is in the United States on Google Cloud. Enterprise includes a 99.5% workflow-execution uptime SLA."
+    primaryCta={{ label: 'VIEW TRUST CENTER', href: externalLinks.trustCenter, target: '_blank' }}
+  />
+  <FAQSplit01 id="faq" heading="Enterprise, answered." faqs={faqs} client:visible />
+  <CtaCenter01
+    heading={'Bring the open standard for visual AI\nto your organization.'}
+    subtitle="Tell us how your teams build today. We will map the right path across Managed Builds, team plans, licensing, and implementation."
+    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+  />
+</BaseLayout>
