@@ -75,10 +75,19 @@
         "title": "Node Agent",
         "diff": "Node Agent proposed changes",
         "close": "Close Node Agent",
-        "description": "Describe the node you want to build or change. Node Agent will propose edits for you to review.",
+        "description": "Describe the node you want to build or change. Node Agent will propose edits and, when available, test the draft in the secured backend runtime.",
         "placeholder": "For example: add a color input and use it for the dark checkerboard squares",
         "ask": "Propose changes",
+        "working": "Building and testing…",
         "proposal": "Proposed changes",
+        "testStatus": {
+          "passed": "Backend test passed",
+          "failed": "Backend test failed",
+          "not_run": "Backend test not run",
+          "unavailable": "Backend test unavailable"
+        },
+        "testDuration": "Completed in {duration} ms",
+        "testOutputs": "Output nodes: {nodes}",
         "reviewNotice": "Review each diff. Nothing changes until you apply the proposal.",
         "apply": "Apply changes",
         "dismiss": "Dismiss",
@@ -87,7 +96,7 @@
         "structuralChange": "This operation changes the project tree and does not need a source diff.",
         "unavailable": "Node Agent is not configured for this environment.",
         "unavailableDetail": "A server-owned hosted-model API key is required. Do not enter personal credentials here.",
-        "safety": "When asked, Node Agent sends the editable pack text to our hosted model. It can only propose reviewed file and folder operations; it cannot run code, install extensions, access credentials, or submit this pack."
+        "safety": "When asked, Node Agent sends the editable pack text to our hosted model. It cannot execute inside the editor, install extensions, access credentials, or submit the pack. When configured, it can run a bounded workflow against a temporary draft registration in the secured backend runtime."
       },
       "status": {
         "creating": "Preparing editor",

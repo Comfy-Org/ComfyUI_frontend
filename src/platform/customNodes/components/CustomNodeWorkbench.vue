@@ -97,6 +97,58 @@
                   {{ proposal.summary }}
                 </p>
               </div>
+              <div
+                v-if="proposal.test"
+                :class="
+                  cn(
+                    'flex gap-2 rounded-sm border p-2.5',
+                    testResultClass(proposal.test.status)
+                  )
+                "
+                data-testid="node-agent-test-result"
+                role="status"
+              >
+                <i
+                  :class="
+                    cn(
+                      'mt-0.5 size-4 shrink-0',
+                      testResultIcon(proposal.test.status)
+                    )
+                  "
+                  aria-hidden="true"
+                />
+                <div class="min-w-0">
+                  <p class="text-foreground m-0 text-xs font-medium">
+                    {{ testResultLabel(proposal.test.status) }}
+                  </p>
+                  <p
+                    class="mt-1 mb-0 max-h-40 overflow-y-auto text-xs/4 wrap-break-word whitespace-pre-wrap text-muted-foreground"
+                  >
+                    {{ proposal.test.summary }}
+                  </p>
+                  <p
+                    v-if="proposal.test.durationMs > 0"
+                    class="mt-1 mb-0 text-[11px]/4 text-muted-foreground"
+                  >
+                    {{
+                      $t('customNodePacks.editor.agent.testDuration', {
+                        duration: proposal.test.durationMs
+                      })
+                    }}
+                  </p>
+                  <p
+                    v-if="proposal.test.outputNodes.length > 0"
+                    class="mt-1 mb-0 truncate text-[11px]/4 text-muted-foreground"
+                    :title="proposal.test.outputNodes.join(', ')"
+                  >
+                    {{
+                      $t('customNodePacks.editor.agent.testOutputs', {
+                        nodes: proposal.test.outputNodes.join(', ')
+                      })
+                    }}
+                  </p>
+                </div>
+              </div>
               <div class="flex flex-col gap-1">
                 <button
                   v-for="(change, index) in proposal.changes"
@@ -174,7 +226,13 @@
               :disabled="!instruction.trim() || isAsking"
             >
               <i class="icon-[lucide--sparkles] size-4" aria-hidden="true" />
-              {{ $t('customNodePacks.editor.agent.ask') }}
+              {{
+                $t(
+                  isAsking
+                    ? 'customNodePacks.editor.agent.working'
+                    : 'customNodePacks.editor.agent.ask'
+                )
+              }}
             </Button>
             <p class="m-0 text-[11px]/4 text-muted-foreground">
               {{ $t('customNodePacks.editor.agent.safety') }}
@@ -201,7 +259,8 @@ import { useCustomNodeEditor } from '../composables/useCustomNodeEditor'
 import type {
   CustomNodeEditorProposal,
   CustomNodeEditorProposalChange,
-  CustomNodeEditorProposalChangeKind
+  CustomNodeEditorProposalChangeKind,
+  CustomNodeEditorTestStatus
 } from '../composables/useCustomNodeEditor'
 import {
   customNodeEditorStateKey,
@@ -327,6 +386,33 @@ function proposalChangeIcon(kind: CustomNodeEditorProposalChangeKind): string {
     default:
       return 'icon-[lucide--file-diff]'
   }
+}
+
+function testResultLabel(status: CustomNodeEditorTestStatus): string {
+  return t(`customNodePacks.editor.agent.testStatus.${status}`)
+}
+
+function testResultClass(status: CustomNodeEditorTestStatus): string {
+  if (status === 'passed') {
+    return 'border-success-background/30 bg-success-background/10'
+  }
+  if (status === 'failed') {
+    return 'border-destructive-background/30 bg-destructive-background/10'
+  }
+  return 'border-border-default bg-base-background'
+}
+
+function testResultIcon(status: CustomNodeEditorTestStatus): string {
+  if (status === 'passed') {
+    return 'icon-[lucide--circle-check] text-success-background'
+  }
+  if (status === 'failed') {
+    return 'icon-[lucide--circle-x] text-destructive-background'
+  }
+  if (status === 'unavailable') {
+    return 'icon-[lucide--circle-alert] text-warning-background'
+  }
+  return 'icon-[lucide--circle-minus] text-muted-foreground'
 }
 
 watch(

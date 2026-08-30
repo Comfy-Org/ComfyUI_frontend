@@ -67,10 +67,25 @@ export interface CustomNodeEditorProposalChange {
   proposedContent: string
 }
 
+export type CustomNodeEditorTestStatus =
+  | 'passed'
+  | 'failed'
+  | 'not_run'
+  | 'unavailable'
+
+export interface CustomNodeEditorTestResult {
+  status: CustomNodeEditorTestStatus
+  summary: string
+  promptId?: string
+  durationMs: number
+  outputNodes: string[]
+}
+
 export interface CustomNodeEditorProposal {
   id: string
   summary: string
   changes: CustomNodeEditorProposalChange[]
+  test?: CustomNodeEditorTestResult
   createdAt: string
 }
 
@@ -84,7 +99,7 @@ export class CustomNodeEditorRequestError extends Error {
   }
 }
 
-interface CustomNodeEditorSessionDto {
+export interface CustomNodeEditorSessionDto {
   id: string
   mode: CustomNodeEditorMode
   name: string
@@ -145,20 +160,20 @@ const readSession = async (
   return toSession((await response.json()) as CustomNodeEditorSessionDto)
 }
 
-interface CustomNodeEditorFileDto {
+export interface CustomNodeEditorFileDto {
   path: string
   content: string
   editable: boolean
 }
 
-interface CustomNodeEditorFilesDto {
+export interface CustomNodeEditorFilesDto {
   files: CustomNodeEditorFileDto[]
   directories?: string[]
   initial_path?: string
   digest?: string
 }
 
-interface CustomNodeEditorProposalDto {
+export interface CustomNodeEditorProposalDto {
   id: string
   summary: string
   changes: Array<{
@@ -168,6 +183,13 @@ interface CustomNodeEditorProposalDto {
     original_content: string
     proposed_content: string
   }>
+  test?: {
+    status: CustomNodeEditorTestStatus
+    summary: string
+    prompt_id?: string
+    duration_ms: number
+    output_nodes?: string[]
+  }
   created_at: string
 }
 
@@ -199,6 +221,15 @@ const readProposal = async (
       originalContent: change.original_content,
       proposedContent: change.proposed_content
     })),
+    test: data.test
+      ? {
+          status: data.test.status,
+          summary: data.test.summary,
+          promptId: data.test.prompt_id,
+          durationMs: data.test.duration_ms,
+          outputNodes: data.test.output_nodes ?? []
+        }
+      : undefined,
     createdAt: data.created_at
   }
 }

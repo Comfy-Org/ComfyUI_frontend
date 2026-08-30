@@ -92,7 +92,16 @@ const i18n = createI18n({
             description: 'Describe the change.',
             placeholder: 'Describe a node change',
             ask: 'Propose changes',
+            working: 'Building and testing…',
             proposal: 'Proposed changes',
+            testStatus: {
+              passed: 'Backend test passed',
+              failed: 'Backend test failed',
+              not_run: 'Backend test not run',
+              unavailable: 'Backend test unavailable'
+            },
+            testDuration: 'Completed in {duration} ms',
+            testOutputs: 'Output nodes: {nodes}',
             reviewNotice: 'Review before applying.',
             apply: 'Apply changes',
             dismiss: 'Dismiss',
@@ -167,6 +176,13 @@ describe('CustomNodeWorkbench', () => {
           proposedContent: '# agent proposal\n'
         }
       ],
+      test: {
+        status: 'passed',
+        summary: 'Workflow completed with 1 output node(s).',
+        promptId: 'prompt-1',
+        durationMs: 842,
+        outputNodes: ['3']
+      },
       createdAt: '2026-08-29T12:00:00Z'
     })
     const appliedFiles = {
@@ -209,6 +225,12 @@ describe('CustomNodeWorkbench', () => {
       mocks.createAgentProposal.mock.invocationCallOrder[0]
     )
     expect(screen.getByText('Added a configurable color.')).toBeVisible()
+    expect(screen.getByText('Backend test passed')).toBeVisible()
+    expect(
+      screen.getByText('Workflow completed with 1 output node(s).')
+    ).toBeVisible()
+    expect(screen.getByText('Completed in 842 ms')).toBeVisible()
+    expect(screen.getByText('Output nodes: 3')).toBeVisible()
     expect(screen.getByTestId('proposal-diff')).toHaveAttribute(
       'data-theme',
       'dark'

@@ -241,6 +241,13 @@ describe('useCustomNodeEditor', () => {
                 proposed_content: '# after\n'
               }
             ],
+            test: {
+              status: 'passed',
+              summary: 'Workflow completed with 1 output node(s).',
+              prompt_id: 'prompt-1',
+              duration_ms: 842,
+              output_nodes: ['3']
+            },
             created_at: '2026-08-29T12:00:00Z'
           },
           true,
@@ -268,6 +275,13 @@ describe('useCustomNodeEditor', () => {
 
     expect(proposal.changes[0].originalContent).toBe('# before\n')
     expect(proposal.changes[0].kind).toBe('modified')
+    expect(proposal.test).toEqual({
+      status: 'passed',
+      summary: 'Workflow completed with 1 output node(s).',
+      promptId: 'prompt-1',
+      durationMs: 842,
+      outputNodes: ['3']
+    })
     expect(applied.files[0].content).toBe('# after\n')
     expect(fetchApi.mock.calls).toEqual([
       [
