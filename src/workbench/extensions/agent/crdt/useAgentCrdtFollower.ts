@@ -6,7 +6,9 @@ import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { recordDevEvent } from './devPanelLog'
+import { docLog, ecsLog, opsLog, wireLog } from './crdtLog'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
+import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
@@ -96,6 +98,44 @@ export function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   if (firstError !== null) throw firstError
 }
 
+/**
+ * Envelope only, never the payload. A `doc_ops` frame carries whole serialized
+ * nodes and every widget value a human just typed; the ring buffer holds 500
+ * entries and feeds a clipboard report, so retaining frames verbatim would put
+ * prompts into an artifact the tester never opted into sharing. `opSender`
+ * logs its mints the same way.
+ */
+function describeOutboundFrame(parsed: unknown): {
+  type: string
+  workflowId?: string
+  opIds?: string[]
+  opCount?: number
+} {
+  if (typeof parsed !== 'object' || parsed === null) return { type: 'unknown' }
+  const frame = parsed as { type?: unknown; data?: unknown }
+  const data =
+    typeof frame.data === 'object' && frame.data !== null
+      ? (frame.data as { workflow_id?: unknown; ops?: unknown })
+      : null
+  const ops = Array.isArray(data?.ops) ? data.ops : null
+  return {
+    type: typeof frame.type === 'string' ? frame.type : 'unknown',
+    ...(typeof data?.workflow_id === 'string' && {
+      workflowId: data.workflow_id
+    }),
+    ...(ops && {
+      opCount: ops.length,
+      opIds: ops.flatMap((op) =>
+        typeof op === 'object' &&
+        op !== null &&
+        typeof (op as { op_id?: unknown }).op_id === 'string'
+          ? [(op as { op_id: string }).op_id]
+          : []
+      )
+    })
+  }
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: GraphMutations
@@ -117,7 +157,12 @@ export function useAgentCrdtFollower(
       } catch {
         // Leave the raw string.
       }
-      recordDevEvent('ws_out', { delivered, frame: parsed })
+      const envelope = describeOutboundFrame(parsed)
+      wireLog.trace(
+        'ws_out',
+        `${envelope.type} ${delivered ? 'sent' : 'DROPPED (socket not open)'}`,
+        { delivered, ...envelope, bytes: frame.length }
+      )
       return delivered
     },
     addEventListener(type, listener) {
@@ -175,9 +220,14 @@ export function useAgentCrdtFollower(
     clearStaleProbe()
     staleProbeTimer = setTimeout(() => {
       staleProbeTimer = null
-      recordDevEvent('stale_probe', {
-        workflowId: subscribedWorkflowId.value
-      })
+      // NOT a warning: this timer re-arms itself, and `warn` bypasses the debug
+      // gate by design, so warning here would emit forever on any idle workflow
+      // in every build — including for users who explicitly opted out.
+      docLog.info(
+        'stale_probe',
+        `no doc frame for ${STALE_AFTER_MS}ms on a bound channel — probing with a resubscribe`,
+        { workflowId: subscribedWorkflowId.value, afterMs: STALE_AFTER_MS }
+      )
       bridge.resubscribe()
       armStaleProbe()
     }, STALE_AFTER_MS)
@@ -202,10 +252,11 @@ export function useAgentCrdtFollower(
       subscribeRetryTimer = null
       // The desired doc changed while we waited — the watch owns that path.
       if (subscribedWorkflowId.value !== target) return
-      recordDevEvent('subscribe_retry', {
-        attempt: subscribeRetryAttempt,
-        workflowId: target
-      })
+      docLog.info(
+        'subscribe_retry',
+        `retrying subscribe (attempt ${subscribeRetryAttempt}/${SUBSCRIBE_RETRY_MAX_ATTEMPTS})`,
+        { attempt: subscribeRetryAttempt, workflowId: target }
+      )
       bridge.resubscribe()
     }, delay)
   }
@@ -215,7 +266,13 @@ export function useAgentCrdtFollower(
     const ok = event.detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
-    recordDevEvent('doc_subscribed', event.detail ?? null)
+    docLog.info(
+      'doc_subscribed',
+      ok
+        ? `bound to ${subscribedWorkflowId.value ?? 'unknown doc'}`
+        : `server refused the subscribe (${String(event.detail?.code ?? 'no code')})`,
+      event.detail ?? null
+    )
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
@@ -241,27 +298,46 @@ export function useAgentCrdtFollower(
         seq?: number
         update?: Uint8Array
         actor?: string
+        opIds?: string[]
       } | null
-      recordDevEvent('doc_update', {
-        workflowId: detail?.workflowId,
-        seq: detail?.seq,
-        actor: detail?.actor,
-        bytes:
-          detail?.update instanceof Uint8Array ? detail.update.length : null
-      })
+      docLog.debug(
+        'doc_update',
+        `seq ${detail?.seq ?? '?'} from ${detail?.actor ?? 'unknown actor'}`,
+        {
+          workflowId: detail?.workflowId,
+          seq: detail?.seq,
+          actor: detail?.actor,
+          opIds: detail?.opIds ?? [],
+          bytes:
+            detail?.update instanceof Uint8Array ? detail.update.length : null
+        }
+      )
     }
     const ids = currentDocNodeIds()
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
+      ecsLog.info(
+        'doc_nodes_changed',
+        `doc nodes ${added.length > 0 ? `+${added.join(',')}` : ''}${added.length > 0 && removed.length > 0 ? ' ' : ''}${removed.length > 0 ? `-${removed.join(',')}` : ''}`,
+        { added, removed }
+      )
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
     if (staleProbeTimer !== null) armStaleProbe()
     lastFrameType.value = event.type
     if (event instanceof CustomEvent) {
-      recordDevEvent('doc_ops_result', event.detail ?? null)
+      const detail = event.detail as {
+        ok?: boolean
+        applied?: string[]
+        skipped?: string[]
+      } | null
+      opsLog.info(
+        'doc_ops_result',
+        `host ${detail?.ok ? 'accepted' : 'refused'} a batch: ${detail?.applied?.length ?? 0} applied, ${detail?.skipped?.length ?? 0} skipped`,
+        event.detail ?? null
+      )
     }
   }
   const onDocReset: EventListener = (event) => {
@@ -285,8 +361,9 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
-    recordDevEvent(
+    docLog.info(
       'doc_reset',
+      'lineage break — the host re-minted the document, so prior updates no longer compose',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
@@ -303,19 +380,29 @@ export function useAgentCrdtFollower(
     clearStaleProbe()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
+        ? (event.detail as {
+            workflowId?: string
+            firstFailure?: boolean
+          } | null)
         : null
     if (detail?.workflowId !== undefined)
       adapter.discardPending(detail.workflowId)
-    recordDevEvent(
+    // Every later frame fails the same gate; `warn` bypasses the debug gate,
+    // so only the first failure earns a console line in a shipping build.
+    docLog[detail?.firstFailure === false ? 'debug' : 'warn'](
       'schema_error',
-      event instanceof CustomEvent ? (event.detail ?? null) : null
+      'refusing to project the doc: its schema version is not the one this build reads (KA-11 fail-closed)',
+      detail
     )
   }
   const onReconnected: EventListener = () => {
     connected.value = false
     clearStaleProbe()
-    recordDevEvent('reconnected', null)
+    docLog.info(
+      'reconnected',
+      'socket reconnected — re-driving the subscribe',
+      null
+    )
     bridge.resubscribe()
   }
   /**
@@ -360,7 +447,11 @@ export function useAgentCrdtFollower(
         const persisted = initialBind ? readPersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
-          recordDevEvent('rebind', { workflowId: persisted })
+          docLog.info(
+            'rebind',
+            `remount rebound to the persisted doc ${persisted}`,
+            { workflowId: persisted }
+          )
           if (boundWorkflowId !== persisted) {
             if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
             adapter.bind(persisted, bridge.follower)
@@ -420,8 +511,22 @@ export function useAgentCrdtFollower(
     lastFrameType: lastFrameType.value
   }))
 
+  /**
+   * A getter, not a computed: the doc's ledgers change on every frame, and
+   * mirroring them into reactive state would make the instrument the most
+   * expensive consumer of the thing it observes.
+   */
+  const debugSnapshot = (): CrdtDebugSnapshot =>
+    readCrdtSnapshot(bridge.follower.doc, {
+      status: status.value,
+      tabId,
+      lastSeq: bridge.lastAppliedSeq,
+      schemaError: bridge.lastSchemaError?.message ?? null
+    })
+
   return {
     status: readonly(status),
+    debugSnapshot,
     // The semantic canvas-command adapter will call this after it moves to
     // @comfyorg/comfy-multi-player. Raw Yjs client updates are never sent.
     sendHumanOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops)

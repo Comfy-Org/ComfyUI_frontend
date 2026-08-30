@@ -1,3 +1,14 @@
+<script lang="ts">
+import { defineAsyncComponent } from 'vue'
+
+// Async so the merge lab's copy of the CRDT applier never reaches the bundle
+// of the users who cannot open the panel. Module scope, so one wrapper is
+// shared rather than rebuilt per instance.
+const CrdtDevPanel = defineAsyncComponent(
+  () => import('./crdt/CrdtDevPanel.vue')
+)
+</script>
+
 <script setup lang="ts">
 import './agentPanel.css'
 
@@ -79,7 +90,7 @@ import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
-import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
+import { isCrdtDebugEnabled } from './crdt/crdtDebugGate'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
@@ -357,12 +368,12 @@ const {
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow and projects doc updates onto the canvas.
-const { status: crdtStatus } = useAgentCrdtFollower(
-  boundWorkflowId,
-  graphMutations
-)
-// Dev instrument only (slice-02 classification): never ships to users.
-const isCrdtDevPanelEnabled = import.meta.env.DEV
+const { status: crdtStatus, debugSnapshot: crdtDebugSnapshot } =
+  useAgentCrdtFollower(boundWorkflowId, graphMutations)
+// Dev instrument (slice-02 classification). Gated on DEV *or* an explicit
+// ?crdtDebug=1 opt-in, because the people who need it are testers on a
+// staging build, where DEV is false. An explicit opt-out beats both.
+const isCrdtDevPanelEnabled = isCrdtDebugEnabled()
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
@@ -903,7 +914,7 @@ function onPanelDrop(event: DragEvent): void {
 <template>
   <div
     id="agent-panel-root"
-    class="size-full"
+    class="relative size-full"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -918,23 +929,6 @@ function onPanelDrop(event: DragEvent): void {
       data-testid="agent-file-input"
       @change="onFilesPicked"
     />
-    <div
-      v-if="crdtStatus.enabled"
-      class="border-b border-border-default bg-base-background px-3 py-1 font-mono text-muted"
-      data-testid="agent-crdt-status"
-    >
-      {{
-        t('agent.crdtStatus', {
-          connection: crdtStatus.connected
-            ? t('agent.crdtConnected')
-            : t('agent.crdtDisconnected'),
-          workflowId: crdtStatus.workflowId ?? t('agent.crdtNoDocument'),
-          updates: crdtStatus.updatesApplied,
-          frame: crdtStatus.lastFrameType ?? '—'
-        })
-      }}
-    </div>
-    <CrdtDevPanel v-if="isCrdtDevPanelEnabled" :status="crdtStatus" />
     <AgentPanel
       ref="panelRef"
       :entries
@@ -974,7 +968,11 @@ function onPanelDrop(event: DragEvent): void {
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
-    />
+    >
+      <template v-if="isCrdtDevPanelEnabled" #instrument>
+        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+      </template>
+    </AgentPanel>
     <OnboardingCoach
       :step="coachStep"
       storage-key="Comfy.AgentPanel.onboarded"
