@@ -17,6 +17,7 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -254,7 +255,9 @@ async function refreshCloudWorkflowIds(): Promise<void> {
       )
     )
   } catch (error) {
-    console.warn('[agent] could not refresh cloud workflow ids', error)
+    reportError(error, {
+      errorType: 'agent_cloud_workflow_ids_refresh_failed'
+    })
   }
 }
 

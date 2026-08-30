@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocUpdate } from './docFrameClient'
@@ -121,7 +122,7 @@ export function useAgentCrdtFollower(
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
-  const tabId = crypto.randomUUID()
+  const tabId = createUuidv4()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
