@@ -15,6 +15,10 @@ import {
   SplitterPanel,
   SplitterResizeHandle
 } from '@/components/ui/splitter'
+import {
+  loadSplitterSizes,
+  saveSplitterSizes
+} from '@/components/ui/splitter/persistence'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -84,6 +88,31 @@ const splitterKey = computed(() => {
   const right = rightPanelVisible.value ? 'R' : ''
   return isArrangeMode.value ? 'arrange' : `app-${left}${right}`
 })
+const splitterStateKey = 'linear-view-splitter'
+const panelCount = computed(
+  () => 1 + Number(leftPanelVisible.value) + Number(rightPanelVisible.value)
+)
+const savedPanelSizes = computed(() =>
+  loadSplitterSizes(splitterStateKey, panelCount.value)
+)
+const leftPanelDefaultSize = computed(
+  () => savedPanelSizes.value?.[0] ?? SIDE_PANEL_SIZE
+)
+const centerPanelDefaultSize = computed(() => {
+  const index = leftPanelVisible.value ? 1 : 0
+  const sidePanelCount = panelCount.value - 1
+  return (
+    savedPanelSizes.value?.[index] ??
+    CENTER_PANEL_SIZE - Math.max(0, sidePanelCount - 1) * SIDE_PANEL_SIZE
+  )
+})
+const rightPanelDefaultSize = computed(
+  () => savedPanelSizes.value?.[panelCount.value - 1] ?? SIDE_PANEL_SIZE
+)
+
+function saveSplitterLayout(sizes: number[]) {
+  saveSplitterSizes(splitterStateKey, sizes)
+}
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
@@ -123,15 +152,15 @@ function dragDrop(e: DragEvent) {
         <SplitterGroup
           :key="splitterKey"
           class="h-full flex-1 border-none bg-secondary-background"
-          auto-save-id="linear-view-splitter"
+          @layout="saveSplitterLayout"
         >
           <SplitterPanel
             v-if="leftPanelVisible"
             id="linear-left-panel"
             :order="1"
-            :default-size="SIDE_PANEL_SIZE"
+            :default-size="leftPanelDefaultSize"
             :min-size="sidePanelMinSize(showLeftBuilder)"
-            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+            class="arrange-panel overflow-hidden bg-comfy-menu-bg outline-none"
           >
             <AppBuilder v-if="showLeftBuilder" />
             <div
@@ -153,7 +182,7 @@ function dragDrop(e: DragEvent) {
             v-coachmark="COACH_IDS.outputs"
             :order="2"
             data-testid="linear-center-panel"
-            :default-size="CENTER_PANEL_SIZE"
+            :default-size="centerPanelDefaultSize"
             class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
             @drop="dragDrop"
           >
@@ -175,9 +204,9 @@ function dragDrop(e: DragEvent) {
             v-if="rightPanelVisible"
             id="linear-right-panel"
             :order="3"
-            :default-size="SIDE_PANEL_SIZE"
+            :default-size="rightPanelDefaultSize"
             :min-size="sidePanelMinSize(showRightBuilder)"
-            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+            class="arrange-panel overflow-hidden bg-comfy-menu-bg outline-none"
           >
             <AppBuilder v-if="showRightBuilder" />
             <LinearControls
