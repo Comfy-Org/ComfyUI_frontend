@@ -1,34 +1,30 @@
 <script setup lang="ts">
-import type { CheckboxRootEmits, CheckboxRootProps } from 'reka-ui'
-import { CheckboxIndicator, CheckboxRoot, useForwardPropsEmits } from 'reka-ui'
+import { CheckboxIndicator, CheckboxRoot } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-interface Props extends CheckboxRootProps {
+const { class: customClass = '', disabled = false } = defineProps<{
   class?: HTMLAttributes['class']
-}
+  disabled?: boolean
+}>()
 
-const { class: className, ...restProps } = defineProps<Props>()
-const emits = defineEmits<CheckboxRootEmits>()
-const forwarded = useForwardPropsEmits(restProps, emits)
+const modelValue = defineModel<boolean>({ default: false })
 </script>
 
 <template>
   <CheckboxRoot
-    v-bind="forwarded"
+    v-model="modelValue"
+    :disabled
     :class="
       cn(
-        'flex size-5 shrink-0 items-center justify-center rounded-sm border border-node-component-header-icon transition-colors',
-        'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        'data-[state=checked]:border-primary-background data-[state=checked]:bg-primary-background',
-        className
+        'inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-interface-stroke bg-transparent text-base-background transition-colors outline-none focus-visible:ring-1 focus-visible:ring-border-default disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-primary-background data-[state=checked]:bg-primary-background',
+        customClass
       )
     "
   >
-    <CheckboxIndicator class="flex items-center justify-center text-white">
-      <i class="icon-[lucide--check] size-3.5" />
+    <CheckboxIndicator class="flex items-center justify-center">
+      <i class="icon-[lucide--check] size-3" />
     </CheckboxIndicator>
   </CheckboxRoot>
 </template>
