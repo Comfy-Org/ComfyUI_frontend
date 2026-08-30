@@ -172,7 +172,19 @@ export function traceEntry(
   index: number,
   verdict: MergeVerdict
 ): MergeTraceEntry {
-  const label = registerLabel(writeTarget(op))
+  const target = writeTarget(op)
+  const widgetWrite = op as {
+    op: string
+    node_id?: NodeId
+    widget?: unknown
+  }
+  const label = registerLabel(
+    widgetWrite.op === 'set_widget' &&
+      widgetWrite.node_id !== undefined &&
+      typeof widgetWrite.widget === 'string'
+      ? ['widget', widgetWrite.node_id, widgetWrite.widget]
+      : target
+  )
   return {
     index,
     opId: op.op_id,

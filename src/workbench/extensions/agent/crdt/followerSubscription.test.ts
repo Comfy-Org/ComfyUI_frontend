@@ -466,11 +466,11 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
-    const v2 = hostDocUpdate((doc) =>
-      doc.getMap('meta').set('schema_version', 2)
+    const newerSchema = hostDocUpdate((doc) =>
+      doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
     )
-    transport.deliver('doc_update', docUpdateFrame(v2, WORKFLOW_ID, 1))
-    transport.deliver('doc_update', docUpdateFrame(v2, WORKFLOW_ID, 2))
+    transport.deliver('doc_update', docUpdateFrame(newerSchema, WORKFLOW_ID, 1))
+    transport.deliver('doc_update', docUpdateFrame(newerSchema, WORKFLOW_ID, 2))
 
     // This event is not just a log line: its listener also clears `connected`
     // and cancels the stale probe, which a resubscribe re-arms. Firing it only
