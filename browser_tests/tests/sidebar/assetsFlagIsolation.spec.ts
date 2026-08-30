@@ -69,12 +69,11 @@ contractTest.describe(
   'Assets sidebar Asset API contract',
   { tag: '@oss' },
   () => {
+    contractTest.use({ initialFeatureFlags: { assets: true } })
+
     contractTest(
       'uses the shared query contract when enabled on OSS',
       async ({ assetApiRequests, comfyPage }) => {
-        await comfyPage.featureFlags.seedFlags({ assets: true })
-        await comfyPage.setup()
-
         const tab = comfyPage.menu.assetsTab
         await tab.open()
         await expect(tab.getAssetCardByName('enabled-output')).toBeVisible()
@@ -100,12 +99,11 @@ contractTest.describe(
   'Assets sidebar Asset API contract on Cloud',
   { tag: '@cloud' },
   () => {
+    contractTest.use({ initialFeatureFlags: { assets: true } })
+
     contractTest(
       'uses the shared query contract',
       async ({ assetApiRequests, comfyPage }) => {
-        await comfyPage.featureFlags.seedFlags({ assets: true })
-        await comfyPage.setup()
-
         const tab = comfyPage.menu.assetsTab
         await tab.open()
         await expect(tab.getAssetCardByName('enabled-output')).toBeVisible()
