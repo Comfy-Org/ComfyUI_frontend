@@ -28,32 +28,36 @@
     <div class="flex items-center gap-2">
       <i v-if="loading" class="pi pi-spinner pi-spin text-muted" />
       <template v-else>
-        <Button
-          v-tooltip="{ value: editLabel, showDelay: 300 }"
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="editLabel"
-          :disabled="disabled"
-          @click="emit('edit')"
-        >
-          <i class="pi pi-pen-to-square" />
-        </Button>
-        <Button
-          v-tooltip="{ value: deleteLabel, showDelay: 300 }"
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="deleteLabel"
-          :disabled="disabled"
-          @click="emit('delete')"
-        >
-          <i class="pi pi-trash" />
-        </Button>
+        <Tooltip :config="{ value: editLabel, showDelay: 300 }" side="right">
+          <Button
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="editLabel"
+            :disabled="disabled"
+            @click="emit('edit')"
+          >
+            <i class="pi pi-pen-to-square" />
+          </Button>
+        </Tooltip>
+        <Tooltip :config="{ value: deleteLabel, showDelay: 300 }" side="right">
+          <Button
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="deleteLabel"
+            :disabled="disabled"
+            @click="emit('delete')"
+          >
+            <i class="pi pi-trash" />
+          </Button>
+        </Tooltip>
       </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
