@@ -5,7 +5,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { ref, useId } from 'vue'
+import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -26,11 +26,11 @@ const emit = defineEmits<{
   hide: []
 }>()
 
-const visible = ref(false)
+const open = ref(false)
 const anchor = ref({ x: 0, y: 0 })
-const triggerId = `${useId()}-trigger`
-const overlayVisible = visible
-const contentStyle = useModalLiftedZIndex(visible)
+const visible = open
+const overlayVisible = open
+const contentStyle = useModalLiftedZIndex(open)
 
 function show(event: Event) {
   const mouseEvent = event instanceof MouseEvent ? event : undefined
@@ -41,14 +41,12 @@ function show(event: Event) {
     y: mouseEvent?.clientY ?? rect?.bottom ?? 0
   }
   window.setTimeout(() => {
-    document.getElementById(triggerId)?.click()
+    open.value = true
   })
 }
 
 function hide() {
-  document.dispatchEvent(
-    new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' })
-  )
+  open.value = false
 }
 
 function toggle(event: Event) {
@@ -57,7 +55,7 @@ function toggle(event: Event) {
 }
 
 function updateOpen(value: boolean) {
-  visible.value = value
+  open.value = value
   if (value) emit('show')
   else emit('hide')
 }
@@ -66,10 +64,9 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
 </script>
 
 <template>
-  <DropdownMenuRoot @update:open="updateOpen">
+  <DropdownMenuRoot :open @update:open="updateOpen">
     <DropdownMenuTrigger as-child>
       <button
-        :id="triggerId"
         type="button"
         tabindex="-1"
         aria-hidden="true"
@@ -86,7 +83,7 @@ defineExpose({ hide, overlayVisible, show, toggle, visible })
         align="start"
         @close-auto-focus.prevent
       >
-        <MenuItems :items="model">
+        <MenuItems :items="model" @select="hide">
           <template v-if="$slots.item" #item="slotProps">
             <slot name="item" v-bind="slotProps" />
           </template>
