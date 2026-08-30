@@ -33,7 +33,7 @@
           :key="option.name"
           :value="option.name"
           :aria-label="option.localizedName"
-          class="flex-none"
+          class="color-picker-option flex-none"
         >
           <i
             v-tooltip.top="option.localizedName"
@@ -172,7 +172,7 @@ watch(
 </script>
 
 <style scoped>
-:deep(.p-togglebutton) {
+:deep(.color-picker-option) {
   padding: calc(var(--spacing) * 2) var(--spacing);
 }
 </style>
