@@ -26,6 +26,6 @@ export interface MenuItem {
   updateTitle?: (title: string) => void
   isBlueprint?: boolean
   shortcut?: string
-  isColorSubmenu?: boolean
-  isShapeSubmenu?: boolean
+  color?: string
+  isShapeSubmenuItem?: boolean
 }

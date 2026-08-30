@@ -40,6 +40,7 @@ function select(item: MenuItem, event: Event) {
     />
     <DropdownMenuSub v-else-if="toValue(item.visible) !== false && item.items">
       <DropdownMenuSubTrigger
+        :aria-label="toValue(item.label)"
         :disabled="toValue(item.disabled) || item.items.length === 0"
         :class="cn(menuItemClass, item.class)"
       >
@@ -61,6 +62,7 @@ function select(item: MenuItem, event: Event) {
     </DropdownMenuSub>
     <DropdownMenuItem
       v-else-if="toValue(item.visible) !== false"
+      :aria-label="toValue(item.label)"
       :disabled="toValue(item.disabled)"
       :class="cn(menuItemClass, item.class)"
       @select="select(item, $event)"

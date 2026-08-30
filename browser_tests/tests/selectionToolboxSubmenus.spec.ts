@@ -40,12 +40,13 @@ test.describe(
       )[0]
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Shape', { exact: true }).click()
-      const shapePopover = comfyPage.page
-        .getByRole('menu')
-        .filter({ hasText: 'Default' })
-      await expect(shapePopover.getByText('Box', { exact: true })).toBeVisible()
-      await shapePopover.getByText('Box', { exact: true }).click()
+      await comfyPage.contextMenu.menuItem('Shape').click()
+      const boxItem = comfyPage.page.getByRole('menuitem', {
+        name: 'Box',
+        exact: true
+      })
+      await expect(boxItem).toBeVisible()
+      await boxItem.click()
       await comfyPage.nextFrame()
 
       await expect.poll(() => nodeRef.getProperty<number>('shape')).toBe(1)
@@ -59,10 +60,13 @@ test.describe(
       )[0]
 
       await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Color', { exact: true }).click()
-      const blueSwatch = comfyPage.page.getByTitle('Blue')
-      await expect(blueSwatch.first()).toBeVisible()
-      await blueSwatch.first().click()
+      await comfyPage.contextMenu.menuItem('Color').click()
+      const blueSwatch = comfyPage.page.getByRole('menuitem', {
+        name: 'Blue',
+        exact: true
+      })
+      await expect(blueSwatch).toBeVisible()
+      await blueSwatch.click()
       await comfyPage.nextFrame()
 
       await expect
