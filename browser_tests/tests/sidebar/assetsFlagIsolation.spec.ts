@@ -74,6 +74,7 @@ contractTest.describe(
     contractTest(
       'uses the shared query contract when enabled on OSS',
       async ({ assetApiRequests, comfyPage }) => {
+        await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
         const tab = comfyPage.menu.assetsTab
         await tab.open({ waitForAssets: false })
         await expect(tab.getAssetCardByName('enabled-output')).toBeVisible()
