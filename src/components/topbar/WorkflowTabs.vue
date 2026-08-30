@@ -35,9 +35,11 @@
             v-for="(option, index) in options"
             :key="option.value"
             :value="option.value"
-            class="workflow-tab-button h-full flex-none rounded-none p-0"
+            class="workflow-tab-button group h-full flex-none rounded-none p-0 font-[inherit] leading-[normal] font-medium data-[state=off]:text-text-muted data-[state=off]:opacity-75 data-[state=on]:border-b-text-primary"
           >
-            <span class="workflow-tab-content">
+            <span
+              class="relative inline-flex items-center justify-center gap-2 group-data-[state=off]:translate-y-[-0.5px]"
+            >
               <WorkflowTab
                 :workflow-option="option"
                 :is-first="index === 0"
@@ -343,9 +345,6 @@ onUpdated(checkOverflow)
   padding: 0;
   border-right-color: var(--border-color);
   min-width: 90px;
-  font-family: inherit;
-  font-weight: 500;
-  line-height: normal;
 }
 
 .overflow-arrow {
@@ -359,14 +358,6 @@ onUpdated(checkOverflow)
 
 :deep(.workflow-tab) {
   max-width: 100%;
-}
-
-:deep(.workflow-tab-content) {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: calc(var(--spacing) * 2);
 }
 
 :deep(.workflow-tab-button:first-child) {
@@ -383,13 +374,7 @@ onUpdated(checkOverflow)
   height: 100%;
   border-bottom-style: solid;
   border-bottom-width: 1px;
-  border-bottom-color: var(--p-button-text-primary-color);
   background-color: transparent;
-}
-
-:deep(.workflow-tab-button[data-state='off']) {
-  color: var(--p-text-muted-color);
-  opacity: 0.75;
 }
 
 :deep(.workflow-tabs) {
