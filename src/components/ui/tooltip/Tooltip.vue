@@ -72,6 +72,14 @@ watch(isDisabled, (disabled) => {
   if (disabled) setOpen(false)
 })
 
+watch(open, (isOpen, _, onCleanup) => {
+  if (!isOpen || typeof document === 'undefined') return
+
+  const closeOnTouchStart = () => setOpen(false)
+  document.addEventListener('touchstart', closeOnTouchStart, { passive: true })
+  onCleanup(() => document.removeEventListener('touchstart', closeOnTouchStart))
+})
+
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer)
 })

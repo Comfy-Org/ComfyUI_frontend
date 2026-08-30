@@ -1,5 +1,5 @@
 import { ZIndex } from '@primeuix/utils/zindex'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -44,6 +44,22 @@ describe('Tooltip', () => {
     expect(screen.getByRole('button')).toHaveAccessibleDescription(
       'Helpful text'
     )
+  })
+
+  it('dismisses a focus-opened tooltip when a touch interaction starts', async () => {
+    const user = userEvent.setup()
+    renderTooltip()
+    const outside = document.createElement('div')
+    document.body.append(outside)
+
+    await user.tab()
+    await screen.findByRole('tooltip')
+    await fireEvent.touchStart(outside)
+
+    await vi.waitFor(() => {
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    })
+    outside.remove()
   })
 
   it('opens on click without bubbling or duplicating the accessible label', async () => {
