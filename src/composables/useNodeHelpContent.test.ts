@@ -1,11 +1,35 @@
 // @vitest-environment jsdom
 // dompurify is inert under happy-dom — see the tripwire note in
 // vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
+import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: { nodeHelpPage: { notFound: 'Help not found' } }
+  }
+})
+
+function useNodeHelpContent(
+  nodeRef: Parameters<typeof useNodeHelpContentComposable>[0]
+) {
+  let result!: ReturnType<typeof useNodeHelpContentComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useNodeHelpContentComposable(nodeRef)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return result
+}
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -34,13 +58,6 @@ vi.mock('@/scripts/api', () => ({
   api: {
     fileURL: vi.fn((url) => url)
   }
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    locale: ref('en'),
-    t: (key: string) => key
-  })
 }))
 
 vi.mock('@/types/nodeSource', () => ({
@@ -131,7 +148,7 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('nodeHelpPage.notFound')
+    expect(error.value).toBe('Help not found')
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
@@ -146,7 +163,7 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('nodeHelpPage.notFound')
+    expect(error.value).toBe('Help not found')
     expect(renderedHelpHtml.value).toContain(mockCustomNode.description)
   })
 
@@ -158,7 +175,7 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('nodeHelpPage.notFound')
+    expect(error.value).toBe('Help not found')
     expect(renderedHelpHtml.value).toBe('')
     expect(mockFetch).not.toHaveBeenCalled()
   })
@@ -175,7 +192,7 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('nodeHelpPage.notFound')
+    expect(error.value).toBe('Help not found')
     expect(renderedHelpHtml.value).toContain('Malformed custom node')
     expect(warning).toHaveBeenCalledWith(
       'Invalid custom node module:',
@@ -195,7 +212,7 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('nodeHelpPage.notFound')
+    expect(error.value).toBe('Help not found')
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
