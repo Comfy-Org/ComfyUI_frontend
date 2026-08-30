@@ -77,6 +77,7 @@ export type OnboardingSurvey = {
  * Configuration fetched from the server at runtime
  */
 export type RemoteConfig = {
+  'agent-in-app-experience'?: boolean
   gtm_container_id?: string
   ga_measurement_id?: string
   mixpanel_token?: string
