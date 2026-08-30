@@ -1,25 +1,30 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
     <template #tool-buttons>
-      <Button
-        v-tooltip.bottom="$t('g.refresh')"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="$t('g.refresh')"
-        @click="withLoadFailureToast(() => modelStore.refresh())"
-      >
-        <i class="icon-[lucide--refresh-cw] size-4" />
-      </Button>
-      <Button
+      <Tooltip :config="$t('g.refresh')" side="bottom">
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('g.refresh')"
+          @click="withLoadFailureToast(() => modelStore.refresh())"
+        >
+          <i class="icon-[lucide--refresh-cw] size-4" />
+        </Button>
+      </Tooltip>
+      <Tooltip
         v-if="!usesAssetApi"
-        v-tooltip.bottom="$t('g.loadAllFolders')"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="$t('g.loadAllFolders')"
-        @click="withLoadFailureToast(() => modelStore.loadModels())"
+        :config="$t('g.loadAllFolders')"
+        side="bottom"
       >
-        <i class="icon-[lucide--cloud-download] size-4" />
-      </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('g.loadAllFolders')"
+          @click="withLoadFailureToast(() => modelStore.loadModels())"
+        >
+          <i class="icon-[lucide--cloud-download] size-4" />
+        </Button>
+      </Tooltip>
     </template>
     <template #header>
       <SidebarTopArea>
@@ -66,6 +71,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { Divider } from 'primevue'
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'

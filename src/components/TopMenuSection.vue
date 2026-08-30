@@ -35,22 +35,23 @@
             v-if="managerState.shouldShowManagerButtons.value || isCloud"
             class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
           >
-            <Button
-              v-tooltip.bottom="customNodesManagerTooltipConfig"
-              variant="secondary"
-              :aria-label="t('menu.manageExtensions')"
-              class="relative"
-              @click="openCustomNodeManager"
-            >
-              <i class="icon-[comfy--extensions-blocks] size-4" />
-              <span class="not-md:hidden">
-                {{ t('menu.manageExtensions') }}
-              </span>
-              <span
-                v-if="shouldShowRedDot"
-                class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
-              />
-            </Button>
+            <Tooltip :config="customNodesManagerTooltipConfig" side="bottom">
+              <Button
+                variant="secondary"
+                :aria-label="t('menu.manageExtensions')"
+                class="relative"
+                @click="openCustomNodeManager"
+              >
+                <i class="icon-[comfy--extensions-blocks] size-4" />
+                <span class="not-md:hidden">
+                  {{ t('menu.manageExtensions') }}
+                </span>
+                <span
+                  v-if="shouldShowRedDot"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                />
+              </Button>
+            </Tooltip>
           </div>
 
           <div
@@ -85,35 +86,40 @@
                 class="shrink-0"
               />
               <LoginButton v-else-if="!isIntegratedTabBar" />
-              <Button
+              <Tooltip
                 v-if="isCloud && flags.workflowSharingEnabled"
-                v-tooltip.bottom="shareTooltipConfig"
-                variant="secondary"
-                :aria-label="t('actionbar.shareTooltip')"
-                @click="() => openShareDialog().catch(toastErrorHandler)"
-                @pointerenter="prefetchShareDialog"
+                :config="shareTooltipConfig"
+                side="bottom"
               >
-                <i class="icon-[comfy--send] size-4" />
-                <span class="not-md:hidden">
-                  {{ t('actionbar.share') }}
-                </span>
-              </Button>
-              <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
-                  v-tooltip.bottom="rightSidePanelTooltipConfig"
-                  :class="
-                    cn(
-                      showErrorIndicatorOnPanelButton &&
-                        'outline-1 outline-destructive-background'
-                    )
-                  "
                   variant="secondary"
-                  size="icon"
-                  :aria-label="t('rightSidePanel.togglePanel')"
-                  @click="openRightSidePanel"
+                  :aria-label="t('actionbar.shareTooltip')"
+                  @click="() => openShareDialog().catch(toastErrorHandler)"
+                  @pointerenter="prefetchShareDialog"
                 >
-                  <i class="icon-[lucide--panel-right] size-4" />
+                  <i class="icon-[comfy--send] size-4" />
+                  <span class="not-md:hidden">
+                    {{ t('actionbar.share') }}
+                  </span>
                 </Button>
+              </Tooltip>
+              <div v-if="!isRightSidePanelOpen" class="relative">
+                <Tooltip :config="rightSidePanelTooltipConfig" side="bottom">
+                  <Button
+                    :class="
+                      cn(
+                        showErrorIndicatorOnPanelButton &&
+                          'outline-1 outline-destructive-background'
+                      )
+                    "
+                    variant="secondary"
+                    size="icon"
+                    :aria-label="t('rightSidePanel.togglePanel')"
+                    @click="openRightSidePanel"
+                  >
+                    <i class="icon-[lucide--panel-right] size-4" />
+                  </Button>
+                </Tooltip>
                 <StatusBadge
                   v-if="showErrorIndicatorOnPanelButton"
                   variant="dot"
@@ -164,6 +170,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
