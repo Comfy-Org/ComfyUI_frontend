@@ -62,8 +62,10 @@ function setOpen(nextOpen: boolean) {
   emit('update:open', nextOpen)
 }
 
-function handleClick() {
-  if (openOnClick) setOpen(true)
+function handleClick(event: MouseEvent) {
+  if (!openOnClick) return
+  event.stopPropagation()
+  setOpen(true)
 }
 
 watch(isDisabled, (disabled) => {

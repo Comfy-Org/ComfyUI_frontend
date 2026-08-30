@@ -480,7 +480,7 @@ describe('MissingModelRow', () => {
     expect(gatedAccess).toHaveAttribute('rel', 'noopener noreferrer')
 
     gatedAccess.focus()
-    expect(await screen.findByTestId('disclosure-tooltip')).toHaveTextContent(
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
       gatedModelTooltip
     )
     expect(gatedAccess).toHaveAccessibleDescription(gatedModelTooltip)
