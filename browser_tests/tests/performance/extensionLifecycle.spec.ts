@@ -52,7 +52,11 @@ async function installDrawInstrumentation(
       listenerCalls: 0
     }
     const listener = () => counters.listenerCalls++
-    const wrapper: typeof drawOwner.drawNode = function (node, context) {
+    const wrapper: typeof drawOwner.drawNode = function (
+      this: typeof canvas,
+      node,
+      context
+    ) {
       originalDrawNode.call(this, node, context)
       counters.wrapperCalls++
 
@@ -92,7 +96,8 @@ async function installDrawInstrumentation(
       cleanup: () => {
         window.clearInterval(timer)
         canvas.canvas.removeEventListener('extension-perf-refresh', listener)
-        if (drawOwner.drawNode === wrapper) drawOwner.drawNode = originalDrawNode
+        if (drawOwner.drawNode === wrapper)
+          drawOwner.drawNode = originalDrawNode
         delete scope.__extensionLifecyclePerf
         return {
           ...counters,
