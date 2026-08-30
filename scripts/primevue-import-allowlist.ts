@@ -58,8 +58,6 @@ export const primeVueImportAllowlist = [
   'src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.test.ts',
   'src/stores/dialogStore.ts',
   'src/views/UserSelectView.test.ts',
-  'src/workbench/extensions/manager/components/manager/PackVersionBadge.test.ts',
-  'src/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.test.ts',
   'src/workbench/extensions/manager/components/manager/button/PackEnableToggle.test.ts',
   'src/workbench/extensions/manager/components/manager/packCard/PackCardFooter.test.ts',
   'src/workbench/extensions/manager/components/manager/skeleton/PackCardGridSkeleton.test.ts',

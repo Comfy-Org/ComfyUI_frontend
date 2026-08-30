@@ -31,14 +31,16 @@
         >
           <div class="flex items-center gap-2">
             <div v-if="option.value === 'nightly'" class="w-4"></div>
-            <i
+            <Tooltip
               v-else-if="option.hasConflict"
-              v-tooltip="{
+              :config="{
                 value: option.conflictMessage,
                 showDelay: 300
               }"
-              class="icon-[lucide--triangle-alert] text-warning-background"
-            />
+              side="right"
+            >
+              <i class="icon-[lucide--triangle-alert] text-warning-background" />
+            </Tooltip>
             <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             <span>{{ option.label }}</span>
           </div>
@@ -71,6 +73,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { whenever } from '@vueuse/core'
 import {
   ListboxContent,

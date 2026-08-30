@@ -1,29 +1,31 @@
 <template>
   <div>
-    <div
-      v-tooltip.top="
-        isDisabled ? $t('manager.enablePackToChangeVersion') : null
-      "
-      class="inline-flex items-center gap-1 rounded-2xl py-1 text-xs"
-      :class="{
-        'bg-dialog-surface px-1.5': fill,
-        'cursor-pointer': !isDisabled,
-        'cursor-not-allowed opacity-60': isDisabled
-      }"
-      :aria-haspopup="!isDisabled"
-      :role="isDisabled ? 'text' : 'button'"
-      :tabindex="isDisabled ? -1 : 0"
-      @click="!isDisabled && toggleVersionSelector($event)"
-      @keydown.enter="!isDisabled && toggleVersionSelector($event)"
-      @keydown.space="!isDisabled && toggleVersionSelector($event)"
+    <Tooltip
+      :config="isDisabled ? $t('manager.enablePackToChangeVersion') : null"
+      side="top"
     >
-      <i
-        v-if="isUpdateAvailable"
-        class="pi pi-arrow-circle-up text-xs text-blue-600"
-      />
-      <span>{{ installedVersion }}</span>
-      <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
-    </div>
+      <div
+        class="inline-flex items-center gap-1 rounded-2xl py-1 text-xs"
+        :class="{
+          'bg-dialog-surface px-1.5': fill,
+          'cursor-pointer': !isDisabled,
+          'cursor-not-allowed opacity-60': isDisabled
+        }"
+        :aria-haspopup="!isDisabled"
+        :role="isDisabled ? 'text' : 'button'"
+        :tabindex="isDisabled ? -1 : 0"
+        @click="!isDisabled && toggleVersionSelector($event)"
+        @keydown.enter="!isDisabled && toggleVersionSelector($event)"
+        @keydown.space="!isDisabled && toggleVersionSelector($event)"
+      >
+        <i
+          v-if="isUpdateAvailable"
+          class="pi pi-arrow-circle-up text-xs text-blue-600"
+        />
+        <span>{{ installedVersion }}</span>
+        <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
+      </div>
+    </Tooltip>
 
     <Popover ref="popoverRef" align="start" content-class="p-0">
       <PackVersionSelectorPopover
@@ -37,6 +39,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import Popover from '@/components/ui/popover/PopoverOverlay.vue'
 import { valid as validSemver } from 'semver'
 import { computed, ref, watch } from 'vue'
