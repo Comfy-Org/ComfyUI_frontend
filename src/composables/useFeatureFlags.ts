@@ -42,7 +42,8 @@ export enum ServerFeatureFlag {
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
+  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience'
 }
 
 /**
@@ -267,6 +268,11 @@ export function useFeatureFlags() {
         ServerFeatureFlag.ONBOARDING_TOUR_ENABLED,
         remoteConfig.value.onboarding_tour_enabled,
         false
+      )
+    },
+    get agentInAppExperienceEnabled() {
+      return resolveFailClosedBooleanFlag(
+        ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE
       )
     }
   })

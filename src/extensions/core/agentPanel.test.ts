@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyExtension } from '@/types/comfy'
+import type { Ref } from 'vue'
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   agentStore: { enabled: false, isOpen: true, close: vi.fn() },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
-  flagEnabled: undefined as boolean | undefined,
-  flagListener: null as (() => void) | null,
+  flagEnabled: null as Ref<boolean | undefined> | null,
   nodeSelectionStore: {
     beginWorkflowLoad: vi.fn(),
     finishWorkflowLoad: vi.fn(),
@@ -66,18 +66,18 @@ vi.mock(
   })
 )
 
-vi.mock('posthog-js', () => ({
-  default: {
-    isFeatureEnabled: () => mocks.flagEnabled,
-    onFeatureFlags: (listener: () => void) => {
-      mocks.flagListener = listener
-      return () => {}
-    }
+vi.mock('@/composables/useFeatureFlags', async () => {
+  const { ref } = await import('vue')
+  mocks.flagEnabled = ref<boolean | undefined>(false)
+  return {
+    ServerFeatureFlag: {
+      AGENT_IN_APP_EXPERIENCE: 'agent-in-app-experience'
+    },
+    useFeatureFlags: () => ({
+      featureFlag: () => mocks.flagEnabled
+    })
   }
-}))
-
-const flush = (): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, 0))
+})
 
 async function loadEntryAndSetup(): Promise<void> {
   await import('./agentPanel')
@@ -86,8 +86,6 @@ async function loadEntryAndSetup(): Promise<void> {
   )
   expect(ext).toBeDefined()
   ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
-  for (let i = 0; i < 2000 && mocks.flagListener === null; i++) await flush()
-  expect(mocks.flagListener).toBeTypeOf('function')
 }
 
 describe('AgentPanel extension flag gate', () => {
@@ -95,8 +93,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.capturedExtensions.length = 0
     mocks.agentStore.close.mockClear()
     mocks.agentStore.enabled = false
-    mocks.flagEnabled = undefined
-    mocks.flagListener = null
+    if (mocks.flagEnabled) mocks.flagEnabled.value = undefined
     mocks.registerTracker.mockClear()
     mocks.canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
@@ -113,7 +110,6 @@ describe('AgentPanel extension flag gate', () => {
 
   it('forces the panel on in development even while the flag is false', async () => {
     vi.stubEnv('MODE', 'development')
-    mocks.flagEnabled = false
 
     await loadEntryAndSetup()
 
@@ -132,17 +128,17 @@ describe('AgentPanel extension flag gate', () => {
 
   it('enables the panel when the flag turns true', async () => {
     await loadEntryAndSetup()
-    mocks.flagEnabled = true
-    mocks.flagListener!()
+    mocks.flagEnabled!.value = true
+    await vi.waitFor(() => expect(mocks.agentStore.enabled).toBe(true))
     expect(mocks.agentStore.enabled).toBe(true)
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
     await loadEntryAndSetup()
-    mocks.flagEnabled = true
-    mocks.flagListener!()
-    mocks.flagEnabled = false
-    mocks.flagListener!()
+    mocks.flagEnabled!.value = true
+    await vi.waitFor(() => expect(mocks.agentStore.enabled).toBe(true))
+    mocks.flagEnabled!.value = false
+    await vi.waitFor(() => expect(mocks.agentStore.enabled).toBe(false))
 
     expect(mocks.agentStore.enabled).toBe(false)
     expect(mocks.agentStore.close).not.toHaveBeenCalled()
