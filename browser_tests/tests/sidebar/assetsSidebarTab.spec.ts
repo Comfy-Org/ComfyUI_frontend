@@ -2,6 +2,7 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   createRouteMockJob,
@@ -150,6 +151,23 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
   })
 }
 
+async function verifyMobileTouchActions(comfyPage: ComfyPage) {
+  const tab = comfyPage.menu.assetsTab
+
+  await comfyPage.setup()
+  await tab.open()
+
+  await tab.getAssetCardByName('alpha').tap()
+  await expect(tab.selectedCards).toHaveCount(1)
+  await expect(tab.selectionFooter).toBeInViewport({ ratio: 1 })
+  await expect(tab.downloadSelectedButton).toBeInViewport({ ratio: 1 })
+  await expect(tab.deleteSelectedButton).toBeInViewport({ ratio: 1 })
+
+  await tab.deleteSelectedButton.tap()
+  await expect(comfyPage.confirmDialog.root).toBeVisible()
+  await expect(comfyPage.confirmDialog.delete).toBeInViewport({ ratio: 1 })
+  await expect(comfyPage.confirmDialog.reject).toBeInViewport({ ratio: 1 })
+}
 function isGeneratedAssetVerificationResponse(response: Response): boolean {
   const url = new URL(response.url())
   return (
@@ -251,6 +269,18 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
     await expect(tab.deleteSelectedButton).toBeVisible()
     await expect(tab.downloadSelectedButton).toBeVisible()
+  })
+
+  test('@mobile touch selection keeps actions reachable', async ({
+    comfyPage
+  }) => {
+    await verifyMobileTouchActions(comfyPage)
+  })
+
+  test('@mobile-ios touch selection keeps actions reachable', async ({
+    comfyPage
+  }) => {
+    await verifyMobileTouchActions(comfyPage)
   })
 
   test('loads full generated job outputs from job detail', async ({
