@@ -10,12 +10,7 @@
     >
       <i class="pi pi-ellipsis-h" />
     </Button>
-    <Menu
-      ref="menu"
-      :model="menuItems"
-      :popup="true"
-      class="max-h-[40vh] overflow-auto"
-    />
+    <Menu ref="menu" :model="menuItems" class="max-h-[40vh] overflow-auto" />
   </div>
 </template>
 

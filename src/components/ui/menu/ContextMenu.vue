@@ -78,7 +78,7 @@ defineExpose({ container: content, hide, show, toggle, visible })
       class="pointer-events-none fixed size-px opacity-0"
     />
     <ContextMenuPortal>
-      <ContextMenuContent as-child>
+      <ContextMenuContent as-child @close-auto-focus.prevent>
         <div
           :id="providedId ?? generatedId"
           ref="content"

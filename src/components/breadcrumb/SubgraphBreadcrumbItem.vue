@@ -8,12 +8,12 @@
     :data-testid="`subgraph-breadcrumb-item-${item.key}`"
     :data-active="isActive ? '' : undefined"
     draggable="false"
-    class="p-breadcrumb-item-link flex h-8 cursor-pointer items-center px-2"
+    class="p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none"
     :class="{
       'gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
       'p-breadcrumb-item-link-icon-visible': isActive,
-      'active-breadcrumb-item': isActive
+      'text-text-primary': isActive
     }"
     @click="handleClick"
   >
@@ -22,7 +22,11 @@
       data-testid="subgraph-breadcrumb-missing-nodes-icon"
       class="icon-[lucide--triangle-alert] text-warning-background"
     />
-    <span class="p-breadcrumb-item-label max-w-72 px-2">{{ item.label }}</span>
+    <span
+      class="p-breadcrumb-item-label max-w-72 truncate px-2"
+    >
+      {{ item.label }}
+    </span>
     <Tag
       v-if="item.isBlueprint"
       data-testid="subgraph-breadcrumb-blueprint-tag"
@@ -35,16 +39,7 @@
     v-if="isActive || isRoot"
     ref="menu"
     :model="menuItems"
-    :popup="true"
-    :pt="{
-      root: {
-        'data-testid': `subgraph-breadcrumb-menu-${item.key}`,
-        style: 'background-color: var(--comfy-menu-bg)'
-      },
-      itemLink: {
-        class: 'py-2'
-      }
-    }"
+    :data-testid="`subgraph-breadcrumb-menu-${item.key}`"
   />
   <Input
     v-if="isEditing"
@@ -179,7 +174,7 @@ const handleClick = (event: MouseEvent) => {
     menu.value?.hide()
     event.stopPropagation()
     event.preventDefault()
-    startRename()
+    void nextTick(startRename)
   }
 }
 
@@ -191,24 +186,3 @@ const inputBlur = async (doRename: boolean) => {
   isEditing.value = false
 }
 </script>
-
-<style scoped>
-.p-breadcrumb-item-link,
-.p-breadcrumb-item-icon {
-  user-select: none;
-}
-
-.p-breadcrumb-item-link {
-  overflow: hidden;
-}
-
-.p-breadcrumb-item-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.active-breadcrumb-item {
-  color: var(--text-primary);
-}
-</style>
