@@ -1,54 +1,57 @@
 <template>
-  <div
-    v-tooltip.bottom="{
+  <Tooltip
+    :config="{
       value: t('menu.batchCount'),
       showDelay: 600
     }"
-    class="batch-count h-full"
-    :aria-label="t('menu.batchCount')"
+    side="bottom"
   >
-    <div
-      class="flex h-full w-14 overflow-hidden rounded-l-lg bg-secondary-background"
-    >
-      <input
-        ref="batchCountInputRef"
-        v-model="batchCountInput"
-        type="text"
-        inputmode="numeric"
-        :aria-label="t('menu.batchCount')"
-        :class="inputClass"
-        @focus="onInputFocus"
-        @input="onInput"
-        @blur="onInputBlur"
-        @keydown.enter.prevent="onInputEnter"
-      />
-      <div class="flex h-full w-6 flex-col">
-        <Button
-          variant="secondary"
-          size="unset"
-          :aria-label="t('g.increment')"
-          :class="cn(stepButtonClass, incrementButtonClass)"
-          :disabled="isIncrementDisabled"
-          @click="incrementBatchCount"
-        >
-          <TinyChevronIcon rotate-up />
-        </Button>
-        <Button
-          variant="secondary"
-          size="unset"
-          :aria-label="t('g.decrement')"
-          :class="cn(stepButtonClass, decrementButtonClass)"
-          :disabled="isDecrementDisabled"
-          @click="decrementBatchCount"
-        >
-          <TinyChevronIcon />
-        </Button>
+    <div class="batch-count h-full" :aria-label="t('menu.batchCount')">
+      <div
+        class="flex h-full w-14 overflow-hidden rounded-l-lg bg-secondary-background"
+      >
+        <input
+          ref="batchCountInputRef"
+          v-model="batchCountInput"
+          type="text"
+          inputmode="numeric"
+          :aria-label="t('menu.batchCount')"
+          :class="inputClass"
+          @focus="onInputFocus"
+          @input="onInput"
+          @blur="onInputBlur"
+          @keydown.enter.prevent="onInputEnter"
+        />
+        <div class="flex h-full w-6 flex-col">
+          <Button
+            variant="secondary"
+            size="unset"
+            :aria-label="t('g.increment')"
+            :class="cn(stepButtonClass, incrementButtonClass)"
+            :disabled="isIncrementDisabled"
+            @click="incrementBatchCount"
+          >
+            <TinyChevronIcon rotate-up />
+          </Button>
+          <Button
+            variant="secondary"
+            size="unset"
+            :aria-label="t('g.decrement')"
+            :class="cn(stepButtonClass, decrementButtonClass)"
+            :disabled="isDecrementDisabled"
+            @click="decrementBatchCount"
+          >
+            <TinyChevronIcon />
+          </Button>
+        </div>
       </div>
     </div>
-  </div>
+  </Tooltip>
 </template>
 
 <script lang="ts" setup>
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
