@@ -284,9 +284,9 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
     this.resubscribe()
-    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
   }
 
   /**
