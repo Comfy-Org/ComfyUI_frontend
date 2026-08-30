@@ -27,14 +27,11 @@ describe('PanelHeader', () => {
     [false, 'Maximize panel'],
     [true, 'Minimize panel'],
     [false, 'Close']
-  ] as const)(
-    'shows the %s panel tooltip for %s',
-    ([isMaximized, label]) => {
-      const spy = vi.spyOn(tooltipConfig, 'buildAgentTooltipConfig')
+  ] as const)('shows the %s panel tooltip for %s', ([isMaximized, label]) => {
+    const spy = vi.spyOn(tooltipConfig, 'buildAgentTooltipConfig')
 
-      mount(isMaximized)
+    mount(isMaximized)
 
-      expect(spy).toHaveBeenCalledWith(label)
-    }
-  )
+    expect(spy).toHaveBeenCalledWith(label)
+  })
 })
