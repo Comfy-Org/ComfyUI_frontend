@@ -18,7 +18,8 @@ const {
   triggerClass,
   ringClass = 'focus-visible:ring-base-foreground',
   side = 'top',
-  sideOffset = 6
+  sideOffset = 6,
+  delayDuration = 300
 } = defineProps<{
   label: string | string[]
   testId?: string
@@ -26,6 +27,7 @@ const {
   ringClass?: string
   side?: 'top' | 'right' | 'bottom' | 'left'
   sideOffset?: number
+  delayDuration?: number
 }>()
 
 const open = ref(false)
@@ -45,32 +47,34 @@ const contentClass = cn(
 </script>
 
 <template>
-  <TooltipProvider :delay-duration="300">
+  <TooltipProvider :delay-duration="delayDuration">
     <TooltipRoot v-model:open="open" disable-closing-trigger>
       <TooltipTrigger as-child>
-        <button
-          type="button"
-          :aria-label="labelText"
-          :data-testid="testId"
-          :class="
-            cn(
-              'cursor-pointer border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:outline-none',
-              ringClass,
-              triggerClass
-            )
-          "
-          @click.stop="open = true"
-        >
-          <slot />
-        </button>
+        <slot name="trigger">
+          <button
+            type="button"
+            :aria-label="labelText"
+            :data-testid="testId"
+            :class="
+              cn(
+                'cursor-pointer border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:outline-none',
+                ringClass,
+                triggerClass
+              )
+            "
+            @click.stop="open = true"
+          >
+            <slot />
+          </button>
+        </slot>
       </TooltipTrigger>
       <TooltipPortal>
         <!-- aria-label=" " stops reka duplicating the label as a description -->
         <TooltipContent
           :side
           :side-offset
-          aria-hidden
-          aria-label=" "
+          :aria-hidden="$slots.trigger ? undefined : true"
+          :aria-label="$slots.trigger ? undefined : ' '"
           data-testid="disclosure-tooltip"
           :style="contentStyle"
           :class="contentClass"

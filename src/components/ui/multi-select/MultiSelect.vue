@@ -72,16 +72,14 @@
             </div>
           </div>
 
+          <!-- The actions row is rendered on the side of the viewport it
+               belongs to rather than repositioned with CSS: keyboard and
+               screen-reader order follows the DOM, so a footer row hoisted
+               visually with `order-last` would still announce "Clear all"
+               before the options. -->
           <div
-            v-if="hasActions"
-            :class="
-              cn(
-                'flex shrink-0 items-center justify-between px-2',
-                actionsPlacement === 'header'
-                  ? 'mt-2 border-b border-border-default pb-4'
-                  : 'order-last mt-2 border-t border-border-default pt-3 pb-1'
-              )
-            "
+            v-if="hasActions && actionsPlacement === 'header'"
+            :class="actionsClass"
           >
             <span
               v-if="showSelectedCount"
@@ -130,6 +128,26 @@
               {{ $t('g.noResultsFound') }}
             </ComboboxEmpty>
           </ComboboxViewport>
+
+          <div
+            v-if="hasActions && actionsPlacement === 'footer'"
+            :class="actionsClass"
+          >
+            <span
+              v-if="showSelectedCount"
+              class="px-1 text-sm text-muted-foreground"
+            >
+              {{ $t('g.itemsSelected', { count: selectedCount }) }}
+            </span>
+            <Button
+              v-if="showClearButton"
+              variant="textonly"
+              size="md"
+              @click.stop="selectedItems = []"
+            >
+              {{ $t('g.clearAll') }}
+            </Button>
+          </div>
         </FocusScope>
       </ComboboxContent>
     </ComboboxPortal>
@@ -231,6 +249,15 @@ const isOpen = ref(false)
 const liftedContentStyle = useModalLiftedZIndex(isOpen)
 const selectedCount = computed(() => selectedItems.value.length)
 const hasActions = computed(() => showSelectedCount || showClearButton)
+
+const actionsClass = computed(() =>
+  cn(
+    'flex shrink-0 items-center justify-between',
+    actionsPlacement === 'header'
+      ? 'mt-2 border-b border-border-default px-2 pb-4'
+      : '-mx-2 mt-2 border-t border-border-default px-4 pt-3 pb-1'
+  )
+)
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

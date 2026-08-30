@@ -123,7 +123,6 @@ const workflowsTab: TestTab = {
 
 describe('SideToolbar', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     state.isMultiUserServer = false
     state.sidebarTabs = [assetsTab, workflowsTab]
     state.activeSidebarTab = null

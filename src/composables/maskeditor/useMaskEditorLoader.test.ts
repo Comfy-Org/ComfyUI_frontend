@@ -1,7 +1,10 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
 import { useMaskEditorLoader } from './useMaskEditorLoader'
 
@@ -69,13 +72,21 @@ class MockImage {
   }
 }
 
+const GRAPH_ID = 'maskeditor-loader-test'
+
 function createLoadImageNode(widgetValue: string): LGraphNode {
+  const nodeId = toNodeId(7)
+  useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, nodeId, 'image'), {
+    type: 'string',
+    value: widgetValue,
+    options: {}
+  })
   return fromAny<LGraphNode, unknown>({
-    id: 7,
+    id: nodeId,
     type: 'LoadImage',
     imgs: [{ src: 'http://localhost:8188/api/view?filename=whatever.png' }],
     images: undefined,
-    widgets: [{ name: 'image', value: widgetValue }]
+    graph: { rootGraph: { id: GRAPH_ID } }
   })
 }
 
@@ -89,17 +100,12 @@ function requestedLayerUrls(layerFilename: string): string[] {
 
 describe('useMaskEditorLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     requestedUrls.length = 0
     failUrlPattern = null
     distribution.isCloud = false
     mockDataStore.inputData = null
     mockDataStore.sourceNode = null
     vi.stubGlobal('Image', MockImage)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   it('loads layer files from the input root for saves without a subfolder prefix', async () => {
@@ -119,7 +125,7 @@ describe('useMaskEditorLoader', () => {
     }
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'clipspace-mask-123.png', type: 'input' },
-      nodeId: 7
+      nodeId: toNodeId(7)
     })
   })
 
@@ -176,7 +182,7 @@ describe('useMaskEditorLoader', () => {
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'clipspace-painted-masked-123.png' },
       paintLayer: undefined,
-      nodeId: 7
+      nodeId: toNodeId(7)
     })
   })
 

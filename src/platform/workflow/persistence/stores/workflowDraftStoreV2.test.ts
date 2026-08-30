@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
 import { StorageKeys } from '../base/storageKeys'
@@ -20,18 +18,6 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 describe('workflowDraftStoreV2', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
-    sessionStorage.clear()
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-    sessionStorage.clear()
-  })
-
   describe('saveDraft', () => {
     it('saves draft to localStorage with separate payload', () => {
       const store = useWorkflowDraftStoreV2()
@@ -81,35 +67,28 @@ describe('workflowDraftStoreV2', () => {
     })
 
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
-      vi.useFakeTimers()
+      const store = useWorkflowDraftStoreV2()
 
-      try {
-        const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/a.json', '{"id":"a"}', {
+        name: 'a',
+        isTemporary: true
+      })
+      const initialUpdatedAt = store.getDraft('workflows/a.json')!.updatedAt
 
-        vi.setSystemTime(new Date('2026-03-21T10:00:00Z'))
-        store.saveDraft('workflows/a.json', '{"id":"a"}', {
-          name: 'a',
-          isTemporary: true
-        })
-        const initialUpdatedAt = store.getDraft('workflows/a.json')!.updatedAt
+      vi.advanceTimersByTime(60_000)
+      store.saveDraft('workflows/b.json', '{"id":"b"}', {
+        name: 'b',
+        isTemporary: true
+      })
+      expect(store.getMostRecentPath()).toBe('workflows/b.json')
 
-        vi.setSystemTime(new Date('2026-03-21T10:01:00Z'))
-        store.saveDraft('workflows/b.json', '{"id":"b"}', {
-          name: 'b',
-          isTemporary: true
-        })
-        expect(store.getMostRecentPath()).toBe('workflows/b.json')
+      vi.advanceTimersByTime(60_000)
+      store.markDraftUsed('workflows/a.json')
 
-        vi.setSystemTime(new Date('2026-03-21T10:02:00Z'))
-        store.markDraftUsed('workflows/a.json')
-
-        expect(store.getDraft('workflows/a.json')!.updatedAt).toBe(
-          initialUpdatedAt
-        )
-        expect(store.getMostRecentPath()).toBe('workflows/a.json')
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(store.getDraft('workflows/a.json')!.updatedAt).toBe(
+        initialUpdatedAt
+      )
+      expect(store.getMostRecentPath()).toBe('workflows/a.json')
     })
 
     it('evicts oldest when over limit', () => {
@@ -217,28 +196,20 @@ describe('workflowDraftStoreV2', () => {
     })
 
     it('preserves payload updatedAt when moving a draft', () => {
-      vi.useFakeTimers()
+      const store = useWorkflowDraftStoreV2()
 
-      try {
-        const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/old.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+      const originalUpdatedAt = store.getDraft('workflows/old.json')!.updatedAt
 
-        vi.setSystemTime(new Date('2026-05-13T00:00:00Z'))
-        store.saveDraft('workflows/old.json', '{"data":"test"}', {
-          name: 'old',
-          isTemporary: true
-        })
-        const originalUpdatedAt =
-          store.getDraft('workflows/old.json')!.updatedAt
+      vi.advanceTimersByTime(5 * 60_000)
+      store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
 
-        vi.setSystemTime(new Date('2026-05-13T00:05:00Z'))
-        store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
-
-        expect(store.getDraft('workflows/new.json')!.updatedAt).toBe(
-          originalUpdatedAt
-        )
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(store.getDraft('workflows/new.json')!.updatedAt).toBe(
+        originalUpdatedAt
+      )
     })
   })
 
@@ -274,7 +245,6 @@ describe('workflowDraftStoreV2', () => {
       })
 
       const result = await store.loadPersistedWorkflow({
-        workflowName: 'test',
         preferredPath: 'workflows/test.json'
       })
 
@@ -290,7 +260,6 @@ describe('workflowDraftStoreV2', () => {
       })
 
       const result = await store.loadPersistedWorkflow({
-        workflowName: null,
         preferredPath: 'workflows/missing.json',
         fallbackToLatestDraft: true
       })
@@ -302,7 +271,6 @@ describe('workflowDraftStoreV2', () => {
       const store = useWorkflowDraftStoreV2()
 
       const result = await store.loadPersistedWorkflow({
-        workflowName: null,
         fallbackToLatestDraft: true
       })
 

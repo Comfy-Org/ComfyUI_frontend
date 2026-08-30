@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
+import type { CreateAssetExportData } from '@comfyorg/ingest-types'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from 'primevue/usetoast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
@@ -112,14 +111,14 @@ vi.mock('@/stores/nodeDefStore', () => ({
 }))
 
 vi.mock('@/utils/loaderNodeUtil', () => ({
-  detectNodeTypeFromFilename: vi.fn().mockReturnValue({
+  detectNodeTypeFromFilename: vi.fn(() => ({
     nodeType: 'LoadImage',
     widgetName: 'image'
-  })
+  }))
 }))
 
 vi.mock('@/utils/typeGuardUtil', () => ({
-  isResultItemType: vi.fn().mockReturnValue(true)
+  isResultItemType: vi.fn(() => true)
 }))
 
 const mockGetAssetType = vi.hoisted(() => vi.fn())
@@ -128,14 +127,18 @@ vi.mock('@/platform/assets/utils/assetTypeUtil', () => ({
 }))
 
 const mockGetOutputAssetMetadata = vi.hoisted(() =>
-  vi.fn().mockReturnValue(null)
+  vi.fn<
+    (
+      metadata: Record<string, unknown> | undefined
+    ) => Record<string, unknown> | null
+  >(() => null)
 )
 vi.mock('../schemas/assetMetadataSchema', () => ({
   getOutputAssetMetadata: mockGetOutputAssetMetadata
 }))
 
 const mockResolveOutputAssetItems = vi.hoisted(() =>
-  vi.fn().mockResolvedValue([])
+  vi.fn<typeof outputAssetUtilModule.resolveOutputAssetItems>(async () => [])
 )
 vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
   const actual = await importOriginal<typeof outputAssetUtilModule>()
@@ -147,7 +150,11 @@ vi.mock('../utils/outputAssetUtil', async (importOriginal) => {
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
-  vi.fn().mockResolvedValue({ task_id: 'test-task-id', status: 'pending' })
+  vi.fn<
+    (
+      params: CreateAssetExportData['body']
+    ) => Promise<{ task_id: string; status: string; message?: string }>
+  >(async () => ({ task_id: 'test-task-id', status: 'pending' }))
 )
 vi.mock('../services/assetService', () => ({
   assetService: {
@@ -221,14 +228,14 @@ vi.mock('../utils/markDeletedAssetsAsMissingMedia', () => ({
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  return fromPartial({
     id: 'test-asset-id',
     name: 'original-name.jpeg',
     size: 1024,
     created_at: '2025-01-01T00:00:00Z',
     tags: ['input'],
     ...overrides
-  }
+  })
 }
 
 function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
@@ -290,16 +297,11 @@ function mountMediaActions(asset?: AssetMeta) {
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mockIsCloud.value = false
     litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
-    mockGetOutputAssetMetadata.mockReset()
     mockGetOutputAssetMetadata.mockReturnValue(null)
-    mockGetAssetType.mockReset()
     mockGetAssetType.mockReturnValue('input')
-    mockResolveOutputAssetItems.mockReset()
     mockResolveOutputAssetItems.mockResolvedValue([])
   })
 
@@ -370,19 +372,6 @@ describe('useMediaAssetActions', () => {
         await actions.addWorkflow(asset)
 
         expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
-      })
-
-      it('should fall back to asset.name when hash is null', async () => {
-        const actions = useMediaAssetActions()
-
-        const asset = createMockAsset({
-          name: 'fallback-null.jpeg',
-          hash: null
-        })
-
-        await actions.addWorkflow(asset)
-
-        expect(getAddedImageWidgetValues()).toEqual(['fallback-null.jpeg'])
       })
     })
   })
@@ -867,8 +856,6 @@ describe('useMediaAssetActions', () => {
   describe('downloadAssets - cloud zip filters', () => {
     beforeEach(() => {
       mockIsCloud.value = true
-      mockCreateAssetExport.mockClear()
-      mockTrackExport.mockClear()
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockImplementation(
         (meta: Record<string, unknown> | undefined) =>
@@ -924,6 +911,64 @@ describe('useMediaAssetActions', () => {
       expect(payload.naming_strategy).toBe('group_by_job_time')
     })
 
+    it('should export temp history outputs through their job IDs', async () => {
+      mockGetAssetType.mockImplementation((asset: AssetItem) =>
+        asset.id === 'temp-job' ? 'temp' : 'output'
+      )
+      const tempOutput = createOutputAsset(
+        'temp-job',
+        'ComfyUI_temp_audio.flac',
+        'temp-job',
+        1
+      )
+      const savedOutput = createOutputAsset(
+        'output-job',
+        'ComfyUI_output.png',
+        'output-job',
+        1
+      )
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([tempOutput, savedOutput])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockCreateAssetExport).toHaveBeenCalledWith({
+        job_ids: ['temp-job', 'output-job'],
+        naming_strategy: 'group_by_job_time',
+        include_previews: true
+      })
+    })
+
+    it('should export inputs with output-shaped metadata through their asset IDs', async () => {
+      mockGetAssetType.mockImplementation((asset: AssetItem) =>
+        asset.id === 'input-asset' ? 'input' : 'output'
+      )
+      const inputWithJobMetadata = createMockAsset({
+        id: 'input-asset',
+        name: 'reference.png',
+        tags: ['input'],
+        user_metadata: { jobId: 'unrelated-job', nodeId: '1' }
+      })
+      const savedOutput = createOutputAsset('output-job', 'out.png', 'job1', 1)
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([inputWithJobMetadata, savedOutput])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockCreateAssetExport).toHaveBeenCalledWith({
+        job_ids: ['job1'],
+        asset_ids: ['input-asset'],
+        naming_strategy: 'preserve',
+        include_previews: true
+      })
+    })
+
     it('should include name filters when outputCount is unknown', async () => {
       const asset1 = createOutputAsset('a1', 'img1.png', 'job1')
       const asset2 = createOutputAsset('a2', 'img2.png', 'job2')
@@ -963,6 +1008,24 @@ describe('useMediaAssetActions', () => {
       expect(payload.naming_strategy).toBe('group_by_job_time')
     })
 
+    it('should omit name filters when a job-level selection overlaps a child', async () => {
+      const parent = createOutputAsset('parent', 'cover.png', 'job1', 3)
+      const child = createOutputAsset('child', 'img1.png', 'job1')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([parent, child])
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockCreateAssetExport).toHaveBeenCalledWith({
+        job_ids: ['job1'],
+        naming_strategy: 'preserve',
+        include_previews: true
+      })
+    })
+
     it('should preserve multiple selected outputs from one job', async () => {
       const asset1 = createOutputAsset('a1', 'img1.png', 'job1')
       const asset2 = createOutputAsset('a2', 'img2.png', 'job1')
@@ -986,7 +1049,6 @@ describe('useMediaAssetActions', () => {
   describe('downloadAssets - export toast file count', () => {
     beforeEach(() => {
       mockIsCloud.value = true
-      mockCreateAssetExport.mockClear()
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockImplementation(
         (meta: Record<string, unknown> | undefined) =>
@@ -1069,6 +1131,16 @@ describe('useMediaAssetActions', () => {
 
       await expectExportToastFileCount(3)
     })
+
+    it('should count an overlapping job-level selection and child once', async () => {
+      const parent = createOutputAsset('parent', 'cover.png', 'job1', 3)
+      const child = createOutputAsset('child', 'img1.png', 'job1')
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([parent, child])
+
+      await expectExportToastFileCount(3)
+    })
   })
 
   describe('deleteAssets - model cache invalidation', () => {
@@ -1076,11 +1148,6 @@ describe('useMediaAssetActions', () => {
       mockIsCloud.value = true
       mockGetAssetType.mockReturnValue('input')
       mockDeleteAsset.mockResolvedValue(undefined)
-      mockInvalidateModelsForCategory.mockClear()
-      mockSetAssetDeleting.mockClear()
-      mockUpdateHistory.mockClear()
-      mockUpdateInputs.mockClear()
-      mockHasCategory.mockClear()
       // By default, hasCategory returns true for model categories
       mockHasCategory.mockImplementation(
         (tag: string) => tag === 'checkpoints' || tag === 'loras'
@@ -1185,7 +1252,6 @@ describe('useMediaAssetActions', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       mockGetAssetType.mockReturnValue('output')
-      mockShowDialog.mockReset()
     })
 
     it('should show user_metadata display names instead of hash filenames', () => {
@@ -1271,7 +1337,6 @@ describe('useMediaAssetActions', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       mockGetAssetType.mockReturnValue('input')
-      mockDeleteAsset.mockReset()
       mockShowDialog.mockImplementation(
         (opts: {
           props: {

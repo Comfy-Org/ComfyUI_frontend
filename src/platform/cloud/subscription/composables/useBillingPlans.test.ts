@@ -39,7 +39,6 @@ describe('useBillingPlans', () => {
 
   beforeEach(() => {
     vi.resetModules()
-    mockGetBillingPlans.mockReset()
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 

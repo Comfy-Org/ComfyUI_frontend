@@ -2,6 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
+import { parseFaqAnswer } from '../../utils/faqAnswer'
 import Accordion from '../ui/accordion/Accordion.vue'
 import AccordionContent from '../ui/accordion/AccordionContent.vue'
 import AccordionItem from '../ui/accordion/AccordionItem.vue'
@@ -15,29 +16,8 @@ const { faqs } = defineProps<{
   faqs: readonly Faq[]
 }>()
 
-type AnswerPart = { type: 'text' | 'link'; value: string }
-
-function parseAnswer(answer: string): AnswerPart[] {
-  const urlPattern = /https?:\/\/[\w\-./?=&#%~:@+,;]+/g
-  const parts: AnswerPart[] = []
-  let lastIndex = 0
-  for (const match of answer.matchAll(urlPattern)) {
-    const start = match.index ?? 0
-    const url = match[0].replace(/[.,;:]+$/, '')
-    if (start > lastIndex) {
-      parts.push({ type: 'text', value: answer.slice(lastIndex, start) })
-    }
-    parts.push({ type: 'link', value: url })
-    lastIndex = start + url.length
-  }
-  if (lastIndex < answer.length) {
-    parts.push({ type: 'text', value: answer.slice(lastIndex) })
-  }
-  return parts
-}
-
 const parsedFaqs = computed(() =>
-  faqs.map((faq) => ({ ...faq, answerParts: parseAnswer(faq.answer) }))
+  faqs.map((faq) => ({ ...faq, answerParts: parseFaqAnswer(faq.answer) }))
 )
 </script>
 
@@ -78,7 +58,7 @@ const parsedFaqs = computed(() =>
                   target="_blank"
                   rel="noopener noreferrer"
                   class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
-                  >{{ part.value }}</a
+                  >{{ part.label ?? part.value }}</a
                 >
                 <template v-else>{{ part.value }}</template>
               </template>

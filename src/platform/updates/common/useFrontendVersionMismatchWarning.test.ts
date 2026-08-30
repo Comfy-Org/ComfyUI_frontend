@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -84,15 +83,6 @@ vi.mock('vue', async () => {
 })
 
 describe('useFrontendVersionMismatchWarning', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('should not show warning when there is no version mismatch', () => {
     const toastStore = useToastStore()
     const versionStore = useVersionCompatibilityStore()

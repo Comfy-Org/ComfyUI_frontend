@@ -16,8 +16,9 @@ type TermsLink = {
   href: string
 }
 
-const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
+const { heading, subtitle, primaryCta, secondaryCta, termsLink } = defineProps<{
   heading: string
+  subtitle?: string
   primaryCta: Cta
   secondaryCta?: Cta
   termsLink?: TermsLink
@@ -29,10 +30,17 @@ const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
     class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
   >
     <h2
-      class="max-w-3xl text-4xl/snug font-light tracking-tight text-pretty text-primary-comfy-canvas lg:text-6xl/snug"
+      class="max-w-3xl text-4xl/snug font-light tracking-tight text-pretty whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/snug"
     >
       {{ heading }}
     </h2>
+
+    <p
+      v-if="subtitle"
+      class="mt-4 max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas/80 lg:text-lg/relaxed"
+    >
+      {{ subtitle }}
+    </p>
 
     <div class="mt-10 flex flex-col gap-4 sm:flex-row lg:mt-12">
       <Button
