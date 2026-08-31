@@ -52,6 +52,7 @@
     "@testing-library/vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "astro": "catalog:",
+    "happy-dom": "catalog:",
     "tailwindcss": "catalog:",
     "tsx": "catalog:",
     "tw-animate-css": "catalog:",
