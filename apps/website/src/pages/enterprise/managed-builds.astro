@@ -1,29 +1,122 @@
 ---
+import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
+import BuildManifestSplit01 from '../../components/blocks/BuildManifestSplit01.vue'
+import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
-import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import EnterpriseGovernance from '../../components/product/enterprise/EnterpriseGovernance.astro'
-import ManagedBuildsIndustries from '../../components/product/enterprise/ManagedBuildsIndustries.astro'
-import ManagedBuildsLifecycle from '../../components/product/enterprise/ManagedBuildsLifecycle.astro'
-import ManagedBuildsMedia from '../../components/product/enterprise/ManagedBuildsMedia.astro'
-import ManagedBuildsProblems from '../../components/product/enterprise/ManagedBuildsProblems.astro'
-import ManagedBuildsSecurity from '../../components/product/enterprise/ManagedBuildsSecurity.astro'
+import FeatureGrid02 from '../../components/blocks/FeatureGrid02.vue'
+import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
+import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
+import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { faqAnswerPlainText } from '../../utils/faqAnswer'
 import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
 
 const faqs = [
-  { id: 'what', question: 'What is a ComfyUI Managed Build?', answer: 'A Managed Build is an approved, reproducible ComfyUI environment. It pins the ComfyUI version, custom nodes, models, and dependencies your team needs so the same setup can be assigned and updated across machines.' },
-  { id: 'where', question: 'Where do Managed Builds run?', answer: 'Managed Builds run on your workstations, studio GPU servers, or customer cloud infrastructure. Your Comfy Workflows stay on the machines where they run.' },
-  { id: 'models', question: 'Can we use private models and our own provider keys?', answer: 'Yes. Teams can include private fine-tuned models, govern which models and partner providers are available in a build, and use supported provider keys with their existing contracts.' },
-  { id: 'nodes', question: 'How are custom nodes governed?', answer: 'Administrators choose which custom nodes belong in each build. Nodes can be sourced from GitHub or a ZIP, then pinned with the rest of the environment for controlled rollout.' },
-  { id: 'access', question: 'How are users and teams assigned?', answer: 'Company identity and SSO can gate access to approved builds. Teams receive the environments assigned to them instead of configuring every machine independently.' },
-  { id: 'usage', question: 'What usage and audit information is available?', answer: 'Usage visibility is available by model and partner. If you need specific authentication, build-assignment, release, retention, or export events, include them in the security review so the audit scope is explicit.' },
-  { id: 'start', question: 'How do we get started?', answer: 'Request a demo and bring the environments your teams rely on today. We will map the current setup, deployment targets, governance requirements, and a path to the first approved build.' },
+  {
+    id: 'what',
+    question: 'What is a ComfyUI Managed Build?',
+    answer:
+      'A Managed Build is an approved, reproducible ComfyUI environment. It pins the ComfyUI version, custom nodes, models, and dependencies your team needs so the same setup can be assigned and updated across machines.',
+  },
+  {
+    id: 'where',
+    question: 'Where do Managed Builds run?',
+    answer:
+      'Managed Builds run on your workstations, studio GPU servers, or customer cloud infrastructure. Your Comfy Workflows stay on the machines where they run.',
+  },
+  {
+    id: 'models',
+    question: 'Can we use private models and our own provider keys?',
+    answer:
+      'Yes. Teams can include private fine-tuned models, govern which models and partner providers are available in a build, and use supported provider keys with their existing contracts.',
+  },
+  {
+    id: 'nodes',
+    question: 'How are custom nodes governed?',
+    answer:
+      'Administrators choose which custom nodes belong in each build, then pin them with the rest of the environment for controlled rollout.',
+  },
+  {
+    id: 'access',
+    question: 'How are users and teams assigned?',
+    answer:
+      'Company identity and SSO can gate access to approved builds. Teams receive the environments assigned to them instead of configuring every machine independently.',
+  },
+  {
+    id: 'usage',
+    question: 'What usage and audit information is available?',
+    answer:
+      'Audit requirements for model, partner, authentication, build-assignment, release, retention, and export events are scoped explicitly during enterprise security review.',
+  },
+  {
+    id: 'start',
+    question: 'How do we get started?',
+    answer:
+      'Request a demo and bring the environments your teams rely on today. We will map the current setup, deployment targets, governance requirements, and a path to the first approved build.',
+  },
 ] as const
 
-const { url } = pageContext(Astro.site, Astro.url.pathname, Astro.currentLocale)
-const faqPage = faqPageNode(url, faqs.map((faq) => ({ question: faq.question, answer: faqAnswerPlainText(faq.answer) })))
+const governanceBenefits = [
+  {
+    id: 'build-policy',
+    title: 'Build policy',
+    description:
+      'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
+  },
+  {
+    id: 'model-policy',
+    title: 'Model policy and BYOK',
+    description:
+      'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
+  },
+  {
+    id: 'people-access',
+    title: 'People and access',
+    description:
+      'Use company identity and SSO to assign approved environments to the teams that need them.',
+  },
+  {
+    id: 'usage-records',
+    title: 'Audit requirements',
+    description:
+      'Define the model, partner, authentication, build-assignment, and release events your organization needs to retain or export.',
+  },
+] as const
+
+const industries = [
+  {
+    id: 'games',
+    title: 'Game studios',
+    description:
+      'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.',
+  },
+  {
+    id: 'vfx',
+    title: 'VFX and animation',
+    description:
+      'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.',
+  },
+  {
+    id: 'onboarding',
+    title: 'Studios you onboard',
+    description:
+      'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.',
+  },
+] as const
+
+const { url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const faqPage = faqPageNode(
+  url,
+  faqs.map((faq) => ({
+    question: faq.question,
+    answer: faqAnswerPlainText(faq.answer),
+  })),
+)
 ---
 
 <BaseLayout
@@ -37,32 +130,180 @@ const faqPage = faqPageNode(url, faqs.map((faq) => ({ question: faq.question, an
   ]}
   extraJsonLd={[faqPage]}
 >
-  <HeroSplit01
-    badgeText="COMFYUI MANAGED BUILDS"
-    title={'One approved ComfyUI environment.\nEvery team, every machine.'}
-    subtitle="Define the ComfyUI release, custom nodes, models, and dependencies your team is approved to run. Ship the same versioned build wherever the work happens."
-    features={['Private custom nodes and models', 'Use supported provider keys and existing contracts', 'Assign approved builds through company identity']}
+  <BuildManifestSplit01
+    eyebrow="COMFYUI MANAGED BUILDS"
+    headingTag="h1"
+    heading={'One approved ComfyUI environment.\nAcross your team and deployment targets.'}
+    body="Define the ComfyUI release, custom nodes, models, and dependencies your team is approved to run. Ship the same versioned build wherever the work happens."
+    features={[
+      'Private custom nodes and models',
+      'Use supported provider keys and existing contracts',
+      'Assign approved builds through company identity',
+    ]}
     primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
     secondaryCta={{ label: 'SEE HOW IT WORKS', href: '#how-it-works' }}
-    mediaFirstOnMobile={false}
-  >
-    <!-- Pass videoSrc when the final H.264 export lands. The build manifest remains the no-JS poster fallback. -->
-    <ManagedBuildsMedia slot="media" />
-  </HeroSplit01>
+    manifestLabel="APPROVED BUILD"
+    manifestName="Production environment"
+    manifestVersion="CURRENT"
+    manifestItems={[
+      {
+        id: 'dependencies',
+        label: 'ComfyUI and dependencies',
+        value: 'Pinned',
+      },
+      { id: 'nodes', label: 'Custom nodes', value: 'Allowlisted' },
+      { id: 'models', label: 'Models', value: 'Approved and private' },
+      { id: 'providers', label: 'Provider access', value: 'BYOK' },
+    ]}
+    releaseLabels={[
+      { id: 'previous', label: 'Previous release' },
+      { id: 'current', label: 'Current release', current: true },
+    ]}
+    deploymentTargets={[
+      { id: 'workstations', label: 'Workstations' },
+      { id: 'servers', label: 'GPU servers' },
+      { id: 'infrastructure', label: 'Customer infrastructure' },
+    ]}
+  />
 
-  <ManagedBuildsProblems />
-  <ManagedBuildsLifecycle />
-  <EnterpriseGovernance />
-  <ManagedBuildsSecurity />
-  <ManagedBuildsIndustries />
+  <FeatureGrid02
+    heading="Replace the failure modes studios run into."
+    steps={[
+      {
+        id: 'drift',
+        number: '01',
+        title: 'Environment drift',
+        description:
+          'When libraries, nodes, or model versions diverge, the same graph behaves differently. Managed Builds pins the approved environment.',
+      },
+      {
+        id: 'admin',
+        number: '02',
+        title: 'Admin bottlenecks',
+        description:
+          'One technical owner should not rebuild every machine. Define once, then release changes as a new build version.',
+      },
+      {
+        id: 'onboarding',
+        number: '03',
+        title: 'Manual onboarding',
+        description:
+          'Company identity connects each person to the approved build they need, without a wiki of install steps.',
+      },
+    ]}
+  />
 
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
-    <div class="grid items-center gap-10 rounded-[2.5rem] bg-primary-comfy-yellow p-8 text-primary-comfy-ink lg:grid-cols-[1fr_auto] lg:p-14">
-      <div><p class="text-xs font-bold tracking-[0.2em]">HANDS-ON DELIVERY</p><h2 class="mt-4 text-3xl font-light tracking-tight lg:text-5xl">Need the production workflow, too?</h2><p class="mt-5 max-w-2xl text-base/relaxed text-primary-comfy-ink/70">Forward Deployed Creatives work alongside your team to build the Comfy Workflows that run inside your approved environments.</p></div>
-      <a href="/forward-deployed-creatives/" class="inline-flex rounded-full bg-primary-comfy-ink px-7 py-4 text-sm font-bold text-primary-comfy-canvas">VIEW THE OFFERING</a>
-    </div>
-  </section>
+  <div id="how-it-works" class="scroll-mt-24">
+    <StepsGrid01
+      heading="From one working setup to an approved fleet."
+      steps={[
+        {
+          id: 'define',
+          label: 'Define the build',
+          description:
+            'Start from a known-good environment or import a snapshot of a setup you already run.',
+        },
+        {
+          id: 'build',
+          label: 'Build it once',
+          description:
+            'Pin the ComfyUI release, Python and CUDA versions, custom nodes, models, and dependencies.',
+        },
+        {
+          id: 'deploy',
+          label: 'Roll out to the fleet',
+          description:
+            'Assign the build through Comfy Desktop or your GPU servers. Deploy endpoints through the Developer Platform.',
+        },
+        {
+          id: 'update',
+          label: 'Update deliberately',
+          description:
+            'Cut a new version when you decide. Move the team together without changing work already in flight.',
+        },
+      ]}
+    />
+  </div>
 
-  <FAQSplit01 id="faq" heading="Managed Builds, answered." faqs={faqs} client:visible />
-  <CtaCenter01 heading={'Your best ComfyUI setup,\nready for the whole team.'} subtitle="Bring us the environment that works today. We will show you how to govern and reproduce it across the fleet." primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }} />
+  <BenefitsGrid01
+    heading="Govern the build, models, people, and usage."
+    benefits={governanceBenefits}
+    footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
+  />
+
+  <BenefitsGrid01
+    heading="Ready for your security review."
+    benefits={[
+      {
+        id: 'local',
+        title: 'Workflows stay local',
+        description:
+          'For local deployments, your Comfy Workflows and outputs stay where they run. Comfy does not train on customer data.',
+      },
+      {
+        id: 'private-assets',
+        title: 'Private models and nodes',
+        description:
+          'Include internal node packs and fine-tuned models inside a team-controlled build.',
+      },
+      {
+        id: 'access',
+        title: 'Identity and BYOK',
+        description:
+          'Gate build assignment through company identity and use supported provider keys with existing contracts.',
+      },
+      {
+        id: 'usage',
+        title: 'Audit requirements',
+        description:
+          'Define the model, partner, authentication, release, retention, and export events your organization needs.',
+      },
+    ]}
+    footnote="DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit in progress."
+    primaryCta={{
+      label: 'VIEW TRUST CENTER',
+      href: externalLinks.trustCenter,
+      target: '_blank',
+    }}
+  />
+
+  <ReasonsSplit01
+    heading={'Built with studios\n'}
+    headingHighlight="in the room."
+    highlightClass="text-primary-comfy-yellow"
+    subtitle="For teams that need ComfyUI to move between people, productions, and partners without changing underneath them."
+    reasons={industries}
+  />
+
+  <CtaBands01
+    bands={[
+      {
+        id: 'platform',
+        label: 'DEVELOPER PLATFORM',
+        text: 'Deploy approved Comfy Workflows as endpoints when the same governed build needs to power products and services.',
+        cta: { label: 'SEE THE PLATFORM', href: '/api/' },
+      },
+      {
+        id: 'fdc',
+        label: 'FORWARD DEPLOYED CREATIVES',
+        text: 'Work alongside builders who create the production Comfy Workflows that run inside your approved environments.',
+        cta: {
+          label: 'VIEW THE OFFERING',
+          href: '/forward-deployed-creatives/',
+        },
+      },
+    ]}
+  />
+
+  <FAQSplit01
+    id="faq"
+    heading="Managed Builds, answered."
+    faqs={faqs}
+    client:visible
+  />
+  <CtaCenter01
+    heading={'Your approved ComfyUI setup,\nready for the whole team.'}
+    subtitle="Bring us the environment that works today. We will show you how to govern and reproduce it across the fleet."
+    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+  />
 </BaseLayout>

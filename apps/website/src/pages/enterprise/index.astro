@@ -1,15 +1,12 @@
 ---
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
+import BuildManifestSplit01 from '../../components/blocks/BuildManifestSplit01.vue'
+import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
-import EnterpriseCommercialLicensing from '../../components/product/enterprise/EnterpriseCommercialLicensing.astro'
-import EnterpriseGovernance from '../../components/product/enterprise/EnterpriseGovernance.astro'
-import EnterpriseOfferings from '../../components/product/enterprise/EnterpriseOfferings.astro'
-import EnterpriseTeamPlan from '../../components/product/enterprise/EnterpriseTeamPlan.astro'
-import EnterpriseTrustRail from '../../components/product/enterprise/EnterpriseTrustRail.astro'
-import ManagedBuildsIndustries from '../../components/product/enterprise/ManagedBuildsIndustries.astro'
-import ManagedBuildsSpotlight from '../../components/product/enterprise/ManagedBuildsSpotlight.astro'
-import HeroSection from '../../components/product/enterprise/HeroSection.vue'
+import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
+import OfferGrid01 from '../../components/blocks/OfferGrid01.vue'
+import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { faqAnswerPlainText } from '../../utils/faqAnswer'
@@ -19,17 +16,20 @@ const faqs = [
   {
     id: 'what-is-enterprise',
     question: 'What is included in Comfy Enterprise?',
-    answer: 'Enterprise engagements can combine ComfyUI Managed Builds, team plans, commercial model licensing, and Forward Deployed Creatives. We scope the right combination around your production and procurement requirements.',
+    answer:
+      'Enterprise engagements can combine ComfyUI Managed Builds, team plans, commercial model licensing, and Forward Deployed Creatives. We scope the right combination around your production and procurement requirements.',
   },
   {
     id: 'where-runs',
     question: 'Where can our Comfy Workflows run?',
-    answer: 'Comfy Workflows can run locally, on infrastructure you control, or through the Developer Platform. ComfyUI Managed Builds are designed for approved environments on your machines and infrastructure.',
+    answer:
+      'Comfy Workflows can run locally, on infrastructure you control, or through the Developer Platform. ComfyUI Managed Builds are designed for approved environments on your machines and infrastructure.',
   },
   {
     id: 'commercial-models',
     question: 'Can we use models commercially?',
-    answer: 'On Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request. Comfy is also an official reseller for MiniMax commercial licenses.',
+    answer:
+      'On Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request. Comfy is also an official reseller for MiniMax commercial licenses.',
   },
   {
     id: 'security',
@@ -39,46 +39,281 @@ const faqs = [
   {
     id: 'usage',
     question: 'What usage and audit information is available?',
-    answer: 'Usage visibility is available by model and partner. We scope any additional authentication, build-assignment, release, retention, or export events explicitly during enterprise security review.',
+    answer:
+      'Audit requirements for model, partner, authentication, build-assignment, release, retention, and export events are scoped explicitly during enterprise security review.',
   },
   {
     id: 'team-plan',
     question: 'What does the team plan include?',
-    answer: 'Team plans provide a shared credit pool, centralized billing, and Single Sign-On so organizations can operate Cloud GPU time and partner-model usage through one relationship.',
+    answer:
+      'Team plans provide a shared credit pool, centralized billing, and Single Sign-On so organizations can operate Cloud GPU time and partner-model usage through one relationship.',
   },
 ] as const
 
-const { url } = pageContext(Astro.site, Astro.url.pathname, Astro.currentLocale)
-const faqPage = faqPageNode(url, faqs.map((faq) => ({ question: faq.question, answer: faqAnswerPlainText(faq.answer) })))
+const enterpriseOffers = [
+  {
+    id: 'team-plans',
+    label: 'FOR TEAMS',
+    title: 'Team plans',
+    description:
+      'Give teams a shared credit pool, centralized billing, and Single Sign-On for Cloud GPU time and partner-model usage.',
+    cta: { label: 'REQUEST DEMO', href: '/contact/' },
+  },
+  {
+    id: 'commercial-licensing',
+    label: 'COMMERCIAL RIGHTS',
+    title: 'Model licensing',
+    description:
+      'Commercial terms for MiniMax today, with local model terms available by provider on request.',
+    cta: {
+      label: 'VIEW MINIMAX LICENSING',
+      href: '/minimax/license/',
+    },
+  },
+  {
+    id: 'forward-deployed-creatives',
+    label: 'HANDS-ON DELIVERY',
+    title: 'Forward Deployed Creatives',
+    description:
+      'Work with builders who design production-ready Comfy Workflows alongside your creative and technical teams.',
+    cta: {
+      label: 'VIEW THE OFFERING',
+      href: '/forward-deployed-creatives/',
+    },
+  },
+] as const
+
+const governanceBenefits = [
+  {
+    id: 'build-policy',
+    title: 'Build policy',
+    description:
+      'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
+  },
+  {
+    id: 'model-policy',
+    title: 'Model policy and BYOK',
+    description:
+      'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
+  },
+  {
+    id: 'people-access',
+    title: 'People and access',
+    description:
+      'Use company identity and SSO to assign approved environments to the teams that need them.',
+  },
+  {
+    id: 'usage-records',
+    title: 'Audit requirements',
+    description:
+      'Define the model, partner, authentication, build-assignment, and release events your organization needs to retain or export.',
+  },
+] as const
+
+const industries = [
+  {
+    id: 'games',
+    title: 'Game studios',
+    description:
+      'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.',
+  },
+  {
+    id: 'vfx',
+    title: 'VFX and animation',
+    description:
+      'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.',
+  },
+  {
+    id: 'onboarding',
+    title: 'Studios you onboard',
+    description:
+      'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.',
+  },
+] as const
+
+const { url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const faqPage = faqPageNode(
+  url,
+  faqs.map((faq) => ({
+    question: faq.question,
+    answer: faqAnswerPlainText(faq.answer),
+  })),
+)
 ---
 
 <BaseLayout
   title="Comfy Enterprise | Govern visual AI across every team"
   description="Standardize ComfyUI across teams and runtimes with Managed Builds, team plans, commercial model licensing, enterprise security, and hands-on delivery."
   pageType="WebPage"
-  breadcrumbs={[{ name: 'Home', url: absoluteUrl(Astro.site, '/') }, { name: 'Enterprise' }]}
+  breadcrumbs={[
+    { name: 'Home', url: absoluteUrl(Astro.site, '/') },
+    { name: 'Enterprise' },
+  ]}
   extraJsonLd={[faqPage]}
 >
-  <HeroSection client:load />
-  <EnterpriseTrustRail />
-  <EnterpriseOfferings />
-  <ManagedBuildsSpotlight />
-  <EnterpriseGovernance />
-  <EnterpriseTeamPlan />
-  <EnterpriseCommercialLicensing />
-  <ManagedBuildsIndustries />
+  <HeroSplit01
+    badgeText="ENTERPRISE"
+    title={'Govern ComfyUI across\nevery team and runtime.'}
+    subtitle="Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, team plans, commercial licensing, and hands-on implementation support."
+    features={[
+      'Approved, reproducible ComfyUI Managed Builds',
+      'Team plans with a shared credit pool and Single Sign-On',
+      'Commercial model licensing and hands-on delivery',
+    ]}
+    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+    secondaryCta={{
+      label: 'VIEW TRUST CENTER',
+      href: externalLinks.trustCenter,
+      target: '_blank',
+    }}
+    imageSrc="/images/mcp/mcp-thumb-keyart.webp"
+    imageAlt="Abstract Comfy artwork"
+  />
+
+  <OfferGrid01
+    eyebrow="ONE ENTERPRISE RELATIONSHIP"
+    heading="The open standard for visual AI, ready for your organization."
+    description="Start with the problem you need to solve. Comfy brings the product, commercial terms, and implementation support together."
+    featuredOffer={{
+      id: 'managed-builds',
+      label: 'LEAD OFFER',
+      title: 'ComfyUI Managed Builds',
+      description:
+        'Create approved, reproducible ComfyUI environments and assign them across workstations, studio GPU servers, and customer infrastructure.',
+      cta: {
+        label: 'VIEW MANAGED BUILDS',
+        href: '/enterprise/managed-builds/',
+      },
+    }}
+    offers={enterpriseOffers}
+  />
+
+  <BuildManifestSplit01
+    eyebrow="COMFYUI MANAGED BUILDS"
+    heading={'One approved build\nacross the fleet.'}
+    body="Package the ComfyUI release, custom nodes, models, and dependencies your team needs into a versioned build. Assign it through company identity and update it deliberately."
+    features={[
+      'Private custom nodes and models',
+      'Use supported provider keys and existing contracts',
+      'Run on workstations, GPU servers, or customer infrastructure',
+    ]}
+    primaryCta={{
+      label: 'VIEW MANAGED BUILDS',
+      href: '/enterprise/managed-builds/',
+    }}
+    secondaryCta={{
+      label: 'SEE THE DEVELOPER PLATFORM',
+      href: '/api/',
+    }}
+    manifestLabel="APPROVED BUILD"
+    manifestName="Production environment"
+    manifestVersion="CURRENT"
+    manifestItems={[
+      {
+        id: 'dependencies',
+        label: 'ComfyUI and dependencies',
+        value: 'Pinned',
+      },
+      { id: 'nodes', label: 'Custom nodes', value: 'Allowlisted' },
+      { id: 'models', label: 'Models', value: 'Approved and private' },
+      { id: 'providers', label: 'Provider access', value: 'BYOK' },
+    ]}
+    releaseLabels={[
+      { id: 'previous', label: 'Previous release' },
+      { id: 'current', label: 'Current release', current: true },
+    ]}
+    deploymentTargets={[
+      { id: 'workstations', label: 'Workstations' },
+      { id: 'servers', label: 'GPU servers' },
+      { id: 'infrastructure', label: 'Customer infrastructure' },
+    ]}
+  />
+
+  <BenefitsGrid01
+    heading="Govern the build, models, people, and usage."
+    benefits={governanceBenefits}
+    footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
+  />
+
+  <CtaBands01
+    bands={[
+      {
+        id: 'team-plans',
+        label: 'TEAM PLANS',
+        text: 'Give the team a shared credit pool, centralized billing, and Single Sign-On for Cloud GPU time and partner-model usage.',
+        cta: { label: 'REQUEST DEMO', href: '/contact/' },
+      },
+      {
+        id: 'commercial-rights',
+        label: 'COMMERCIAL RIGHTS',
+        text: 'Every model on Cloud is licensed for commercial use. Local terms vary by provider, and Comfy is an official reseller for MiniMax commercial-use licenses.',
+        cta: {
+          label: 'VIEW MINIMAX LICENSING',
+          href: '/minimax/license/',
+        },
+      },
+      {
+        id: 'fdc',
+        label: 'FORWARD DEPLOYED CREATIVES',
+        text: 'Work alongside builders who turn your production requirements into Comfy Workflows your team can run and extend.',
+        cta: {
+          label: 'VIEW THE OFFERING',
+          href: '/forward-deployed-creatives/',
+        },
+      },
+    ]}
+  />
+
+  <ReasonsSplit01
+    heading={'Built with studios\n'}
+    headingHighlight="in the room."
+    highlightClass="text-primary-comfy-yellow"
+    subtitle="For teams that need ComfyUI to move between people, productions, and partners without changing underneath them."
+    reasons={industries}
+  />
+
   <BenefitsGrid01
     heading="A clearer path through security review."
     benefits={[
-      { id: 'soc2', title: 'SOC 2', description: 'Type II audit in progress.' },
-      { id: 'sso', title: 'Identity', description: 'Single Sign-On is available for enterprise teams.' },
-      { id: 'data', title: 'Customer data', description: 'Your data is not used to train models.' },
-      { id: 'dpa', title: 'Procurement', description: 'A DPA and enterprise agreement are available.' },
+      {
+        id: 'soc2',
+        title: 'SOC 2',
+        description: 'Type II audit in progress.',
+      },
+      {
+        id: 'sso',
+        title: 'Identity',
+        description: 'Single Sign-On is available for enterprise teams.',
+      },
+      {
+        id: 'data',
+        title: 'Customer data',
+        description: 'Your data is not used to train models.',
+      },
+      {
+        id: 'dpa',
+        title: 'Procurement',
+        description: 'A DPA and enterprise agreement are available.',
+      },
     ]}
     footnote="Processing is in the United States on Google Cloud. Enterprise includes a 99.5% workflow-execution uptime SLA."
-    primaryCta={{ label: 'VIEW TRUST CENTER', href: externalLinks.trustCenter, target: '_blank' }}
+    primaryCta={{
+      label: 'VIEW TRUST CENTER',
+      href: externalLinks.trustCenter,
+      target: '_blank',
+    }}
   />
-  <FAQSplit01 id="faq" heading="Enterprise, answered." faqs={faqs} client:visible />
+
+  <FAQSplit01
+    id="faq"
+    heading="Enterprise, answered."
+    faqs={faqs}
+    client:visible
+  />
   <CtaCenter01
     heading={'Bring the open standard for visual AI\nto your organization.'}
     subtitle="Tell us how your teams build today. We will map the right path across Managed Builds, team plans, licensing, and implementation."
