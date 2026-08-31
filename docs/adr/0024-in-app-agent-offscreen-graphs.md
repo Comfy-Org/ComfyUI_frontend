@@ -18,10 +18,13 @@ The missing abstraction is larger than an offscreen queue: a workflow graph need
 a first-class domain document that exists independently of a tab and renderer. Activation
 then becomes an explicit binding between that document and the active canvas. This ADR is
 the self-contained frontend contract for target routing, document ownership, and lifecycle;
-its requirements do not depend on access to a separate program repository. It also mirrors
-the cross-repository target-routing contract recorded in the program repository's
-[ADR-015](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md),
-so frontend-local implementation work stays aligned with the shared agent/CRDT invariants.
+its requirements do not depend on access to a separate program repository. Its
+target-routing and offscreen-queue rules align with the cross-repository contract recorded
+in the program repository's
+[ADR-015](https://github.com/christian-byrne/in-app-agent-program/blob/f3175059413d3ce4d22f53fc2b77107b475f9afb/decisions/ADR-015-target-graph-addressing-and-offscreen-queues.md).
+That ADR uses canonical wire `workflow_id` as the V1 agent frame target; this frontend ADR
+keeps a separately minted `document_id` for local document ownership and maps cloud-backed
+documents to their `workflow_id` explicitly.
 
 The current `ChangeTracker` is important prior art. It stores serialized state during
 tab deactivation, allowing transient graph state to survive a tab switch, but its
