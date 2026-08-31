@@ -488,17 +488,12 @@ describe("generated two-writer streams over a contested input", () => {
 // 6. the batch-interior caveat, pinned honestly
 // ---------------------------------------------------------------------------
 
-describe("KNOWN GAP amendment v1.2 does NOT close", () => {
-  it("outputs[].links is appended in arrival order, so its ORDER is not convergent", () => {
+describe("canonical source references", () => {
+  it("projects outputs[].links in numeric link_id order", () => {
     // Two connects out of node 300 into two DIFFERENT inputs of node 200:
     // different registers, so both land in both orders — but the source's
-    // out-links array records them in arrival order. Same set, different
-    // sequence, so a byte-comparison of §7's projection still differs.
-    //
-    // This is an ordering artifact of a set-valued field (no link is lost or
-    // invented), and closing it is a §7 projection-canonicalization change
-    // that would invalidate the recorded fixture finals — several of which
-    // carry unsorted out-links today. Filed, not fixed here.
+    // out-links array stores arrival order, while projection gives this
+    // set-valued field its canonical numeric link-id order (#156 option D).
     const a = connectOp("l1", AGENT, 5, 9001, ENCODER, SAMPLER, POSITIVE);
     const b = connectOp("l2", HUMAN, 9, 9002, ENCODER, SAMPLER, 2);
     const outLinks = (ops: Op[]): unknown[] => {
@@ -511,9 +506,7 @@ describe("KNOWN GAP amendment v1.2 does NOT close", () => {
       return (src.outputs as { links: unknown[] }[])[0]!.links;
     };
     expect(outLinks([a, b])).toEqual([9001, 9002]);
-    expect(outLinks([b, a])).toEqual([9002, 9001]);
-    // …and the SET is convergent, which is the part v1.2 guarantees.
-    expect([...outLinks([a, b])].sort()).toEqual([...outLinks([b, a])].sort());
+    expect(outLinks([b, a])).toEqual([9001, 9002]);
   });
 });
 

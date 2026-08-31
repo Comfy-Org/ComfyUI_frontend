@@ -44,6 +44,14 @@ function idCompare(a: unknown, b: unknown): number {
   return sa < sb ? -1 : sa > sb ? 1 : 0;
 }
 
+/** Source-output references are link identities, whose canonical order is numeric. */
+function linkIdCompare(a: unknown, b: unknown): number {
+  const na = Number(a);
+  const nb = Number(b);
+  if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+  return idCompare(a, b);
+}
+
 function yMapToObject(m: Y.Map<unknown>): Record<string, unknown> {
   const obj: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   m.forEach((v, k) => {
@@ -56,6 +64,17 @@ function yMapToObject(m: Y.Map<unknown>): Record<string, unknown> {
 function projectSlot(slot: unknown): unknown {
   if (!(slot instanceof Y.Map)) return structuredClone(slot);
   return yMapToObject(slot);
+}
+
+/** Output slot projection additionally canonicalizes its set-valued source refs. */
+function projectOutputSlot(slot: unknown): unknown {
+  const out = projectSlot(slot);
+  if (typeof out !== "object" || out === null) return out;
+  const record = out as Record<string, unknown>;
+  if (Array.isArray(record["links"])) {
+    record["links"] = [...record["links"]].sort(linkIdCompare);
+  }
+  return record;
 }
 
 /** Name-keyed widgets map → positional widgets_values (§7 rule 2). */
@@ -125,7 +144,8 @@ function projectNode(ym: Y.Map<unknown>, catalog: WidgetCatalog): WorkflowNode {
       // authoritative is `widgetStorageOf`'s decision, not iteration order's.
       out["widgets_values"] = projectWidgets(nodeType, ym, catalog);
     } else if (v instanceof Y.Array) {
-      out[k] = v.toArray().map((slot) => projectSlot(slot));
+      const projector = k === "outputs" ? projectOutputSlot : projectSlot;
+      out[k] = v.toArray().map((slot) => projector(slot));
     } else if (v instanceof Y.Map) {
       out[k] = yMapToObject(v);
     } else {

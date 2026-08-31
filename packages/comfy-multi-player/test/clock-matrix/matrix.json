@@ -16474,7 +16474,7 @@
             "a393791daa6c4f0bbab93e04725464ae"
           ],
           "rejected": [],
-          "final_state_hash": "1ad0b3cf4817bd5e87d3f6981f1721a2c0010db7929772a88adbd19db355115f",
+          "final_state_hash": "f0ebde04d9958196283e37571bc10a4880db4556ad8d3244326da61592aa1a6d",
           "divergence_class": "identical"
         },
         "lamport_doc_derived": {
@@ -16643,7 +16643,7 @@
             "a393791daa6c4f0bbab93e04725464ae"
           ],
           "rejected": [],
-          "final_state_hash": "cf58428b9cf78c5e5a8f401e867b02ce06018a84e1fd528eaab965c4c48ae089",
+          "final_state_hash": "3427a5a37c372ff9041396ff8a948196540be61a1bbfdf094629d7f3e2bcd462",
           "divergence_class": "DIVERGENT"
         },
         "vector_reference": {
@@ -16812,7 +16812,7 @@
             "a393791daa6c4f0bbab93e04725464ae"
           ],
           "rejected": [],
-          "final_state_hash": "eed2e2db8d268249b9c7f6cc65d5b5f1589da31aa1b3858066ec129b51e8f027",
+          "final_state_hash": "10a29e6fafb85c553ff5581490a01e3d9e3027e26bce72a8b08b632e4a3c6e94",
           "divergence_class": "DIVERGENT"
         }
       }

@@ -1409,7 +1409,10 @@ function growInputSlot(
   }
   const insArr = ins as Y.Array<unknown>;
   const family = grow.name.split(".", 1)[0]!;
-  const growStampKey = JSON.stringify(["grow", String(op.to_node), String(op.link_id), family]);
+  // Inputcount grows use bare names. Their canonical rank is destination-wide,
+  // not one independent rank per requested bare-name family (#156 / option D).
+  const rankScope = grow.inputcount != null && !grow.name.includes(".") ? "__inputcount__" : family;
+  const growStampKey = JSON.stringify(["grow", String(op.to_node), String(op.link_id), rankScope]);
   const stamps = stampsMap(doc);
   let existing = -1;
   insArr.forEach((slot: unknown, idx: number) => {
@@ -1442,13 +1445,13 @@ function growInputSlot(
   // renaming has to replay every racing grow's own request; deriving them all
   // from whichever op is currently executing made two grows that asked for
   // different names in one family settle differently per arrival order.
-  mset(stamps, growRequestKey(op.to_node, op.link_id, family), [
+  mset(stamps, growRequestKey(op.to_node, op.link_id, rankScope), [
     grow.name,
     grow.widget ?? null,
     grow.inputcount != null,
   ]);
   const toIdx = normalizeGrowFamily(
-    { doc, inputs: insArr, dst, catalog, family },
+    { doc, inputs: insArr, dst, catalog, family, rankScope },
     op.to_node,
     op.link_id,
     insArr.length - 1,
@@ -1467,6 +1470,7 @@ interface GrowFamilyContext {
   dst: Y.Map<unknown>;
   catalog: WidgetCatalog | undefined;
   family: string;
+  rankScope: string;
 }
 
 /** What one grow ASKED for, recorded next to its stamp: `[name, widget, isInputcount]`. */
@@ -1492,7 +1496,7 @@ function normalizeGrowFamily(
   currentGrowId: unknown,
   appendedIndex: number,
 ): number {
-  const { doc, inputs, dst, catalog, family } = ctx;
+  const { doc, inputs, dst, catalog, family, rankScope } = ctx;
   const stamps = stampsMap(doc);
   const records: {
     index: number;
@@ -1503,9 +1507,9 @@ function normalizeGrowFamily(
   inputs.forEach((value, index) => {
     if (!(value instanceof Y.Map) || value.get("grow_id") == null) return;
     const growId = value.get("grow_id");
-    const key = JSON.stringify(["grow", String(toNode), String(growId), family]);
+    const key = JSON.stringify(["grow", String(toNode), String(growId), rankScope]);
     const stamp = stamps.get(key) as StampKey | undefined;
-    const request = stamps.get(growRequestKey(toNode, growId, family)) as GrowRequest | undefined;
+    const request = stamps.get(growRequestKey(toNode, growId, rankScope)) as GrowRequest | undefined;
     if (stamp && request) records.push({ index, slot: value, stamp, request });
   });
   if (records.length <= 1) return records[0]?.index ?? appendedIndex;
