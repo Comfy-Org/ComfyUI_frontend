@@ -2010,6 +2010,35 @@ describe('AgentPanelRoot history', () => {
   })
 })
 
+describe('AgentPanelRoot thinking indicator', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+  })
+
+  // The LINK half of the shimmer rider. The browser suite pins that the RULE
+  // animates - a computed-style fact no class assertion can see. This pins
+  // that the rendered thinking element actually carries the class that rule
+  // targets - a wiring fact the browser probe cannot see, because it supplies
+  // its own element. Neither half is a style test on its own terms: this one
+  // fails if AgentMessage stops emitting the class, which is a behaviour
+  // change, not a cosmetic one.
+  it('gives the streaming thinking indicator the shimmer class', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const convo = useAgentConversationStore()
+    const turnId = 'turn-shimmer' as TurnId
+    convo.setThreadId('th-1')
+    convo.recordUser(turnId, 'make a cat')
+    convo.startTurn(turnId)
+    await nextTick()
+
+    expect(screen.getByText(i18n.global.t('agent.thinking'))).toHaveClass(
+      'agent-shimmer-text'
+    )
+  })
+})
+
 describe('AgentPanelRoot transcript copy', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
