@@ -830,13 +830,16 @@
       "insufficientMessage": "您的點數不足，無法執行此工作流程。",
       "insufficientTitle": "點數不足",
       "insufficientWorkflowMessage": "您的點數不足，無法執行此工作流程。",
+      "manageBillingError": "無法開啟帳務入口網站。請再試一次。",
       "maxAllowed": "最多可購買 {credits} 點。",
       "maxAmount": "（最高 $1,000 美元）",
       "maximumAmount": "最高 ${amount}",
       "minRequired": "最低需購買 {credits} 點",
       "minimumPurchase": "最低購買 ${amount}（${credits} 點）",
       "needMore": "需要更多？",
+      "noPaymentMethodError": "此工作區尚未儲存付款方式。請依序前往「設定」→「方案與點數」→「管理帳務」新增付款方式，然後再試一次儲值。",
       "payAmount": "支付 {amount}",
+      "paymentDetailsRequiredNote": "系統會要求您新增付款方式以完成此次購買。",
       "purchaseError": "購買失敗",
       "purchaseErrorDetail": "購買點數失敗：{error}",
       "purchaseSuccess": "點數儲值成功！",
@@ -1705,6 +1708,7 @@
     "micPermissionDenied": "麥克風權限被拒絕",
     "migrate": "遷移",
     "missing": "缺少",
+    "missingNodeTypesInGroup": "缺少：{types}",
     "modifyKeybinding": "修改快捷鍵",
     "more": "更多",
     "moreOptions": "更多選項",
@@ -3217,15 +3221,26 @@
     "done": "完成",
     "firstRun": {
       "nudge": {
-        "dismiss": "暫時不要",
-        "explore": "探索範本",
-        "noTour": {
-          "body": "瀏覽範本並選擇一個來製作。",
-          "title": "還有數百個等您體驗"
+        "animate": {
+          "detail": "圖片轉影片 · 5 秒",
+          "title": "製作動畫"
         },
-        "ran": {
-          "body": "您已經完成第一個。探索更多可以製作的內容吧。",
-          "title": "這只是數百個中的一個"
+        "body": "每個項目都從您剛建立的圖片開始。",
+        "explore": "瀏覽所有範本",
+        "fallback": {
+          "body": "瀏覽範本，挑選想建立的內容。",
+          "title": "還有數百種更多選擇"
+        },
+        "loadFailed": "無法載入該範本。請再試一次。",
+        "restyle": {
+          "detail": "合作夥伴模型 · 任一付費方案",
+          "title": "使用 Nano Banana 重新設計風格"
+        },
+        "title": "您的第一個輸出成果。接下來可以這樣做。",
+        "upscale": {
+          "badge": "4x",
+          "detail": "相同圖片，更多細節",
+          "title": "放大圖片"
         }
       },
       "prompt": {
@@ -4363,6 +4378,8 @@
     "resubscribeFailed": "重新啟用訂閱失敗",
     "resubscribeSuccess": "訂閱已重新啟用",
     "resubscribeTo": "重新訂閱 {plan}",
+    "salesManagedRunBlockedDetail": "此工作區的方案已不再啟用。請聯絡您的 Comfy 客戶經理以恢復存取權。",
+    "salesManagedRunBlockedTitle": "方案未啟用",
     "saveYearly": "節省 20%",
     "saveYearlyUpTo": "最高可省 20%",
     "soloUseOnly": "僅限個人使用",
@@ -4441,6 +4458,7 @@
     "title": "訂閱方案",
     "titleUnsubscribed": "訂閱 Comfy Cloud",
     "totalCredits": "總點數",
+    "unknownTierName": "目前方案",
     "upgrade": "升級",
     "upgradePlan": "升級方案",
     "upgradeTo": "升級至 {plan}",

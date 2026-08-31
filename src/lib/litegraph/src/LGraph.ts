@@ -22,6 +22,7 @@ import {
   materializeRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -1583,7 +1584,7 @@ export class LGraph
     y: number,
     nodeList?: LGraphNode[]
   ): LGraphNode | null {
-    const nodes = nodeList || this._nodes
+    const nodes = nodeList || nodesInRenderOrder(this)
     let i = nodes.length
     while (--i >= 0) {
       const node = nodes[i]
