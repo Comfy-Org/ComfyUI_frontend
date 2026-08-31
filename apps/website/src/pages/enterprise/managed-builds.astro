@@ -47,13 +47,13 @@ const faqs = [
     id: 'usage',
     question: 'What usage and audit information is available?',
     answer:
-      'Audit requirements for model, partner, authentication, build-assignment, release, retention, and export events are scoped explicitly during enterprise security review.',
+      'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.',
   },
   {
     id: 'start',
     question: 'How do we get started?',
     answer:
-      'Request a demo and bring the environments your teams rely on today. We will map the current setup, deployment targets, governance requirements, and a path to the first approved build.',
+      'Request a demo and bring one known-good environment. Comfy engineers will map the current setup, deployment targets, governance requirements, onboarding plan, and path to the first approved build.',
   },
 ] as const
 
@@ -78,9 +78,9 @@ const governanceBenefits = [
   },
   {
     id: 'usage-records',
-    title: 'Audit requirements',
+    title: 'Usage visibility and audit requirements',
     description:
-      'Define the model, partner, authentication, build-assignment, and release events your organization needs to retain or export.',
+      'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
   },
 ] as const
 
@@ -128,11 +128,11 @@ const faqPage = buildFaqPageNode(url, faqs)
     eyebrow="COMFYUI MANAGED BUILDS"
     headingTag="h1"
     heading={'One approved ComfyUI environment.\nAcross your team and deployment targets.'}
-    body="Define the ComfyUI release, custom nodes, models, and dependencies your team is approved to run. Ship the same versioned build wherever the work happens."
+    body="Replace one-off installation scripts and machine-by-machine maintenance with a versioned ComfyUI build. Define the release, custom nodes, models, and dependencies once, then ship it wherever the work happens."
     features={[
       'Private custom nodes and models',
       'Use supported provider keys and existing contracts',
-      'Assign approved builds through company identity',
+      'Deploy across workstations, GPU servers, or customer infrastructure',
     ]}
     primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
     secondaryCta={{ label: 'SEE HOW IT WORKS', href: '#how-it-works' }}
@@ -161,28 +161,28 @@ const faqPage = buildFaqPageNode(url, faqs)
   />
 
   <FeatureGrid02
-    heading="Replace the failure modes studios run into."
+    heading="Stop rebuilding the operating layer around ComfyUI."
     steps={[
       {
-        id: 'drift',
+        id: 'packaging',
         number: '01',
-        title: 'Environment drift',
+        title: 'Environment packaging',
         description:
-          'When libraries, nodes, or model versions diverge, the same graph behaves differently. Managed Builds pins the approved environment.',
+          'Replace one-off install scripts, dependency matrices, and machine-specific fixes with one versioned build.',
       },
       {
-        id: 'admin',
+        id: 'upkeep',
         number: '02',
-        title: 'Admin bottlenecks',
+        title: 'Admin and upkeep',
         description:
-          'One technical owner should not rebuild every machine. Define once, then release changes as a new build version.',
+          'ComfyUI’s ecosystem spans 5,000+ extensions and 60,000+ community nodes. Pin and approve the nodes included in each build.',
       },
       {
-        id: 'onboarding',
+        id: 'rollout',
         number: '03',
-        title: 'Manual onboarding',
+        title: 'Onboarding and rollout',
         description:
-          'Company identity connects each person to the approved build they need, without a wiki of install steps.',
+          'Assign known-good builds through company identity, onboard new teammates, and move the fleet together when a release is ready.',
       },
     ]}
   />
@@ -274,13 +274,13 @@ const faqPage = buildFaqPageNode(url, faqs)
       {
         id: 'platform',
         label: 'DEVELOPER PLATFORM',
-        text: 'Deploy approved Comfy Workflows as endpoints when the same governed build needs to power products and services.',
+        text: 'Run approved Comfy Workflows as endpoints with dedicated GPU capacity, priority queueing, and enterprise SLA terms through the Developer Platform.',
         cta: { label: 'SEE THE PLATFORM', href: '/api/' },
       },
       {
         id: 'fdc',
         label: 'FORWARD DEPLOYED CREATIVES',
-        text: 'Work alongside builders who create the production Comfy Workflows that run inside your approved environments.',
+        text: 'Builders, not advisors. Forward Deployed Creatives build production Comfy Workflows inside approved environments, alongside the teams that will own and extend them.',
         cta: {
           label: 'VIEW THE OFFERING',
           href: '/forward-deployed-creatives/',
@@ -297,7 +297,7 @@ const faqPage = buildFaqPageNode(url, faqs)
   />
   <CtaCenter01
     heading={'Your approved ComfyUI setup,\nready for the whole team.'}
-    subtitle="Bring us the environment that works today. We will show you how to govern and reproduce it across the fleet."
+    subtitle="Start with one known-good environment. Comfy engineers will map deployment targets, governance requirements, onboarding, and the path to your first approved build."
     primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
   />
 </BaseLayout>
