@@ -75,6 +75,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref } from 'vue'
+import { viewerDialogContentClass } from '@/components/ui/dialog/dialog.variants'
 import { useI18n } from 'vue-i18n'
 
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
@@ -191,7 +192,7 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
       dialogComponentProps: {
         renderer: 'reka',
         size: 'full',
-        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+        contentClass: viewerDialogContentClass,
         maximizable: true
       }
     })
