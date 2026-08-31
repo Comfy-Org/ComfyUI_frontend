@@ -1,5 +1,3 @@
-import { reportError } from '@/platform/telemetry/reportError'
-
 import type {
   DocFrameClient,
   DocOp,
@@ -9,8 +7,6 @@ import type {
 } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
-
-const MAX_SAME_LINEAGE_RECOVERY_ATTEMPTS = 3
 
 /**
  * Outbound frames are advisory: the follower's correctness never depends on one
@@ -23,9 +19,7 @@ function trySend(send: () => boolean): boolean {
   try {
     return send()
   } catch (error) {
-    reportError(error, {
-      errorType: 'agent_crdt_outbound_frame_send_failure'
-    })
+    console.warn('[agent-crdt] outbound doc frame dropped', error)
     return false
   }
 }
@@ -33,26 +27,20 @@ function trySend(send: () => boolean): boolean {
 /**
  * Bridges server doc frames to the follower's semantic {@link FollowerDoc} and
  * re-dispatches them. It does NOT touch the layout store: the semantic doc is
- * projected into the canvas by `SemanticProjector` (ADR-009). Applying the raw
- * semantic update into `layoutStore` was the original render bug — both docs
- * expose a root map named `nodes`, so semantic entries corrupted the layout doc
- * and no node ever rendered.
+ * applied to the domain stores by the ECS follower adapter. It never merges the
+ * semantic update into layoutStore: semantic and layout state remain separate
+ * Y.Docs.
  *
  * Subscription is modelled as INTENT reconciled against transport REALITY, and
  * teardown is failure-tolerant; see the two id fields and {@link destroy}.
  */
 export class LayoutFollowerBridge extends EventTarget {
   /**
-   * Reassigned only on a LINEAGE change - an explicit `doc_reset`, a workflow
-   * change in {@link subscribe}, or a detected lineage regression in
-   * {@link onDocSubscribed} - because folding a re-minted document into the
-   * old one merges two unrelated histories. An ordinary dropped frame is NOT
-   * lineage evidence: same-lineage recovery keeps this doc and replays via
-   * its state vector.
+   * Reassigned only by {@link onDocReset}: a lineage break replaces the doc
+   * wholesale, because folding a re-minted document into the old one merges
+   * two unrelated histories and duplicates every node on the canvas.
    */
   private followerDoc = new FollowerDoc()
-  /** The workflow whose lineage is currently held by {@link followerDoc}. */
-  private docWorkflowId: string | null = null
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -80,20 +68,6 @@ export class LayoutFollowerBridge extends EventTarget {
    * {@link onDocUpdate}.
    */
   private lastSeq: number | null = null
-  /**
-   * Armed by {@link resubscribe} while the retained doc's catch-up is in
-   * flight: the last seq this lineage reached. A `doc_subscribed` whose
-   * snapshot seq is BELOW this floor cannot be the same lineage (seq is
-   * monotonic per doc), so the catch-up would fold a re-minted document into
-   * the old one - the one case where the doc is still dropped wholesale.
-   * Checked BEFORE any catch-up update applies, which is what makes
-   * retain-and-replay safe against a missed `doc_reset`.
-   */
-  private lineageFloorSeq: number | null = null
-  /** Consecutive replay failures since the last successfully projected update. */
-  private recoveryAttempts = 0
-  /** Prevents repeated terminal signals after the recovery budget is spent. */
-  private recoveryExhausted = false
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -101,7 +75,6 @@ export class LayoutFollowerBridge extends EventTarget {
     client.addEventListener('doc_reset', this.onDocReset)
     client.addEventListener('doc_subscribed', this.onDocSubscribed)
     client.addEventListener('doc_ops_result', this.forwardFrame)
-    client.addEventListener('frame_error', this.onFrameError)
   }
 
   /** The semantic doc this bridge currently follows. */
@@ -112,6 +85,10 @@ export class LayoutFollowerBridge extends EventTarget {
   /** The workflow a subscribe frame actually went out for, if any. */
   get subscribedWorkflowId(): string | null {
     return this.sentWorkflowId
+  }
+
+  get lastSequence(): number {
+    return this.lastSeq ?? 0
   }
 
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
@@ -128,14 +105,6 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   subscribe(workflowId: string): void {
-    if (this.docWorkflowId !== null && this.docWorkflowId !== workflowId) {
-      // A workflow change is a lineage change: keeping the old doc would send
-      // workflow A's state vector for workflow B and merge B's updates into
-      // A's document. Document and projection state are replaced together -
-      // the composition root resets the projector on the same watch.
-      this.dropDocForNewLineage()
-    }
-    this.docWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
     this.reconcile()
   }
@@ -165,14 +134,7 @@ export class LayoutFollowerBridge extends EventTarget {
     }
   }
 
-  /**
-   * Same-lineage recovery: re-drive the subscription keeping the current doc,
-   * so the catch-up is a state-vector delta rather than a full refetch. The
-   * lineage floor arms the {@link onDocSubscribed} regression check for the
-   * missed-`doc_reset` case.
-   */
   resubscribe(): void {
-    if (this.lastSeq !== null) this.lineageFloorSeq = this.lastSeq
     this.sentWorkflowId = null
     this.reconcile()
   }
@@ -192,7 +154,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * Release everything this bridge owns. Teardown is failure-tolerant: the
    * unsubscribe is best-effort and can never prevent the listener detach or the
    * Y.Doc destroy, because a bridge that survives its composable keeps applying
-   * remote updates into a projector still wired to the live canvas.
+   * remote updates through an adapter still wired to the live stores.
    */
   destroy(): void {
     try {
@@ -202,10 +164,8 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_reset', this.onDocReset)
       this.client.removeEventListener('doc_subscribed', this.onDocSubscribed)
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
-      this.client.removeEventListener('frame_error', this.onFrameError)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
-      this.docWorkflowId = null
       this.followerDoc.destroy()
     }
   }
@@ -214,39 +174,21 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
-    if (this.schemaError) return
 
-    // Seq is the contract's gap detector (crdt.go): the pub/sub relay is
-    // best-effort, so a jump means a frame was dropped. An ordinary gap is
-    // NOT lineage evidence: the doc is retained and the resubscribe's
-    // state-vector catch-up fills the hole. The rare missed-`doc_reset` case
-    // is caught by the lineage floor in {@link onDocSubscribed} BEFORE any
-    // catch-up bytes apply, so a re-minted document is never folded into the
-    // old one. The gapped frame itself is not applied - Yjs would only buffer
-    // it against its missing dependencies.
+    // A stale/duplicate frame cannot advance the replica. Ignoring it also
+    // prevents a replayed Yjs frame from spuriously re-running ECS effects.
+    if (this.lastSeq !== null && update.seq <= this.lastSeq) return
+
+    // Seq is only a gap detector. A jump withholds the uncertain frame and
+    // asks the host for a same-lineage state-vector delta using this EXACT
+    // follower doc. Only an explicit doc_reset may replace it (ADR-0024).
     if (this.lastSeq !== null && update.seq > this.lastSeq + 1) {
-      this.recoverSameLineage(update.workflowId, 'sequence_gap')
-      return
-    }
-    // Apply before advancing seq: a failed integration leaves a hole that the
-    // same-lineage replay must still see.
-    try {
-      this.follower.applyRemoteUpdate(update.update)
-    } catch (error) {
-      reportError(error, {
-        errorType: 'agent_crdt_remote_update_apply_failure',
-        tags: { workflow_id: update.workflowId }
-      })
-      this.dispatchEvent(
-        new CustomEvent('frame_error', {
-          detail: { workflowId: update.workflowId, reason: 'apply_failed' }
-        })
-      )
-      this.recoverSameLineage(update.workflowId, 'apply_failed')
+      this.resubscribe()
       return
     }
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
+    this.follower.applyRemoteUpdate(update.update)
 
     // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
     // integrated or they are not — but nothing downstream may READ a doc whose
@@ -266,65 +208,32 @@ export class LayoutFollowerBridge extends EventTarget {
       return
     }
 
-    this.recoveryAttempts = 0
-    this.recoveryExhausted = false
     this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
   }
 
   /**
-   * Lineage break (`doc_reset`): the host re-minted the document, so nothing
-   * already held composes with what comes next. Resync is a FOLD — folding a
-   * re-minted lineage into the old doc duplicates the canvas — so the doc is
-   * dropped wholesale and the fresh state is pulled through the ordinary
-   * subscribe catch-up path: the recreated doc's state vector is empty, so the
-   * resubscribe asks for the full folded state. The follower still never
-   * writes (KA-6); a reset emits nothing but the resubscribe.
+   * Lineage break (`doc_reset`): dispatch while the old doc is still readable,
+   * then replace it exactly once and pull the new lineage from an empty vector.
+   * `follower_replaced` lets consumers rebind Yjs observers after replacement.
    */
   private readonly onDocReset: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
     this.resubscribe()
-    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+    this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 
   /**
-   * Drop the doc wholesale so the next subscribe carries an EMPTY state
-   * vector and pulls the full folded state. Reserved for LINEAGE changes:
-   * the explicit `doc_reset`, a workflow change, and a detected lineage
-   * regression.
+   * Replace the doc after an explicit lineage reset so the next subscribe
+   * carries an empty state vector and pulls the new folded state.
    */
   private dropDocForNewLineage(): void {
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
-    this.lastSeq = null
-    this.lineageFloorSeq = null
-    this.recoveryAttempts = 0
-    this.recoveryExhausted = false
-  }
-
-  private recoverSameLineage(workflowId: string, reason: string): void {
-    if (this.recoveryExhausted) return
-    if (this.recoveryAttempts >= MAX_SAME_LINEAGE_RECOVERY_ATTEMPTS) {
-      this.recoveryExhausted = true
-      const error = new Error(
-        `CRDT follower recovery exhausted for ${workflowId} after ${reason}`
-      )
-      reportError(error, {
-        errorType: 'agent_crdt_recovery_exhausted',
-        tags: { workflow_id: workflowId, recovery_reason: reason }
-      })
-      this.dispatchEvent(
-        new CustomEvent('frame_error', {
-          detail: { workflowId, reason: 'recovery_exhausted', cause: reason }
-        })
-      )
-      return
-    }
-    this.recoveryAttempts += 1
-    this.resubscribe()
   }
 
   /**
@@ -338,38 +247,8 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
-    if (subscribed.ok) {
-      // Lineage-regression check for a retained-doc catch-up: seq is
-      // monotonic within a lineage, so a missing or lower snapshot seq cannot
-      // prove the retained document belongs to this lineage. Drop and refetch
-      // from empty BEFORE any folded catch-up update can apply.
-      if (
-        this.lineageFloorSeq !== null &&
-        (subscribed.seq === undefined || subscribed.seq < this.lineageFloorSeq)
-      ) {
-        this.dropDocForNewLineage()
-        this.resubscribe()
-        return
-      }
-      this.lineageFloorSeq = null
-      this.lastSeq = subscribed.seq ?? null
-    } else {
-      this.sentWorkflowId = null
-    }
-    this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
-  }
-
-  /**
-   * A frame for our workflow was lost to a decode or apply failure: the doc
-   * has a hole only a same-lineage state-vector replay can fill. Fail closed
-   * into that one recovery path and surface the report; the document itself
-   * is never replaced for a lost frame.
-   */
-  private readonly onFrameError: EventListener = (event) => {
-    if (!(event instanceof CustomEvent)) return
-    const failure = event.detail as { workflowId?: string; reason?: string }
-    if (failure.workflowId !== this.sentWorkflowId) return
-    this.recoverSameLineage(failure.workflowId, failure.reason ?? 'frame_error')
+    if (subscribed.ok) this.lastSeq = subscribed.seq ?? null
+    else this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
 

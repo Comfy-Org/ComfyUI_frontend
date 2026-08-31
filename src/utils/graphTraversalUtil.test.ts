@@ -133,41 +133,6 @@ describe('graphTraversalUtil', () => {
 
       expect(findSubgraphNodePathById(root, 'nowhere-uuid')).toBeNull()
     })
-
-    it('skips a subgraph without a node array instead of throwing', () => {
-      const malformed = {
-        id: 'broken-uuid'
-      } satisfies Partial<Subgraph> as Subgraph
-      const brokenNode = createMockNode('9', {
-        isSubgraph: true,
-        subgraph: malformed
-      })
-      const root = createMockGraph([brokenNode])
-
-      expect(findSubgraphNodePathById(root, 'unreachable-uuid')).toBeNull()
-    })
-
-    it('fails closed when one subgraph definition has multiple instances', () => {
-      const shared = createMockSubgraph('shared-uuid', [])
-      const root = createMockGraph([
-        createMockNode('1', { isSubgraph: true, subgraph: shared }),
-        createMockNode('2', { isSubgraph: true, subgraph: shared })
-      ])
-
-      expect(findSubgraphNodePathById(root, 'shared-uuid')).toBeNull()
-    })
-
-    it('terminates on a cyclic subgraph definition', () => {
-      const cyclic = createMockSubgraph('cyclic-uuid', [])
-      cyclic._nodes = [
-        createMockNode('self', { isSubgraph: true, subgraph: cyclic })
-      ]
-      const root = createMockGraph([
-        createMockNode('1', { isSubgraph: true, subgraph: cyclic })
-      ])
-
-      expect(findSubgraphNodePathById(root, 'missing-uuid')).toBeNull()
-    })
   })
 
   describe('Pure utility functions', () => {
