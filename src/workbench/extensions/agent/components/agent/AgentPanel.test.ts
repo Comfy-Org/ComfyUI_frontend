@@ -9,16 +9,16 @@ import type { TurnId } from '../../schemas/agentApiSchema'
 
 import AgentPanel from './AgentPanel.vue'
 
-const historyGroups = {
+const createHistoryGroups = () => ({
   current: [],
   today: [],
   yesterday: [],
   earlier: []
-}
+})
 
 function mount(isMaximized = false) {
   return render(AgentPanel, {
-    props: { entries: [], historyGroups, isMaximized },
+    props: { entries: [], historyGroups: createHistoryGroups(), isMaximized },
     global: {
       plugins: [i18n],
       stubs: {
@@ -137,7 +137,7 @@ describe('AgentPanel', () => {
     render(AgentPanel, {
       props: {
         entries: [],
-        historyGroups,
+        historyGroups: createHistoryGroups(),
         sessionId: 'thread-1',
         customTitle: title
       },
@@ -172,7 +172,7 @@ describe('AgentPanel', () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     render(AgentPanel, {
-      props: { entries: [], historyGroups },
+      props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
         plugins: [pinia, i18n],
         directives: { tooltip: {} },
@@ -204,7 +204,7 @@ describe('AgentPanel', () => {
       props: {
         editableTurnId: 'msg-1' as TurnId,
         entries: [{ id: 'msg-1' as TurnId, role: 'user', text: prompt }],
-        historyGroups
+        historyGroups: createHistoryGroups()
       },
       global: {
         plugins: [pinia, i18n],
@@ -230,7 +230,7 @@ describe('AgentPanel', () => {
   it('switches into history mode and routes history actions', async () => {
     const user = userEvent.setup()
     const { emitted } = render(AgentPanel, {
-      props: { entries: [], historyGroups },
+      props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
         plugins: [i18n],
         stubs: {
@@ -274,7 +274,7 @@ describe('AgentPanel', () => {
     const { emitted } = render(AgentPanel, {
       props: {
         entries: [],
-        historyGroups,
+        historyGroups: createHistoryGroups(),
         sessionId: 'thread-1',
         customTitle: 'Before title'
       },
@@ -304,7 +304,7 @@ describe('AgentPanel', () => {
     const { emitted } = render(AgentPanel, {
       props: {
         entries: [],
-        historyGroups,
+        historyGroups: createHistoryGroups(),
         sessionId: 'thread-1',
         customTitle: 'Draft title'
       },
@@ -331,7 +331,7 @@ describe('AgentPanel', () => {
   it('forwards header, composer, and workflow chip actions', async () => {
     const user = userEvent.setup()
     const { emitted } = render(AgentPanel, {
-      props: { entries: [], historyGroups },
+      props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
         plugins: [i18n],
         stubs: {
