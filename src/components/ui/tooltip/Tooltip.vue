@@ -47,7 +47,8 @@ const text = computed(() => {
 const isDisabled = computed(
   () => rootProps.disabled || normalizedConfig.value?.disabled || !text.value
 )
-const lacksHoverInput = window.matchMedia('(hover: none)').matches
+const lacksHoverInput =
+  window.matchMedia('(hover: none)').matches || navigator.maxTouchPoints > 0
 const open = ref(rootProps.open ?? rootProps.defaultOpen ?? false)
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 
