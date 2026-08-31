@@ -129,7 +129,14 @@ describe('Tooltip', () => {
     await fireEvent.focus(trigger)
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 
-    await user.pointer({ target: trigger, coords: { x: 10, y: 10 } })
+    const pointerMove = new PointerEvent('pointermove', {
+      bubbles: true,
+      pointerType: 'mouse'
+    })
+    Object.defineProperty(pointerMove, 'movementX', { value: 10 })
+    Object.defineProperty(pointerMove, 'movementY', { value: 0 })
+    trigger.dispatchEvent(pointerMove)
+    await user.hover(trigger)
     expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful text')
     outside.remove()
   })
