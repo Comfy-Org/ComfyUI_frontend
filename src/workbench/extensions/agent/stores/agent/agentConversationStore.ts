@@ -35,6 +35,8 @@ interface BackgroundTurn {
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
+  attachments: UserAttachment[] | undefined
+  tags: string[] | undefined
   settled: boolean
 }
 
@@ -114,7 +116,14 @@ export const useAgentConversationStore = defineStore(
     }
 
     function ingest(event: AgentChatEvent): void {
-      if (transport && event.data.message_id === activeTurnId.value) {
+      const eventThreadId = event.data.thread_id
+      if (
+        transport &&
+        event.data.message_id === activeTurnId.value &&
+        (threadId.value === null ||
+          eventThreadId === undefined ||
+          eventThreadId === threadId.value)
+      ) {
         if (event.type === 'agent_message_done') {
           transport.settle()
           clearActive()
@@ -123,7 +132,6 @@ export const useAgentConversationStore = defineStore(
         transport.ingest(event)
         return
       }
-      const eventThreadId = event.data.thread_id
       // agent_active_tab is the one event whose message_id is optional; without
       // it the thread is the only routing key left.
       if (
@@ -163,6 +171,8 @@ export const useAgentConversationStore = defineStore(
         message: liveMessage,
         transport,
         userText: userTexts.value.get(liveMessage.id),
+        attachments: userAttachments.value.get(liveMessage.id),
+        tags: userTags.value.get(liveMessage.id),
         settled: false
       })
       clearActive()
@@ -202,6 +212,10 @@ export const useAgentConversationStore = defineStore(
         !userTexts.value.has(entry.message.id)
       )
         userTexts.value.set(entry.message.id, entry.userText)
+      if (entry.attachments !== undefined)
+        userAttachments.value.set(entry.message.id, entry.attachments)
+      if (entry.tags !== undefined)
+        userTags.value.set(entry.message.id, entry.tags)
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) return
@@ -211,13 +225,31 @@ export const useAgentConversationStore = defineStore(
       liveMessage = entry.message
     }
 
-    function settleBackgroundTurn(turnId: string): void {
-      for (const [key, entry] of backgroundTurns) {
-        if (entry.messageId !== turnId) continue
-        entry.transport.settle()
-        backgroundTurns.delete(key)
-        return
-      }
+    function settleBackgroundTurn(thread: string, turnId: string): void {
+      const entry = backgroundTurns.get(thread)
+      if (!entry || entry.messageId !== turnId) return
+      entry.transport.settle()
+      backgroundTurns.delete(thread)
+    }
+
+    function startBackgroundTurn(
+      thread: string,
+      turnId: TurnId,
+      text: string,
+      attachments?: UserAttachment[],
+      tags?: string[]
+    ): void {
+      const message = createAssistantMessage(turnId)
+      const backgroundTransport = createAgentEventTransport(message, () => {})
+      backgroundTurns.set(thread, {
+        messageId: turnId,
+        message,
+        transport: backgroundTransport,
+        userText: text,
+        attachments,
+        tags,
+        settled: false
+      })
     }
 
     function dropBackgroundTurns(): void {
@@ -233,9 +265,16 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dropAttachmentPreviews(): void {
+      const retained = new Set(
+        [...backgroundTurns.values()].flatMap(
+          ({ attachments }) =>
+            attachments?.map(({ previewUrl }) => previewUrl) ?? []
+        )
+      )
       for (const attachments of userAttachments.value.values()) {
         for (const { previewUrl } of attachments) {
-          if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
+          if (previewUrl?.startsWith('blob:') && !retained.has(previewUrl))
+            URL.revokeObjectURL(previewUrl)
         }
       }
       userAttachments.value = new Map()
@@ -317,6 +356,7 @@ export const useAgentConversationStore = defineStore(
       stashActiveTurn,
       resumeBackgroundTurn,
       settleBackgroundTurn,
+      startBackgroundTurn,
       dropBackgroundTurns,
       reset,
       hydrate
