@@ -29,7 +29,7 @@ export interface OpsResultView {
   applied: string[]
   skipped: string[]
   /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
-  failure?: { op_id?: string }
+  failure?: { op_id?: string; code?: string; message?: string }
 }
 
 export interface OpSenderDeps {

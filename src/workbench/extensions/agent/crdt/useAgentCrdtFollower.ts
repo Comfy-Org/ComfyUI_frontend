@@ -58,14 +58,19 @@ function clearPersistedDocId(): void {
 }
 
 function failureView(failed: unknown): OpsResultView['failure'] | undefined {
-  if (
-    typeof failed !== 'object' ||
-    failed === null ||
-    !('op_id' in failed) ||
-    typeof failed.op_id !== 'string'
-  )
-    return undefined
-  return { op_id: failed.op_id }
+  if (typeof failed !== 'object' || failed === null) return undefined
+  const view = {
+    ...('op_id' in failed && typeof failed.op_id === 'string'
+      ? { op_id: failed.op_id }
+      : {}),
+    ...('code' in failed && typeof failed.code === 'string'
+      ? { code: failed.code }
+      : {}),
+    ...('message' in failed && typeof failed.message === 'string'
+      ? { message: failed.message }
+      : {})
+  }
+  return Object.keys(view).length > 0 ? view : undefined
 }
 
 /**
