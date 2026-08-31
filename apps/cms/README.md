@@ -90,6 +90,17 @@ Its own Vercel project, root directory `apps/cms`. `vercel.json` pins the
 framework preset, the workspace install/build commands, and an `ignoreCommand` so
 pushes that don't touch `apps/cms` skip the build. The admin panel is `noindex`.
 
+**Step 1 — before the first deploy — lock the project down.** On a fresh
+database `/admin` serves an unauthenticated "create first user" screen, and the
+first account is forced to `admin`; an admin can publish content and trigger
+production deploys of the website. So the window between first deploy and first
+login must not be public: in the Vercel project settings, set Deployment
+Protection → Vercel Authentication to **All Deployments** before anything
+deploys. After the first deploy, open `/admin` through the protected URL and
+create the admin account. Only then relax protection to **Standard Protection**
+(previews only) so editors and the website's anonymous content fetch can reach
+production.
+
 Environment variables to set on the Vercel project (Production + Preview):
 
 | Key                                                    | Notes                                                                                                                                                                                                                                                                                       |
@@ -104,10 +115,6 @@ Environment variables to set on the Vercel project (Production + Preview):
 Do **not** set `PAYLOAD_ADMIN_EMAIL` / `PAYLOAD_ADMIN_PASSWORD` on Vercel. They only
 drive the local login prefill, which requires `NODE_ENV === 'development'` with `VERCEL`
 unset — so it stays off on every deployed environment, not just production.
-
-On a fresh database `/admin` serves an unauthenticated "create first user" screen,
-and the first account is forced to `admin` — create it immediately after the first
-deploy.
 
 ## Workspace commands
 
