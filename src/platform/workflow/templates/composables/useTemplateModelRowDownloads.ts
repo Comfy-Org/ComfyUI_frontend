@@ -171,10 +171,11 @@ export function useTemplateModelRowDownloads({
 
   function stateFor(model: ModelWithUrl): TemplateModelDownloadState {
     const identity = identityFor(model)
+    const state = states.get(identity)
     if (models.get(identity)?.url !== model.url) {
       return createTemplateModelDownloadState()
     }
-    return states.get(identity) ?? createTemplateModelDownloadState()
+    return state ?? createTemplateModelDownloadState()
   }
 
   function applyEvent(
