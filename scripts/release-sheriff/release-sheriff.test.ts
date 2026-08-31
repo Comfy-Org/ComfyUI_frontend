@@ -7,7 +7,6 @@ import {
   fetchOnCallEmails,
   isSheriffPr,
   nextInRotation,
-  parseGithubLogins,
   parseOnCallEmails,
   parseRotationKeys,
   planActions,
@@ -59,37 +58,6 @@ describe('parseOnCallEmails', () => {
         included: [{ type: 'users', attributes: { email: ' ' } }]
       })
     ).toEqual([])
-  })
-})
-
-describe('parseGithubLogins', () => {
-  it('reads github:<user>:<login> tags and ignores unrelated ones', () => {
-    const payload = {
-      data: {
-        attributes: {
-          tags: [
-            'github:ben:benceruleanlu',
-            'team:frontend',
-            'github:drjkl:drjkl',
-            'github:malformed',
-            42
-          ]
-        }
-      }
-    }
-
-    expect(parseGithubLogins(payload)).toEqual({
-      ben: 'benceruleanlu',
-      drjkl: 'drjkl'
-    })
-  })
-
-  it('ignores payloads without a usable tag list', () => {
-    expect(parseGithubLogins(null)).toEqual({})
-    expect(parseGithubLogins({ data: {} })).toEqual({})
-    expect(parseGithubLogins({ data: { attributes: { tags: 'no' } } })).toEqual(
-      {}
-    )
   })
 })
 
@@ -163,7 +131,11 @@ describe('CONFIG', () => {
 })
 
 describe('fetchOnCallEmails', () => {
-  const datadog = { datadogSite: 'datadoghq.com', scheduleId: 'sched-1' }
+  const datadog = {
+    datadogSite: 'datadoghq.com',
+    scheduleId: 'sched-1',
+    githubLoginByUser: { sheriff: 'sheriff-dev' }
+  }
   const creds = { apiKey: 'api', appKey: 'app' }
 
   it('warns and skips the request when no schedule is configured', async () => {
@@ -243,12 +215,12 @@ describe('fetchOnCallEmails', () => {
     })
   })
 
-  it('reads the login directory from the schedule itself', async () => {
+  it('uses the configured GitHub login directory', async () => {
     const fetchSpy = vi.fn().mockResolvedValue({
       ok: true,
       json: () =>
         Promise.resolve({
-          data: { attributes: { tags: ['github:sheriff:sheriff-dev'] } }
+          included: []
         })
     })
     vi.stubGlobal('fetch', fetchSpy)
@@ -267,14 +239,13 @@ describe('fetchOnCallEmails', () => {
     )
   })
 
-  it('separates tagged members from those still missing a login', async () => {
+  it('separates configured members from those still missing a login', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
           Promise.resolve({
-            data: { attributes: { tags: ['github:ann:ann-gh'] } },
             included: [
               {
                 type: 'layers',
@@ -304,7 +275,10 @@ describe('fetchOnCallEmails', () => {
       })
     )
 
-    const result = await fetchGithubLogins(datadog, creds)
+    const result = await fetchGithubLogins(
+      { ...datadog, githubLoginByUser: { ann: 'ann-gh' } },
+      creds
+    )
 
     expect(result.rotation).toEqual(['ann-gh'])
     expect(result.unmappedMembers).toEqual(['bo'])
@@ -315,7 +289,7 @@ describe('fetchOnCallEmails', () => {
 
     const result = await fetchGithubLogins(datadog, creds)
 
-    expect(result.githubLoginByUser).toEqual({})
+    expect(result.githubLoginByUser).toEqual({ sheriff: 'sheriff-dev' })
     expect(result.unmappedMembers).toEqual([])
     expect(result.warning).toMatch(/lookup failed/)
   })

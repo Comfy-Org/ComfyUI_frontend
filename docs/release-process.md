@@ -94,37 +94,32 @@ need no commit.
 
 Datadog exposes no GitHub identity, and GitHub only resolves commit emails its
 users chose to publish, so the two have to be bridged explicitly. That bridge
-lives on the Datadog schedule as tags, one per sheriff:
+lives in `GITHUB_LOGIN_BY_USER` in
+`scripts/release-sheriff/release-sheriff.ts`, keyed by the local part of each
+Datadog email. For example, `ben@comfy.org` maps to `benceruleanlu` with
+`ben: 'benceruleanlu'`.
 
-```text
-github:<datadog-email-local-part>:<github-login>
-```
+Adding someone to the rotation therefore also requires adding their mapping in
+the same pull request.
 
-So `ben@comfy.org` → GitHub `benceruleanlu` is the tag `github:ben:benceruleanlu`.
-**Adding someone to the rotation therefore means adding their tag in the Datadog
-UI — no commit.** Tags are only settable at schedule-creation time over the API,
-so edit them in the on-call UI. Datadog rejects `@` and `+` in tags and
-lower-cases what it accepts; GitHub logins are case-insensitive, so a
-lower-cased login still resolves.
-
-Only `scheduleId`, `datadogSite` and `fallbackGithubLogin` stay in the `CONFIG`
-object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
-`us5.datadoghq.com` — the Comfy org lives on that sub-domain and the default
-`api.datadoghq.com` returns 403.
+`scheduleId`, `datadogSite`, `fallbackGithubLogin` and the GitHub login
+directory live in `scripts/release-sheriff/release-sheriff.ts`. Note
+`datadogSite` is `us5.datadoghq.com` — the Comfy org lives on that sub-domain
+and the default `api.datadoghq.com` returns 403.
 
 Requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY` (scope:
 `on_call_read`).
 
-If the on-call user cannot be mapped — a missing tag, missing secrets, an
+If the on-call user cannot be mapped — a missing mapping, missing secrets, an
 unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
 never left unowned, but **exits non-zero** so the degradation is visible. A
 green run means a real sheriff was resolved from Datadog.
 
-Tag coverage is checked for the **whole rotation**, not just whoever is on call,
-and a member without one fails the run. Someone added to the layer without a tag
-otherwise works fine until their own shift begins — the breakage surfaces weeks
-after the cause, on whoever happens to be sheriff. This is a configuration
-check, so it fails even when today's assignment succeeded.
+Mapping coverage is checked for the **whole rotation**, not just whoever is on
+call, and a member without one fails the run. Someone added to the layer without
+a mapping otherwise works fine until their own shift begins — the breakage
+surfaces weeks after the cause, on whoever happens to be sheriff. This is a
+configuration check, so it fails even when today's assignment succeeded.
 
 A failed run also posts to **#frontend-releases** with the reason, because a
 failing scheduled workflow otherwise only notifies whoever last pushed to
@@ -148,9 +143,9 @@ Only scheduled runs **alert**, for the same reason: a run can recognise a
 duplicate only within the history it reads, so the runs that post have to be
 the runs that get read back. While the two sets differed, every PR-triggered
 failure was invisible to every other one — five posts in nine minutes when a
-rotation member turned up without a `github:` tag. PR-triggered runs still go
-red on the PR itself; the alert rides the hourly sweep instead, so a new
-breakage is announced within the hour rather than on the spot.
+rotation member turned up without a GitHub login mapping. PR-triggered runs
+still go red on the PR itself; the alert rides the hourly sweep instead, so a
+new breakage is announced within the hour rather than on the spot.
 
 ## Publishing
 

@@ -5,12 +5,22 @@ import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
+const GITHUB_LOGIN_BY_USER: Record<string, string> = {
+  austin: 'austinmroz',
+  ben: 'benceruleanlu',
+  cbyrne: 'christian-byrne',
+  drjkl: 'drjkl',
+  jaewon: 'jaeone94',
+  shihchi: 'huang47'
+}
+
 export const CONFIG = {
   // The Comfy org lives on the us5 sub-domain; api.datadoghq.com 403s.
   datadogSite: 'us5.datadoghq.com',
   // "Frontend Team – Oncall Schedule", whose sole layer is "Release Sheriff".
   scheduleId: 'f3258942-c040-4c33-8228-63a03e9092d6',
-  fallbackGithubLogin: 'christian-byrne'
+  fallbackGithubLogin: 'christian-byrne',
+  githubLoginByUser: GITHUB_LOGIN_BY_USER
 }
 
 export interface PullRequestSummary {
@@ -49,29 +59,8 @@ export function parseOnCallEmails(payload: unknown): string[] {
   return [...new Set(emails)]
 }
 
-// Datadog holds no GitHub identity, and GitHub only resolves commit emails its
-// users chose to make public — three of seven sheriffs are unresolvable that
-// way. The bridge is therefore declared on the schedule itself, as tags of the
-// form github:<datadog-email-local-part>:<github-login>, so a rotation change
-// stays a Datadog edit. Datadog rejects "@" and "+" outright and lower-cases
-// what it does accept; GitHub logins are case-insensitive, so that is lossless.
-const GITHUB_LOGIN_TAG = /^github:([^:]+):([^:]+)$/
-
 export function emailKey(email: string): string {
   return email.split('@')[0].trim().toLowerCase()
-}
-
-export function parseGithubLogins(payload: unknown): Record<string, string> {
-  if (!isRecord(payload) || !isRecord(payload.data)) return {}
-  const { attributes } = payload.data
-  if (!isRecord(attributes) || !Array.isArray(attributes.tags)) return {}
-
-  return Object.fromEntries(
-    attributes.tags.flatMap((tag) => {
-      const match = typeof tag === 'string' ? GITHUB_LOGIN_TAG.exec(tag) : null
-      return match ? [[match[1].toLowerCase(), match[2]]] : []
-    })
-  )
 }
 
 export interface OnCallLookup {
@@ -113,8 +102,8 @@ export function parseRotationKeys(payload: unknown): string[] {
 export interface DirectoryLookup {
   githubLoginByUser: Record<string, string>
   rotation: string[]
-  // Rotation members with no github: tag. They break silently when their own
-  // shift starts, weeks after the tag was forgotten, so surface them now.
+  // Rotation members missing from the login directory. They break silently
+  // when their own shift starts, so surface them now.
   unmappedMembers: string[]
   warning: string | null
 }
@@ -194,13 +183,16 @@ export async function fetchOnCallEmails(
 }
 
 export async function fetchGithubLogins(
-  config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
+  config: Pick<
+    typeof CONFIG,
+    'datadogSite' | 'scheduleId' | 'githubLoginByUser'
+  >,
   credentials: { apiKey?: string; appKey?: string }
 ): Promise<DirectoryLookup> {
   const { payload, warning } = await datadogGet(config, credentials, '', {
     include: 'layers.members.user'
   })
-  const githubLoginByUser = parseGithubLogins(payload)
+  const { githubLoginByUser } = config
   const keys = parseRotationKeys(payload)
   return {
     githubLoginByUser,
@@ -442,20 +434,21 @@ async function main() {
     githubLoginByUser: directory.githubLoginByUser
   })
   // Keyed, not the full address: this repo is public, so the warning lands in
-  // public Actions logs and in Slack. The key is what the tag needs anyway.
+  // public Actions logs and in Slack. The key is all the mapping needs.
   for (const email of unmappedEmails) {
     problems.push(
       `Datadog on-call user "${emailKey(email)}" has no GitHub login. Add ` +
-        `the tag "github:${emailKey(email)}:<github-login>" to the schedule.`
+        `it to GITHUB_LOGIN_BY_USER in release-sheriff.ts.`
     )
   }
   // Checked for the whole rotation, not just whoever is on call: a member
-  // added without a tag works fine until their own shift begins, then falls
-  // back silently. Fail now, while it is still someone else's week.
+  // added without a mapping works fine until their own shift begins, then
+  // falls back silently. Fail now, while it is still someone else's week.
   for (const key of directory.unmappedMembers) {
     problems.push(
       `Rotation member "${key}" has no GitHub login and will fall back when ` +
-        `their shift starts. Add "github:${key}:<github-login>" to the schedule.`
+        `their shift starts. Add it to GITHUB_LOGIN_BY_USER in ` +
+        `release-sheriff.ts.`
     )
   }
   for (const problem of problems) warn(problem)
