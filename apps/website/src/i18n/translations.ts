@@ -7622,6 +7622,10 @@ const translations = {
     'zh-CN':
       '调用合作伙伴模型——Seedance、Minimax H3、Nano Banana、GPT-Image-2——用一个 API 密钥即可访问最新模型。'
   },
+  'platform.modelsFeatures.heading': {
+    en: 'One key, every frontier model',
+    'zh-CN': '一个密钥，所有前沿模型'
+  },
   'platform.modelsFeatures.1.title': {
     en: 'Every frontier media model',
     'zh-CN': '所有前沿媒体模型'

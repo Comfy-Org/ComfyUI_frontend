@@ -9,6 +9,11 @@ describe('ModelsApiFeaturesSection', () => {
   it('renders the supplied Models API value callouts', () => {
     render(ModelsApiFeaturesSection, { props: { locale: 'en' } })
 
+    expect(
+      screen.getByRole('heading', {
+        name: t('platform.modelsFeatures.heading', 'en')
+      })
+    ).toBeTruthy()
     expect(screen.getAllByRole('article')).toHaveLength(6)
     expect(
       screen.getByText(t('platform.modelsFeatures.1.title', 'en'))
