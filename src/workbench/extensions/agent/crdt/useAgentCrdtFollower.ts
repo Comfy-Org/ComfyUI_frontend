@@ -1,6 +1,8 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
+import { setCoordinationFreeIds } from '@/lib/litegraph/src/idAllocation'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -155,7 +157,8 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true)
+  isTargetActive: Ref<boolean> = ref(true),
+  idAllocationState: () => LGraphState | null = () => null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -215,6 +218,19 @@ export function useAgentCrdtFollower(
       producerClock.reserve(target, observed, count),
     onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
   })
+
+  let armedIdState: LGraphState | null = null
+  const armCoordinationFreeIds = (): void => {
+    const state = idAllocationState()
+    if (armedIdState !== null && armedIdState !== state)
+      setCoordinationFreeIds(armedIdState, false)
+    armedIdState = state
+    if (state !== null) setCoordinationFreeIds(state, true)
+  }
+  const disarmCoordinationFreeIds = (): void => {
+    if (armedIdState !== null) setCoordinationFreeIds(armedIdState, false)
+    armedIdState = null
+  }
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -304,6 +320,7 @@ export function useAgentCrdtFollower(
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
+      armCoordinationFreeIds()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
@@ -322,6 +339,7 @@ export function useAgentCrdtFollower(
     )
       return
     if (staleProbeTimer !== null) armStaleProbe()
+    armCoordinationFreeIds()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     adapter.applyFrame(update)
@@ -469,6 +487,7 @@ export function useAgentCrdtFollower(
         }
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
+        disarmCoordinationFreeIds()
         return
       }
       if (next === null) {
@@ -492,6 +511,7 @@ export function useAgentCrdtFollower(
         }
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
+        disarmCoordinationFreeIds()
         return
       }
       initialBind = false
@@ -502,6 +522,7 @@ export function useAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       bridge.subscribe(next)
+      armCoordinationFreeIds()
     },
     { immediate: true }
   )
@@ -512,6 +533,7 @@ export function useAgentCrdtFollower(
     try {
       clearSubscribeRetry()
       clearStaleProbe()
+      disarmCoordinationFreeIds()
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)

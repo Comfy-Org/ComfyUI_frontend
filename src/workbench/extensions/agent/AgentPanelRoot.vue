@@ -389,7 +389,8 @@ const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive
+  isBoundWorkflowActive,
+  () => app.rootGraph?.state ?? null
 )
 
 function currentMintTarget(): GraphMutationTarget | null {

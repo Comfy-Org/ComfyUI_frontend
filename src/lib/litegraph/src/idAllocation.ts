@@ -24,7 +24,38 @@ export function createLGraphState(): LGraphState {
   }
 }
 
+/**
+ * Shared-document ids occupy a disjoint safe-integer range so two replicas
+ * seeded from the same snapshot do not allocate the same next node or link.
+ */
+export const MINT_ID_MIN = 2 ** 40
+export const MINT_ID_CEILING = 2 ** 53
+const MINT_ID_SPAN = MINT_ID_CEILING - MINT_ID_MIN
+
+const coordinationFreeStates = new WeakSet<LGraphState>()
+
+export function setCoordinationFreeIds(
+  state: LGraphState,
+  enabled: boolean
+): void {
+  if (enabled) coordinationFreeStates.add(state)
+  else coordinationFreeStates.delete(state)
+}
+
+export function mintCoordinationFreeId(
+  random: () => number = Math.random
+): number {
+  return MINT_ID_MIN + Math.floor(random() * MINT_ID_SPAN)
+}
+
 export function mintNodeId(state: LGraphState): NodeId {
+  if (coordinationFreeStates.has(state))
+    return toNodeId(mintCoordinationFreeId())
+  if (state.lastNodeId + 1 >= MINT_ID_MIN) {
+    throw new RangeError(
+      'Node id counter exhausted below coordination-free range'
+    )
+  }
   return toNodeId(++state.lastNodeId)
 }
 
@@ -33,6 +64,13 @@ export function mintGroupId(state: LGraphState): GroupId {
 }
 
 export function mintLinkId(state: LGraphState): LinkId {
+  if (coordinationFreeStates.has(state))
+    return toLinkId(mintCoordinationFreeId())
+  if (Number(state.lastLinkId) + 1 >= MINT_ID_MIN) {
+    throw new RangeError(
+      'Link id counter exhausted below coordination-free range'
+    )
+  }
   state.lastLinkId = toLinkId(Number(state.lastLinkId) + 1)
   return state.lastLinkId
 }
@@ -44,7 +82,11 @@ export function mintRerouteId(state: LGraphState): RerouteId {
 
 export function observeNodeId(state: LGraphState, id: NodeId): void {
   const numericId = Number(id)
-  if (Number.isInteger(numericId) && numericId > state.lastNodeId) {
+  if (
+    Number.isInteger(numericId) &&
+    numericId < MINT_ID_MIN - 1 &&
+    numericId > state.lastNodeId
+  ) {
     state.lastNodeId = numericId
   }
 }
@@ -54,7 +96,12 @@ export function observeGroupId(state: LGraphState, id: GroupId): void {
 }
 
 export function observeLinkId(state: LGraphState, id: LinkId): void {
-  if (id > state.lastLinkId) state.lastLinkId = id
+  if (
+    Number.isInteger(Number(id)) &&
+    id < MINT_ID_MIN - 1 &&
+    id > state.lastLinkId
+  )
+    state.lastLinkId = id
 }
 
 export function observeRerouteId(state: LGraphState, id: RerouteId): void {

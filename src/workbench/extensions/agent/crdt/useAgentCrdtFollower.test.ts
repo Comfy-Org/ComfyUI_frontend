@@ -15,6 +15,11 @@ import type { Ref } from 'vue'
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
+import {
+  createLGraphState,
+  MINT_ID_MIN,
+  mintNodeId
+} from '@/lib/litegraph/src/idAllocation'
 import type { TargetedGraphOperations } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
@@ -113,7 +118,8 @@ const graphMutations = {} as GraphMutations
 
 function mountFollower(
   initial: string | null = null,
-  initiallyActive = true
+  initiallyActive = true,
+  idAllocationState = createLGraphState()
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -131,7 +137,8 @@ function mountFollower(
         workflowId,
         graphMutations,
         () => null,
-        isTargetActive
+        isTargetActive,
+        () => idAllocationState
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
@@ -365,6 +372,24 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_update', catchUp)
     expect(adapterState.applyFrame).toHaveBeenCalledWith(catchUp)
     unmount()
+  })
+
+  it('arms collision-free ids only while a shared document is bound', async () => {
+    const state = createLGraphState()
+    const { unmount, workflowId } = mountFollower('wf-a', true, state)
+
+    expect(Number(mintNodeId(state))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+
+    workflowId.value = null
+    await nextTick()
+    expect(mintNodeId(state)).toBe('1')
+
+    workflowId.value = 'wf-b'
+    await nextTick()
+    expect(Number(mintNodeId(state))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+
+    unmount()
+    expect(mintNodeId(state)).toBe('2')
   })
 
   it('sends minted human operations through the doc client', () => {
