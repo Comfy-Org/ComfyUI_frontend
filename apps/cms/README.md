@@ -119,6 +119,10 @@ Environment variables to set on the Vercel project (Production + Preview):
 | `WEBSITE_DEPLOY_HOOK_URL`                              | Vercel deploy hook on the website project; powers "Rebuild site".                                                                                                                                                                                                                           |
 | `WEBSITE_PREVIEW_URL`                                  | Optional; enables the admin "Preview" link.                                                                                                                                                                                                                                                 |
 
+Set the project's Node.js version to **22** — `@types/node` is deliberately
+pinned to 22.x to match the deployed runtime rather than taking the workspace
+catalog version, so the types can't claim APIs the runtime doesn't have.
+
 Do **not** set `PAYLOAD_ADMIN_EMAIL` / `PAYLOAD_ADMIN_PASSWORD` on Vercel. They only
 drive the local login prefill, which requires `NODE_ENV === 'development'` with `VERCEL`
 unset — so it stays off on every deployed environment, not just production.
