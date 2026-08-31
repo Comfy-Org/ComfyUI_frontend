@@ -4,6 +4,7 @@ import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
+import { markdownTwins } from './src/integrations/markdown-twins'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
@@ -35,7 +36,8 @@ export default defineConfig({
     mdx(),
     sitemap({
       filter: (page) => !isExcludedFromSitemap(page)
-    })
+    }),
+    markdownTwins()
   ],
   vite: {
     plugins: [tailwindcss()],

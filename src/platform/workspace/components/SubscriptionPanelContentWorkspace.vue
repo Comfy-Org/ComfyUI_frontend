@@ -225,7 +225,10 @@
                     severity="warn"
                   />
                 </div>
-                <div class="flex items-baseline gap-1 font-inter">
+                <div
+                  v-if="!isNonCatalogPlan"
+                  class="flex items-baseline gap-1 font-inter"
+                >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
@@ -317,9 +320,10 @@
 
           <div
             v-if="
-              canAccessSubscriptionFeatures ||
-              isPersonalFree ||
-              showInactiveTeamSubscription
+              !isNonCatalogPlan &&
+              (canAccessSubscriptionFeatures ||
+                isPersonalFree ||
+                showInactiveTeamSubscription)
             "
             class="flex flex-col gap-2"
           >
@@ -379,7 +383,7 @@
       </div>
 
       <!-- View More Details - Outside main content -->
-      <div v-if="permissions.canManageSubscription" class="py-6">
+      <div v-if="canOpenPricingSurface" class="py-6">
         <Button
           variant="muted-textonly"
           class="text-sm text-muted"
@@ -413,6 +417,11 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import {
+  isEnterprisePlanSlug,
+  isSalesManagedTier,
+  isUnknownTier
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
@@ -435,7 +444,8 @@ const {
   permissions,
   isSubscriptionCancelled,
   workspaceRole,
-  canReactivatePlan
+  canReactivatePlan,
+  canOpenPricingSurface
 } = useWorkspaceUI()
 const { canChangeSeats, canSubscribeSelfServe } = useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
@@ -520,7 +530,8 @@ const showTeamSubscribePrompt = computed(
 
 const showInactiveTeamSubscription = computed(
   () =>
-    showTeamSubscribePrompt.value &&
+    permissions.value.canManageSubscription &&
+    !isInPersonalWorkspace.value &&
     isSubscriptionEnded.value &&
     isTeamPlan.value
 )
@@ -581,12 +592,22 @@ const formattedChangeDate = computed(() =>
 )
 
 const scheduledPlanName = computed(() => {
+  const scheduledPlanSlug = subscription.value?.scheduledPlanSlug
+  if (isEnterprisePlanSlug(scheduledPlanSlug)) {
+    return t('subscription.tiers.enterprise.name')
+  }
   const scheduledPlan = plans.value.find(
-    (plan) => plan.slug === subscription.value?.scheduledPlanSlug
+    (plan) => plan.slug === scheduledPlanSlug
   )
   if (!scheduledPlan) return ''
+  if (scheduledPlan.tier === 'ENTERPRISE') {
+    return t('subscription.tiers.enterprise.name')
+  }
   if (scheduledPlan.slug.startsWith('team')) {
     return t('subscription.teamPlanName')
+  }
+  if (isUnknownTier(scheduledPlan.tier)) {
+    return t('subscription.unknownTierName')
   }
   return t(
     `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
@@ -646,9 +667,21 @@ const subscriptionTierName = computed(() => {
     : baseName
 })
 
-const planDisplayName = computed(() =>
-  isTeamPlan.value ? t('subscription.teamPlanName') : subscriptionTierName.value
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
 )
+
+const isNonCatalogPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
+)
+
+const planDisplayName = computed(() => {
+  if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')
+  if (isNonCatalogPlan.value) return t('subscription.unknownTierName')
+  return isTeamPlan.value
+    ? t('subscription.teamPlanName')
+    : subscriptionTierName.value
+})
 
 const tierKey = computed(() =>
   resolveSubscriptionTierKey(subscription.value?.tier)
@@ -662,6 +695,7 @@ const TEAM_PERK_KEYS = [
 ] as const
 
 const tierBenefits = computed((): TierBenefit[] => {
+  if (isNonCatalogPlan.value) return []
   if (isTeamActive.value || showInactiveTeamSubscription.value) {
     return TEAM_PERK_KEYS.map((key) => ({
       key,

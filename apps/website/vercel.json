@@ -16,6 +16,15 @@
       "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
     },
     {
+      "source": "/((?!.*\\.(?:txt|xml|json|ico|png|jpg|jpeg|webp|avif|gif|svg|css|js|mjs|map|woff|woff2|ttf|otf|eot|mp4|webm|vtt|pdf|zip|webmanifest)$).*)",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "<https://comfy.org/llms.txt>; rel=\"describedby\""
+        }
+      ]
+    },
+    {
       "source": "/payment/(.*)",
       "headers": [
         {

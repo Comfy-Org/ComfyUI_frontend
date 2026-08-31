@@ -88,9 +88,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
   describe('drawNode title button rendering', () => {
     it('clips using the node rendering shape', () => {
-      Object.defineProperty(node, 'constructor', {
-        value: { shape: RenderShape.ROUND }
-      })
+      node.shape = RenderShape.ROUND
       node.clip_area = true
 
       canvas.drawNode(node, ctx)

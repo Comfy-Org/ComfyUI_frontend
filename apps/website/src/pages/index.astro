@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import ProductCardsSection from "../components/home/ProductCardsSection.vue";
 import HeroGraphSection from "../components/hero/HeroGraphSection.vue";
 import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
+import MinimaxLicenseHeroSection from "../components/common/MinimaxLicenseHeroSection.vue";
 import IndustriesSection from "../components/home/IndustriesSection.vue";
 import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
@@ -46,6 +47,7 @@ const { siteUrl } = pageContext(
 >
   <HeroGraphSection client:load />
   <SocialProofBarSection />
+  <MinimaxLicenseHeroSection client:visible />
   <ModelReleaseSection client:visible />
   <FeaturedWorkflowsSection client:load />
   <ProductShowcaseSection client:load />

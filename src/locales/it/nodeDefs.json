@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Genera un video con audio da un prompt di testo usando i modelli Gemini Omni Flash di Google. Facoltativamente, fornisci immagini e/o video di riferimento per guidare o modificare il risultato. Descrivi direttamente nel prompt la durata desiderata (3-10 s).",
+    "display_name": "Google Gemini Omni (Video)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Il modello video Gemini usato per generare il video."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "Genera Tracce Video",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "lunghezza_traccia",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Analizza un file di modello 3D (GLB, GLTF, OBJ, STL) in una MESH modificabile per i nodi di elaborazione mesh (decimate, remesh, UV unwrap, bake, ...). Tutti i nodi/primitivi della scena vengono uniti in un'unica mesh con le relative trasformazioni applicate; le texture e i fattori del materiale provengono dal primo materiale. Controparte di MeshToFile3D.",
+    "display_name": "Ottieni componenti 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "File di modello 3D da Load 3D o da un altro nodo 3D. FBX/USDZ non sono supportati: converti prima in GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -17772,7 +17824,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "Seleziona lo stile realistic_image e un eventuale sottostile.",
+    "description": "Seleziona lo stile e il sottostile logo_raster.",
     "display_name": "Recraft Stile - Logo Raster",
     "inputs": {
       "substyle": {
@@ -17883,6 +17935,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "Crea uno stile Recraft V4 riutilizzabile da 1-10 immagini di riferimento. Lo style_id restituito funziona con ogni modello Recraft V4 e V4.1 dello stesso tipo di output. La dimensione totale di tutte le immagini è limitata a 10 MB.",
+    "display_name": "Recraft V4 Crea stile",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Immagini di riferimento che definiscono lo stile. Riferimenti simili rendono la corrispondenza più precisa, riferimenti diversi la ampliano."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Tipo di output per cui viene creato lo stile: recraftv4_styles per immagini raster, recraftv4_styles_vector per SVG."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Genera immagini utilizzando i modelli Recraft V4 e V4.1.",
     "display_name": "Recraft V4 Da Testo a Immagine",
@@ -17892,7 +17964,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Il modello da utilizzare per la generazione."
+        "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per una generazione con stile coerente e richiedono sempre uno style_id o style_references."
       },
       "model_size": {
         "name": "dimensione"
@@ -17916,10 +17988,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono non deterministici indipendentemente dal seed."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID di uno stile Recraft V4 da applicare, ad es. dal nodo Recraft V4 Crea stile o dall'output style_id di un'esecuzione precedente. Non può essere combinato con style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Quanto fedelmente seguire lo stile: precise lo riproduce nei dettagli, flexible ne rispecchia l'aspetto generale. Usato solo quando viene fornito uno stile."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Immagini di riferimento per creare uno stile al volo, fatturato in aggiunta alla generazione. Lo stile creato viene restituito come style_id per il riutilizzo. Non può essere combinato con style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +18021,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Il modello da utilizzare per la generazione."
+        "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per una generazione con stile coerente e richiedono sempre uno style_id o style_references."
       },
       "model_size": {
         "name": "dimensione"
@@ -17957,10 +18045,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono non deterministici indipendentemente dal seed."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID di uno stile vettoriale Recraft V4 da applicare, ad es. dal nodo Recraft V4 Crea stile o dall'output style_id di un'esecuzione precedente. Non può essere combinato con style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Quanto fedelmente seguire lo stile: precise lo riproduce nei dettagli, flexible ne rispecchia l'aspetto generale. Usato solo quando viene fornito uno stile."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Immagini di riferimento per creare uno stile vettoriale al volo, fatturato in aggiunta alla generazione. Lo stile creato viene restituito come style_id per il riutilizzo. Non può essere combinato con style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,57 +24717,7 @@
       },
       "resolution": {
         "name": "risoluzione",
-        "tooltip": "Risoluzione del video generato. Il 4K non è disponibile per i modelli veo-3.1-lite e veo-3.0."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed per la generazione del video (0 per casuale)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Genera video da prompt testuali utilizzando l'API Google Veo 2",
-    "display_name": "Generazione Video Google Veo 2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Rapporto d'aspetto del video in output"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "Durata del video in output in secondi"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "Se migliorare il prompt con assistenza AI"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Immagine di riferimento opzionale per guidare la generazione del video"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "Modello Veo 2 da utilizzare per la generazione del video"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Prompt negativo per guidare cosa evitare nel video"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "Se consentire la generazione di persone nel video"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Descrizione testuale del video"
+        "tooltip": "Risoluzione del video di output. 4K non è disponibile per il modello veo-3.1-lite."
       },
       "seed": {
         "name": "seed",
