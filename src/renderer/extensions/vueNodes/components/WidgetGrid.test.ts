@@ -45,19 +45,20 @@ function widget(name: string, type: string, index: number): WidgetGridItem {
 }
 
 describe('WidgetGrid', () => {
-  it('renders converted widgets as input sockets without controls', () => {
+  it('renders hidden converted widgets as input sockets without controls', () => {
     render(WidgetGrid, {
       props: {
         nodeId: toNodeId(1),
         nodeType: 'TestNode',
         processedWidgets: [
-          widget('seed', 'converted-widget', 0),
+          { ...widget('seed', 'converted-widget', 0), visible: false },
           {
             ...widget('control_after_generate', 'converted-widget:seed', 1),
             slotMetadata: undefined
           },
           widget('replacement', 'number', 2),
-          widget('converted-widget-picker', 'converted-widget-picker', 3)
+          widget('converted-widget-picker', 'converted-widget-picker', 3),
+          { ...widget('hidden', 'number', 4), visible: false }
         ]
       },
       global: {
