@@ -6238,12 +6238,13 @@ Enterprise`
   },
   'events.hero.eyebrow': { en: 'EVENTS', 'zh-CN': '活动' },
   'events.hero.title': {
-    en: 'Creators, all in one place',
+    en: 'Creatives, all in one place',
     'zh-CN': '创作者，齐聚一堂'
   },
   'events.hero.subtitle': {
-    en: 'Upcoming livestreams, hackathons, and events worldwide',
-    'zh-CN': '即将举行的直播、黑客松以及遍布全球的活动'
+    en: "Livestreams, hackathons, and community meetups — here's how to take part. Bring builders together, anywhere in the world: apply to host a community event.",
+    'zh-CN':
+      '直播、黑客松与社区聚会——这就是参与的方式。把创作者聚到一起，无论身在世界何处：申请主办一场社区活动。'
   },
   'events.hero.prevSlide': {
     en: 'Previous featured event',
@@ -6308,8 +6309,8 @@ Enterprise`
   'events.program.official': { en: 'Official', 'zh-CN': '官方' },
   'events.program.partner': { en: 'Partner', 'zh-CN': '合作伙伴' },
   'events.host.title': {
-    en: 'How to host your event',
-    'zh-CN': '如何主办你的活动'
+    en: 'Host a Comfy event!',
+    'zh-CN': '主办一场 Comfy 活动！'
   },
   'events.host.lead': {
     en: 'Got an event coming up, or an idea in the works? Submit it for review to get support from Comfy.',
