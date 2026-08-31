@@ -40,6 +40,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     const clipEncoderNode: NodeReference =
       await comfyPage.nodeOps.getNodeRefById(2)
     await primitiveNode.connectWidget(0, clipEncoderNode, 0)
+    await comfyPage.canvasOps.moveMouseToEmptyArea()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'primitive_node_connected_dom_widget.png'
     )

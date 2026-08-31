@@ -22,7 +22,9 @@ import {
   materializeRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkStore } from '@/stores/linkStore'
+import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -69,6 +71,11 @@ import {
   normalizeConfiguredTopology,
   realignInputLinkSlots
 } from './linkDeduplication'
+import {
+  countRequestedNodeIds,
+  getRemintedEndpointPatch,
+  recordUnambiguousRemint
+} from './remintLinkRemap'
 import {
   beginNamedValuesShadowDiffLoad,
   endNamedValuesShadowDiffLoad
@@ -1577,7 +1584,7 @@ export class LGraph
     y: number,
     nodeList?: LGraphNode[]
   ): LGraphNode | null {
-    const nodes = nodeList || this._nodes
+    const nodes = nodeList || nodesInRenderOrder(this)
     let i = nodes.length
     while (--i >= 0) {
       const node = nodes[i]
@@ -2787,6 +2794,13 @@ export class LGraph
       }
 
       let reroutes: SerialisableReroute[] | undefined
+      /**
+       * Links restored from this payload, in case node-id remints during the
+       * node-creation pass require their endpoints to be remapped
+       * (ADR-0008). Only payload links are candidates; incumbent links are
+       * never touched.
+       */
+      const addedLinkIds: LinkId[] = []
       // TODO: Determine whether this should this fall back to 0.4.
       if (data.version === 0.4) {
         const { extra } = data
@@ -2794,7 +2808,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
-            this._addLink(link)
+            if (this._addLink(link)) addedLinkIds.push(link.id)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2835,7 +2849,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            this._addLink(link)
+            if (this._addLink(link)) addedLinkIds.push(link.id)
           }
         }
 
@@ -2885,12 +2899,23 @@ export class LGraph
       }
 
       let error = false
-      const nodeDataMap = new Map<SerializedNodeId, ISerialisedNode>()
-      const realignmentDataMap = new Map<SerializedNodeId, ISerialisedNode>()
+      const nodeDataMap = new Map<NodeId, ISerialisedNode>()
+      const realignmentDataMap = new Map<NodeId, ISerialisedNode>()
+
+      /**
+       * Requested (serialized) id → final id for nodes whose id was
+       * reminted on collision during `this.add` (ADR-0008). Payload links
+       * name nodes by requested id, so their endpoints must follow the
+       * remint. Ambiguous requested ids (claimed by >1 payload node) are
+       * never recorded — see {@link recordUnambiguousRemint}.
+       */
+      const remintedIds = new Map<NodeId, NodeId>()
 
       // create nodes
       this._nodes = []
       if (effectiveNodesData) {
+        const requestedIdCounts = countRequestedNodeIds(effectiveNodesData)
+
         for (const n_info of effectiveNodesData) {
           // stored info
           let node = LiteGraph.createNode(String(n_info.type), n_info.title)
@@ -2907,9 +2932,18 @@ export class LGraph
           }
 
           // id it or it will create a new id
-          node.id = toNodeId(n_info.id)
+          const requestedId = toNodeId(n_info.id)
+          node.id = requestedId
           // add before configure, otherwise configure cannot create links
           this.add(node, true)
+          if (node.id !== requestedId) {
+            recordUnambiguousRemint(
+              remintedIds,
+              requestedIdCounts,
+              requestedId,
+              node.id
+            )
+          }
           nodeDataMap.set(node.id, n_info)
           realignmentDataMap.set(node.id, {
             ...n_info,
@@ -2917,9 +2951,35 @@ export class LGraph
           })
         }
 
+        // Follow remints: repoint this payload's link endpoints from
+        // requested ids to the reminted ids before nodes configure their
+        // slots against those links.
+        if (remintedIds.size > 0) {
+          const endpointUpdates: EndpointUpdate[] = []
+          for (const linkId of addedLinkIds) {
+            const link = this.links.get(linkId)
+            if (!link) continue
+            const patch = getRemintedEndpointPatch(link, remintedIds)
+            if (patch) endpointUpdates.push({ topology: link._state, patch })
+          }
+          if (endpointUpdates.length > 0) {
+            const result = useLinkStore().updateEndpoints(
+              graphScopeOf(this),
+              endpointUpdates
+            )
+            if (!result.ok) {
+              console.error(
+                'Failed to remap node-id link endpoints',
+                result.error
+              )
+              error = true
+            }
+          }
+        }
+
         // configure nodes afterwards so they can reach each other
         for (const [id, nodeData] of nodeDataMap) {
-          const node = this.getNodeById(toNodeId(id))
+          const node = this.getNodeById(id)
           node?.configure(nodeData)
 
           if (LiteGraph.alwaysSnapToGrid && node) {
@@ -2937,6 +2997,8 @@ export class LGraph
       if (Array.isArray(data.floatingLinks)) {
         for (const linkData of data.floatingLinks) {
           const floatingLink = LLink.create(linkData)
+          const patch = getRemintedEndpointPatch(floatingLink, remintedIds)
+          if (patch) Object.assign(floatingLink._state, patch)
           if (
             this.links.has(floatingLink.id) ||
             this.floatingLinks.has(floatingLink.id)
@@ -2947,7 +3009,7 @@ export class LGraph
         }
       }
 
-      realignInputLinkSlots(this, realignmentDataMap.values())
+      realignInputLinkSlots(this, realignmentDataMap.entries())
 
       // Drop reroutes that no live link or floating link passes through
       for (const reroute of this.reroutes.values()) {
@@ -3231,7 +3293,10 @@ export class Subgraph
    */
   renameInput(input: SubgraphInput, name: string): void {
     const index = this.inputs.indexOf(input)
-    if (index === -1) throw new Error('Input not found')
+    if (index === -1) {
+      console.error('Input not found')
+      return
+    }
 
     const oldName = input.displayName
     this.events.dispatch('renaming-input', {
@@ -3251,7 +3316,10 @@ export class Subgraph
    */
   renameOutput(output: SubgraphOutput, name: string): void {
     const index = this.outputs.indexOf(output)
-    if (index === -1) throw new Error('Output not found')
+    if (index === -1) {
+      console.error('Output not found')
+      return
+    }
 
     const oldName = output.displayName
     this.events.dispatch('renaming-output', {
@@ -3270,7 +3338,10 @@ export class Subgraph
    */
   removeInput(input: SubgraphInput): void {
     const index = this.inputs.indexOf(input)
-    if (index === -1) throw new Error('Input not found')
+    if (index === -1) {
+      console.error('Input not found')
+      return
+    }
 
     const mayContinue = this.events.dispatch('removing-input', { input, index })
     if (!mayContinue) return
@@ -3291,7 +3362,10 @@ export class Subgraph
    */
   removeOutput(output: SubgraphOutput): void {
     const index = this.outputs.indexOf(output)
-    if (index === -1) throw new Error('Output not found')
+    if (index === -1) {
+      console.error('Output not found')
+      return
+    }
 
     const mayContinue = this.events.dispatch('removing-output', {
       output,
