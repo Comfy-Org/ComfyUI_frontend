@@ -10,6 +10,8 @@ import type { EventsDirectoryView } from '../../utils/eventsDirectory'
 
 import MapPins01 from '../../components/blocks/MapPins01.vue'
 import Button from '../../components/ui/button/Button.vue'
+import EventsAgendaView from './EventsAgendaView.vue'
+import EventsCardsView from './EventsCardsView.vue'
 import { externalLinks } from '../../config/routes'
 import { directoryEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
@@ -18,6 +20,7 @@ import {
   EVENT_CATEGORIES,
   EVENT_PROGRAMS,
   defaultDirectoryFilters,
+  directoryRows,
   filterDirectoryEvents
 } from '../../utils/eventsDirectory'
 import EventsDirectoryList from './EventsDirectoryList.vue'
@@ -33,6 +36,15 @@ const view = ref<EventsDirectoryView>('map')
 const visibleEvents = computed(() =>
   filterDirectoryEvents(directoryEvents, filters, locale)
 )
+
+// `directoryEvents` is already ordered upcoming-then-past against the data
+// module's load-time clock; classifying a row only needs the same boundary,
+// not a second reactive clock.
+const NOW = new Date()
+
+// Derived once and handed to whichever view is showing, so the list and the
+// cards can never disagree about a CTA or a date.
+const rows = computed(() => directoryRows(visibleEvents.value, locale, NOW))
 
 // Pins are the filtered events that have coordinates; virtual events stay in
 // the list and never reach the map. The block takes a generic markers prop, so
@@ -62,17 +74,16 @@ const countLabel = computed(() => {
   return t(key, locale).replace('{count}', String(count))
 })
 
-// Cards and Calendar are disabled until tickets 05 and 06 land their views;
-// the tabs render so the control matches the design and those tickets only
-// flip a flag and fill the slot.
+// Switching tabs leaves `filters` untouched, so search and both filters carry
+// across views; only the presentation changes.
 const VIEWS: ReadonlyArray<{
   key: EventsDirectoryView
   icon: typeof Map
   enabled: boolean
 }> = [
   { key: 'map', icon: Map, enabled: true },
-  { key: 'cards', icon: LayoutGrid, enabled: false },
-  { key: 'calendar', icon: CalendarDays, enabled: false }
+  { key: 'cards', icon: LayoutGrid, enabled: true },
+  { key: 'calendar', icon: CalendarDays, enabled: true }
 ]
 
 const controlClass =
@@ -225,7 +236,10 @@ const caretClass =
       </div>
     </div>
 
-    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
+    <div
+      v-if="view === 'map'"
+      class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]"
+    >
       <MapPins01
         :markers
         :aria-label="t('events.directory.mapLabel', locale)"
@@ -233,11 +247,15 @@ const caretClass =
         @select="pinnedId = $event"
       />
 
-      <EventsDirectoryList
-        :events="visibleEvents"
-        :locale
-        :selected-event-id="selectedEventId"
-      />
+      <EventsDirectoryList :rows :locale :selected-event-id="selectedEventId" />
+    </div>
+
+    <div v-else-if="view === 'cards'" class="mt-6">
+      <EventsCardsView :rows :locale />
+    </div>
+
+    <div v-else class="mt-6">
+      <EventsAgendaView :rows :locale />
     </div>
   </section>
 </template>

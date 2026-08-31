@@ -14,7 +14,10 @@ import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
 import {
   EVENT_CATEGORIES,
-  filterDirectoryEvents
+  directoryRows,
+  filterDirectoryEvents,
+  groupRowsByMonth,
+  monthLabel
 } from '../src/utils/eventsDirectory'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -354,6 +357,197 @@ test.describe('Events page — desktop @smoke', () => {
     await expect.poll(() => pins.count()).toBeGreaterThan(0)
   })
 
+  test('cards tab shows the same filtered set and keeps the filters', async ({
+    page
+  }) => {
+    const category = EVENT_CATEGORIES.find((entry) =>
+      directoryEvents.some((event) => event.category === entry)
+    )
+    test.skip(!category, 'needs at least one categorised event')
+    if (!category) return
+
+    const expected = filterDirectoryEvents(
+      directoryEvents,
+      { query: '', category, program: 'all' },
+      'en'
+    )
+
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    const cards = section.getByTestId('events-directory-card')
+    const rows = section.getByTestId('events-directory-row')
+
+    // Map is the default view, so no cards until the tab is picked.
+    await expect(cards).toHaveCount(0)
+
+    // Filter first, then switch: the tab must inherit the active filters.
+    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+    await expect(async () => {
+      await typeFilter.selectOption(category)
+      await expect(rows).toHaveCount(expected.length, { timeout: 1000 })
+    }).toPass()
+
+    await section
+      .getByRole('button', { name: t('events.directory.view.cards', 'en') })
+      .click()
+    await expect(cards).toHaveCount(expected.length)
+    // The map view's list and map are gone while cards are showing.
+    await expect(rows).toHaveCount(0)
+    await expect(section.locator('.leaflet-container')).toHaveCount(0)
+    for (const [i, event] of expected.entries()) {
+      await expect(cards.nth(i)).toContainText(event.title.en)
+    }
+    await expect(
+      section.getByLabel(t('events.directory.typeLabel', 'en'))
+    ).toHaveValue(category)
+
+    // Searching while on the cards tab narrows the cards too.
+    await section
+      .getByLabel(t('events.directory.searchLabel', 'en'))
+      .fill('zzzzzzzz')
+    await expect(cards).toHaveCount(0)
+    await expect(
+      section.getByText(t('events.directory.empty', 'en'))
+    ).toBeVisible()
+
+    // Switching back restores the map view with the filters still applied.
+    await section
+      .getByRole('button', { name: t('events.directory.view.map', 'en') })
+      .click()
+    await expect(section.locator('.leaflet-container')).toBeVisible()
+    await expect(
+      section.getByLabel(t('events.directory.typeLabel', 'en'))
+    ).toHaveValue(category)
+  })
+
+  test('cards carry the same upcoming and past CTAs as the list', async ({
+    page
+  }) => {
+    const upcoming = directoryEvents.find(
+      (event) => Date.parse(event.startDateTime) > Date.now()
+    )
+    test.skip(!upcoming, 'needs an upcoming event')
+    if (!upcoming) return
+
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    const cards = section.getByTestId('events-directory-card')
+    const cardsTab = section.getByRole('button', {
+      name: t('events.directory.view.cards', 'en')
+    })
+    // Retry only the tab switch, until the island hydrates and the click lands.
+    // Once cards are on screen the section is live, so the menu below needs no
+    // retry — and must not get one: clicking the trigger again would toggle the
+    // menu shut.
+    await expect(async () => {
+      await cardsTab.click()
+      await expect(cards.first()).toBeVisible({ timeout: 1000 })
+    }).toPass()
+
+    const card = cards.filter({ hasText: upcoming.title.en }).first()
+    // An upcoming card offers the calendar menu, not a watch link — and unlike
+    // CardArticle01 there is no full-card link overlay to swallow the click.
+    await expect(
+      card.getByRole('link', { name: t('events.past.watchNow', 'en') })
+    ).toHaveCount(0)
+
+    const saveTheDate = card.getByRole('button', {
+      name: t('events.directory.saveTheDate', 'en')
+    })
+    await saveTheDate.scrollIntoViewIfNeeded()
+    await saveTheDate.click()
+    await expect(
+      page.getByRole('menuitem', {
+        name: t('events.upcoming.calendarGoogle', 'en')
+      })
+    ).toBeVisible()
+
+    // A past card links out instead of offering the menu.
+    const past = directoryEvents.find(
+      (event) => Date.parse(event.startDateTime) < Date.now() && event.link
+    )
+    if (past) {
+      await page.keyboard.press('Escape')
+      const pastCard = cards.filter({ hasText: past.title.en }).first()
+      await expect(
+        pastCard.getByRole('link', { name: t('events.past.watchNow', 'en') })
+      ).toBeVisible()
+      await expect(
+        pastCard.getByRole('button', {
+          name: t('events.directory.saveTheDate', 'en')
+        })
+      ).toHaveCount(0)
+    }
+  })
+
+  test('calendar tab groups the filtered set into sticky months', async ({
+    page
+  }) => {
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    const agenda = section.getByTestId('events-directory-agenda')
+    const rows = section.getByTestId('events-directory-row')
+    const calendarTab = section.getByRole('button', {
+      name: t('events.directory.view.calendar', 'en')
+    })
+    // Retry only the tab switch, until the island hydrates and the click lands.
+    await expect(async () => {
+      await calendarTab.click()
+      await expect(agenda).toBeVisible({ timeout: 1000 })
+    }).toPass()
+
+    // Every event is present, grouped rather than dropped.
+    await expect(rows).toHaveCount(directoryEvents.length)
+    await expect(section.locator('.leaflet-container')).toHaveCount(0)
+
+    // The rendered grouping matches the pure function the unit tests cover,
+    // including the upcoming-ascending-then-past-descending month order.
+    const expectedMonths = groupRowsByMonth(
+      directoryRows(directoryEvents, 'en', new Date())
+    )
+    const headings = agenda.locator('[data-month]')
+    await expect(headings).toHaveCount(expectedMonths.length)
+    expect(
+      await headings.evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute('data-month'))
+      )
+    ).toEqual(expectedMonths.map((month) => month.key))
+
+    // Headings are localized by Intl, not by an i18n key, and they stick.
+    await expect(headings.first()).toHaveText(
+      monthLabel(expectedMonths[0].key, 'en')
+    )
+    await expect(headings.first()).toHaveCSS('position', 'sticky')
+
+    // Each month holds exactly its own events, in the order the grouping gives.
+    for (const month of expectedMonths) {
+      const monthRows = agenda
+        .locator(`section:has(> [data-month="${month.key}"])`)
+        .getByTestId('events-directory-row')
+      await expect(monthRows).toHaveCount(month.rows.length)
+      expect(
+        await monthRows.evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute('data-event-id'))
+        )
+      ).toEqual(month.rows.map((row) => row.event.id))
+    }
+
+    // Filters reach the agenda like every other view.
+    await section
+      .getByLabel(t('events.directory.searchLabel', 'en'))
+      .fill('zzzzzzzz')
+    await expect(rows).toHaveCount(0)
+    await expect(
+      section.getByText(t('events.directory.empty', 'en'))
+    ).toBeVisible()
+  })
+
   test('directory type filter composes with the search box', async ({
     page
   }) => {
@@ -576,6 +770,37 @@ test.describe('Events page — mobile @mobile', () => {
       .toBe(true)
 
     // Nothing in the section pushes the page wider than the viewport.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.documentElement.scrollWidth <=
+            document.documentElement.clientWidth
+        )
+      )
+      .toBe(true)
+  })
+
+  test('calendar agenda fits the viewport at mobile width', async ({
+    page
+  }) => {
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    const agenda = section.getByTestId('events-directory-agenda')
+    const calendarTab = section.getByRole('button', {
+      name: t('events.directory.view.calendar', 'en')
+    })
+    await expect(async () => {
+      await calendarTab.click()
+      await expect(agenda).toBeVisible({ timeout: 1000 })
+    }).toPass()
+
+    // Full-width rows plus a thumbnail are the overflow risk on a phone.
+    await expect(section.getByTestId('events-directory-row')).toHaveCount(
+      directoryEvents.length
+    )
     await expect
       .poll(() =>
         page.evaluate(
