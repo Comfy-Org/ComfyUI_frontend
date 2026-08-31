@@ -673,7 +673,7 @@ describe('drawConnections hidden links', () => {
   it('reveals on badge hover and clears the reveal on canvas leave', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = canvas.linkBadgeFrameState.hitAreas[0]
+    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
 
     canvas.processMouseMove(
       new PointerEvent('pointermove', {
@@ -694,7 +694,7 @@ describe('drawConnections hidden links', () => {
     vi.stubGlobal('Path2D', StubPath2D)
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = canvas.linkBadgeFrameState.hitAreas[0]
+    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
     canvas.processMouseMove(
       new PointerEvent('pointermove', {
         clientX: badge.x + badge.width / 2,
@@ -720,7 +720,7 @@ describe('drawConnections hidden links', () => {
   it('does not reveal an occluded badge', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = canvas.linkBadgeFrameState.hitAreas[0]
+    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
     const source = graph.getNodeById(link.origin_id)
     if (!source) throw new Error('Missing hidden link source node')
     vi.spyOn(graph, 'getNodeOnPos').mockReturnValue(source)
@@ -801,12 +801,12 @@ describe('drawConnections hidden links', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
     setRevealedLinks(graph.rootGraph.id, [link.id], canvas)
-    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
+    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
 
     canvas.setGraph(new LGraph())
 
     expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
-    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(0)
+    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(0)
   })
 
   it('groups output badges by source slot regardless of target node order', () => {
@@ -894,7 +894,7 @@ describe('drawConnections hidden links', () => {
 
     canvas.drawConnections(createMockCtx())
 
-    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
+    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
     expect(canvas.renderedPaths.has(link)).toBe(false)
     expect(drawReroute).not.toHaveBeenCalled()
     expect(renderLink).not.toHaveBeenCalled()
@@ -904,13 +904,13 @@ describe('drawConnections hidden links', () => {
     setRevealedLinks(graph.rootGraph.id, [link.id], revealOwner)
     canvas.drawConnections(createMockCtx())
 
-    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
+    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
     expect(canvas.renderedPaths.has(link)).toBe(true)
     expect(canvas.renderedPaths.has(reroute)).toBe(true)
     expect(drawReroute).toHaveBeenCalledOnce()
     expect(renderLink).toHaveBeenCalledTimes(2)
 
-    const [outputBadge, inputBadge] = canvas.linkBadgeFrameState.hitAreas
+    const [outputBadge, inputBadge] = getLinkBadgeFrameState(canvas).hitAreas
     const outputTip = [
       outputBadge.x + outputBadge.width,
       outputBadge.y + outputBadge.height / 2
