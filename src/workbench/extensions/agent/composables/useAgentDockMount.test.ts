@@ -22,13 +22,18 @@ describe('useAgentDockMount', () => {
     expect(DockedAgentPanel).toBeNull()
   })
 
-  it('docks only once the gate enables and the panel opens on cloud', () => {
+  it('docks only once the gate enables and the panel opens on cloud', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const store = useAgentPanelStore()
 
     const { docked, DockedAgentPanel } = useAgentDockMount()
 
     expect(DockedAgentPanel).not.toBeNull()
+    await expect(
+      (
+        DockedAgentPanel as { __asyncLoader: () => Promise<unknown> }
+      ).__asyncLoader()
+    ).resolves.toMatchObject({ __name: 'DockedAgentPanel' })
     expect(docked.value).toBe(false)
     store.enabled = true
     expect(docked.value).toBe(false)
