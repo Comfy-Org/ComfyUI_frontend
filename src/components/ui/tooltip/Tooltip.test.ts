@@ -102,21 +102,21 @@ describe('Tooltip', () => {
     const outside = document.createElement('button')
     document.body.append(outside)
 
-    await user.click(outside)
+    await user.pointer({ keys: '[MouseLeft>]', target: outside })
     await fireEvent.focus(trigger)
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     outside.remove()
   })
 
-  it('preserves pointer suppression while all tooltips are unmounted', async () => {
+  it('preserves touch suppression while all tooltips are unmounted', async () => {
     vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const first = renderTooltip()
     const outside = document.createElement('button')
     document.body.append(outside)
 
-    await user.pointer({ keys: '[MouseLeft>]', target: outside })
+    await fireEvent.touchStart(outside)
     first.unmount()
     renderTooltip()
     const trigger = screen.getByRole('button', { name: 'Trigger' })

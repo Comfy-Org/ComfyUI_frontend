@@ -1,13 +1,16 @@
 import { ref } from 'vue'
 
 const POINTER_MOVE_THRESHOLD_SQUARED = 16
+const POINTER_FOCUS_WINDOW_MS = 100
 const KEYBOARD_FOCUS_WINDOW_MS = 100
 
 export const automaticTooltipSuppressed = ref(false)
 export const keyboardInteraction = ref(false)
 
 let pointerMovementSquared = 0
+let touchInteraction = false
 let keyboardInteractionTimer: ReturnType<typeof setTimeout> | undefined
+let pointerInteractionTimer: ReturnType<typeof setTimeout> | undefined
 
 function suppressAutomaticTooltips() {
   if (keyboardInteractionTimer) clearTimeout(keyboardInteractionTimer)
@@ -17,11 +20,19 @@ function suppressAutomaticTooltips() {
   pointerMovementSquared = 0
 }
 
-function handlePointerDown() {
+function handlePointerDown(event: PointerEvent) {
+  if (pointerInteractionTimer) clearTimeout(pointerInteractionTimer)
+  touchInteraction = event.pointerType === 'touch'
   suppressAutomaticTooltips()
+  if (touchInteraction) return
+  pointerInteractionTimer = setTimeout(() => {
+    automaticTooltipSuppressed.value = false
+    pointerInteractionTimer = undefined
+  }, POINTER_FOCUS_WINDOW_MS)
 }
 
 function handleTouchStart() {
+  touchInteraction = true
   suppressAutomaticTooltips()
 }
 
@@ -31,6 +42,13 @@ function handlePointerMove(event: PointerEvent) {
     event.movementX * event.movementX + event.movementY * event.movementY
   if (pointerMovementSquared <= POINTER_MOVE_THRESHOLD_SQUARED) return
   pointerMovementSquared = 0
+  touchInteraction = false
+  automaticTooltipSuppressed.value = false
+}
+
+function handlePointerOver(event: PointerEvent) {
+  if (event.pointerType !== 'mouse' || touchInteraction) return
+  pointerMovementSquared = 0
   automaticTooltipSuppressed.value = false
 }
 
@@ -38,6 +56,7 @@ function handleKeyboardInteraction() {
   if (keyboardInteractionTimer) clearTimeout(keyboardInteractionTimer)
   keyboardInteraction.value = true
   pointerMovementSquared = 0
+  touchInteraction = false
   automaticTooltipSuppressed.value = false
   keyboardInteractionTimer = setTimeout(() => {
     keyboardInteraction.value = false
@@ -47,8 +66,11 @@ function handleKeyboardInteraction() {
 
 export function resetTooltipInputModality() {
   if (keyboardInteractionTimer) clearTimeout(keyboardInteractionTimer)
+  if (pointerInteractionTimer) clearTimeout(pointerInteractionTimer)
   keyboardInteractionTimer = undefined
+  pointerInteractionTimer = undefined
   pointerMovementSquared = 0
+  touchInteraction = false
   automaticTooltipSuppressed.value = false
   keyboardInteraction.value = false
 }
@@ -56,6 +78,7 @@ export function resetTooltipInputModality() {
 function removeListeners() {
   document.removeEventListener('pointerdown', handlePointerDown)
   document.removeEventListener('pointermove', handlePointerMove)
+  document.removeEventListener('pointerover', handlePointerOver)
   document.removeEventListener('touchstart', handleTouchStart)
   document.removeEventListener('keydown', handleKeyboardInteraction)
   resetTooltipInputModality()
@@ -66,6 +89,9 @@ if (typeof document !== 'undefined') {
     passive: true
   })
   document.addEventListener('pointermove', handlePointerMove, {
+    passive: true
+  })
+  document.addEventListener('pointerover', handlePointerOver, {
     passive: true
   })
   document.addEventListener('touchstart', handleTouchStart, {
