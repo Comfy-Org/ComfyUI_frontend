@@ -143,10 +143,11 @@ describe('Tooltip', () => {
 
   it('only opens automatically from the keyboard without a hover input', async () => {
     const user = userEvent.setup()
+    vi.spyOn(navigator, 'maxTouchPoints', 'get').mockReturnValue(1)
     vi.spyOn(window, 'matchMedia').mockImplementation(
       (query) =>
         ({
-          matches: query === '(hover: none)',
+          matches: false,
           media: query,
           onchange: null,
           addListener: vi.fn(),
