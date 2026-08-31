@@ -41,7 +41,7 @@ An Architecture Decision Record captures an important architectural decision mad
 ## Creating a New ADR
 
 1. Choose a unique, memorable identifier derived from the ADR title
-2. Name the file `<IDENTIFIER>-descriptive-title.md`, using an all-caps identifier
+2. Name the file `<IDENTIFIER>-descriptive-title.md`, using a 2–12 character uppercase alphanumeric identifier that begins with a letter
 3. Fill in all sections
 4. Update this index
 5. Submit as part of your PR
