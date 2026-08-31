@@ -85,7 +85,7 @@ export function registerNodeState(
   }
   assert(
     strandedScope === undefined,
-    `registerNodeState: node ${node.id} already registered under a different root graph (${strandedScope?.rootGraphId})`
+    'registerNodeState: node already registered under a different root graph'
   )
 
   node._state.graphId = graph.id
@@ -107,7 +107,7 @@ export function unregisterNodeState(node: LGraphNode): void {
   node._graphScope = undefined
   assert(
     deleted,
-    `unregisterNodeState: state for node ${node.id} not found in bucket (identity drift)`
+    'unregisterNodeState: node state not found in bucket (identity drift)'
   )
 }
 

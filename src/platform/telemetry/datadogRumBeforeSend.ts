@@ -36,9 +36,8 @@ export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
 }
 
 /**
- * RUM collects `console.error` on its own, so an assertion whose reporter also
- * reports it arrives twice — untagged from the console, and tagged. Only the
- * console copy is dropped, and only while a reporter exists to produce the other.
+ * RUM collects `console.error` on its own, so a reported assertion arrives
+ * twice — untagged from the console, and tagged.
  */
 function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
   return (

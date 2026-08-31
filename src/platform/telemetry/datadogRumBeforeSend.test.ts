@@ -54,6 +54,12 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
   })
 
+  it('keeps ordinary console errors that are not assertion failures', () => {
+    const event = createErrorEvent('Application failed', undefined, 'console')
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
   it('keeps the console copy while no reporter exists to replace it', () => {
     setAssertReporter(null)
     const event = createErrorEvent(

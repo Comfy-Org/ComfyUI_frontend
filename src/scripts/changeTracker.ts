@@ -231,10 +231,6 @@ function getExecutionGraphState(value: unknown): unknown {
 
 const reportedInactiveCalls = new Set<string>()
 
-/**
- * Report a ChangeTracker method being called on an inactive tracker.
- * Deduplicates per method+workflow per session to avoid signal noise on hot paths.
- */
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
   const key = `${method}:${workflowPath}`
   if (reportedInactiveCalls.has(key)) return
