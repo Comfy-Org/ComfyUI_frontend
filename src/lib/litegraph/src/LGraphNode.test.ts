@@ -16,13 +16,15 @@ import {
   LGraphNode,
   LiteGraph,
   LGraph,
+  LLink,
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -364,6 +366,26 @@ describe('LGraphNode', () => {
       // Test disconnecting already disconnected output
       const alreadyDisconnected = sourceNode.disconnectOutput(0)
       expect(alreadyDisconnected).toBe(false)
+    })
+
+    test('preserves floating links during a targeted output disconnect', () => {
+      const { graph, sourceNode } = createConnectedPair()
+      const unrelated = new LGraphNode('unrelated')
+      unrelated.addInput('input', '*')
+      graph.add(unrelated)
+      const floating = new LLink(
+        toLinkId(-1),
+        '*',
+        sourceNode.id,
+        0,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+      graph.addFloatingLink(floating)
+
+      expect(sourceNode.disconnectOutput(0, unrelated)).toBe(false)
+      expect(graph.floatingLinks.get(floating.id)).toBe(floating)
+      expect(sourceNode.isOutputConnected(0)).toBe(true)
     })
   })
 

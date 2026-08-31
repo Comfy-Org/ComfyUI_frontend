@@ -229,7 +229,7 @@ describe('BaseWidget store integration', () => {
       )
       expect(node.widgets.map(({ name }) => name)).toEqual([
         'duplicate',
-        'duplicate'
+        'duplicate#1'
       ])
       expect(store.getNodeWidgetIds(graph.id, toNodeId(1))).toEqual([
         first.widgetId,
@@ -259,10 +259,10 @@ describe('BaseWidget store integration', () => {
       )
       expect(
         ids.map((id) => (id ? store.getWidget(id)?.name : undefined))
-      ).toEqual(['duplicate', 'duplicate', 'duplicate#1'])
+      ).toEqual(['duplicate', 'duplicate#2', 'duplicate#1'])
       expect(node.widgets.map(({ name }) => name).reverse()).toEqual([
         'duplicate',
-        'duplicate',
+        'duplicate#2',
         'duplicate#1'
       ])
     })
