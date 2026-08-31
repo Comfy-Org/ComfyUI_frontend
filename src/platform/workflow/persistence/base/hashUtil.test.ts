@@ -63,3 +63,11 @@ describe('hashPath', () => {
     expect(hash1).not.toBe(hash2)
   })
 })
+
+describe('R-78 hash collision characterization', () => {
+  it('documents the known FNV-1a collision pair', () => {
+    // Current-risk characterization for R-78, not desired behavior.
+    expect(hashPath('workflows/ewip.json')).toBe('684dbc71')
+    expect(hashPath('workflows/4hbab.json')).toBe('684dbc71')
+  })
+})
