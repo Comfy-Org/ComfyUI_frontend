@@ -406,8 +406,14 @@ export function useAgentCrdtFollower(
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
-      bytes: update.update instanceof Uint8Array ? update.update.length : null
+      bytes: update.update instanceof Uint8Array ? update.update.length : null,
+      applied
     })
+    if (!applied)
+      recordDevEvent('doc_update_dropped', {
+        workflowId: update.workflowId,
+        seq: update.seq
+      })
     const ids = currentDocNodeIds()
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))

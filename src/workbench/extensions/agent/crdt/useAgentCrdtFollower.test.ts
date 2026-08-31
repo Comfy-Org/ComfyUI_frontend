@@ -615,6 +615,40 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
+  it('records a dropped doc_update when the adapter has no bound session', () => {
+    const { unmount } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValueOnce(false)
+
+    const update = { workflowId: 'wf-1', seq: 7 }
+    dispatchFrame('doc_update', update)
+
+    expect(recordDevEvent).toHaveBeenCalledWith(
+      'doc_update',
+      expect.objectContaining({ applied: false })
+    )
+    expect(recordDevEvent).toHaveBeenCalledWith('doc_update_dropped', {
+      workflowId: 'wf-1',
+      seq: 7
+    })
+    unmount()
+  })
+
+  it('records an applied doc_update without a drop event', () => {
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(recordDevEvent).toHaveBeenCalledWith(
+      'doc_update',
+      expect.objectContaining({ applied: true })
+    )
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'doc_update_dropped',
+      expect.anything()
+    )
+    unmount()
+  })
+
   it('suspends a background target and catches up only after it becomes active', async () => {
     const { unmount, isTargetActive } = mountFollower('wf-a', false)
 

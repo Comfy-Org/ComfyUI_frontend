@@ -154,6 +154,7 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'ws_out',
   'doc_subscribed',
   'doc_update',
+  'doc_update_dropped',
   'doc_ops_result',
   'human_ops_settled',
   'doc_reset',
