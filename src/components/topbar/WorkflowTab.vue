@@ -3,7 +3,15 @@
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
-        class="workflow-tab group flex gap-2 p-2"
+        :data-testid="restyled ? 'workflow-tab' : undefined"
+        :class="
+          cn(
+            'workflow-tab group flex gap-2',
+            restyled
+              ? 'box-border h-(--workflow-tabs-height) items-center justify-center px-4 py-2'
+              : 'p-2'
+          )
+        "
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -16,11 +24,16 @@
           class="icon-[lucide--panels-top-left] bg-primary-background"
         />
         <span
-          class="workflow-label inline-block max-w-[150px] truncate text-sm"
+          :class="
+            cn(
+              'workflow-label inline-block max-w-[150px] truncate text-sm',
+              restyled && 'font-normal'
+            )
+          "
         >
           {{ workflowOption.workflow.filename }}
         </span>
-        <div class="relative">
+        <div :class="cn('relative', restyled && 'size-5 shrink-0')">
           <i
             v-if="workflowStatus"
             role="img"
@@ -35,18 +48,46 @@
           <span
             v-else-if="shouldShowUnsavedIndicator"
             data-testid="workflow-dirty-indicator"
-            class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
-            >•</span
+            :data-active="restyled ? isActiveTab : undefined"
+            :class="
+              cn(
+                'absolute top-1/2 left-1/2 z-10 -translate-1/2 bg-(--comfy-menu-bg) group-hover:hidden',
+                restyled
+                  ? 'flex size-4 items-center justify-center'
+                  : 'w-4 text-2xl font-bold'
+              )
+            "
           >
+            <span
+              v-if="restyled"
+              :class="
+                cn(
+                  'size-2 rounded-full',
+                  isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
+                )
+              "
+            />
+            <template v-else>•</template>
+          </span>
           <Button
-            class="close-button invisible w-auto p-0"
+            :class="
+              cn(
+                'close-button invisible',
+                restyled
+                  ? 'rounded-none text-smoke-800 group-hover:visible'
+                  : 'w-auto p-0'
+              )
+            "
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('g.close')"
-            data-testid="close-workflow-button"
+            :data-testid="restyled ? undefined : 'close-workflow-button'"
             @click.stop="onCloseWorkflow(workflowOption)"
           >
-            <i class="pi pi-times" />
+            <i
+              :data-testid="restyled ? 'close-workflow-icon' : undefined"
+              :class="restyled ? 'icon-[lucide--x] size-4' : 'pi pi-times'"
+            />
           </Button>
         </div>
       </div>
@@ -108,6 +149,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
+defineOptions({ inheritAttrs: false })
+
 interface WorkflowOption {
   value: string
   workflow: ComfyWorkflow
@@ -117,6 +160,7 @@ const props = defineProps<{
   workflowOption: WorkflowOption
   isFirst: boolean
   isLast: boolean
+  restyled: boolean
 }>()
 
 const emit = defineEmits<{
@@ -176,7 +220,7 @@ const isBuilderState = computed(() => {
 })
 
 const isActiveTab = computed(() => {
-  return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
+  return workflowStore.isActive(props.workflowOption.workflow)
 })
 
 const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {

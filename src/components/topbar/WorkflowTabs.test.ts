@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PropType, Ref } from 'vue'
 import { defineComponent, h, nextTick, reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -43,6 +44,19 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
+const openWorkflow = vi.hoisted(() => vi.fn())
+const workflowStore = vi.hoisted(() => ({
+  openWorkflows: [] as Array<{
+    key: string
+    path: string
+    filename: string
+  }>,
+  activeWorkflow: null as {
+    key: string
+    path: string
+    filename: string
+  } | null
+}))
 vi.mock('@/platform/support/feedbackDialog', () => ({
   openFeedbackDialog
 }))
@@ -51,28 +65,31 @@ vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
 
-vi.mock('@/composables/element/useOverflowObserver', () => ({
-  useOverflowObserver: () => ({
-    isOverflowing: { value: false },
-    disposed: { value: false },
-    checkOverflow: vi.fn(),
-    dispose: vi.fn()
-  })
+const overflowObserver = vi.hoisted(() => ({
+  isOverflowing: null as unknown as Ref<boolean>
 }))
+vi.mock('@/composables/element/useOverflowObserver', async () => {
+  const { ref } = await import('vue')
+  overflowObserver.isOverflowing = ref(false)
+  return {
+    useOverflowObserver: () => ({
+      isOverflowing: overflowObserver.isOverflowing,
+      disposed: ref(false),
+      checkOverflow: vi.fn(),
+      dispose: vi.fn()
+    })
+  }
+})
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
-    openWorkflow: vi.fn(),
+    openWorkflow,
     closeWorkflow: vi.fn()
   })
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () =>
-    reactive({
-      openWorkflows: [],
-      activeWorkflow: null
-    })
+  useWorkflowStore: () => reactive(workflowStore)
 }))
 
 vi.mock('@/stores/commandStore', () => ({
@@ -113,14 +130,30 @@ vi.mock('@/utils/mouseDownUtil', () => ({
 vi.mock('./WorkflowOverflowMenu.vue', () => ({
   default: defineComponent({
     name: 'WorkflowOverflowMenuStub',
-    render: () => h('div')
+    render: () => h('div', { 'data-testid': 'workflow-overflow-menu' })
   })
 }))
 
 vi.mock('./WorkflowTab.vue', () => ({
   default: defineComponent({
     name: 'WorkflowTabStub',
-    render: () => h('div')
+    props: {
+      workflowOption: {
+        type: Object as PropType<{ workflow: { filename: string } }>,
+        required: true
+      },
+      restyled: { type: Boolean, required: true }
+    },
+    render() {
+      return h(
+        'div',
+        {
+          'data-testid': 'workflow-tab-stub',
+          'data-restyled': this.restyled || undefined
+        },
+        this.workflowOption.workflow.filename
+      )
+    }
   })
 }))
 
@@ -138,7 +171,7 @@ vi.mock('./LoginButton.vue', () => ({
   })
 }))
 
-function renderComponent() {
+function renderComponent(errorHandler?: (error: unknown) => void) {
   const user = userEvent.setup()
   const i18n = createI18n({
     legacy: false,
@@ -148,6 +181,7 @@ function renderComponent() {
 
   const result = render(WorkflowTabs, {
     global: {
+      config: { errorHandler },
       plugins: [i18n],
       directives: {
         tooltip: {}
@@ -164,6 +198,10 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isDesktop = false
     distribution.isNightly = false
     tabBarLayout.value = 'Default'
+    openWorkflow.mockReset()
+    workflowStore.openWorkflows = []
+    workflowStore.activeWorkflow = null
+    overflowObserver.isOverflowing.value = false
   })
 
   it('opens the feedback dialog tagged with topbar source when clicked', async () => {
@@ -226,11 +264,17 @@ describe('WorkflowTabs agent entry button', () => {
 
   it('does not render the entry button while the feature flag is off', () => {
     agentPanelHolder.store.enabled.value = false
+    workflowStore.openWorkflows = [
+      { key: 'first', path: 'first.json', filename: 'First workflow' }
+    ]
     renderComponent()
 
     expect(
       screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
     ).toBeNull()
+    const tab = screen.getByTestId('workflow-tab-stub')
+    expect(tab).not.toHaveAttribute('data-restyled')
+    expect(tab).not.toHaveAttribute('data-workflow-path')
   })
 
   it('toggles the panel and reflects the pressed state on the button', async () => {
@@ -257,5 +301,125 @@ describe('WorkflowTabs agent entry button', () => {
     await nextTick()
 
     expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
+  })
+})
+
+describe('WorkflowTabs selection and overflow', () => {
+  const firstWorkflow = {
+    key: 'first',
+    path: 'first.json',
+    filename: 'First workflow'
+  }
+  const secondWorkflow = {
+    key: 'second',
+    path: 'second.json',
+    filename: 'Second workflow'
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    agentPanelHolder.store.enabled.value = true
+    workflowStore.openWorkflows = [firstWorkflow, secondWorkflow]
+    workflowStore.activeWorkflow = firstWorkflow
+    openWorkflow.mockReset()
+    overflowObserver.isOverflowing.value = false
+  })
+
+  it('opens the selected workflow again when its tab is activated', async () => {
+    const { user } = renderComponent()
+    expect(screen.getAllByTestId('workflow-tab-stub')[0]).toHaveAttribute(
+      'data-restyled',
+      'true'
+    )
+
+    await user.click(screen.getByText('First workflow'))
+
+    expect(openWorkflow).toHaveBeenCalledOnce()
+    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
+    expect(
+      screen.getByRole('button', { name: 'First workflow' })
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('opens another workflow once when its tab is activated', async () => {
+    const { user } = renderComponent()
+
+    await user.click(screen.getByText('Second workflow'))
+
+    expect(openWorkflow).toHaveBeenCalledOnce()
+    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+  })
+
+  it('opens another workflow when its tab is activated by keyboard', async () => {
+    const { user } = renderComponent()
+    const secondTab = screen.getByRole('button', { name: 'Second workflow' })
+
+    secondTab.focus()
+    await user.keyboard('{Enter}')
+
+    expect(openWorkflow).toHaveBeenCalledOnce()
+    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+  })
+
+  it('opens the selected workflow when its tab is activated by keyboard', async () => {
+    const { user } = renderComponent()
+    const firstTab = screen.getByRole('button', { name: 'First workflow' })
+
+    firstTab.focus()
+    await user.keyboard('{Enter}')
+
+    expect(openWorkflow).toHaveBeenCalledOnce()
+    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
+  })
+
+  it('keeps the real workflow selected when another workflow fails to load', async () => {
+    const error = new Error('load failed')
+    const errorHandler = vi.fn()
+    openWorkflow.mockRejectedValueOnce(error)
+    const { user } = renderComponent(errorHandler)
+
+    await user.click(screen.getByText('Second workflow'))
+
+    await vi.waitFor(() => expect(errorHandler).toHaveBeenCalled())
+    expect(errorHandler.mock.calls[0][0]).toBe(error)
+    expect(
+      screen.getByRole('button', { name: 'First workflow' })
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByRole('button', { name: 'Second workflow' })
+    ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('keeps overflow controls available when the tab strip overflows', async () => {
+    renderComponent()
+
+    overflowObserver.isOverflowing.value = true
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: 'Scroll Left' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Scroll Right' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('workflow-overflow-menu')).toBeInTheDocument()
+  })
+
+  it('scrolls a newly active workflow into view', async () => {
+    const originalScrollIntoView = Element.prototype.scrollIntoView
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const { unmount } = renderComponent()
+
+    workflowStore.activeWorkflow = secondWorkflow
+    await vi.waitFor(() =>
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        block: 'nearest',
+        inline: 'nearest'
+      })
+    )
+
+    unmount()
+    Element.prototype.scrollIntoView = originalScrollIntoView
   })
 })
