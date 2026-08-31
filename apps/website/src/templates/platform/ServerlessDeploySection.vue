@@ -52,6 +52,17 @@ $ comfy deploy run --workflow workflow_api.json
 </script>
 
 <template>
+  <section class="max-w-9xl mx-auto px-6 pt-10 pb-4 lg:pt-14 lg:pb-6">
+    <SectionHeader max-width="xl" heading-size="compact">
+      {{ t('platform.serverlessDeploy.shipHeading', locale) }}
+      <template #subtitle>
+        <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
+          {{ t('platform.serverlessDeploy.shipSubtitle', locale) }}
+        </p>
+      </template>
+    </SectionHeader>
+  </section>
+
   <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.serverlessDeploy.heading', locale) }}

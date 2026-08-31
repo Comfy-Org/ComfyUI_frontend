@@ -7505,6 +7505,14 @@ const translations = {
     en: 'How it works',
     'zh-CN': '工作原理'
   },
+  'platform.serverlessDeploy.shipHeading': {
+    en: 'Ship in minutes',
+    'zh-CN': '几分钟内上线'
+  },
+  'platform.serverlessDeploy.shipSubtitle': {
+    en: 'Easily package up your existing ComfyUI environment or a single workflow, then deploy it to serverless.',
+    'zh-CN': '轻松打包现有的 ComfyUI 环境或单个工作流，然后部署到 Serverless。'
+  },
   'platform.serverlessDeploy.subtitle': {
     en: 'Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to serverless and scale it on demand.',
     'zh-CN':

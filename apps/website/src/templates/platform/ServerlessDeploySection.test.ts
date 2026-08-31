@@ -15,6 +15,15 @@ describe('ServerlessDeploySection', () => {
         name: t('platform.serverlessDeploy.heading', 'en')
       })
     ).toBeTruthy()
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: t('platform.serverlessDeploy.shipHeading', 'en')
+      })
+    ).toBeTruthy()
+    expect(
+      screen.getByText(t('platform.serverlessDeploy.shipSubtitle', 'en'))
+    ).toBeTruthy()
     expect(screen.getAllByRole('listitem')).toHaveLength(3)
     expect(
       screen.getByText(t('platform.serverlessDeploy.2.title', 'en'))
