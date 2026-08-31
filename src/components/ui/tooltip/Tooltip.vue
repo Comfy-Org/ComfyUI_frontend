@@ -1,32 +1,16 @@
 <script setup lang="ts">
 import type { TooltipRootEmits, TooltipRootProps } from 'reka-ui'
 import { TooltipRoot } from 'reka-ui'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import TooltipContent from './TooltipContent.vue'
+import {
+  automaticTooltipSuppressed,
+  keyboardInteraction
+} from './tooltipInputModality'
 import TooltipProvider from './TooltipProvider.vue'
 import TooltipTrigger from './TooltipTrigger.vue'
 import type { TooltipSide, TooltipValue } from './tooltipTypes'
-
-const POINTER_TOOLTIP_SUPPRESSION_MS = 700
-const automaticTooltipSuppressed = ref(false)
-const keyboardInteraction = ref(false)
-let mountedTooltipCount = 0
-let pointerSuppressionTimer: ReturnType<typeof setTimeout> | undefined
-
-function handleDocumentPointerInteraction() {
-  keyboardInteraction.value = false
-  automaticTooltipSuppressed.value = true
-  if (pointerSuppressionTimer) clearTimeout(pointerSuppressionTimer)
-  pointerSuppressionTimer = setTimeout(() => {
-    automaticTooltipSuppressed.value = false
-    pointerSuppressionTimer = undefined
-  }, POINTER_TOOLTIP_SUPPRESSION_MS)
-}
-
-function handleDocumentKeyboardInteraction() {
-  keyboardInteraction.value = true
-}
 
 defineOptions({ inheritAttrs: false })
 
@@ -102,32 +86,8 @@ watch(automaticTooltipSuppressed, (suppressed) => {
   if (suppressed) setOpen(false)
 })
 
-onMounted(() => {
-  if (mountedTooltipCount++ === 0) {
-    document.addEventListener('pointerdown', handleDocumentPointerInteraction, {
-      passive: true
-    })
-    document.addEventListener('touchstart', handleDocumentPointerInteraction, {
-      passive: true
-    })
-    document.addEventListener('keydown', handleDocumentKeyboardInteraction)
-  }
-})
-
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer)
-  if (--mountedTooltipCount === 0) {
-    document.removeEventListener(
-      'pointerdown',
-      handleDocumentPointerInteraction
-    )
-    document.removeEventListener('touchstart', handleDocumentPointerInteraction)
-    document.removeEventListener('keydown', handleDocumentKeyboardInteraction)
-    if (pointerSuppressionTimer) clearTimeout(pointerSuppressionTimer)
-    pointerSuppressionTimer = undefined
-    automaticTooltipSuppressed.value = false
-    keyboardInteraction.value = false
-  }
 })
 </script>
 

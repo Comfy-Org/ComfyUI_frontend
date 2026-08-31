@@ -4,11 +4,13 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import Tooltip from './Tooltip.vue'
+import { resetTooltipInputModality } from './tooltipInputModality'
 
 const openDialogs: HTMLElement[] = []
 
 afterEach(() => {
   for (const dialog of openDialogs.splice(0)) ZIndex.clear(dialog)
+  resetTooltipInputModality()
 })
 
 function renderTooltip(
@@ -102,6 +104,22 @@ describe('Tooltip', () => {
 
     await user.click(outside)
     await fireEvent.focus(trigger)
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    outside.remove()
+  })
+
+  it('preserves pointer suppression while all tooltips are unmounted', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const first = renderTooltip()
+    const outside = document.createElement('button')
+    document.body.append(outside)
+
+    await user.pointer({ keys: '[MouseLeft>]', target: outside })
+    first.unmount()
+    renderTooltip()
+    await fireEvent.focus(screen.getByRole('button', { name: 'Trigger' }))
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     outside.remove()
