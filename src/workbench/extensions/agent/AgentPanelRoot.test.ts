@@ -60,7 +60,7 @@ vi.mock('@/scripts/api', () => ({
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
-    socket: { readyState: 1 },
+    socket: { readyState: 1, send: vi.fn() },
     addEventListener: ws.add,
     removeEventListener: ws.remove,
     addCustomEventListener: ws.add,
@@ -1836,6 +1836,7 @@ describe('AgentPanelRoot workflow binding', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     ws.clear()
+    useAgentPanelStore().enabled = true
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
     telemetry.trackAgentNodeTagged.mockClear()
