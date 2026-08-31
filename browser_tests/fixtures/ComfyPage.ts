@@ -373,9 +373,8 @@ export class ComfyPage {
 
   /**
    * Wait for the app to finish initializing after navigation/reload:
-   * `window.app.extensionManager` is present, the PrimeVue block-UI mask is
-   * hidden, and one animation frame has elapsed. Shared by `setup()` and
-   * `WorkflowHelper.reloadAndWaitForApp()`.
+   * `window.app.extensionManager` is present and one animation frame has
+   * elapsed. Shared by `setup()` and `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
     const readyFuseMs = 300_000
@@ -387,9 +386,6 @@ export class ComfyPage {
         null,
         { timeout: readyFuseMs }
       )
-      await this.page
-        .locator('.p-blockui-mask')
-        .waitFor({ state: 'hidden', timeout: readyFuseMs })
     } catch (error) {
       const state = await this.describeUnreadyApp()
       throw new Error(`app never became ready: ${state}`, { cause: error })
@@ -412,7 +408,6 @@ export class ComfyPage {
         title: document.title,
         hasApp: !!window.app,
         hasExtensionManager: !!window.app?.extensionManager,
-        blockUiVisible: !!document.querySelector('.p-blockui-mask'),
         signInVisible: !!document.querySelector(
           '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
         ),
@@ -421,7 +416,7 @@ export class ComfyPage {
       return (
         `url=${state.url} title=${JSON.stringify(state.title)} ` +
         `window.app=${state.hasApp} extensionManager=${state.hasExtensionManager} ` +
-        `blockUiMask=${state.blockUiVisible} signInView=${state.signInVisible} ` +
+        `signInView=${state.signInVisible} ` +
         `body=${JSON.stringify(state.bodyText)}`
       )
     } catch (probeError) {

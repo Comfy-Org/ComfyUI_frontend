@@ -106,7 +106,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
 )
 
 /**
- * The dropdown content is teleported to `document.body` by PrimeVue Popover,
+ * The dropdown content is teleported to `document.body`,
  * detaching it from the LGraphNode subtree where the canvas wheel guard lives.
  * Pinch-zoom (`ctrl/meta + wheel`) would otherwise trigger page-level zoom and
  * push fixed UI off-screen, so it must be suppressed locally. Horizontal

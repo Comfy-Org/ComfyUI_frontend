@@ -148,9 +148,6 @@ vi.mock('@/components/searchbox/NodeSearchFilter.vue', () => ({
   }
 }))
 
-vi.mock('primevue/divider', () => ({
-  default: { name: 'Divider', template: '<div />' }
-}))
 vi.mock('@/components/ui/popover/PopoverOverlay.vue', () => ({
   default: {
     name: 'Popover',

@@ -24,7 +24,7 @@
 
     <template #header>
       <div
-        :ref="primeVueOverlay.overlayScopeRef"
+        :ref="overlayChild.overlayScopeRef"
         class="flex w-full items-center justify-between gap-2"
         @click.self="focusedAsset = null"
       >
@@ -123,8 +123,8 @@ const { flags } = useFeatureFlags()
 const assetStore = useAssetsStore()
 const modelToNodeStore = useModelToNodeStore()
 const breakpoints = useBreakpoints(breakpointsTailwind)
-const primeVueOverlay = useOverlayChildStyle()
-const selectContentStyle = primeVueOverlay.contentStyle
+const overlayChild = useOverlayChildStyle()
+const selectContentStyle = overlayChild.contentStyle
 
 const props = defineProps<{
   nodeType?: string

@@ -9,7 +9,7 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import {
   onRekaFocusOutside,
   onRekaPointerDownOutside
-} from '@/components/dialog/rekaPrimeVueBridge'
+} from '@/components/dialog/rekaDialogBridge'
 import UiDialog from '@/components/ui/dialog/Dialog.vue'
 import UiDialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
@@ -125,7 +125,7 @@ function mountDialog() {
   })
 }
 
-describe('GlobalDialog Reka parity with PrimeVue', () => {
+describe('GlobalDialog', () => {
   it('omits the close button when closable is false', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -526,27 +526,24 @@ describe('shouldPreventRekaDismiss', () => {
     }
   }
 
-  it.for([
-    'p-select-overlay',
-    'p-colorpicker-panel',
-    'p-popover',
-    'p-autocomplete-overlay',
-    'p-overlay-mask'
-  ])('prevents dismiss when target is inside %s', (className) => {
-    const overlay = document.createElement('div')
-    overlay.className = className
-    const inner = document.createElement('button')
-    overlay.appendChild(inner)
-    document.body.appendChild(overlay)
+  it.for(['dialog', 'menu', 'listbox', 'tooltip'])(
+    'prevents dismiss when target is inside a %s portal',
+    (role) => {
+      const overlay = document.createElement('div')
+      overlay.setAttribute('role', role)
+      const inner = document.createElement('button')
+      overlay.appendChild(inner)
+      document.body.appendChild(overlay)
 
-    const event = makeEvent(inner)
-    onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+      const event = makeEvent(inner)
+      onRekaPointerDownOutside({ dismissableMask: undefined }, event)
 
-    expect(event.defaultPrevented).toBe(true)
-    overlay.remove()
-  })
+      expect(event.defaultPrevented).toBe(true)
+      overlay.remove()
+    }
+  )
 
-  it('allows dismiss when target is outside any PrimeVue overlay', () => {
+  it('allows dismiss when target is outside any portaled layer', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: undefined }, event)
     expect(event.defaultPrevented).toBe(false)
@@ -574,11 +571,11 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-select-overlay'])(
+  it.for(['listbox'])(
     'focus-outside on a sibling %s portal does not dismiss the parent',
-    (className) => {
+    (role) => {
       const overlay = document.createElement('div')
-      overlay.className = className
+      overlay.setAttribute('role', role)
       const inner = document.createElement('button')
       overlay.appendChild(inner)
       document.body.appendChild(overlay)

@@ -31,7 +31,7 @@ describe('useManagerDialog', () => {
     )
   })
 
-  it('show() uses non-modal Reka so nested PrimeVue overlays keep focus and pointer events', () => {
+  it('show() uses non-modal Reka so nested overlays keep focus and pointer events', () => {
     useManagerDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.modal).toBe(false)

@@ -408,7 +408,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.page.mouse.move(0, 0)
     await expect(disclosure).toHaveCount(0)
 
-    // Keyboard focus reveals the hidden tags — the gap PrimeVue's tooltip left.
+    // Keyboard focus reveals the hidden tags.
     await overflow.focus()
     await expect(disclosure).toBeVisible()
     await expectOnTop()

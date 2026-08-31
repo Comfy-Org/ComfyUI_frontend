@@ -23,8 +23,6 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
-import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
-
 const extraFileExtensions = ['.vue']
 
 const commonGlobals = {
@@ -97,7 +95,7 @@ const noPrimeVueImports: Rule.RuleModule = {
     type: 'problem',
     messages: {
       banned:
-        'New PrimeVue usage is banned per the PrimeVue removal effort. Remove this import. scripts/primevue-import-allowlist.ts only shrinks; do not add entries.'
+        'PrimeVue usage is banned. Use the project design-system components instead.'
     },
     schema: []
   },
@@ -105,7 +103,7 @@ const noPrimeVueImports: Rule.RuleModule = {
     function report(node: Rule.Node, source: unknown) {
       if (
         typeof source === 'string' &&
-        /^(?:primevue(?:\/|$)|@primevue(?:\/|$))/.test(source)
+        /^(?:primevue(?:\/|$)|@primevue(?:\/|$)|@primeuix(?:\/|$))/.test(source)
       ) {
         context.report({ node, messageId: 'banned' })
       }
@@ -221,13 +219,6 @@ export default defineConfig([
     },
     rules: {
       'primevue-removal/no-imports': 'error'
-    }
-  },
-  {
-    name: 'primevue-removal/existing-imports',
-    files: [...primeVueImportAllowlist],
-    rules: {
-      'primevue-removal/no-imports': 'off'
     }
   },
   pluginJs.configs.recommended,

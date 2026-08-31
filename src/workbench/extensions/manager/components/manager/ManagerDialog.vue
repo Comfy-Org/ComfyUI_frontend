@@ -15,7 +15,7 @@
 
     <template #header>
       <div
-        :ref="primeVueOverlay.overlayScopeRef"
+        :ref="overlayChild.overlayScopeRef"
         class="flex w-full items-center justify-between gap-2"
       >
         <div class="flex w-full items-center gap-2">
@@ -204,8 +204,8 @@ const { initialTab, initialPackId, onClose } = defineProps<{
 provide(OnCloseKey, onClose)
 
 const { t } = useI18n()
-const primeVueOverlay = useOverlayChildStyle()
-const selectContentStyle = primeVueOverlay.contentStyle
+const overlayChild = useOverlayChildStyle()
+const selectContentStyle = overlayChild.contentStyle
 const { buildDocsUrl } = useExternalLink()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
