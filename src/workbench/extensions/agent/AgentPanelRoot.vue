@@ -18,6 +18,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { fitGraphToView } from '@/composables/canvas/fitGraphToView'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
+import { createGraphMutations } from '@/core/graph/graphMutations'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -38,6 +39,14 @@ import { appendWorkflowJsonExt } from '@/utils/formatUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+// The composition root injects the renderer-owned layout port; follower core
+// stays independent of renderer and LiteGraph runtime values.
+// eslint-disable-next-line import-x/no-restricted-paths
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -46,6 +55,7 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -84,6 +94,7 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
@@ -92,7 +103,7 @@ const toast = useToastStore()
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
-const { userDisplayName } = useCurrentUser()
+const { resolvedUserInfo, userDisplayName } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -105,8 +116,6 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const draftStore = useAgentDraftStore()
-const crdtWorkflowId = computed(() => draftStore.workflowId)
-const { status: crdtStatus } = useAgentCrdtFollower(crdtWorkflowId)
 const agentPanelStore = useAgentPanelStore()
 const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
@@ -114,6 +123,63 @@ const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
+const graphMutationsByWorkflow = new Map<
+  string,
+  ReturnType<typeof createGraphMutations>
+>()
+const graphMutations = (workflowId: string) => {
+  const existing = graphMutationsByWorkflow.get(workflowId)
+  if (existing) return existing
+  const mutations = createGraphMutations({
+    getScope() {
+      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
+      return rootGraphId
+        ? {
+            rootGraphId: toRootGraphId(rootGraphId),
+            owningGraphId: toOwningGraphId(rootGraphId)
+          }
+        : null
+    },
+    layout: {
+      createNode(scope, nodeId, layout, context) {
+        const { position, size } = layout
+        layoutStore.applyOperation({
+          type: 'createNode',
+          graphId: scope.rootGraphId,
+          nodeId,
+          layout: {
+            id: nodeId,
+            position,
+            size,
+            bounds: { x: position.x, y: position.y, ...size },
+            zIndex: layoutStore.allocateZIndex(),
+            visible: true
+          },
+          source: LayoutSource.AgentRemote,
+          actor: context.actor,
+          opId: context.opId,
+          timestamp: Date.now()
+        })
+      },
+      deleteNodes(scope, nodeIds, context) {
+        const timestamp = Date.now()
+        layoutStore.applyOperations(
+          nodeIds.map((nodeId) => ({
+            type: 'deleteNode',
+            graphId: scope.rootGraphId,
+            nodeId,
+            source: LayoutSource.AgentRemote,
+            actor: context.actor,
+            opId: context.opId,
+            timestamp
+          }))
+        )
+      }
+    }
+  })
+  graphMutationsByWorkflow.set(workflowId, mutations)
+  return mutations
+}
 const { focusNodeInstance } = useFocusNode()
 
 function toSelectedNode(node: LGraphNode): SelectedNode {
@@ -366,6 +432,38 @@ const {
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab
   }
+})
+
+const crdtWorkflowId = computed(() => draftStore.workflowId)
+
+const isBoundWorkflowActive = computed(() => {
+  const bound = crdtWorkflowId.value
+  const active = workflowStore.activeWorkflow
+  return (
+    bound !== null &&
+    active !== null &&
+    boundTabFor(bound)?.path === active.path
+  )
+})
+
+// The CRDT follower is the inbound content channel: subscribes to the
+// session's bound workflow while its tab is active. Suspending the background
+// subscription makes reopening pull state-vector catch-up only after the
+// workflow's serialized activeState has hydrated the transient stores.
+const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
+  crdtWorkflowId,
+  graphMutations,
+  () => resolvedUserInfo.value?.id ?? null,
+  isBoundWorkflowActive
+)
+const mintPortWiring = attachMintPortWiring({
+  isEnabled: () => agentPanelStore.enabled,
+  isDocBound: () => isBoundWorkflowActive.value,
+  enqueue: enqueueHumanOperations,
+  layoutChanges: (listener) => layoutStore.onChange(listener),
+  withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
+  localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
+  getGraph: () => (app.isGraphReady ? app.rootGraph : null)
 })
 
 let autoFitPending = false
@@ -773,6 +871,7 @@ onBeforeUnmount(() => {
   // Bump first: an in-flight active-tab link sees a stale generation and
   // stops, so no tab is created - and no file written - after the close.
   activeTabGeneration++
+  mintPortWiring.detach()
   // stop() precedes the throw-capable exit so a raise there cannot leave the
   // session subscribed.
   stop()

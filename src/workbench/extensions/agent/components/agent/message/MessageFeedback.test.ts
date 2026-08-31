@@ -131,10 +131,12 @@ describe('MessageFeedback', () => {
   })
 
   it('downloads every reply asset from the download action', async () => {
-    fetchApi.mockResolvedValue({
-      ok: true,
-      blob: () => Promise.resolve(new Blob(['x']))
-    })
+    // Cross-origin assets go through plain fetch, never the authenticated
+    // client; the two-direction routing itself is pinned in
+    // downloadReplyAsset.test.ts.
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => new Response(new Blob(['x'])))
     const createObjectURL = vi.fn(() => 'blob:mock')
     const revokeObjectURL = vi.fn()
     URL.createObjectURL = createObjectURL
@@ -146,9 +148,10 @@ describe('MessageFeedback', () => {
 
     await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
-    await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
-    expect(fetchApi).toHaveBeenCalledWith('https://x/a.png')
-    expect(fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2))
+    expect(fetchSpy).toHaveBeenCalledWith('https://x/a.png')
+    expect(fetchSpy).toHaveBeenCalledWith('https://x/mesh.glb')
+    expect(fetchApi).not.toHaveBeenCalled()
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 

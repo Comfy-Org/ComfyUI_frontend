@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   CollapsibleContent,
   CollapsibleRoot,
@@ -119,7 +120,7 @@ watch(failed, (failedNow, failedBefore) => {
 <template>
   <CollapsibleRoot v-model:open="open">
     <CollapsibleTrigger
-      class="hover:text-foreground group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal text-muted-foreground transition-colors hover:bg-muted"
+      class="hover:text-foreground group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-xs/none font-normal text-muted-foreground transition-colors hover:bg-muted"
     >
       <span
         v-if="running"
@@ -134,7 +135,15 @@ watch(failed, (failedNow, failedBefore) => {
         class="icon-[lucide--brain] size-4 shrink-0"
       />
       <span v-else class="icon-[lucide--wrench] size-4 shrink-0" />
-      <span class="text-left">{{ statusLabel }}</span>
+      <span
+        :class="
+          cn(
+            'text-left',
+            thoughts.length > 0 && isActive && 'agent-shimmer-text'
+          )
+        "
+        >{{ statusLabel }}</span
+      >
       <span
         class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
       />

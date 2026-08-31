@@ -1,8 +1,10 @@
 import { i18n } from '@/i18n'
-import { hasImageType } from '@/utils/eventUtils'
+import { api } from '@/scripts/api'
+import { hasImageType, hasVideoType } from '@/utils/eventUtils'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
+export const MAX_VIDEO_ATTACHMENT_BYTES = 200 * 1024 * 1024
 
 interface UploadResult {
   ref: string
@@ -28,7 +30,16 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function isTooLarge(file: File): boolean {
-    const maxBytes = options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES
+    const serverLimit = api.getServerFeature<number>(
+      'max_upload_size',
+      MAX_VIDEO_ATTACHMENT_BYTES
+    )
+    const maxBytes =
+      options.maxBytes?.(file) ??
+      Math.min(
+        serverLimit,
+        hasVideoType(file) ? MAX_VIDEO_ATTACHMENT_BYTES : MAX_ATTACHMENT_BYTES
+      )
     if (file.size <= maxBytes) return false
 
     options.onError?.(

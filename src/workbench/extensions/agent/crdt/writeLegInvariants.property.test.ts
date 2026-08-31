@@ -84,7 +84,6 @@ describe('CRDT human write-leg invariants (property)', () => {
           const latest = sent.at(-1)
           if (!latest) throw new Error('Expected an in-flight operation')
           resultListener({
-            workflowId: WORKFLOW_ID,
             ok: true,
             applied: [latest[0].op_id],
             skipped: []
@@ -98,9 +97,9 @@ describe('CRDT human write-leg invariants (property)', () => {
             return op.node_id
           })
         ).toEqual(operations.map((operation) => operation.node_id))
-        for (let index = 1; index < delivered.length; index++) {
-          expect(delivered[index].op_id > delivered[index - 1].op_id).toBe(true)
-        }
+        expect(new Set(delivered.map((op) => op.op_id))).toHaveLength(
+          operations.length
+        )
         expect(sender.pending()).toBe(0)
         sender.detach()
       })

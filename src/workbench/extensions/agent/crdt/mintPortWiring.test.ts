@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GraphScope } from '@/types/graphScopeId'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkTopology } from '@/types/linkTopology'
 
 import { useLinkStore } from '@/stores/linkStore'
@@ -138,12 +139,7 @@ describe('attachMintPortWiring', () => {
 
     linkStore.deleteLink(ROOT_SCOPE, severed)
     deliverLayoutChange({
-      operation: {
-        type: 'deleteNode',
-        actor: 'user-abc',
-        graphId: ROOT_ID,
-        nodeId: toNodeId(2)
-      }
+      operation: { type: 'deleteNode', actor: 'user-abc', nodeId: toNodeId(2) }
     })
     await afterSweep()
 
@@ -192,21 +188,38 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([])
   })
 
-  it('keeps mints suppressed until every overlapping load bracket closes', () => {
+  it('suppresses remote store calls from their call-carried context', () => {
+    const context: RemoteMutationContext = {
+      source: 'agent-remote',
+      actor: 'agent:test',
+      opId: 'op-1'
+    }
+    const link = useLinkStore().registerLink(ROOT_SCOPE, topology(41), context)
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+    const widget = widgetStore.setValue(id, 42, context)
+
+    expect(link).toBeDefined()
+    expect(widget).toBe(true)
+    expect(minted).toEqual([])
+  })
+
+  it('suppresses mints between the load-bracket hooks, fail-closed on a failed load', () => {
     wiring.onBeforeGraphLoad()
     useLinkStore().registerLink(ROOT_SCOPE, topology(41))
     expect(minted).toEqual([])
 
+    // A failed load never fires afterConfigureGraph: the bracket stays open
+    // (still no mints), and the NEXT load's paired hooks close it.
     wiring.onBeforeGraphLoad()
     useLinkStore().registerLink(ROOT_SCOPE, topology(42))
     expect(minted).toEqual([])
 
     wiring.onAfterGraphConfigure()
     useLinkStore().registerLink(ROOT_SCOPE, topology(43, 4))
-    expect(minted).toEqual([])
-
-    wiring.onAfterGraphConfigure()
-    useLinkStore().registerLink(ROOT_SCOPE, topology(44, 5))
     expect(minted).toHaveLength(1)
   })
 
@@ -228,7 +241,6 @@ describe('attachMintPortWiring', () => {
       operation: {
         type: 'createNode',
         actor: 'user-abc',
-        graphId: ROOT_ID,
         nodeId: toNodeId(5),
         layout: { position: { x: 10, y: 20 } }
       }
