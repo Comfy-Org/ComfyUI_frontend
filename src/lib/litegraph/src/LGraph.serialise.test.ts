@@ -96,6 +96,9 @@ describe('LGraph Serialisation', () => {
       'Adapter only'
     ])
     expect(error).toHaveBeenCalledOnce()
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining(`live node ${adapterOnly.id} has no stored state`)
+    )
   })
 
   test('round trips namespaced node and graph extension payloads', ({
