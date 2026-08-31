@@ -62,12 +62,10 @@ describe('hashPath', () => {
     const hash2 = hashPath('workflows/Untitled (2).json')
     expect(hash1).not.toBe(hash2)
   })
-})
 
-describe('R-78 hash collision characterization', () => {
-  it('documents the known FNV-1a collision pair', () => {
-    // Current-risk characterization for R-78, not desired behavior.
-    expect(hashPath('workflows/ewip.json')).toBe('684dbc71')
-    expect(hashPath('workflows/4hbab.json')).toBe('684dbc71')
+  it.fails('produces different hashes for known collision paths', () => {
+    const hash1 = hashPath('workflows/ewip.json')
+    const hash2 = hashPath('workflows/4hbab.json')
+    expect(hash1).not.toBe(hash2)
   })
 })
