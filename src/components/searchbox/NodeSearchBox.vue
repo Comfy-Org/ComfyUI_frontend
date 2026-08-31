@@ -27,7 +27,10 @@
     >
       <DialogPortal>
         <DialogOverlay />
-        <DialogContent class="min-w-96">
+        <DialogContent
+          class="min-w-96"
+          @close-auto-focus="onFilterDialogCloseAutoFocus"
+        >
           <DialogHeader>
             <DialogTitle>{{ $t('g.addNodeFilterCondition') }}</DialogTitle>
             <DialogClose />
@@ -187,7 +190,11 @@ const reFocusInput = async () => {
 
 function onFilterDialogOpenChange(open: boolean) {
   nodeSearchFilterVisible.value = open
-  if (!open) void reFocusInput()
+}
+
+function onFilterDialogCloseAutoFocus(event: Event) {
+  event.preventDefault()
+  void reFocusInput()
 }
 
 onMounted(() => {
