@@ -38,6 +38,7 @@
     "posthog-js": "catalog:",
     "reka-ui": "catalog:",
     "shaders": "catalog:",
+    "shiki": "catalog:",
     "three": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"

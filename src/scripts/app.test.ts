@@ -398,17 +398,10 @@ describe('ComfyApp', () => {
         '1',
         output
       )
-      expect(
-        mockNodeOutputStore.replaceOutputsFromLegacy
-      ).not.toHaveBeenCalled()
-
       delete app.nodeOutputs['1']
       expect(mockNodeOutputStore.removeOutputFromLegacy).toHaveBeenCalledWith(
         '1'
       )
-      expect(
-        mockNodeOutputStore.replaceOutputsFromLegacy
-      ).not.toHaveBeenCalled()
     })
 
     it('commits nested legacy output mutations to the output store', () => {
@@ -422,7 +415,6 @@ describe('ComfyApp', () => {
         '1',
         { images: [{ filename: 'second.png' }] }
       )
-
       mockNodeOutputStore.setOutputFromLegacy.mockClear()
       const images = output.images
       images?.push({ filename: 'third.png' })

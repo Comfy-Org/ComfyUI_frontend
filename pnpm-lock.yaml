@@ -986,6 +986,9 @@ importers:
       shaders:
         specifier: 'catalog:'
         version: 3.1.463(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vue@3.5.41(typescript@6.0.3))
+      shiki:
+        specifier: 'catalog:'
+        version: 4.3.1
       three:
         specifier: 'catalog:'
         version: 0.184.0
