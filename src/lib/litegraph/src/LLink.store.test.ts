@@ -11,7 +11,11 @@ import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { NodeSlotType } from './types/globalEnums'
 
-import { registerLinkTopology, resolveLinkTopology } from './LLink'
+import {
+  registerLinkTopology,
+  resolveLinkTopology,
+  unregisterLinkTopology
+} from './LLink'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -294,6 +298,27 @@ describe('LLink ↔ linkStore integration', () => {
       link.target_slot = 3
     }).not.toThrow()
     expect(link.target_slot).toBe(3)
+  })
+
+  it('discards rejected endpoint patches when a link is unregistered', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in', 'INT')
+    graph.add(a)
+    graph.add(b)
+
+    const link = a.connect(0, b, 0)!
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    link.target_slot = 1
+
+    unregisterLinkTopology(link)
+    link.target_slot = 0
+    expect(registerLinkTopology(graph, link)).toBe(true)
+    link.origin_slot = 0
+
+    expect(link.target_slot).toBe(0)
   })
 
   it('keeps the winner registered when a colliding loser link disconnects', () => {

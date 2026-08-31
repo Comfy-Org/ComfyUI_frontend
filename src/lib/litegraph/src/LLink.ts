@@ -713,6 +713,7 @@ export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
   useLinkStore().deleteLink(link._graphScope, link._state)
   linkByTopology.delete(toRaw(link._state))
+  pendingEndpointPatches.delete(link)
   link._graphScope = undefined
 }
 
