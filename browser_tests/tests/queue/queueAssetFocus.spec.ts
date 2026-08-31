@@ -14,7 +14,7 @@ test.use({
   }
 })
 
-test.describe('Queue asset focus', { tag: '@ui' }, () => {
+test.describe('Queue asset focus', { tag: ['@cloud', '@ui'] }, () => {
   test('loads later asset pages before selecting a queued output', async ({
     comfyPage,
     outputAssetRequests
