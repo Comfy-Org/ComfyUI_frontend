@@ -1,7 +1,7 @@
 'use client'
 
 import { Button, toast } from '@payloadcms/ui'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const hasErrorMessage = (body: unknown): body is { error: string } =>
   typeof body === 'object' &&
@@ -13,11 +13,29 @@ const hasErrorMessage = (body: unknown): body is { error: string } =>
  * Admin dashboard button that triggers a production website redeploy by POSTing
  * to the server-side `/api/rebuild-website` endpoint (which holds the Vercel
  * Deploy Hook secret). Rendered via `admin.components.beforeDashboard`.
+ *
+ * Triggering a production deploy from one click is too easy to do by accident,
+ * so the first click only arms the button and the second fires the rebuild.
  */
 export const RebuildSiteButton = () => {
   const [isRebuilding, setIsRebuilding] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [lastTriggeredAt, setLastTriggeredAt] = useState<Date | null>(null)
+
+  useEffect(() => {
+    if (!isConfirming) {
+      return
+    }
+    const timeout = setTimeout(() => setIsConfirming(false), 5000)
+    return () => clearTimeout(timeout)
+  }, [isConfirming])
 
   const handleClick = async () => {
+    if (!isConfirming) {
+      setIsConfirming(true)
+      return
+    }
+    setIsConfirming(false)
     setIsRebuilding(true)
     try {
       const response = await fetch('/api/rebuild-website', {
@@ -26,6 +44,7 @@ export const RebuildSiteButton = () => {
       })
       if (response.ok) {
         toast.success('Website rebuild triggered.')
+        setLastTriggeredAt(new Date())
         return
       }
       const body: unknown = await response.json().catch(() => null)
@@ -37,11 +56,23 @@ export const RebuildSiteButton = () => {
     }
   }
 
+  const label = isRebuilding
+    ? 'Rebuilding…'
+    : isConfirming
+      ? 'Click again to confirm'
+      : 'Rebuild site'
+
   return (
     <div style={{ marginBottom: '1rem' }}>
       <Button buttonStyle="secondary" disabled={isRebuilding} onClick={handleClick}>
-        {isRebuilding ? 'Rebuilding…' : 'Rebuild site'}
+        {label}
       </Button>
+      {lastTriggeredAt && (
+        <span style={{ marginLeft: '0.75rem' }}>
+          Rebuild triggered at {lastTriggeredAt.toLocaleTimeString()} — the deploy takes a few
+          minutes to go live.
+        </span>
+      )}
     </div>
   )
 }
