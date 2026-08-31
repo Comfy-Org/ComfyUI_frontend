@@ -78,7 +78,7 @@
           hasAnyError && 'ring-4 ring-destructive-background',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
-          isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
+          isDraggingOver && 'bg-primary-500/10 ring-primary-500 ring-4'
         )
       "
       :style="{
