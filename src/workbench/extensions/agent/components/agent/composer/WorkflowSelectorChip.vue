@@ -74,7 +74,13 @@ const filteredTabs = computed(() =>
 // but let Escape bubble to reka's dismiss (a window keydown listener) so the
 // menu still closes from the focused input.
 function onSearchKeydown(event: KeyboardEvent): void {
-  if (event.key !== 'Escape') event.stopPropagation()
+  if (
+    event.key.length === 1 &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey
+  )
+    event.stopPropagation()
 }
 </script>
 
