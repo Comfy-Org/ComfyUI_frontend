@@ -364,14 +364,14 @@ Phase 4.)
   database engine serves many databases — provided every entry is keyed by
   document uid and each slice is conceptually one document's data. Stores
   then take one of two shapes: a sidecar (its own uid-keyed map, evicted at
-  `Close`) or a reactive facade exposing the active document's slice to
-  components. What we stop adding — and migrate away from — is the third
-  shape, the one that produced the bug class: a singleton holding a
-  _single, unkeyed_ copy of "the current document's" data, overwritten in
-  place on every switch. Keyed storage carries its natural obligations —
-  eviction on close, sweeping orphaned entries — which is what D3's close
-  events and the D1 orphan sweep exist to serve; those are requirements of
-  the pattern, not defects in it.
+  `PostClose` after its resources are released) or a reactive facade exposing
+  the active document's slice to components. What we stop adding — and
+  migrate away from — is the third shape, the one that produced the bug
+  class: a singleton holding a _single, unkeyed_ copy of "the current
+  document's" data, overwritten in place on every switch. Keyed storage
+  carries its natural obligations — eviction on close, sweeping orphaned
+  entries — which is what D3's close events and the D1 orphan sweep exist to
+  serve; those are requirements of the pattern, not defects in it.
 - **Legacy globals become read-through facades** over the active document
   (`app.graph`, `app.nodeOutputs`, `window.graph` as a defined property).
   The key format of ecosystem-visible surfaces (bare node ids in
