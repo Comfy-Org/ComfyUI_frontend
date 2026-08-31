@@ -5,6 +5,7 @@ import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 describe('execution output projection', () => {
   it('projects an executed event through canonical state to node preview URLs', () => {
@@ -41,11 +42,13 @@ describe('execution output projection', () => {
     })
 
     const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([node.id])
     expect(store.nodeOutputs[String(node.id)]).toEqual(output)
     expect(app.nodeOutputs[String(node.id)]).toEqual(output)
     expect(onExecuted).toHaveBeenCalledWith(output)
 
-    const [previewUrl] = store.getNodeImageUrls(node) ?? []
+    const [previewUrl] =
+      store.getNodeImageUrlsByExecutionId(executionId, node) ?? []
     const parsedPreviewUrl = new URL(previewUrl, window.location.origin)
     expect(parsedPreviewUrl.pathname).toBe('/api/view')
     expect(parsedPreviewUrl.searchParams.get('filename')).toBe(
