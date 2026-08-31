@@ -27,8 +27,11 @@ export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
-  const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } =
-    useErrorHandling()
+  const {
+    wrapWithErrorHandling,
+    wrapWithErrorHandlingAsync,
+    toastErrorHandler
+  } = useErrorHandling()
 
   /**
    * Validates the palette against the zod schema.
@@ -249,7 +252,7 @@ export const useColorPaletteService = () => {
   const loadColorPalette = async (colorPaletteId: string): Promise<boolean> => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      console.warn(`Color palette ${colorPaletteId} not found`)
+      toastErrorHandler(new Error(`Color palette ${colorPaletteId} not found`))
       return false
     }
 
@@ -279,7 +282,7 @@ export const useColorPaletteService = () => {
   const exportColorPalette = (colorPaletteId: string): boolean => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      console.warn(`Color palette ${colorPaletteId} not found`)
+      toastErrorHandler(new Error(`Color palette ${colorPaletteId} not found`))
       return false
     }
     downloadBlob(

@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -21,7 +22,7 @@ vi.mock('@/scripts/app', () => ({
 describe('color palette missing-palette contracts', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   it('does not apply a missing palette', async () => {
@@ -34,7 +35,15 @@ describe('color palette missing-palette contracts', () => {
 
     expect(store.activePaletteId).toBe(initialPaletteId)
     expect(app.canvas.setDirty).not.toHaveBeenCalled()
-    expect(console.warn).toHaveBeenCalledWith('Color palette missing not found')
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'Color palette missing not found'
+      })
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      new Error('Color palette missing not found')
+    )
   })
 
   it('does not download a missing palette', () => {
@@ -42,7 +51,15 @@ describe('color palette missing-palette contracts', () => {
 
     expect(exported).toBe(false)
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(console.warn).toHaveBeenCalledWith('Color palette missing not found')
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'Color palette missing not found'
+      })
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      new Error('Color palette missing not found')
+    )
   })
 
   it('applies an existing palette', async () => {

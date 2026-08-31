@@ -99,6 +99,9 @@ test.describe(
           message: 'ColorPalette setting should be applied'
         })
         .toBe('unknown')
+      await expect(comfyPage.toast.toastErrors).toContainText(
+        'Color palette unknown not found'
+      )
       await comfyPage.canvasOps.clickEmptySpace()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-badge-unknown-color-palette.png'
