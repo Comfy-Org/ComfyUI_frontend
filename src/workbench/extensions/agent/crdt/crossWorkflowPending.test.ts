@@ -39,8 +39,10 @@ const bridgeState = vi.hoisted(() => {
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
   transportUp: true,
+  attempts: [] as Array<{ workflowId: string; tab: string; ops: Op[] }>,
   sent: [] as Array<{ workflowId: string; tab: string; ops: Op[] }>,
   sendOps: vi.fn((workflowId: string, tab: string, ops: Op[]) => {
+    clientState.attempts.push({ workflowId, tab, ops })
     if (!clientState.transportUp) return false
     clientState.sent.push({ workflowId, tab, ops })
     return true
@@ -169,6 +171,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     setActivePinia(createPinia())
     bridgeState.current = null
     clientState.transportUp = true
+    clientState.attempts = []
     clientState.sent = []
     clientState.sendOps.mockClear()
     devLogState.recordDevEvent.mockClear()
@@ -182,6 +185,8 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 
     enqueue([deleteNode('a-queued')])
     expect(clientState.sent).toHaveLength(0)
+    expect(clientState.attempts).toHaveLength(1)
+    const operationId = clientState.attempts[0].ops[0].op_id
 
     await switchWorkflow(workflowId, 'wf-b')
     clientState.transportUp = true
@@ -194,6 +199,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(clientState.sent).toHaveLength(1)
     expect(clientState.sent[0]).toMatchObject({ workflowId: 'wf-a' })
     expect(clientState.sent[0].ops[0]).toMatchObject({
+      op_id: operationId,
       op: 'delete_node',
       node_id: 'a-queued'
     })
@@ -205,15 +211,20 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const { unmount, workflowId, enqueue, status } = mountFollower('wf-a')
 
     enqueue([deleteNode('a-inflight')])
-    const operationId = clientState.sent[0].ops[0].op_id
+    const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
+    enqueue([deleteNode('b-pending')])
 
     dispatchOpsResult({
       workflowId: 'wf-a',
       ok: true,
-      applied: [operationId],
+      applied: [operationAId],
       skipped: []
     })
+
+    expect(clientState.sent).toHaveLength(2)
+    expect(clientState.sent[1]).toMatchObject({ workflowId: 'wf-b' })
+    const operationBId = clientState.sent[1].ops[0].op_id
 
     // Current risk characterization: result frames carry workflowId, but the
     // composable/sender path correlates by op_id only.
@@ -224,20 +235,27 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(devLogState.recordDevEvent).toHaveBeenCalledWith('doc_ops_result', {
       workflowId: 'wf-a',
       ok: true,
-      applied: [operationId],
+      applied: [operationAId],
       skipped: []
     })
     expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
       'human_ops_settled',
-      expect.objectContaining({
+      {
         state: 'acknowledged',
+        ops: [expect.objectContaining({ op_id: operationAId })],
         result: expect.objectContaining({
           ok: true,
-          applied: [operationId],
+          applied: [operationAId],
           skipped: []
         })
-      })
+      }
     )
+    expect(
+      devLogState.recordDevEvent.mock.calls.filter(
+        ([event]) => event === 'human_ops_settled'
+      )
+    ).toHaveLength(1)
+    expect(operationBId).not.toBe(operationAId)
 
     unmount()
   })
