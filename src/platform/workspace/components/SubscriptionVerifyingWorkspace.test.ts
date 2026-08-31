@@ -41,5 +41,19 @@ describe('SubscriptionVerifyingWorkspace', () => {
         "This payment is already processing and can't be canceled."
       )
     ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel payment' })).toBeNull()
+  })
+
+  it('keeps cancel available when the request never reached the server', () => {
+    renderVerifying({ cancelUnreachable: true })
+
+    expect(
+      screen.getByText(
+        "Couldn't reach the server. Your payment has not been canceled — try again."
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Cancel payment' })
+    ).toBeInTheDocument()
   })
 })

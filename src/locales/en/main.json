@@ -3138,6 +3138,7 @@
       },
       "cancelPayment": "Cancel payment",
       "cancelUnavailable": "This payment is already processing and can't be canceled.",
+      "cancelUnreachable": "Couldn't reach the server. Your payment has not been canceled — try again.",
       "changePaymentMethod": "Change",
       "paymentCanceledNotice": "Payment canceled. Nothing was charged.",
       "verifyTitle": "Verify your payment",
