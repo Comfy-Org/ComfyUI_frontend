@@ -128,6 +128,9 @@ export type RemoteConfig = {
   v1_payment_recovery?: boolean
   churnkey_app_id?: string
   sentry_dsn?: string
+  extension_host?: {
+    module_url: string
+  }
   turnstile_sitekey?: string
   // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).
   // Always funnel it through normalizeTurnstileMode before trusting it as a

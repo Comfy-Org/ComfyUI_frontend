@@ -9,6 +9,7 @@ const config: KnipConfig = {
         '{build,scripts}/**/*.{js,ts}',
         'vitest.matrix.config.mts',
         'src/assets/css/style.css',
+        'public/comfy/api/v2.js',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',

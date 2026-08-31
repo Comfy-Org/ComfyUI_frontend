@@ -18,6 +18,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import { commitWidgetValue } from '@/lib/litegraph/src/widgets/commitWidgetValue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
@@ -452,26 +453,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * @param value The value to set
    * @param options The options for setting the value
    */
-  setValue(
-    value: TWidget['value'],
-    { e, node, canvas }: WidgetEventOptions
-  ): void {
-    const oldValue = this.value
-    if (value === this.value) return
-
-    const v = this.type === 'number' ? Number(value) : value
-    this.value = v
-    if (
-      this.options?.property &&
-      node.properties[this.options.property] !== undefined
-    ) {
-      node.setProperty(this.options.property, v)
-    }
-    const pos = canvas.graph_mouse
-    this.callback?.(this.value, canvas, node, pos, e)
-
-    node.onWidgetChanged?.(this.name ?? '', v, oldValue, this)
-    if (node.graph) node.graph.incrementVersion()
+  setValue(value: TWidget['value'], options: WidgetEventOptions): void {
+    commitWidgetValue(this, value, options)
   }
 
   /**

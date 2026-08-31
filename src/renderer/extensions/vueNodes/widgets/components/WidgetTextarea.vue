@@ -34,7 +34,10 @@
       data-capture-wheel="true"
       @pointerdown.capture.stop="trackFocus"
       @pointermove.capture.stop
-      @pointerup.capture.stop
+      @pointerup.capture.stop="handleSelection"
+      @input="handleInput"
+      @keydown="handleKeyDown"
+      @wheel="handleWheel"
       @contextmenu.capture="handleContextMenu"
     />
     <Button
@@ -59,6 +62,10 @@ import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { dispatchWidgetTextInteraction } from '@/platform/nodeApi/widgetTextInteraction'
+import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -69,14 +76,67 @@ import {
 
 import { WidgetInputBaseClass } from './layout'
 
-const { widget, placeholder = '' } = defineProps<{
+const {
+  widget,
+  nodeId,
+  placeholder = ''
+} = defineProps<{
   widget: SimplifiedWidget<string>
+  nodeId?: NodeId
   placeholder?: string
 }>()
 
 const textAreaRef = useTemplateRef('textAreaRef')
 
 const modelValue = defineModel<string>({ default: '' })
+const canvasStore = useCanvasStore()
+
+function textArea(): HTMLTextAreaElement | undefined {
+  const element = textAreaRef.value?.$el
+  return element instanceof HTMLTextAreaElement ? element : undefined
+}
+
+function hostWidget() {
+  if (nodeId === undefined) return
+  const node = canvasStore.canvas?.graph?.getNodeById(nodeId) ?? undefined
+  return resolveWidgetFromHostNode(node, widget.name)?.widget
+}
+
+function dispatch(
+  kind: 'input' | 'selection' | 'wheel' | 'keydown',
+  event: Event
+): void {
+  const element = textArea()
+  const source = hostWidget()
+  if (!element || !source) return
+  if (kind === 'wheel' && event instanceof WheelEvent) {
+    dispatchWidgetTextInteraction(source, element, kind, event)
+    return
+  }
+  if (kind === 'keydown' && event instanceof KeyboardEvent) {
+    dispatchWidgetTextInteraction(source, element, kind, event)
+    return
+  }
+  if (kind === 'input' || kind === 'selection') {
+    dispatchWidgetTextInteraction(source, element, kind, event)
+  }
+}
+
+function handleInput(event: Event) {
+  dispatch('input', event)
+}
+
+function handleSelection(event: PointerEvent) {
+  dispatch('selection', event)
+}
+
+function handleKeyDown(event: KeyboardEvent) {
+  dispatch('keydown', event)
+}
+
+function handleWheel(event: WheelEvent) {
+  dispatch('wheel', event)
+}
 
 const isFocused = ref(false)
 function trackFocus() {

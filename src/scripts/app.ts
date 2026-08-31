@@ -27,6 +27,11 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { markAppReady, notifyWorkflowLoaded } from '@/platform/nodeApi/appReady'
+import { notifyDefsRefreshed } from '@/platform/nodeApi/defsRegistry'
+import { mayRun } from '@/platform/nodeApi/queueHandle'
+import { installComfyApi } from '@/platform/nodeApi/comfyApi'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -79,6 +84,7 @@ import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/comp
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
+import { installConfiguredExtensionHost } from '@/services/configuredExtensionHost'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
@@ -167,6 +173,11 @@ import {
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { deliverPreview } from '@/platform/nodeApi/defsRegistry'
+import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
+import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
+import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
+import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -909,6 +920,18 @@ export class ComfyApp {
       )) {
         setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
+
+      // Hand the frame to any pack that registered through `b.onPreview`.
+      // Delivered before the url is released, and synchronously, so a listener
+      // must consume it during the call rather than retaining it.
+      const previewNode = this.graph?.getNodeById(toNodeId(displayNodeId))
+      if (previewNode?.type) {
+        deliverPreview(String(previewNode.id), previewNode.type, {
+          blob,
+          url: blobUrl
+        })
+      }
+
       releaseSharedObjectUrl(blobUrl)
     })
 
@@ -963,6 +986,21 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
+
+    // Both before loadExtensions: extension modules run their top level during
+    // that call, so the API must already be reachable *and* fully sourced. The
+    // bridge used to be installed in addApiUpdateHandlers() below, four lines
+    // too late, so every pack subscribing to onNodeMoved at module scope threw.
+    installNodeMoveBridge()
+    installNodeChangeBridge()
+    // Which the API cannot see for itself: ChangeTracker lives up here.
+    provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
+    installComfyApi(() => useCanvasStore().currentGraph, {
+      openWorkflow: async (data) => {
+        await this.loadGraphData(data as ComfyWorkflowJSON)
+      }
+    })
+    await installConfiguredExtensionHost()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -991,6 +1029,8 @@ export class ComfyApp {
     this.rootGraphInternal = graph
     installNodeAddedTelemetry(graph)
     this.canvas = new LGraphCanvas(canvasEl, graph)
+    // Per canvas, not per app: the offer comes off this connector's event bus.
+    installUnplacedLinkBridge(this.canvas)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
@@ -1064,6 +1104,7 @@ export class ComfyApp {
     this.addDropHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
+    markAppReady()
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1534,6 +1575,7 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
+      notifyWorkflowLoaded()
 
       const effectiveShareId =
         shareId ??
@@ -1731,6 +1773,11 @@ export class ComfyApp {
           workflowQueueIntent
         } = this.queueItems.pop()!
         let queuedCount = 0
+        // Reported on promptQueued so a pack can correlate progress with the
+        // run it started, and notice a submission the backend refused.
+        const promptIds: string[] = []
+        const submissions: { promptId: string; nodeCount: number }[] = []
+        let rejectedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
             workflowQueueIntent?.trigger_source
@@ -1741,6 +1788,12 @@ export class ComfyApp {
         )
 
         const isPartialExecution = !!queueNodeIds?.length
+
+        // Packs may hold or cancel a run — a confirmation, a validation. Once
+        // per queued item rather than per batch iteration: the user pressed
+        // Run once and should be asked once.
+        if (!(await mayRun())) continue
+
         for (let i = 0; i < batchCount; i++) {
           let executionContext: ExecutionContext | undefined
           if (telemetry) {
@@ -1824,7 +1877,15 @@ export class ComfyApp {
                 ...workflowExecutionIntent,
                 ...(workflowContext && { workflowContext })
               })
+              api.dispatchCustomEvent('promptRejected', { response: res })
             }
+            if (res.prompt_id) {
+              promptIds.push(res.prompt_id)
+              submissions.push({
+                promptId: res.prompt_id,
+                nodeCount: Object.keys(p.output).length
+              })
+            } else rejectedCount++
             executionErrorStore.recordNodeErrors(res.node_errors ?? null)
             queueResultOverride = null
             try {
@@ -1852,6 +1913,7 @@ export class ComfyApp {
               }
               this.canvas.draw(true, true)
             }
+            if (!res.prompt_id) break
           } catch (error: unknown) {
             telemetry?.trackExecutionOutcome({
               startTime,
@@ -1864,6 +1926,13 @@ export class ComfyApp {
               ...workflowExecutionIntent,
               ...(workflowContext && { workflowContext })
             })
+            if (error instanceof PromptExecutionError) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', {
+                response: error.response,
+                ...(error.status === undefined ? {} : { status: error.status })
+              })
+            }
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
@@ -1971,13 +2040,32 @@ export class ComfyApp {
           await this.ui.queue.update()
         }
 
+        // Guarded, and it must stay guarded: `promptQueued` IS `afterQueued`,
+        // which runs only for an iteration that got that far, and four packs
+        // have converted onto it expecting exactly that. A batch counter that
+        // also counted failed submissions would advance the batch when nothing
+        // ran.
         if (queuedCount > 0) {
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,
-            requestId
+            requestId,
+            promptIds,
+            submissions,
+            rejectedCount
           })
         }
+
+        // The other fact, which nothing reported: the attempt is over, whether
+        // or not anything started. `promptQueueing` fires unconditionally, so
+        // without this its partner never arrives on a failed submission — a
+        // pack that mutated the graph to build the prompt was left holding it
+        // open, and the queuing banner had nothing to resolve it.
+        api.dispatchCustomEvent('promptQueueAttemptEnded', {
+          requestId,
+          queued: queuedCount,
+          rejected: rejectedCount
+        })
       }
     } finally {
       this.processingQueue = false
@@ -2539,6 +2627,7 @@ export class ComfyApp {
           life: 1000
         })
       }
+      notifyDefsRefreshed()
     } catch (error) {
       if (this.vueAppReady) {
         useToastStore().add({

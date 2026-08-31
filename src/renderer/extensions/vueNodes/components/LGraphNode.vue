@@ -38,6 +38,9 @@
     :inert="isGhostPlacing"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
+    @pointerenter="dispatchHover($event, true)"
+    @pointerleave="dispatchHover($event, false)"
+    @dblclick="dispatchDoubleClick"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
@@ -75,6 +78,7 @@
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
+          isSecureNode && 'ring-secure-outline ring-2',
           hasAnyError && 'ring-4 ring-destructive-background',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
@@ -257,8 +261,11 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -327,6 +334,7 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
+const nodeDefStore = useNodeDefStore()
 const colorPaletteStore = useColorPaletteStore()
 const isLightTheme = computed(
   () => !!colorPaletteStore.completedActivePalette.light_theme
@@ -362,6 +370,15 @@ const showErrorsTabEnabled = computed(() =>
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
+
+// On Cloud every node that is not part of the core app runs in a sandboxed
+// guest — the curated custom-node packs. Mark them so the boundary is visible
+// on the graph, not just inferable from the node's origin.
+const isSecureNode = computed(() => {
+  if (!isCloud) return false
+  const nodeDef = nodeDefStore.nodeDefsByName[nodeData.type]
+  return !!nodeDef && !nodeDef.isCoreNode
+})
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
 const bypassed = computed(
@@ -626,6 +643,39 @@ function resolveLGraphNode() {
 }
 
 const lgraphNode = computed(resolveLGraphNode)
+
+// The legacy canvas dispatches these node callbacks; this renderer did not,
+// so an extension using them worked under one renderer and silently did
+// nothing under the other.
+//
+// The event is passed through with canvasX/canvasY attached, because that is
+// what the legacy canvas hands these callbacks. Passing a bare DOM event — or
+// nothing — would make an extension reading e.canvasX throw here while working
+// there, which is worse than the callback never firing.
+function withGraphCoords(event: PointerEvent | MouseEvent) {
+  const [x, y] = LGraphCanvas.active_canvas?.graph_mouse ?? [0, 0]
+  return Object.assign(event, { canvasX: x, canvasY: y }) as CanvasPointerEvent
+}
+
+function dispatchHover(event: PointerEvent, hovering: boolean) {
+  const node = lgraphNode.value
+  if (!node) return
+  const canvasEvent = withGraphCoords(event)
+  if (hovering) node.onMouseEnter?.(canvasEvent)
+  else node.onMouseLeave?.(canvasEvent)
+}
+
+function dispatchDoubleClick(event: MouseEvent) {
+  const node = lgraphNode.value
+  if (!node) return
+  const canvasEvent = withGraphCoords(event)
+  // Node-local, as the legacy canvas passes it.
+  node.onDblClick?.(
+    canvasEvent,
+    [canvasEvent.canvasX - node.pos[0], canvasEvent.canvasY - node.pos[1]],
+    LGraphCanvas.active_canvas as never
+  )
+}
 
 // TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.

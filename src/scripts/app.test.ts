@@ -18,7 +18,7 @@ import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { ComfyApp, app as singletonApp } from './app'
-import { createNode } from '@/utils/litegraphUtil'
+import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -813,6 +813,33 @@ describe('ComfyApp', () => {
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
 
+    it('reports that a refused attempt ended, without claiming it queued', async () => {
+      // promptQueueing fires whatever happens, and nothing reported the other
+      // end of it. promptQueued cannot: it means afterQueued, and four packs
+      // have converted onto it expecting a counter that only advances when a
+      // run actually started. A pack bracketing a temporary mutation around a run was left
+      // holding the graph open after a failed submission, and the "queuing"
+      // banner stayed up for good.
+      prepareEmptyPromptQueue()
+      const dispatch = vi.mocked(api.dispatchCustomEvent)
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new Error('backend unreachable')
+      )
+
+      await app.queuePrompt(0).catch(() => undefined)
+
+      expect(dispatch).toHaveBeenCalledWith('promptQueueing', expect.anything())
+      expect(dispatch).toHaveBeenCalledWith(
+        'promptQueueAttemptEnded',
+        expect.objectContaining({ queued: 0 })
+      )
+      // And promptQueued stays unsent, because nothing was queued.
+      expect(dispatch).not.toHaveBeenCalledWith(
+        'promptQueued',
+        expect.anything()
+      )
+    })
+
     it('stores workflow telemetry metadata for every accepted batch submission', async () => {
       prepareEmptyPromptQueue()
       const registry = new TelemetryRegistry()
@@ -856,6 +883,38 @@ describe('ComfyApp', () => {
       } finally {
         setTelemetryRegistry(null)
       }
+    })
+
+    it('reports executable node counts for accepted submissions', async () => {
+      prepareEmptyPromptQueue()
+      vi.mocked(app.graphToPrompt).mockResolvedValue({
+        output: {
+          '1': {
+            class_type: 'LoadImage',
+            inputs: {},
+            _meta: { title: 'Load Image' }
+          },
+          '2': {
+            class_type: 'PreviewImage',
+            inputs: { images: ['1', 0] },
+            _meta: { title: 'Preview Image' }
+          }
+        },
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      await app.queuePrompt(0)
+
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'promptQueued',
+        expect.objectContaining({
+          submissions: [{ promptId: 'job-1', nodeCount: 2 }]
+        })
+      )
     })
 
     it('tracks a resolved prompt rejection at the submission stage', async () => {
@@ -940,6 +999,73 @@ describe('ComfyApp', () => {
         now.mockRestore()
         setTelemetryRegistry(null)
       }
+    })
+
+    it('reports a rejected prompt with its validation response', async () => {
+      prepareEmptyPromptQueue()
+      const response = {
+        error: {
+          type: 'prompt_outputs_failed_validation',
+          message: 'Prompt outputs failed validation',
+          details: 'See node errors'
+        },
+        node_errors: {
+          '12': {
+            class_type: 'KSampler',
+            dependent_outputs: [],
+            errors: [
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing: positive',
+                details: '',
+                extra_info: { input_name: 'positive' }
+              }
+            ]
+          }
+        }
+      }
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(response, 400)
+      )
+
+      await app.queuePrompt(0)
+
+      const dispatch = vi.mocked(api.dispatchCustomEvent)
+      expect(dispatch).toHaveBeenCalledWith('promptRejected', {
+        response,
+        status: 400
+      })
+      expect(dispatch).toHaveBeenCalledWith(
+        'promptQueueAttemptEnded',
+        expect.objectContaining({ queued: 0, rejected: 1 })
+      )
+    })
+
+    it('does not advance a run when the backend resolves without a prompt id', async () => {
+      prepareEmptyPromptQueue()
+      const response = {
+        error: {
+          type: 'prompt_no_outputs',
+          message: 'Prompt has no outputs',
+          details: ''
+        }
+      }
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue(response)
+
+      await app.queuePrompt(0, 2)
+
+      const dispatch = vi.mocked(api.dispatchCustomEvent)
+      expect(api.queuePrompt).toHaveBeenCalledOnce()
+      expect(dispatch).toHaveBeenCalledWith('promptRejected', { response })
+      expect(dispatch).toHaveBeenCalledWith(
+        'promptQueueAttemptEnded',
+        expect.objectContaining({ queued: 0, rejected: 1 })
+      )
+      expect(dispatch).not.toHaveBeenCalledWith(
+        'promptQueued',
+        expect.anything()
+      )
+      expect(executeWidgetsCallback).not.toHaveBeenCalled()
     })
 
     it('tracks prompt construction failures at the submission stage', async () => {

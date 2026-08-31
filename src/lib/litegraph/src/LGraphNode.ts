@@ -169,7 +169,12 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
+    // `serializeWorkflowValue` is the saved-file counterpart of
+    // `serializeValue`, which only the prompt builder consults. A widget that
+    // sets neither serialises its own value, as it always has.
+    const value = widget.serializeWorkflowValue
+      ? widget.serializeWorkflowValue()
+      : widget.value
     const serialisedValue =
       value != null && typeof value === 'object'
         ? JSON.parse(JSON.stringify(value))
@@ -656,6 +661,15 @@ export class LGraphNode
   declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
   declare isVirtualNode?: boolean
+  /**
+   * A virtual node whose outputs the prompt builder's RESOLUTION pass
+   * substitutes. Execution-time link walking must stop at this node and
+   * report it as the origin — the legacy virtual shapes below
+   * (`resolveVirtualOutput`, same-slot `getInputLink` pass-through) cannot
+   * express a computed source like Get/Set, and guessing with them silently
+   * drops the consumer's input.
+   */
+  declare resolutionOwned?: boolean
   applyToGraph?(extraLinks?: LLink[]): void
 
   isSubgraphNode(): this is SubgraphNode {
@@ -1165,6 +1179,12 @@ export class LGraphNode
         )
       }
 
+      // Main restores by widget NAME through the widget-value store, with a
+      // COMPACTED positional index as the fallback — and `serialiseWidgetValues`
+      // writes compacted too (`positional.push`). Our branch carried an
+      // indexed-read fix for a write-indexed/read-compacted mismatch; that
+      // mismatch does not exist here, so the fix is superseded rather than
+      // dropped. Re-introducing it would make the read disagree with the write.
       let positionalIndex = 0
       for (const widget of this.widgets) {
         if (widget.serialize === false) continue
@@ -1235,7 +1255,13 @@ export class LGraphNode
     if (state.properties) o.properties = LiteGraph.cloneObject(state.properties)
 
     const { widgets } = this
-    if (widgets?.length && this.serialize_widgets)
+    // Guarded on `some(serialize !== false)` rather than `length`: a node whose
+    // widgets ALL opt out used to emit an empty `widgets_values`, which load
+    // treats as a no-op but which still changes the saved bytes — mounting a
+    // canvas widget was enough to make it appear on a node that previously had
+    // none. `serialiseWidgetValues` skips those widgets internally, so without
+    // this guard it still returns an empty pair and assigns it.
+    if (widgets?.some((w) => w.serialize !== false) && this.serialize_widgets)
       Object.assign(o, serialiseWidgetValues(widgets))
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
@@ -3130,8 +3156,12 @@ export class LGraphNode
         output.type === LiteGraph.EVENT &&
         !LiteGraph.allow_multi_output_for_events
       ) {
+        // Balanced here rather than left for connectSlots to close: that only
+        // worked while its afterChange was unconditional, which is the bug
+        // above. Nesting is fine — the tracker counts.
         graph.beforeChange()
         this.disconnectOutput(slot)
+        graph.afterChange()
       }
     }
 
@@ -3196,9 +3226,18 @@ export class LGraphNode
       return null
 
     const replacingLink = inputLink(graph, inputNode.id, inputIndex)
-    if (replacingLink) {
-      graph.beforeChange()
-    }
+
+    // Everything below mutates, and everything above returns without touching
+    // anything, so this is where the undo transaction starts. It must open
+    // unconditionally: `afterChange` at the end of this method always ran, so
+    // connecting to an EMPTY input closed a transaction that was never opened.
+    // ChangeTracker.afterChange is `if (!--this.changeCount)`, with no floor —
+    // one such connection drove the count to -1, and from then on no
+    // before/after pair could ever return it to zero. Undo stopped grouping for
+    // the rest of the session, and `graph.batch()` started producing more undo
+    // steps rather than one, because a count of 0 mid-batch no longer suppressed
+    // the per-mutation captures.
+    graph.beforeChange()
 
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
@@ -3216,7 +3255,7 @@ export class LGraphNode
     )
 
     if (!replaceLinkTopology(graph, replacingLink, link)) {
-      if (replacingLink) graph.afterChange()
+      graph.afterChange()
       return
     }
 
