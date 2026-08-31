@@ -118,4 +118,16 @@ describe('OfferGrid01', () => {
     ).toBeNull()
     expect(screen.getAllByRole('article')).toHaveLength(2)
   })
+
+  it('omits offer labels when they are not provided', () => {
+    renderOffers({
+      featuredOffer: { ...requiredProps.featuredOffer, label: undefined },
+      offers: [{ ...requiredProps.offers[0], label: undefined }]
+    })
+
+    expect(screen.queryByText('LEAD OFFER')).toBeNull()
+    expect(screen.queryByText('FOR TEAMS')).toBeNull()
+    expect(screen.getByText('ComfyUI Managed Builds')).toBeTruthy()
+    expect(screen.getByText('Team plans')).toBeTruthy()
+  })
 })

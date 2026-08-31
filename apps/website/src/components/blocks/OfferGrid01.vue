@@ -17,7 +17,7 @@ type Cta = {
 
 interface OfferGridItem {
   id: string
-  label: string
+  label?: string
   title: string
   description: string
   cta: Cta
@@ -61,12 +61,18 @@ const {
           class="bg-primary-comfy-plum flex min-h-96 flex-col rounded-4xl p-8 md:col-span-2 lg:p-10 xl:row-span-2"
         >
           <p
+            v-if="featuredOffer.label"
             class="text-primary-comfy-yellow text-xs font-bold tracking-[0.18em] uppercase"
           >
             {{ featuredOffer.label }}
           </p>
           <h3
-            class="mt-6 max-w-2xl text-4xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
+            :class="
+              cn(
+                'max-w-2xl text-4xl font-light tracking-tight text-primary-warm-white lg:text-5xl',
+                featuredOffer.label && 'mt-6'
+              )
+            "
           >
             {{ featuredOffer.title }}
           </h3>
@@ -95,12 +101,18 @@ const {
           class="flex min-h-64 flex-col rounded-4xl bg-primary-comfy-ink p-8 last:md:col-span-2 last:xl:col-span-2"
         >
           <p
+            v-if="offer.label"
             class="text-primary-comfy-yellow text-xs font-bold tracking-[0.18em] uppercase"
           >
             {{ offer.label }}
           </p>
           <h3
-            class="mt-5 text-2xl font-light tracking-tight text-primary-warm-white lg:text-3xl"
+            :class="
+              cn(
+                'text-2xl font-light tracking-tight text-primary-warm-white lg:text-3xl',
+                offer.label && 'mt-5'
+              )
+            "
           >
             {{ offer.title }}
           </h3>
