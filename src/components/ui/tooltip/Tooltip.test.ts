@@ -119,9 +119,18 @@ describe('Tooltip', () => {
     await user.pointer({ keys: '[MouseLeft>]', target: outside })
     first.unmount()
     renderTooltip()
-    await fireEvent.focus(screen.getByRole('button', { name: 'Trigger' }))
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+    await fireEvent.focus(trigger)
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+    await vi.advanceTimersByTimeAsync(1000)
+    await fireEvent.blur(trigger)
+    await fireEvent.focus(trigger)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+    await user.pointer({ target: trigger, coords: { x: 10, y: 10 } })
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful text')
     outside.remove()
   })
 
