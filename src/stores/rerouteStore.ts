@@ -111,15 +111,7 @@ export const useRerouteStore = defineStore('reroute', () => {
   }
 
   /**
-   * Registers a reroute's chain state. The first registration for a reroute id
-   * wins; a _different_ chain object claiming an already-registered id stays
-   * detached and returns `undefined`, while re-registering the same raw chain
-   * object under the same owning graph is idempotent and returns the
-   * incumbent. See "Amendment
-   * (2026-08-23): registration and collision contract" in
-   * `docs/adr/0008-entity-component-system.md`.
-   * @returns The store-held reactive state — callers keep it as their live
-   * state object so later field writes are tracked.
+   * @returns The registered chain, or `undefined` when its ID is occupied.
    */
   function registerReroute(
     scope: GraphScope,

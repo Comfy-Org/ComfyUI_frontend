@@ -220,51 +220,11 @@ mutation with no name.
 
 ### Amendment (2026-08-23): merge-boundary reconciliation constraint
 
-**Open question resolved.** Can duplicate-entity-ID reconciliation live at the
-CRDT merge boundary while the in-memory registries keep a strict no-collision
-invariant? **Yes — and that is the required split of responsibility.**
-
-**What the in-memory registries guarantee.** Each dedicated store
-(`nodeDataStore`, `widgetValueStore`, `linkStore`, `rerouteStore`) enforces
-its own collision contract at registration time:
-
-- `nodeDataStore.registerNode` is id-keyed (a `Map<NodeId, NodeState>` per
-  root graph), with an identity escape: re-registering the _same_ raw
-  `NodeState` object under the same owning graph returns the incumbent. A
-  _different_ state object under an occupied id is rejected
-  (`undefined` return) with no store-level diagnostic — rejection is control
-  flow for the remint loop in `attachNodeToStores`, which resolves the
-  collision and owns the diagnostic. Re-registering an object already
-  registered under a different root graph asserts (`registerNodeState`), and
-  unregistering a state the store does not hold asserts
-  (`unregisterNodeState`): those are lifecycle corruption, not collisions.
-- `widgetValueStore.registerWidget` is structurally keyed
-  (`graphId:nodeId:name`) and type-discriminated: same `WidgetId` and same
-  `type` returns the existing state; same `WidgetId` with a different `type`
-  overwrites, keeping the newcomer (the widget has changed kind). Its
-  `console.warn` fires only on an un-keyable id, never on this path.
-- `linkStore.registerLink` rejects a duplicate **link id** first
-  (`console.error`, `undefined` return). The rejection applies to a
-  _different_ topology object claiming an already-registered id;
-  re-registering the same raw topology object under the same owning graph is
-  idempotent and returns the incumbent. The per-target-slot rule is
-  secondary and applies only to non-floating topologies: a second non-floating
-  topology claiming an occupied target input slot is rejected
-  (`console.error`), while floating links (either endpoint unassigned) may
-  share an input slot by design.
-- `rerouteStore.registerReroute` is first-registration-wins per chain ID: a
-  duplicate chain ID logs a `console.error` and leaves the live registration
-  untouched (`undefined` return); re-registering the same raw chain object
-  under the same owning graph returns the incumbent.
-
-None of these stores resolve conflicts between two independently-created
-entities that happen to share an ID. They assume incoming IDs are already
-deduplicated. If two concurrent operations created a node with ID `42`, the
-stores keep whichever arrived first and reject the other; the node path
-surfaces the conflict at its recovery site (the remint loop), the link and
-reroute paths at the store (`console.error`), and the widget path resolves it
-structurally. See ADR-0008 "Amendment (2026-08-23): registration and collision
-contract" for the full per-store contract and its rationale.
+In-memory registration and collision recovery follow
+[ADR 0016](0016-entity-registration-collision-and-recovery-boundaries.md).
+The CRDT boundary must reconcile distributed conflicts over stable entity
+identity keys before registration. Registries with recyclable structural keys
+retain their documented local policies.
 
 **What the CRDT merge boundary must guarantee.** Before any merged entity set
 is committed to the in-memory registries, the Yjs merge layer is responsible

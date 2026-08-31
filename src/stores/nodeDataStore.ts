@@ -43,13 +43,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   }
 
   /**
-   * Registers a node's shell state. The first registration for a node id wins
-   * — a duplicate stays detached instead of clobbering the incumbent — and
-   * re-registering the already-registered state under the same owner is a
-   * no-op. See "Amendment (2026-08-23): registration and collision contract"
-   * in `docs/adr/0008-entity-component-system.md`.
-   * @returns The store-held reactive state when `state` holds the registration
-   * afterwards, otherwise `undefined`.
+   * @returns The registered state, or `undefined` when the node ID is occupied.
    */
   function registerNode(
     graphScope: GraphScope,
