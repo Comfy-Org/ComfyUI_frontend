@@ -1366,7 +1366,7 @@ describe('AgentPanelRoot draft binding', () => {
     vi.mocked(validateComfyWorkflow).mockClear()
   })
 
-  it('binds the draft to the workflow id from the message ack and reloads the canvas on a patch', async () => {
+  it('binds the draft to the workflow id from the message ack and adopts only its patches', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes('/messages')) {
         return new Response(JSON.stringify(ack('wf-42', 'm-1')), {
@@ -1380,6 +1380,9 @@ describe('AgentPanelRoot draft binding', () => {
 
     await renderAndSend('build a graph')
 
+    const draftStore = useAgentDraftStore()
+    expect(draftStore.workflowId).toBe('wf-42')
+
     const graph = { version: 0.4, nodes: [{ id: 1 }] }
     ws.emit('draft_patch', {
       workflow_id: 'other',
@@ -1387,6 +1390,7 @@ describe('AgentPanelRoot draft binding', () => {
       version: 1,
       content: {}
     })
+    expect(draftStore.version).toBeNull()
     ws.emit('draft_patch', {
       workflow_id: 'wf-42',
       base_version: 0,
@@ -1394,13 +1398,13 @@ describe('AgentPanelRoot draft binding', () => {
       content: graph
     })
 
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
-    )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(draftStore.version).toBe(1))
+    expect(draftStore.content).toEqual(graph)
+    // Content sync is the CRDT follower's job: a patch never reloads the canvas.
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('surfaces one workflow error per rejection streak and recovers on a valid draft', async () => {
+  it('adopts streamed patches without validating or surfacing apply errors', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes('/messages')) {
         return new Response(JSON.stringify(ack('wf-42', 'm-1')), {
@@ -1414,20 +1418,9 @@ describe('AgentPanelRoot draft binding', () => {
       })
     })
     vi.stubGlobal('fetch', fetchMock)
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
     executionErrors.lastPromptError = null
     executionErrors.showErrorOverlay.mockClear()
-    vi.mocked(validateComfyWorkflow)
-      .mockImplementationOnce(async (_content, onError) => {
-        onError?.('rejected: version required')
-        return null
-      })
-      .mockImplementationOnce(async (_content, onError) => {
-        onError?.('rejected: version required')
-        return null
-      })
 
     await renderAndSend('build a graph')
 
@@ -1436,40 +1429,21 @@ describe('AgentPanelRoot draft binding', () => {
         workflow_id: 'wf-42',
         base_version: version - 1,
         version,
-        content: { nodes: [{ id: 1 }] }
+        content: { nodes: [{ id: version }] }
       })
 
+    const draftStore = useAgentDraftStore()
     patch(1)
-    await vi.waitFor(() =>
-      expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(1)
-    )
+    await vi.waitFor(() => expect(draftStore.version).toBe(1))
     patch(2)
-    await vi.waitFor(() =>
-      expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(2)
-    )
+    await vi.waitFor(() => expect(draftStore.version).toBe(2))
+
+    expect(vi.mocked(validateComfyWorkflow)).not.toHaveBeenCalled()
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
-    expect(executionErrors.lastPromptError).toMatchObject({
-      type: 'agent_draft_apply_failed',
-      details: 'rejected: version required'
-    })
-
-    patch(3)
-    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
-
-    vi.mocked(validateComfyWorkflow).mockImplementationOnce(
-      async (_content, onError) => {
-        onError?.('rejected again')
-        return null
-      }
-    )
-    patch(4)
-    await vi.waitFor(() =>
-      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(2)
-    )
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
   })
 
-  it('surfaces a loadGraphData rejection as the same workflow error', async () => {
+  it('ignores a patch at or behind the adopted version', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) =>
@@ -1484,15 +1458,18 @@ describe('AgentPanelRoot draft binding', () => {
             })
       )
     )
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    vi.mocked(app.loadGraphData)
-      .mockClear()
-      .mockRejectedValueOnce(new Error('graph configure exploded'))
-    vi.mocked(validateComfyWorkflow).mockClear()
-    executionErrors.lastPromptError = null
-    executionErrors.showErrorOverlay.mockClear()
 
     await renderAndSend('build a graph')
+
+    const draftStore = useAgentDraftStore()
+    const adopted = { version: 0.4, nodes: [{ id: 2 }] }
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 1,
+      version: 2,
+      content: adopted
+    })
+    await vi.waitFor(() => expect(draftStore.version).toBe(2))
 
     ws.emit('draft_patch', {
       workflow_id: 'wf-42',
@@ -1500,14 +1477,15 @@ describe('AgentPanelRoot draft binding', () => {
       version: 1,
       content: { version: 0.4, nodes: [{ id: 1 }] }
     })
-
-    await vi.waitFor(() =>
-      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
-    )
-    expect(executionErrors.lastPromptError).toMatchObject({
-      type: 'agent_draft_apply_failed',
-      details: 'graph configure exploded'
+    ws.emit('draft_patch', {
+      workflow_id: 'wf-42',
+      base_version: 1,
+      version: 2,
+      content: { version: 0.4, nodes: [{ id: 9 }] }
     })
+
+    expect(draftStore.version).toBe(2)
+    expect(draftStore.content).toEqual(adopted)
   })
 })
 
@@ -1550,7 +1528,7 @@ describe('AgentPanelRoot auto fit after generation', () => {
     )
   }
 
-  it('frames the whole graph in the visible canvas when the turn finishes', async () => {
+  it('leaves the view alone when the turn finishes; the follower owns the fit', async () => {
     const animateToBounds = stageFitCanvas()
     mockAck()
 
@@ -1561,15 +1539,13 @@ describe('AgentPanelRoot auto fit after generation', () => {
       version: 1,
       content: { version: 0.4, nodes: [{ id: 1 }] }
     })
-    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
-    expect(animateToBounds).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
+    expect(app.loadGraphData).not.toHaveBeenCalled()
 
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
 
-    await vi.waitFor(() => expect(animateToBounds).toHaveBeenCalledTimes(1))
-    expect(animateToBounds).toHaveBeenCalledWith([-10, -10, 420, 320], {
-      viewport: [0, 0, 1500, 1000]
-    })
+    expect(animateToBounds).not.toHaveBeenCalled()
   })
 
   it('does not move the view when the turn finishes without a draft', async () => {
@@ -1583,7 +1559,7 @@ describe('AgentPanelRoot auto fit after generation', () => {
     expect(animateToBounds).not.toHaveBeenCalled()
   })
 
-  it('fits immediately when the draft lands after the turn already finished', async () => {
+  it('leaves the view alone when the draft lands after the turn finished', async () => {
     const animateToBounds = stageFitCanvas()
     mockAck()
 
@@ -1598,7 +1574,9 @@ describe('AgentPanelRoot auto fit after generation', () => {
       content: { version: 0.4, nodes: [{ id: 1 }] }
     })
 
-    await vi.waitFor(() => expect(animateToBounds).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
+    expect(animateToBounds).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 })
 
@@ -1619,7 +1597,7 @@ describe('AgentPanelRoot agent auto-layout', () => {
     )
   }
 
-  it('arranges the layered layout when a draft adds nodes', async () => {
+  it('never arranges the canvas for a draft patch', async () => {
     mockAck()
     await renderAndSend('build a graph')
 
@@ -1630,11 +1608,12 @@ describe('AgentPanelRoot agent auto-layout', () => {
       content: { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] }
     })
 
-    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
-    expect(appMock.graph.arrange).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(appMock.graph.arrange).not.toHaveBeenCalled()
   })
 
-  it('skips the arrange when a later draft brings no new nodes', async () => {
+  it('adopts successive patches for a bound tab without arranging', async () => {
     const tab: FakeTab = {
       path: 'workflows/current.json',
       directory: 'workflows',
@@ -1649,33 +1628,25 @@ describe('AgentPanelRoot agent auto-layout', () => {
     await renderAndSend('build a graph')
     useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
 
+    const draftStore = useAgentDraftStore()
     ws.emit('draft_patch', {
       workflow_id: 'wf-42',
       base_version: 0,
       version: 1,
       content: { version: 0.4, nodes: [{ id: 1 }] }
     })
-    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
-    expect(appMock.graph.arrange).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(draftStore.version).toBe(1))
 
-    appMock.graph.nodes = [{ id: 1 }]
     ws.emit('draft_patch', {
       workflow_id: 'wf-42',
       base_version: 1,
       version: 2,
-      content: { version: 0.4, nodes: [{ id: 1 }] }
-    })
-    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
-    expect(appMock.graph.arrange).toHaveBeenCalledTimes(1)
-
-    ws.emit('draft_patch', {
-      workflow_id: 'wf-42',
-      base_version: 2,
-      version: 3,
       content: { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] }
     })
-    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(3))
-    expect(appMock.graph.arrange).toHaveBeenCalledTimes(2)
+    await vi.waitFor(() => expect(draftStore.version).toBe(2))
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(appMock.graph.arrange).not.toHaveBeenCalled()
   })
 })
 
@@ -2444,7 +2415,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it('marks a backgrounded bound tab modified without touching the canvas', async () => {
+  it('marks the backgrounded bound tab modified on turn completion, never on a patch', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
@@ -2455,13 +2426,19 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
 
     patch(1, { version: 0.4, nodes: [{ id: 3 }] })
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
     const activity = useWorkflowTabActivityStore()
+    expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
+      false
+    )
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await vi.waitFor(() =>
       expect(activity.unseenModifiedPaths.has('workflows/current.json')).toBe(
         true
       )
     )
-    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('clears the spinner and creating flags when the panel unmounts mid-turn', async () => {
@@ -2752,7 +2729,7 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
-  it("sends the active tab's saved workflow id and applies patches in place", async () => {
+  it("sends the active tab's saved workflow id and adopts patches without applying", async () => {
     const tab = makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
 
@@ -2763,37 +2740,24 @@ describe('AgentPanelRoot workflow binding', () => {
     tab.isModified = false
     const graph = { version: 0.4, nodes: [{ id: 1 }] }
     patch(1, graph)
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-    await vi.waitFor(() =>
-      expect(workflowService.saveWorkflow).toHaveBeenCalledWith(tab)
-    )
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(workflowService.saveWorkflow).not.toHaveBeenCalled()
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
-    expect(vi.mocked(validateComfyWorkflow)).toHaveBeenCalledTimes(1)
-    expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
-      workflow_id: 'wf-42',
-      target: 'existing_tab'
-    })
+    expect(vi.mocked(validateComfyWorkflow)).not.toHaveBeenCalled()
   })
 
-  it('records nothing as applied when loadGraphData resolves false', async () => {
+  it('a patch fires no applied telemetry and autosaves nothing', async () => {
     const tab = makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('add an upscaler')
 
     tab.isModified = false
-    vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
     const graph = { version: 0.4, nodes: [{ id: 1 }] }
     patch(1, graph)
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
 
-    // Without the guard a failed load still records lastApplied, fires
-    // applied-telemetry, and autosaves the unloaded canvas over the draft.
     expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
     expect(workflowService.saveWorkflow).not.toHaveBeenCalled()
   })
@@ -2890,126 +2854,82 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(activity.editingTabPath).toBeNull()
   })
 
-  it('autosaves a minted tab so the next patch applies in place', async () => {
+  it('a patch mints no tab; tabs come only from agent_active_tab', async () => {
     mockMessagesEndpoint('wf-42')
     const mintedPath = 'workflows/Unsaved Workflow.json'
-    vi.mocked(app.loadGraphData).mockImplementation(
-      async (_graph, _clean, _restore, workflowTab) => {
-        if (workflowTab !== null) return true
-        const minted: FakeTab = {
-          path: mintedPath,
-          directory: 'workflows',
-          filename: 'Unsaved Workflow',
-          isTemporary: true,
-          isModified: true,
-          activeState: null
-        }
-        hostStores.workflow.tabs.set(minted.path, minted)
-        hostStores.workflow.activeWorkflow = minted
-        return true
-      }
-    )
 
     await renderAndSend('build me a workflow')
 
+    const draftStore = useAgentDraftStore()
     patch(1, { version: 0.4, nodes: [{ id: 1 }] })
-    await vi.waitFor(() => {
-      expect(hostStores.workflow.tabs.get(mintedPath)?.isModified).toBe(false)
-    })
-    const minted = hostStores.workflow.tabs.get(mintedPath)
-    expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(minted, {
-      filename: 'Unsaved Workflow'
-    })
-    expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
-      workflow_id: 'wf-42',
-      target: 'new_tab'
-    })
+    await vi.waitFor(() => expect(draftStore.version).toBe(1))
+    patch(2, { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] })
+    await vi.waitFor(() => expect(draftStore.version).toBe(2))
 
-    const graph = { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] }
-    patch(2, graph)
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, minted)
-    )
+    expect(hostStores.workflow.tabs.get(mintedPath)).toBeUndefined()
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('a failed autosave keeps the applied draft and surfaces no apply error', async () => {
-    const tab = makeTab('wf-42')
+  it('a failed autosave still binds the minted tab and surfaces no apply error', async () => {
+    makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     executionErrors.showErrorOverlay.mockClear()
-    workflowService.saveWorkflow.mockRejectedValueOnce(new Error('offline'))
+    workflowService.saveWorkflowAs.mockRejectedValueOnce(new Error('offline'))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await renderAndSend('add an upscaler')
 
-    tab.isModified = false
-    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
-    await vi.waitFor(() =>
-      expect(workflowService.saveWorkflow).toHaveBeenCalledWith(tab)
-    )
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+    const mintedPath = 'workflows/Video test.json'
     await vi.waitFor(() =>
       expect(consoleError).toHaveBeenCalledWith(
-        `Agent draft autosave failed for ${tab.path}:`,
+        `Agent draft autosave failed for ${mintedPath}:`,
         expect.any(Error)
       )
     )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() =>
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-77')).toBe(
+        mintedPath
+      )
+    )
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(3))
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
-    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(tab.path)
   })
 
-  it('autosave dodges an occupied app-mode save path and rebinds the renamed tab', async () => {
+  it('minting dodges an occupied save path and binds the renamed tab', async () => {
     mockMessagesEndpoint('wf-42')
     const occupant: FakeTab = {
-      path: 'workflows/Unsaved Workflow.app.json',
+      path: 'workflows/Video test.json',
       directory: 'workflows',
-      filename: 'Unsaved Workflow',
+      filename: 'Video test',
       isTemporary: false,
       isModified: false,
       activeState: null
     }
     hostStores.workflow.tabs.set(occupant.path, occupant)
-    const mintedPath = 'workflows/Unsaved Workflow.json'
-    const renamedPath = 'workflows/Unsaved Workflow (2).app.json'
-    workflowService.saveWorkflowAs.mockImplementationOnce(
-      async (tab, options) => {
-        const renamed = hostStores.workflow.tabs.get(tab.path)
-        hostStores.workflow.tabs.delete(tab.path)
-        tab.isTemporary = false
-        tab.isModified = false
-        tab.path = `workflows/${options?.filename}.app.json`
-        if (renamed) hostStores.workflow.tabs.set(tab.path, renamed)
-        return true
-      }
-    )
-    vi.mocked(app.loadGraphData).mockImplementation(
-      async (_graph, _clean, _restore, workflowTab) => {
-        if (workflowTab !== null) return true
-        const minted: FakeTab = {
-          path: mintedPath,
-          directory: 'workflows',
-          filename: 'Unsaved Workflow',
-          isTemporary: true,
-          isModified: true,
-          activeState: null,
-          initialMode: 'app'
-        }
-        hostStores.workflow.tabs.set(minted.path, minted)
-        hostStores.workflow.activeWorkflow = minted
-        return true
-      }
-    )
+    const renamedPath = 'workflows/Video test (2).json'
 
     await renderAndSend('build me a workflow')
 
-    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
     await vi.waitFor(() =>
       expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(
         hostStores.workflow.tabs.get(renamedPath),
-        { filename: 'Unsaved Workflow (2)' }
+        { filename: 'Video test (2)' }
       )
     )
     await vi.waitFor(() =>
-      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-77')).toBe(
         renamedPath
       )
     )
@@ -3017,8 +2937,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('a save that fails after the service renames still rebinds the tab', async () => {
     mockMessagesEndpoint('wf-42')
-    const mintedPath = 'workflows/Unsaved Workflow.json'
-    const renamedPath = 'workflows/Unsaved Workflow.app.json'
+    const renamedPath = 'workflows/Video test.app.json'
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     workflowService.saveWorkflowAs.mockImplementationOnce(async (tab) => {
       const renamed = hostStores.workflow.tabs.get(tab.path)
@@ -3027,34 +2946,21 @@ describe('AgentPanelRoot workflow binding', () => {
       if (renamed) hostStores.workflow.tabs.set(tab.path, renamed)
       throw new Error('offline')
     })
-    vi.mocked(app.loadGraphData).mockImplementation(
-      async (_graph, _clean, _restore, workflowTab) => {
-        if (workflowTab !== null) return true
-        const minted: FakeTab = {
-          path: mintedPath,
-          directory: 'workflows',
-          filename: 'Unsaved Workflow',
-          isTemporary: true,
-          isModified: true,
-          activeState: null,
-          initialMode: 'app'
-        }
-        hostStores.workflow.tabs.set(minted.path, minted)
-        hostStores.workflow.activeWorkflow = minted
-        return true
-      }
-    )
 
     await renderAndSend('build me a workflow')
 
-    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
     await vi.waitFor(() =>
       expect(consoleError).toHaveBeenCalledWith(
         `Agent draft autosave failed for ${renamedPath}:`,
         expect.any(Error)
       )
     )
-    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-77')).toBe(
       renamedPath
     )
   })
@@ -3078,15 +2984,6 @@ describe('AgentPanelRoot workflow binding', () => {
     const draftStore = useAgentDraftStore()
     await vi.waitFor(() => expect(draftStore.version).toBe(3))
     expect(draftStore.workflowId).toBe('wf-42')
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(
-        { version: 0.4, nodes: [{ id: 1 }] },
-        true,
-        true,
-        tab
-      )
-    )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
 
     const nextGraph = { version: 0.4, nodes: [{ id: 1 }, { id: 2 }] }
     ws.emit('draft_patch', {
@@ -3095,10 +2992,9 @@ describe('AgentPanelRoot workflow binding', () => {
       version: 4,
       content: nextGraph
     })
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(nextGraph, true, true, tab)
-    )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(2)
+    await vi.waitFor(() => expect(draftStore.version).toBe(4))
+    expect(draftStore.content).toEqual(nextGraph)
+    expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
       workflow_id: 'wf-42',
       target: 'active_tab_switch'
@@ -3139,15 +3035,8 @@ describe('AgentPanelRoot workflow binding', () => {
       version: 4,
       content: nextGraph
     })
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(
-        nextGraph,
-        true,
-        true,
-        minted
-      )
-    )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(draftStore.version).toBe(4))
+    expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
       workflow_id: 'wf-77',
       target: 'active_tab_open'
@@ -3277,7 +3166,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentDraftStore().version).toBe(1)
   })
 
-  it('switching back to a tab that missed a patch renders the fetched newer draft once', async () => {
+  it('switching back to a tab that missed a patch adopts the fetched newer draft', async () => {
     const tab = makeTab('wf-42')
     mockMessagesEndpoint('wf-42', {
       status: 200,
@@ -3296,27 +3185,18 @@ describe('AgentPanelRoot workflow binding', () => {
       version: 3,
       content: { version: 0.4, nodes: [{ id: 1 }] }
     })
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(
-        { version: 0.4, nodes: [{ id: 1 }] },
-        true,
-        true,
-        tab
-      )
-    )
-    vi.mocked(app.loadGraphData).mockClear()
+    await vi.waitFor(() => expect(draftStore.version).toBe(3))
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
     await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(
-        { version: 0.4, nodes: [{ id: 1 }, { id: 9 }] },
-        true,
-        true,
-        tab
-      )
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(tab)
     )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-    expect(draftStore.version).toBe(4)
+    await vi.waitFor(() => expect(draftStore.version).toBe(4))
+    expect(draftStore.content).toEqual({
+      version: 0.4,
+      nodes: [{ id: 1 }, { id: 9 }]
+    })
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('a failed unbound fetch still moves the binding so the next patch self-heals', async () => {
@@ -3343,9 +3223,9 @@ describe('AgentPanelRoot workflow binding', () => {
       version: 1,
       content: graph
     })
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, null)
-    )
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
+    expect(useAgentDraftStore().content).toEqual(graph)
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
@@ -3381,14 +3261,7 @@ describe('AgentPanelRoot workflow binding', () => {
       version: 3,
       content: { version: 0.4, nodes: [{ id: 1 }] }
     })
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(
-        { version: 0.4, nodes: [{ id: 1 }] },
-        true,
-        true,
-        tab
-      )
-    )
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(3))
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-away',
@@ -3400,7 +3273,6 @@ describe('AgentPanelRoot workflow binding', () => {
         hostStores.workflow.tabs.get('workflows/Detour.json')
       ).toBeDefined()
     )
-    vi.mocked(app.loadGraphData).mockClear()
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
     await vi.waitFor(() =>
@@ -3465,9 +3337,9 @@ describe('AgentPanelRoot workflow binding', () => {
       version: 1,
       content: nextGraph
     })
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(nextGraph, true, true, tab)
-    )
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
+    expect(useAgentDraftStore().content).toEqual(nextGraph)
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('a slow tab activation cannot finish after a newer focus event', async () => {
@@ -3720,7 +3592,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(hostStores.workflow.activeWorkflow?.filename).toBe('Quick tab')
   })
 
-  it('re-activating the current tab with no newer server draft keeps the rendered state', async () => {
+  it('re-activating the current tab with no newer server draft keeps the adopted state', async () => {
     makeTab('wf-42')
     const patchContent = { version: 0.4, nodes: [{ id: 1 }] }
     mockMessagesEndpoint('wf-42', {
@@ -3734,8 +3606,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('work here')
 
     patch(3, patchContent)
-    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
-    vi.mocked(app.loadGraphData).mockClear()
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(3))
 
     ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
     await vi.waitFor(() =>
@@ -4253,12 +4124,12 @@ describe('AgentPanelRoot workflow binding', () => {
       version: 1,
       content: graph
     })
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
+    expect(useAgentDraftStore().workflowId).toBe('wf-fresh')
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('parks a patch for a backgrounded bound tab and applies it on refocus', async () => {
+  it('a patch for a backgrounded bound tab never touches the canvas', async () => {
     const tab = makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
@@ -4269,18 +4140,16 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const graph = { version: 0.4, nodes: [{ id: 3 }] }
     patch(1, graph)
-    await nextTick()
-    await nextTick()
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
     expect(app.loadGraphData).not.toHaveBeenCalled()
 
     hostStores.workflow.activeWorkflow = tab
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    await nextTick()
+    await nextTick()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('overwrites a user-edited bound tab without prompting', async () => {
+  it('a patch leaves a user-edited bound tab untouched', async () => {
     const tab = makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
@@ -4290,17 +4159,13 @@ describe('AgentPanelRoot workflow binding', () => {
     const graph = { version: 0.4, nodes: [{ id: 5 }] }
     patch(1, graph)
 
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-    await vi.waitFor(() =>
-      expect(workflowService.saveWorkflow).toHaveBeenCalledWith(tab)
-    )
-    expect(tab.isModified).toBe(false)
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(workflowService.saveWorkflow).not.toHaveBeenCalled()
+    expect(tab.isModified).toBe(true)
   })
 
-  it('drops a parked draft when a new chat starts', async () => {
+  it('drops the draft state when a new chat starts', async () => {
     const tab = makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
@@ -4308,27 +4173,28 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const other = addTab('workflows/other.json')
     hostStores.workflow.activeWorkflow = other
+    const draftStore = useAgentDraftStore()
     patch(1, { version: 0.4, nodes: [{ id: 2 }] })
-    await nextTick()
-    await nextTick()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(draftStore.version).toBe(1))
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
+    expect(draftStore.workflowId).toBeNull()
+    expect(draftStore.version).toBeNull()
 
     hostStores.workflow.activeWorkflow = tab
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
 
-    // Only the parked draft was dropped; the next turn's drafts still apply.
+    // The next turn's ack rebinds the store and its patches adopt again.
     await sendFromComposer('fresh start')
+    await vi.waitFor(() => expect(draftStore.workflowId).toBe('wf-42'))
     const graph = { version: 0.4, nodes: [{ id: 9 }] }
     patch(2, graph)
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
+    await vi.waitFor(() => expect(draftStore.version).toBe(2))
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('sends only the remaining chip after one is dismissed', async () => {
@@ -4724,54 +4590,40 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
   })
 
-  it('coalesces patches that stream faster than the canvas apply settles', async () => {
-    const tab = makeTab('wf-42')
+  it('adopts the newest of rapidly streamed patches without canvas applies', async () => {
+    makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('add an upscaler')
 
-    let releaseApply: () => void = () => {}
-    vi.mocked(app.loadGraphData).mockImplementationOnce(
-      () =>
-        new Promise<boolean>((resolve) => {
-          releaseApply = () => resolve(true)
-        })
-    )
-    const g1 = { version: 0.4, nodes: [{ id: 1 }] }
-    patch(1, g1)
-    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(1))
-
+    const draftStore = useAgentDraftStore()
+    patch(1, { version: 0.4, nodes: [{ id: 1 }] })
     patch(2, { version: 0.4, nodes: [{ id: 2 }] })
-    await nextTick()
     patch(3, { version: 0.4, nodes: [{ id: 3 }] })
-    await nextTick()
-    expect(app.loadGraphData).toHaveBeenCalledTimes(1)
 
-    releaseApply()
-    await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledTimes(2))
-    expect(vi.mocked(app.loadGraphData).mock.calls[1][0]).toEqual({
+    await vi.waitFor(() => expect(draftStore.version).toBe(3))
+    expect(draftStore.content).toEqual({
       version: 0.4,
       nodes: [{ id: 3 }]
     })
-    expect(vi.mocked(app.loadGraphData).mock.calls[1][3]).toBe(tab)
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
-  it('parks an empty minted draft, then applies the first real patch to the uploading tab', async () => {
-    const tab = makeTab()
+  it('adopts empty and real patches into the draft store without canvas applies', async () => {
+    makeTab()
     appMock.graph.nodes = [{ id: 1 }]
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('hi')
 
+    const draftStore = useAgentDraftStore()
     patch(1, { version: 0.4, nodes: [] })
-    await nextTick()
-    await nextTick()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(draftStore.version).toBe(1))
 
     const graph = { version: 0.4, nodes: [{ id: 1 }] }
     patch(2, graph)
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
+    await vi.waitFor(() => expect(draftStore.version).toBe(2))
+    expect(draftStore.content).toEqual(graph)
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('keeps modifier-free legacy LiteGraph clicks selected', async () => {
@@ -4993,8 +4845,8 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
   })
 
-  it('uploads the current canvas every turn and binds the minted id for in-place applies', async () => {
-    const tab = makeTab()
+  it('uploads the current canvas every turn and binds the minted id', async () => {
+    makeTab()
     const bodies = mockMessagesEndpoint('wf-mint')
     appMock.graph.nodes = [{ id: 1 }]
 
@@ -5036,9 +4888,9 @@ describe('AgentPanelRoot workflow binding', () => {
       version: 1,
       content: graph
     })
-    await vi.waitFor(() =>
-      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
-    )
+    await vi.waitFor(() => expect(useAgentDraftStore().version).toBe(1))
+    expect(useAgentDraftStore().workflowId).toBe('wf-mint')
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('re-uploads a bound empty canvas after the panel remounts', async () => {

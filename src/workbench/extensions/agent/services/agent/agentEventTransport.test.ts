@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
-import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent, TurnId } from '../../schemas/agentApiSchema'
+import { zAgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
@@ -53,7 +53,7 @@ function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
   )
 }
 
-const T = toTurnId('t1')
+const T = 't1' as TurnId
 
 function drive(events: AgentChatEvent[]): AssistantMessage {
   const message = createAssistantMessage(T)

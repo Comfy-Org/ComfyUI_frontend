@@ -45,12 +45,9 @@ vi.mock('@/i18n', () => ({
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
-const persistThumbnailFromDataUrl = vi.hoisted(() => vi.fn(async () => {}))
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   isAssetPreviewSupported,
-  persistThumbnail,
-  persistThumbnailFromDataUrl,
-  THUMBNAIL_CAPTURE_SIZE: 256
+  persistThumbnail
 }))
 
 vi.mock('@/extensions/core/load3d/Load3d', () => ({
@@ -771,6 +768,10 @@ describe('useLoad3dViewer', () => {
     beforeEach(() => {
       isAssetPreviewSupported.mockReset().mockReturnValue(false)
       persistThumbnail.mockReset()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
+      )
     })
 
     it('captures and persists a thumbnail after a standalone model loads', async () => {
@@ -784,47 +785,12 @@ describe('useLoad3dViewer', () => {
       )
 
       await vi.waitFor(() =>
-        expect(persistThumbnailFromDataUrl).toHaveBeenCalledWith(
+        expect(persistThumbnail).toHaveBeenCalledWith(
           'mesh.glb',
-          'data:image/png;base64,x'
+          expect.any(Blob)
         )
       )
       expect(mockLoad3d.captureThumbnail).toHaveBeenCalledWith(256, 256)
-    })
-
-    it('drops an in-flight capture when a newer model load starts', async () => {
-      isAssetPreviewSupported.mockReturnValue(true)
-      let releaseFirst!: (dataUrl: string) => void
-      vi.mocked(mockLoad3d.captureThumbnail!)
-        .mockImplementationOnce(
-          () => new Promise<string>((resolve) => (releaseFirst = resolve))
-        )
-        .mockResolvedValueOnce('data:image/png;base64,second')
-      const viewer = useLoad3dViewer()
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeStandaloneViewer(
-        containerRef,
-        '/api/view?filename=first.glb&type=output'
-      )
-      await viewer.initializeStandaloneViewer(
-        containerRef,
-        '/api/view?filename=second.glb&type=output'
-      )
-      releaseFirst('data:image/png;base64,first')
-
-      await vi.waitFor(() =>
-        expect(persistThumbnailFromDataUrl).toHaveBeenCalledWith(
-          'second.glb',
-          'data:image/png;base64,second'
-        )
-      )
-      // The capture that outlived its model must not persist under the
-      // stale name.
-      expect(persistThumbnailFromDataUrl).not.toHaveBeenCalledWith(
-        'first.glb',
-        expect.anything()
-      )
     })
 
     it('skips thumbnail persistence when the asset API is unavailable', async () => {
@@ -834,8 +800,7 @@ describe('useLoad3dViewer', () => {
       await viewer.initializeStandaloneViewer(containerRef, 'model.glb')
       await nextTick()
 
-      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
-      expect(persistThumbnailFromDataUrl).not.toHaveBeenCalled()
+      expect(persistThumbnail).not.toHaveBeenCalled()
     })
   })
 

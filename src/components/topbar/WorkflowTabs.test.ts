@@ -267,6 +267,16 @@ describe('WorkflowTabs agent entry button', () => {
     ).toBeNull()
   })
 
+  // Two entry controls once shipped side by side after a merge, which broke
+  // every role-based lookup of the button in the Playwright suite.
+  it('renders exactly one agent entry control', () => {
+    renderComponent()
+
+    expect(
+      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toHaveLength(1)
+  })
+
   it('toggles the panel and reflects the pressed state on the button', async () => {
     const { user } = renderComponent()
 

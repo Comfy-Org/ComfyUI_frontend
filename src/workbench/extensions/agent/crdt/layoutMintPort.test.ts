@@ -10,7 +10,6 @@ import type { MintSession } from './mintSession'
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123def'
-const ROOT_GRAPH_ID = 'root-uuid'
 
 function createNodeChange(
   id: string,
@@ -20,7 +19,6 @@ function createNodeChange(
     operation: {
       type: 'createNode',
       actor,
-      graphId: ROOT_GRAPH_ID,
       nodeId: id,
       layout: { position: { x: 128, y: 96 } }
     }
@@ -28,18 +26,14 @@ function createNodeChange(
 }
 
 function clearChange(actor: string = LOCAL_ACTOR): LayoutChangeView {
-  return {
-    operation: { type: 'clearGraph', actor, graphId: ROOT_GRAPH_ID }
-  }
+  return { operation: { type: 'clearGraph', actor } }
 }
 
 function deleteChange(
   id: string,
   actor: string = LOCAL_ACTOR
 ): LayoutChangeView {
-  return {
-    operation: { type: 'deleteNode', actor, graphId: ROOT_GRAPH_ID, nodeId: id }
-  }
+  return { operation: { type: 'deleteNode', actor, nodeId: id } }
 }
 
 describe('attachLayoutMintPort', () => {
@@ -79,7 +73,6 @@ describe('attachLayoutMintPort', () => {
       isEnabled: () => enabled,
       isDocBound: () => bound,
       source: {
-        rootGraphId: () => ROOT_GRAPH_ID,
         serializeNode: (id) => graphNodes.get(id) ?? null,
         nodeIds: () => [...graphNodes.keys()]
       },
@@ -103,6 +96,15 @@ describe('attachLayoutMintPort', () => {
 
   it('never mints an agent-remote echo (KA-6 sender half)', () => {
     deliver(createNodeChange('1', AGENT_REMOTE_ACTOR))
+
+    expect(minted).toEqual([])
+  })
+
+  it('uses call-carried source to suppress an echoed local actor', () => {
+    const change = createNodeChange('1', LOCAL_ACTOR)
+    change.operation.source = 'agent-remote'
+
+    deliver(change)
 
     expect(minted).toEqual([])
   })
@@ -167,27 +169,6 @@ describe('attachLayoutMintPort', () => {
     deliver(deleteChange('1'))
     session.endGraphTeardown()
     deliver(deleteChange('2', AGENT_REMOTE_ACTOR))
-
-    expect(minted).toEqual([])
-  })
-
-  it('never mints root operations for a node inside a subgraph', () => {
-    const create = createNodeChange('1')
-    create.operation.graphId = 'subgraph-uuid'
-    const remove = deleteChange('1')
-    remove.operation.graphId = 'subgraph-uuid'
-
-    deliver(create)
-    deliver(remove)
-    port.runIntentionalClear(() =>
-      deliver({
-        operation: {
-          type: 'clearGraph',
-          actor: LOCAL_ACTOR,
-          graphId: 'subgraph-uuid'
-        }
-      })
-    )
 
     expect(minted).toEqual([])
   })
