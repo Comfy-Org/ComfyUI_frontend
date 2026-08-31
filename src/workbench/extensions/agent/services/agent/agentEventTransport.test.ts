@@ -383,6 +383,20 @@ describe('agentEventTransport settle lifecycle', () => {
     ).toEqual(['wf-1'])
   })
 
+  it('links distinct node targets within the same workflow', () => {
+    const message = drive([
+      activeTab('wf-1', 'First node', 'root-a:1'),
+      activeTab('wf-1', 'Second node', 'root-a:2'),
+      activeTab('wf-1', 'Second node', 'root-a:2')
+    ])
+
+    expect(
+      parts(message).flatMap((part) =>
+        part.type === 'tabLink' ? [part.locatorId] : []
+      )
+    ).toEqual(['root-a:1', 'root-a:2'])
+  })
+
   it('links a tab again when the agent returns to it after switching away', () => {
     const message = drive([
       activeTab('wf-1', 'First'),
