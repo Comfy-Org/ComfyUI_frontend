@@ -60,6 +60,28 @@ if (hasHostTelemetryBridge) {
   initHostTelemetry()
 }
 
+// ========== Edge 浏览器补丁：阻止隐藏状态下的 replaceState ==========
+const isEdge = /Edg/.test(navigator.userAgent)
+if (isEdge) {
+  const originalReplaceState = window.history.replaceState
+
+  window.history.replaceState = function (
+    data: unknown,
+    title: string,
+    url?: string | null
+  ) {
+    if (!document.hidden) {
+      return originalReplaceState.apply(this, [data, title, url] as Parameters<
+        typeof originalReplaceState
+      >)
+    }
+
+    console.warn('[EDGE_Patch] Suppressed replaceState when hidden')
+    return
+  }
+}
+// ========== Edge 浏览器补丁：阻止隐藏状态下的 replaceState ==========
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     // @ts-expect-error fixme ts strict error
