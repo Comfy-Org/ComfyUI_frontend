@@ -18,6 +18,16 @@ export interface CustomNodeUploadRecordDto {
   uploaded_at: string
 }
 
+export class CustomNodePackRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message)
+    this.name = 'CustomNodePackRequestError'
+  }
+}
+
 const packs = ref<UploadedNodePack[]>([])
 const isLoading = ref(false)
 const isUploading = ref(false)
@@ -46,13 +56,17 @@ const newIdempotencyKey = (): string =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 
-const readError = async (response: Response): Promise<string> => {
+const readError = async (
+  response: Response
+): Promise<CustomNodePackRequestError> => {
   const data = (await response.json().catch(() => null)) as {
     error?: unknown
   } | null
-  return typeof data?.error === 'string'
-    ? data.error
-    : `Request failed (${response.status})`
+  const message =
+    typeof data?.error === 'string'
+      ? data.error
+      : `Request failed (${response.status})`
+  return new CustomNodePackRequestError(message, response.status)
 }
 
 /**
@@ -66,7 +80,7 @@ export function useCustomNodePacks() {
     try {
       const response = await api.fetchApi('/customnodes', { method: 'GET' })
       if (!response.ok) {
-        throw new Error(`Failed to list custom node packs (${response.status})`)
+        throw await readError(response)
       }
       const records = (await response.json()) as CustomNodeUploadRecordDto[]
       packs.value = records.map(toPack)
@@ -88,7 +102,7 @@ export function useCustomNodePacks() {
         body: form
       })
       if (!response.ok) {
-        throw new Error(await readError(response))
+        throw await readError(response)
       }
       await refresh()
       await app.reloadNodeDefs()
@@ -105,7 +119,7 @@ export function useCustomNodePacks() {
         { method: 'DELETE' }
       )
       if (!response.ok) {
-        throw new Error(await readError(response))
+        throw await readError(response)
       }
       await refresh()
       await app.reloadNodeDefs()
@@ -123,7 +137,7 @@ export function useCustomNodePacks() {
         { method: 'GET' }
       )
       if (!response.ok) {
-        throw new Error(await readError(response))
+        throw await readError(response)
       }
 
       objectUrl = URL.createObjectURL(await response.blob())

@@ -63,10 +63,6 @@ const config: KnipConfig = {
     '@iconify/json'
   ],
   ignore: [
-    // Served to custom nodes at runtime as /comfy/api/v2.js. Nothing in the
-    // build imports it — that is the point; it is the published entry point
-    // packs import from, so knip cannot see a consumer.
-    'public/comfy/api/v2.js',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',

@@ -153,7 +153,10 @@ import Input from '@/components/ui/input/Input.vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-import { useCustomNodeEditor } from '../composables/useCustomNodeEditor'
+import {
+  CustomNodeEditorRequestError,
+  useCustomNodeEditor
+} from '../composables/useCustomNodeEditor'
 import type {
   CustomNodeEditorFile,
   CustomNodeEditorFiles,
@@ -318,7 +321,10 @@ function queueOperations(
     .catch(() => undefined)
     .then(async () => {
       if (!digest.value) {
-        throw new Error(t('customNodePacks.editor.workbench.reloadRequired'))
+        throw new CustomNodeEditorRequestError(
+          t('customNodePacks.editor.workbench.reloadRequired'),
+          409
+        )
       }
       await replaceFiles(
         await applyOperations(sessionId, operations, digest.value)
