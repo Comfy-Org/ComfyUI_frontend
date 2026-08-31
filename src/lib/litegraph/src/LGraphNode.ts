@@ -1206,6 +1206,15 @@ export class LGraphNode
     } finally {
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
+
+    // The missing-node error UI just added placeholder widgets via
+    // `onConfigure` above, which auto-expands the node to fit them
+    // (`addWidget` -> `expandToFitContent`). A placeholder has no
+    // definition to re-derive a real size from, so the recorded size —
+    // the sole record `serialize()` has of it — is restored afterward.
+    if (this.constructor === LGraphNode && info.size) {
+      this.size = [info.size[0], info.size[1]]
+    }
   }
 
   /**
