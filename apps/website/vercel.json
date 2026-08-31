@@ -63,6 +63,16 @@
       "permanent": true
     },
     {
+      "source": "/agent-beta-june",
+      "destination": "/agent/",
+      "permanent": false
+    },
+    {
+      "source": "/agent-beta-june/",
+      "destination": "/agent/",
+      "permanent": false
+    },
+    {
       "source": "/minimax",
       "destination": "/minimax-h3/",
       "permanent": false

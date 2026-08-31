@@ -32,6 +32,35 @@ function findRedirect(source: string): VercelRedirect | undefined {
 
 const minimaxCanonical = `${getRoutes('en').minimax}/`
 const minimaxZhCanonical = `${getRoutes('zh-CN').minimax}/`
+const agentCanonical = `${getRoutes('en').agent}/`
+
+describe('legacy agent beta redirects', () => {
+  it.for([
+    { source: '/agent-beta-june', destination: agentCanonical },
+    { source: '/agent-beta-june/', destination: agentCanonical }
+  ])(
+    'sends $source to $destination with a temporary status',
+    ({ source, destination }) => {
+      const redirect = findRedirect(source)
+
+      if (!redirect) {
+        throw new Error(`${source} is missing from vercel.json`)
+      }
+
+      expect(redirect.destination).toBe(destination)
+      expect(redirect.permanent, `${source} must be a temporary redirect`).toBe(
+        false
+      )
+    }
+  )
+
+  it.for([getRoutes('en').agent, agentCanonical])(
+    'leaves the new canonical path %s unredirected',
+    (canonicalPath) => {
+      expect(findRedirect(canonicalPath)).toBeUndefined()
+    }
+  )
+})
 
 describe('legacy MiniMax H3 redirects', () => {
   it.for([
