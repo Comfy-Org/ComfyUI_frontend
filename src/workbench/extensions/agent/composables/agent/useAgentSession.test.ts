@@ -691,6 +691,34 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('(h5b) the 409 retry is bounded to one attempt', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('draft moved', 409, { error: 'conflict', version: 7 })
+      )
+    const rest = fakeRest({ postMessage })
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        snapshot: () => ({ content: { nodes: [{ id: 1 }] }, version: 3 })
+      }
+    })
+    session.start()
+
+    const ok = await session.sendMessage('hi')
+
+    // A second conflict must surface, not recurse: the retry adopts once and
+    // gives up, so an endlessly-conflicting server cannot spin the send loop.
+    expect(ok).toBe(false)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+  })
+
   it("(i2) loadThread drops the previous thread's draft binding", async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()

@@ -283,6 +283,14 @@ const telemetry = vi.hoisted(() => ({
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn()
 }))
+const dialog = vi.hoisted(() => ({
+  confirm: vi.fn(async (): Promise<boolean | null> => true)
+}))
+
+vi.mock('@/services/dialogService', () => ({
+  useDialogService: () => dialog
+}))
+
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => telemetry
 }))
@@ -1875,6 +1883,9 @@ describe('AgentPanelRoot history', () => {
       await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
     )
 
+    expect(dialog.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'delete', itemList: ['build a duck'] })
+    )
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
     // The fresh chat has no thread yet, so the menu disappears with it.
     expect(
@@ -1887,6 +1898,27 @@ describe('AgentPanelRoot history', () => {
       { id: 'th-active', title: 'build a duck', updatedAt: Date.now() }
     ])
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
+  })
+
+  it('keeps the chat when the delete confirmation is declined', async () => {
+    dialog.confirm.mockResolvedValueOnce(false)
+    await renderWithActiveThread()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+
+    expect(dialog.confirm).toHaveBeenCalled()
+    expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+    expect(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    ).toBeVisible()
   })
 
   it('populates Chat History from the server thread list on mount', async () => {
@@ -1978,11 +2010,96 @@ describe('AgentPanelRoot history', () => {
   })
 })
 
+describe('AgentPanelRoot thinking indicator', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+  })
+
+  // The LINK half of the shimmer rider. The browser suite pins that the RULE
+  // animates - a computed-style fact no class assertion can see. This pins
+  // that the rendered thinking element actually carries the class that rule
+  // targets - a wiring fact the browser probe cannot see, because it supplies
+  // its own element. Neither half is a style test on its own terms: this one
+  // fails if AgentMessage stops emitting the class, which is a behaviour
+  // change, not a cosmetic one.
+  it('gives the streaming thinking indicator the shimmer class', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const convo = useAgentConversationStore()
+    const turnId = 'turn-shimmer' as TurnId
+    convo.setThreadId('th-1')
+    convo.recordUser(turnId, 'make a cat')
+    convo.startTurn(turnId)
+    await nextTick()
+
+    expect(screen.getByText(i18n.global.t('agent.thinking'))).toHaveClass(
+      'agent-shimmer-text'
+    )
+  })
+})
+
 describe('AgentPanelRoot transcript copy', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     ws.clear()
     clipboard.copy.mockClear()
+  })
+
+  it('toasts instead of copying when the row is not the active chat', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('/api/agent/threads')
+          ? new Response(
+              JSON.stringify({
+                threads: [
+                  {
+                    id: 'th-1',
+                    title: 'make a cat',
+                    last_message_at: '2026-07-07T10:00:00Z'
+                  },
+                  {
+                    id: 'th-2',
+                    title: 'make a dog',
+                    last_message_at: '2026-07-07T09:00:00Z'
+                  }
+                ],
+                pagination: { page: 1 }
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          : new Response('{}', { status: 200 })
+      )
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().setThreadId('th-1')
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().sessions).toHaveLength(2)
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    const copyButtons = await screen.findAllByRole('button', {
+      name: i18n.global.t('agent.copyMarkdown')
+    })
+    const rows = screen.getAllByRole('button', { name: /make a/ })
+    const inactiveIndex = rows.findIndex((row) =>
+      row.textContent?.includes('make a dog')
+    )
+    await userEvent.click(copyButtons[inactiveIndex])
+
+    expect(clipboard.copy).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'info',
+        summary: i18n.global.t('agent.copyUnavailable')
+      })
+    )
   })
 
   it('copies the active session from chat history as formatted markdown', async () => {
@@ -2408,6 +2525,46 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.useRealTimers()
   })
 
+  it('mints no tab and writes no file when the panel closes mid-create', async () => {
+    makeTab('wf-42')
+    let resolveDraft: ((response: Response) => void) | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('workflow_id=wf-new')) {
+          return new Promise<Response>((resolve) => {
+            resolveDraft = resolve
+          })
+        }
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await sendFromComposer('work here')
+
+    vi.useFakeTimers()
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    resolveDraft?.(json(404, { error: 'none' }))
+    await vi.advanceTimersByTimeAsync(0)
+    await vi.advanceTimersByTimeAsync(499)
+    expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeUndefined()
+
+    unmount()
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(hostStores.workflow.tabs.get('workflows/Fresh.json')).toBeUndefined()
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
   it('lowers the creating flag when the draft fetch for a fresh tab fails', async () => {
     makeTab('wf-42')
     let rejectDraft: ((error: Error) => void) | undefined
@@ -2619,6 +2776,26 @@ describe('AgentPanelRoot workflow binding', () => {
       workflow_id: 'wf-42',
       target: 'existing_tab'
     })
+  })
+
+  it('records nothing as applied when loadGraphData resolves false', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    tab.isModified = false
+    vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+    const graph = { version: 0.4, nodes: [{ id: 1 }] }
+    patch(1, graph)
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, tab)
+    )
+
+    // Without the guard a failed load still records lastApplied, fires
+    // applied-telemetry, and autosaves the unloaded canvas over the draft.
+    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(workflowService.saveWorkflow).not.toHaveBeenCalled()
   })
 
   it('chip X detaches the chat so the next send carries no workflow context', async () => {

@@ -13,11 +13,12 @@ const BANNER_TRANSITION_MS = 150
 const SIDEBAR_PANEL_TRANSITION_MS = 200
 
 /**
- * Hides the whole toast layer for the duration of the mode. PrimeVue teleports
- * every `<Toast>` container to `<body>`, and several components mount their own
- * groups, so the layer can only be reached from the root - see the `.p-toast`
- * rule in `src/assets/css/style.css`. The mode owns the class rather than any
- * one toast component, since no single component renders all of those groups.
+ * Marks the body for the duration of the mode. The mode owns the class rather
+ * than any one toast component, since PrimeVue teleports every `<Toast>`
+ * container to `<body>` and several components mount their own groups, so no
+ * single component renders all of them. The `.p-toast` rule that actually
+ * hides the layer arrives with the 16 consumers; at this head the class is
+ * set but nothing styles it.
  */
 const NODE_SELECTION_CLASS = 'node-selection-active'
 
@@ -83,8 +84,9 @@ export const useAgentNodeSelectionStore = defineStore(
       clearTimeout(sidebarTimeoutId)
 
       // This watcher is created with the store, so it runs before any watcher a
-      // component registers on `isActive`. That is what lets GlobalToast replay
-      // its deferred messages onto an already-visible layer.
+      // component registers on `isActive`. That ordering is what will let
+      // GlobalToast replay deferred messages onto an already-visible layer
+      // once that deferral arrives with the 16 consumers; nothing defers here.
       document.body.classList.toggle(NODE_SELECTION_CLASS, active)
 
       if (active) {

@@ -18,6 +18,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { fitGraphToView } from '@/composables/canvas/fitGraphToView'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
+import { useDialogService } from '@/services/dialogService'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -87,6 +88,7 @@ import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
+const dialogService = useDialogService()
 const toast = useToastStore()
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
@@ -512,7 +514,9 @@ const lastRenderedVersions = new Map<string, number>()
 
 function enqueueActiveTab(data: AgentActiveTabData): void {
   const generation = ++activeTabGeneration
-  activeTabChain = activeTabChain.then(() => onAgentActiveTab(data, generation))
+  activeTabChain = activeTabChain
+    .then(() => onAgentActiveTab(data, generation))
+    .catch(() => undefined)
 }
 
 function agentTabFilename(name: string | undefined): string | undefined {
@@ -768,6 +772,15 @@ watch(
 
 void refreshCloudWorkflowIds()
 
+onBeforeUnmount(() => {
+  // Slice 15 moved stop/exit/activity teardown into useAgentLifetime and
+  // the exitNodeSelectionMode hook above. The active-tab generation bump
+  // (slice 14's post-close guard) has no owner there, so it stays: an
+  // in-flight active-tab link sees a stale generation and stops, so no tab
+  // is created and no file written after the close.
+  activeTabGeneration++
+})
+
 const history = useAgentChatHistoryStore()
 
 const { copy } = useClipboard({ legacy: true })
@@ -862,7 +875,20 @@ function onRenameHistory(id: string, title: string): void {
   history.rename(id, title)
 }
 
-function onDeleteHistory(id: string): void {
+async function onDeleteHistory(id: string): Promise<void> {
+  const confirmed = await dialogService.confirm({
+    title: t('agent.confirmDeleteChatTitle'),
+    type: 'delete',
+    message: t('agent.confirmDeleteChat'),
+    itemList: [
+      // Rename overlay wins, then the server title; the empty-title fallback
+      // matches what the history row itself renders.
+      history.titleFor(id) ||
+        history.sessions.find((session) => session.id === id)?.title ||
+        t('agent.untitledChat')
+    ]
+  })
+  if (!confirmed) return
   history.remove(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
   if (id === threadId.value) onNewChat()
