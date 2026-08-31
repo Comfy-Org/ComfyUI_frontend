@@ -5,6 +5,10 @@ import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -37,6 +41,18 @@ interface Load3dViewerState {
   materialMode: MaterialMode
   gizmoEnabled: boolean
   gizmoMode: GizmoMode
+}
+
+function standaloneAssetName(modelUrl: string): string | null {
+  try {
+    const url = new URL(modelUrl, window.location.origin)
+    const filename =
+      url.searchParams.get('filename') ??
+      decodeURIComponent(url.pathname.split('/').pop() ?? '')
+    return filename || null
+  } catch {
+    return null
+  }
 }
 
 const DEFAULT_STANDALONE_CONFIG: Load3dViewerState = {
@@ -483,10 +499,23 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       isPreview.value = true
 
       setupAnimationEvents()
+      persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error initializing standalone 3D viewer:', error)
       useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
     }
+  }
+
+  const persistStandaloneThumbnail = (modelUrl: string) => {
+    if (!load3d || !isAssetPreviewSupported()) return
+    const name = standaloneAssetName(modelUrl)
+    if (!name) return
+    void load3d
+      .captureThumbnail(256, 256)
+      .then((dataUrl) => fetch(dataUrl))
+      .then((response) => response.blob())
+      .then((blob) => persistThumbnail(name, blob))
+      .catch(() => {})
   }
 
   /**
@@ -502,6 +531,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
+      persistStandaloneThumbnail(modelUrl)
     } catch (error) {
       console.error('Error loading model in standalone viewer:', error)
       useToastStore().addAlert('Failed to load 3D model')
