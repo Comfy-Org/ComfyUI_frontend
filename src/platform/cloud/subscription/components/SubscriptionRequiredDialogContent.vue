@@ -109,7 +109,7 @@
             <CloudBadge
               reverse-order
               no-padding
-              background-color="var(--p-dialog-background)"
+              background-color="var(--theme-content-background)"
               use-subscription
             />
           </div>
