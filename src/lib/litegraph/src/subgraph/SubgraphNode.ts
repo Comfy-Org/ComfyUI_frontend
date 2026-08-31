@@ -717,10 +717,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const state = store.getWidget(previousId)
       if (!state) continue
       const renderState = store.getWidgetRenderState(previousId)
-      store.registerWidget(nextId, { ...state }, { ...renderState })
+      const migrated = store.registerWidget(
+        nextId,
+        { ...state },
+        { ...renderState }
+      )
+      if (!migrated) continue
+      store.setValue(nextId, state.value)
       store.deleteWidget(previousId)
       input.widgetId = nextId
       this._clearPromotedWidget(input)
+      if (input._subgraphSlot) {
+        this._resolveInputWidget(input._subgraphSlot, input)
+      }
+      input._widget ??= this._projectPromotedWidget(input)
     }
   }
 
