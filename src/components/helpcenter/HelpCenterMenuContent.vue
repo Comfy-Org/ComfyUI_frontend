@@ -34,7 +34,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
+            class="text-primary ml-auto icon-[lucide--external-link] size-4"
           />
           <i
             v-if="menuItem.key === 'more'"
