@@ -31,15 +31,12 @@ const ctas = platformCtas(locale)
       />
     </template>
     <template #aboveCtas>
-      <div class="mt-8 h-[186px] overflow-hidden rounded-3xl lg:hidden">
+      <div class="mt-8 rounded-3xl lg:hidden">
         <ServerlessIsometricStudy :locale />
       </div>
     </template>
     <template #media>
-      <ServerlessIsometricStudy
-        class="origin-center lg:scale-[1.5625]"
-        :locale
-      />
+      <ServerlessIsometricStudy :locale />
     </template>
   </HeroSplit01>
 </template>
