@@ -111,18 +111,25 @@ Tags are settable after creation over `PUT /api/v2/on-call/schedules/{id}`;
 `PATCH` answers `{"errors":["Not found"]}` even for a schedule that `GET`
 returns fine.
 
+The workflow's `DATADOG_APP_KEY` repo secret must remain read-only with the
+`on_call_read` permission. A manual `PUT` requires a separate local application
+key with `on_call_write`; export it as `DATADOG_WRITE_APP_KEY`, and never widen
+or reuse the CI secret for this destructive operation.
+
 `PUT` is a full replace, so read the schedule first and edit what comes back
 rather than composing a body by hand:
 
 ```bash
 BASE=https://api.us5.datadoghq.com/api/v2/on-call/schedules
-AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
-      -H "DD-APPLICATION-KEY: $DATADOG_APP_KEY")
+READ_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
+           -H "DD-APPLICATION-KEY: $DATADOG_APP_KEY")
+WRITE_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
+            -H "DD-APPLICATION-KEY: $DATADOG_WRITE_APP_KEY")
 
-curl -sS "${AUTH[@]}" \
+curl -sS "${READ_AUTH[@]}" \
   "$BASE/$SCHEDULE_ID?include=layers,layers.members,layers.members.user"
 
-curl -sS -X PUT "${AUTH[@]}" -H 'Content-Type: application/json' \
+curl -sS -X PUT "${WRITE_AUTH[@]}" -H 'Content-Type: application/json' \
   "$BASE/$SCHEDULE_ID" -d @schedule.json
 ```
 
