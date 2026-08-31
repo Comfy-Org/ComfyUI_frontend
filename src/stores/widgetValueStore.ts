@@ -8,6 +8,7 @@ import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 
 export interface WidgetRenderState {
   advanced?: boolean
@@ -140,7 +141,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function registerWidget<TValue extends WidgetValue = WidgetValue>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>,
-    renderState: WidgetRenderState = {}
+    renderState: WidgetRenderState = {},
+    _context?: RemoteMutationContext
   ): WidgetState<TValue> | undefined {
     if (!isWidgetId(widgetId)) {
       console.warn(
@@ -219,7 +221,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return graphWidgetRenderStates.value.get(graphId)?.get(widgetId)
   }
 
-  function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
+  function setValue(
+    widgetId: WidgetId,
+    value: WidgetState['value'],
+    _context?: RemoteMutationContext
+  ): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
     state.value = value
@@ -380,7 +386,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     graphOrders.delete(localNodeId)
   }
 
-  function clearNode(graphId: UUID, nodeId: NodeId): void {
+  function clearNode(
+    graphId: UUID,
+    nodeId: NodeId,
+    _context?: RemoteMutationContext
+  ): void {
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgetStates = graphWidgetStates.value.get(graphId)
     const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)

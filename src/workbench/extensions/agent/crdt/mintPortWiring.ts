@@ -3,8 +3,8 @@
  * (workbench must not import renderer); link/widget adapt via Pinia $onAction,
  * which fires synchronously around each action. A replace maps to PLACED and
  * never DELETED (the store displaces incumbents internally). Load brackets
- * are depth-counted over beforeLoadGraph/afterConfigureGraph so overlapping
- * loads cannot reopen minting while either graph is still configuring.
+ * are a fail-closed boolean over beforeLoadGraph/afterConfigureGraph: a
+ * failed load leaves mints suppressed until the next load's pair recloses.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -15,6 +15,7 @@ import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { isFloatingTopology } from '@/types/linkTopology'
+import { isRemoteMutationContext } from '@/types/graphMutationContext'
 import { parseWidgetId } from '@/types/widgetId'
 import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
 
@@ -30,7 +31,7 @@ import type { MintSession } from './mintSession'
 export interface MintableGraph {
   id: string
   rootGraph?: { id: string }
-  getNodeById(id: NodeId | string): LGraphNode | null
+  getNodeById(id: NodeId): LGraphNode | null
   _nodes: LGraphNode[]
 }
 
@@ -53,7 +54,7 @@ export interface MintPortWiringDeps {
 
 export interface MintPortWiring {
   session: MintSession
-  /** Hand to {@link LitegraphMutator}'s `runRemoteScope` dep verbatim. */
+  /** Legacy compatibility scope; new remote store calls carry their context. */
   runRemoteScope(apply: () => void): void
   /** The layout port's intentional-clear window (human clear paths only). */
   runIntentionalClear<T>(fn: () => T): T
@@ -62,6 +63,16 @@ export interface MintPortWiring {
   /** Forward from the app extension's `afterConfigureGraph` hook. */
   onAfterGraphConfigure(): void
   detach(): void
+}
+
+const activeWirings = new Set<MintPortWiring>()
+
+export function notifyMintPortsBeforeGraphLoad(): void {
+  for (const wiring of activeWirings) wiring.onBeforeGraphLoad()
+}
+
+export function notifyMintPortsAfterGraphConfigure(): void {
+  for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
 }
 
 /**
@@ -134,12 +145,8 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
     source: {
-      rootGraphId() {
-        const graph = deps.getGraph()
-        return graph ? String(graph.rootGraph?.id ?? graph.id) : null
-      },
       serializeNode(id) {
-        const node = deps.getGraph()?.getNodeById(id)
+        const node = deps.getGraph()?.getNodeById(id as NodeId)
         return node ? serializeForMint(node) : null
       },
       nodeIds() {
@@ -176,6 +183,9 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const widgetStore = useWidgetValueStore()
 
   const detachLinkActions = linkStore.$onAction(({ name, args, after }) => {
+    // The remote origin travels on the store call itself. Do not rely on the
+    // old ambient MintSession scope: nested legacy setters can overwrite it.
+    if (isRemoteMutationContext(args.at(-1))) return
     if (name === 'registerLink' || name === 'replaceLink') {
       const scope = args[0]
       after((placed) => {
@@ -195,6 +205,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   const detachWidgetActions = widgetStore.$onAction(({ name, args, after }) => {
     if (name !== 'setValue') return
+    if (isRemoteMutationContext(args[2])) return
     const widgetId = args[0] as WidgetId
     const old = widgetStore.getWidget(widgetId)?.value
     after((applied) => {
@@ -212,7 +223,9 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     })
   })
 
-  return {
+  let loadBracketOpen = false
+
+  const wiring: MintPortWiring = {
     session,
     runRemoteScope(apply) {
       session.runRemoteApply(() => {
@@ -223,12 +236,17 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       return layoutPort.runIntentionalClear(fn)
     },
     onBeforeGraphLoad() {
+      if (loadBracketOpen) return
+      loadBracketOpen = true
       session.beginGraphTeardown()
     },
     onAfterGraphConfigure() {
+      if (!loadBracketOpen) return
+      loadBracketOpen = false
       session.endGraphTeardown()
     },
     detach() {
+      activeWirings.delete(wiring)
       detachLinkActions()
       detachWidgetActions()
       widgetPort.detach()
@@ -236,4 +254,6 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       linkPort.detach()
     }
   }
+  activeWirings.add(wiring)
+  return wiring
 }

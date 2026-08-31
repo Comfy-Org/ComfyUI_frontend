@@ -86,7 +86,7 @@ export function useSelectionToolboxPosition(
    * Update position based on selection
    */
   const updateSelectionBounds = () => {
-    if (isSelectOnly(canvasStore.canvas)) {
+    if (isSelectOnly(canvasStore.canvas ?? undefined)) {
       visible.value = false
       return
     }

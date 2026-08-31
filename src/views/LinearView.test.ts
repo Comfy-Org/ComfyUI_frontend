@@ -98,6 +98,7 @@ function leafStub(testId: string) {
 const baseStubs = {
   Splitter: passthroughStub,
   SplitterPanel: passthroughStub,
+  DockedAgentPanel: leafStub('docked-agent-panel'),
   MobileDisplay: leafStub('mobile-display'),
   AppBuilder: leafStub('app-builder'),
   AppModeToolbar: leafStub('app-mode-toolbar'),
@@ -106,7 +107,6 @@ const baseStubs = {
   TopbarBadges: leafStub('topbar-badges'),
   TopbarSubscribeButton: leafStub('topbar-subscribe-button'),
   WorkflowTabs: leafStub('workflow-tabs'),
-  DockedAgentPanel: leafStub('docked-agent-panel'),
   LinearControls: leafStub('linear-controls'),
   LinearPreview: leafStub('linear-preview'),
   LinearProgressBar: leafStub('linear-progress-bar')
@@ -160,6 +160,15 @@ describe('LinearView', () => {
     expect(screen.getByTestId('workflow-tabs')).toBeInTheDocument()
     expect(screen.getByTestId('linear-header-progress-bar')).toBeInTheDocument()
     expect(screen.getByTestId('linear-preview')).toBeInTheDocument()
+  })
+
+  it('hosts the docked agent panel after the center content', () => {
+    renderView()
+
+    expectRenderedBefore(
+      screen.getByTestId('linear-preview'),
+      screen.getByTestId('docked-agent-panel')
+    )
   })
 
   it('shows the toolbar and puts the active tab before the controls for a left sidebar', () => {

@@ -67,7 +67,7 @@ export function useShareDialog() {
       },
       dialogComponentProps: {
         contentClass:
-          'max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(36rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden'
+          'sm:max-w-[min(36rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden'
       }
     })
   }
