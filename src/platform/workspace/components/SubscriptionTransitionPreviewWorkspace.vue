@@ -322,6 +322,12 @@
       >
         {{ $t('subscription.preview.cancelUnavailable') }}
       </p>
+      <p
+        v-if="actionUrl && cancelUnreachable"
+        class="m-0 py-2 text-center text-xs text-muted-foreground"
+      >
+        {{ $t('subscription.preview.cancelUnreachable') }}
+      </p>
       <Button
         v-else-if="actionUrl"
         variant="muted-textonly"
@@ -376,6 +382,7 @@ const {
   isApplyingPromotionCode = false,
   embeddedCheckoutEnabled = false,
   cancelUnavailable = false,
+  cancelUnreachable = false,
   isCanceling = false,
   showCanceledNotice = false
 } = defineProps<{
@@ -397,6 +404,7 @@ const {
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
   cancelUnavailable?: boolean
+  cancelUnreachable?: boolean
   isCanceling?: boolean
   showCanceledNotice?: boolean
 }>()
