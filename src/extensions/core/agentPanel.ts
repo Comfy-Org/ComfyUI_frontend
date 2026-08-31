@@ -1,9 +1,4 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { isLGraphNode } from '@/utils/litegraphUtil'
 
 // The initTelemetry.ts idiom: the guard lives INSIDE the unconditionally
 // retained function, and every agent-chunk module is imported dynamically
@@ -26,13 +21,18 @@ export function registerAgentPanelExtension(): void {
       const { notifyMintPortsBeforeGraphLoad } =
         await import('@/workbench/extensions/agent/crdt/mintPortWiring')
       notifyMintPortsBeforeGraphLoad()
-      const { useAgentPanelStore } =
-        await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
+      const [{ useAgentPanelStore }, { useAgentNodeSelectionStore }] =
+        await Promise.all([
+          import('@/workbench/extensions/agent/stores/agent/agentPanelStore'),
+          import('@/stores/agentNodeSelectionStore')
+        ])
       if (!useAgentPanelStore().isOpen) return
 
       useAgentNodeSelectionStore().beginWorkflowLoad()
     },
     async afterLoadGraph(app) {
+      const { useAgentNodeSelectionStore } =
+        await import('@/stores/agentNodeSelectionStore')
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (!nodeSelectionStore.isLoadingWorkflow) return
       const { useAgentPanelStore } =
@@ -42,6 +42,17 @@ export function registerAgentPanelExtension(): void {
         return
       }
 
+      const [
+        { useWorkflowStore },
+        { useCanvasStore },
+        { getNodeByLocatorId },
+        { isLGraphNode }
+      ] = await Promise.all([
+        import('@/platform/workflow/management/stores/workflowStore'),
+        import('@/renderer/core/canvas/canvasStore'),
+        import('@/utils/graphTraversalUtil'),
+        import('@/utils/litegraphUtil')
+      ])
       const canvas = app.canvas
       const workflowStore = useWorkflowStore()
       const workflowPath = workflowStore.activeWorkflow?.path
