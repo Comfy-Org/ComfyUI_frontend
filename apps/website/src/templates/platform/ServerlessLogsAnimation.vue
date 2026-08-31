@@ -1,37 +1,43 @@
 <script setup lang="ts">
-// Live log meters: [start width %, end width %, duration s, steps, delay s, event?]
+// Log meters: [width %, event?]
 const meterRows = [
-  [22, 32, 5.4, 4, 0, false],
-  [30, 40, 4.6, 3, 0.8, false],
-  [72, 84, 3.8, 4, 0.3, true],
-  [42, 54, 6.4, 5, 1.2, false],
-  [54, 64, 5, 4, 0.9, true],
-  [26, 36, 5.8, 4, 0.5, false]
+  [32, false],
+  [40, false],
+  [84, true],
+  [54, false],
+  [64, true],
+  [36, false]
 ] as const
+
+const streamRows = [...meterRows, ...meterRows]
 </script>
 
 <template>
   <div class="logs-art" aria-hidden="true">
     <div class="live"><i />LIVE</div>
     <div class="rows">
-      <div
-        v-for="([w0, w1, t, steps, d, event], index) in meterRows"
-        :key="index"
-        class="row"
-        :class="{ ev: event }"
-      >
-        <span class="rail"><span class="a" /><span class="b" /></span>
-        <span class="meter">
-          <i
-            :style="{
-              '--w0': `${w0}%`,
-              '--w1': `${w1}%`,
-              '--t': `${t}s`,
-              '--steps': steps,
-              '--d': `${d}s`
-            }"
-          />
-        </span>
+      <div class="row-stream">
+        <div
+          v-for="([width, event], index) in streamRows"
+          :key="index"
+          class="row"
+          :class="{
+            ev: event,
+            'row--entering': index === 5 || (index >= 6 && index <= 10)
+          }"
+          :style="{
+            '--entry-delay': `${index === 5 ? 0 : (index - 5) * 1.5}s`
+          }"
+        >
+          <span class="rail"><span class="a" /><span class="b" /></span>
+          <span class="meter">
+            <i
+              :style="{
+                '--width': `${width}%`
+              }"
+            />
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -42,8 +48,7 @@ const meterRows = [
   --lime: var(--color-primary-comfy-yellow);
   --plum: #7a68ce;
   --plum-deep: #322a47;
-  --pitch: 8px;
-  --dot: 2.3px;
+  --bar-height: 14px;
   position: relative;
   width: 100%;
   height: 100%;
@@ -82,12 +87,18 @@ const meterRows = [
 .rows {
   position: absolute;
   inset: 26px 0 10px;
+  overflow: hidden;
+}
+
+.row-stream {
+  height: 200%;
   display: flex;
   flex-direction: column;
+  animation: logs-tick 9s steps(6, end) infinite;
 }
 
 .row {
-  flex: 1;
+  flex: 0 0 calc(100% / 12);
   display: flex;
   align-items: center;
   gap: 20px;
@@ -96,6 +107,12 @@ const meterRows = [
 }
 .row:last-child {
   border-bottom: 0;
+}
+
+@keyframes logs-tick {
+  to {
+    transform: translateY(-50%);
+  }
 }
 
 .rail {
@@ -117,62 +134,42 @@ const meterRows = [
 
 .meter {
   flex: 1;
-  height: calc(var(--pitch) * 3);
+  height: var(--bar-height);
   position: relative;
-  background-image: radial-gradient(
-    circle,
-    rgb(122 104 206 / 0.13) var(--dot),
-    transparent calc(var(--dot) + 0.5px)
-  );
-  background-size: var(--pitch) var(--pitch);
-  background-position: left center;
 }
 .meter i {
   position: absolute;
   inset: 0 auto 0 0;
-  background-image: radial-gradient(
-    circle,
-    var(--c, var(--plum)) var(--dot),
-    transparent calc(var(--dot) + 0.5px)
-  );
-  background-size: var(--pitch) var(--pitch);
-  background-position: left center;
-  width: var(--w0, 30%);
-  animation: logs-flux var(--t, 6s) steps(var(--steps, 5)) var(--d, 0s) infinite
-    alternate;
-}
-@keyframes logs-flux {
-  from {
-    width: var(--w0);
-  }
-  to {
-    width: var(--w1);
-  }
+  border-radius: 4px;
+  background: var(--c, var(--plum));
+  transform: skewX(-12deg);
+  transform-origin: left center;
+  width: var(--width, 30%);
 }
 
 .row.ev .meter i {
   --c: var(--lime);
-  filter: drop-shadow(0 0 5px rgb(214 242 78 / 0.35));
-  animation:
-    logs-flux var(--t, 6s) steps(var(--steps, 5)) var(--d, 0s) infinite
-      alternate,
-    logs-breathe 3.6s ease-in-out infinite;
+}
+
+.row--entering .meter i {
+  animation: logs-enter 9s ease-out var(--entry-delay) infinite both;
+}
+
+@keyframes logs-enter {
+  0% {
+    transform: skewX(-12deg) scaleX(0);
+  }
+  6%,
+  100% {
+    transform: skewX(-12deg) scaleX(1);
+  }
 }
 .row.ev .rail span {
   background: #5a5230;
 }
-@keyframes logs-breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .meter i,
+  .row-stream,
+  .row--entering .meter i,
   .live i {
     animation: none;
   }

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -6,6 +8,76 @@ import ServerlessAutoscaleAnimation from './ServerlessAutoscaleAnimation.vue'
 import ServerlessLogsAnimation from './ServerlessLogsAnimation.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
+type SlotShape = 'circle' | 'square' | 'diamond'
+
+type SlotColumn = {
+  duration: number
+  offset: number
+  shapes: SlotShape[]
+  steps: number
+}
+
+const slotShapeOrder = ['circle', 'square', 'diamond'] as const
+const slotXPositions = [86, 144, 200] as const
+const slotFills = ['#3a3161', '#5d4fa3', 'url(#convergence-shape)'] as const
+
+const slotColumns = ref<SlotColumn[]>(
+  slotXPositions.map(() => ({
+    duration: 0,
+    offset: 0,
+    shapes: [...slotShapeOrder],
+    steps: 0
+  }))
+)
+
+const slotAnimating = ref(false)
+let slotInterval: number | undefined
+let slotResetTimeout: number | undefined
+
+function randomShape(): SlotShape {
+  return slotShapeOrder[Math.floor(Math.random() * slotShapeOrder.length)]
+}
+
+function spinSlots() {
+  slotAnimating.value = true
+  slotColumns.value = slotColumns.value.map((column, index) => {
+    const steps = 3 + Math.floor(Math.random() * 3)
+    const incoming = Array.from({ length: steps }, randomShape)
+
+    return {
+      duration: 700 + index * 130 + Math.floor(Math.random() * 120),
+      offset: steps * -100,
+      shapes: [...column.shapes.slice(0, 3), ...incoming],
+      steps
+    }
+  })
+
+  const resetDelay = Math.max(
+    ...slotColumns.value.map(({ duration }) => duration)
+  )
+
+  slotResetTimeout = window.setTimeout(() => {
+    slotAnimating.value = false
+    slotColumns.value = slotColumns.value.map(({ shapes, steps }) => ({
+      duration: 0,
+      offset: 0,
+      shapes: shapes.slice(steps, steps + 3),
+      steps: 0
+    }))
+  }, resetDelay + 50)
+}
+
+onMounted(() => {
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    slotInterval = window.setInterval(spinSlots, 3000)
+  }
+})
+
+onBeforeUnmount(() => {
+  window.clearInterval(slotInterval)
+  window.clearTimeout(slotResetTimeout)
+})
 </script>
 
 <template>
@@ -90,16 +162,6 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
                   fill="url(#convergence-dotfade)"
                 />
               </mask>
-              <radialGradient
-                id="convergence-core-glow"
-                cx="50%"
-                cy="50%"
-                r="50%"
-              >
-                <stop offset="0" stop-color="#EFF75A" stop-opacity="0.30" />
-                <stop offset="0.55" stop-color="#EFF75A" stop-opacity="0.08" />
-                <stop offset="1" stop-color="#EFF75A" stop-opacity="0" />
-              </radialGradient>
               <linearGradient
                 id="convergence-shape"
                 x1="0"
@@ -110,6 +172,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
                 <stop offset="0" stop-color="#6B5CB8" />
                 <stop offset="1" stop-color="#4A3E85" />
               </linearGradient>
+              <clipPath
+                v-for="(x, index) in slotXPositions"
+                :id="`slot-column-${index}`"
+                :key="x"
+              >
+                <rect :x="x - 21" y="80" width="42" height="260" />
+              </clipPath>
             </defs>
 
             <rect
@@ -132,90 +201,74 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
               <path d="M218,310 C340,308 430,240 520,216" />
             </g>
 
-            <g>
-              <circle cx="86" cy="110" r="17" fill="#3a3161" />
-              <circle cx="144" cy="110" r="17" fill="#5d4fa3" />
-              <circle cx="200" cy="110" r="17" fill="url(#convergence-shape)" />
+            <g
+              v-for="(column, columnIndex) in slotColumns"
+              :key="slotXPositions[columnIndex]"
+              :clip-path="`url(#slot-column-${columnIndex})`"
+            >
+              <g
+                class="slot-reel"
+                :class="{ 'slot-reel--animating': slotAnimating }"
+                :style="{
+                  transform: `translateY(${column.offset}px)`,
+                  transitionDuration: `${column.duration}ms`
+                }"
+              >
+                <g
+                  v-for="(shape, shapeIndex) in column.shapes"
+                  :key="shapeIndex"
+                  :transform="`translate(${slotXPositions[columnIndex]} ${110 + shapeIndex * 100})`"
+                >
+                  <circle
+                    v-if="shape === 'circle'"
+                    r="17"
+                    :fill="slotFills[columnIndex]"
+                  />
+                  <rect
+                    v-else-if="shape === 'square'"
+                    x="-16"
+                    y="-16"
+                    width="32"
+                    height="32"
+                    rx="9"
+                    :fill="slotFills[columnIndex]"
+                  />
+                  <rect
+                    v-else
+                    x="-14"
+                    y="-14"
+                    width="28"
+                    height="28"
+                    rx="7"
+                    :fill="slotFills[columnIndex]"
+                    transform="rotate(45)"
+                  />
+                </g>
+              </g>
             </g>
 
-            <g>
-              <rect
-                x="70"
-                y="194"
-                width="32"
-                height="32"
-                rx="9"
-                fill="#3a3161"
-              />
-              <rect
-                x="128"
-                y="194"
-                width="32"
-                height="32"
-                rx="9"
-                fill="#5d4fa3"
-              />
-              <rect
-                x="184"
-                y="194"
-                width="32"
-                height="32"
-                rx="9"
-                fill="url(#convergence-shape)"
+            <g transform="translate(590 210) scale(0.68) translate(-380 -210)">
+              <path
+                class="convergence-ring"
+                d="M406.0,85.0 Q380.0,70.0 354.0,85.0 L284.7,125.0 Q258.8,140.0 258.8,170.0 L258.8,250.0 Q258.8,280.0 284.7,295.0 L354.0,335.0 Q380.0,350.0 406.0,335.0 L475.3,295.0 Q501.2,280.0 501.2,250.0 L501.2,170.0 Q501.2,140.0 475.3,125.0 Z"
+                fill="none"
+                stroke="var(--color-primary-comfy-yellow)"
+                stroke-width="1.6"
               />
             </g>
-
-            <g>
-              <rect
-                x="72"
-                y="296"
-                width="28"
-                height="28"
-                rx="7"
-                fill="#3a3161"
-                transform="rotate(45 86 310)"
-              />
-              <rect
-                x="130"
-                y="296"
-                width="28"
-                height="28"
-                rx="7"
-                fill="#5d4fa3"
-                transform="rotate(45 144 310)"
-              />
-              <rect
-                x="186"
-                y="296"
-                width="28"
-                height="28"
-                rx="7"
-                fill="url(#convergence-shape)"
-                transform="rotate(45 200 310)"
-              />
-            </g>
-
-            <circle
-              cx="590"
-              cy="210"
-              r="150"
-              fill="url(#convergence-core-glow)"
-            />
-            <circle
-              cx="590"
-              cy="210"
-              r="86"
+            <svg
+              x="553.5"
+              y="170"
+              width="73"
+              height="80"
+              viewBox="0 0 93 102"
               fill="none"
-              stroke="var(--color-primary-comfy-yellow)"
-              stroke-width="1.5"
-              opacity="0.85"
-            />
-            <circle
-              cx="590"
-              cy="210"
-              r="40"
-              fill="var(--color-primary-comfy-yellow)"
-            />
+            >
+              <path
+                d="M51.4104 100.502L84.2773 81.5373C88.6465 79.0163 92.1885 72.8853 92.1885 67.8433V29.9147C92.1885 26.7211 89.6378 22.4511 86.8717 20.8551L54.0046 1.89075C49.6354 -0.630226 42.5516 -0.630241 38.1824 1.89075L5.31545 20.8549C2.54929 22.451 0 26.721 0 29.9147V67.8433C9.41183e-07 72.8853 3.54197 79.0163 7.91116 81.5373L40.778 100.502C43.5497 102.101 48.6388 102.101 51.4104 100.502Z"
+                fill="var(--color-primary-comfy-yellow)"
+              />
+            </svg>
             <circle
               cx="520"
               cy="210"
@@ -234,3 +287,46 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </div>
   </section>
 </template>
+
+<style scoped>
+.slot-reel {
+  transform-box: view-box;
+  will-change: transform;
+}
+
+.slot-reel--animating {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+
+.convergence-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: convergence-ringload 7s ease-in-out infinite;
+}
+
+@keyframes convergence-ringload {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  30%,
+  62% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot-reel {
+    transition: none;
+  }
+
+  .convergence-ring {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+</style>

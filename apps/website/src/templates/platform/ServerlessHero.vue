@@ -36,7 +36,10 @@ const ctas = platformCtas(locale)
       </div>
     </template>
     <template #media>
-      <ServerlessIsometricStudy :locale />
+      <ServerlessIsometricStudy
+        class="origin-center lg:scale-[1.5625]"
+        :locale
+      />
     </template>
   </HeroSplit01>
 </template>
