@@ -92,8 +92,8 @@ const props = defineProps<{
 
 <style scoped>
 :deep(.highlight) {
-  background-color: var(--p-primary-color);
-  color: var(--p-primary-contrast-color);
+  background-color: var(--theme-primary);
+  color: var(--theme-primary-contrast);
   font-weight: 700;
   border-radius: 0.25rem;
   padding: 0 0.125rem;
