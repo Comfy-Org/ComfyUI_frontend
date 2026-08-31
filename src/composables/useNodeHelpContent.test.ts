@@ -310,6 +310,27 @@ describe('useNodeHelpContent', () => {
     )
   })
 
+  it('should use custom node fallback help after a localized request fails', async () => {
+    const nodeRef = ref(mockCustomNode)
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error'
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => '# Fallback content'
+      })
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBeNull()
+    expect(renderedHelpHtml.value).toContain('Fallback content')
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+  })
+
   it('should prefix relative source src in custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
     mockFetch.mockResolvedValueOnce({

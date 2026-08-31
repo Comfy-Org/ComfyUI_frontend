@@ -33,13 +33,21 @@ class NodeHelpService {
 
     // Try locale-specific path first
     const localePath = `/extensions/${customNodeName}/docs/${node.name}/${locale}.md`
-    const localeDoc = await this.tryFetchMarkdown(localePath)
+    let localeError: unknown
+    let localeDoc: string | undefined
+    try {
+      localeDoc = await this.tryFetchMarkdown(localePath)
+    } catch (error) {
+      localeError = error
+    }
     if (localeDoc) return localeDoc
 
     // Fall back to non-locale path
     const fallbackPath = `/extensions/${customNodeName}/docs/${node.name}.md`
     const fallbackDoc = await this.tryFetchMarkdown(fallbackPath)
-    return fallbackDoc || undefined
+    if (fallbackDoc) return fallbackDoc
+    if (localeError) throw localeError
+    return undefined
   }
 
   private async fetchCoreNodeHelp(

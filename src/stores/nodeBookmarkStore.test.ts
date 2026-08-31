@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import { useNodeBookmarkStore } from './nodeBookmarkStore'
@@ -45,16 +46,19 @@ describe('node bookmark folder commands', () => {
       })
     )
     vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
   it.for([
     {
       name: 'non-folder rename',
+      error: 'Cannot rename non-folder node',
       command: () =>
         useNodeBookmarkStore().renameBookmarkFolder(nonFolder, 'Renamed')
     },
     {
       name: 'invalid name',
+      error: 'Folder name cannot contain "/"',
       command: () =>
         useNodeBookmarkStore().renameBookmarkFolder(
           folder('Folder/'),
@@ -63,6 +67,7 @@ describe('node bookmark folder commands', () => {
     },
     {
       name: 'duplicate destination',
+      error: 'Folder name "Existing/" already exists',
       command: () =>
         useNodeBookmarkStore().renameBookmarkFolder(
           folder('Folder/'),
@@ -71,18 +76,25 @@ describe('node bookmark folder commands', () => {
     },
     {
       name: 'unchanged path',
+      error: undefined,
       command: () =>
         useNodeBookmarkStore().renameBookmarkFolder(folder('Folder/'), 'Folder')
     },
     {
       name: 'non-folder delete',
+      error: undefined,
       command: () => useNodeBookmarkStore().deleteBookmarkFolder(nonFolder)
     }
-  ])('does not persist $name', async ({ command }) => {
+  ])('does not persist $name', async ({ command, error }) => {
     const originalBookmarks = [...bookmarks]
     await expect(command()).resolves.toBe(false)
     expect(bookmarks).toEqual(originalBookmarks)
     expect(set).not.toHaveBeenCalled()
+    if (error) {
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({ severity: 'error', detail: error })
+      )
+    }
   })
 
   it('persists a successful folder rename', async () => {
