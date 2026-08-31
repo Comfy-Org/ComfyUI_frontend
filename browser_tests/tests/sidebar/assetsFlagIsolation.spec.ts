@@ -42,7 +42,9 @@ test.describe(
       comfyPage,
       page
     }) => {
-      test.fail(
+      // Restore the executing assertion after the Cloud flag-off harness is fixed:
+      // https://github.com/Comfy-Org/ComfyUI_frontend/issues/16380
+      test.fixme(
         true,
         'Cloud currently enables Assets unconditionally instead of honoring the off flag'
       )
