@@ -136,22 +136,51 @@ printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
 
 curl --fail-with-body -sS --config "$READ_CONFIG" \
   "$BASE/$SCHEDULE_ID?include=layers,layers.members,layers.members.user" \
-  --output "$WORK_DIR/schedule.original.json"
-cp "$WORK_DIR/schedule.original.json" "$WORK_DIR/schedule.json"
+  --output "$WORK_DIR/schedule.response.original.json"
+
+jq '
+  . as $response
+  | .data as $schedule
+  | {
+      data: {
+        id: $schedule.id,
+        type: $schedule.type,
+        attributes: (
+          $schedule.attributes
+          | .layers = [
+              $schedule.relationships.layers.data[] as $layer_ref
+              | $response.included[]
+              | select(.type == "layers" and .id == $layer_ref.id)
+              | . as $layer
+              | $layer.attributes + {
+                  id: $layer.id,
+                  members: [
+                    $layer.relationships.members.data[] as $member_ref
+                    | $response.included[]
+                    | select(.type == "members" and .id == $member_ref.id)
+                    | {user: {id: .relationships.user.data.id}}
+                  ]
+                }
+            ]
+        ),
+        relationships: {teams: $schedule.relationships.teams}
+      }
+    }
+' "$WORK_DIR/schedule.response.original.json" \
+  >"$WORK_DIR/schedule.put.original.json"
+cp "$WORK_DIR/schedule.put.original.json" \
+  "$WORK_DIR/schedule.put.edited.json"
 
 curl --fail-with-body -sS -X PUT --config "$WRITE_CONFIG" \
   -H 'Content-Type: application/json' \
-  "$BASE/$SCHEDULE_ID" -d @"$WORK_DIR/schedule.json"
+  "$BASE/$SCHEDULE_ID" -d @"$WORK_DIR/schedule.put.edited.json"
 ```
 
-Edit `$WORK_DIR/schedule.json`; the untouched response remains beside it as
-`schedule.original.json` until the shell exits.
-The body has to repeat `data.id` even though the same UUID is already in the
-path, and it has to carry `layers`. Keep each layer's `id`, `rotation_start`,
-`effective_date`, `interval` and `restrictions`, and keep the members in their
-existing order — order is the rotation sequence, and a layer sent without its
-`id` is destroyed and recreated under a new one, taking its shift and override
-state with it.
+The GET response is JSON:API: layers and members live in `included`. The `jq`
+step converts them to the PUT shape under `data.attributes.layers` and maps
+each member to `{ "user": { "id": "..." } }`. Edit only `tags` in
+`$WORK_DIR/schedule.put.edited.json`; the untouched response and transformed
+PUT body remain beside it until the shell exits.
 
 The trap worth stating plainly: **a `PUT` whose body omits `tags` wipes every
 tag**, returns 200, and warns about nothing. Any tags-unaware edit to the
