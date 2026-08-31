@@ -62,6 +62,8 @@ interface MockTopupOperation {
   isAuthenticating?: boolean
 }
 
+const mockCancelOperation = vi.hoisted(() => vi.fn())
+
 const mockBillingOperationState = vi.hoisted(() => ({
   isAddingCredits: undefined as { value: boolean } | undefined,
   topupActionOperation: undefined as
@@ -92,7 +94,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
         return mockBillingOperationState.topupActionOperation?.value
       },
       startOperation: mockStartOperation,
-      retryPaymentAuthentication: mockRetryPaymentAuthentication
+      retryPaymentAuthentication: mockRetryPaymentAuthentication,
+      cancelOperation: mockCancelOperation
     })
   }
 })
@@ -205,6 +208,51 @@ async function clickAddCredits() {
 }
 
 describe('TopUpCreditsDialogContentWorkspace', () => {
+  describe('canceling a pending charge', () => {
+    function pendingCharge() {
+      setCanTopUp(true)
+      setTopupActionOperation({
+        opId: 'op-1',
+        actionUrl: 'https://bank.example/3ds',
+        status: 'pending'
+      } as never)
+    }
+
+    it('returns to the amount step and says nothing was charged', async () => {
+      mockCancelOperation.mockResolvedValue('canceled')
+      pendingCharge()
+      renderDialog()
+
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Cancel payment' }))
+
+      expect(mockCancelOperation).toHaveBeenCalledWith('op-1')
+      expect(
+        await screen.findByText('Payment canceled. Nothing was charged.')
+      ).toBeInTheDocument()
+    })
+
+    it('explains when the charge is already past the point of cancelling', async () => {
+      mockCancelOperation.mockResolvedValue('unavailable')
+      pendingCharge()
+      renderDialog()
+
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Cancel payment' }))
+
+      expect(
+        await screen.findByText(
+          "This payment is already processing and can't be canceled."
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('Payment canceled. Nothing was charged.')
+      ).toBeNull()
+    })
+  })
+
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     setCanTopUp(true)

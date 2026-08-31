@@ -108,6 +108,13 @@
     </template>
 
     <!-- Preset amount buttons -->
+    <div
+      v-if="canceledNoticeVisible && step === 'amount'"
+      class="mx-8 mb-2 rounded-lg bg-secondary-background px-4 py-2 text-center text-xs text-muted-foreground"
+    >
+      {{ $t('credits.topUp.paymentCanceledNotice') }}
+    </div>
+
     <div v-if="step === 'amount'" class="px-8">
       <h3 class="m-0 text-sm font-normal text-muted-foreground">
         {{ $t('credits.topUp.selectAmount') }}
@@ -230,6 +237,23 @@
         >
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
+
+        <p
+          v-if="cancelUnavailable"
+          class="m-0 py-2 text-center text-xs text-muted-foreground"
+        >
+          {{ $t('credits.topUp.cancelUnavailable') }}
+        </p>
+        <Button
+          v-else-if="!topupReconciliationOperationId"
+          variant="muted-textonly"
+          size="lg"
+          class="h-10 w-full justify-center"
+          :loading="isCancelingPayment"
+          @click="handleCancelPendingPayment"
+        >
+          {{ $t('credits.topUp.cancelPayment') }}
+        </Button>
       </div>
       <div v-else class="flex flex-col gap-2">
         <Button
@@ -277,7 +301,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
@@ -349,6 +373,37 @@ const step = ref<'amount' | 'confirm' | 'verifying'>(
 )
 
 const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
+
+const isCancelingPayment = ref(false)
+const cancelUnavailable = ref(false)
+const canceledNoticeVisible = ref(false)
+let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
+
+async function handleCancelPendingPayment() {
+  const opId = topupOperation.value?.opId
+  if (!opId || isCancelingPayment.value) return
+  isCancelingPayment.value = true
+  try {
+    const result = await billingOperationStore.cancelOperation(opId)
+    if (result !== 'canceled') {
+      cancelUnavailable.value = true
+      return
+    }
+    // Canceled is not failed: the typed amount survives so paying again does
+    // not mean entering it again.
+    cancelUnavailable.value = false
+    canceledNoticeVisible.value = true
+    step.value = 'amount'
+    clearTimeout(canceledNoticeTimer)
+    canceledNoticeTimer = setTimeout(() => {
+      canceledNoticeVisible.value = false
+    }, 8000)
+  } finally {
+    isCancelingPayment.value = false
+  }
+}
+
+onScopeDispose(() => clearTimeout(canceledNoticeTimer))
 
 // Computed
 const pricingUrl = computed(() =>
