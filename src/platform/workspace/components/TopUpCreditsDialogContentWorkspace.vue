@@ -6,11 +6,11 @@
     <div class="flex items-center justify-between p-8">
       <div class="flex items-center gap-2">
         <button
-          v-if="step === 'confirm'"
+          v-if="step === 'confirm' || step === 'declined'"
           class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground disabled:pointer-events-none disabled:opacity-40"
-          :disabled="paymentLocked"
+          :disabled="step === 'confirm' && paymentLocked"
           :aria-label="$t('g.back')"
-          @click="step = 'amount'"
+          @click="handleBack"
         >
           <i class="icon-[lucide--arrow-left] size-5" />
         </button>
@@ -118,9 +118,20 @@
         >
           {{ $t('credits.topUp.successTitle') }}
         </h2>
-        <p class="m-0 text-sm text-balance text-muted-foreground">
-          {{ $t('credits.topUp.successBody') }}
-        </p>
+        <i18n-t
+          keypath="credits.topUp.successBody"
+          tag="p"
+          class="m-0 text-sm text-balance text-muted-foreground"
+        >
+          <template #link>
+            <button
+              class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground underline"
+              @click="openBillingAndInvoices"
+            >
+              {{ $t('subscription.billingAndInvoices') }}
+            </button>
+          </template>
+        </i18n-t>
       </div>
 
       <div
@@ -148,7 +159,10 @@
           <span class="text-base-foreground">
             {{ $t('credits.topUp.newBalance') }}
           </span>
-          <span class="text-base-foreground tabular-nums">
+          <span
+            class="flex items-center gap-1 text-base-foreground tabular-nums"
+          >
+            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
             {{ formatNumber(newBalanceCredits) }}
           </span>
         </div>
@@ -296,7 +310,7 @@
           {{ $t('g.close') }}
         </Button>
       </div>
-      <div v-else-if="step === 'declined'" class="flex flex-col gap-2">
+      <div v-else-if="step === 'declined'">
         <Button
           variant="primary"
           size="lg"
@@ -304,14 +318,6 @@
           @click="openManageBilling"
         >
           {{ $t('credits.topUp.updatePaymentMethod') }}
-        </Button>
-        <Button
-          variant="muted-textonly"
-          size="lg"
-          class="h-10 w-full justify-center"
-          @click="handleDeclinedBack"
-        >
-          {{ $t('g.back') }}
         </Button>
       </div>
       <div v-else-if="step === 'verifying'">
@@ -414,6 +420,7 @@ import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
@@ -433,6 +440,7 @@ const { n, t } = useI18n()
 const dialogStore = useDialogStore()
 const telemetry = useTelemetry()
 const toast = useToast()
+const settingsDialog = useSettingsDialog()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { balance, fetchBalance, fetchStatus, manageSubscription, topup } =
   useBillingContext()
@@ -657,9 +665,18 @@ function showDeclined(reason: string | null) {
   step.value = 'declined'
 }
 
-function handleDeclinedBack() {
-  declineReason.value = null
-  step.value = 'confirm'
+function handleBack() {
+  if (step.value === 'declined') {
+    declineReason.value = null
+    step.value = 'confirm'
+    return
+  }
+  step.value = 'amount'
+}
+
+function openBillingAndInvoices() {
+  handleClose()
+  settingsDialog.show('workspace')
 }
 
 async function handleBuy() {

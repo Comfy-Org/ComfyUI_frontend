@@ -2712,7 +2712,7 @@
       "cancelUnavailable": "This payment is already processing and can't be canceled.",
       "paymentCanceledNotice": "Payment canceled. Nothing was charged.",
       "successTitle": "You're all set",
-      "successBody": "View this charge anytime in Billing & invoices in your workspace settings.",
+      "successBody": "View this charge anytime in {link} in your workspace settings.",
       "previousBalance": "Previous balance",
       "added": "Added",
       "newBalance": "New balance",
