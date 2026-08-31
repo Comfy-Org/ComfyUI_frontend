@@ -14,18 +14,12 @@ describe('ModelsApiFeaturesSection', () => {
         name: t('platform.modelsFeatures.heading', 'en')
       })
     ).toBeTruthy()
-    expect(screen.getAllByRole('article')).toHaveLength(6)
+    expect(screen.getAllByRole('article')).toHaveLength(4)
     expect(
       screen.getByText(t('platform.modelsFeatures.1.title', 'en'))
     ).toBeTruthy()
     expect(
-      screen.getByText(t('platform.modelsFeatures.2.title', 'en'))
-    ).toBeTruthy()
-    expect(
       screen.getByText(t('platform.modelsFeatures.3.title', 'en'))
-    ).toBeTruthy()
-    expect(
-      screen.getByText(t('platform.modelsFeatures.4.title', 'en'))
     ).toBeTruthy()
     expect(
       screen.getByText(t('platform.modelsFeatures.5.title', 'en'))
@@ -33,5 +27,7 @@ describe('ModelsApiFeaturesSection', () => {
     expect(
       screen.getByText(t('platform.modelsFeatures.6.title', 'en'))
     ).toBeTruthy()
+    expect(screen.queryByText(/never dropped/i)).toBeNull()
+    expect(screen.queryByText(/costs you can attribute/i)).toBeNull()
   })
 })

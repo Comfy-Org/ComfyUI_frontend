@@ -11,16 +11,8 @@ const cards = [
     description: t('platform.modelsFeatures.1.description', locale)
   },
   {
-    title: t('platform.modelsFeatures.2.title', locale),
-    description: t('platform.modelsFeatures.2.description', locale)
-  },
-  {
     title: t('platform.modelsFeatures.3.title', locale),
     description: t('platform.modelsFeatures.3.description', locale)
-  },
-  {
-    title: t('platform.modelsFeatures.4.title', locale),
-    description: t('platform.modelsFeatures.4.description', locale)
   },
   {
     title: t('platform.modelsFeatures.5.title', locale),
@@ -43,7 +35,7 @@ const cards = [
     >
       {{ t('platform.modelsFeatures.heading', locale) }}
     </h2>
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
       <FeatureCard
         v-for="card in cards"
         :key="card.title"
