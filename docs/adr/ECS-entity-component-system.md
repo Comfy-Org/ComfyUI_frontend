@@ -61,9 +61,9 @@ not serialized, transmitted through CRDT, or included in undo history. See
 ### Amendment (2026-08-23): registration and collision contract
 
 Entity registration collision and recovery policy is defined by
-[ADR 0016](0016-entity-registration-collision-and-recovery-boundaries.md).
+[ADR COLLISIONS](COLLISIONS-entity-id-collision-policy-and-recovery.md).
 Node ID reminting policy is defined by
-[ADR 0018](0018-node-id-reminting-at-the-merge-boundary.md).
+[ADR MINT](MINT-merge-identity-for-node-transfers.md).
 
 ## Context
 

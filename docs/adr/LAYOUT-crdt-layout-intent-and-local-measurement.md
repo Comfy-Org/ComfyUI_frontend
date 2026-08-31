@@ -221,7 +221,7 @@ mutation with no name.
 ### Amendment (2026-08-23): merge-boundary reconciliation constraint
 
 In-memory registration and collision recovery follow
-[ADR 0016](0016-entity-registration-collision-and-recovery-boundaries.md).
+[ADR COLLISIONS](COLLISIONS-entity-id-collision-policy-and-recovery.md).
 The CRDT boundary must reconcile distributed conflicts over stable entity
 identity keys before registration. Registries with recyclable structural keys
 retain their documented local policies.
