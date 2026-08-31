@@ -387,6 +387,27 @@ describe('LGraphNode', () => {
       expect(graph.floatingLinks.get(floating.id)).toBe(floating)
       expect(sourceNode.isOutputConnected(0)).toBe(true)
     })
+
+    test('reports and redraws a floating-only output disconnect', () => {
+      const graph = new LGraph()
+      const sourceNode = new LGraphNode('source')
+      sourceNode.addOutput('output', '*')
+      graph.add(sourceNode)
+      const floating = new LLink(
+        toLinkId(-1),
+        '*',
+        sourceNode.id,
+        0,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+      graph.addFloatingLink(floating)
+      sourceNode.setDirtyCanvas = vi.fn()
+
+      expect(sourceNode.disconnectOutput(0)).toBe(true)
+      expect(graph.floatingLinks.has(floating.id)).toBe(false)
+      expect(sourceNode.setDirtyCanvas).toHaveBeenCalledWith(false, true)
+    })
   })
 
   describe('Applies correct link type on connection', () => {
