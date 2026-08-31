@@ -51,6 +51,14 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('POST')
   })
 
+  // Remove SALVAGE-16188-REST-ID once route identifiers are segment-encoded.
+  it.fails('percent-encodes a hostile thread id instead of retargeting the path', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1/x', { content: 'hi' })
+
+    expect(lastCall().route).toBe('/agent/threads/t1%2Fx/messages')
+  })
+
   it('getMessages GETs the thread messages path', async () => {
     respond(jsonResponse(200, []))
     await makeClient().getMessages('t7')
@@ -146,6 +154,24 @@ describe('agentRestClient route + method', () => {
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
   })
+
+  it('stops at the designed page cap and returns what accumulated', async () => {
+    const page = (data: unknown[]) =>
+      jsonResponse(200, {
+        data,
+        pagination: { offset: 0, limit: 100, total: 999, has_more: true }
+      })
+    for (let i = 0; i < 5; i++) {
+      respond(page([{ id: `wf-${i}`, name: `${i}` }]))
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const workflows = await makeClient().listCloudWorkflows()
+
+    expect(fetchApi).toHaveBeenCalledTimes(5)
+    expect(workflows).toHaveLength(5)
+    warn.mockRestore()
+  })
 })
 
 describe('postMessage wire body', () => {
@@ -203,6 +229,22 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toMatchObject({
       draft: { version: 4 }
     })
+  })
+
+  it('flattens tabs to top-level keys and omits an absent current tab', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'hi',
+      tabs: { open_tabs: [{ workflow_id: 'w1', name: 'One' }] }
+    })
+
+    const parsed = JSON.parse(lastCall().init.body as string) as Record<
+      string,
+      unknown
+    >
+    expect(parsed.open_tabs).toEqual([{ workflow_id: 'w1', name: 'One' }])
+    expect(parsed).not.toHaveProperty('tabs')
+    expect(parsed).not.toHaveProperty('current_tab')
   })
 })
 
