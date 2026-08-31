@@ -53,21 +53,19 @@ export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
 }
 
 function defineEnumerableTopologyFacade(link: LLink): void {
-  topologyFacadeDescriptors ??= Object.fromEntries(
-    [
-      'id',
-      'type',
-      'origin_id',
-      'origin_slot',
-      'target_id',
-      'target_slot',
-      'parentId'
-    ].map((key) => {
-      const descriptor = Object.getOwnPropertyDescriptor(LLink.prototype, key)
-      if (!descriptor) throw new TypeError(`Missing LLink descriptor: ${key}`)
-      return [key, { ...descriptor, enumerable: true }]
-    })
-  )
+  topologyFacadeDescriptors ??= [
+    'id',
+    'type',
+    'origin_id',
+    'origin_slot',
+    'target_id',
+    'target_slot',
+    'parentId'
+  ].reduce<PropertyDescriptorMap>((descriptors, key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(LLink.prototype, key)
+    if (descriptor) descriptors[key] = { ...descriptor, enumerable: true }
+    return descriptors
+  }, {})
   Object.defineProperties(link, topologyFacadeDescriptors)
 }
 
