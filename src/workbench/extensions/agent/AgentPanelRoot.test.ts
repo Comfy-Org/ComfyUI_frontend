@@ -355,6 +355,23 @@ function addTab(path: string, overrides: Partial<FakeTab> = {}): FakeTab {
   return tab
 }
 
+describe('AgentPanelRoot layout', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+  })
+
+  it('keeps the panel within the space left by status surfaces', () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const root = screen.getByTestId('agent-panel-layout')
+    const panel = screen.getByTestId('agent-panel-content')
+
+    expect(root).toHaveClass('flex', 'flex-col', 'overflow-hidden')
+    expect(panel).toHaveClass('min-h-0', 'flex-1')
+  })
+})
+
 describe('AgentPanelRoot session notices', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
