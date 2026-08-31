@@ -432,7 +432,6 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations: GraphMutations = {
       batch: (_context, define) => {
         batchAttempts += 1
-        if (batchAttempts === 1) return false
         define({
           addNode: (payload) => projectedNodes.push(payload),
           reconcileNode: (payload) => projectedNodes.push(payload),
@@ -442,6 +441,10 @@ describe('EcsFollowerAdapter integration', () => {
           deleteNode: () => undefined,
           clearSemanticGraph: () => undefined
         })
+        if (batchAttempts === 1) {
+          projectedNodes.length = 0
+          return false
+        }
         return true
       },
       addNode: () => true,
