@@ -106,7 +106,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state = moved
   }
 
-  options: TWidget['options']
+  get options(): TWidget['options'] {
+    return this._state.options as TWidget['options']
+  }
+  set options(value: TWidget['options']) {
+    const hidden = this._state.options.hidden
+    this._state.options = value ?? {}
+    if (hidden !== undefined) this._state.options.hidden = hidden
+  }
+
   type: TWidget['type']
   y: number = 0
   last_y?: number
@@ -207,11 +215,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // Private fields
     this._node = node ?? widget.node
 
-    // The set and get functions for DOM widget values are hacked on to the options object;
-    // attempting to set value before options will throw.
-    // https://github.com/Comfy-Org/ComfyUI_frontend/blob/df86da3d672628a452baed3df3347a52c0c8d378/src/scripts/domWidget.ts#L125
     this.name = widget.name
-    this.options = widget.options
     this.type = widget.type
 
     // `node` has no setter - Object.assign will throw.
@@ -236,6 +240,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       displayValue,
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
+      options,
       label,
       hidden,
       disabled,
@@ -253,7 +258,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       label,
       disabled: disabled ?? false,
       serialize: this.serialize,
-      options: this.options ?? {},
+      options: options ?? {},
       y: this.y
     }
     if (hidden !== undefined) this.hidden = hidden

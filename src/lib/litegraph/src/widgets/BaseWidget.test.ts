@@ -224,6 +224,26 @@ describe('BaseWidget store integration', () => {
       ).toBe('number-custom')
     })
 
+    it('registers replaced options after graph attachment', () => {
+      const detachedNode = new LGraphNode('DetachedNode')
+      const widget = detachedNode.addWidget(
+        'combo',
+        'resolution',
+        'initial',
+        null,
+        { values: ['initial'] }
+      )
+      widget.hidden = true
+      widget.options = { values: ['replacement'] }
+
+      graph.add(detachedNode)
+
+      expect(
+        store.getWidget(widgetId(graph.id, detachedNode.id, 'resolution'))
+          ?.options
+      ).toEqual({ values: ['replacement'], hidden: true })
+    })
+
     it('registers duplicate widget names under distinct ids', () => {
       const first = createTestWidget(node, { name: 'duplicate' })
       const second = createTestWidget(node, { name: 'duplicate' })
