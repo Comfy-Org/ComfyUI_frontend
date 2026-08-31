@@ -54,6 +54,34 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toBeNull()
   })
 
+  it('smoke-renders follower and document status from a live snapshot', async () => {
+    const user = userEvent.setup()
+    render(CrdtDevPanel, {
+      props: {
+        status: STATUS,
+        snapshot: () => ({
+          status: STATUS,
+          tabId: 'tab-1',
+          lastSeq: 7,
+          schemaError: null,
+          meta: { schema_version: 2 },
+          nodeIds: ['node-1'],
+          linkIds: ['link-1'],
+          appliedOpIds: ['op-1'],
+          stamps: { 'node:node-1': [7, 'actor-1', 'op-1'] }
+        })
+      }
+    })
+
+    await user.click(chip()!)
+
+    expect(sheet()).toHaveTextContent('doc-1')
+    expect(sheet()).toHaveTextContent('tab-1')
+    expect(sheet()).toHaveTextContent('node-1')
+    expect(sheet()).toHaveTextContent('last seq')
+    expect(sheet()).toHaveTextContent('7')
+  })
+
   it('opens and closes back to the chip', async () => {
     const user = userEvent.setup()
     renderPanel()
