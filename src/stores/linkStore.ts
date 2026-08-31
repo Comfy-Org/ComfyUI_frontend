@@ -10,6 +10,7 @@ import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 
 export type EndpointPatch = Partial<
   Pick<
@@ -22,7 +23,7 @@ export interface EndpointUpdate {
   topology: LinkTopology
   patch: EndpointPatch
 }
-interface EndpointUpdateError {
+export interface EndpointUpdateError {
   code:
     | 'duplicate-topology'
     | 'unowned-topology'
@@ -185,7 +186,8 @@ export const useLinkStore = defineStore('link', () => {
    */
   function registerLink(
     scope: GraphScope,
-    topology: LinkTopology
+    topology: LinkTopology,
+    context?: RemoteMutationContext
   ): LinkTopology | undefined {
     const incumbent = roots.get(scope.rootGraphId)?.byId.get(topology.id)
     if (
@@ -193,14 +195,15 @@ export const useLinkStore = defineStore('link', () => {
       incumbent?.graphId === scope.owningGraphId
     )
       return incumbent
-    return replaceLink(scope, undefined, topology)
+    return replaceLink(scope, undefined, topology, context)
   }
 
   /** Atomically replaces an expected target occupant with a new link. */
   function replaceLink(
     scope: GraphScope,
     expected: LinkTopology | undefined,
-    replacement: LinkTopology
+    replacement: LinkTopology,
+    _context?: RemoteMutationContext
   ): LinkTopology | undefined {
     const bucket = roots.get(scope.rootGraphId)
     if (expected && (!bucket || !ownsPlacement(scope, bucket, expected))) {
@@ -254,7 +257,11 @@ export const useLinkStore = defineStore('link', () => {
     unindexOrigin(bucket, topology)
   }
 
-  function deleteLink(scope: GraphScope, topology: LinkTopology): boolean {
+  function deleteLink(
+    scope: GraphScope,
+    topology: LinkTopology,
+    _context?: RemoteMutationContext
+  ): boolean {
     const bucket = roots.get(scope.rootGraphId)
     if (!bucket || !ownsPlacement(scope, bucket, topology)) return false
     displace(bucket, topology)
@@ -332,7 +339,8 @@ export const useLinkStore = defineStore('link', () => {
   function updateEndpoints(
     scope: GraphScope,
     updates: readonly EndpointUpdate[],
-    removals: readonly LinkTopology[] = []
+    removals: readonly LinkTopology[] = [],
+    _context?: RemoteMutationContext
   ): EndpointUpdateResult<LinkTopology[]> {
     const error = validateEndpointUpdates(scope, updates, removals)
     if (error) return { ok: false, error }
@@ -354,9 +362,10 @@ export const useLinkStore = defineStore('link', () => {
   function updateEndpoint(
     scope: GraphScope,
     topology: LinkTopology,
-    patch: EndpointPatch
+    patch: EndpointPatch,
+    context?: RemoteMutationContext
   ): EndpointUpdateResult<LinkTopology> {
-    const result = updateEndpoints(scope, [{ topology, patch }])
+    const result = updateEndpoints(scope, [{ topology, patch }], [], context)
     return result.ok ? { ok: true, value: result.value[0] } : result
   }
 
@@ -429,7 +438,10 @@ export const useLinkStore = defineStore('link', () => {
     if (roots.delete(graphId)) revision.value++
   }
 
-  function clearOwner(scope: GraphScope): void {
+  function clearOwner(
+    scope: GraphScope,
+    _context?: RemoteMutationContext
+  ): void {
     const bucket = roots.get(scope.rootGraphId)
     const ids = bucket?.idsByOwner.get(scope.owningGraphId)
     if (!bucket || !ids) return
@@ -446,6 +458,7 @@ export const useLinkStore = defineStore('link', () => {
     replaceLink,
     updateEndpoint,
     updateEndpoints,
+    validateEndpointUpdates,
     deleteLink,
     isInputSlotConnected,
     getInputSlotLink,

@@ -134,7 +134,8 @@ function dynamicComboWidget(
     }
 
     if (!newSpec) {
-      commitMutatedInputs(node, previous, inputLinks)
+      const result = commitMutatedInputs(node, previous, inputLinks)
+      if (!result.ok) return
       syncNodeWidgetOrder(node)
       return
     }
@@ -180,7 +181,8 @@ function dynamicComboWidget(
       )
         //input is inputOnly, but lacks an insertion point
         throw new Error('Failed to find input socket for ' + widget.name)
-      commitMutatedInputs(node, previous, inputLinks)
+      const result = commitMutatedInputs(node, previous, inputLinks)
+      if (!result.ok) return
       return
     }
     const addedInputs = node.inputs
@@ -201,17 +203,24 @@ function dynamicComboWidget(
       const link = inputLinks.get(input)
       if (replacement && link) inputLinks.set(replacement, link)
     }
-    const replacements = commitMutatedInputs(node, previous, inputLinks)
-    for (const { input, link, slot } of replacements) {
+    const result = commitMutatedInputs(node, previous, inputLinks)
+    if (!result.ok) return
+    for (const { input, link, slot } of result.replacements) {
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
 
-    node.size = [node.size[0], node.computeSize([...node.size])[1]]
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
     app.canvas?.setDirty(true, true)
   }
+  //Refit height on the callback channel: interaction fires it after the value
+  //setter, while configure (load, clone, paste) only fires the setter and must
+  //keep the serialised height.
+  widget.callback = useChainCallback(widget.callback, () => {
+    node.size = [node.size[0], node.computeSize([...node.size])[1]]
+    app.canvas?.setDirty(true, true)
+  })
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value
@@ -273,7 +282,7 @@ function changeOutputType(
     slot
   )
   for (const topology of topologies) {
-    const link = node.graph.links[topology.id]
+    const link = node.graph.getLink(topology.id)
     if (!link) continue
     const { input, inputNode, subgraphOutput } = link.resolve(node.graph)
     const inputType = (input ?? subgraphOutput)?.type
@@ -350,7 +359,6 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       if (!outputType) throw new Error('invalid connection')
       this.outputs.forEach((_output, idx) => {
         if (!(outputGroups?.[idx] == matchKey)) return
-        this.outputs[idx] = shallowReactive(this.outputs[idx])
         changeOutputType(this, idx, outputType)
       })
       app.canvas?.setDirty(true, true)
@@ -460,7 +468,8 @@ function addAutogrowGroup(
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   node.inputs.splice(insertionIndex, 0, ...newInputs)
-  commitMutatedInputs(node, previous, inputLinks)
+  const result = commitMutatedInputs(node, previous, inputLinks)
+  if (!result.ok) return
   app.canvas?.setDirty(true, true)
 }
 
@@ -554,7 +563,8 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   }
   const toRemove = removalChecks.slice(i + stride * 2)
   const finalInputs = node.inputs.filter((input) => !toRemove.includes(input))
-  replaceNodeInputs(node, previous, finalInputs, inputLinks)
+  const result = replaceNodeInputs(node, previous, finalInputs, inputLinks)
+  if (!result.ok) return
 
   for (const { input, link } of transplants) {
     const slot = node.inputs.indexOf(input)
