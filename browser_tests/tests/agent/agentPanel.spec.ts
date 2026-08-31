@@ -52,7 +52,10 @@ test.describe('In-App Agent panel shell', { tag: '@cloud' }, () => {
 
     const panel = page.getByTestId('docked-agent-panel')
     await expect(panel).toBeVisible()
-    const panelRoot = page.getByTestId('agent-panel-root')
+    // The mounted shell is workbench/extensions/agent/AgentPanelRoot.vue,
+    // which carries only id="agent-panel-root". The data-testid lives on the
+    // unmounted components/agent/ stub, so getByTestId could never match here.
+    const panelRoot = page.locator('#agent-panel-root')
     await expect(panelRoot).toBeVisible()
     await expect(panelRoot).toHaveCSS('font-size', '14px')
     await expect(
