@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/vue'
+import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, ref } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import Checkbox from './Checkbox.vue'
 
@@ -34,5 +34,56 @@ describe('Checkbox', () => {
 
     await userEvent.click(checkbox)
     expect(checkbox).not.toBeChecked()
+  })
+
+  it('toggles with Space while focused', async () => {
+    const Harness = defineComponent({
+      components: { Checkbox },
+      setup() {
+        return { checked: ref(false) }
+      },
+      template: '<Checkbox v-model="checked" aria-label="Keyboard checkbox" />'
+    })
+    render(Harness)
+    const checkbox = screen.getByRole('checkbox', {
+      name: 'Keyboard checkbox'
+    })
+
+    await userEvent.tab()
+    expect(checkbox).toHaveFocus()
+    await userEvent.keyboard(' ')
+    expect(checkbox).toBeChecked()
+  })
+
+  it('passes root-level attributes through to the control', () => {
+    render(Checkbox, { attrs: { 'aria-label': 'Pass through' } })
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Pass through' })
+    ).toBeInTheDocument()
+  })
+
+  it('surfaces update emits to controlled consumers', async () => {
+    const onUpdate = vi.fn()
+    render(Checkbox, {
+      props: { modelValue: false, 'onUpdate:modelValue': onUpdate },
+      attrs: { 'aria-label': 'Controlled' }
+    })
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Controlled' }))
+
+    expect(onUpdate).toHaveBeenCalledWith(true)
+  })
+
+  it('merges custom classes without clobbering base styling', () => {
+    cleanup()
+    render(Checkbox, {
+      props: { class: 'size-4' },
+      attrs: { 'aria-label': 'Merged' }
+    })
+    const checkbox = screen.getByRole('checkbox', { name: 'Merged' })
+
+    expect(checkbox).toHaveClass('size-4', 'rounded-sm')
+    expect(checkbox).not.toHaveClass('size-5')
   })
 })
