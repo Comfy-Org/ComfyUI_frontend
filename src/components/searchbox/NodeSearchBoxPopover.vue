@@ -1,66 +1,61 @@
 <template>
   <div>
-    <Dialog
-      v-model:visible="visible"
-      modal
-      :dismissable-mask="dismissable"
-      :pt="{
-        root: {
-          class: useSearchBoxV2
-            ? 'w-full max-w-[56rem] min-w-[32rem] max-md:min-w-0 bg-transparent border-0 overflow-visible'
-            : 'invisible-dialog-root'
-        },
-        mask: {
-          class: useSearchBoxV2 ? 'items-start' : 'node-search-box-dialog-mask'
-        },
-        transition: {
-          enterFromClass: 'opacity-0 scale-75',
-          // 100ms is the duration of the transition in the dialog component
-          enterActiveClass: 'transition-all duration-100 ease-out',
-          leaveActiveClass: 'transition-all duration-100 ease-in',
-          leaveToClass: 'opacity-0 scale-75'
-        }
-      }"
-      @hide="clearFilters"
-    >
-      <template #container>
-        <div v-if="useSearchBoxV2" role="search" class="relative">
-          <NodeSearchContent
+    <Dialog :open="visible" @update:open="onOpenChange">
+      <DialogPortal>
+        <DialogOverlay class="items-start" />
+        <DialogContent
+          :class="
+            cn(
+              'top-1/4 translate-y-0 border-0 bg-transparent p-0 shadow-none duration-100',
+              useSearchBoxV2
+                ? 'w-full max-w-4xl min-w-lg overflow-visible max-md:min-w-0 sm:max-w-4xl'
+                : 'ml-[200px] w-3/5 max-w-3xl min-w-96 max-md:ml-0'
+            )
+          "
+          @pointer-down-outside="onPointerDownOutside"
+        >
+          <div v-if="useSearchBoxV2" role="search" class="relative">
+            <NodeSearchContent
+              :filters="nodeFilters"
+              @add-filter="addFilter"
+              @remove-filter="removeFilter"
+              @add-node="addNode"
+              @hover-node="hoveredNodeDef = $event"
+            />
+            <NodePreviewCard
+              v-if="hoveredNodeDef && enableNodePreview"
+              :key="hoveredNodeDef.name"
+              :node-def="hoveredNodeDef"
+              :scale-factor="0.625"
+              show-category-path
+              inert
+              class="absolute top-0 left-full ml-3"
+            />
+          </div>
+          <NodeSearchBox
+            v-else
             :filters="nodeFilters"
             @add-filter="addFilter"
             @remove-filter="removeFilter"
             @add-node="addNode"
-            @hover-node="hoveredNodeDef = $event"
           />
-          <NodePreviewCard
-            v-if="hoveredNodeDef && enableNodePreview"
-            :key="hoveredNodeDef.name"
-            :node-def="hoveredNodeDef"
-            :scale-factor="0.625"
-            show-category-path
-            inert
-            class="absolute top-0 left-full ml-3"
-          />
-        </div>
-        <NodeSearchBox
-          v-else
-          :filters="nodeFilters"
-          @add-filter="addFilter"
-          @remove-filter="removeFilter"
-          @add-node="addNode"
-        />
-      </template>
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useEventListener, useWindowSize } from '@vueuse/core'
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
 import type { Point } from '@/lib/litegraph/src/interfaces'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -123,6 +118,14 @@ function removeFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
 function clearFilters() {
   nodeFilters.value = []
   hoveredNodeDef.value = null
+}
+function onOpenChange(open: boolean) {
+  visible.value = open
+  if (!open) clearFilters()
+}
+
+function onPointerDownOutside(event: Event) {
+  if (!dismissable.value) event.preventDefault()
 }
 function closeDialog() {
   visible.value = false
@@ -358,24 +361,3 @@ watch(visible, () => {
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 defineExpose({ showSearchBox })
 </script>
-
-<style>
-.invisible-dialog-root {
-  width: 60%;
-  min-width: 24rem;
-  max-width: 48rem;
-  border: 0 !important;
-  background-color: transparent !important;
-  margin-top: 25vh;
-  margin-left: 400px;
-}
-@media all and (max-width: 768px) {
-  .invisible-dialog-root {
-    margin-left: 0;
-  }
-}
-
-.node-search-box-dialog-mask {
-  align-items: flex-start !important;
-}
-</style>
