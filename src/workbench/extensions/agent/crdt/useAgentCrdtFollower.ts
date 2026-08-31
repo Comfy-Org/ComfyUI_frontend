@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -172,6 +173,8 @@ export function useAgentCrdtFollower(
   const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
   let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeRetryAttempt = 0
+  let subscribeRetryStartedAt: number | null = null
+  let subscribeRetryFailureReported = false
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
@@ -205,11 +208,35 @@ export function useAgentCrdtFollower(
       subscribeRetryTimer = null
     }
     subscribeRetryAttempt = 0
+    subscribeRetryStartedAt = null
+    subscribeRetryFailureReported = false
+  }
+
+  const reportSubscribeRetryExhausted = (): void => {
+    if (
+      subscribeRetryFailureReported ||
+      subscribeRetryStartedAt === null ||
+      subscribeRetryAttempt < SUBSCRIBE_RETRY_MAX_ATTEMPTS
+    )
+      return
+    subscribeRetryFailureReported = true
+    useTelemetry()?.trackAgentReconnectFailed({
+      attempt: subscribeRetryAttempt,
+      error_class: 'subscription_refused',
+      retryable: false,
+      reconnect_duration_ms: Math.max(
+        0,
+        Math.round(performance.now() - subscribeRetryStartedAt)
+      )
+    })
   }
 
   const scheduleSubscribeRetry = (): void => {
     if (subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      reportSubscribeRetryExhausted()
+      return
+    }
     const target = subscribedWorkflowId.value
     if (target === null) return
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
@@ -336,6 +363,8 @@ export function useAgentCrdtFollower(
     )
   }
   const onReconnected: EventListener = () => {
+    clearSubscribeRetry()
+    subscribeRetryStartedAt = performance.now()
     connected.value = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)

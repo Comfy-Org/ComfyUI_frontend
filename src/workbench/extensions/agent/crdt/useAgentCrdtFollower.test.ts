@@ -49,6 +49,10 @@ const adapterState = vi.hoisted(() => ({
   destroy: vi.fn()
 }))
 
+const telemetryState = vi.hoisted(() => ({
+  trackAgentReconnectFailed: vi.fn()
+}))
+
 const apiState = vi.hoisted(() => {
   const target = new EventTarget()
   return {
@@ -99,6 +103,9 @@ vi.mock('./devPanelLog', () => ({
 }))
 
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => telemetryState
+}))
 vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
@@ -188,6 +195,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    expect(telemetryState.trackAgentReconnectFailed).not.toHaveBeenCalled()
     unmount()
   })
 
@@ -202,6 +210,29 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('reports retry exhaustion exactly once with normalized metadata', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    dispatchFrame('doc_subscribed', { ok: false })
+    dispatchFrame('doc_subscribed', { ok: false })
+
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledWith({
+      attempt: 6,
+      error_class: 'subscription_refused',
+      retryable: false,
+      reconnect_duration_ms: 31_500
+    })
     unmount()
   })
 
