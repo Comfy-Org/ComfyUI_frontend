@@ -59,14 +59,19 @@ const itemClass =
 <template>
   <DropdownMenuRoot>
     <DropdownMenuTrigger as-child>
-      <Button
-        variant="outline"
-        :size
-        :prepend-icon="CalendarPlus"
-        :append-icon="ChevronDown"
-      >
-        {{ labels.trigger }}
-      </Button>
+      <!-- Callers that need a different affordance (the events directory's
+      compact SAVE THE DATE? chip) replace the trigger; the slot must resolve to
+      a single element for `as-child` to forward the menu's props onto it. -->
+      <slot name="trigger" :label="labels.trigger">
+        <Button
+          variant="outline"
+          :size
+          :prepend-icon="CalendarPlus"
+          :append-icon="ChevronDown"
+        >
+          {{ labels.trigger }}
+        </Button>
+      </slot>
     </DropdownMenuTrigger>
     <DropdownMenuPortal :disabled="portalDisabled">
       <DropdownMenuContent

@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 
 import { localizeHref } from '../src/config/routes'
 import {
+  directoryEvents,
   eventPath,
   eventVideoId,
   featuredEvents,
@@ -11,6 +12,7 @@ import {
 } from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
+import { filterDirectoryEvents } from '../src/utils/eventsDirectory'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/events'
@@ -33,6 +35,22 @@ function heroSection(page: Page, locale: Locale) {
     has: page.getByRole('heading', {
       level: 1,
       name: t('events.hero.title', locale)
+    })
+  })
+}
+
+// Mirrors the singular/plural pick in EventsDirectorySection.vue.
+function countLabel(count: number, locale: Locale) {
+  const key =
+    count === 1 ? 'events.directory.countOne' : 'events.directory.count'
+  return t(key, locale).replace('{count}', String(count))
+}
+
+function directorySection(page: Page, locale: Locale) {
+  return page.locator('section').filter({
+    has: page.getByRole('heading', {
+      level: 2,
+      name: t('events.directory.title', locale)
     })
   })
 }
@@ -198,7 +216,7 @@ test.describe('Events page — desktop @smoke', () => {
     )
   })
 
-  test('directory and host placeholder sections render their headings', async ({
+  test('directory and host sections render their headings', async ({
     page
   }) => {
     for (const [path, locale] of LOCALES) {
@@ -216,6 +234,109 @@ test.describe('Events page — desktop @smoke', () => {
         })
       ).toBeVisible()
     }
+  })
+
+  test('directory lists every event with a live count in both locales', async ({
+    page
+  }) => {
+    for (const [path, locale] of LOCALES) {
+      await page.goto(path)
+      const section = directorySection(page, locale)
+      await section.scrollIntoViewIfNeeded()
+
+      const rows = section.getByTestId('events-directory-row')
+      await expect(rows).toHaveCount(directoryEvents.length)
+      await expect(
+        section.getByText(countLabel(directoryEvents.length, locale))
+      ).toBeVisible()
+
+      // Upcoming events sort first and offer the calendar menu; past events
+      // follow and link out to their recording.
+      for (const [i, event] of directoryEvents.entries()) {
+        await expect(rows.nth(i)).toContainText(event.title[locale])
+      }
+    }
+  })
+
+  test('directory search narrows the list and the count follows it', async ({
+    page
+  }) => {
+    const target = directoryEvents.find((event) => event.location)
+    test.skip(!target, 'needs an event with a location')
+    if (!target) return
+
+    const query = target.location!.en
+    const expected = filterDirectoryEvents(
+      directoryEvents,
+      { query, category: 'all', program: 'all' },
+      'en'
+    )
+
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    const rows = section.getByTestId('events-directory-row')
+    const search = section.getByLabel(t('events.directory.searchLabel', 'en'))
+    // Retry until the island hydrates and the typing lands.
+    await expect(async () => {
+      await search.fill(query)
+      await expect(rows).toHaveCount(expected.length, { timeout: 1000 })
+    }).toPass()
+    for (const [i, event] of expected.entries()) {
+      await expect(rows.nth(i)).toContainText(event.title.en)
+    }
+    await expect(
+      section.getByText(countLabel(expected.length, 'en'))
+    ).toBeVisible()
+
+    // A query that matches nothing falls through to the empty state.
+    await search.fill('zzzzzzzz')
+    await expect(rows).toHaveCount(0)
+    await expect(
+      section.getByText(t('events.directory.empty', 'en'))
+    ).toBeVisible()
+  })
+
+  test('directory type filter composes with the search box', async ({
+    page
+  }) => {
+    const category = directoryEvents
+      .map((event) => event.category)
+      .find((entry) => entry !== directoryEvents[0]?.category)
+    test.skip(!category, 'needs events in at least two categories')
+    if (!category) return
+
+    const expected = filterDirectoryEvents(
+      directoryEvents,
+      { query: '', category, program: 'all' },
+      'en'
+    )
+
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    const rows = section.getByTestId('events-directory-row')
+    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+    await expect(async () => {
+      await typeFilter.selectOption(category)
+      await expect(rows).toHaveCount(expected.length, { timeout: 1000 })
+    }).toPass()
+    for (const [i, event] of expected.entries()) {
+      await expect(rows.nth(i)).toContainText(event.title.en)
+    }
+
+    // Composing a non-matching search with the same type empties the list.
+    await section
+      .getByLabel(t('events.directory.searchLabel', 'en'))
+      .fill('zzzzzzzz')
+    await expect(rows).toHaveCount(0)
+
+    // Back to All types with the search cleared restores every event.
+    await section.getByLabel(t('events.directory.searchLabel', 'en')).fill('')
+    await typeFilter.selectOption('all')
+    await expect(rows).toHaveCount(directoryEvents.length)
   })
 
   test('an upcoming streamed event page opens with the video dialog', async ({

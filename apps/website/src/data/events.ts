@@ -4,13 +4,15 @@ import type { CalendarEvent } from '../utils/calendar'
 import type { JsonLdNode } from '../utils/jsonLd'
 import { absoluteUrl, eventNode, jsonLdId } from '../utils/jsonLd'
 
-type EventCategory =
+export type EventCategory =
   | 'livestream'
   | 'hackathon'
   | 'workshop'
   | 'meetup'
   | 'buildathon'
   | 'conference'
+
+export type EventProgram = 'student' | 'communityHosts' | 'official' | 'partner'
 
 type EventMedia =
   | { type: 'image'; src: string; alt: LocalizedText }
@@ -20,7 +22,7 @@ export type ComfyEvent = {
   id: string
   category: EventCategory
   /** Comfy program track; drives the directory's programs filter. */
-  program?: 'student' | 'communityHosts' | 'official' | 'partner'
+  program?: EventProgram
   /** Drives the directory map pin; virtual events omit it and appear only in
    * the list, cards, and calendar views. */
   coords?: { lat: number; lng: number }
