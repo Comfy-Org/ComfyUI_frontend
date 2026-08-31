@@ -14,7 +14,7 @@ describe('visibleCanvasViewport', () => {
 
   afterEach(() => unregisterInset?.())
 
-  it('uses the full CSS-pixel canvas while the Agent panel is closed', () => {
+  it('uses the full CSS-pixel canvas when no inset is registered', () => {
     const canvas = {
       canvas: { width: 1600, height: 900 }
     } as LGraphCanvas
