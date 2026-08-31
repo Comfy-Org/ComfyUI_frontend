@@ -192,7 +192,21 @@ it (see D4).
 
 ### D1 — Identity: the session uid
 
-Every live document has a uid with these invariants:
+Every live document has two identities with different lifetimes:
+
+- The stable **document_id** names the user workflow target. It is the
+  address ADR-0024 uses for `workflow_id` → `document_id` resolution, detached
+  target sessions, bounded CRDT queues, lineage, state vectors, and remote
+  frames. It survives tab/view closure for as long as a target session is
+  intentionally retained, and reopening a workflow resolves to the same stable
+  target when that retained session still exists.
+- The ephemeral **uid** names one in-memory editing session. Runtime sidecars
+  that only belong to the live editing session key by uid, but agent-targeted
+  state first resolves `document_id` to the current live uid, if one exists. If
+  no uid exists because the target is detached, the operation remains queued on
+  the stable `document_id`; it is never redirected to the active tab.
+
+Every live document uid has these invariants:
 
 - **Minted at open** (hydration — where `changeTracker` is created today),
   **erased at close**. Reopening the same file creates a **new** uid.
