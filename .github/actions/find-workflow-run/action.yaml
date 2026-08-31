@@ -76,7 +76,12 @@ runs:
                 !candidate.expired
             );
             if (!artifact) {
-              core.setOutput('status', process.env.NOT_FOUND_STATUS);
+              core.setOutput(
+                'status',
+                run.conclusion === 'success'
+                  ? process.env.NOT_FOUND_STATUS
+                  : 'failed'
+              );
               return;
             }
             core.setOutput('status', 'ready');

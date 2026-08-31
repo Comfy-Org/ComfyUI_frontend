@@ -3,15 +3,11 @@ name: 'CI: E2E Coverage Package'
 on:
   workflow_call:
     inputs:
-      source_run_id:
-        required: true
-        type: string
       source_sha:
         required: true
         type: string
 
 permissions:
-  actions: read
   contents: read
 
 jobs:
@@ -31,13 +27,10 @@ jobs:
             scripts/cicd/package-e2e-coverage.sh
 
       - name: Download all shard coverage data
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        uses: actions/download-artifact@v8
         with:
-          run_id: ${{ inputs.source_run_id }}
-          name: e2e-coverage-shard-.*
-          name_is_regexp: true
+          pattern: e2e-coverage-shard-*
           path: temp/coverage-shards
-          if_no_artifact_found: warn
 
       - name: Install lcov
         run: sudo apt-get install -y -qq lcov

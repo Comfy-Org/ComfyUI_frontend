@@ -233,7 +233,6 @@ jobs:
       }}
     uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
     with:
-      source_run_id: ${{ format('{0}', github.run_id) }}
       source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
 
   # Records video only for spec files newly added in this PR, to keep cost bounded.

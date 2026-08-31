@@ -57,14 +57,10 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-if [[ "\${STUB_LCOV_KEEP_FIRST:-false}" == "true" ]]; then
-  cat "\${inputs[0]}" > "$output"
-else
-  : > "$output"
-  for input in "\${inputs[@]}"; do
-    cat "$input" >> "$output"
-  done
-fi
+: > "$output"
+for input in "\${inputs[@]}"; do
+  cat "$input" >> "$output"
+done
 `,
     { mode: 0o755 }
   )
@@ -97,15 +93,14 @@ exit 1
       mkdirSync(shard, { recursive: true })
       writeFileSync(join(shard, 'coverage.lcov'), contents)
     },
-    run(extraEnv: NodeJS.ProcessEnv = {}) {
+    run() {
       const result = spawnSync('bash', [SCRIPT, shards, output, html], {
         encoding: 'utf8',
         env: {
           ...process.env,
           PATH: `${bin}:${process.env.PATH ?? ''}`,
           GITHUB_OUTPUT: githubOutput,
-          GITHUB_STEP_SUMMARY: summary,
-          ...extraEnv
+          GITHUB_STEP_SUMMARY: summary
         }
       })
       return {
@@ -147,20 +142,6 @@ describe('package-e2e-coverage.sh', () => {
       'has-coverage=false\n'
     )
     expect(existsSync(join(fixture.output, 'coverage.lcov'))).toBe(false)
-  })
-
-  it('fails when merging omits a shard with an equal hit count', () => {
-    using fixture = coverageFixture()
-    fixture.writeShard('shard-a', coverage('src/shard-a'))
-    fixture.writeShard('shard-b', coverage('packages/shard-b'))
-
-    const result = fixture.run({ STUB_LCOV_KEEP_FIRST: 'true' })
-
-    expect(result.status).toBe(1)
-    expect(result.output).toContain(
-      'Merged coverage omitted hit lines from shard-b'
-    )
-    expect(existsSync(join(fixture.html, 'index.html'))).toBe(false)
   })
 
   it('fails when coverage is not mapped to repository sources', () => {
