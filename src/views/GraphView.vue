@@ -20,6 +20,17 @@
     </template>
   </div>
 
+  <component
+    :is="CompactAgentComposer"
+    v-if="agentCanvasEntryEnabled && !isBuilderMode"
+    @learn="agentOnboardingGuideRef?.open()"
+  />
+  <component
+    :is="AgentOnboardingGuide"
+    v-if="agentCanvasEntryEnabled && !isBuilderMode"
+    ref="agentOnboardingGuideRef"
+  />
+
   <GlobalToast />
   <InviteAcceptedToast />
   <RerouteMigrationToast />
@@ -103,10 +114,21 @@ import BuilderMenu from '@/components/builder/BuilderMenu.vue'
 import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
+import { useAgentCanvasEntryMount } from '@/workbench/extensions/agent/composables/useAgentCanvasEntryMount'
 
 setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
+
+interface AgentOnboardingGuideHandle {
+  open(): void
+}
+
+const {
+  enabled: agentCanvasEntryEnabled,
+  CompactAgentComposer,
+  AgentOnboardingGuide
+} = useAgentCanvasEntryMount()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
@@ -115,6 +137,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const agentOnboardingGuideRef = ref<AgentOnboardingGuideHandle>()
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())

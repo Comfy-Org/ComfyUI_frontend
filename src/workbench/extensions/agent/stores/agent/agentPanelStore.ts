@@ -3,7 +3,10 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
-import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
+import type {
+  AgentPanelCloseSource,
+  AgentPanelOpenSource
+} from '@/platform/telemetry/types'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -32,11 +35,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
-  function open(): void {
+  function open(source: AgentPanelOpenSource = 'topbar_button'): void {
     if (isOpen.value) return
     isOpen.value = true
     openedAt = Date.now()
-    useTelemetry()?.trackAgentPanelOpened({ source: 'topbar_button' })
+    useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
   function close(source: AgentPanelCloseSource): void {
@@ -70,6 +73,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     width,
     isMaximized,
     dismissedSelectionSignature,
+    open,
     toggle,
     close,
     setWidth,

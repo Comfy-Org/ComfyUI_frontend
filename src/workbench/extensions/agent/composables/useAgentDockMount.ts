@@ -9,13 +9,12 @@ interface AgentDockMount {
 }
 
 /**
- * The one distribution seam for the dock mounts. The literal comparison is
- * what dead-code-eliminates the store and both panel component chunks from
- * OSS builds; on cloud the async component is only requested once the gate
- * enables and opens the panel, so a flag-off session fetches no agent chunk.
+ * The production distribution seam for the dock mounts. The literal
+ * comparison dead-code-eliminates both panel component chunks from OSS builds.
+ * Development keeps the mount available for local Agent UI testing.
  */
 export function useAgentDockMount(): AgentDockMount {
-  if (__DISTRIBUTION__ !== 'cloud') {
+  if (__DISTRIBUTION__ !== 'cloud' && import.meta.env.MODE !== 'development') {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
   const agentPanelStore = useAgentPanelStore()

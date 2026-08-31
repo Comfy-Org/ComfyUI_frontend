@@ -287,6 +287,7 @@ import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 
@@ -386,6 +387,38 @@ describe('AgentPanelRoot session notices', () => {
       type: 'agent_api_failed',
       details: i18n.global.t('agent.malformedEvent')
     })
+  })
+})
+
+describe('AgentPanelRoot compact submission bridge', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+  })
+
+  it('forwards a queued compact prompt through the existing Agent transport', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, ack('workflow-1'))
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.draft = 'Build a compact image workflow'
+    expect(composer.requestSubmission()).toBe(true)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(messageBodies).toHaveLength(1))
+    expect(messageBodies[0]).toMatchObject({
+      content: 'Build a compact image workflow'
+    })
+    expect(composer.pendingSubmission).toBeNull()
+    expect(composer.draft).toBe('')
   })
 })
 

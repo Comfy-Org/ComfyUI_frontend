@@ -61,6 +61,17 @@ describe('agentPanelStore engagement telemetry', () => {
     })
   })
 
+  it('attributes a direct compact composer open', () => {
+    const store = useAgentPanelStore()
+
+    store.open('compact_composer')
+
+    expect(store.isOpen).toBe(true)
+    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledWith({
+      source: 'compact_composer'
+    })
+  })
+
   it('never emits for a rehydrated-open panel while the feature stays disabled', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     useAgentPanelStore()

@@ -44,6 +44,9 @@ if (__DISTRIBUTION__ === 'cloud') {
   registerAgentPanelExtension()
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
+} else if (import.meta.env.MODE === 'development') {
+  const { registerAgentPanelExtension } = await import('./agentPanel')
+  registerAgentPanelExtension()
 }
 
 // Feedback button for cloud and nightly builds

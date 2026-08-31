@@ -556,8 +556,9 @@ export type AgentPanelCloseSource =
   | 'close_button'
   | 'workflow_switch'
   | 'topbar_button'
+export type AgentPanelOpenSource = 'topbar_button' | 'compact_composer'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button'
+  source: 'restored' | AgentPanelOpenSource
 }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource

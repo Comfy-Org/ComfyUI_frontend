@@ -82,6 +82,7 @@ import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
@@ -546,6 +547,7 @@ async function onAgentActiveTab(
 }
 
 start()
+const agentComposerStore = useAgentComposerStore()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   mintPortWiring.detach()
@@ -938,6 +940,17 @@ function onPanelDrop(event: DragEvent): void {
   event.preventDefault()
   void attachment.addFiles(files)
 }
+
+watch(
+  () => agentComposerStore.pendingSubmission,
+  (pendingSubmission) => {
+    if (pendingSubmission === null) return
+    const submission = agentComposerStore.takeSubmission(pendingSubmission.id)
+    if (submission === undefined) return
+    onSend(submission.text, submission.attachments)
+  },
+  { immediate: true, flush: 'post' }
+)
 </script>
 
 <template>
