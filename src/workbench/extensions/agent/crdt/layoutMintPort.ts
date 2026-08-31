@@ -1,8 +1,8 @@
 /**
  * Layout-store mint port over the injected change feed (both applyOperation
- * entries funnel through it). Provenance rides operation.actor - stamped at
- * apply, so deferred delivery still carries it; remote applies run as
- * AGENT_REMOTE_ACTOR and never re-mint (KA-6). Teardown clears are inert
+ * entries funnel through it). Provenance rides each operation's source and
+ * actor, so deferred delivery still carries it; remote applies never re-mint
+ * (KA-6). Teardown clears are inert
  * outside runIntentionalClear, whose capture is the authoritative pre-clear
  * node set; delete_node consumes the link port's severance capture.
  */
@@ -24,7 +24,7 @@ export interface LayoutChangeView {
   operation: {
     type: string
     actor?: string
-    graphId?: string
+    source?: string
     nodeId?: NodeId
     layout?: { position: { x: number; y: number } }
   }
@@ -36,8 +36,6 @@ interface LayoutChangeFeed {
 
 /** The workflow-JSON node snapshot an `add_node` carries, read at mint time. */
 interface MintSnapshotSource {
-  /** Active root graph id; interior graph operations are not root doc ops. */
-  rootGraphId(): string | null
   /** Serialized workflow-JSON node for `id`, or null when unavailable. */
   serializeNode(id: string): WorkflowNode | null
   /** Every node id currently on the graph (clear's authoritative target set). */
@@ -80,7 +78,9 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
       localProvenance:
-        actor !== undefined && actor.startsWith(deps.localActorPrefix),
+        change.operation.source !== AGENT_REMOTE_ACTOR &&
+        actor !== undefined &&
+        actor.startsWith(deps.localActorPrefix),
       teardown
     })
   }
@@ -88,12 +88,9 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   function onChange(change: LayoutChangeView): void {
     const operation = change.operation
     const inTeardown = deps.session.inTeardown()
-    const inRootGraph =
-      operation.graphId !== undefined &&
-      operation.graphId === deps.source.rootGraphId()
     switch (operation.type) {
       case 'createNode': {
-        if (!inRootGraph || !gate(change, inTeardown)) return
+        if (!gate(change, inTeardown)) return
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
@@ -117,7 +114,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         return
       }
       case 'deleteNode': {
-        if (!inRootGraph || !gate(change, inTeardown)) return
+        if (!gate(change, inTeardown)) return
         if (operation.nodeId === undefined) return
         deps.enqueue([
           {
@@ -131,8 +128,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'clearGraph': {
         const captured = intentionalClearNodes
         intentionalClearNodes = null
-        if (!inRootGraph || !gate(change, inTeardown || captured === null))
-          return
+        if (!gate(change, inTeardown || captured === null)) return
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return
       }
