@@ -101,6 +101,8 @@ export interface components {
       /** @description Non-empty Yjs binary update encoded as standard base64. */
       update_b64: components['schemas']['Base64Payload']
       actor?: string
+      /** @description Creator-minted operation ids whose effects are included in this update. */
+      op_ids?: string[]
     }
     DocOpsFrame: {
       /**

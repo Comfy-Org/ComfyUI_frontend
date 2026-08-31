@@ -195,6 +195,10 @@ components:
           minLength: 1
           description: Non-empty Yjs binary update encoded as standard base64.
         actor: { type: string }
+        op_ids:
+          type: array
+          items: { type: string, minLength: 1 }
+          description: Creator-minted operation ids whose effects are included in this update.
       description: Provenance inventory "Message inventory" row doc_update.
 
     DocOpsFrame:
