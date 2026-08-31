@@ -1,15 +1,10 @@
-import { Form } from '@primevue/forms'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import Message from '@/components/ui/message/Message.vue'
 
 import ApiKeyForm from './ApiKeyForm.vue'
 
@@ -65,8 +60,7 @@ describe('ApiKeyForm', () => {
     const user = userEvent.setup()
     const result = render(ApiKeyForm, {
       global: {
-        plugins: [PrimeVue, i18n],
-        components: { Button, Form, Input, Message }
+        plugins: [i18n]
       },
       props
     })
@@ -115,5 +109,30 @@ describe('ApiKeyForm', () => {
       'href',
       'https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites'
     )
+  })
+
+  it('blocks an invalid key and displays its validation error', async () => {
+    const onSuccess = vi.fn()
+    const { user } = renderComponent({ onSuccess })
+    const input = screen.getByLabelText('API Key')
+
+    await user.type(input, 'invalid')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(mockStoreApiKey).not.toHaveBeenCalled()
+    expect(onSuccess).not.toHaveBeenCalled()
+    expect(input).toHaveAccessibleDescription('Must start with comfyui-')
+  })
+
+  it('stores a valid key and emits success', async () => {
+    const onSuccess = vi.fn()
+    const { user } = renderComponent({ onSuccess })
+    const apiKey = `comfyui-${'a'.repeat(64)}`
+
+    await user.type(screen.getByLabelText('API Key'), apiKey)
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(mockStoreApiKey).toHaveBeenCalledWith(apiKey)
+    expect(onSuccess).toHaveBeenCalledOnce()
   })
 })

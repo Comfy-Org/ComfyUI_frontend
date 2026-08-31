@@ -114,8 +114,6 @@ describe('CloudSignInForm password manager support', () => {
 })
 
 describe('CloudSignInForm submit gating', () => {
-  // PrimeVue leaves `$form.valid` undefined until a field is touched, so the
-  // pristine button is enabled by design and is not asserted here.
   it('disables submit once a field is touched and invalid', async () => {
     const user = userEvent.setup()
     renderRealForm()
