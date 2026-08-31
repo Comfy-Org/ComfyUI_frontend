@@ -590,7 +590,7 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
   })
 
   it('a switch on a dead socket still replaces the doc and announces it', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, bridge } = wire()
     const replaced: unknown[] = []
     bridge.addEventListener('follower_replaced', (event) => {
@@ -613,6 +613,5 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
     transport.open = true
     bridge.reconcile()
     expect(bridge.subscribedWorkflowId).toBe('wf-2')
-    warn.mockRestore()
   })
 })
