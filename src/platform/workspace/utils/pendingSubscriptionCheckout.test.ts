@@ -90,7 +90,7 @@ describe('clearPendingSubscriptionCheckoutIfTerminal', () => {
     savePendingSubscriptionCheckout(checkoutFixture())
   })
 
-  it.for(['succeeded', 'failed', 'reconciliation_needed'])(
+  it.for(['succeeded', 'failed', 'reconciliation_needed'] as const)(
     'clears the pointer once the operation reports %s',
     (status) => {
       clearPendingSubscriptionCheckoutIfTerminal('op-1', status)
@@ -99,7 +99,7 @@ describe('clearPendingSubscriptionCheckoutIfTerminal', () => {
     }
   )
 
-  it.for(['pending', 'timeout'])(
+  it.for(['pending', 'timeout'] as const)(
     'keeps the pointer while the operation reports %s',
     (status) => {
       clearPendingSubscriptionCheckoutIfTerminal('op-1', status)

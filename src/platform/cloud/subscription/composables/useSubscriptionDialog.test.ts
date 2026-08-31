@@ -767,7 +767,7 @@ describe('useSubscriptionDialog', () => {
 
     it('keeps the pointer for an unfinished operation across repeated resumes', async () => {
       mockShouldUseWorkspaceBilling.value = true
-      mockStartOperation.mockResolvedValue({ status: 'pending' })
+      mockStartOperation.mockResolvedValue({ status: 'timeout' })
       savePendingSubscriptionCheckout({
         operationId: 'op-parked',
         workspaceId: 'workspace-1',
