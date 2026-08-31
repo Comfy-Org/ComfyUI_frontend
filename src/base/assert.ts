@@ -1,3 +1,5 @@
+export const ASSERTION_FAILURE_PREFIX = '[Assertion failed]: '
+
 type AssertReporter = (message: string) => void
 
 let reporter: AssertReporter | null = null
@@ -9,6 +11,10 @@ let reporter: AssertReporter | null = null
  */
 export function setAssertReporter(fn: AssertReporter | null): void {
   reporter = fn
+}
+
+export function hasAssertReporter(): boolean {
+  return reporter !== null
 }
 
 /**
@@ -25,7 +31,7 @@ export function setAssertReporter(fn: AssertReporter | null): void {
 export function assert(condition: unknown, message: string): asserts condition {
   if (condition) return
 
-  const formatted = `[Assertion failed]: ${message}`
+  const formatted = `${ASSERTION_FAILURE_PREFIX}${message}`
   console.error(formatted)
 
   if (import.meta.env.DEV) {
