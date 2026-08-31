@@ -129,16 +129,13 @@ WORK_DIR=$(mktemp -d "${TMPDIR:-/tmp}/release-sheriff.XXXXXX")
 trap 'rm -rf "$WORK_DIR"' EXIT
 READ_CONFIG="$WORK_DIR/read.curl"
 WRITE_CONFIG="$WORK_DIR/write.curl"
+PUT_FILTER="$WORK_DIR/to-put.jq"
 printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
   "$DATADOG_API_KEY" "$DATADOG_APP_KEY" >"$READ_CONFIG"
 printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
   "$DATADOG_API_KEY" "$DATADOG_WRITE_APP_KEY" >"$WRITE_CONFIG"
 
-curl --fail-with-body -sS --config "$READ_CONFIG" \
-  "$BASE/$SCHEDULE_ID?include=teams,layers,layers.members,layers.members.user" \
-  --output "$WORK_DIR/schedule.response.original.json"
-
-jq '
+cat >"$PUT_FILTER" <<'JQ'
   . as $response
   | .data as $schedule
   | {
@@ -166,10 +163,32 @@ jq '
         relationships: {teams: $schedule.relationships.teams}
       }
     }
-' "$WORK_DIR/schedule.response.original.json" \
+JQ
+
+curl --fail-with-body -sS --config "$READ_CONFIG" \
+  "$BASE/$SCHEDULE_ID?include=teams,layers,layers.members,layers.members.user" \
+  --output "$WORK_DIR/schedule.response.original.json"
+jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.original.json" \
   >"$WORK_DIR/schedule.put.original.json"
 cp "$WORK_DIR/schedule.put.original.json" \
   "$WORK_DIR/schedule.put.edited.json"
+"${EDITOR:?Set EDITOR before running this procedure}" \
+  "$WORK_DIR/schedule.put.edited.json"
+
+curl --fail-with-body -sS --config "$READ_CONFIG" \
+  "$BASE/$SCHEDULE_ID?include=teams,layers,layers.members,layers.members.user" \
+  --output "$WORK_DIR/schedule.response.latest.json"
+jq -f "$PUT_FILTER" "$WORK_DIR/schedule.response.latest.json" \
+  >"$WORK_DIR/schedule.put.latest.json"
+diff -u "$WORK_DIR/schedule.put.original.json" \
+  "$WORK_DIR/schedule.put.latest.json"
+diff -u \
+  <(jq -S 'del(.data.attributes.tags)' \
+    "$WORK_DIR/schedule.put.original.json") \
+  <(jq -S 'del(.data.attributes.tags)' \
+    "$WORK_DIR/schedule.put.edited.json")
+jq -e '.data.attributes.tags | type == "array"' \
+  "$WORK_DIR/schedule.put.edited.json" >/dev/null
 
 curl --fail-with-body -sS -X PUT --config "$WRITE_CONFIG" \
   -H 'Content-Type: application/json' \
@@ -183,6 +202,11 @@ each member to `{ "user": { "id": "..." } }`. Edit only `tags` in
 PUT body remain beside it until the shell exits. The conversion preserves the
 schedule's `name`, `time_zone`, `tags`, and team references; every layer's
 complete attributes and `id`; and member order.
+
+Datadog offers no optimistic-concurrency token for this endpoint. After the
+editor closes, the procedure immediately fetches the schedule again and stops
+if anything changed. It also stops unless `tags` is still an array and every
+other field in the edited body exactly matches the original.
 
 The trap worth stating plainly: **a `PUT` whose body omits `tags` wipes every
 tag**, returns 200, and warns about nothing. Any tags-unaware edit to the
