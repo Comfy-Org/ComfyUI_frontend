@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -137,7 +136,7 @@ function mountCard(
       ...(onLocateModel ? { onLocateModel } : {})
     },
     global: {
-      plugins: [pinia, PrimeVue, i18n]
+      plugins: [pinia, i18n]
     }
   })
 }

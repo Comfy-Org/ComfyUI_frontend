@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import ErrorNodeCard from './ErrorNodeCard.vue'
@@ -106,7 +105,6 @@ describe('ErrorNodeCard.vue', () => {
       props: { card, onCopyToClipboard, onLocateNode },
       global: {
         plugins: [
-          PrimeVue,
           i18n,
           createTestingPinia({
             createSpy: vi.fn,

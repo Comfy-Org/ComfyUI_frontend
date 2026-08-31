@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -64,7 +63,7 @@ describe('PackCardFooter', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
+        plugins: [createTestingPinia({ stubActions: false }), i18n],
         provide: {
           [IsInstallingKey]: ref(false)
         }

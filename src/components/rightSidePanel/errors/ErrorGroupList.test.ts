@@ -3,7 +3,6 @@ import type { TestingPinia } from '@pinia/testing'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
@@ -122,7 +121,7 @@ function renderList(pinia: TestingPinia) {
   const user = userEvent.setup()
   render(ErrorGroupList, {
     global: {
-      plugins: [PrimeVue, testI18n, pinia],
+      plugins: [testI18n, pinia],
       stubs: {
         AsyncSearchInput: {
           template: '<input />'

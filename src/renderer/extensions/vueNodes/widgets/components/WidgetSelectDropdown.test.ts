@@ -2,7 +2,6 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { computed, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -147,7 +146,7 @@ describe('WidgetSelectDropdown', () => {
         ...extraProps
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n]
+        plugins: [createTestingPinia(), i18n]
       }
     })
   }

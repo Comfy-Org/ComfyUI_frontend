@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -122,7 +121,7 @@ const ClosedNonModalDialog = defineComponent({
 
 function mountDialog() {
   return render(GlobalDialog, {
-    global: { plugins: [PrimeVue, i18n] }
+    global: { plugins: [i18n] }
   })
 }
 
@@ -398,7 +397,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
   it('keeps checkout open on the scrim while preserving explicit dismissal', async () => {
     render(GlobalDialog, {
       global: {
-        plugins: [PrimeVue, i18n],
+        plugins: [i18n],
         stubs: {
           UnifiedPricingTable: true,
           SubscriptionAddPaymentPreviewWorkspace: true,
