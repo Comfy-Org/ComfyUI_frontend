@@ -55,6 +55,7 @@
             :widget="widget.simplified"
             :node-id
             :node-type
+            :invalid="widget.hasError"
             :aria-invalid="widget.hasError || undefined"
             :class="
               cn(
