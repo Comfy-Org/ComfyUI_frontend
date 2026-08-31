@@ -47,6 +47,13 @@ Uploads land on the Next server's local disk unless `GCS_BUCKET` is set. With th
 GCS vars configured, uploads go to the bucket behind the `media.comfy.org` CDN and
 each media doc's `url` becomes an absolute CDN url. See `.env.example`.
 
+**Uploading publishes the file immediately.** Media has no draft state: the
+moment an asset is uploaded it is downloadable from the CDN and listed by
+`GET /api/media`, even while the document using it is still a draft. This
+matches how the bucket already works for the website's hand-uploaded assets —
+but it means artwork under embargo must not be uploaded before its
+announcement.
+
 ## Rebuild site
 
 The website is statically built, so published changes only go live on a redeploy.
