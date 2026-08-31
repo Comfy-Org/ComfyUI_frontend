@@ -6,7 +6,8 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import TooltipContent from './TooltipContent.vue'
 import {
   automaticTooltipSuppressed,
-  keyboardInteraction
+  keyboardInteraction,
+  touchInteraction
 } from './tooltipInputModality'
 import TooltipProvider from './TooltipProvider.vue'
 import TooltipTrigger from './TooltipTrigger.vue'
@@ -47,8 +48,7 @@ const text = computed(() => {
 const isDisabled = computed(
   () => rootProps.disabled || normalizedConfig.value?.disabled || !text.value
 )
-const lacksHoverInput =
-  window.matchMedia('(hover: none)').matches || navigator.maxTouchPoints > 0
+const lacksHoverInput = window.matchMedia('(hover: none)').matches
 const open = ref(rootProps.open ?? rootProps.defaultOpen ?? false)
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -56,8 +56,7 @@ function updateOpen(nextOpen: boolean) {
   if (closeTimer) clearTimeout(closeTimer)
   if (
     nextOpen &&
-    (automaticTooltipSuppressed.value ||
-      (lacksHoverInput && !keyboardInteraction.value))
+    (touchInteraction.value || (lacksHoverInput && !keyboardInteraction.value))
   )
     return
 

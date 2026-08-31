@@ -6,9 +6,9 @@ const KEYBOARD_FOCUS_WINDOW_MS = 100
 
 export const automaticTooltipSuppressed = ref(false)
 export const keyboardInteraction = ref(false)
+export const touchInteraction = ref(false)
 
 let pointerMovementSquared = 0
-let touchInteraction = false
 let keyboardInteractionTimer: ReturnType<typeof setTimeout> | undefined
 let pointerInteractionTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -22,9 +22,9 @@ function suppressAutomaticTooltips() {
 
 function handlePointerDown(event: PointerEvent) {
   if (pointerInteractionTimer) clearTimeout(pointerInteractionTimer)
-  touchInteraction = event.pointerType === 'touch'
+  touchInteraction.value = event.pointerType === 'touch'
   suppressAutomaticTooltips()
-  if (touchInteraction) return
+  if (touchInteraction.value) return
   pointerInteractionTimer = setTimeout(() => {
     automaticTooltipSuppressed.value = false
     pointerInteractionTimer = undefined
@@ -32,7 +32,7 @@ function handlePointerDown(event: PointerEvent) {
 }
 
 function handleTouchStart() {
-  touchInteraction = true
+  touchInteraction.value = true
   suppressAutomaticTooltips()
 }
 
@@ -42,12 +42,12 @@ function handlePointerMove(event: PointerEvent) {
     event.movementX * event.movementX + event.movementY * event.movementY
   if (pointerMovementSquared <= POINTER_MOVE_THRESHOLD_SQUARED) return
   pointerMovementSquared = 0
-  touchInteraction = false
+  touchInteraction.value = false
   automaticTooltipSuppressed.value = false
 }
 
 function handlePointerOver(event: PointerEvent) {
-  if (event.pointerType !== 'mouse' || touchInteraction) return
+  if (event.pointerType !== 'mouse' || touchInteraction.value) return
   pointerMovementSquared = 0
   automaticTooltipSuppressed.value = false
 }
@@ -56,7 +56,7 @@ function handleKeyboardInteraction() {
   if (keyboardInteractionTimer) clearTimeout(keyboardInteractionTimer)
   keyboardInteraction.value = true
   pointerMovementSquared = 0
-  touchInteraction = false
+  touchInteraction.value = false
   automaticTooltipSuppressed.value = false
   keyboardInteractionTimer = setTimeout(() => {
     keyboardInteraction.value = false
@@ -70,7 +70,7 @@ export function resetTooltipInputModality() {
   keyboardInteractionTimer = undefined
   pointerInteractionTimer = undefined
   pointerMovementSquared = 0
-  touchInteraction = false
+  touchInteraction.value = false
   automaticTooltipSuppressed.value = false
   keyboardInteraction.value = false
 }
