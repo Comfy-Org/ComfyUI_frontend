@@ -356,13 +356,11 @@ describe('useVideoFilmstrip', () => {
     expect(bitmap.close).toHaveBeenCalledTimes(1)
   })
 
-  it('leaves the thumbnail empty when the capture fails', async () => {
-    vi.stubGlobal(
-      'createImageBitmap',
-      vi.fn(async () => {
-        throw new Error('decode failed')
-      })
-    )
+  it('leaves the thumbnail empty when every capture attempt fails', async () => {
+    const createImageBitmapMock = vi.fn(async () => {
+      throw new Error('decode failed')
+    })
+    vi.stubGlobal('createImageBitmap', createImageBitmapMock)
     vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
     installVideoMocks()
 
@@ -371,10 +369,34 @@ describe('useVideoFilmstrip', () => {
       useVideoFilmstrip(videoUrl)
     )
 
+    await vi.advanceTimersByTimeAsync(6000)
     await vi.waitFor(() => expect(loading.value).toBe(false))
 
+    expect(createImageBitmapMock.mock.calls.length).toBeGreaterThan(1)
     expect(thumbnail.value).toBe('')
     expect(error.value).toBeNull()
+  })
+
+  it('retries the capture when the frame is not yet decodable', async () => {
+    const bitmap = { width: 171, height: 96, close: vi.fn() }
+    const createImageBitmapMock = vi
+      .fn(async () => bitmap)
+      .mockRejectedValueOnce(new Error('The image source is not usable.'))
+      .mockRejectedValueOnce(new Error('The image source is not usable.'))
+    vi.stubGlobal('createImageBitmap', createImageBitmapMock)
+    vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
+    installVideoMocks()
+
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { thumbnail, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+
+    await vi.advanceTimersByTimeAsync(3000)
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(createImageBitmapMock).toHaveBeenCalledTimes(3)
+    expect(thumbnail.value).not.toBe('')
   })
 
   it('downscales the captured thumbnail to the filmstrip height', async () => {
