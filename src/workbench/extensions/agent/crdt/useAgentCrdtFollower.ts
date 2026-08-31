@@ -309,12 +309,13 @@ export function useAgentCrdtFollower(
     )
   }
   const onFollowerReplaced: EventListener = () => {
-    const workflowId = bridge.subscribedWorkflowId
-    if (
-      isTargetActive.value &&
-      workflowId !== null &&
-      workflowId === subscribedWorkflowId.value
-    )
+    // Gate on this composable's own INTENT, not the bridge's send REALITY
+    // (`bridge.subscribedWorkflowId`): a doc replacement while the socket is
+    // down leaves reality null, but the adapter must still be rebound to the
+    // new doc — otherwise it keeps observing the destroyed one and goes deaf
+    // when the socket recovers and updates land in the replacement.
+    const workflowId = subscribedWorkflowId.value
+    if (isTargetActive.value && workflowId !== null)
       adapter.bind(workflowId, bridge.follower)
   }
   const onSchemaError: EventListener = (event) => {
