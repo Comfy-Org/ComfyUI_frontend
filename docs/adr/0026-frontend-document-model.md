@@ -36,9 +36,9 @@ ComfyUI_frontend has the view, the stores, and the events, but not the
 document:
 
 - There is exactly **one root `LGraph` and one `LGraphCanvas`** for the
-  app's lifetime, created once in `ComfyApp.setup`
-  (`src/scripts/app.ts:942`). (Subgraphs are separate graph objects the
-  canvas pointer-swaps into — the mechanism Phase 5 generalizes.) A
+  app's lifetime, created once in `ComfyApp.setup` in `src/scripts/app.ts`.
+  (Subgraphs are separate graph objects the canvas pointer-swaps into — the
+  mechanism Phase 5 generalizes.) A
   workflow tab switch does not swap a pointer; it serializes the outgoing
   workflow to JSON, calls `rootGraph.clear()`, and rebuilds the incoming
   workflow into the _same_ graph instance via `rootGraph.configure()`. Every
@@ -126,10 +126,10 @@ The maintenance history of the snapshot/restore system is the bug tracker:
   regression-gated by the registry census matrix. Any architecture change
   must present the old surface as a facade. The facade pattern is already
   deployed and relied on by shipping code in three places: the deprecation
-  getters on `ComfyApp`
-  (`app.ts:285-414`), the `LGraphNode.pos`/`size` proxies over the layout
-  store, and the in-development v2 node API prototype, which is
-  parameterized on a graph-supplier _thunk_ rather than a graph reference.
+  getters on `ComfyApp` in `src/scripts/app.ts`, the `LGraphNode.pos`/`size`
+  proxies over the layout store, and the in-development v2 node API
+  prototype, which is parameterized on a graph-supplier _thunk_ rather than
+  a graph reference.
 - The ECS target architecture (ADR-0008 and
   `docs/architecture/ecs-target-architecture.md`) already states that runtime
   state must be scoped per workflow instance. This ADR supplies the identity
@@ -388,12 +388,12 @@ Ordering is allowed to exist in exactly three places:
    manager's role is to drive transitions and dispatch events, not to
    contain the work. Order
    is editable by moving a line, visible in diffs, reviewed. (Today's
-   `beforeLoadNewGraph`/`afterLoadNewGraph`
-   (`workflowService.ts:409` ff.) are this pattern, unnamed and
-   unsubscribable — and they conflate document-transition work with
-   graph-load work, firing on every undo/redo as well as on switches. Only
-   their document-transition half becomes the `Deactivate`/`Activate`
-   implementation; see Phase 1.)
+   `useWorkflowService().beforeLoadNewGraph` and
+   `useWorkflowService().afterLoadNewGraph` are this pattern, unnamed and
+   unsubscribable — and they conflate document-transition work with graph-load
+   work, firing on every undo/redo as well as on switches. Only their
+   document-transition half becomes the `Deactivate`/`Activate` implementation;
+   see Phase 1.)
 2. **Within a phase, sidecars**: FIFO — registered first, called first, the
    same order for every event. One registration per module (an object
    carrying all its handlers); duplicates throw; per-sidecar error isolation
@@ -520,12 +520,11 @@ handle (`ComfyWorkflow`), and the uid-keyed buckets absorbed as fields.
 (undo/redo queues, baselines) fold into the document; its _engine_ becomes
 a single undo system operating on the current document; its snapshot
 choreography shrinks. Legacy globals become read-through facades over the
-active document (the dozen deprecated delegating members on `ComfyApp`
-(`app.ts:285-414`) are the template; `window.graph` becomes a defined
-property). Pinia stores flip to
-the facade pattern of D4. Extension hooks gain an appended context argument
-identifying the document (non-breaking; the v2 node API takes the document
-handle natively).
+active document (the deprecated delegating members on `ComfyApp` in
+`src/scripts/app.ts` are the template; `window.graph` becomes a defined
+property). Pinia stores flip to the facade pattern of D4. Extension hooks gain
+an appended context argument identifying the document (non-breaking; the v2
+node API takes the document handle natively).
 
 ### Phase 5 — the document store (later, own TDD)
 
