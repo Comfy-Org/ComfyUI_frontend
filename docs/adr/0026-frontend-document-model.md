@@ -356,7 +356,11 @@ Phase 4.)
   Sidecars hold what is _about_ documents but not _of_ them — external
   resources, caches, cross-cutting services. Boundary rule of thumb: the
   document holds data you would serialize to hand the session to another
-  window; sidecars hold handles you would have to rebuild or release.
+  window; sidecars hold handles you would have to rebuild or release. A
+  sidecar releases those handles during `PostClose` while its uid-keyed bucket
+  is still readable, then evicts the bucket before the phase returns. `Close`
+  is for core document data becoming unavailable; `PostClose` is for external
+  cleanup against the last visible sidecar state.
 - **Pinia stores become managers, not owners.** A singleton store is a
   perfectly good _storage engine_ for per-document data — the way a single
   database engine serves many databases — provided every entry is keyed by
