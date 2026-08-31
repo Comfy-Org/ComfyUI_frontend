@@ -125,11 +125,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   get hidden(): boolean | undefined {
-    return (this._state?.options ?? this.options).hidden
+    return this._state.options.hidden
   }
   set hidden(value: boolean | undefined) {
-    const options = this._state?.options ?? this.options
-    options.hidden = value
+    this._state.options.hidden = value
   }
 
   advanced?: boolean
@@ -191,7 +190,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         disabled: this.disabled,
         label: this.label,
         name: this.name,
-        options: this.options,
+        options: this._state.options,
         serialize: this.serialize,
         type: this.type,
         value: this.value,
@@ -238,6 +237,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
       label,
+      hidden,
       disabled,
       value,
       linkedWidgets,
@@ -253,9 +253,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       label,
       disabled: disabled ?? false,
       serialize: this.serialize,
-      options: this.options,
+      options: this.options ?? {},
       y: this.y
     }
+    if (hidden !== undefined) this.hidden = hidden
   }
 
   getOutlineColor() {
