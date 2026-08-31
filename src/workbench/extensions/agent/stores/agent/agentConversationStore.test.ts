@@ -138,6 +138,30 @@ describe('useAgentConversationStore', () => {
     expect(tabLinkIds(store)).toEqual(['wf-9'])
   })
 
+  it('routes colliding turn ids by thread before the displayed transport', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('visible')
+    store.startTurn(T1)
+    store.startBackgroundTurn('background', T1, 'background prompt')
+
+    store.ingest(
+      chat({
+        type: 'agent_message_delta',
+        data: {
+          delta: 'background reply',
+          message_id: T1,
+          thread_id: 'background'
+        }
+      })
+    )
+
+    expect(partTexts(store)).not.toContain('background reply')
+    store.stashActiveTurn()
+    store.setThreadId('background')
+    store.resumeBackgroundTurn()
+    expect(partTexts(store)).toContain('background reply')
+  })
+
   it('(M2) isStreaming is false after abortActiveTurn() with no done', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)

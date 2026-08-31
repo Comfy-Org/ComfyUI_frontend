@@ -1,9 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ComfyApi } from '@/scripts/api'
+
 import { AGENT_WS_EVENT_TYPES } from '../../schemas/agentApiSchema'
 
 import type { AgentEventHost } from './agentEventSource'
 import { createAgentEventSource } from './agentEventSource'
+
+it('the live ComfyApi shape satisfies AgentEventHost', () => {
+  // Compile-time pin: if ComfyApi drops a host member, vue-tsc fails here.
+  const host: AgentEventHost = null as unknown as ComfyApi
+  expect(host).toBeNull()
+})
 
 function fakeHost(readyState?: number) {
   const target = new EventTarget()
@@ -64,7 +72,7 @@ describe('createAgentEventSource', () => {
     const status = vi.fn()
 
     createAgentEventSource(host).onStatus?.(status)
-    expect(status).not.toHaveBeenCalled()
+    expect(status).toHaveBeenLastCalledWith(false)
 
     emit('reconnecting')
     expect(status).toHaveBeenLastCalledWith(false)
@@ -83,15 +91,15 @@ describe('createAgentEventSource', () => {
     expect(status).toHaveBeenCalledWith(true)
   })
 
-  it('stays quiet for a connecting socket and after status unsubscribe', () => {
+  it('reports a connecting socket as offline and stays quiet after unsubscribe', () => {
     const { host, emit } = fakeHost(WebSocket.CONNECTING)
     const status = vi.fn()
 
     const unsubscribe = createAgentEventSource(host).onStatus?.(status)
-    expect(status).not.toHaveBeenCalled()
+    expect(status).toHaveBeenCalledExactlyOnceWith(false)
 
     unsubscribe?.()
     emit('reconnected')
-    expect(status).not.toHaveBeenCalled()
+    expect(status).toHaveBeenCalledExactlyOnceWith(false)
   })
 })
