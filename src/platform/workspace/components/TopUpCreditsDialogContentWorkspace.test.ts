@@ -667,6 +667,66 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       ).toBeInTheDocument()
     })
 
+    /**
+     * A charge that needs a bank challenge resolves through the operation
+     * store rather than the topup response, and the store settles the same
+     * terminal promise whether the charge succeeded, failed, or was canceled.
+     * Only the first two are verdicts on the payment.
+     */
+    function settleChallenge(status: string, errorMessage: string | null) {
+      mockStartOperation.mockImplementation(() => {
+        setIsAddingCredits(true)
+        setTopupActionOperation({
+          opId: 'op-1',
+          actionUrl: 'https://bank.example/3ds',
+          status: 'pending'
+        } as never)
+        return Promise.resolve({ opId: 'op-1', status, errorMessage })
+      })
+    }
+
+    it('lands on success once a bank challenge clears', async () => {
+      settleChallenge('succeeded', null)
+      mockTopup.mockResolvedValue(topupResponse('pending'))
+
+      renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+      expect(await screen.findByText("You're all set")).toBeInTheDocument()
+    })
+
+    it('names the reason a challenged charge was refused', async () => {
+      settleChallenge('failed', 'Insufficient funds')
+      mockTopup.mockResolvedValue(topupResponse('pending'))
+
+      renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+      expect(await screen.findByText('Payment declined')).toBeInTheDocument()
+      expect(screen.getByText('Stripe reasoning:')).toBeInTheDocument()
+      expect(screen.getByText('Insufficient funds')).toBeInTheDocument()
+    })
+
+    it('treats a canceled challenge as no charge, not a decline', async () => {
+      settleChallenge('pending', null)
+      mockCancelOperation.mockResolvedValue('canceled')
+      mockTopup.mockResolvedValue(topupResponse('pending'))
+
+      renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Cancel payment' })
+      )
+
+      expect(
+        await screen.findByText('Payment canceled. Nothing was charged.')
+      ).toBeInTheDocument()
+      expect(screen.queryByText('Payment declined')).toBeNull()
+    })
+
     it('sends a declined customer to the billing portal', async () => {
       mockTopup.mockResolvedValue(topupResponse('failed'))
       mockManageSubscription.mockResolvedValue(undefined)

@@ -302,7 +302,7 @@
     <div class="mt-auto flex flex-col gap-8 p-8">
       <div v-if="step === 'success'">
         <Button
-          variant="primary"
+          variant="secondary"
           size="lg"
           class="h-10 w-full justify-center"
           @click="() => handleClose()"
@@ -312,7 +312,7 @@
       </div>
       <div v-else-if="step === 'declined'">
         <Button
-          variant="primary"
+          variant="secondary"
           size="lg"
           class="h-10 w-full justify-center"
           @click="openManageBilling"
