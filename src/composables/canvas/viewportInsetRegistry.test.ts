@@ -23,6 +23,21 @@ describe('viewportInsetRegistry', () => {
     expect(getViewportInset()).toBe(0)
   })
 
+  it('clamps negative providers alone and alongside positive providers', () => {
+    const unregisterNegative = registerViewportInset(
+      'test-negative',
+      () => -100
+    )
+
+    expect(getViewportInset()).toBe(0)
+
+    const unregisterPositive = registerViewportInset('test-positive', () => 48)
+    expect(getViewportInset()).toBe(48)
+
+    unregisterNegative()
+    unregisterPositive()
+  })
+
   it('does not let an obsolete disposer remove a replacement provider', () => {
     const unregisterOld = registerViewportInset('test-replacement', () => 100)
     const unregisterCurrent = registerViewportInset(
