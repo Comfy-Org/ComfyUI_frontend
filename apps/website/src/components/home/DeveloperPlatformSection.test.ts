@@ -9,6 +9,11 @@ describe('DeveloperPlatformSection', () => {
   it('links the three products and the landing page', () => {
     render(DeveloperPlatformSection, { props: { locale: 'en' } })
 
+    expect(
+      screen.getByRole('heading', { name: t('home.platform.heading', 'en') })
+    ).toBeTruthy()
+    expect(screen.getByText(t('home.platform.body', 'en'))).toBeTruthy()
+
     const hrefOf = (name: string) =>
       screen.getByRole('link', { name }).getAttribute('href')
     expect(hrefOf(t('platform.products.serverless.title', 'en'))).toBe(

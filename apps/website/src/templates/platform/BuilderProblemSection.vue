@@ -28,16 +28,5 @@ const pains = painNumbers.map((n) => t(`platform.builderProblem.${n}`, locale))
         {{ pain }}
       </li>
     </ul>
-
-    <figure class="mx-auto mt-8 max-w-2xl text-center">
-      <blockquote
-        class="text-base/relaxed font-light text-primary-warm-white lg:text-lg/relaxed"
-      >
-        {{ t('platform.builderProblem.quote', locale) }}
-      </blockquote>
-      <figcaption class="mt-3 text-xs text-smoke-700">
-        {{ t('platform.builderProblem.quoteAttribution', locale) }}
-      </figcaption>
-    </figure>
   </section>
 </template>

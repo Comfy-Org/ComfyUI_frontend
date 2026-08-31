@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import { externalLinks, getRoutes } from '../../config/routes'
+import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BuilderVisual from './BuilderVisual.vue'
@@ -8,7 +8,6 @@ import { platformCtas } from './ctas'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const routes = getRoutes(locale)
 const ctas = platformCtas(locale)
 </script>
 
@@ -26,8 +25,9 @@ const ctas = platformCtas(locale)
       target: '_blank'
     }"
     :secondary-cta="{
-      label: t('platform.products.builder.enterpriseCta', locale),
-      href: routes.enterprise
+      label: ctas.docs.label,
+      href: ctas.docs.href,
+      target: ctas.docs.target
     }"
   >
     <template #media>

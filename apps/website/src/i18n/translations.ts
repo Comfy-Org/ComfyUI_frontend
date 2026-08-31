@@ -7323,13 +7323,13 @@ const translations = {
     'zh-CN': '开发者平台'
   },
   'home.platform.heading': {
-    en: 'Deploy and scale ComfyUI workflows',
-    'zh-CN': '部署并扩展 ComfyUI 工作流'
+    en: 'Deploy and scale your Comfy workflows with Serverless',
+    'zh-CN': '使用 Serverless 部署并扩展你的 Comfy 工作流'
   },
   'home.platform.body': {
-    en: 'Package your workflow, deploy it to Serverless, and call every frontier model — behind one API key. The fastest way from ComfyUI workflow to production endpoint.',
+    en: 'Bring your custom nodes and custom environments, then scale from zero to millions of generations without managing GPUs.',
     'zh-CN':
-      '打包你的工作流，部署到 Serverless，并调用所有前沿模型——共用一个 API 密钥。从 ComfyUI 工作流到生产端点的最快路径。'
+      '带上你的自定义节点和自定义环境，从零扩展到数百万次生成，无需管理 GPU。'
   },
   'home.platform.cta': {
     en: 'Explore the Developer Platform',
@@ -7507,13 +7507,39 @@ const translations = {
     'zh-CN': 'SDK 是首选入口，纯 HTTP 同样可用。'
   },
   'platform.serverlessDeploy.heading': {
+    en: 'How it works',
+    'zh-CN': '工作原理'
+  },
+  'platform.serverlessDeploy.subtitle': {
+    en: 'Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to serverless and scale it on demand.',
+    'zh-CN':
+      'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Serverless，并按需扩展。'
+  },
+  'platform.serverlessDeploy.1.title': {
     en: 'Ship in minutes',
     'zh-CN': '几分钟内上线'
   },
-  'platform.serverlessDeploy.subtitle': {
-    en: 'Easily package up your existing ComfyUI environment — or a single workflow — and deploy to Serverless.',
+  'platform.serverlessDeploy.1.description': {
+    en: 'Start with an existing ComfyUI installation or a single workflow.',
+    'zh-CN': '从现有的 ComfyUI 安装或单个工作流开始。'
+  },
+  'platform.serverlessDeploy.2.title': {
+    en: 'Package the environment',
+    'zh-CN': '打包环境'
+  },
+  'platform.serverlessDeploy.2.description': {
+    en: 'Builder auto-resolves Python dependencies and packages custom nodes and models into one build.',
     'zh-CN':
-      '轻松打包你现有的 ComfyUI 环境——或单个工作流——并部署到 Serverless。'
+      'Builder 自动解析 Python 依赖，并将自定义节点和模型打包到一个构建中。'
+  },
+  'platform.serverlessDeploy.3.title': {
+    en: 'Deploy with confidence',
+    'zh-CN': '放心部署'
+  },
+  'platform.serverlessDeploy.3.description': {
+    en: 'Custom nodes are installed correctly, models are packaged correctly, and the workflow runs in the environment you tested.',
+    'zh-CN':
+      '正确安装自定义节点、正确打包模型，并在经过测试的环境中运行工作流。'
   },
   'platform.serverlessDeploy.tabInstall': {
     en: 'Start with your installation',
@@ -7528,9 +7554,8 @@ const translations = {
     'zh-CN': '为规模而生'
   },
   'platform.serverlessScale.subtitle': {
-    en: 'Deploy on the Developer Platform across thousands of GPUs — autoscaling, logs, and performance controls built in.',
-    'zh-CN':
-      '在开发者平台上跨数千块 GPU 部署——自动扩缩、日志和性能控制开箱即用。'
+    en: 'Deploy across thousands of GPUs with autoscaling, logs, and performance controls built in.',
+    'zh-CN': '跨数千块 GPU 部署，自动扩缩、日志和性能控制开箱即用。'
   },
   'platform.serverlessScale.1.title': {
     en: 'Autoscaling',
@@ -7562,9 +7587,9 @@ const translations = {
     'zh-CN': 'Serverless API'
   },
   'platform.products.serverless.description': {
-    en: "Scale from 0 to millions of generations on Comfy's serverless engine. No GPUs to configure, no cold starts — only pay for what you use.",
+    en: 'Deploy and scale your Comfy workflows with serverless. Bring custom nodes and custom environments, then scale from zero to millions of generations.',
     'zh-CN':
-      '在 Comfy 无服务器引擎上从 0 扩展到数百万次生成。无需配置 GPU，没有冷启动——只为实际用量付费。'
+      '使用 Serverless 部署并扩展你的 Comfy 工作流。带上自定义节点和自定义环境，从零扩展到数百万次生成。'
   },
   'platform.serverlessVisual.ariaLabel': {
     en: 'Animated diagram of a request lighting up RTX 6000 PRO, H100, and B200 GPU workers, with COMFYUI scrolling across the grid.',
@@ -7580,9 +7605,9 @@ const translations = {
     'zh-CN': 'Builder'
   },
   'platform.products.builder.description': {
-    en: 'Package your custom nodes, models, and pinned dependencies into an immutable build. Deploy builds on Serverless or to local workstations. Enterprises govern the fleet with the Managed Builds dashboard.',
+    en: 'Package custom nodes, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to serverless.',
     'zh-CN':
-      '把你的自定义节点、模型和锁定依赖打包成一个不可变构建。构建可部署到 Serverless，也可部署到本地工作站。企业可通过托管构建仪表盘治理整个集群。'
+      '将自定义节点、模型和 Python 依赖打包成可复现的构建。在 Comfy Desktop 上运行，或部署到 Serverless。'
   },
   'platform.products.builder.enterpriseCta': {
     en: 'Enterprise: Managed Builds',
@@ -7954,93 +7979,26 @@ const translations = {
     en: 'Targeting the end of September 2026.',
     'zh-CN': '目标是 2026 年 9 月底。'
   },
-  // ── Serverless API subpage ────────────────────────────────────
-  // ── Router subpage ────────────────────────────────────────────
-  'platform.modelsFeatures.heading': {
-    en: 'One key, every frontier model',
-    'zh-CN': '一个密钥，所有前沿模型'
-  },
-  'platform.modelsFeatures.1.title': {
-    en: 'Every frontier media model',
-    'zh-CN': '所有前沿媒体模型'
-  },
-  'platform.modelsFeatures.1.description': {
-    en: '36+ partner providers — Nano Banana, Veo, Kling, Seedance, Flux, Sora, GPT Image, Runway, Luma, ElevenLabs and more — behind stable model IDs.',
-    'zh-CN':
-      '36+ 家合作伙伴——Nano Banana、Veo、Kling、Seedance、Flux、Sora、GPT Image、Runway、Luma、ElevenLabs 等——都在稳定的模型 ID 之后。'
-  },
-  'platform.modelsFeatures.2.title': {
-    en: 'Never dropped',
-    'zh-CN': '永不丢弃'
-  },
-  'platform.modelsFeatures.2.description': {
-    en: 'Queued requests never die with a 429. They hold a queue position against your workspace concurrency and start the moment a slot frees.',
-    'zh-CN':
-      '排队中的请求绝不会以 429 告终。它们在你工作区的并发额度内保留队列位置，一有空位立刻开始。'
-  },
-  'platform.modelsFeatures.3.title': {
-    en: 'One credit pool',
-    'zh-CN': '一个积分池'
-  },
-  'platform.modelsFeatures.3.description': {
-    en: 'Pay per use from the same balance that powers Cloud workflows and serverless GPUs. No subscription floor.',
-    'zh-CN':
-      '按用量付费，与 Cloud 工作流和无服务器 GPU 共用同一余额。没有订阅门槛。'
-  },
-  'platform.modelsFeatures.4.title': {
-    en: 'Costs you can attribute',
-    'zh-CN': '可归因的成本'
-  },
-  'platform.modelsFeatures.4.description': {
-    en: 'Every completed request returns the credits it consumed. Failed provider calls are never billed.',
-    'zh-CN': '每个完成的请求都会返回其消耗的积分。失败的调用绝不计费。'
-  },
-  'platform.modelsFeatures.5.title': {
-    en: 'Schemas to generate against',
-    'zh-CN': '可直接生成代码的 Schema'
-  },
-  'platform.modelsFeatures.5.description': {
-    en: 'Every model publishes its own OpenAPI document — the same one the server validates your call against.',
-    'zh-CN':
-      '每个模型都发布自己的 OpenAPI 文档——服务器校验你的调用时用的正是同一份。'
-  },
-  'platform.modelsFeatures.6.title': {
-    en: 'Cancel anytime',
-    'zh-CN': '随时取消'
-  },
-  'platform.modelsFeatures.6.description': {
-    en: 'A queued request cancels immediately and costs nothing; in-progress calls get a best-effort cancel.',
-    'zh-CN': '排队中的请求立即取消且不产生费用；进行中的调用会尽力取消。'
-  },
   // ── Builder subpage ───────────────────────────────────────────
   'platform.builderProblem.heading': {
-    en: 'Teams love using Comfy — and hate managing it',
-    'zh-CN': '团队爱用 Comfy——却讨厌管理它'
+    en: 'Build once. Run the same Comfy anywhere.',
+    'zh-CN': '一次构建，在任何地方运行同一个 Comfy。'
   },
   'platform.builderProblem.1': {
-    en: 'The same nodes installed a week apart resolve different dependencies — a workflow works on one machine and fails on the next.',
-    'zh-CN':
-      '相隔一周安装的同一批节点会解析出不同的依赖——工作流在一台机器上能跑，在另一台上却失败。'
+    en: 'The same nodes can resolve different dependencies when installed at different times.',
+    'zh-CN': '同一批节点在不同时间安装时，可能会解析出不同的依赖。'
   },
   'platform.builderProblem.2': {
-    en: 'Environments drift mid-production, and outputs silently change.',
-    'zh-CN': '环境在制作中途悄悄漂移，产出也随之悄悄变化。'
+    en: 'Environments drift during production and outputs change.',
+    'zh-CN': '环境在制作过程中发生漂移，产出也随之变化。'
   },
   'platform.builderProblem.3': {
-    en: 'Workflows get shared over a network drive, but no one can keep everyone on the same version.',
-    'zh-CN': '工作流通过网络硬盘共享，却没人能让所有人保持同一版本。'
+    en: 'Shared workflows break when machines run different versions.',
+    'zh-CN': '当机器运行不同版本时，共享的工作流会失效。'
   },
   'platform.builderProblem.4': {
-    en: 'Whoever runs Comfy for the team spends their time keeping it alive instead of using it.',
-    'zh-CN': '为团队维护 Comfy 的人，把时间都花在维持它运转上，而不是使用它。'
-  },
-  'platform.builderProblem.quote': {
-    en: '“Debugging our GPU cloud has become a bigger job for us than making workflows.”',
-    'zh-CN': '“调试我们的 GPU 云已经变成比制作工作流更大的工作。”'
-  },
-  'platform.builderProblem.quoteAttribution': {
-    en: 'Film production company',
-    'zh-CN': '影视制作公司'
+    en: 'Environment maintenance takes time away from building workflows.',
+    'zh-CN': '环境维护占用了构建工作流的时间。'
   },
   'platform.builderPillars.heading': {
     en: 'Get everyone on the same Comfy',
@@ -8081,13 +8039,45 @@ const translations = {
       '通过界面轻松迁移，或让你的智能体使用我们团队维护的 Skills 完成迁移。'
   },
   'platform.builderEnterprise.heading': {
-    en: 'Need enterprise controls?',
-    'zh-CN': '需要企业级控制？'
+    en: 'Builder vs. Managed Builds',
+    'zh-CN': 'Builder 与托管构建对比'
   },
   'platform.builderEnterprise.subtitle': {
-    en: "Model allowlists, per-partner-node control, and BYOK — run partner models on your organization's own keys. Managed Builds gives your admins governance over every build your organization runs.",
+    en: 'Builder is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance.',
     'zh-CN':
-      '模型白名单、逐个控制合作伙伴节点、BYOK——用组织自己的密钥运行合作伙伴模型。托管构建让管理员治理组织运行的每一个构建。'
+      'Builder 可用于自助打包和测试自己的环境。托管构建增加了团队共享和企业治理。'
+  },
+  'platform.builderEnterprise.feature': {
+    en: 'Feature',
+    'zh-CN': '功能'
+  },
+  'platform.builderEnterprise.included': {
+    en: 'Included',
+    'zh-CN': '包含'
+  },
+  'platform.builderEnterprise.notIncluded': {
+    en: 'Not included',
+    'zh-CN': '不包含'
+  },
+  'platform.builderEnterprise.enterpriseOnly': {
+    en: 'Enterprise only',
+    'zh-CN': '仅限企业版'
+  },
+  'platform.builderEnterprise.customNodes.label': {
+    en: 'Custom nodes packaging',
+    'zh-CN': '自定义节点打包'
+  },
+  'platform.builderEnterprise.teamSharing.label': {
+    en: 'Team sharing',
+    'zh-CN': '团队共享'
+  },
+  'platform.builderEnterprise.governance.label': {
+    en: 'Governance',
+    'zh-CN': '治理'
+  },
+  'platform.builderEnterprise.pythonDependencies.label': {
+    en: 'Python dependency auto-resolution',
+    'zh-CN': 'Python 依赖自动解析'
   },
   'platform.closing.heading': {
     en: 'Maximize scale and control on Developer Platform',

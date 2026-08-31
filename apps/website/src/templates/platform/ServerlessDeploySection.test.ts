@@ -10,6 +10,15 @@ describe('ServerlessDeploySection', () => {
   it('walks through the snapshot flow first and the workflow flow on demand', async () => {
     render(ServerlessDeploySection, { props: { locale: 'en' } })
 
+    expect(
+      screen.getByRole('heading', {
+        name: t('platform.serverlessDeploy.heading', 'en')
+      })
+    ).toBeTruthy()
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    expect(
+      screen.getByText(t('platform.serverlessDeploy.2.title', 'en'))
+    ).toBeTruthy()
     expect(screen.getByText(/comfy build init --from-snapshot/)).toBeTruthy()
 
     await userEvent.click(
