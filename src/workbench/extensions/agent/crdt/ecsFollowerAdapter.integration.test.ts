@@ -12,6 +12,7 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -28,6 +29,10 @@ const catalog: WidgetCatalog = {
 const scope = {
   rootGraphId: toRootGraphId('root'),
   owningGraphId: toOwningGraphId('root')
+}
+interface TestLayout {
+  position: { x: number; y: number }
+  size: { width: number; height: number }
 }
 
 function op(id: string, baseVersion: number, payload: object) {
@@ -46,8 +51,17 @@ describe('EcsFollowerAdapter integration', () => {
   })
 
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
-    const createLayout = vi.fn()
-    const deleteLayouts = vi.fn()
+    const layouts = new Map<NodeId, TestLayout>()
+    const createLayout = vi.fn(
+      (_scope: typeof scope, nodeId: NodeId, layout: TestLayout) => {
+        layouts.set(nodeId, structuredClone(layout))
+      }
+    )
+    const deleteLayouts = vi.fn(
+      (_scope: typeof scope, nodeIds: readonly NodeId[]) => {
+        for (const nodeId of nodeIds) layouts.delete(nodeId)
+      }
+    )
     const mutations = createGraphMutations({
       getScope: () => scope,
       layout: { createNode: createLayout, deleteNodes: deleteLayouts }
@@ -57,7 +71,7 @@ describe('EcsFollowerAdapter integration', () => {
         id: 1,
         type: 'Source',
         title: 'Local baseline',
-        pos: [0, 0],
+        pos: [37, 41],
         size: [100, 80],
         inputs: [],
         outputs: [{ name: 'out', type: 'IMAGE', links: [] }],
@@ -69,6 +83,7 @@ describe('EcsFollowerAdapter integration', () => {
         opId: 'local-seed'
       }
     )
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
     createLayout.mockClear()
 
     const host = mint(
@@ -114,9 +129,8 @@ describe('EcsFollowerAdapter integration', () => {
 
     const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
     expect(nodes.map(({ id }) => id)).toEqual([toNodeId(1), toNodeId(2)])
-    expect(nodes.find(({ id }) => id === toNodeId(1))?.title).toBe(
-      'Host baseline'
-    )
+    expect(nodes.find(({ id }) => id === toNodeId(1))).toBe(existing)
+    expect(existing.title).toBe('Host baseline')
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
         ?.value
@@ -127,13 +141,15 @@ describe('EcsFollowerAdapter integration', () => {
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toMatchObject({ originNodeId: toNodeId(1), targetNodeId: toNodeId(2) })
-    expect(deleteLayouts).toHaveBeenCalledWith(scope, [toNodeId(1)], {
-      source: 'agent-remote',
-      actor: 'agent:test',
-      opId: 'bootstrap',
-      opIds: ['bootstrap']
+    expect(layouts.get(toNodeId(1))).toEqual({
+      position: { x: 37, y: 41 },
+      size: { width: 100, height: 80 }
     })
-    expect(createLayout).toHaveBeenCalledTimes(2)
+    expect(layouts.get(toNodeId(2))).toMatchObject({
+      position: { x: 300, y: 20 }
+    })
+    expect(deleteLayouts).not.toHaveBeenCalled()
+    expect(createLayout).toHaveBeenCalledOnce()
 
     adapter.destroy()
     follower.destroy()
@@ -155,8 +171,8 @@ describe('EcsFollowerAdapter integration', () => {
       {
         id: 1,
         type: 'Source',
-        inputs: [],
-        outputs: [{ name: 'out', type: 'IMAGE', links: [99] }]
+        inputs: [{ name: 'in', type: 'IMAGE', link: 98 }],
+        outputs: [{ name: 'out', type: 'IMAGE', links: [98, 99] }]
       },
       context
     )
@@ -167,6 +183,17 @@ describe('EcsFollowerAdapter integration', () => {
         widgets_values: { stale: 9 },
         inputs: [{ name: 'in', type: 'IMAGE', link: 99 }],
         outputs: []
+      },
+      context
+    )
+    mutations.connect(
+      {
+        id: 98,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 1,
+        targetSlot: 0,
+        type: 'IMAGE'
       },
       context
     )
@@ -205,12 +232,15 @@ describe('EcsFollowerAdapter integration', () => {
     expect(useLinkStore().getTopology(scope.rootGraphId, toLinkId(99))).toBe(
       undefined
     )
+    expect(useLinkStore().getTopology(scope.rootGraphId, toLinkId(98))).toBe(
+      undefined
+    )
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(99), 'stale'))
     ).toBeUndefined()
     expect(deleteLayouts).toHaveBeenCalledWith(
       scope,
-      [toNodeId(1), toNodeId(99)],
+      [toNodeId(99)],
       expect.objectContaining({ opId: 'replay' })
     )
 
@@ -659,6 +689,7 @@ describe('EcsFollowerAdapter integration', () => {
         reconcileNode: () => undefined,
         setWidget: () => undefined,
         connect: () => undefined,
+        removeMissing: () => undefined,
         removeLinks: () => undefined,
         deleteNode: () => undefined,
         clearSemanticGraph: () => undefined

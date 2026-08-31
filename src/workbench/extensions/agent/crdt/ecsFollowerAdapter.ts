@@ -243,15 +243,20 @@ export class EcsFollowerAdapter {
     )
     session.mutations.batch(frameContext(update), (batch) => {
       if (reconcile) {
-        batch.clearSemanticGraph()
-        session.nodes.forEach((_node, id) => {
+        const nodes = [...session.nodes.keys()].flatMap((id) => {
           const payload = readSemanticNode(session.follower.doc, id)
-          if (payload) batch.addNode(payload)
+          return payload ? [payload] : []
         })
-        session.links.forEach((_link, id) => {
+        const links = [...session.links.keys()].flatMap((id) => {
           const link = readSemanticLink(session.follower.doc, id)
-          if (link) batch.connect(link)
+          return link ? [link] : []
         })
+        batch.removeMissing(
+          nodes.map(({ id }) => toNodeId(id)),
+          links.map(({ id }) => id)
+        )
+        for (const payload of nodes) batch.reconcileNode(payload)
+        for (const link of links) batch.connect(link)
         return
       }
 
