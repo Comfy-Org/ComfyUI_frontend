@@ -138,6 +138,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (order.length === 0) graphOrders.delete(nodeId)
   }
 
+  /**
+   * @returns The existing state for the same widget type, replacement state
+   * for a different type, or `undefined` for an invalid widget ID.
+   */
   function registerWidget<TValue extends WidgetValue = WidgetValue>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>,
