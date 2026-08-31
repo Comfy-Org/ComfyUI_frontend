@@ -167,6 +167,34 @@ describe('attachLinkMintPort', () => {
     consoleError.mockRestore()
   })
 
+  it('surfaces an unconsumed subgraph-interior deletion observably instead of minting', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    remove(SUBGRAPH_SCOPE, topology(41))
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledWith(
+      '[agent-crdt] subgraph-interior disconnect has no wire op; the bound doc diverges from the local graph',
+      '41'
+    )
+    consoleError.mockRestore()
+  })
+
+  it('stays silent for a consumed subgraph-interior deletion', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    remove(SUBGRAPH_SCOPE, topology(41))
+    port.severances.take('1')
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    expect(consoleError).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
   it('stays silent for teardown severances', async () => {
     const consoleError = vi
       .spyOn(console, 'error')

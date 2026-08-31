@@ -8,6 +8,8 @@
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
+import { assert } from '@/base/assert'
+
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
@@ -76,6 +78,8 @@ interface SeveranceEntry {
   topology: LinkTopologyView
   /** The gate was open at severance: unconsumed means a real divergence. */
   mintable: boolean
+  /** Only root-scope link deletions can be represented as standalone ops. */
+  rootScoped: boolean
 }
 
 function isRootScope(scope: LinkScopeView): boolean {
@@ -139,6 +143,9 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
             if (!entry.mintable || consumedLinkIds.has(key)) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
+            if (!entry.rootScoped) {
+              surfaceUnrepresentable('subgraph-interior disconnect', key)
+            }
           }
         }
         severancesByNode.clear()
@@ -155,14 +162,21 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
+    const mintable = gateOpen()
+    const rootScoped = isRootScope(scope)
     const entry: SeveranceEntry = {
       linkId: topology.id,
       topology,
-      mintable: gateOpen() && isRootScope(scope)
+      mintable,
+      rootScoped
     }
     capture(topology.originNodeId, entry)
     capture(topology.targetNodeId, entry)
-    if (entry.mintable) {
+    if (mintable && rootScoped) {
+      assert(
+        rootScoped,
+        'breaks CRDT invariant #1 (ops are the replication unit): standalone disconnect ops require a root-scope link; see ADR-0016'
+      )
       deps.enqueue([
         {
           op: 'disconnect',
