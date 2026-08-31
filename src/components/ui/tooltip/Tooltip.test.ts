@@ -107,6 +107,33 @@ describe('Tooltip', () => {
     outside.remove()
   })
 
+  it('only opens automatically from the keyboard without a hover input', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query) =>
+        ({
+          matches: query === '(hover: none)',
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn()
+        }) satisfies MediaQueryList
+    )
+    renderTooltip()
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await fireEvent.focus(trigger)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+    await fireEvent.blur(trigger)
+    await user.tab()
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
+  })
+
   it('opens on click without bubbling or duplicating the accessible label', async () => {
     const cardClick = vi.fn()
     const user = userEvent.setup()
