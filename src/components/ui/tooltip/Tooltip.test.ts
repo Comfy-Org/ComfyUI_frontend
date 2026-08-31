@@ -142,7 +142,8 @@ describe('Tooltip', () => {
   })
 
   it('only opens automatically from the keyboard without a hover input', async () => {
-    const user = userEvent.setup()
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     vi.spyOn(navigator, 'maxTouchPoints', 'get').mockReturnValue(1)
     vi.spyOn(window, 'matchMedia').mockImplementation(
       (query) =>
@@ -167,6 +168,11 @@ describe('Tooltip', () => {
     await user.tab()
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
+
+    await fireEvent.blur(trigger)
+    await vi.advanceTimersByTimeAsync(100)
+    await user.hover(trigger)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
   it('opens on click without bubbling or duplicating the accessible label', async () => {
