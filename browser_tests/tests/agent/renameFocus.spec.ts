@@ -13,12 +13,20 @@ const SHOW_HISTORY_LABEL = enMessages.agent.showChatHistory
 const CHAT_OPTIONS_LABEL = enMessages.agent.chatOptions
 const RENAME_LABEL = enMessages.g.rename
 
+// The root is loaded through defineAsyncComponent (DockedAgentPanel.vue), so
+// opening the panel costs a chunk fetch on top of the dock; the staged wait and
+// the wider budget below cover that. They are NOT what fixed the cloud-CI
+// failure - that was the locator (see below).
+const PANEL_MOUNT_TIMEOUT = 30_000
+
 // Precondition, not the criterion. The history list is populated by
-// AgentPanelRoot.vue:808 -> history.replaceAll((await listThreads())...),
-// and listThreads() GETs /agent/threads (agentRestClient.ts:149). Seeding
-// through that route is the app's own load path, so the rows under test are
-// rendered by the real component from real store state - nothing is injected
-// into the DOM and no state is faked past the UI.
+// AgentPanelRoot.vue -> history.replaceAll((await listThreads())...), and
+// listThreads() GETs /agent/threads (agentRestClient.ts). Seeding through that
+// route is the app's own load path, so the row under test is rendered by the
+// real component from real store state - nothing is injected into the DOM and
+// no state is faked past the UI.
+// Shape verified against zAgentThreadSummary (agentApiSchema.ts): id and title
+// required, updated_at optional, passthrough for extras.
 const SEEDED_THREAD_ID = 'thread-rename-focus'
 const SEEDED_TITLE = 'Seeded session'
 
@@ -46,13 +54,28 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
     await seedOneThread(page)
     await bootAgentApp(page, agentFlagEnabled)
 
-    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
-    await expect(page.getByTestId('agent-panel-root')).toBeVisible()
+    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    await expect(openButton).toBeVisible()
+    await openButton.click()
+
+    // Staged: the docked shell renders immediately, the async root arrives
+    // after its chunk. Asserting the shell first keeps a later failure
+    // attributable to the root rather than to the dock.
+    await expect(page.getByTestId('docked-agent-panel')).toBeVisible()
+    // The mounted shell is workbench/extensions/agent/AgentPanelRoot.vue, which
+    // carries only id="agent-panel-root"; the data-testid is on the unmounted
+    // components/agent/ stub. My first version used getByTestId here, which can
+    // never match - the 5s timeout was a symptom, not the cause.
+    await expect(page.locator('#agent-panel-root')).toBeVisible({
+      timeout: PANEL_MOUNT_TIMEOUT
+    })
 
     await page.getByRole('button', { name: SHOW_HISTORY_LABEL }).click()
 
     // Positive anchor: the seeded row rendered, so a later absence means the
-    // editor was torn down, not that history was empty all along.
+    // editor was torn down, not that history was empty all along. If THIS
+    // line is what fails, the /agent/threads mock is wrong and the run says
+    // nothing about the focus race.
     const row = page.getByText(SEEDED_TITLE)
     await expect(row).toBeVisible()
 
@@ -71,7 +94,7 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
 
     const editor = page.getByRole('textbox', { name: RENAME_LABEL })
 
-    // (1) still mounted. cancelRename() (ChatHistoryScreen.vue:155, @blur)
+    // (1) still mounted. cancelRename() (ChatHistoryScreen.vue, @blur)
     // unmounts the editor, so a stolen focus shows up here first.
     await expect(editor).toBeVisible()
 
