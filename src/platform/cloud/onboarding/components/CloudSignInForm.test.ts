@@ -1,7 +1,6 @@
 import { useAuthStore } from '@/stores/authStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -30,7 +29,6 @@ function renderForm(
     global: {
       plugins: [
         router,
-        PrimeVue,
         createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
       ]
     }

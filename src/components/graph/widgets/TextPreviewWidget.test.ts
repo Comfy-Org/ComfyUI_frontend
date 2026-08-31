@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
@@ -39,7 +38,6 @@ function renderPreview(
   })
   return render(Harness, {
     global: {
-      plugins: [PrimeVue],
       stubs: { Skeleton: SkeletonStub }
     }
   })
