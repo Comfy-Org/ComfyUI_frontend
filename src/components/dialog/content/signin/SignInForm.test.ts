@@ -1,14 +1,9 @@
-import { useToast } from '@/components/ui/toast'
-import { Form } from '@primevue/forms'
-import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
+import { useToast } from '@/components/ui/toast'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAuthStore } from '@/stores/authStore'
 
@@ -64,8 +59,7 @@ describe('SignInForm', () => {
     const user = userEvent.setup()
     const result = render(SignInForm, {
       global: {
-        plugins: [PrimeVue, i18n],
-        components: { Form, Button, Input, ProgressSpinner }
+        plugins: [i18n]
       },
       props
     })
@@ -127,6 +121,12 @@ describe('SignInForm', () => {
       await user.click(screen.getByRole('button', { name: loginButtonText }))
 
       expect(onSubmit).not.toHaveBeenCalled()
+      expect(
+        screen.getByText(enMessages.validation.invalidEmail)
+      ).toBeInTheDocument()
+      expect(getEmailInput()).toHaveAccessibleDescription(
+        enMessages.validation.invalidEmail
+      )
     })
   })
 

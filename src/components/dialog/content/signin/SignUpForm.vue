@@ -1,12 +1,7 @@
 <template>
-  <Form
-    v-slot="$form"
-    class="flex flex-col gap-6"
-    :resolver="zodResolver(signUpSchema)"
-    @submit="onSubmit"
-  >
+  <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
     <!-- Email Field -->
-    <FormField v-slot="$field" name="email" class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2">
       <label
         class="mb-2 text-base font-medium opacity-80"
         for="comfy-org-sign-up-email"
@@ -14,20 +9,31 @@
         {{ t('auth.signup.emailLabel') }}
       </label>
       <Input
-        v-bind="$field.props"
         id="comfy-org-sign-up-email"
+        :model-value="values.email"
+        name="email"
         autocomplete="email"
         :class="fieldClass"
         type="email"
         :placeholder="t('auth.signup.emailPlaceholder')"
-        :aria-invalid="$field.invalid"
+        :aria-invalid="Boolean(errors.email)"
+        :aria-describedby="errors.email ? emailErrorId : undefined"
+        @update:model-value="updateEmail"
       />
-      <small v-if="$field.error" class="text-red-500">{{
-        $field.error.message
-      }}</small>
-    </FormField>
+      <small v-if="errors.email" :id="emailErrorId" class="text-red-500">
+        {{ errors.email }}
+      </small>
+    </div>
 
-    <PasswordFields :field-class="fieldClass" />
+    <PasswordFields
+      v-model:password="values.password"
+      v-model:confirm-password="values.confirmPassword"
+      :field-class="fieldClass"
+      :password-error="errors.password"
+      :confirm-password-error="errors.confirmPassword"
+      @update:password="validatePassword"
+      @update:confirm-password="validateConfirmPassword"
+    />
 
     <TurnstileWidget
       v-if="turnstileEnabled"
@@ -52,22 +58,19 @@
       :size="submitSize"
       :class="cn('mt-4', submitClass)"
       :loading="loading"
-      :disabled="!$form.valid || waitingForTurnstile"
+      :disabled="!isValid || waitingForTurnstile"
       :aria-describedby="
         waitingForTurnstile ? 'comfy-org-sign-up-turnstile-hint' : undefined
       "
     >
       {{ t('auth.signup.signUpButton') }}
     </Button>
-  </Form>
+  </form>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form, FormField } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { computed, reactive, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -80,6 +83,7 @@ import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
+import { getZodFieldErrors } from '@/utils/zodFieldErrors'
 
 import PasswordFields from './PasswordFields.vue'
 import TurnstileWidget from './TurnstileWidget.vue'
@@ -108,18 +112,51 @@ const {
 } = useTurnstileGate(turnstileEnabled)
 const turnstileWidget =
   useTemplateRef<InstanceType<typeof TurnstileWidget>>('turnstileWidget')
+const emailErrorId = 'comfy-org-sign-up-email-error'
+const values = reactive<SignUpData>({
+  email: '',
+  password: '',
+  confirmPassword: ''
+})
+const errors = reactive<Partial<Record<keyof SignUpData, string>>>({})
+const isValid = computed(() => Object.keys(errors).length === 0)
 
 const emit = defineEmits<{
   submit: [values: SignUpData, turnstileToken?: string]
 }>()
 
-const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
-  if (event.valid && !waitingForTurnstile.value) {
-    emit(
-      'submit',
-      event.values as SignUpData,
-      turnstileToken.value || undefined
-    )
+function validateField(field: keyof SignUpData) {
+  const result = signUpSchema.safeParse(values)
+  const message = result.success
+    ? undefined
+    : getZodFieldErrors(result.error)[field]
+
+  if (message) errors[field] = message
+  else delete errors[field]
+}
+
+function updateEmail(value: string | number | undefined) {
+  values.email = String(value ?? '')
+  validateField('email')
+}
+
+function validatePassword() {
+  validateField('password')
+}
+
+function validateConfirmPassword() {
+  validateField('confirmPassword')
+}
+
+const onSubmit = useThrottleFn(() => {
+  const result = signUpSchema.safeParse(values)
+  if (result.success && !waitingForTurnstile.value) {
+    emit('submit', result.data, turnstileToken.value || undefined)
+    return
+  }
+
+  if (!result.success) {
+    Object.assign(errors, getZodFieldErrors(result.error))
   }
 }, 1_500)
 
