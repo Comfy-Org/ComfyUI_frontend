@@ -453,7 +453,8 @@ export const useAuthStore = defineStore('auth', () => {
         throw new AuthStoreError(
           t('toastMessages.failedToFetchBalance', {
             error: message
-          })
+          }),
+          response.status
         )
       }
 

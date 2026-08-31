@@ -11,6 +11,7 @@ import {
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
+import { AuthStoreError } from '@/stores/authStore'
 
 import { useBillingContext } from './useBillingContext'
 
@@ -151,7 +152,15 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 }))
 
 vi.mock('@/stores/authStore', () => ({
-  AuthStoreError: class extends Error {},
+  AuthStoreError: class extends Error {
+    constructor(
+      message: string,
+      readonly status?: number
+    ) {
+      super(message)
+      this.name = 'AuthStoreError'
+    }
+  },
   useAuthStore: () => ({
     balance: { amount_micros: 5000000 },
     fetchBalance: mockLegacyFetchBalance
@@ -285,7 +294,6 @@ describe('useBillingContext', () => {
   })
 
   it('recovers from a transient network failure during initialization', async () => {
-    vi.useFakeTimers()
     mockHasActiveWorkspace.value = false
     mockBillingRail.value = 'legacy_stripe'
     mockLegacyFetchStatus
@@ -304,7 +312,6 @@ describe('useBillingContext', () => {
   })
 
   it('reports a network failure after bounded initialization retries', async () => {
-    vi.useFakeTimers()
     mockHasActiveWorkspace.value = false
     mockBillingRail.value = 'legacy_stripe'
     mockLegacyFetchStatus.mockRejectedValue(new TypeError('Failed to fetch'))
@@ -331,7 +338,6 @@ describe('useBillingContext', () => {
   })
 
   it('stops retrying when the billing adapter changes during backoff', async () => {
-    vi.useFakeTimers()
     mockBillingRail.value = 'legacy_stripe'
     mockLegacyFetchStatus
       .mockRejectedValueOnce(new TypeError('Failed to fetch'))
@@ -348,10 +354,12 @@ describe('useBillingContext', () => {
     expect(mockReportError).not.toHaveBeenCalled()
   })
 
-  it('does not retry a non-network initialization failure', async () => {
+  it('does not retry a legacy HTTP initialization failure', async () => {
     mockHasActiveWorkspace.value = false
     mockBillingRail.value = 'legacy_stripe'
-    mockLegacyFetchStatus.mockRejectedValue(new Error('Forbidden'))
+    mockLegacyFetchStatus.mockRejectedValue(
+      new AuthStoreError('Forbidden', 403)
+    )
 
     const { initialize } = useBillingContext()
 
