@@ -50,9 +50,10 @@ Code facts this rule is grounded on (cmp `8636af3e4`; FE `poc/fe-crdt-follower` 
 
 1. **Committed positions merge by native per-key Yjs LWW.** The layout doc stores one
    register per node (`pos` as a whole `[x, y]` value under the node's key). Two replicas
-   dragging the same node converge deterministically by Yjs's native conflict resolution on
-   that key; the later committed drop wins on every replica. No smoothing, no averaging,
-   no locks, no custom tiebreak.
+   dragging the same node converge on the deterministic Yjs winner for that key regardless
+   of update delivery order. Because this record has no physical drop-time clock, the
+   physically later drop is not guaranteed to win. No smoothing, no averaging, no locks,
+   no custom tiebreak.
 2. **Drag-end commit is the only required write.** A drag writes its layout-doc register on
    drop (pointerup). Throttled intermediate commits are _permitted_ (they are ordinary LWW
    writes) but never required for correctness.
@@ -76,8 +77,9 @@ naming the guard (a cmp docs PR through cmp's normal review).
 
 - KA-8's demanded rule now exists; the invariant remains UNGUARDED only until the layout-doc
   implementation lands its guard.
-- Worst-case UX under concurrent same-node drags: the node lands where the last dropper put
-  it — visible, comprehensible, immediately correctable by another drag. No divergence.
+- Worst-case UX under concurrent same-node drags: the node lands at the deterministic
+  Yjs-winning position — visible, comprehensible, immediately correctable by another drag.
+  No divergence.
 - High-frequency drag traffic never inflates semantic-doc history or Lamport clock churn
   (DQ-10/ADR-021): drags do not produce ops.
 - Per `decisions/AGENTS.md`, this ADR must also be committed into the repo it governs —
