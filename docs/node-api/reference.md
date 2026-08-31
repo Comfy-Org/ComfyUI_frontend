@@ -621,21 +621,21 @@ This block is generated from `CAPABILITIES` in `comfyApi.ts`.
 
 <!-- node-api-capabilities:start -->
 
-`backend`, `commands`, `defs.define`, `defs.extend`, `defs.inputValues`,
-`defs.localizedInputNames`, `defs.typeCompatibility`, `execution.node`,
-`graph.nodes`, `graph.selection`, `interaction.nodeDragEnd`,
-`interaction.nodeMoved`, `interaction.state`, `node.changeScope`,
-`node.connectVeto`, `node.fileDrop`, `node.geometry`, `node.menu`,
-`node.onPreview`, `node.onSerialize`, `node.resolve`, `node.sizeConstraints`,
-`queue.disableAutoQueue`, `queue.settings`, `serialization.control`,
-`settings`, `slots.connect`, `slots.connectedType`, `slots.dynamic`,
-`slots.identity`, `slots.layout`, `slots.localizedName`, `slots.moveLinks`,
-`slots.resolvedSource`, `slots.retype`, `slots.widgetConfig`, `storage`,
-`supply.outputs`, `supply.resolved`, `ui.sidebarTab`, `viewport.changed`,
-`widgets.canvas`, `widgets.create`, `widgets.height`, `widgets.hidden`,
-`widgets.linked`, `widgets.mount`, `widgets.reorder`,
-`widgets.textInteraction`, `widgets.typeContext`, `workflow.open`,
-`workflow.textReplacements`.
+`backend`, `commands`, `commands.playSound`, `defs.define`, `defs.extend`,
+`defs.inputValues`, `defs.localizedInputNames`, `defs.typeCompatibility`,
+`execution.node`, `graph.nodes`, `graph.selection`,
+`interaction.nodeDragEnd`, `interaction.nodeMoved`, `interaction.state`,
+`node.changeScope`, `node.connectVeto`, `node.fileDrop`, `node.geometry`,
+`node.menu`, `node.onPreview`, `node.onSerialize`, `node.resolve`,
+`node.sizeConstraints`, `queue.disableAutoQueue`, `queue.settings`,
+`serialization.control`, `settings`, `slots.connect`, `slots.connectedType`,
+`slots.dynamic`, `slots.identity`, `slots.layout`, `slots.localizedName`,
+`slots.moveLinks`, `slots.resolvedSource`, `slots.retype`,
+`slots.widgetConfig`, `storage`, `supply.outputs`, `supply.resolved`,
+`system.monitor`, `ui.sidebarTab`, `viewport.changed`, `widgets.canvas`,
+`widgets.create`, `widgets.height`, `widgets.hidden`, `widgets.linked`,
+`widgets.mount`, `widgets.reorder`, `widgets.textInteraction`,
+`widgets.typeContext`, `workflow.open`, `workflow.textReplacements`.
 <!-- node-api-capabilities:end -->
 
 Use `comfy.capabilities()` at runtime. The generated block exists for discovery

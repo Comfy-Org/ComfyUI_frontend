@@ -997,13 +997,17 @@ export class ComfyApp {
     // Which the API cannot see for itself: ChangeTracker lives up here.
     provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
     installComfyApi(() => useCanvasStore().currentGraph, {
-      openWorkflow: (data) => this.loadGraphData(data as ComfyWorkflowJSON)
+      openWorkflow: async (data) => {
+        await this.loadGraphData(data as ComfyWorkflowJSON)
+      }
     })
     // After installComfyApi — the secure host serves globalThis.comfy to its
     // guests — and before loadExtensions, which it decides how to load. No-op
     // when the overlay is absent. See secureNodesBootstrap for the interface
     // debt note.
-    await installSecureNodesHost()
+    if (!(await installConfiguredExtensionHost())) {
+      await installSecureNodesHost()
+    }
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()

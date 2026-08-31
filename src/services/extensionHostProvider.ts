@@ -23,6 +23,7 @@
 export interface ExtensionHostProvider {
   /** Human-readable name, for diagnostics. */
   readonly name: string
+  readonly policy?: 'selective' | 'exclusive'
   /** Whether this provider handles the given extension URL. */
   canLoad(extensionUrl: string): boolean
   /** Load the extension. Resolves when it is ready. */
@@ -44,6 +45,7 @@ export function resolveExtensionHost(
   extensionUrl: string
 ): ExtensionHostProvider | null {
   if (!provider) return null
+  if (provider.policy === 'exclusive') return provider
   try {
     return provider.canLoad(extensionUrl) ? provider : null
   } catch {
@@ -55,4 +57,8 @@ export function resolveExtensionHost(
 /** Whether any provider is installed (diagnostics/tests). */
 export function hasExtensionHost(): boolean {
   return provider !== null
+}
+
+export function hasExclusiveExtensionHost(): boolean {
+  return provider?.policy === 'exclusive'
 }

@@ -1,10 +1,14 @@
+import { defineAsyncComponent } from 'vue'
+
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import CustomNodeEditorDialog from '../components/CustomNodeEditorDialog.vue'
 import type { CustomNodeEditorSession } from './useCustomNodeEditor'
 
 const DIALOG_KEY = 'custom-node-editor'
+const CustomNodeEditorDialog = defineAsyncComponent(
+  () => import('../components/CustomNodeEditorDialog.vue')
+)
 
 export function useCustomNodeEditorDialog() {
   const dialogService = useDialogService()
