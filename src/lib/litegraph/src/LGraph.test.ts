@@ -18,7 +18,6 @@ import {
   Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { serialiseMutableGraphParts } from '@/lib/litegraph/src/LGraph'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -39,7 +38,7 @@ import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toRerouteId } from '@/types/rerouteId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, compareNodeIds, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import {
   createNestedSubgraphs,
@@ -715,7 +714,24 @@ describe('Store-driven serialization parity', () => {
       new LGraph(floatingLinkGraph)
     ]) {
       const stored = graph.asSerialisable({ sortNodes: true })
-      const mutable = serialiseMutableGraphParts(graph, true)
+      const nodes = [...graph._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
+      const mutable = {
+        nodes: nodes.map((node) => node.serialize()),
+        groups: graph._groups.map((group) => group.serialize()),
+        links: graph.links.size
+          ? [...graph.links.values()].map((link) => link.asSerialisable())
+          : undefined,
+        floatingLinks: graph.floatingLinks.size
+          ? [...graph.floatingLinks.values()].map((link) =>
+              link.asSerialisable()
+            )
+          : undefined,
+        reroutes: graph.reroutes.size
+          ? [...graph.reroutes.values()].map((reroute) =>
+              reroute.asSerialisable()
+            )
+          : undefined
+      }
       const normalizedStored = {
         nodes: stored.nodes,
         groups: stored.groups,
