@@ -17,6 +17,14 @@ const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
 const BEFORE_TEST_IMPORTS = new Set(['beforeAll', 'describe', 'suite'])
+const SUITE_CALLBACK_MODIFIERS = new Set([
+  'concurrent',
+  'only',
+  'sequential',
+  'shuffle',
+  'skip',
+  'todo'
+])
 const TEARDOWN_IMPORTS = new Set(['afterAll', 'afterEach'])
 const HOOK_IMPORTS = new Set([
   'afterAll',
@@ -256,11 +264,22 @@ function isVitestCallback(
   expression: Expression,
   callbackImports: ReadonlySet<string>
 ): boolean {
-  return (
+  if (
     isVitestImport(context, expression, callbackImports) ||
     [...callbackImports].some((callback) =>
       isVitestNamespaceMember(context, expression, callback)
     )
+  ) {
+    return true
+  }
+
+  const modifier = asMemberExpression(expression)
+  const modifierName = modifier && staticMemberName(modifier)
+  return (
+    modifier !== undefined &&
+    modifierName !== undefined &&
+    SUITE_CALLBACK_MODIFIERS.has(modifierName) &&
+    isVitestCallback(context, modifier.object, callbackImports)
   )
 }
 
