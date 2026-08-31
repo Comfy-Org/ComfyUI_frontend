@@ -5202,6 +5202,7 @@ const translations = {
     'zh-CN': '在这里找到答案'
   },
 
+  // HubspotFormEmbed – shared by every page that embeds a HubSpot form
   'hubspotForm.embedLoadErrorPrefix': {
     en: 'Unable to load the form. Email us at',
     'zh-CN': '表单无法加载。请发送邮件至'
