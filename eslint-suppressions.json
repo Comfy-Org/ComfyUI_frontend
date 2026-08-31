@@ -71,7 +71,7 @@
   },
   "src/lib/litegraph/src/LGraph.ts": {
     "comfy/no-new-error-throw": {
-      "count": 10
+      "count": 9
     }
   },
   "src/lib/litegraph/src/LGraphNode.ts": {
@@ -156,7 +156,7 @@
   },
   "src/platform/assets/services/assetService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 21
+      "count": 20
     }
   },
   "src/platform/auth/session/useSessionCookie.ts": {
@@ -196,7 +196,7 @@
   },
   "src/platform/keybindings/presetService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/platform/nodeReplacement/nodeReplacementService.ts": {
@@ -211,7 +211,7 @@
   },
   "src/platform/tasks/services/taskService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 2
     }
   },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
@@ -376,7 +376,7 @@
   },
   "src/services/colorPaletteService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 1
     }
   },
   "src/services/gateway/registrySearchGateway.ts": {
@@ -391,7 +391,7 @@
   },
   "src/services/nodeHelpService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 1
     }
   },
   "src/services/nodeOrganizationService.ts": {
@@ -424,14 +424,9 @@
       "count": 2
     }
   },
-  "src/stores/nodeBookmarkStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
   "src/stores/subgraphStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 8
+      "count": 5
     }
   },
   "src/stores/userFileStore.ts": {
