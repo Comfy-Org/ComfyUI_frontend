@@ -23,9 +23,10 @@
 </template>
 
 <script setup lang="ts">
-import Skeleton from 'primevue/skeleton'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import Tag from '@/components/ui/badge/Badge.vue'
