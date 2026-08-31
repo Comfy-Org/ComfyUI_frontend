@@ -19,8 +19,6 @@ const overflowObservers = vi.hoisted<
   Array<{
     isOverflowing: { value: boolean }
     checkOverflow: ReturnType<typeof vi.fn>
-    notifyCheck: () => void
-    dispose: ReturnType<typeof vi.fn>
   }>
 >(() => [])
 interface WorkflowFixture {
@@ -111,17 +109,11 @@ vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
 vi.mock('@/composables/element/useOverflowObserver', async () => {
   const { ref } = await import('vue')
   return {
-    useOverflowObserver: (
-      _element: unknown,
-      options?: { onCheck?: (isOverflowing: boolean) => void }
-    ) => {
+    useOverflowObserver: () => {
       const isOverflowing = ref(false)
       const observer = {
         isOverflowing,
-        disposed: ref(false),
-        checkOverflow: vi.fn(),
-        notifyCheck: () => options?.onCheck?.(isOverflowing.value),
-        dispose: vi.fn()
+        checkOverflow: vi.fn()
       }
       overflowObservers.push(observer)
       return observer
@@ -364,7 +356,7 @@ describe('WorkflowTabs scrolling', () => {
   })
 
   it('rebinds scroll listeners when scroll content is replaced', async () => {
-    const { user, unmount, rerender } = renderComponent()
+    const { user, unmount } = renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
     const oldScrollContent = screen.getByTestId('scroll-content')
     const removeOldListener = vi.spyOn(oldScrollContent, 'removeEventListener')
@@ -372,17 +364,14 @@ describe('WorkflowTabs scrolling', () => {
     await user.click(
       screen.getByRole('button', { name: 'Replace scroll content' })
     )
-    await rerender({ class: 'updated' })
 
     await waitFor(() => {
-      expect(overflowObservers).toHaveLength(2)
       expect(removeOldListener).toHaveBeenCalledWith(
         'scroll',
         expect.any(Function),
         expect.any(Object)
       )
     })
-    expect(overflowObservers[0].dispose).toHaveBeenCalledOnce()
     expect(removeOldListener).toHaveBeenCalledWith(
       'scrollend',
       expect.any(Function),
@@ -393,7 +382,6 @@ describe('WorkflowTabs scrolling', () => {
     const removeNewListener = vi.spyOn(newScrollContent, 'removeEventListener')
     unmount()
 
-    expect(overflowObservers[1].dispose).toHaveBeenCalledOnce()
     expect(removeNewListener).toHaveBeenCalledWith(
       'scroll',
       expect.any(Function),
@@ -422,7 +410,7 @@ describe('WorkflowTabs scrolling', () => {
     await nextTick()
     scrollIntoView.mockClear()
 
-    overflowObservers[0].notifyCheck()
+    overflowObservers[0].isOverflowing.value = true
     await nextTick()
 
     expect(scrollIntoView).not.toHaveBeenCalled()
