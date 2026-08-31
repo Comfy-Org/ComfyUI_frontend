@@ -77,6 +77,13 @@ target cannot be resolved, the adapter reports a target-resolution failure and k
 batch recoverable or requests a target-scoped state-vector resync. It must not apply the
 batch to the active graph.
 
+Loaded application and queue drain use the same atomic prepare/commit boundary. Prepare
+stages the follower Y.Doc, ECS/domain stores, target `ChangeTracker`, state vector, and
+applied sequence without exposing any component independently. Commit publishes that
+complete target tuple together. A queued batch is removed and acknowledged only after the
+commit succeeds. If preparation or commit fails, the prior tuple remains visible and the
+batch retains its target ordering and remains recoverable.
+
 The queue is a delivery/application buffer, not a second merge authority. The host and
 shared `@comfyorg/comfy-multi-player` applier remain authoritative. A bounded queue overflow,
 process restart, or lost target session is recovered by a target-scoped state-vector
