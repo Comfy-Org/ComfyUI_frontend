@@ -7322,14 +7322,9 @@ const translations = {
     en: 'Developer Platform',
     'zh-CN': '开发者平台'
   },
-  'home.platform.heading': {
-    en: 'Deploy and scale your Comfy workflows with Serverless',
-    'zh-CN': '使用 Serverless 部署并扩展你的 Comfy 工作流'
-  },
   'home.platform.body': {
-    en: 'Bring your custom nodes and custom environments, then scale from zero to millions of generations without managing GPUs.',
-    'zh-CN':
-      '带上你的自定义节点和自定义环境，从零扩展到数百万次生成，无需管理 GPU。'
+    en: 'Deploy and scale your Comfy workflows with Serverless.',
+    'zh-CN': '使用 Serverless 部署并扩展你的 Comfy 工作流。'
   },
   'home.platform.cta': {
     en: 'Explore the Developer Platform',

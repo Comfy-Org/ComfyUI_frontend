@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
   <ClosingCtaSection
     :locale="locale"
     visual="columns"
-    :heading-lead="t('home.platform.heading', locale)"
+    badge-only
     :subtitle="t('home.platform.body', locale)"
   />
 </template>

@@ -52,9 +52,11 @@ onMounted(() => {
       compact
       class="relative z-10 min-h-96 justify-center"
       :heading="
-        headingLead
-          ? `${headingLead} ${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)}`
-          : t('platform.closing.heading', locale)
+        badgeOnly
+          ? `${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)}`
+          : headingLead
+            ? `${headingLead} ${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)}`
+            : t('platform.closing.heading', locale)
       "
       :subtitle
       :subtitle-class="badgeOnly ? 'mt-6' : undefined"
