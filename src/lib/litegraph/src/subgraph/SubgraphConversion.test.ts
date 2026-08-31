@@ -189,10 +189,6 @@ describe('SubgraphConversion', () => {
       const nodeType = 'test/unavailable-during-unpack'
       class UnavailableNode extends LGraphNode {}
       LiteGraph.registerNodeType(nodeType, UnavailableNode)
-      onTestFinished(() => {
-        if (LiteGraph.getNodeType(nodeType))
-          LiteGraph.unregisterNodeType(nodeType)
-      })
 
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)

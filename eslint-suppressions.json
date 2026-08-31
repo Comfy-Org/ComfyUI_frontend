@@ -66,17 +66,12 @@
   },
   "src/core/graph/widgets/dynamicWidgets.ts": {
     "comfy/no-new-error-throw": {
-      "count": 7
+      "count": 4
     }
   },
   "src/lib/litegraph/src/LGraph.ts": {
     "comfy/no-new-error-throw": {
-      "count": 9
-    }
-  },
-  "src/lib/litegraph/src/LGraphNode.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 8
     }
   },
   "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
@@ -376,7 +371,7 @@
   },
   "src/services/litegraphService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 1
     }
   },
   "src/services/nodeOrganizationService.ts": {
