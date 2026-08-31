@@ -7,6 +7,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
+import type * as FocusNodeModule from '@/composables/canvas/useFocusNode'
+
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
 vi.hoisted(() => {
@@ -31,10 +33,17 @@ const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
 )
 const focusNodeInstance = vi.hoisted(() => vi.fn())
+const focusNodeMode = vi.hoisted(() => ({ useRealImplementation: false }))
 
-vi.mock('@/composables/canvas/useFocusNode', () => ({
-  useFocusNode: () => ({ focusNodeInstance })
-}))
+vi.mock('@/composables/canvas/useFocusNode', async (importOriginal) => {
+  const actual = await importOriginal<typeof FocusNodeModule>()
+  return {
+    useFocusNode: () =>
+      focusNodeMode.useRealImplementation
+        ? actual.useFocusNode()
+        : { focusNodeInstance }
+  }
+})
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -313,6 +322,7 @@ beforeEach(() => {
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
   focusNodeInstance.mockReset()
+  focusNodeMode.useRealImplementation = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -434,7 +444,11 @@ type SelectionTestNode = {
   id: number | string
   title: string
   boundingRect: object
-  graph?: { id?: string }
+  graph?: {
+    id?: string
+    nodes?: SelectionTestNode[]
+    getNodeById?: (id: string | number) => SelectionTestNode | null
+  }
 }
 
 function setupNodeSelectionCanvas() {
@@ -2952,6 +2966,53 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(focusNodeInstance).toHaveBeenCalledWith(state.nodes[1])
     expect(screen.getByText('KSampler')).toBeInTheDocument()
+  })
+
+  it('navigates and frames a retained subgraph node through the real focus composable', async () => {
+    makeTab()
+    const state = setupNodeSelectionCanvas()
+    nestSelectionCanvasInSubgraph(state)
+    const subgraph = state.canvas.graph
+    const referencedNode = state.nodes[1]
+    referencedNode.graph = subgraph
+
+    const rootGraph = {
+      isRootGraph: true,
+      nodes: [],
+      getNodeById: () => null
+    }
+    const setGraph = vi.fn((graph: typeof subgraph) => {
+      state.canvas.graph = graph
+    })
+    const animateToBounds = vi.fn()
+    Object.assign(state.canvas, {
+      setGraph,
+      animateToBounds,
+      canvas: { focus: state.focus, width: 1000, height: 600 }
+    })
+    hostStores.canvas.canvas = state.canvas
+    focusNodeMode.useRealImplementation = true
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) =>
+      callback(0)
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().enabled = true
+    useAgentPanelStore().isOpen = true
+
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    state.canvas.graph = rootGraph
+    hostStores.canvas.currentGraph = rootGraph
+    await nextTick()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show KSampler #12 on canvas' })
+    )
+
+    expect(setGraph).toHaveBeenCalledWith(subgraph)
+    expect(animateToBounds).toHaveBeenCalledWith(referencedNode.boundingRect, {
+      viewport: [0, 0, 1000 - useAgentPanelStore().width, 600]
+    })
   })
 
   it('uses graph-scoped identity for focus, removal, and picker exclusion', async () => {
