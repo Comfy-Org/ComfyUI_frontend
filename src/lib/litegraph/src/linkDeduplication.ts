@@ -60,7 +60,6 @@ export function remapLinkReferences(
     for (const [key, value] of Object.entries(presentation)) {
       const remappedKey = String(remap(Number(key)))
       if (remappedKey === key) continue
-      // First entry wins when a survivor already carries presentation.
       presentation[remappedKey] ??= value
       delete presentation[key]
     }

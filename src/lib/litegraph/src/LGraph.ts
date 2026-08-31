@@ -2278,7 +2278,6 @@ export class LGraph
           candidate?.hidden === grouped[0]?.hidden &&
           candidate?.label === grouped[0]?.label
       )
-      // Presentation moves onto the merged boundary only when unambiguous.
       transferLinkPresentation(
         (unambiguous ? grouped[0] : undefined) ?? {},
         boundaryLink
