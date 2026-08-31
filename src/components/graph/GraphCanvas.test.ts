@@ -357,6 +357,40 @@ describe('GraphCanvas execution progress updates', () => {
     }
   )
 
+  it('clears stale progress when an execution entry is removed', async () => {
+    const harness = await mountProgressHarness({
+      totalNodes: 1,
+      activeEntries: 1
+    })
+
+    harness.executionStore.nodeProgressStates = {}
+    await nextTick()
+
+    expect(harness.progressWrites).toBe(1)
+    expect(harness.progressValues[0]).toBeUndefined()
+    expect(mocks.setDirty).toHaveBeenCalledOnce()
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+  })
+
+  it('clears stale progress when the current graph changes', async () => {
+    await mountProgressHarness({ totalNodes: 1, activeEntries: 1 })
+    const replacementNode = new LGraphNode('Replacement node')
+    replacementNode.id = toNodeId(2)
+    replacementNode.progress = 0.75
+    const replacementGraph = new LGraph()
+    replacementGraph._nodes.push(replacementNode)
+
+    const canvas = app.canvas
+    if (!canvas) throw new Error('GraphCanvas did not initialize the canvas')
+    canvas.graph = replacementGraph
+    useCanvasStore().currentGraph = replacementGraph
+    await nextTick()
+
+    expect(replacementNode.progress).toBeUndefined()
+    expect(mocks.setDirty).toHaveBeenCalledOnce()
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+  })
+
   it.fails('does no node work for structurally equal progress', async () => {
     const harness = await mountProgressHarness()
 
