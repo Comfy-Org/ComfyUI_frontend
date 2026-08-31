@@ -1,13 +1,17 @@
 import { ref } from 'vue'
 
 const POINTER_MOVE_THRESHOLD_SQUARED = 16
+const KEYBOARD_FOCUS_WINDOW_MS = 100
 
 export const automaticTooltipSuppressed = ref(false)
 export const keyboardInteraction = ref(false)
 
 let pointerMovementSquared = 0
+let keyboardInteractionTimer: ReturnType<typeof setTimeout> | undefined
 
 function suppressAutomaticTooltips() {
+  if (keyboardInteractionTimer) clearTimeout(keyboardInteractionTimer)
+  keyboardInteractionTimer = undefined
   keyboardInteraction.value = false
   automaticTooltipSuppressed.value = true
   pointerMovementSquared = 0
@@ -31,12 +35,19 @@ function handlePointerMove(event: PointerEvent) {
 }
 
 function handleKeyboardInteraction() {
+  if (keyboardInteractionTimer) clearTimeout(keyboardInteractionTimer)
   keyboardInteraction.value = true
   pointerMovementSquared = 0
   automaticTooltipSuppressed.value = false
+  keyboardInteractionTimer = setTimeout(() => {
+    keyboardInteraction.value = false
+    keyboardInteractionTimer = undefined
+  }, KEYBOARD_FOCUS_WINDOW_MS)
 }
 
 export function resetTooltipInputModality() {
+  if (keyboardInteractionTimer) clearTimeout(keyboardInteractionTimer)
+  keyboardInteractionTimer = undefined
   pointerMovementSquared = 0
   automaticTooltipSuppressed.value = false
   keyboardInteraction.value = false
