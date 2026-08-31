@@ -133,6 +133,12 @@ export function useAgentCrdtFollower(
   const lastOpNack = ref<OpNack | null>(null)
   const projectionErrors = ref(0)
 
+  const resetBindingDiagnostics = (): void => {
+    opNacks.value = 0
+    lastOpNack.value = null
+    projectionErrors.value = 0
+  }
+
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
   // never-throw contract is covered by tests.
@@ -383,6 +389,7 @@ export function useAgentCrdtFollower(
       adapter.clearForReset(detail.workflowId, context)
     connected.value = false
     updatesApplied.value = 0
+    resetBindingDiagnostics()
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
@@ -461,6 +468,7 @@ export function useAgentCrdtFollower(
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
+      resetBindingDiagnostics()
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
