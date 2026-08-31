@@ -209,6 +209,73 @@ describe('ToolCallGroup', () => {
       'Set widget'
     ])
   })
+
+  // Slice #16210 10-T1, reproduced on main@00b9c69ad; remove `.fails` when mixed rows retain the tool-count summary.
+  it.fails('summarizes tool count for mixed rows', () => {
+    render(ToolCallGroup, {
+      props: {
+        parts: [
+          { type: 'thinking', text: 'Inspecting', state: 'done' },
+          tool('c1', 'list_slots', 'done', true),
+          tool('c2', 'set_widget', 'done', true)
+        ],
+        active: true
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Ran 2 tool calls')).toBeInTheDocument()
+  })
+
+  // Slice #16210 10-T2, reproduced on main@00b9c69ad; remove `.fails` when a new failure reopens the group.
+  it.fails('reopens on a new failure while activity remains true', async () => {
+    const { rerender } = render(ToolCallGroup, {
+      props: { parts: [tool('c1', 'add_node', 'streaming')], active: true },
+      global: { plugins: [i18n] }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: /ran 1 tool/i }))
+    expect(screen.queryByText('Add node')).not.toBeInTheDocument()
+    await rerender({
+      parts: [
+        tool('c1', 'add_node', 'streaming'),
+        tool('c2', 'set_widget', 'done', false)
+      ],
+      active: true
+    })
+    expect(await screen.findByText('Set widget')).toBeInTheDocument()
+  })
+
+  // Slice #16210 10-T3, reproduced on main@00b9c69ad; remove `.fails` when all thinking durations are summed.
+  it.fails('sums all thinking durations in a thinking-only group', () => {
+    render(ToolCallGroup, {
+      props: {
+        parts: [
+          { type: 'thinking', text: 'One', state: 'done', durationMs: 500 },
+          { type: 'thinking', text: 'Two', state: 'done', durationMs: 800 }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Thought for 1.3 seconds')).toBeInTheDocument()
+  })
+
+  // Slice #16210 10-T4, reproduced on main@00b9c69ad; remove `.fails` when streaming state drives expansion.
+  it.fails('treats a streaming thought as active without the active prop', () => {
+    render(ToolCallGroup, {
+      props: {
+        parts: [{ type: 'thinking', text: 'Working', state: 'streaming' }]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('button', { name: /thinking/i })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+    expect(screen.getByText('Working')).toBeInTheDocument()
+  })
 })
 
 describe('AgentMessage tool grouping', () => {
