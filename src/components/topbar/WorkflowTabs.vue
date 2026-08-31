@@ -307,12 +307,15 @@ const {
   checkOverflow: checkScrollOverflow
 } = useOverflowObserver(scrollContent)
 
-whenever(showOverflowArrows, () => {
-  void nextTick(() => {
-    scrollState.measure()
-    void ensureActiveTabVisible({ waitForDom: false })
-  })
-})
+whenever(
+  () => showOverflowArrows.value && scrollContent.value,
+  () => {
+    void nextTick(() => {
+      scrollState.measure()
+      void ensureActiveTabVisible({ waitForDom: false })
+    })
+  }
+)
 
 onUpdated(checkScrollOverflow)
 </script>

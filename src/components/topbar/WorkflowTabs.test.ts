@@ -394,6 +394,34 @@ describe('WorkflowTabs scrolling', () => {
     )
   })
 
+  it('reveals the active tab when overflowing scroll content is replaced', async () => {
+    const workflow = { path: 'active.json' }
+    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+    const { user } = renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    if (!workflowStoreHolder.store)
+      throw new Error('Workflow store not mounted')
+    workflowStoreHolder.store.openWorkflows = [workflow]
+    workflowStoreHolder.store.activeWorkflow = workflow
+    await nextTick()
+
+    overflowObservers[0].isOverflowing.value = true
+    await nextTick()
+    await nextTick()
+    scrollIntoView.mockClear()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Replace scroll content' })
+    )
+
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        block: 'nearest',
+        inline: 'nearest'
+      })
+    })
+  })
+
   it('does not reveal the active tab again when overflow remains true', async () => {
     const workflow = { path: 'active.json' }
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
