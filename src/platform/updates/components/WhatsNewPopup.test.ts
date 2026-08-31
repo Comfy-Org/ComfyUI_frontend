@@ -16,7 +16,6 @@ beforeEach(() => {
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -81,7 +80,7 @@ describe('WhatsNewPopup', () => {
   const renderComponent = (props = {}) => {
     return render(WhatsNewPopup, {
       global: {
-        plugins: [PrimeVue, i18n],
+        plugins: [i18n],
         components: { Button },
         stubs: {
           'i-lucide-x': true,

@@ -1,4 +1,3 @@
-import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -36,7 +35,7 @@ function renderComponent(
 ) {
   return render(WidgetInputNumberInput, {
     global: {
-      plugins: [PrimeVue, i18n]
+      plugins: [i18n]
     },
     props: {
       widget,
