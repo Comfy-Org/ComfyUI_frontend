@@ -109,6 +109,21 @@ describe('Tooltip', () => {
     outside.remove()
   })
 
+  it('opens when mouse hover follows a pointer interaction', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderTooltip()
+    const trigger = screen.getByRole('button')
+    const outside = document.createElement('button')
+    document.body.append(outside)
+
+    await user.click(outside)
+    await user.hover(trigger)
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Helpful text')
+    outside.remove()
+  })
+
   it('preserves touch suppression while all tooltips are unmounted', async () => {
     vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

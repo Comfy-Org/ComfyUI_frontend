@@ -76,25 +76,29 @@ export function resetTooltipInputModality() {
 }
 
 function removeListeners() {
-  document.removeEventListener('pointerdown', handlePointerDown)
-  document.removeEventListener('pointermove', handlePointerMove)
-  document.removeEventListener('pointerover', handlePointerOver)
-  document.removeEventListener('touchstart', handleTouchStart)
+  document.removeEventListener('pointerdown', handlePointerDown, true)
+  document.removeEventListener('pointermove', handlePointerMove, true)
+  document.removeEventListener('pointerover', handlePointerOver, true)
+  document.removeEventListener('touchstart', handleTouchStart, true)
   document.removeEventListener('keydown', handleKeyboardInteraction)
   resetTooltipInputModality()
 }
 
 if (typeof document !== 'undefined') {
   document.addEventListener('pointerdown', handlePointerDown, {
+    capture: true,
     passive: true
   })
   document.addEventListener('pointermove', handlePointerMove, {
+    capture: true,
     passive: true
   })
   document.addEventListener('pointerover', handlePointerOver, {
+    capture: true,
     passive: true
   })
   document.addEventListener('touchstart', handleTouchStart, {
+    capture: true,
     passive: true
   })
   document.addEventListener('keydown', handleKeyboardInteraction)
