@@ -14,7 +14,7 @@ export function nodeClassNameFor(name: string): string {
 }
 
 /** Pack and node names accepted by the manager. */
-export const CUSTOM_NODE_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._()-]{0,79}$/
+const CUSTOM_NODE_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._()-]{0,79}$/
 
 export function isValidCustomNodeName(name: string): boolean {
   return CUSTOM_NODE_NAME_PATTERN.test(name.trim())
