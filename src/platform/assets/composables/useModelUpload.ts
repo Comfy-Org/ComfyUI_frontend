@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 
+import { HUG_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import UploadModelDialog from '@/platform/assets/components/UploadModelDialog.vue'
 import UploadModelDialogHeader from '@/platform/assets/components/UploadModelDialogHeader.vue'
@@ -18,7 +19,7 @@ type UploadModelContextResolver = () => UploadModelDialogContext | undefined
 const uploadDialogComponentProps = {
   renderer: 'reka',
   size: 'lg',
-  contentClass: 'w-fit max-w-[calc(100vw-1rem)]',
+  contentClass: HUG_CONTENT_CLASS,
   headerClass: 'py-0 pl-0',
   bodyClass: 'min-h-0 overflow-hidden p-0'
 } as const
