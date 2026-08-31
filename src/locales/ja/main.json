@@ -346,6 +346,7 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+<<<<<<< Updated upstream
     "authenticationFailedDetail": "支払い確認を完了できませんでした。もう一度お試しください。",
     "authenticationManagerRequired": "支払い確認にはワークスペースの請求管理者による対応が必要です。",
     "authenticationUnavailable": "安全な支払い認証を利用できません。更新してもう一度お試しください。",
@@ -359,6 +360,21 @@
     "reconciliationDetail": "お支払いは受領しましたが、ワークスペースの更新を完了できませんでした。サポートに連絡し、次の操作IDをお伝えください:",
     "reconciliationTitle": "支払いを受領しました — 確認待ち",
     "retryVerification": "確認を再試行",
+=======
+    "authenticationFailedDetail": "支払い認証を完了できませんでした。もう一度お試しください。",
+    "authenticationManagerRequired": "支払い認証にはワークスペースの請求管理者による対応が必要です。",
+    "authenticationUnavailable": "安全な支払い認証を利用できません。更新してもう一度お試しください。",
+    "cancelFailed": "サブスクリプションのキャンセルに失敗しました",
+    "cancelTimeout": "サブスクリプションのキャンセルがタイムアウトしました",
+    "expiredCardDetail": "このカードの有効期限が切れています。別のお支払い方法をご利用ください。",
+    "incorrectCvcDetail": "カードのセキュリティコードが正しくありません。確認してもう一度お試しください。",
+    "insufficientFundsDetail": "このお支払い方法の残高が不足しています。別のお支払い方法を試すか、銀行にお問い合わせください。",
+    "paymentDeclinedDetail": "ご利用の銀行によりこの支払いは拒否されました。別のお支払い方法を試すか、銀行にお問い合わせください。",
+    "processingErrorDetail": "お支払いを処理できませんでした。もう一度試すか、別のお支払い方法をご利用ください。",
+    "reconciliationDetail": "お支払いを受領しましたが、ワークスペースの更新を完了できませんでした。サポートにお問い合わせの際は、次の操作IDをお伝えください：",
+    "reconciliationTitle": "支払いを受領しました — 確認待ち",
+    "retryVerification": "認証を再試行",
+>>>>>>> Stashed changes
     "subscriptionActionRequired": "ワークスペースの設定を完了するにはお支払いを確認してください",
     "subscriptionFailed": "サブスクリプションの更新に失敗しました",
     "subscriptionFailedDetail": "サブスクリプションの更新に失敗しました。もう一度お試しください。",
@@ -819,7 +835,11 @@
       "buy": "購入",
       "buyCredits": "支払いに進む",
       "buyNow": "今すぐ購入",
+<<<<<<< Updated upstream
       "chargedImmediatelyNote": "保存済みのお支払い方法に直ちに請求されます。",
+=======
+      "chargedImmediatelyNote": "保存済みのお支払い方法には直ちに請求されます。",
+>>>>>>> Stashed changes
       "confirmSubtitle": "お支払いが完了すると、クレジットがこのワークスペースに追加されます。",
       "confirmTitle": "確認",
       "contactUs": "お問い合わせ",
@@ -4262,9 +4282,15 @@
       "addNewPaymentMethod": "新しいお支払い方法を追加",
       "afterThat": "その後",
       "alipay": "Alipay",
+<<<<<<< Updated upstream
       "alipayRenewalNote": "Alipayの認可は、自動更新および今後の購入にも使用されます。",
       "applyPromoCode": "適用",
       "applyQuoteBeforeContinuing": "続行する前にプロモーションコードを適用して見積もりを更新してください。",
+=======
+      "alipayRenewalNote": "Alipayの認証は、自動更新および今後の購入にも使用されます。",
+      "applyPromoCode": "適用",
+      "applyQuoteBeforeContinuing": "続行する前にプロモコードを適用して見積もりを更新してください。",
+>>>>>>> Stashed changes
       "backToAllPlans": "すべてのプランに戻る",
       "billedEachMonth": "毎月{amount}請求されます。いつでもキャンセル可能です。",
       "changePaymentMethod": "変更",
@@ -4284,7 +4310,11 @@
       "currentMonthly": "月間プラン",
       "discount": {
         "plan": "プラン割引",
+<<<<<<< Updated upstream
         "promotion": "プロモーションコード"
+=======
+        "promotion": "プロモコード"
+>>>>>>> Stashed changes
       },
       "discountComposition": "割引",
       "eachMonthCreditsRefill": "毎月クレジットが補充されます",
@@ -4294,15 +4324,26 @@
       "hideFeatures": "機能を隠す",
       "newMonthlySubscription": "新しい月間サブスクリプション",
       "nextPaymentDue": "次回のお支払いは{date}です。いつでもキャンセルできます。",
+<<<<<<< Updated upstream
       "payAndSubscribe": "支払って購読",
+=======
+      "payAndSubscribe": "支払って登録",
+>>>>>>> Stashed changes
       "paymentMethod": "お支払い方法",
       "paymentPopupBlocked": "支払いページを開けませんでした。ポップアップを許可して再試行してください。",
       "perMember": "/ メンバー",
       "privacyPolicy": "プライバシーポリシー",
+<<<<<<< Updated upstream
       "promoCodePlaceholder": "プロモーションコード",
       "proratedCharge": "{plan}の按分請求",
       "proratedRefund": "{plan}の按分返金",
       "quoteRefreshFailed": "見積もりの有効期限が切れ、更新できませんでした。もう一度プランを選択してください。",
+=======
+      "promoCodePlaceholder": "プロモコード",
+      "proratedCharge": "{plan}の按分請求",
+      "proratedRefund": "{plan}の按分返金",
+      "quoteRefreshFailed": "見積もりの有効期限が切れ、更新できませんでした。プランをもう一度選択してください。",
+>>>>>>> Stashed changes
       "quoteStale": "見積もりが変更されました。更新後の金額を確認して、もう一度お試しください。",
       "quoteUnavailable": "利用不可",
       "reactivation": {
@@ -4363,7 +4404,11 @@
     "resubscribeFailed": "サブスクリプションの再有効化に失敗しました",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
+<<<<<<< Updated upstream
     "salesManagedRunBlockedDetail": "このワークスペースのプランはすでに有効ではありません。アクセスを復元するには、Comfyのアカウントマネージャーにお問い合わせください。",
+=======
+    "salesManagedRunBlockedDetail": "このワークスペースのプランは現在有効ではありません。アクセスを復元するには、Comfyのアカウントマネージャーにお問い合わせください。",
+>>>>>>> Stashed changes
     "salesManagedRunBlockedTitle": "プランは無効です",
     "saveYearly": "20%お得",
     "saveYearlyUpTo": "最大20%お得",
@@ -4384,7 +4429,11 @@
       "inviteTitle": "チームを招待",
       "planUpdated": "プランが正常に更新されました。",
       "promoApplied": "{code}を適用しました。",
+<<<<<<< Updated upstream
       "promoRenews": "{date} に {amount} で更新されます",
+=======
+      "promoRenews": "{date}に{amount}で更新されます",
+>>>>>>> Stashed changes
       "receiptEmailed": "領収書をメールで送信しました。",
       "sendInvites": "招待を送信"
     },

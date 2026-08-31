@@ -6299,6 +6299,7 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "Genera un video con audio da un prompt testuale usando i modelli Gemini Omni Flash di Google. Facoltativamente, fornisci immagini e/o video di riferimento per guidare o modificare il risultato. Descrivi direttamente nel prompt la durata desiderata (3-10 s).",
     "display_name": "Google Gemini Omni (Video)",
     "inputs": {
@@ -6308,6 +6309,17 @@
       "model": {
         "name": "modello",
         "tooltip": "Il modello Gemini video usato per generare il video."
+=======
+    "description": "Genera un video con audio da un prompt di testo usando i modelli Gemini Omni Flash di Google. Facoltativamente, fornisci immagini e/o video di riferimento per guidare o modificare il risultato. Descrivi direttamente nel prompt la durata desiderata (3-10 s).",
+    "display_name": "Google Gemini Omni (Video)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Il modello video Gemini usato per generare il video."
+>>>>>>> Stashed changes
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
@@ -6316,7 +6328,11 @@
         "name": "prompt"
       },
       "model_resolution": {
+<<<<<<< Updated upstream
         "name": "risoluzione"
+=======
+        "name": "resolution"
+>>>>>>> Stashed changes
       },
       "model_seed": {
         "name": "seed"
@@ -6401,12 +6417,20 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "Analizza un file di modello 3D (GLB, GLTF, OBJ, STL) in una MESH modificabile per i nodi di elaborazione delle mesh (decimazione, remesh, unwrap UV, bake, ...). Tutti i nodi/le primitive della scena vengono uniti in un'unica mesh con le rispettive trasformazioni applicate; texture e fattori dei materiali provengono dal primo materiale. Equivalente di MeshToFile3D.",
+=======
+    "description": "Analizza un file di modello 3D (GLB, GLTF, OBJ, STL) in una MESH modificabile per i nodi di elaborazione delle mesh (decimate, remesh, UV unwrap, bake, ...). Tutti i nodi/primitivi della scena vengono uniti in un'unica mesh con le rispettive trasformazioni applicate; texture e fattori dei materiali provengono dal primo materiale. Controparte di MeshToFile3D.",
+>>>>>>> Stashed changes
     "display_name": "Ottieni componenti 3D",
     "inputs": {
       "model_3d": {
         "name": "model_3d",
+<<<<<<< Updated upstream
         "tooltip": "File del modello 3D da Load 3D o da un altro nodo 3D. FBX/USDZ non sono supportati: converti prima in GLB."
+=======
+        "tooltip": "File di modello 3D da Load 3D o da un altro nodo 3D. FBX/USDZ non sono supportati: converti prima in GLB."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -7133,7 +7157,11 @@
       },
       "mode": {
         "name": "mode",
+<<<<<<< Updated upstream
         "tooltip": "«speed» è più rapido; «precision» produce una sincronizzazione labiale di qualità superiore a un prezzo maggiore."
+=======
+        "tooltip": "'speed' è più rapido; 'precision' produce una sincronizzazione labiale di qualità superiore a un prezzo maggiore."
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "output_language",
@@ -17937,6 +17965,7 @@
   },
   "RecraftV4CreateStyleNode": {
     "description": "Crea uno stile Recraft V4 riutilizzabile da 1-10 immagini di riferimento. Lo style_id restituito funziona con ogni modello Recraft V4 e V4.1 dello stesso tipo di output. La dimensione totale di tutte le immagini è limitata a 10 MB.",
+<<<<<<< Updated upstream
     "display_name": "Recraft V4 Create Style",
     "inputs": {
       "images": {
@@ -17945,6 +17974,16 @@
       },
       "model": {
         "name": "modello",
+=======
+    "display_name": "Recraft V4 Crea stile",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Immagini di riferimento che definiscono lo stile. Riferimenti simili rendono la corrispondenza più precisa, riferimenti vari la ampliano."
+      },
+      "model": {
+        "name": "model",
+>>>>>>> Stashed changes
         "tooltip": "Tipo di output per cui viene creato lo stile: recraftv4_styles per immagini raster, recraftv4_styles_vector per SVG."
       }
     },
@@ -17964,7 +18003,11 @@
       },
       "model": {
         "name": "modello",
+<<<<<<< Updated upstream
         "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per una generazione coerente nello stile e richiedono sempre uno style_id o style_references."
+=======
+        "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per una generazione coerente nello stile e richiedono sempre style_id o style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "dimensione"
@@ -17995,7 +18038,11 @@
       },
       "style_match": {
         "name": "style_match",
+<<<<<<< Updated upstream
         "tooltip": "Quanto fedelmente seguire lo stile: «precise» lo riproduce nei dettagli, «flexible» ne riprende l'aspetto generale. Usato solo quando viene fornito uno stile."
+=======
+        "tooltip": "Quanto fedelmente seguire lo stile: precise lo riproduce nei dettagli, flexible corrisponde all'aspetto generale. Usato solo quando viene fornito uno stile."
+>>>>>>> Stashed changes
       },
       "style_references": {
         "name": "style_references",
@@ -18021,7 +18068,11 @@
       },
       "model": {
         "name": "modello",
+<<<<<<< Updated upstream
         "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per una generazione coerente nello stile e richiedono sempre uno style_id o style_references."
+=======
+        "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per una generazione coerente nello stile e richiedono sempre style_id o style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "dimensione"
@@ -18052,7 +18103,11 @@
       },
       "style_match": {
         "name": "style_match",
+<<<<<<< Updated upstream
         "tooltip": "Quanto fedelmente seguire lo stile: «precise» lo riproduce nei dettagli, «flexible» ne riprende l'aspetto generale. Usato solo quando viene fornito uno stile."
+=======
+        "tooltip": "Quanto fedelmente seguire lo stile: precise lo riproduce nei dettagli, flexible corrisponde all'aspetto generale. Usato solo quando viene fornito uno stile."
+>>>>>>> Stashed changes
       },
       "style_references": {
         "name": "style_references",
@@ -24760,7 +24815,11 @@
     "inputs": {
       "crop": {
         "name": "crop",
+<<<<<<< Updated upstream
         "tooltip": "Regione di ritaglio in pixel. Larghezza/altezza pari a zero mantengono il fotogramma intero."
+=======
+        "tooltip": "Area di ritaglio in pixel. Larghezza/altezza pari a zero mantiene l'intero fotogramma."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"

@@ -6299,7 +6299,11 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "Générez une vidéo avec audio à partir d’une invite textuelle à l’aide des modèles Gemini Omni Flash de Google. Fournissez éventuellement des images et/ou vidéos de référence pour guider ou modifier le résultat. Décrivez directement dans l’invite la durée souhaitée (3-10 s).",
+=======
+    "description": "Générez une vidéo avec audio à partir d’un prompt textuel à l’aide des modèles Gemini Omni Flash de Google. Fournissez éventuellement des images et/ou vidéos de référence pour guider ou modifier le résultat. Indiquez directement la durée souhaitée (3-10 s) dans le prompt.",
+>>>>>>> Stashed changes
     "display_name": "Google Gemini Omni (Vidéo)",
     "inputs": {
       "control_after_generate": {
@@ -6401,12 +6405,20 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "Analyse un fichier de modèle 3D (GLB, GLTF, OBJ, STL) en un MESH modifiable pour les nœuds de traitement de maillage (décimation, remaillage, dépliage UV, bake, ...). Tous les nœuds/primitives de la scène sont fusionnés en un seul maillage avec leurs transformations appliquées ; les textures et facteurs de matériau proviennent du premier matériau. Équivalent de MeshToFile3D.",
+=======
+    "description": "Analyse un fichier de modèle 3D (GLB, GLTF, OBJ, STL) en un MESH modifiable pour les nœuds de traitement de maillage (décimation, remaillage, dépliage UV, bake, ...). Tous les nœuds/primitives de la scène sont fusionnés dans un seul maillage avec leurs transformations appliquées ; les textures et facteurs de matériau proviennent du premier matériau. Équivalent de MeshToFile3D.",
+>>>>>>> Stashed changes
     "display_name": "Obtenir les composants 3D",
     "inputs": {
       "model_3d": {
         "name": "model_3d",
+<<<<<<< Updated upstream
         "tooltip": "Fichier de modèle 3D provenant de Load 3D ou d’un autre nœud 3D. FBX/USDZ ne sont pas pris en charge : convertissez d’abord en GLB."
+=======
+        "tooltip": "Fichier de modèle 3D provenant de Load 3D ou d’un autre nœud 3D. FBX/USDZ ne sont pas pris en charge : convertissez-les d’abord en GLB."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -7133,7 +7145,11 @@
       },
       "mode": {
         "name": "mode",
+<<<<<<< Updated upstream
         "tooltip": "« speed » est plus rapide ; « precision » produit une synchronisation labiale de meilleure qualité à un prix plus élevé."
+=======
+        "tooltip": "« speed » est plus rapide ; « precision » produit une synchronisation labiale de meilleure qualité, mais à un prix plus élevé."
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "langue de sortie",
@@ -17824,7 +17840,11 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
+<<<<<<< Updated upstream
     "description": "Sélectionnez le style et le sous-style logo_raster.",
+=======
+    "description": "Sélectionnez le style logo_raster et son sous-style.",
+>>>>>>> Stashed changes
     "display_name": "Recraft Style - Logo Raster",
     "inputs": {
       "substyle": {
@@ -17936,8 +17956,13 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "Créez un style Recraft V4 réutilisable à partir de 1 à 10 images de référence. Le style_id renvoyé fonctionne avec tous les modèles Recraft V4 et V4.1 du même type de sortie. La taille totale de toutes les images est limitée à 10 Mo.",
     "display_name": "Recraft V4 Créer un style",
+=======
+    "description": "Créez un style Recraft V4 réutilisable à partir de 1 à 10 images de référence. Le style_id renvoyé fonctionne avec chaque modèle Recraft V4 et V4.1 du même type de sortie. La taille totale de toutes les images est limitée à 10 MB.",
+    "display_name": "Recraft V4 Create Style",
+>>>>>>> Stashed changes
     "inputs": {
       "images": {
         "name": "images",
@@ -17945,7 +17970,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "Type de sortie pour lequel le style est créé : recraftv4_styles pour les images raster, recraftv4_styles_vector pour les SVG."
+=======
+        "tooltip": "Type de sortie pour lequel le style est créé : recraftv4_styles pour les images matricielles, recraftv4_styles_vector pour SVG."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -17964,7 +17993,11 @@
       },
       "model": {
         "name": "modèle",
+<<<<<<< Updated upstream
         "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en matière de style et nécessitent toujours un style_id ou des style_references."
+=======
+        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente avec le style et nécessitent toujours un style_id ou style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "taille"
@@ -17999,7 +18032,11 @@
       },
       "style_references": {
         "name": "style_references",
+<<<<<<< Updated upstream
         "tooltip": "Images de référence pour créer un style à la volée, facturées en plus de la génération. Le style créé est renvoyé sous forme de style_id pour réutilisation. Ne peut pas être combiné avec style_id."
+=======
+        "tooltip": "Images de référence pour créer un style à la volée, facturées en supplément de la génération. Le style créé est renvoyé comme style_id pour être réutilisé. Ne peut pas être combiné avec style_id."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -18021,7 +18058,11 @@
       },
       "model": {
         "name": "modèle",
+<<<<<<< Updated upstream
         "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en matière de style et nécessitent toujours un style_id ou des style_references."
+=======
+        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente avec le style et nécessitent toujours un style_id ou style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "taille"
@@ -18056,7 +18097,11 @@
       },
       "style_references": {
         "name": "style_references",
+<<<<<<< Updated upstream
         "tooltip": "Images de référence pour créer un style vectoriel à la volée, facturées en plus de la génération. Le style créé est renvoyé sous forme de style_id pour réutilisation. Ne peut pas être combiné avec style_id."
+=======
+        "tooltip": "Images de référence pour créer un style vectoriel à la volée, facturées en supplément de la génération. Le style créé est renvoyé comme style_id pour être réutilisé. Ne peut pas être combiné avec style_id."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24759,11 +24804,19 @@
     "display_name": "Recadrer la vidéo",
     "inputs": {
       "crop": {
+<<<<<<< Updated upstream
         "name": "crop",
         "tooltip": "Région de recadrage en pixels. Une largeur ou hauteur nulle conserve l’image entière."
       },
       "video": {
         "name": "video"
+=======
+        "name": "recadrage",
+        "tooltip": "Région de recadrage en pixels. Une largeur/hauteur nulle conserve l’image entière."
+      },
+      "video": {
+        "name": "vidéo"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24877,6 +24930,7 @@
     }
   },
   "VideoTrim": {
+<<<<<<< Updated upstream
     "display_name": "Découper la vidéo (avancé)",
     "inputs": {
       "strict_duration": {
@@ -24889,6 +24943,20 @@
       },
       "video": {
         "name": "video"
+=======
+    "display_name": "Rogner la vidéo (avancé)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Si True, une erreur sera générée lorsque la durée spécifiée n’est pas possible."
+      },
+      "trim": {
+        "name": "rognage",
+        "tooltip": "Fenêtre de rognage utilisant les images de début/fin."
+      },
+      "video": {
+        "name": "vidéo"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {

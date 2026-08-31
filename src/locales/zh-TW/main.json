@@ -346,6 +346,7 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+<<<<<<< Updated upstream
     "authenticationFailedDetail": "我們無法完成付款驗證。請再試一次。",
     "authenticationManagerRequired": "付款驗證需要工作區帳務管理員處理。",
     "authenticationUnavailable": "安全付款驗證目前無法使用。請重新整理後再試一次。",
@@ -357,6 +358,19 @@
     "paymentDeclinedDetail": "您的銀行拒絕此筆付款。請嘗試其他付款方式或聯絡您的銀行。",
     "processingErrorDetail": "您的付款無法處理。請再試一次或使用其他付款方式。",
     "reconciliationDetail": "已收到您的付款，但我們無法完成工作區更新。請聯絡支援團隊，並提供此操作 ID：",
+=======
+    "authenticationFailedDetail": "無法完成付款驗證。請再試一次。",
+    "authenticationManagerRequired": "付款驗證需要工作區帳務管理員處理。",
+    "authenticationUnavailable": "安全付款驗證無法使用。請重新整理後再試一次。",
+    "cancelFailed": "取消訂閱失敗",
+    "cancelTimeout": "訂閱取消逾時",
+    "expiredCardDetail": "此卡片已過期。請使用其他付款方式。",
+    "incorrectCvcDetail": "卡片安全碼不正確。請確認後再試一次。",
+    "insufficientFundsDetail": "此付款方式餘額不足。請嘗試其他付款方式或聯絡您的銀行。",
+    "paymentDeclinedDetail": "您的銀行拒絕了這筆付款。請嘗試其他付款方式或聯絡您的銀行。",
+    "processingErrorDetail": "無法處理您的付款。請再試一次或使用其他付款方式。",
+    "reconciliationDetail": "已收到您的付款，但無法完成工作區的更新。請聯絡支援人員，並提供此操作 ID：",
+>>>>>>> Stashed changes
     "reconciliationTitle": "已收到付款 — 等待確認",
     "retryVerification": "重試驗證",
     "subscriptionActionRequired": "請驗證您的付款以完成工作區設置",
@@ -819,7 +833,11 @@
       "buy": "購買",
       "buyCredits": "繼續付款",
       "buyNow": "立即購買",
+<<<<<<< Updated upstream
       "chargedImmediatelyNote": "系統會立即向您已儲存的付款方式扣款。",
+=======
+      "chargedImmediatelyNote": "系統會立即向您儲存的付款方式扣款。",
+>>>>>>> Stashed changes
       "confirmSubtitle": "付款完成後，點數將立即加到此工作區。",
       "confirmTitle": "確認",
       "contactUs": "聯絡我們",
@@ -2422,8 +2440,13 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "來自版本 {version} 的核心節點：",
+<<<<<<< Updated upstream
     "newerVersionRequired": "部分節點需要較新版的 ComfyUI（目前版本：{version}）。請更新以使用所有節點。",
     "newerVersionRequiredGeneric": "部分節點需要較新版的 ComfyUI。請更新以使用所有節點。",
+=======
+    "newerVersionRequired": "部分節點需要較新版本的 ComfyUI（目前版本：{version}）。請更新以使用所有節點。",
+    "newerVersionRequiredGeneric": "部分節點需要較新版本的 ComfyUI。請更新以使用所有節點。",
+>>>>>>> Stashed changes
     "unknownVersion": "未知"
   },
   "logsTerminal": {
@@ -4261,10 +4284,17 @@
       "addCreditCard": "新增信用卡",
       "addNewPaymentMethod": "新增付款方式",
       "afterThat": "之後",
+<<<<<<< Updated upstream
       "alipay": "支付寶",
       "alipayRenewalNote": "支付寶授權也將用於自動續訂及未來購買。",
       "applyPromoCode": "套用",
       "applyQuoteBeforeContinuing": "繼續前，請套用優惠碼以更新您的報價。",
+=======
+      "alipay": "Alipay",
+      "alipayRenewalNote": "Alipay 授權也將用於自動續訂與日後購買。",
+      "applyPromoCode": "套用",
+      "applyQuoteBeforeContinuing": "繼續前請先套用優惠碼，以重新整理您的報價。",
+>>>>>>> Stashed changes
       "backToAllPlans": "返回所有方案",
       "billedEachMonth": "每月收費 {amount}。可隨時取消。",
       "changePaymentMethod": "變更",
@@ -4302,8 +4332,13 @@
       "promoCodePlaceholder": "優惠碼",
       "proratedCharge": "{plan} 按比例收費",
       "proratedRefund": "{plan} 按比例退款",
+<<<<<<< Updated upstream
       "quoteRefreshFailed": "您的報價已過期且無法更新。請重新選擇方案。",
       "quoteStale": "您的報價已變更。請確認更新後的金額並再試一次。",
+=======
+      "quoteRefreshFailed": "您的報價已過期且無法重新整理。請再次選擇您的方案。",
+      "quoteStale": "您的報價已變更。請檢視更新後的金額並再試一次。",
+>>>>>>> Stashed changes
       "quoteUnavailable": "無法使用",
       "reactivation": {
         "amountChanged": "自您確認後，收費金額已變更 — 請重新檢查並再試一次",
@@ -4328,7 +4363,11 @@
       "startsOn": "開始於 {date}",
       "stayOnUntil": "您將於 {date} 前維持 {plan}。",
       "stripeMethodChoice": "您的付款資訊由 Stripe 安全處理。",
+<<<<<<< Updated upstream
       "stripeUnavailable": "付款選項目前無法使用。請重新整理後再試一次。",
+=======
+      "stripeUnavailable": "付款選項無法使用。請重新整理後再試一次。",
+>>>>>>> Stashed changes
       "subscribeToPlan": "訂閱 {plan}",
       "switchToPlan": "切換至 {plan}",
       "switchesToday": "今日切換次數",
@@ -4363,7 +4402,11 @@
     "resubscribeFailed": "重新啟用訂閱失敗",
     "resubscribeSuccess": "訂閱已重新啟用",
     "resubscribeTo": "重新訂閱 {plan}",
+<<<<<<< Updated upstream
     "salesManagedRunBlockedDetail": "此工作區的方案已不再啟用。請聯絡您的 Comfy 客戶經理以恢復存取權。",
+=======
+    "salesManagedRunBlockedDetail": "此工作區的方案已不再啟用。請聯絡您的 Comfy 帳戶經理以恢復存取權。",
+>>>>>>> Stashed changes
     "salesManagedRunBlockedTitle": "方案未啟用",
     "saveYearly": "節省 20%",
     "saveYearlyUpTo": "最高可省 20%",
@@ -4422,7 +4465,11 @@
         "name": "創作者版"
       },
       "enterprise": {
+<<<<<<< Updated upstream
         "name": "企業方案"
+=======
+        "name": "企業版"
+>>>>>>> Stashed changes
       },
       "founder": {
         "name": "創始版"

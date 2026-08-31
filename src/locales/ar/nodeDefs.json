@@ -6299,11 +6299,19 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "أنشئ فيديو مع صوت من مطالبة نصية باستخدام نماذج Gemini Omni Flash من Google. يمكنك اختياريًا توفير صور و/أو مقاطع فيديو مرجعية لتوجيه النتيجة أو تعديلها. صِف المدة المطلوبة (3-10s) مباشرةً في المطالبة.",
     "display_name": "Google Gemini Omni (فيديو)",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد الإنشاء"
+=======
+    "description": "أنشئ فيديو مع صوت من مطالبة نصية باستخدام نماذج Gemini Omni Flash من Google. يمكنك اختياريًا توفير صور و/أو فيديوهات مرجعية لتوجيه النتيجة أو تحريرها. صف المدة المطلوبة (3-10s) مباشرةً في المطالبة.",
+    "display_name": "Google Gemini Omni (فيديو)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+>>>>>>> Stashed changes
       },
       "model": {
         "name": "model",
@@ -6401,7 +6409,11 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "حلّل ملف نموذج ثلاثي الأبعاد (GLB، GLTF، OBJ، STL) إلى MESH قابل للتحرير لعُقد معالجة الشبكات (decimate، remesh، UV unwrap، bake، ...). تُدمج جميع عُقد/بدائيات المشهد في شبكة واحدة مع تطبيق تحويلاتها؛ وتأتي الأنسجة وعوامل المواد من المادة الأولى. النظير لـ MeshToFile3D.",
+=======
+    "description": "حلّل ملف نموذج ثلاثي الأبعاد (GLB، GLTF، OBJ، STL) إلى MESH قابل للتحرير لعُقد معالجة الشبكات (decimate، remesh، UV unwrap، bake، ...). تُدمج جميع عُقد/بدائيات المشهد في شبكة واحدة مع تطبيق تحويلاتها؛ وتأتي الخامات وعوامل المواد من المادة الأولى. النظير لـ MeshToFile3D.",
+>>>>>>> Stashed changes
     "display_name": "الحصول على مكوّنات ثلاثية الأبعاد",
     "inputs": {
       "model_3d": {
@@ -6411,7 +6423,11 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "mesh",
+=======
+        "name": "شبكة",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -7133,7 +7149,11 @@
       },
       "mode": {
         "name": "الوضع",
+<<<<<<< Updated upstream
         "tooltip": "‏'speed' أسرع؛ أما 'precision' فينتج مزامنة شفاه أعلى جودة بتكلفة أعلى."
+=======
+        "tooltip": "‏'speed' أسرع؛ أما 'precision' فينتج مزامنة شفاه بجودة أعلى مقابل سعر أعلى."
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "اللغة المستهدفة",
@@ -17936,12 +17956,21 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "أنشئ نمط Recraft V4 قابلًا لإعادة الاستخدام من 1-10 صور مرجعية. يعمل style_id المُعاد مع كل نموذج Recraft V4 وV4.1 من نوع الإخراج نفسه. الحجم الإجمالي لجميع الصور محدود بـ 10 MB.",
     "display_name": "إنشاء نمط Recraft V4",
     "inputs": {
       "images": {
         "name": "images",
         "tooltip": "صور مرجعية تحدد النمط. المراجع المتشابهة تجعل المطابقة أدق، والمراجع المتنوعة توسعها."
+=======
+    "description": "أنشئ نمط Recraft V4 قابلًا لإعادة الاستخدام من 1-10 صور مرجعية. يعمل style_id المُعاد مع كل نموذج Recraft V4 وV4.1 من نوع الإخراج نفسه. يقتصر الحجم الإجمالي لجميع الصور على 10 MB.",
+    "display_name": "Recraft V4 إنشاء نمط",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "الصور المرجعية التي تحدد النمط. المراجع المتشابهة تجعل المطابقة أدق، والمراجع المتنوعة توسّعها."
+>>>>>>> Stashed changes
       },
       "model": {
         "name": "model",
@@ -17964,7 +17993,11 @@
       },
       "model": {
         "name": "النموذج",
+<<<<<<< Updated upstream
         "tooltip": "النموذج المستخدم للإنشاء. نماذج recraftv4_styles مصممة لإنشاء متسق مع النمط وتتطلب دائمًا style_id أو style_references."
+=======
+        "tooltip": "النموذج المستخدم للإنشاء. نماذج recraftv4_styles مصممة لإنشاء متّسق مع النمط وتتطلب دائمًا style_id أو style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "الحجم"
@@ -17991,7 +18024,11 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "UUID لنمط Recraft V4 لتطبيقه، مثلًا من عقدة Recraft V4 Create Style أو مخرج style_id من تشغيل سابق. لا يمكن دمجه مع style_references."
+=======
+        "tooltip": "UUID لنمط Recraft V4 لتطبيقه، مثلًا من عقدة Recraft V4 Create Style أو من مخرج style_id لتشغيل سابق. لا يمكن دمجه مع style_references."
+>>>>>>> Stashed changes
       },
       "style_match": {
         "name": "style_match",
@@ -18021,7 +18058,11 @@
       },
       "model": {
         "name": "النموذج",
+<<<<<<< Updated upstream
         "tooltip": "النموذج المستخدم للإنشاء. نماذج recraftv4_styles مصممة لإنشاء متسق مع النمط وتتطلب دائمًا style_id أو style_references."
+=======
+        "tooltip": "النموذج المستخدم للإنشاء. نماذج recraftv4_styles مصممة لإنشاء متّسق مع النمط وتتطلب دائمًا style_id أو style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "الحجم"
@@ -18048,7 +18089,11 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "UUID لنمط متجهات Recraft V4 لتطبيقه، مثلًا من عقدة Recraft V4 Create Style أو مخرج style_id من تشغيل سابق. لا يمكن دمجه مع style_references."
+=======
+        "tooltip": "UUID لنمط متجهي من Recraft V4 لتطبيقه، مثلًا من عقدة Recraft V4 Create Style أو من مخرج style_id لتشغيل سابق. لا يمكن دمجه مع style_references."
+>>>>>>> Stashed changes
       },
       "style_match": {
         "name": "style_match",
@@ -18056,7 +18101,11 @@
       },
       "style_references": {
         "name": "style_references",
+<<<<<<< Updated upstream
         "tooltip": "صور مرجعية لإنشاء نمط متجهات منها تلقائيًا، وتُحتسب تكلفتها بالإضافة إلى تكلفة الإنشاء. يُعاد النمط المُنشأ كـ style_id لإعادة استخدامه. لا يمكن دمجه مع style_id."
+=======
+        "tooltip": "صور مرجعية لإنشاء نمط متجهي منها تلقائيًا، وتُحتسب تكلفتها بالإضافة إلى تكلفة الإنشاء. يُعاد النمط المُنشأ كـ style_id لإعادة استخدامه. لا يمكن دمجه مع style_id."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24717,7 +24766,11 @@
       },
       "resolution": {
         "name": "الدقة",
+<<<<<<< Updated upstream
         "tooltip": "دقة الفيديو الناتج. لا تتوفر دقة 4K لطراز veo-3.1-lite."
+=======
+        "tooltip": "دقة الفيديو الناتج. لا تتوفر 4K لطراز veo-3.1-lite."
+>>>>>>> Stashed changes
       },
       "seed": {
         "name": "البذرة",
@@ -24760,7 +24813,11 @@
     "inputs": {
       "crop": {
         "name": "crop",
+<<<<<<< Updated upstream
         "tooltip": "منطقة الاقتصاص بالبكسل. يؤدي العرض أو الارتفاع الصفري إلى الاحتفاظ بالإطار كاملًا."
+=======
+        "tooltip": "منطقة الاقتصاص بالبكسل. يؤدي ضبط العرض/الارتفاع على صفر إلى الاحتفاظ بالإطار الكامل."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"
@@ -24885,7 +24942,11 @@
       },
       "trim": {
         "name": "trim",
+<<<<<<< Updated upstream
         "tooltip": "نافذة التشذيب باستخدام إطارات البداية والنهاية."
+=======
+        "tooltip": "نافذة التشذيب باستخدام إطارات البداية/النهاية."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"

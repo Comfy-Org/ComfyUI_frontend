@@ -6299,20 +6299,30 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "使用 Google 的 Gemini Omni Flash 模型，根據文字提示詞生成含音訊的影片。可選擇提供參考圖片及／或影片來引導或編輯結果。請直接在提示詞中描述所需時長（3–10 秒）。",
+=======
+    "description": "使用 Google 的 Gemini Omni Flash 模型，根據文字提示詞產生含音訊的影片。可選擇提供參考圖片及／或影片，以引導或編輯結果。請直接在提示詞中描述所需長度（3–10 秒）。",
+>>>>>>> Stashed changes
     "display_name": "Google Gemini Omni（影片）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
       },
       "model": {
+<<<<<<< Updated upstream
         "name": "模型",
         "tooltip": "用於生成影片的 Gemini 影片模型。"
+=======
+        "name": "model",
+        "tooltip": "用於產生影片的 Gemini 影片模型。"
+>>>>>>> Stashed changes
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
       },
       "model_prompt": {
+<<<<<<< Updated upstream
         "name": "提示詞"
       },
       "model_resolution": {
@@ -6320,6 +6330,15 @@
       },
       "model_seed": {
         "name": "種子"
+=======
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+>>>>>>> Stashed changes
       },
       "model_task_type": {
         "name": "task_type"
@@ -6401,7 +6420,11 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "將 3D 模型檔案（GLB、GLTF、OBJ、STL）解析為可編輯的 MESH，以供網格處理節點使用（減面、重新網格化、UV 展開、烘焙等）。所有場景節點／基本體都會合併為單一網格並套用其變換；紋理與材質係數取自第一個材質。與 MeshToFile3D 相對應。",
+=======
+    "description": "將 3D 模型檔案（GLB、GLTF、OBJ、STL）解析為可供網格處理節點（簡化、重新網格化、UV 展開、烘焙等）使用的可編輯 MESH。所有場景節點／基本圖元會合併為單一網格，並套用其轉換；紋理與材質係數取自第一個材質。MeshToFile3D 的對應節點。",
+>>>>>>> Stashed changes
     "display_name": "取得 3D 元件",
     "inputs": {
       "model_3d": {
@@ -7133,7 +7156,11 @@
       },
       "mode": {
         "name": "模式",
+<<<<<<< Updated upstream
         "tooltip": "「speed」較快；「precision」可產生品質更高的唇形同步，但價格較高。"
+=======
+        "tooltip": "'speed' 較快；'precision' 可產生品質更高的唇形同步，但費用較高。"
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "目標語言",
@@ -17824,7 +17851,11 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
+<<<<<<< Updated upstream
     "description": "選擇 logo_raster 樣式與子樣式。",
+=======
+    "description": "選擇 logo_raster 樣式及子樣式。",
+>>>>>>> Stashed changes
     "display_name": "Recraft Style - 標誌點陣圖",
     "inputs": {
       "substyle": {
@@ -17936,6 +17967,7 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "從 1–10 張參考圖片建立可重複使用的 Recraft V4 樣式。傳回的 style_id 可搭配相同輸出類型的所有 Recraft V4 與 V4.1 模型使用。所有圖片的總大小限制為 10 MB。",
     "display_name": "Recraft V4 建立樣式",
     "inputs": {
@@ -17946,6 +17978,18 @@
       "model": {
         "name": "模型",
         "tooltip": "建立樣式所對應的輸出類型：recraftv4_styles 用於點陣圖片，recraftv4_styles_vector 用於 SVG。"
+=======
+    "description": "從 1–10 張參考圖片建立可重複使用的 Recraft V4 樣式。傳回的 style_id 可搭配相同輸出類型的所有 Recraft V4 與 V4.1 模型使用。所有圖片總大小上限為 10 MB。",
+    "display_name": "Recraft V4 建立樣式",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "用於定義樣式的參考圖片。相似的參考圖片可提升符合度，多樣化的參考圖片可擴展範圍。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "此樣式建立所適用的輸出類型：點陣圖片使用 recraftv4_styles，SVG 使用 recraftv4_styles_vector。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -17964,7 +18008,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
+=======
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為樣式一致的生成打造，且一律需要 style_id 或 style_references。"
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "size"
@@ -17991,6 +18039,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "要套用的 Recraft V4 樣式 UUID，例如來自 Recraft V4 建立樣式節點或前一次執行的 style_id 輸出。無法與 style_references 合併使用。"
       },
       "style_match": {
@@ -18000,6 +18049,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "即時從參考圖片建立樣式，費用會加計於生成費用。建立的樣式會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
+=======
+        "tooltip": "要套用的 Recraft V4 樣式 UUID，例如來自 Recraft V4 建立樣式節點或先前執行的 style_id 輸出。無法與 style_references 合併使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "與樣式的遵循程度：precise 會細緻重現，flexible 則符合整體外觀。僅在提供樣式時使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "即時建立樣式的參考圖片，費用會額外加計於生成費用。建立的樣式會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -18021,7 +18081,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
+=======
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為樣式一致的生成打造，且一律需要 style_id 或 style_references。"
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "size"
@@ -18048,6 +18112,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "要套用的 Recraft V4 向量樣式 UUID，例如來自 Recraft V4 建立樣式節點或前一次執行的 style_id 輸出。無法與 style_references 合併使用。"
       },
       "style_match": {
@@ -18057,6 +18122,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "即時從參考圖片建立向量樣式，費用會加計於生成費用。建立的樣式會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
+=======
+        "tooltip": "要套用的 Recraft V4 向量樣式 UUID，例如來自 Recraft V4 建立樣式節點或先前執行的 style_id 輸出。無法與 style_references 合併使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "與樣式的遵循程度：precise 會細緻重現，flexible 則符合整體外觀。僅在提供樣式時使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "即時建立向量樣式的參考圖片，費用會額外加計於生成費用。建立的樣式會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24760,7 +24836,11 @@
     "inputs": {
       "crop": {
         "name": "crop",
+<<<<<<< Updated upstream
         "tooltip": "以像素為單位的裁切區域。寬度／高度為零時保留完整畫面。"
+=======
+        "tooltip": "以像素為單位的裁切區域。寬度或高度為零時保留完整影格。"
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"
@@ -24881,7 +24961,11 @@
     "inputs": {
       "strict_duration": {
         "name": "strict_duration",
+<<<<<<< Updated upstream
         "tooltip": "若為 True，且無法使用指定的時長，將引發錯誤。"
+=======
+        "tooltip": "若為 True，當無法使用指定的時長時，將會引發錯誤。"
+>>>>>>> Stashed changes
       },
       "trim": {
         "name": "trim",

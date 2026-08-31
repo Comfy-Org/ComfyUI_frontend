@@ -346,6 +346,7 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+<<<<<<< Updated upstream
     "authenticationFailedDetail": "לא הצלחנו להשלים את אימות התשלום. יש לנסות שוב.",
     "authenticationManagerRequired": "אימות התשלום דורש טיפול של מנהל חיוב בסביבת העבודה.",
     "authenticationUnavailable": "אימות מאובטח של תשלום אינו זמין. יש לרענן ולנסות שוב.",
@@ -359,6 +360,21 @@
     "reconciliationDetail": "התשלום שלך התקבל, אך לא הצלחנו לסיים את עדכון סביבת העבודה שלך. פנה לתמיכה וכלול את מזהה הפעולה הזה:",
     "reconciliationTitle": "התשלום התקבל — ממתין לאישור",
     "retryVerification": "נסה שוב את האימות",
+=======
+    "authenticationFailedDetail": "לא הצלחנו להשלים את אימות התשלום. נסו שוב.",
+    "authenticationManagerRequired": "אימות התשלום דורש טיפול של מנהל חיוב במרחב העבודה.",
+    "authenticationUnavailable": "אימות תשלום מאובטח אינו זמין. יש לרענן ולנסות שוב.",
+    "cancelFailed": "ביטול המנוי נכשל",
+    "cancelTimeout": "פג זמן ההמתנה לביטול המנוי",
+    "expiredCardDetail": "תוקף כרטיס זה פג. השתמשו באמצעי תשלום אחר.",
+    "incorrectCvcDetail": "קוד האבטחה של הכרטיס שגוי. בדקו אותו ונסו שוב.",
+    "insufficientFundsDetail": "אין מספיק כספים באמצעי תשלום זה. נסו אמצעי תשלום אחר או פנו לבנק שלכם.",
+    "paymentDeclinedDetail": "הבנק שלך דחה תשלום זה. נסו אמצעי תשלום אחר או פנו לבנק שלכם.",
+    "processingErrorDetail": "לא ניתן היה לעבד את התשלום שלך. נסו שוב או השתמשו באמצעי תשלום אחר.",
+    "reconciliationDetail": "התשלום שלך התקבל, אך לא הצלחנו לסיים את עדכון מרחב העבודה שלך. פנו לתמיכה וכללו מזהה פעולה זה:",
+    "reconciliationTitle": "התשלום התקבל — ממתין לאישור",
+    "retryVerification": "נסה שוב אימות",
+>>>>>>> Stashed changes
     "subscriptionActionRequired": "אמת את התשלום שלך כדי להשלים את הגדרת סביבת העבודה",
     "subscriptionFailed": "עדכון המנוי נכשל",
     "subscriptionFailedDetail": "לא הצלחנו לעדכן את המנוי שלכם. אנא נסו שוב.",
@@ -819,7 +835,11 @@
       "buy": "קנה",
       "buyCredits": "המשך לתשלום",
       "buyNow": "קנה עכשיו",
+<<<<<<< Updated upstream
       "chargedImmediatelyNote": "אמצעי התשלום השמור שלך מחויב באופן מיידי.",
+=======
+      "chargedImmediatelyNote": "אמצעי התשלום השמור שלך יחויב באופן מיידי.",
+>>>>>>> Stashed changes
       "confirmSubtitle": "קרדיטים מתווספים לסביבת עבודה זו מיד עם סיום התשלום.",
       "confirmTitle": "אישור",
       "contactUs": "צור קשר",
@@ -4259,6 +4279,7 @@
     "prepaidDescription": "קרדיטים ששולמו מראש",
     "preview": {
       "addCreditCard": "הוספת כרטיס אשראי",
+<<<<<<< Updated upstream
       "addNewPaymentMethod": "הוסף אמצעי תשלום חדש",
       "afterThat": "לאחר מכן",
       "alipay": "Alipay",
@@ -4268,6 +4289,17 @@
       "backToAllPlans": "חזרה לכל המסלולים",
       "billedEachMonth": "{amount} מחויב כל חודש. ניתן לבטל בכל עת.",
       "changePaymentMethod": "שנה",
+=======
+      "addNewPaymentMethod": "הוספת אמצעי תשלום חדש",
+      "afterThat": "לאחר מכן",
+      "alipay": "Alipay",
+      "alipayRenewalNote": "האישור של Alipay ישמש גם לחידושים אוטומטיים ולרכישות עתידיות.",
+      "applyPromoCode": "החל",
+      "applyQuoteBeforeContinuing": "החילו את קוד הקידום כדי לרענן את הצעת המחיר לפני ההמשך.",
+      "backToAllPlans": "חזרה לכל המסלולים",
+      "billedEachMonth": "{amount} מחויב כל חודש. ניתן לבטל בכל עת.",
+      "changePaymentMethod": "שינוי",
+>>>>>>> Stashed changes
       "commitment": "התחייבות",
       "completeVerification": "השלם אימות",
       "confirm": "אישור",
@@ -4294,7 +4326,11 @@
       "hideFeatures": "הסתרת תכונות",
       "newMonthlySubscription": "מנוי חודשי חדש",
       "nextPaymentDue": "התשלום הבא ב-{date}. ניתן לבטל בכל עת.",
+<<<<<<< Updated upstream
       "payAndSubscribe": "שלם והירשם",
+=======
+      "payAndSubscribe": "תשלום והרשמה",
+>>>>>>> Stashed changes
       "paymentMethod": "אמצעי תשלום",
       "paymentPopupBlocked": "לא ניתן היה לפתוח את דף התשלום — אפשר חלונות קופצים ונסה שוב.",
       "perMember": "/ חבר",
@@ -4302,8 +4338,13 @@
       "promoCodePlaceholder": "קוד קידום",
       "proratedCharge": "חיוב יחסי עבור {plan}",
       "proratedRefund": "החזר יחסי עבור {plan}",
+<<<<<<< Updated upstream
       "quoteRefreshFailed": "תוקף הצעת המחיר שלך פג ולא ניתן היה לרענן אותה. בחר שוב את התוכנית שלך.",
       "quoteStale": "הצעת המחיר שלך השתנתה. בדוק את הסכום המעודכן ונסה שוב.",
+=======
+      "quoteRefreshFailed": "תוקף הצעת המחיר שלך פג ולא ניתן היה לרענן אותה. בחרו שוב את התוכנית שלכם.",
+      "quoteStale": "הצעת המחיר שלך השתנתה. בדקו את הסכום המעודכן ונסו שוב.",
+>>>>>>> Stashed changes
       "quoteUnavailable": "לא זמין",
       "reactivation": {
         "amountChanged": "סכום החיוב השתנה מאז האישור — נא בדוק ונסה שוב",
@@ -4320,7 +4361,11 @@
         "upgradeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. שדרוג כעת מחדש אותו — תחויב {amount} היום, והוא יתחדש אוטומטית בתאריך {nextDate} במקום להסתיים."
       },
       "refillReplacesNote": "מחליף את המילוי החודשי שלך. היתרה הקיימת נשמרת.",
+<<<<<<< Updated upstream
       "renewsAt": "חידוש בסך {amount} בתאריך {date}. ניתן לבטל בכל עת.",
+=======
+      "renewsAt": "החידוש יהיה בסך {amount} בתאריך {date}. ניתן לבטל בכל עת.",
+>>>>>>> Stashed changes
       "savedPaymentMethod": "אמצעי תשלום",
       "showMoreFeatures": "הצגת תכונות נוספות",
       "starting": "החל מ-{date}",
@@ -4333,7 +4378,11 @@
       "switchToPlan": "עבור לתוכנית {plan}",
       "switchesToday": "מתחלף היום",
       "terms": "תנאים",
+<<<<<<< Updated upstream
       "termsAgreement": "בהמשך, אתה מסכים ל-{terms} ול-{privacy} של Comfy Org, ומאשר ל-Comfy Org לחייב את אמצעי התשלום שלך בכל תקופת חיוב עד לביטול.",
+=======
+      "termsAgreement": "בהמשך, אתם מסכימים ל-{terms} ול-{privacy} של Comfy Org, ומאשרים ל-Comfy Org לחייב את אמצעי התשלום שלכם בכל תקופת חיוב עד לביטול.",
+>>>>>>> Stashed changes
       "totalDueToday": "סך לתשלום היום",
       "yearlySubscription": "מנוי שנתי",
       "youllBeCharged": "תחויב"
@@ -4363,7 +4412,11 @@
     "resubscribeFailed": "נכשל ניסיון להפעיל מחדש את המנוי",
     "resubscribeSuccess": "המנוי הופעל מחדש בהצלחה",
     "resubscribeTo": "הירשם מחדש ל-{plan}",
+<<<<<<< Updated upstream
     "salesManagedRunBlockedDetail": "התוכנית של סביבת עבודה זו אינה פעילה עוד. פנה למנהל החשבון שלך ב-Comfy כדי לשחזר את הגישה.",
+=======
+    "salesManagedRunBlockedDetail": "התוכנית של מרחב עבודה זה אינה פעילה עוד. פנו למנהל החשבון שלכם ב-Comfy כדי לשחזר את הגישה.",
+>>>>>>> Stashed changes
     "salesManagedRunBlockedTitle": "התוכנית אינה פעילה",
     "saveYearly": "חסוך 20%",
     "saveYearlyUpTo": "חסוך עד 20%",
@@ -4837,7 +4890,11 @@
         "dismiss": "סגור",
         "memberBody": "הצוות שלך השתמש בכל הקרדיטים. מנהלי סביבת העבודה צריכים להוסיף קרדיטים נוספים כדי להמשיך ביצירה.",
         "title": "אזלו הקרדיטים",
+<<<<<<< Updated upstream
         "upgradeBody": "שדרגו את התוכנית שלכם כדי להוסיף קרדיטים ולהמשיך ביצירה."
+=======
+        "upgradeBody": "שדרגו את התוכנית שלכם כדי להוסיף קרדיטים ולהמשיך ליצור."
+>>>>>>> Stashed changes
       },
       "paused": {
         "body": "המנוי של סביבת עבודה זו מושהה. עדכן את התשלום כדי להמשיך.",

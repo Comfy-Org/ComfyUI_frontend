@@ -6299,7 +6299,11 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "Google'ın Gemini Omni Flash modellerini kullanarak metin isteminden sesli bir video oluşturun. Sonucu yönlendirmek veya düzenlemek için isteğe bağlı olarak referans görseller ve/veya videolar sağlayın. İstemde istenen uzunluğu (3-10s) doğrudan belirtin.",
+=======
+    "description": "Google'ın Gemini Omni Flash modellerini kullanarak bir metin isteminden sesli video oluşturun. Sonucu yönlendirmek veya düzenlemek için isteğe bağlı olarak referans görseller ve/veya videolar sağlayın. İstekte istenen süreyi (3-10s) doğrudan belirtin.",
+>>>>>>> Stashed changes
     "display_name": "Google Gemini Omni (Video)",
     "inputs": {
       "control_after_generate": {
@@ -6401,7 +6405,11 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "Bir 3D model dosyasını (GLB, GLTF, OBJ, STL), mesh işleme düğümleri (decimate, remesh, UV unwrap, bake, ...) için düzenlenebilir bir MESH'e ayrıştırır. Tüm sahne düğümleri/ilkelleri, dönüşümleri uygulanarak tek bir mesh'te birleştirilir; dokular ve malzeme faktörleri ilk malzemeden alınır. MeshToFile3D'nin karşılığıdır.",
+=======
+    "description": "Bir 3D model dosyasını (GLB, GLTF, OBJ, STL), mesh işleme düğümleri (decimate, remesh, UV unwrap, bake, ...) için düzenlenebilir bir MESH'e ayrıştırır. Tüm sahne düğümleri/ilkelleri, dönüşümleri uygulanarak tek bir mesh içinde birleştirilir; dokular ve malzeme çarpanları ilk malzemeden alınır. MeshToFile3D'nin karşılığıdır.",
+>>>>>>> Stashed changes
     "display_name": "3D Bileşenlerini Al",
     "inputs": {
       "model_3d": {
@@ -7133,7 +7141,11 @@
       },
       "mode": {
         "name": "mode",
+<<<<<<< Updated upstream
         "tooltip": "'speed' daha hızlıdır; 'precision' daha yüksek ücret karşılığında daha kaliteli dudak senkronizasyonu üretir."
+=======
+        "tooltip": "'speed' daha hızlıdır; 'precision' ise daha yüksek ücret karşılığında daha yüksek kaliteli dudak senkronizasyonu üretir."
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "output_language",
@@ -17936,7 +17948,11 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "1-10 referans görselden yeniden kullanılabilir bir Recraft V4 stili oluşturun. Döndürülen style_id, aynı çıktı türündeki tüm Recraft V4 ve V4.1 modelleriyle çalışır. Tüm görsellerin toplam boyutu 10 MB ile sınırlıdır.",
+=======
+    "description": "1-10 referans görselden yeniden kullanılabilir bir Recraft V4 stili oluşturun. Döndürülen style_id, aynı çıktı türündeki her Recraft V4 ve V4.1 modeliyle çalışır. Tüm görsellerin toplam boyutu 10 MB ile sınırlıdır.",
+>>>>>>> Stashed changes
     "display_name": "Recraft V4 Stil Oluştur",
     "inputs": {
       "images": {
@@ -17964,7 +17980,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stil tutarlı oluşturma için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
+=======
+        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri stil açısından tutarlı oluşturma için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "boyut"
@@ -17991,6 +18011,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "Uygulanacak bir Recraft V4 stilinin UUID'si; örn. Recraft V4 Create Style düğümünden veya önceki bir çalıştırmanın style_id çıktısından. style_references ile birleştirilemez."
       },
       "style_match": {
@@ -18000,6 +18021,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "Anında stil oluşturmak için kullanılan referans görseller; oluşturma ücretine ek olarak faturalandırılır. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
+=======
+        "tooltip": "Uygulanacak bir Recraft V4 stilinin UUID'si; örneğin Recraft V4 Stil Oluştur düğümünden veya önceki bir çalıştırmanın style_id çıktısından alınabilir. style_references ile birleştirilemez."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Stilin ne kadar yakından takip edileceği: precise stili ayrıntılı olarak yeniden üretir, flexible genel görünümü eşleştirir. Yalnızca bir stil sağlandığında kullanılır."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Anında stil oluşturmak için kullanılan referans görseller; oluşturma ücretine ek olarak ücretlendirilir. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -18021,7 +18053,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stil tutarlı oluşturma için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
+=======
+        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri stil açısından tutarlı oluşturma için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "boyut"
@@ -18048,6 +18084,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "Uygulanacak bir Recraft V4 vektör stilinin UUID'si; örn. Recraft V4 Create Style düğümünden veya önceki bir çalıştırmanın style_id çıktısından. style_references ile birleştirilemez."
       },
       "style_match": {
@@ -18057,6 +18094,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "Anında vektör stili oluşturmak için kullanılan referans görseller; oluşturma ücretine ek olarak faturalandırılır. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
+=======
+        "tooltip": "Uygulanacak bir Recraft V4 vektör stilinin UUID'si; örneğin Recraft V4 Stil Oluştur düğümünden veya önceki bir çalıştırmanın style_id çıktısından alınabilir. style_references ile birleştirilemez."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Stilin ne kadar yakından takip edileceği: precise stili ayrıntılı olarak yeniden üretir, flexible genel görünümü eşleştirir. Yalnızca bir stil sağlandığında kullanılır."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Anında vektör stili oluşturmak için kullanılan referans görseller; oluşturma ücretine ek olarak ücretlendirilir. Oluşturulan stil, yeniden kullanım için style_id olarak döndürülür. style_id ile birleştirilemez."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24760,7 +24808,11 @@
     "inputs": {
       "crop": {
         "name": "crop",
+<<<<<<< Updated upstream
         "tooltip": "Piksel cinsinden kırpma bölgesi. Sıfır genişlik/yükseklik tam kareyi korur."
+=======
+        "tooltip": "Piksel cinsinden kırpma bölgesi. Sıfır genişlik/yükseklik, tam kareyi korur."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"
@@ -24881,7 +24933,11 @@
     "inputs": {
       "strict_duration": {
         "name": "strict_duration",
+<<<<<<< Updated upstream
         "tooltip": "True ise, belirtilen süre mümkün olmadığında bir hata oluşturulur."
+=======
+        "tooltip": "True ise, belirtilen süre mümkün olmadığında hata oluşturulur."
+>>>>>>> Stashed changes
       },
       "trim": {
         "name": "trim",

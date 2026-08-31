@@ -346,17 +346,28 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+<<<<<<< Updated upstream
     "authenticationFailedDetail": "تعذر إكمال التحقق من الدفع. يُرجى المحاولة مرة أخرى.",
+=======
+    "authenticationFailedDetail": "تعذّر إكمال التحقق من الدفع. يُرجى المحاولة مرة أخرى.",
+>>>>>>> Stashed changes
     "authenticationManagerRequired": "يتطلب التحقق من الدفع اهتمام مدير فوترة مساحة العمل.",
     "authenticationUnavailable": "المصادقة الآمنة للدفع غير متاحة. يُرجى التحديث والمحاولة مرة أخرى.",
     "cancelFailed": "فشل في إلغاء الاشتراك",
     "cancelTimeout": "انتهت مهلة إلغاء الاشتراك",
     "expiredCardDetail": "انتهت صلاحية هذه البطاقة. استخدم طريقة دفع مختلفة.",
     "incorrectCvcDetail": "رمز أمان البطاقة غير صحيح. تحقّق منه وحاول مرة أخرى.",
+<<<<<<< Updated upstream
     "insufficientFundsDetail": "لا تحتوي طريقة الدفع هذه على رصيد كافٍ. جرّب طريقة دفع أخرى أو اتصل ببنكك.",
     "paymentDeclinedDetail": "رفض بنكك هذه الدفعة. جرّب طريقة دفع أخرى أو اتصل ببنكك.",
     "processingErrorDetail": "تعذرت معالجة دفعتك. حاول مرة أخرى أو استخدم طريقة دفع أخرى.",
     "reconciliationDetail": "تم استلام دفعتك، لكن تعذر علينا إكمال تحديث مساحة العمل. اتصل بالدعم وأدرج معرّف العملية هذا:",
+=======
+    "insufficientFundsDetail": "لا تحتوي طريقة الدفع هذه على رصيد كافٍ. جرّب طريقة دفع أخرى أو تواصل مع مصرفك.",
+    "paymentDeclinedDetail": "رفض مصرفك هذه الدفعة. جرّب طريقة دفع أخرى أو تواصل مع مصرفك.",
+    "processingErrorDetail": "تعذّرت معالجة دفعتك. حاول مرة أخرى أو استخدم طريقة دفع أخرى.",
+    "reconciliationDetail": "تم استلام دفعتك، لكن تعذّر علينا إكمال تحديث مساحة العمل. تواصل مع الدعم وأدرج معرّف العملية هذا:",
+>>>>>>> Stashed changes
     "reconciliationTitle": "تم استلام الدفعة — التأكيد معلّق",
     "retryVerification": "إعادة محاولة التحقق",
     "subscriptionActionRequired": "يرجى التحقق من الدفع لإكمال إعداد مساحة العمل الخاصة بك",
@@ -974,7 +985,11 @@
     "UPSCALE_MODEL": "نموذج التكبير",
     "VAE": "VAE",
     "VIDEO": "فيديو",
+<<<<<<< Updated upstream
     "VIDEO_EDIT": "تحرير الفيديو",
+=======
+    "VIDEO_EDIT": "VIDEO_EDIT",
+>>>>>>> Stashed changes
     "VOXEL": "فوكسل",
     "WAN_CAMERA_EMBEDDING": "تضمين كاميرا وان",
     "WEBCAM": "كاميرا ويب"
@@ -4294,7 +4309,11 @@
       "hideFeatures": "إخفاء الميزات",
       "newMonthlySubscription": "اشتراك شهري جديد",
       "nextPaymentDue": "الدفع القادم مستحق في {date}. يمكنك الإلغاء في أي وقت.",
+<<<<<<< Updated upstream
       "payAndSubscribe": "الدفع والاشتراك",
+=======
+      "payAndSubscribe": "ادفع واشترك",
+>>>>>>> Stashed changes
       "paymentMethod": "طريقة الدفع",
       "paymentPopupBlocked": "تعذر فتح صفحة الدفع — يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.",
       "perMember": "/ عضو",
@@ -4302,7 +4321,11 @@
       "promoCodePlaceholder": "رمز ترويجي",
       "proratedCharge": "رسوم نسبية لخطة {plan}",
       "proratedRefund": "استرداد نسبي لخطة {plan}",
+<<<<<<< Updated upstream
       "quoteRefreshFailed": "انتهت صلاحية عرض السعر وتعذر تحديثه. اختر خطتك مرة أخرى.",
+=======
+      "quoteRefreshFailed": "انتهت صلاحية عرض السعر الخاص بك وتعذّر تحديثه. اختر خطتك مرة أخرى.",
+>>>>>>> Stashed changes
       "quoteStale": "تغيّر عرض السعر الخاص بك. راجع المبلغ المحدّث وحاول مرة أخرى.",
       "quoteUnavailable": "غير متاح",
       "reactivation": {
@@ -4333,7 +4356,11 @@
       "switchToPlan": "انتقل إلى {plan}",
       "switchesToday": "تبديلات اليوم",
       "terms": "الشروط",
+<<<<<<< Updated upstream
       "termsAgreement": "بالمتابعة، فإنك توافق على {terms} و{privacy} الخاصة بـ Comfy Org، وتفوّض Comfy Org بخصم الرسوم من طريقة الدفع الخاصة بك في كل فترة فوترة إلى أن تلغي الاشتراك.",
+=======
+      "termsAgreement": "بالمتابعة، فإنك توافق على {terms} و{privacy} الخاصة بـ Comfy Org، وتفوّض Comfy Org لتحصيل الرسوم من طريقة الدفع الخاصة بك في كل فترة فوترة حتى تلغي الاشتراك.",
+>>>>>>> Stashed changes
       "totalDueToday": "الإجمالي المستحق اليوم",
       "yearlySubscription": "اشتراك سنوي",
       "youllBeCharged": "سيتم خصم"
@@ -4363,7 +4390,11 @@
     "resubscribeFailed": "فشل في إعادة تفعيل الاشتراك",
     "resubscribeSuccess": "تمت إعادة تفعيل الاشتراك بنجاح",
     "resubscribeTo": "إعادة الاشتراك في {plan}",
+<<<<<<< Updated upstream
     "salesManagedRunBlockedDetail": "لم تعد خطة مساحة العمل هذه نشطة. اتصل بمدير حساب Comfy لاستعادة الوصول.",
+=======
+    "salesManagedRunBlockedDetail": "لم تعد خطة مساحة العمل هذه نشطة. تواصل مع مدير حساب Comfy لاستعادة الوصول.",
+>>>>>>> Stashed changes
     "salesManagedRunBlockedTitle": "الخطة غير نشطة",
     "saveYearly": "وفّر 20%",
     "saveYearlyUpTo": "وفر حتى ٢٠٪",
@@ -4837,7 +4868,11 @@
         "dismiss": "تجاهل",
         "memberBody": "لقد استخدم فريقك جميع أرصدته. يجب على مسؤولي المساحة workspace إضافة المزيد من الأرصدة للمتابعة.",
         "title": "نفدت الأرصدة",
+<<<<<<< Updated upstream
         "upgradeBody": "قم بترقية خطتك لإضافة أرصدة ومواصلة التوليد."
+=======
+        "upgradeBody": "قم بترقية خطتك لإضافة أرصدة ومتابعة التوليد."
+>>>>>>> Stashed changes
       },
       "paused": {
         "body": "تم إيقاف اشتراك هذه المساحة workspace مؤقتًا. يرجى تحديث الدفع للاستمرار.",

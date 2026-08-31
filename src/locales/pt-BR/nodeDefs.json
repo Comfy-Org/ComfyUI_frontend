@@ -6299,6 +6299,7 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "Gere um vídeo com áudio a partir de um prompt de texto usando os modelos Gemini Omni Flash do Google. Opcionalmente, forneça imagens e/ou vídeos de referência para orientar ou editar o resultado. Descreva a duração desejada (3-10s) diretamente no prompt.",
     "display_name": "Google Gemini Omni (Vídeo)",
     "inputs": {
@@ -6307,6 +6308,16 @@
       },
       "model": {
         "name": "model",
+=======
+    "description": "Gere um vídeo com áudio a partir de um prompt de texto usando os modelos Gemini Omni Flash do Google. Opcionalmente, forneça imagens e/ou vídeos de referência para orientar ou editar o resultado. Descreva a duração desejada (3-10 s) diretamente no prompt.",
+    "display_name": "Google Gemini Omni (Vídeo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+>>>>>>> Stashed changes
         "tooltip": "O modelo Gemini de vídeo usado para gerar o vídeo."
       },
       "model_aspect_ratio": {
@@ -6316,10 +6327,17 @@
         "name": "prompt"
       },
       "model_resolution": {
+<<<<<<< Updated upstream
         "name": "resolution"
       },
       "model_seed": {
         "name": "seed"
+=======
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+>>>>>>> Stashed changes
       },
       "model_task_type": {
         "name": "task_type"
@@ -6401,7 +6419,11 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "Analisa um arquivo de modelo 3D (GLB, GLTF, OBJ, STL) em uma MESH editável para os nós de processamento de mesh (decimate, remesh, UV unwrap, bake, ...). Todos os nós/primitivas da cena são mesclados em uma única mesh com suas transformações aplicadas; as texturas e os fatores de material vêm do primeiro material. Equivalente de MeshToFile3D.",
+=======
+    "description": "Analisa um arquivo de modelo 3D (GLB, GLTF, OBJ, STL) em uma MESH editável para os nós de processamento de malha (decimate, remesh, desdobramento UV, bake, ...). Todos os nós/primitivas da cena são mesclados em uma única malha com suas transformações aplicadas; as texturas e os fatores de material vêm do primeiro material. Equivalente do MeshToFile3D.",
+>>>>>>> Stashed changes
     "display_name": "Obter componentes 3D",
     "inputs": {
       "model_3d": {
@@ -7133,7 +7155,11 @@
       },
       "mode": {
         "name": "modo",
+<<<<<<< Updated upstream
         "tooltip": "'speed' é mais rápido; 'precision' produz sincronização labial de maior qualidade por um preço mais alto."
+=======
+        "tooltip": "'speed' é mais rápido; 'precision' produz sincronização labial de maior qualidade a um preço mais alto."
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "idioma de saída",
@@ -17824,7 +17850,11 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
+<<<<<<< Updated upstream
     "description": "Selecione o estilo logo_raster e o subestilo.",
+=======
+    "description": "Selecione o estilo e o subestilo logo_raster.",
+>>>>>>> Stashed changes
     "display_name": "Recraft Estilo - Logo Raster",
     "inputs": {
       "substyle": {
@@ -17936,6 +17966,7 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "Crie um estilo Recraft V4 reutilizável a partir de 1 a 10 imagens de referência. O style_id retornado funciona com todos os modelos Recraft V4 e V4.1 do mesmo tipo de saída. O tamanho total de todas as imagens é limitado a 10 MB.",
     "display_name": "Criar estilo Recraft V4",
     "inputs": {
@@ -17945,6 +17976,17 @@
       },
       "model": {
         "name": "model",
+=======
+    "description": "Crie um estilo reutilizável do Recraft V4 a partir de 1 a 10 imagens de referência. O style_id retornado funciona com todos os modelos Recraft V4 e V4.1 do mesmo tipo de saída. O tamanho total de todas as imagens é limitado a 10 MB.",
+    "display_name": "Recraft V4 Criar estilo",
+    "inputs": {
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagens de referência que definem o estilo. Referências semelhantes tornam a correspondência mais precisa; referências variadas a ampliam."
+      },
+      "model": {
+        "name": "modelo",
+>>>>>>> Stashed changes
         "tooltip": "Tipo de saída para o qual o estilo é criado: recraftv4_styles para imagens rasterizadas, recraftv4_styles_vector para SVG."
       }
     },
@@ -17964,7 +18006,11 @@
       },
       "model": {
         "name": "modelo",
+<<<<<<< Updated upstream
         "tooltip": "O modelo a ser usado para geração. Os modelos recraftv4_styles são criados para geração com consistência de estilo e sempre exigem um style_id ou style_references."
+=======
+        "tooltip": "O modelo a ser usado na geração. Os modelos recraftv4_styles são criados para geração com estilo consistente e sempre exigem um style_id ou style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "tamanho"
@@ -17995,7 +18041,11 @@
       },
       "style_match": {
         "name": "style_match",
+<<<<<<< Updated upstream
         "tooltip": "O quanto o estilo deve ser seguido: precise o reproduz em detalhes, flexible corresponde à aparência geral. Usado apenas quando um estilo é fornecido."
+=======
+        "tooltip": "O quão fielmente seguir o estilo: precise o reproduz em detalhes, flexible corresponde à aparência geral. Usado apenas quando um estilo é fornecido."
+>>>>>>> Stashed changes
       },
       "style_references": {
         "name": "style_references",
@@ -18021,7 +18071,11 @@
       },
       "model": {
         "name": "modelo",
+<<<<<<< Updated upstream
         "tooltip": "O modelo a ser usado para geração. Os modelos recraftv4_styles são criados para geração com consistência de estilo e sempre exigem um style_id ou style_references."
+=======
+        "tooltip": "O modelo a ser usado na geração. Os modelos recraftv4_styles são criados para geração com estilo consistente e sempre exigem um style_id ou style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "tamanho"
@@ -18052,7 +18106,11 @@
       },
       "style_match": {
         "name": "style_match",
+<<<<<<< Updated upstream
         "tooltip": "O quanto o estilo deve ser seguido: precise o reproduz em detalhes, flexible corresponde à aparência geral. Usado apenas quando um estilo é fornecido."
+=======
+        "tooltip": "O quão fielmente seguir o estilo: precise o reproduz em detalhes, flexible corresponde à aparência geral. Usado apenas quando um estilo é fornecido."
+>>>>>>> Stashed changes
       },
       "style_references": {
         "name": "style_references",
@@ -24759,11 +24817,19 @@
     "display_name": "Recortar vídeo",
     "inputs": {
       "crop": {
+<<<<<<< Updated upstream
         "name": "crop",
         "tooltip": "Região de recorte em pixels. Largura/altura zero mantém o quadro inteiro."
       },
       "video": {
         "name": "video"
+=======
+        "name": "recorte",
+        "tooltip": "Região de recorte em pixels. Largura/altura zero mantém o quadro completo."
+      },
+      "video": {
+        "name": "vídeo"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24884,11 +24950,19 @@
         "tooltip": "Se True, quando a duração especificada não for possível, será gerado um erro."
       },
       "trim": {
+<<<<<<< Updated upstream
         "name": "trim",
         "tooltip": "Janela de aparagem usando quadros inicial/final."
       },
       "video": {
         "name": "video"
+=======
+        "name": "aparar",
+        "tooltip": "Janela de aparagem usando quadros inicial/final."
+      },
+      "video": {
+        "name": "vídeo"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {

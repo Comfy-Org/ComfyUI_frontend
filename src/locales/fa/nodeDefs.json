@@ -6299,6 +6299,7 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "با استفاده از مدل‌های Gemini Omni Flash گوگل، از یک prompt ویدیویی همراه با صدا تولید کنید. در صورت تمایل، تصاویر و/یا ویدیوهای مرجع ارائه کنید تا نتیجه هدایت یا ویرایش شود. طول دلخواه (۳ تا ۱۰ ثانیه) را مستقیماً در prompt توضیح دهید.",
     "display_name": "Google Gemini Omni (ویدیو)",
     "inputs": {
@@ -6308,6 +6309,17 @@
       "model": {
         "name": "model",
         "tooltip": "مدل ویدیویی Gemini که برای تولید ویدیو استفاده می‌شود."
+=======
+    "description": "با استفاده از مدل‌های Gemini Omni Flash گوگل، از یک prompt ویدئویی همراه با صدا تولید کنید. در صورت تمایل، تصاویر و/یا ویدئوهای مرجع را برای هدایت یا ویرایش نتیجه ارائه دهید. مدت دلخواه (۳ تا ۱۰ ثانیه) را مستقیماً در prompt توضیح دهید.",
+    "display_name": "Google Gemini Omni (ویدئو)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل ویدئویی Gemini که برای تولید ویدئو استفاده می‌شود."
+>>>>>>> Stashed changes
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
@@ -6401,12 +6413,21 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "یک فایل مدل سه‌بعدی (GLB، GLTF، OBJ، STL) را به یک MESH قابل‌ویرایش برای nodeهای پردازش mesh (decimate، remesh، بازکردن UV، bake، ...) تجزیه کنید. همه nodeها/اشیای اولیهٔ صحنه با اعمال تبدیل‌هایشان در یک mesh ادغام می‌شوند؛ تکسچرها و عوامل متریال از اولین متریال گرفته می‌شوند. مشابه MeshToFile3D.",
     "display_name": "دریافت مؤلفه‌های سه‌بعدی",
     "inputs": {
       "model_3d": {
         "name": "model_3d",
         "tooltip": "فایل مدل سه‌بعدی از Load 3D یا node سه‌بعدی دیگر. FBX/USDZ پشتیبانی نمی‌شوند؛ ابتدا به GLB تبدیل کنید."
+=======
+    "description": "یک فایل مدل 3D ‏(GLB، GLTF، OBJ، STL) را به یک MESH قابل‌ویرایش برای nodeهای پردازش mesh (کاهش چندضلعی، remesh، بازکردن UV، bake و ...) تجزیه کنید. همه nodeها/اجزای صحنه با اعمال تبدیل‌هایشان در یک mesh ادغام می‌شوند؛ بافت‌ها و ضرایب material از نخستین material گرفته می‌شوند. مکمل MeshToFile3D.",
+    "display_name": "دریافت مؤلفه‌های 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "فایل مدل 3D از Load 3D یا node دیگر 3D. ‏FBX/USDZ پشتیبانی نمی‌شوند؛ ابتدا به GLB تبدیل کنید."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -17936,16 +17957,28 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "یک سبک قابل‌استفادهٔ مجدد Recraft V4 از ۱ تا ۱۰ تصویر مرجع ایجاد کنید. style_id بازگشتی با هر مدل Recraft V4 و V4.1 از همان نوع خروجی کار می‌کند. مجموع حجم همهٔ تصاویر به ۱۰ MB محدود است.",
+=======
+    "description": "یک سبک قابل‌استفاده‌مجدد Recraft V4 از ۱ تا ۱۰ تصویر مرجع ایجاد کنید. style_id بازگردانده‌شده با همه مدل‌های Recraft V4 و V4.1 از همان نوع خروجی کار می‌کند. مجموع حجم همه تصاویر به ۱۰ MB محدود است.",
+>>>>>>> Stashed changes
     "display_name": "ایجاد سبک Recraft V4",
     "inputs": {
       "images": {
         "name": "images",
+<<<<<<< Updated upstream
         "tooltip": "تصاویر مرجعی که سبک را تعریف می‌کنند. مراجع مشابه تطابق را دقیق‌تر و مراجع متنوع دامنهٔ آن را گسترده‌تر می‌کنند."
       },
       "model": {
         "name": "model",
         "tooltip": "نوع خروجی که سبک برای آن ایجاد می‌شود: recraftv4_styles برای تصاویر رستری و recraftv4_styles_vector برای SVG."
+=======
+        "tooltip": "تصاویر مرجع تعیین‌کننده سبک. مراجع مشابه تطابق را دقیق‌تر و مراجع متنوع دامنه آن را گسترده‌تر می‌کنند."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نوع خروجی که سبک برای آن ایجاد می‌شود: recraftv4_styles برای تصاویر raster و recraftv4_styles_vector برای SVG."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -17964,7 +17997,11 @@
       },
       "model": {
         "name": "مدل",
+<<<<<<< Updated upstream
         "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
+=======
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکدست ساخته شده‌اند و همواره به style_id یا style_references نیاز دارند."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "اندازه"
@@ -17991,6 +18028,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "UUID یک سبک Recraft V4 برای اعمال، مثلاً از node ایجاد سبک Recraft V4 یا خروجی style_id اجرای قبلی. با style_references قابل ترکیب نیست."
       },
       "style_match": {
@@ -18000,6 +18038,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "تصاویر مرجع برای ایجاد فوری یک سبک که هزینه‌اش علاوه بر هزینهٔ تولید محاسبه می‌شود. سبک ایجادشده برای استفادهٔ مجدد به‌صورت style_id بازگردانده می‌شود. با style_id قابل ترکیب نیست."
+=======
+        "tooltip": "UUID یک سبک Recraft V4 برای اعمال، برای نمونه از node ایجاد سبک Recraft V4 یا خروجی style_id اجرای پیشین. با style_references قابل ترکیب نیست."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "میزان پیروی از سبک: precise آن را با جزئیات بازتولید می‌کند و flexible ظاهر کلی را مطابقت می‌دهد. فقط هنگام ارائه سبک استفاده می‌شود."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "تصاویر مرجع برای ایجاد آنی سبک که علاوه بر هزینه تولید، هزینه‌گذاری می‌شوند. سبک ایجادشده برای استفاده مجدد به‌صورت style_id بازگردانده می‌شود. با style_id قابل ترکیب نیست."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -18021,7 +18070,11 @@
       },
       "model": {
         "name": "مدل",
+<<<<<<< Updated upstream
         "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
+=======
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکدست ساخته شده‌اند و همواره به style_id یا style_references نیاز دارند."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "اندازه"
@@ -18048,6 +18101,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "UUID یک سبک برداری Recraft V4 برای اعمال، مثلاً از node ایجاد سبک Recraft V4 یا خروجی style_id اجرای قبلی. با style_references قابل ترکیب نیست."
       },
       "style_match": {
@@ -18057,6 +18111,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "تصاویر مرجع برای ایجاد فوری یک سبک برداری که هزینه‌اش علاوه بر هزینهٔ تولید محاسبه می‌شود. سبک ایجادشده برای استفادهٔ مجدد به‌صورت style_id بازگردانده می‌شود. با style_id قابل ترکیب نیست."
+=======
+        "tooltip": "UUID یک سبک برداری Recraft V4 برای اعمال، برای نمونه از node ایجاد سبک Recraft V4 یا خروجی style_id اجرای پیشین. با style_references قابل ترکیب نیست."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "میزان پیروی از سبک: precise آن را با جزئیات بازتولید می‌کند و flexible ظاهر کلی را مطابقت می‌دهد. فقط هنگام ارائه سبک استفاده می‌شود."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "تصاویر مرجع برای ایجاد آنی یک سبک برداری که علاوه بر هزینه تولید، هزینه‌گذاری می‌شوند. سبک ایجادشده برای استفاده مجدد به‌صورت style_id بازگردانده می‌شود. با style_id قابل ترکیب نیست."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24717,7 +24782,11 @@
       },
       "resolution": {
         "name": "وضوح تصویر",
+<<<<<<< Updated upstream
         "tooltip": "وضوح ویدیوی خروجی. ۴K برای مدل veo-3.1-lite در دسترس نیست."
+=======
+        "tooltip": "رزولوشن ویدیوی خروجی. 4K برای مدل veo-3.1-lite در دسترس نیست."
+>>>>>>> Stashed changes
       },
       "seed": {
         "name": "seed",
@@ -24760,7 +24829,11 @@
     "inputs": {
       "crop": {
         "name": "crop",
+<<<<<<< Updated upstream
         "tooltip": "ناحیهٔ برش بر حسب پیکسل. عرض/ارتفاع صفر، فریم کامل را حفظ می‌کند."
+=======
+        "tooltip": "ناحیهٔ برش بر حسب پیکسل. عرض/ارتفاع ۰، فریم کامل را حفظ می‌کند."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"
@@ -24877,6 +24950,7 @@
     }
   },
   "VideoTrim": {
+<<<<<<< Updated upstream
     "display_name": "برش زمانی ویدیو (پیشرفته)",
     "inputs": {
       "strict_duration": {
@@ -24886,6 +24960,17 @@
       "trim": {
         "name": "trim",
         "tooltip": "بازهٔ برش زمانی با استفاده از فریم‌های شروع/پایان."
+=======
+    "display_name": "کوتاه‌سازی ویدیو (پیشرفته)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "اگر True باشد، هنگامی که مدت‌زمان مشخص‌شده ممکن نباشد، خطا ایجاد می‌شود."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "بازهٔ کوتاه‌سازی با استفاده از فریم‌های آغاز/پایان."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"

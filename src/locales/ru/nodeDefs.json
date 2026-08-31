@@ -6299,6 +6299,7 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "Создавайте видео со звуком по текстовому запросу с помощью моделей Google Gemini Omni Flash. При необходимости добавьте эталонные изображения и/или видео для направления или редактирования результата. Укажите желаемую длительность (3–10 с) непосредственно в запросе.",
     "display_name": "Google Gemini Omni (Видео)",
     "inputs": {
@@ -6307,12 +6308,23 @@
       },
       "model": {
         "name": "model",
+=======
+    "description": "Создавайте видео со звуком по текстовому запросу с помощью моделей Gemini Omni Flash от Google. При необходимости добавьте эталонные изображения и/или видео, чтобы направить или отредактировать результат. Укажите желаемую длительность (3–10 с) прямо в запросе.",
+    "display_name": "Google Gemini Omni (Видео)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+>>>>>>> Stashed changes
         "tooltip": "Модель Gemini для создания видео."
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
       },
       "model_prompt": {
+<<<<<<< Updated upstream
         "name": "prompt"
       },
       "model_resolution": {
@@ -6320,6 +6332,15 @@
       },
       "model_seed": {
         "name": "seed"
+=======
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+>>>>>>> Stashed changes
       },
       "model_task_type": {
         "name": "task_type"
@@ -6401,12 +6422,21 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "Разбирает файл 3D-модели (GLB, GLTF, OBJ, STL) в редактируемый MESH для узлов обработки сетки (децимация, remesh, UV-развёртка, запекание, ...). Все узлы/примитивы сцены объединяются в одну сетку с применёнными преобразованиями; текстуры и параметры материала берутся из первого материала. Аналог MeshToFile3D.",
     "display_name": "Получить компоненты 3D",
     "inputs": {
       "model_3d": {
         "name": "model_3d",
         "tooltip": "Файл 3D-модели из Load 3D или другого 3D-узла. FBX/USDZ не поддерживаются — сначала преобразуйте в GLB."
+=======
+    "description": "Преобразует файл 3D-модели (GLB, GLTF, OBJ, STL) в редактируемый MESH для узлов обработки сеток (упрощение, перестроение сетки, развёртка UV, запекание и т. д.). Все узлы/примитивы сцены объединяются в одну сетку с применением их преобразований; текстуры и коэффициенты материала берутся из первого материала. Аналог MeshToFile3D.",
+    "display_name": "Получить 3D-компоненты",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D-модели из Load 3D или другого 3D-узла. FBX/USDZ не поддерживаются — сначала преобразуйте их в GLB."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -7133,7 +7163,11 @@
       },
       "mode": {
         "name": "режим",
+<<<<<<< Updated upstream
         "tooltip": "«speed» работает быстрее; «precision» обеспечивает более качественную синхронизацию губ, но стоит дороже."
+=======
+        "tooltip": "'speed' работает быстрее; 'precision' обеспечивает более качественную синхронизацию движения губ, но стоит дороже."
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "язык_перевода",
@@ -17936,6 +17970,7 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "Создаёт многоразовый стиль Recraft V4 на основе 1–10 эталонных изображений. Возвращаемый style_id работает с любой моделью Recraft V4 и V4.1 того же типа вывода. Общий размер всех изображений ограничен 10 МБ.",
     "display_name": "Recraft V4: создание стиля",
     "inputs": {
@@ -17945,6 +17980,17 @@
       },
       "model": {
         "name": "model",
+=======
+    "description": "Создайте многоразовый стиль Recraft V4 на основе 1–10 эталонных изображений. Возвращаемый style_id работает с любой моделью Recraft V4 и V4.1 того же типа вывода. Общий размер всех изображений ограничен 10 МБ.",
+    "display_name": "Recraft V4: создание стиля",
+    "inputs": {
+      "images": {
+        "name": "изображения",
+        "tooltip": "Эталонные изображения, определяющие стиль. Похожие эталоны повышают точность соответствия, а разнообразные расширяют его."
+      },
+      "model": {
+        "name": "модель",
+>>>>>>> Stashed changes
         "tooltip": "Тип вывода, для которого создаётся стиль: recraftv4_styles для растровых изображений, recraftv4_styles_vector для SVG."
       }
     },
@@ -17964,7 +18010,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с согласованным стилем и всегда требуют style_id или style_references."
+=======
+        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с сохранением стиля и всегда требуют style_id или style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "size"
@@ -17991,6 +18041,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "UUID применяемого стиля Recraft V4, например из узла Recraft V4 Create Style или вывода style_id предыдущего запуска. Нельзя использовать вместе со style_references."
       },
       "style_match": {
@@ -18000,6 +18051,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "Эталонные изображения для создания стиля на лету; их стоимость добавляется к стоимости генерации. Созданный стиль возвращается как style_id для повторного использования. Нельзя использовать вместе со style_id."
+=======
+        "tooltip": "UUID применяемого стиля Recraft V4, например из узла Recraft V4 Create Style или вывода style_id предыдущего запуска. Нельзя использовать вместе с style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Степень следования стилю: precise воспроизводит его в деталях, flexible соответствует общему виду. Используется только при наличии стиля."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Эталонные изображения для создания стиля на лету; их стоимость добавляется к стоимости генерации. Созданный стиль возвращается как style_id для повторного использования. Нельзя использовать вместе с style_id."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -18021,7 +18083,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с согласованным стилем и всегда требуют style_id или style_references."
+=======
+        "tooltip": "Модель для генерации. Модели recraftv4_styles предназначены для генерации с сохранением стиля и всегда требуют style_id или style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "size"
@@ -18048,6 +18114,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "UUID применяемого векторного стиля Recraft V4, например из узла Recraft V4 Create Style или вывода style_id предыдущего запуска. Нельзя использовать вместе со style_references."
       },
       "style_match": {
@@ -18057,6 +18124,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "Эталонные изображения для создания векторного стиля на лету; их стоимость добавляется к стоимости генерации. Созданный стиль возвращается как style_id для повторного использования. Нельзя использовать вместе со style_id."
+=======
+        "tooltip": "UUID применяемого векторного стиля Recraft V4, например из узла Recraft V4 Create Style или вывода style_id предыдущего запуска. Нельзя использовать вместе с style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Степень следования стилю: precise воспроизводит его в деталях, flexible соответствует общему виду. Используется только при наличии стиля."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Эталонные изображения для создания векторного стиля на лету; их стоимость добавляется к стоимости генерации. Созданный стиль возвращается как style_id для повторного использования. Нельзя использовать вместе с style_id."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24756,11 +24834,19 @@
     }
   },
   "VideoCrop": {
+<<<<<<< Updated upstream
     "display_name": "Обрезать видео",
     "inputs": {
       "crop": {
         "name": "crop",
         "tooltip": "Область обрезки в пикселях. Нулевая ширина/высота сохраняет полный кадр."
+=======
+    "display_name": "Обрезка видео",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Область обрезки в пикселях. Нулевая ширина или высота сохраняет весь кадр."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"
@@ -24877,7 +24963,11 @@
     }
   },
   "VideoTrim": {
+<<<<<<< Updated upstream
     "display_name": "Обрезать видео по времени (расширенный режим)",
+=======
+    "display_name": "Обрезка видео (расширенная)",
+>>>>>>> Stashed changes
     "inputs": {
       "strict_duration": {
         "name": "strict_duration",
@@ -24885,7 +24975,11 @@
       },
       "trim": {
         "name": "trim",
+<<<<<<< Updated upstream
         "tooltip": "Окно обрезки с использованием начального/конечного кадров."
+=======
+        "tooltip": "Окно обрезки с использованием начального и конечного кадров."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"

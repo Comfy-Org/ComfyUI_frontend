@@ -6299,6 +6299,7 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "Google의 Gemini Omni Flash 모델을 사용하여 텍스트 프롬프트로 오디오가 포함된 비디오를 생성합니다. 필요에 따라 참조 이미지 및/또는 비디오를 제공하여 결과를 안내하거나 편집할 수 있습니다. 원하는 길이(3~10초)를 프롬프트에 직접 설명하세요.",
     "display_name": "Google Gemini Omni (비디오)",
     "inputs": {
@@ -6307,12 +6308,23 @@
       },
       "model": {
         "name": "모델",
+=======
+    "description": "Google의 Gemini Omni Flash 모델을 사용하여 텍스트 프롬프트에서 오디오가 포함된 비디오를 생성합니다. 선택적으로 참조 이미지 및/또는 비디오를 제공하여 결과를 안내하거나 편집할 수 있습니다. 원하는 길이(3-10초)를 프롬프트에 직접 설명하세요.",
+    "display_name": "Google Gemini Omni (비디오)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+>>>>>>> Stashed changes
         "tooltip": "비디오 생성에 사용할 Gemini 비디오 모델입니다."
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
       },
       "model_prompt": {
+<<<<<<< Updated upstream
         "name": "프롬프트"
       },
       "model_resolution": {
@@ -6320,6 +6332,15 @@
       },
       "model_seed": {
         "name": "시드"
+=======
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+>>>>>>> Stashed changes
       },
       "model_task_type": {
         "name": "task_type"
@@ -6401,7 +6422,11 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "3D 모델 파일(GLB, GLTF, OBJ, STL)을 메시 처리 노드(decimate, remesh, UV unwrap, bake, ...)용으로 편집 가능한 MESH로 파싱합니다. 모든 씬 노드/프리미티브는 변환이 적용된 하나의 메시로 병합되며, 텍스처와 머티리얼 계수는 첫 번째 머티리얼에서 가져옵니다. MeshToFile3D의 대응 노드입니다.",
+=======
+    "description": "3D 모델 파일(GLB, GLTF, OBJ, STL)을 메쉬 처리 노드(감소, 리메시, UV 언랩, 베이크, ...)용으로 편집 가능한 MESH로 파싱합니다. 모든 씬 노드/프리미티브는 변환이 적용된 하나의 메쉬로 병합되며, 텍스처와 재질 계수는 첫 번째 재질에서 가져옵니다. MeshToFile3D의 대응 노드입니다.",
+>>>>>>> Stashed changes
     "display_name": "3D 구성 요소 가져오기",
     "inputs": {
       "model_3d": {
@@ -6411,7 +6436,11 @@
     },
     "outputs": {
       "0": {
+<<<<<<< Updated upstream
         "name": "메시",
+=======
+        "name": "mesh",
+>>>>>>> Stashed changes
         "tooltip": null
       }
     }
@@ -7133,7 +7162,11 @@
       },
       "mode": {
         "name": "모드",
+<<<<<<< Updated upstream
         "tooltip": "'speed'는 더 빠르며, 'precision'은 더 높은 비용으로 고품질 립싱크를 생성합니다."
+=======
+        "tooltip": "'speed'는 더 빠르며, 'precision'은 더 높은 비용으로 더 높은 품질의 립싱크를 생성합니다."
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "출력 언어",
@@ -17936,6 +17969,7 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "1~10개의 참조 이미지에서 재사용 가능한 Recraft V4 스타일을 생성합니다. 반환된 style_id는 동일한 출력 유형의 모든 Recraft V4 및 V4.1 모델에서 작동합니다. 모든 이미지의 총 크기는 10MB로 제한됩니다.",
     "display_name": "Recraft V4 스타일 생성",
     "inputs": {
@@ -17946,6 +17980,18 @@
       "model": {
         "name": "모델",
         "tooltip": "스타일을 생성할 출력 유형입니다. 래스터 이미지에는 recraftv4_styles, SVG에는 recraftv4_styles_vector를 사용합니다."
+=======
+    "description": "1~10개의 참조 이미지로 재사용 가능한 Recraft V4 스타일을 만듭니다. 반환된 style_id는 동일한 출력 유형의 모든 Recraft V4 및 V4.1 모델에서 작동합니다. 모든 이미지의 총 크기는 10MB로 제한됩니다.",
+    "display_name": "Recraft V4 스타일 만들기",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "스타일을 정의하는 참조 이미지입니다. 유사한 참조는 일치도를 높이고, 다양한 참조는 범위를 넓힙니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "스타일을 생성할 출력 유형입니다: 래스터 이미지용 recraftv4_styles, SVG용 recraftv4_styles_vector."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -17964,7 +18010,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 스타일 일관성 있는 생성을 위해 제작되었으며 항상 style_id 또는 style_references가 필요합니다."
+=======
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 스타일 일관성 있는 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "size"
@@ -17991,6 +18041,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "적용할 Recraft V4 스타일의 UUID입니다. 예를 들어 Recraft V4 Create Style 노드 또는 이전 실행의 style_id 출력에서 가져올 수 있습니다. style_references와 함께 사용할 수 없습니다."
       },
       "style_match": {
@@ -18000,6 +18051,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "즉석에서 스타일을 생성할 참조 이미지이며, 생성 비용에 추가로 청구됩니다. 생성된 스타일은 재사용을 위해 style_id로 반환됩니다. style_id와 함께 사용할 수 없습니다."
+=======
+        "tooltip": "적용할 Recraft V4 스타일의 UUID입니다. 예: Recraft V4 Create Style 노드 또는 이전 실행의 style_id 출력. style_references와 함께 사용할 수 없습니다."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "스타일을 따르는 정도입니다: precise는 세부적으로 재현하고, flexible은 전반적인 느낌을 맞춥니다. 스타일이 제공된 경우에만 사용됩니다."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "즉시 스타일을 생성하기 위한 참조 이미지이며, 생성 비용에 추가로 청구됩니다. 생성된 스타일은 재사용할 수 있도록 style_id로 반환됩니다. style_id와 함께 사용할 수 없습니다."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -18021,7 +18083,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 스타일 일관성 있는 생성을 위해 제작되었으며 항상 style_id 또는 style_references가 필요합니다."
+=======
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 스타일 일관성 있는 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "size"
@@ -18048,6 +18114,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "적용할 Recraft V4 벡터 스타일의 UUID입니다. 예를 들어 Recraft V4 Create Style 노드 또는 이전 실행의 style_id 출력에서 가져올 수 있습니다. style_references와 함께 사용할 수 없습니다."
       },
       "style_match": {
@@ -18057,6 +18124,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "즉석에서 벡터 스타일을 생성할 참조 이미지이며, 생성 비용에 추가로 청구됩니다. 생성된 스타일은 재사용을 위해 style_id로 반환됩니다. style_id와 함께 사용할 수 없습니다."
+=======
+        "tooltip": "적용할 Recraft V4 벡터 스타일의 UUID입니다. 예: Recraft V4 Create Style 노드 또는 이전 실행의 style_id 출력. style_references와 함께 사용할 수 없습니다."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "스타일을 따르는 정도입니다: precise는 세부적으로 재현하고, flexible은 전반적인 느낌을 맞춥니다. 스타일이 제공된 경우에만 사용됩니다."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "즉시 벡터 스타일을 생성하기 위한 참조 이미지이며, 생성 비용에 추가로 청구됩니다. 생성된 스타일은 재사용할 수 있도록 style_id로 반환됩니다. style_id와 함께 사용할 수 없습니다."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24717,7 +24795,11 @@
       },
       "resolution": {
         "name": "해상도",
+<<<<<<< Updated upstream
         "tooltip": "출력 비디오 해상도입니다. veo-3.1-lite 모델에서는 4K를 사용할 수 없습니다."
+=======
+        "tooltip": "출력 동영상 해상도입니다. veo-3.1-lite 모델에서는 4K를 사용할 수 없습니다."
+>>>>>>> Stashed changes
       },
       "seed": {
         "name": "시드",
@@ -24756,11 +24838,19 @@
     }
   },
   "VideoCrop": {
+<<<<<<< Updated upstream
     "display_name": "비디오 자르기",
     "inputs": {
       "crop": {
         "name": "crop",
         "tooltip": "픽셀 단위의 자르기 영역입니다. 너비/높이가 0이면 전체 프레임을 유지합니다."
+=======
+    "display_name": "동영상 자르기",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "픽셀 단위의 자르기 영역입니다. 너비/높이가 0이면 전체 프레임이 유지됩니다."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"
@@ -24877,6 +24967,7 @@
     }
   },
   "VideoTrim": {
+<<<<<<< Updated upstream
     "display_name": "비디오 트리밍(고급)",
     "inputs": {
       "strict_duration": {
@@ -24886,6 +24977,17 @@
       "trim": {
         "name": "trim",
         "tooltip": "시작/종료 프레임을 사용해 구간을 트리밍합니다."
+=======
+    "display_name": "동영상 트리밍 (고급)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True인 경우, 지정한 길이를 사용할 수 없으면 오류가 발생합니다."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "시작/종료 프레임을 사용하여 트리밍 구간을 지정합니다."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"

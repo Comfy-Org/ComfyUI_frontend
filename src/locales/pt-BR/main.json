@@ -347,6 +347,7 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "Não foi possível concluir a verificação do pagamento. Tente novamente.",
+<<<<<<< Updated upstream
     "authenticationManagerRequired": "A verificação do pagamento precisa da atenção de um gerente de cobrança do espaço de trabalho.",
     "authenticationUnavailable": "A autenticação segura de pagamento não está disponível. Atualize a página e tente novamente.",
     "cancelFailed": "Falha ao cancelar a assinatura",
@@ -359,6 +360,20 @@
     "reconciliationDetail": "Seu pagamento foi recebido, mas não foi possível concluir a atualização do seu espaço de trabalho. Entre em contato com o suporte e inclua este ID de operação:",
     "reconciliationTitle": "Pagamento recebido — confirmação pendente",
     "retryVerification": "Tentar verificação novamente",
+=======
+    "authenticationManagerRequired": "A verificação do pagamento requer a atenção de um gerente de cobrança do espaço de trabalho.",
+    "authenticationUnavailable": "A autenticação segura de pagamento está indisponível. Atualize a página e tente novamente.",
+    "cancelFailed": "Falha ao cancelar a assinatura",
+    "cancelTimeout": "Tempo esgotado ao cancelar a assinatura",
+    "expiredCardDetail": "Este cartão expirou. Use outra forma de pagamento.",
+    "incorrectCvcDetail": "O código de segurança do cartão está incorreto. Verifique-o e tente novamente.",
+    "insufficientFundsDetail": "Esta forma de pagamento não tem fundos suficientes. Tente outra forma de pagamento ou entre em contato com seu banco.",
+    "paymentDeclinedDetail": "Seu banco recusou este pagamento. Tente outra forma de pagamento ou entre em contato com seu banco.",
+    "processingErrorDetail": "Não foi possível processar seu pagamento. Tente novamente ou use outra forma de pagamento.",
+    "reconciliationDetail": "Seu pagamento foi recebido, mas não foi possível concluir a atualização do seu espaço de trabalho. Entre em contato com o suporte e inclua este ID da operação:",
+    "reconciliationTitle": "Pagamento recebido — confirmação pendente",
+    "retryVerification": "Tentar novamente a verificação",
+>>>>>>> Stashed changes
     "subscriptionActionRequired": "Verifique seu pagamento para finalizar a configuração do seu workspace",
     "subscriptionFailed": "Falha ao atualizar a assinatura",
     "subscriptionFailedDetail": "Não foi possível atualizar sua assinatura. Por favor, tente novamente.",
@@ -819,7 +834,11 @@
       "buy": "Comprar",
       "buyCredits": "Continuar para o pagamento",
       "buyNow": "Comprar agora",
+<<<<<<< Updated upstream
       "chargedImmediatelyNote": "O método de pagamento salvo será cobrado imediatamente.",
+=======
+      "chargedImmediatelyNote": "Sua forma de pagamento salva é cobrada imediatamente.",
+>>>>>>> Stashed changes
       "confirmSubtitle": "Os créditos são adicionados a este workspace assim que o pagamento for concluído.",
       "confirmTitle": "Confirmar",
       "contactUs": "Fale conosco",
@@ -4259,7 +4278,11 @@
     "prepaidDescription": "Créditos pré-pagos",
     "preview": {
       "addCreditCard": "Adicionar cartão de crédito",
+<<<<<<< Updated upstream
       "addNewPaymentMethod": "Adicionar novo método de pagamento",
+=======
+      "addNewPaymentMethod": "Adicionar nova forma de pagamento",
+>>>>>>> Stashed changes
       "afterThat": "Depois disso",
       "alipay": "Alipay",
       "alipayRenewalNote": "A autorização do Alipay também será usada para renovações automáticas e compras futuras.",
@@ -4295,14 +4318,22 @@
       "newMonthlySubscription": "Nova assinatura mensal",
       "nextPaymentDue": "Próximo pagamento em {date}. Cancele a qualquer momento.",
       "payAndSubscribe": "Pagar e assinar",
+<<<<<<< Updated upstream
       "paymentMethod": "Método de pagamento",
+=======
+      "paymentMethod": "Forma de pagamento",
+>>>>>>> Stashed changes
       "paymentPopupBlocked": "Não foi possível abrir a página de pagamento — permita pop-ups e tente novamente.",
       "perMember": "/ membro",
       "privacyPolicy": "Política de Privacidade",
       "promoCodePlaceholder": "Código promocional",
       "proratedCharge": "Cobrança proporcional para {plan}",
       "proratedRefund": "Reembolso proporcional para {plan}",
+<<<<<<< Updated upstream
       "quoteRefreshFailed": "Seu orçamento expirou e não foi possível atualizá-lo. Escolha seu plano novamente.",
+=======
+      "quoteRefreshFailed": "Seu orçamento expirou e não pôde ser atualizado. Escolha seu plano novamente.",
+>>>>>>> Stashed changes
       "quoteStale": "Seu orçamento mudou. Revise o valor atualizado e tente novamente.",
       "quoteUnavailable": "Indisponível",
       "reactivation": {
@@ -4321,19 +4352,31 @@
       },
       "refillReplacesNote": "Substitui sua recarga mensal. O saldo existente é mantido.",
       "renewsAt": "Renova por {amount} em {date}. Cancele a qualquer momento.",
+<<<<<<< Updated upstream
       "savedPaymentMethod": "Método de pagamento",
+=======
+      "savedPaymentMethod": "Forma de pagamento",
+>>>>>>> Stashed changes
       "showMoreFeatures": "Mostrar mais recursos",
       "starting": "Começando em {date}",
       "startingToday": "Começando hoje",
       "startsOn": "Começa em {date}",
       "stayOnUntil": "Você permanecerá no {plan} até {date}.",
       "stripeMethodChoice": "Seus dados de pagamento são processados com segurança pela Stripe.",
+<<<<<<< Updated upstream
       "stripeUnavailable": "As opções de pagamento não estão disponíveis. Atualize a página e tente novamente.",
+=======
+      "stripeUnavailable": "As opções de pagamento estão indisponíveis. Atualize a página e tente novamente.",
+>>>>>>> Stashed changes
       "subscribeToPlan": "Assinar {plan}",
       "switchToPlan": "Mudar para {plan}",
       "switchesToday": "Trocas hoje",
       "terms": "Termos",
+<<<<<<< Updated upstream
       "termsAgreement": "Ao continuar, você concorda com os {terms} e a {privacy} da Comfy Org e autoriza a Comfy Org a cobrar seu método de pagamento em cada período de cobrança até que você cancele.",
+=======
+      "termsAgreement": "Ao continuar, você concorda com os {terms} e a {privacy} da Comfy Org e autoriza a Comfy Org a cobrar sua forma de pagamento a cada período de cobrança até que você cancele.",
+>>>>>>> Stashed changes
       "totalDueToday": "Total devido hoje",
       "yearlySubscription": "Assinatura anual",
       "youllBeCharged": "Você será cobrado"
@@ -4363,7 +4406,11 @@
     "resubscribeFailed": "Falha ao reativar a assinatura",
     "resubscribeSuccess": "Assinatura reativada com sucesso",
     "resubscribeTo": "Reassinar {plan}",
+<<<<<<< Updated upstream
     "salesManagedRunBlockedDetail": "O plano deste espaço de trabalho não está mais ativo. Entre em contato com seu gerente de contas da Comfy para restaurar o acesso.",
+=======
+    "salesManagedRunBlockedDetail": "O plano deste espaço de trabalho não está mais ativo. Entre em contato com o gerente da sua conta Comfy para restaurar o acesso.",
+>>>>>>> Stashed changes
     "salesManagedRunBlockedTitle": "Plano inativo",
     "saveYearly": "Economize 20%",
     "saveYearlyUpTo": "Economize até 20%",
@@ -4422,7 +4469,11 @@
         "name": "Criador"
       },
       "enterprise": {
+<<<<<<< Updated upstream
         "name": "Enterprise"
+=======
+        "name": "Empresarial"
+>>>>>>> Stashed changes
       },
       "founder": {
         "name": "Edição do Fundador"

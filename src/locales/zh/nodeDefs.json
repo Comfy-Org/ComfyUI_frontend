@@ -6299,7 +6299,11 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "使用 Google 的 Gemini Omni Flash 模型根据文本提示词生成带音频的视频。可选提供参考图像和/或视频，以引导或编辑结果。请直接在提示词中描述所需时长（3-10 秒）。",
+=======
+    "description": "使用 Google 的 Gemini Omni Flash 模型根据文本提示生成带音频的视频。可选择提供参考图像和/或视频来引导或编辑结果。请直接在提示词中描述所需时长（3-10 秒）。",
+>>>>>>> Stashed changes
     "display_name": "Google Gemini Omni（视频）",
     "inputs": {
       "control_after_generate": {
@@ -6401,12 +6405,20 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "将 3D 模型文件（GLB、GLTF、OBJ、STL）解析为可编辑的 MESH，供网格处理节点（decimate、remesh、UV unwrap、bake 等）使用。所有场景节点/图元将合并为一个网格并应用其变换；纹理和材质参数取自第一个材质。MeshToFile3D 的对应节点。",
+=======
+    "description": "将 3D 模型文件（GLB、GLTF、OBJ、STL）解析为可编辑的 MESH，供网格处理节点使用（简化、重建网格、UV 展开、烘焙等）。所有场景节点/图元将合并为一个网格并应用其变换；纹理和材质系数取自第一个材质。与 MeshToFile3D 对应。",
+>>>>>>> Stashed changes
     "display_name": "获取 3D 组件",
     "inputs": {
       "model_3d": {
         "name": "model_3d",
+<<<<<<< Updated upstream
         "tooltip": "来自加载 3D 或其他 3D 节点的 3D 模型文件。不支持 FBX/USDZ，请先转换为 GLB。"
+=======
+        "tooltip": "来自“加载 3D”或其他 3D 节点的 3D 模型文件。不支持 FBX/USDZ，请先转换为 GLB。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -7133,7 +7145,11 @@
       },
       "mode": {
         "name": "模式",
+<<<<<<< Updated upstream
         "tooltip": "'speed' 更快；'precision' 可提供更高质量的唇形同步，但价格更高。"
+=======
+        "tooltip": "“speed”更快；“precision”可生成质量更高的口型同步，但价格更高。"
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "目标语言",
@@ -17936,16 +17952,28 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "从 1-10 张参考图像创建可复用的 Recraft V4 风格。返回的 style_id 可用于具有相同输出类型的所有 Recraft V4 和 V4.1 模型。所有图像总大小限制为 10 MB。",
+=======
+    "description": "从 1-10 张参考图像创建可复用的 Recraft V4 风格。返回的 style_id 适用于同一输出类型的所有 Recraft V4 和 V4.1 模型。所有图像的总大小限制为 10 MB。",
+>>>>>>> Stashed changes
     "display_name": "Recraft V4 创建风格",
     "inputs": {
       "images": {
         "name": "图像",
+<<<<<<< Updated upstream
         "tooltip": "定义风格的参考图像。相似的参考图像可提高匹配精度，多样的参考图像可扩大风格范围。"
       },
       "model": {
         "name": "模型",
         "tooltip": "创建该风格所适用的输出类型：recraftv4_styles 用于栅格图像，recraftv4_styles_vector 用于 SVG。"
+=======
+        "tooltip": "用于定义风格的参考图像。相似的参考图像可提高匹配精度，多样的参考图像可扩展风格范围。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "创建风格所对应的输出类型：recraftv4_styles 用于栅格图像，recraftv4_styles_vector 用于 SVG。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -17964,7 +17992,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而设计，且始终需要 style_id 或 style_references。"
+=======
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为保持风格一致的生成而构建，始终需要 style_id 或 style_references。"
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "size"
@@ -17995,7 +18027,11 @@
       },
       "style_match": {
         "name": "style_match",
+<<<<<<< Updated upstream
         "tooltip": "与风格的贴合程度：precise 会细致复现风格，flexible 匹配整体外观。仅在提供风格时使用。"
+=======
+        "tooltip": "与风格的贴合程度：precise 会精确复现细节，flexible 匹配整体外观。仅在提供风格时使用。"
+>>>>>>> Stashed changes
       },
       "style_references": {
         "name": "style_references",
@@ -18021,7 +18057,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而设计，且始终需要 style_id 或 style_references。"
+=======
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为保持风格一致的生成而构建，始终需要 style_id 或 style_references。"
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "size"
@@ -18052,7 +18092,11 @@
       },
       "style_match": {
         "name": "style_match",
+<<<<<<< Updated upstream
         "tooltip": "与风格的贴合程度：precise 会细致复现风格，flexible 匹配整体外观。仅在提供风格时使用。"
+=======
+        "tooltip": "与风格的贴合程度：precise 会精确复现细节，flexible 匹配整体外观。仅在提供风格时使用。"
+>>>>>>> Stashed changes
       },
       "style_references": {
         "name": "style_references",
@@ -24759,11 +24803,19 @@
     "display_name": "裁剪视频",
     "inputs": {
       "crop": {
+<<<<<<< Updated upstream
         "name": "裁剪",
         "tooltip": "以像素为单位的裁剪区域。宽度/高度为零时保留完整帧。"
       },
       "video": {
         "name": "视频"
+=======
+        "name": "crop",
+        "tooltip": "以像素为单位的裁剪区域。宽度/高度为零时保留完整帧。"
+      },
+      "video": {
+        "name": "video"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24877,6 +24929,7 @@
     }
   },
   "VideoTrim": {
+<<<<<<< Updated upstream
     "display_name": "修剪视频（高级）",
     "inputs": {
       "strict_duration": {
@@ -24889,6 +24942,20 @@
       },
       "video": {
         "name": "视频"
+=======
+    "display_name": "裁剪视频（高级）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "如果为 True，在无法满足指定时长时将引发错误。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "使用起始/结束帧裁剪区间。"
+      },
+      "video": {
+        "name": "video"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {

@@ -6299,7 +6299,11 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "Google の Gemini Omni Flash モデルを使用して、テキストプロンプトから音声付き動画を生成します。必要に応じて、結果の誘導または編集用に参照画像や動画を指定できます。希望する長さ（3～10秒）をプロンプト内に直接記述してください。",
+=======
+    "description": "Google の Gemini Omni Flash モデルを使用して、テキストプロンプトから音声付き動画を生成します。結果の誘導または編集のために、参照画像や動画を任意で指定できます。希望する長さ（3～10秒）をプロンプト内に直接記述してください。",
+>>>>>>> Stashed changes
     "display_name": "Google Gemini Omni（動画）",
     "inputs": {
       "control_after_generate": {
@@ -6307,7 +6311,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "動画生成に使用する Gemini 動画モデル。"
+=======
+        "tooltip": "動画の生成に使用する Gemini 動画モデル。"
+>>>>>>> Stashed changes
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
@@ -6401,7 +6409,11 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "3Dモデルファイル（GLB、GLTF、OBJ、STL）を、メッシュ処理ノード（decimate、remesh、UV展開、bake、...）用の編集可能な MESH に解析します。すべてのシーンノード／プリミティブは、変換を適用したうえで1つのメッシュに統合されます。テクスチャとマテリアル係数は最初のマテリアルから取得されます。MeshToFile3D の対となるノードです。",
+=======
+    "description": "3Dモデルファイル（GLB、GLTF、OBJ、STL）を、メッシュ処理ノード（decimate、remesh、UV unwrap、bake、…）で編集可能な MESH に解析します。すべてのシーンノード／プリミティブは、変換を適用したうえで1つのメッシュに統合されます。テクスチャとマテリアル係数は最初のマテリアルから取得されます。MeshToFile3D の対になるノードです。",
+>>>>>>> Stashed changes
     "display_name": "3Dコンポーネントを取得",
     "inputs": {
       "model_3d": {
@@ -7133,7 +7145,11 @@
       },
       "mode": {
         "name": "モード",
+<<<<<<< Updated upstream
         "tooltip": "「speed」はより高速です。「precision」はより高価ですが、高品質なリップシンクを生成します。"
+=======
+        "tooltip": "'speed' は高速です。'precision' は高価ですが、より高品質なリップシンクを生成します。"
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "出力言語",
@@ -17824,7 +17840,11 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
+<<<<<<< Updated upstream
     "description": "logo_raster スタイルとサブスタイルを選択します。",
+=======
+    "description": "logo_raster のスタイルとサブスタイルを選択します。",
+>>>>>>> Stashed changes
     "display_name": "Recraft Style - ロゴラスタ",
     "inputs": {
       "substyle": {
@@ -17936,7 +17956,11 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "1～10枚の参照画像から再利用可能な Recraft V4 スタイルを作成します。返される style_id は、同じ出力タイプのすべての Recraft V4 および V4.1 モデルで使用できます。すべての画像の合計サイズは 10 MB に制限されています。",
+=======
+    "description": "1～10枚の参照画像から再利用可能な Recraft V4 スタイルを作成します。返される style_id は、同じ出力タイプのすべての Recraft V4 および V4.1 モデルで使用できます。すべての画像の合計サイズは 10 MB に制限されます。",
+>>>>>>> Stashed changes
     "display_name": "Recraft V4 スタイルを作成",
     "inputs": {
       "images": {
@@ -17945,7 +17969,11 @@
       },
       "model": {
         "name": "model",
+<<<<<<< Updated upstream
         "tooltip": "スタイルの作成対象となる出力タイプ：ラスター画像には recraftv4_styles、SVG には recraftv4_styles_vector。"
+=======
+        "tooltip": "スタイルを作成する出力タイプ: ラスター画像には recraftv4_styles、SVG には recraftv4_styles_vector。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -17991,6 +18019,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "適用する Recraft V4 スタイルの UUID。たとえば Recraft V4 Create Style ノードまたは前回の実行の style_id 出力から取得します。style_references とは併用できません。"
       },
       "style_match": {
@@ -18000,6 +18029,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "その場でスタイルを作成するための参照画像です。生成料金に加えて課金されます。作成されたスタイルは再利用用の style_id として返されます。style_id とは併用できません。"
+=======
+        "tooltip": "適用する Recraft V4 スタイルの UUID。例: Recraft V4 Create Style ノードまたは前回の実行の style_id 出力から取得できます。style_references とは併用できません。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "スタイルへの追従度: precise は細部まで再現し、flexible は全体的な見た目に合わせます。スタイルが指定されている場合にのみ使用されます。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "その場でスタイルを作成するための参照画像。生成料金に加えて課金されます。作成されたスタイルは再利用用の style_id として返されます。style_id とは併用できません。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -18048,6 +18088,7 @@
       },
       "style_id": {
         "name": "style_id",
+<<<<<<< Updated upstream
         "tooltip": "適用する Recraft V4 ベクタースタイルの UUID。たとえば Recraft V4 Create Style ノードまたは前回の実行の style_id 出力から取得します。style_references とは併用できません。"
       },
       "style_match": {
@@ -18057,6 +18098,17 @@
       "style_references": {
         "name": "style_references",
         "tooltip": "その場でベクタースタイルを作成するための参照画像です。生成料金に加えて課金されます。作成されたスタイルは再利用用の style_id として返されます。style_id とは併用できません。"
+=======
+        "tooltip": "適用する Recraft V4 ベクタースタイルの UUID。例: Recraft V4 Create Style ノードまたは前回の実行の style_id 出力から取得できます。style_references とは併用できません。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "スタイルへの追従度: precise は細部まで再現し、flexible は全体的な見た目に合わせます。スタイルが指定されている場合にのみ使用されます。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "その場でベクタースタイルを作成するための参照画像。生成料金に加えて課金されます。作成されたスタイルは再利用用の style_id として返されます。style_id とは併用できません。"
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24760,7 +24812,11 @@
     "inputs": {
       "crop": {
         "name": "crop",
+<<<<<<< Updated upstream
         "tooltip": "ピクセル単位のクロップ領域。幅/高さがゼロの場合はフルフレームを維持します。"
+=======
+        "tooltip": "ピクセル単位のクロップ領域。幅または高さがゼロの場合はフルフレームを維持します。"
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"

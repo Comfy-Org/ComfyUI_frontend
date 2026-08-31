@@ -346,18 +346,31 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+<<<<<<< Updated upstream
     "authenticationFailedDetail": "无法完成付款验证。请重试。",
+=======
+    "authenticationFailedDetail": "我们无法完成付款验证。请重试。",
+>>>>>>> Stashed changes
     "authenticationManagerRequired": "付款验证需要工作区账单管理员处理。",
     "authenticationUnavailable": "安全付款验证不可用。请刷新后重试。",
     "cancelFailed": "取消订阅失败",
     "cancelTimeout": "订阅取消超时",
     "expiredCardDetail": "此卡已过期。请使用其他付款方式。",
+<<<<<<< Updated upstream
     "incorrectCvcDetail": "银行卡安全码不正确。请检查后重试。",
     "insufficientFundsDetail": "此付款方式余额不足。请尝试其他付款方式或联系您的银行。",
     "paymentDeclinedDetail": "您的银行拒绝了此付款。请尝试其他付款方式或联系您的银行。",
     "processingErrorDetail": "无法处理您的付款。请重试或使用其他付款方式。",
     "reconciliationDetail": "已收到您的付款，但无法完成工作区更新。请联系支持团队并提供此操作 ID：",
     "reconciliationTitle": "已收到付款 — 等待确认",
+=======
+    "incorrectCvcDetail": "卡片安全码不正确。请检查后重试。",
+    "insufficientFundsDetail": "此付款方式余额不足。请尝试其他付款方式或联系您的银行。",
+    "paymentDeclinedDetail": "您的银行拒绝了此付款。请尝试其他付款方式或联系您的银行。",
+    "processingErrorDetail": "无法处理您的付款。请重试或使用其他付款方式。",
+    "reconciliationDetail": "已收到您的付款，但我们无法完成更新您的工作区。请联系支持团队并提供此操作 ID：",
+    "reconciliationTitle": "已收到付款 — 正在等待确认",
+>>>>>>> Stashed changes
     "retryVerification": "重试验证",
     "subscriptionActionRequired": "请验证您的付款以完成工作区设置",
     "subscriptionFailed": "订阅更新失败",
@@ -819,7 +832,11 @@
       "buy": "购买",
       "buyCredits": "继续付款",
       "buyNow": "立即购买",
+<<<<<<< Updated upstream
       "chargedImmediatelyNote": "将立即从您已保存的付款方式扣款。",
+=======
+      "chargedImmediatelyNote": "将立即从您保存的付款方式扣款。",
+>>>>>>> Stashed changes
       "confirmSubtitle": "付款完成后，积分将立即添加到此工作区。",
       "confirmTitle": "确认",
       "contactUs": "联系我们",

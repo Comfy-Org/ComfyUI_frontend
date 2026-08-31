@@ -346,16 +346,28 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+<<<<<<< Updated upstream
     "authenticationFailedDetail": "Non è stato possibile completare la verifica del pagamento. Riprova.",
+=======
+    "authenticationFailedDetail": "Impossibile completare la verifica del pagamento. Riprova.",
+>>>>>>> Stashed changes
     "authenticationManagerRequired": "La verifica del pagamento richiede l'intervento di un responsabile della fatturazione dello spazio di lavoro.",
     "authenticationUnavailable": "L'autenticazione sicura del pagamento non è disponibile. Aggiorna la pagina e riprova.",
     "cancelFailed": "Annullamento dell'abbonamento non riuscito",
     "cancelTimeout": "Timeout nell'annullamento dell'abbonamento",
+<<<<<<< Updated upstream
     "expiredCardDetail": "Questa carta è scaduta. Usa un metodo di pagamento diverso.",
     "incorrectCvcDetail": "Il codice di sicurezza della carta non è corretto. Verificalo e riprova.",
     "insufficientFundsDetail": "Questo metodo di pagamento non dispone di fondi sufficienti. Prova un altro metodo di pagamento o contatta la tua banca.",
     "paymentDeclinedDetail": "La tua banca ha rifiutato questo pagamento. Prova un altro metodo di pagamento o contatta la tua banca.",
     "processingErrorDetail": "Non è stato possibile elaborare il pagamento. Riprova o usa un altro metodo di pagamento.",
+=======
+    "expiredCardDetail": "Questa carta è scaduta. Utilizza un metodo di pagamento diverso.",
+    "incorrectCvcDetail": "Il codice di sicurezza della carta non è corretto. Verificalo e riprova.",
+    "insufficientFundsDetail": "Questo metodo di pagamento non dispone di fondi sufficienti. Prova un altro metodo di pagamento o contatta la tua banca.",
+    "paymentDeclinedDetail": "La tua banca ha rifiutato questo pagamento. Prova un altro metodo di pagamento o contatta la tua banca.",
+    "processingErrorDetail": "Impossibile elaborare il pagamento. Riprova o utilizza un altro metodo di pagamento.",
+>>>>>>> Stashed changes
     "reconciliationDetail": "Il pagamento è stato ricevuto, ma non è stato possibile completare l'aggiornamento dello spazio di lavoro. Contatta l'assistenza e includi questo ID operazione:",
     "reconciliationTitle": "Pagamento ricevuto — conferma in attesa",
     "retryVerification": "Riprova la verifica",
@@ -819,7 +831,11 @@
       "buy": "Acquista",
       "buyCredits": "Continua al pagamento",
       "buyNow": "Acquista ora",
+<<<<<<< Updated upstream
       "chargedImmediatelyNote": "Il metodo di pagamento salvato verrà addebitato immediatamente.",
+=======
+      "chargedImmediatelyNote": "Il metodo di pagamento salvato viene addebitato immediatamente.",
+>>>>>>> Stashed changes
       "confirmSubtitle": "I crediti vengono aggiunti a questo workspace non appena il pagamento è completato.",
       "confirmTitle": "Conferma",
       "contactUs": "Contattaci",
@@ -2422,8 +2438,13 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nodi core dalla versione {version}:",
+<<<<<<< Updated upstream
     "newerVersionRequired": "Alcuni nodi richiedono una versione più recente di ComfyUI (attuale: {version}). Aggiorna per usare tutti i nodi.",
     "newerVersionRequiredGeneric": "Alcuni nodi richiedono una versione più recente di ComfyUI. Aggiorna per usare tutti i nodi.",
+=======
+    "newerVersionRequired": "Alcuni nodi richiedono una versione più recente di ComfyUI (attuale: {version}). Aggiorna per utilizzare tutti i nodi.",
+    "newerVersionRequiredGeneric": "Alcuni nodi richiedono una versione più recente di ComfyUI. Aggiorna per utilizzare tutti i nodi.",
+>>>>>>> Stashed changes
     "unknownVersion": "sconosciuto"
   },
   "logsTerminal": {
@@ -4262,7 +4283,11 @@
       "addNewPaymentMethod": "Aggiungi un nuovo metodo di pagamento",
       "afterThat": "Dopo di ciò",
       "alipay": "Alipay",
+<<<<<<< Updated upstream
       "alipayRenewalNote": "L'autorizzazione Alipay sarà utilizzata anche per i rinnovi automatici e gli acquisti futuri.",
+=======
+      "alipayRenewalNote": "L'autorizzazione Alipay verrà utilizzata anche per i rinnovi automatici e gli acquisti futuri.",
+>>>>>>> Stashed changes
       "applyPromoCode": "Applica",
       "applyQuoteBeforeContinuing": "Applica il codice promozionale per aggiornare il preventivo prima di continuare.",
       "backToAllPlans": "Torna a tutti i piani",
@@ -4302,7 +4327,11 @@
       "promoCodePlaceholder": "Codice promozionale",
       "proratedCharge": "Addebito proporzionale per {plan}",
       "proratedRefund": "Rimborso proporzionale per {plan}",
+<<<<<<< Updated upstream
       "quoteRefreshFailed": "Il tuo preventivo è scaduto e non è stato possibile aggiornarlo. Seleziona nuovamente il tuo piano.",
+=======
+      "quoteRefreshFailed": "Il tuo preventivo è scaduto e non è stato possibile aggiornarlo. Scegli di nuovo il tuo piano.",
+>>>>>>> Stashed changes
       "quoteStale": "Il tuo preventivo è cambiato. Controlla l'importo aggiornato e riprova.",
       "quoteUnavailable": "Non disponibile",
       "reactivation": {
@@ -4320,7 +4349,11 @@
         "upgradeBody": "Il tuo {plan} era previsto per terminare il {date}. L'upgrade ora lo riattiva — ti verrà addebitato {amount} oggi e si rinnoverà automaticamente il {nextDate} invece di terminare."
       },
       "refillReplacesNote": "Sostituisce la tua ricarica mensile. Il saldo esistente viene mantenuto.",
+<<<<<<< Updated upstream
       "renewsAt": "Rinnovo a {amount} il {date}. Annulla in qualsiasi momento.",
+=======
+      "renewsAt": "Si rinnova a {amount} il {date}. Annulla in qualsiasi momento.",
+>>>>>>> Stashed changes
       "savedPaymentMethod": "Metodo di pagamento",
       "showMoreFeatures": "Mostra più funzionalità",
       "starting": "Inizio {date}",
@@ -4333,7 +4366,11 @@
       "switchToPlan": "Passa a {plan}",
       "switchesToday": "Cambia oggi",
       "terms": "Termini",
+<<<<<<< Updated upstream
       "termsAgreement": "Continuando, accetti i {terms} e l'{privacy} di Comfy Org e autorizzi Comfy Org ad addebitare il tuo metodo di pagamento a ogni periodo di fatturazione fino all'annullamento.",
+=======
+      "termsAgreement": "Continuando, accetti i {terms} e l'{privacy} di Comfy Org e autorizzi Comfy Org ad addebitare il tuo metodo di pagamento a ogni periodo di fatturazione fino alla disdetta.",
+>>>>>>> Stashed changes
       "totalDueToday": "Totale dovuto oggi",
       "yearlySubscription": "Abbonamento annuale",
       "youllBeCharged": "Ti verrà addebitato"
@@ -4363,7 +4400,11 @@
     "resubscribeFailed": "Impossibile riattivare l'abbonamento",
     "resubscribeSuccess": "Abbonamento riattivato con successo",
     "resubscribeTo": "Riattiva abbonamento a {plan}",
+<<<<<<< Updated upstream
     "salesManagedRunBlockedDetail": "Il piano di questo spazio di lavoro non è più attivo. Contatta il tuo account manager Comfy per ripristinare l'accesso.",
+=======
+    "salesManagedRunBlockedDetail": "Il piano di questo spazio di lavoro non è più attivo. Contatta il tuo responsabile account Comfy per ripristinare l'accesso.",
+>>>>>>> Stashed changes
     "salesManagedRunBlockedTitle": "Piano inattivo",
     "saveYearly": "Risparmia il 20%",
     "saveYearlyUpTo": "Risparmia fino al 20%",

@@ -6299,6 +6299,7 @@
     }
   },
   "GeminiVideoOmniV2": {
+<<<<<<< Updated upstream
     "description": "יצירת וידאו עם שמע מהנחיית טקסט באמצעות מודלי Gemini Omni Flash של Google. ניתן לספק באופן אופציונלי תמונות ו/או סרטוני וידאו להפניה כדי להנחות או לערוך את התוצאה. יש לתאר את האורך הרצוי (3–10 שניות) ישירות בהנחיה.",
     "display_name": "Google Gemini Omni ‏(וידאו)",
     "inputs": {
@@ -6308,11 +6309,23 @@
       "model": {
         "name": "מודל",
         "tooltip": "מודל הווידאו של Gemini המשמש ליצירת הסרטון."
+=======
+    "description": "יצירת וידאו עם שמע מהנחיית טקסט באמצעות מודלי Gemini Omni Flash של Google. אפשר לספק תמונות ו/או סרטוני עזר להכוונה או לעריכת התוצאה. יש לתאר את האורך הרצוי (3–10 שניות) ישירות בהנחיה.",
+    "display_name": "Google Gemini Omni (וידאו)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "מודל הווידאו של Gemini המשמש ליצירת הווידאו."
+>>>>>>> Stashed changes
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
       },
       "model_prompt": {
+<<<<<<< Updated upstream
         "name": "הנחיה"
       },
       "model_resolution": {
@@ -6320,6 +6333,15 @@
       },
       "model_seed": {
         "name": "זרע"
+=======
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+>>>>>>> Stashed changes
       },
       "model_task_type": {
         "name": "task_type"
@@ -6401,7 +6423,11 @@
     }
   },
   "Get3DComponents": {
+<<<<<<< Updated upstream
     "description": "ניתוח קובץ מודל 3D ‏(GLB, GLTF, OBJ, STL) ל-MESH הניתן לעריכה עבור צומתי עיבוד הרשת (decimate, remesh, UV unwrap, bake, ...). כל צומתי הסצנה/הפרימיטיבים ממוזגים לרשת אחת לאחר החלת ההתמרות שלהם; המרקמים ומקדמי החומר נלקחים מהחומר הראשון. המקביל של MeshToFile3D.",
+=======
+    "description": "ניתוח קובץ מודל 3D ‏(GLB, GLTF, OBJ, STL) ל-MESH הניתן לעריכה עבור צמתי עיבוד הרשת (decimate, remesh, UV unwrap, bake, ...). כל צמתי/פרימיטיבי הסצנה ממוזגים לרשת אחת עם ההמרות שלהם מוחלות; מרקמים וגורמי חומרים נלקחים מהחומר הראשון. המקביל של MeshToFile3D.",
+>>>>>>> Stashed changes
     "display_name": "קבלת רכיבי 3D",
     "inputs": {
       "model_3d": {
@@ -7133,7 +7159,11 @@
       },
       "mode": {
         "name": "מצב",
+<<<<<<< Updated upstream
         "tooltip": "‎'speed' מהיר יותר; ‎'precision' מפיק סנכרון שפתיים איכותי יותר במחיר גבוה יותר."
+=======
+        "tooltip": "'speed' מהיר יותר; 'precision' מפיק סנכרון שפתיים איכותי יותר במחיר גבוה יותר."
+>>>>>>> Stashed changes
       },
       "output_language": {
         "name": "שפת יעד",
@@ -17936,6 +17966,7 @@
     }
   },
   "RecraftV4CreateStyleNode": {
+<<<<<<< Updated upstream
     "description": "יצירת סגנון Recraft V4 רב-פעמי מ-1–10 תמונות הפניה. ה-style_id המוחזר פועל עם כל מודל Recraft V4 ו-V4.1 מאותו סוג פלט. הגודל הכולל של כל התמונות מוגבל ל-10 MB.",
     "display_name": "יצירת סגנון Recraft V4",
     "inputs": {
@@ -17945,6 +17976,17 @@
       },
       "model": {
         "name": "מודל",
+=======
+    "description": "יצירת סגנון Recraft V4 לשימוש חוזר מתוך 1–10 תמונות עזר. ה-style_id המוחזר פועל עם כל מודל Recraft V4 ו-V4.1 מאותו סוג פלט. הגודל הכולל של כל התמונות מוגבל ל-10 MB.",
+    "display_name": "יצירת סגנון Recraft V4",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "תמונות עזר המגדירות את הסגנון. תמונות עזר דומות מחדדות את ההתאמה, ותמונות מגוונות מרחיבות אותה."
+      },
+      "model": {
+        "name": "model",
+>>>>>>> Stashed changes
         "tooltip": "סוג הפלט שעבורו נוצר הסגנון: recraftv4_styles לתמונות רסטר, recraftv4_styles_vector עבור SVG."
       }
     },
@@ -17964,7 +18006,11 @@
       },
       "model": {
         "name": "מודל",
+<<<<<<< Updated upstream
         "tooltip": "המודל שישמש ליצירה. מודלי recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
+=======
+        "tooltip": "המודל לשימוש ביצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "גודל"
@@ -17999,7 +18045,11 @@
       },
       "style_references": {
         "name": "style_references",
+<<<<<<< Updated upstream
         "tooltip": "תמונות הפניה ליצירת סגנון באופן מיידי, בחיוב נוסף על היצירה. הסגנון שנוצר מוחזר כ-style_id לשימוש חוזר. לא ניתן לשלב עם style_id."
+=======
+        "tooltip": "תמונות עזר ליצירת סגנון בזמן אמת, המחויבות בנוסף ליצירה. הסגנון שנוצר מוחזר כ-style_id לשימוש חוזר. לא ניתן לשלב עם style_id."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -18021,7 +18071,11 @@
       },
       "model": {
         "name": "מודל",
+<<<<<<< Updated upstream
         "tooltip": "המודל שישמש ליצירה. מודלי recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
+=======
+        "tooltip": "המודל לשימוש ביצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
+>>>>>>> Stashed changes
       },
       "model_size": {
         "name": "גודל"
@@ -18056,7 +18110,11 @@
       },
       "style_references": {
         "name": "style_references",
+<<<<<<< Updated upstream
         "tooltip": "תמונות הפניה ליצירת סגנון וקטורי באופן מיידי, בחיוב נוסף על היצירה. הסגנון שנוצר מוחזר כ-style_id לשימוש חוזר. לא ניתן לשלב עם style_id."
+=======
+        "tooltip": "תמונות עזר ליצירת סגנון וקטורי בזמן אמת, המחויבות בנוסף ליצירה. הסגנון שנוצר מוחזר כ-style_id לשימוש חוזר. לא ניתן לשלב עם style_id."
+>>>>>>> Stashed changes
       }
     },
     "outputs": {
@@ -24717,7 +24775,11 @@
       },
       "resolution": {
         "name": "resolution",
+<<<<<<< Updated upstream
         "tooltip": "רזולוציית וידאו הפלט. 4K אינו זמין עבור המודל veo-3.1-lite."
+=======
+        "tooltip": "רזולוציית וידאו לפלט. 4K אינו זמין עבור המודל veo-3.1-lite."
+>>>>>>> Stashed changes
       },
       "seed": {
         "name": "seed",
@@ -24760,7 +24822,11 @@
     "inputs": {
       "crop": {
         "name": "crop",
+<<<<<<< Updated upstream
         "tooltip": "אזור חיתוך בפיקסלים. רוחב/גובה אפס שומרים על הפריים המלא."
+=======
+        "tooltip": "אזור החיתוך בפיקסלים. רוחב או גובה אפס שומרים על המסגרת המלאה."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"
@@ -24881,11 +24947,19 @@
     "inputs": {
       "strict_duration": {
         "name": "strict_duration",
+<<<<<<< Updated upstream
         "tooltip": "אם הערך True, תוצג שגיאה כאשר משך הזמן שצוין אינו אפשרי."
       },
       "trim": {
         "name": "trim",
         "tooltip": "חלון קיצוץ באמצעות פריימי התחלה/סיום."
+=======
+        "tooltip": "אם הערך הוא True, תופק שגיאה כאשר משך הזמן שצוין אינו אפשרי."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "חלון הקיצוץ באמצעות פריימי התחלה/סיום."
+>>>>>>> Stashed changes
       },
       "video": {
         "name": "video"

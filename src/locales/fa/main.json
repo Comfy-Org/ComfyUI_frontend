@@ -356,7 +356,11 @@
     "insufficientFundsDetail": "این روش پرداخت موجودی کافی ندارد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
     "paymentDeclinedDetail": "بانک شما این پرداخت را رد کرد. روش پرداخت دیگری را امتحان کنید یا با بانک خود تماس بگیرید.",
     "processingErrorDetail": "پرداخت شما پردازش نشد. دوباره تلاش کنید یا از روش پرداخت دیگری استفاده کنید.",
+<<<<<<< Updated upstream
     "reconciliationDetail": "پرداخت شما دریافت شد، اما نتوانستیم به‌روزرسانی workspace شما را تکمیل کنیم. با پشتیبانی تماس بگیرید و این شناسه عملیات را نیز درج کنید:",
+=======
+    "reconciliationDetail": "پرداخت شما دریافت شد، اما نتوانستیم به‌روزرسانی workspace شما را تکمیل کنیم. با پشتیبانی تماس بگیرید و این شناسه عملیات را وارد کنید:",
+>>>>>>> Stashed changes
     "reconciliationTitle": "پرداخت دریافت شد — در انتظار تأیید",
     "retryVerification": "تلاش مجدد برای تأیید",
     "subscriptionActionRequired": "برای تکمیل راه‌اندازی فضای کاری، پرداخت خود را تأیید کنید",
@@ -4264,7 +4268,11 @@
       "alipay": "Alipay",
       "alipayRenewalNote": "مجوز Alipay برای تمدیدهای خودکار و خریدهای آینده نیز استفاده خواهد شد.",
       "applyPromoCode": "اعمال",
+<<<<<<< Updated upstream
       "applyQuoteBeforeContinuing": "پیش از ادامه، کد تبلیغاتی را اعمال کنید تا قیمت پیشنهادی شما به‌روزرسانی شود.",
+=======
+      "applyQuoteBeforeContinuing": "پیش از ادامه، کد تخفیف را اعمال کنید تا قیمت پیشنهادی شما به‌روزرسانی شود.",
+>>>>>>> Stashed changes
       "backToAllPlans": "بازگشت به همه طرح‌ها",
       "billedEachMonth": "{amount} هر ماه صورتحساب می‌شود. در هر زمان قابل لغو است.",
       "changePaymentMethod": "تغییر",
@@ -4284,7 +4292,11 @@
       "currentMonthly": "طرح ماهانه",
       "discount": {
         "plan": "تخفیف طرح",
+<<<<<<< Updated upstream
         "promotion": "کد تبلیغاتی"
+=======
+        "promotion": "کد تخفیف"
+>>>>>>> Stashed changes
       },
       "discountComposition": "تخفیف‌ها",
       "eachMonthCreditsRefill": "هر ماه اعتبار به این مقدار بازنشانی می‌شود",
@@ -4299,11 +4311,19 @@
       "paymentPopupBlocked": "امکان باز کردن صفحه پرداخت وجود ندارد — لطفاً پاپ‌آپ‌ها را فعال کنید و دوباره تلاش کنید.",
       "perMember": "/ هر عضو",
       "privacyPolicy": "سیاست حفظ حریم خصوصی",
+<<<<<<< Updated upstream
       "promoCodePlaceholder": "کد تبلیغاتی",
       "proratedCharge": "هزینه متناسب برای {plan}",
       "proratedRefund": "بازپرداخت متناسب برای {plan}",
       "quoteRefreshFailed": "قیمت پیشنهادی شما منقضی شده و نتوانستیم آن را به‌روزرسانی کنیم. دوباره طرح خود را انتخاب کنید.",
       "quoteStale": "قیمت پیشنهادی شما تغییر کرده است. مبلغ به‌روزرسانی‌شده را بررسی کرده و دوباره تلاش کنید.",
+=======
+      "promoCodePlaceholder": "کد تخفیف",
+      "proratedCharge": "هزینه متناسب برای {plan}",
+      "proratedRefund": "بازپرداخت متناسب برای {plan}",
+      "quoteRefreshFailed": "قیمت پیشنهادی شما منقضی شد و نتوانستیم آن را به‌روزرسانی کنیم. طرح خود را دوباره انتخاب کنید.",
+      "quoteStale": "قیمت پیشنهادی شما تغییر کرده است. مبلغ به‌روزشده را بررسی کرده و دوباره تلاش کنید.",
+>>>>>>> Stashed changes
       "quoteUnavailable": "در دسترس نیست",
       "reactivation": {
         "amountChanged": "مبلغ پرداختی از زمان تأیید شما تغییر کرده است — لطفاً بررسی و دوباره تلاش کنید",
@@ -4320,20 +4340,32 @@
         "upgradeBody": "اشتراک {plan} شما قرار بود در تاریخ {date} به پایان برسد. با ارتقاء اکنون، اشتراک شما مجدداً فعال می‌شود — امروز مبلغ {amount} از شما دریافت می‌شود و به جای پایان یافتن، در تاریخ {nextDate} به صورت خودکار تمدید خواهد شد."
       },
       "refillReplacesNote": "جایگزین شارژ ماهانه شما می‌شود. موجودی فعلی حفظ می‌شود.",
+<<<<<<< Updated upstream
       "renewsAt": "در {date} با مبلغ {amount} تمدید می‌شود. هر زمان خواستید لغو کنید.",
+=======
+      "renewsAt": "در تاریخ {date} با مبلغ {amount} تمدید می‌شود. هر زمان خواستید لغو کنید.",
+>>>>>>> Stashed changes
       "savedPaymentMethod": "روش پرداخت",
       "showMoreFeatures": "نمایش امکانات بیشتر",
       "starting": "شروع از {date}",
       "startingToday": "شروع از امروز",
       "startsOn": "شروع از {date}",
       "stayOnUntil": "تا {date} در {plan} باقی خواهید ماند.",
+<<<<<<< Updated upstream
       "stripeMethodChoice": "جزئیات پرداخت شما به‌صورت امن توسط Stripe مدیریت می‌شود.",
+=======
+      "stripeMethodChoice": "جزئیات پرداخت شما به‌طور امن توسط Stripe مدیریت می‌شود.",
+>>>>>>> Stashed changes
       "stripeUnavailable": "گزینه‌های پرداخت در دسترس نیستند. لطفاً صفحه را تازه‌سازی کرده و دوباره تلاش کنید.",
       "subscribeToPlan": "اشتراک پلن {plan}",
       "switchToPlan": "تغییر به پلن {plan}",
       "switchesToday": "تغییرات امروز",
       "terms": "شرایط",
+<<<<<<< Updated upstream
       "termsAgreement": "با ادامه، با {terms} و {privacy} Comfy Org موافقت می‌کنید و به Comfy Org اجازه می‌دهید تا در هر دوره صورتحساب، تا زمان لغو شما، از روش پرداختتان هزینه کسر کند.",
+=======
+      "termsAgreement": "با ادامه، با {terms} و {privacy} ‏Comfy Org موافقت می‌کنید و به Comfy Org اجازه می‌دهید تا در هر دوره صورتحساب، تا زمان لغو شما، روش پرداختتان را شارژ کند.",
+>>>>>>> Stashed changes
       "totalDueToday": "مبلغ قابل پرداخت امروز",
       "yearlySubscription": "اشتراک سالانه",
       "youllBeCharged": "شما مبلغ زیر را پرداخت خواهید کرد"
@@ -4363,7 +4395,11 @@
     "resubscribeFailed": "فعال‌سازی مجدد اشتراک ناموفق بود",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
     "resubscribeTo": "تمدید اشتراک {plan}",
+<<<<<<< Updated upstream
     "salesManagedRunBlockedDetail": "طرح این workspace دیگر فعال نیست. برای بازیابی دسترسی با مدیر حساب Comfy خود تماس بگیرید.",
+=======
+    "salesManagedRunBlockedDetail": "طرح این workspace دیگر فعال نیست. برای بازیابی دسترسی، با مدیر حساب Comfy خود تماس بگیرید.",
+>>>>>>> Stashed changes
     "salesManagedRunBlockedTitle": "طرح غیرفعال است",
     "saveYearly": "٪۲۰ صرفه‌جویی",
     "saveYearlyUpTo": "تا ۲۰٪ صرفه‌جویی کنید",

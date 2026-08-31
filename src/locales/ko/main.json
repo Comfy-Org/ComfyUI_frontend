@@ -347,6 +347,7 @@
   },
   "billingOperation": {
     "authenticationFailedDetail": "결제 인증을 완료할 수 없습니다. 다시 시도하세요.",
+<<<<<<< Updated upstream
     "authenticationManagerRequired": "결제 인증에는 워크스페이스 청구 관리자의 확인이 필요합니다.",
     "authenticationUnavailable": "보안 결제 인증을 사용할 수 없습니다. 새로고침한 후 다시 시도하세요.",
     "cancelFailed": "구독 취소에 실패했습니다",
@@ -359,6 +360,20 @@
     "reconciliationDetail": "결제는 수신되었지만 워크스페이스 업데이트를 완료할 수 없습니다. 지원팀에 문의하고 다음 작업 ID를 포함하세요:",
     "reconciliationTitle": "결제 수신됨 — 확인 대기 중",
     "retryVerification": "인증 다시 시도",
+=======
+    "authenticationManagerRequired": "결제 인증을 위해 워크스페이스 청구 관리자의 조치가 필요합니다.",
+    "authenticationUnavailable": "보안 결제 인증을 사용할 수 없습니다. 새로 고친 후 다시 시도하세요.",
+    "cancelFailed": "구독 취소에 실패했습니다",
+    "cancelTimeout": "구독 취소가 시간 초과되었습니다",
+    "expiredCardDetail": "이 카드는 만료되었습니다. 다른 결제 수단을 사용하세요.",
+    "incorrectCvcDetail": "카드 보안 코드가 올바르지 않습니다. 확인 후 다시 시도하세요.",
+    "insufficientFundsDetail": "이 결제 수단의 잔액이 부족합니다. 다른 결제 수단을 사용하거나 은행에 문의하세요.",
+    "paymentDeclinedDetail": "은행에서 이 결제를 거절했습니다. 다른 결제 수단을 사용하거나 은행에 문의하세요.",
+    "processingErrorDetail": "결제를 처리할 수 없습니다. 다시 시도하거나 다른 결제 수단을 사용하세요.",
+    "reconciliationDetail": "결제가 수신되었지만 워크스페이스 업데이트를 완료할 수 없습니다. 지원팀에 문의하고 이 작업 ID를 포함하세요:",
+    "reconciliationTitle": "결제 수신됨 — 확인 대기 중",
+    "retryVerification": "인증 재시도",
+>>>>>>> Stashed changes
     "subscriptionActionRequired": "작업 공간 설정을 완료하려면 결제를 인증하세요",
     "subscriptionFailed": "구독 업데이트에 실패했습니다",
     "subscriptionFailedDetail": "구독을 업데이트할 수 없습니다. 다시 시도해 주세요.",
@@ -2422,8 +2437,13 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "버전 {version}의 코어 노드:",
+<<<<<<< Updated upstream
     "newerVersionRequired": "일부 노드에는 더 최신 버전의 ComfyUI가 필요합니다(현재: {version}). 모든 노드를 사용하려면 업데이트하세요.",
     "newerVersionRequiredGeneric": "일부 노드에는 더 최신 버전의 ComfyUI가 필요합니다. 모든 노드를 사용하려면 업데이트하세요.",
+=======
+    "newerVersionRequired": "일부 노드를 사용하려면 더 최신 버전의 ComfyUI가 필요합니다(현재: {version}). 모든 노드를 사용하려면 업데이트하세요.",
+    "newerVersionRequiredGeneric": "일부 노드를 사용하려면 더 최신 버전의 ComfyUI가 필요합니다. 모든 노드를 사용하려면 업데이트하세요.",
+>>>>>>> Stashed changes
     "unknownVersion": "알 수 없음"
   },
   "logsTerminal": {
@@ -4264,7 +4284,11 @@
       "alipay": "Alipay",
       "alipayRenewalNote": "Alipay 승인은 자동 갱신 및 향후 구매에도 사용됩니다.",
       "applyPromoCode": "적용",
+<<<<<<< Updated upstream
       "applyQuoteBeforeContinuing": "계속하기 전에 프로모션 코드를 적용하여 견적을 새로고침하세요.",
+=======
+      "applyQuoteBeforeContinuing": "계속하기 전에 프로모션 코드를 적용하여 견적을 새로 고치세요.",
+>>>>>>> Stashed changes
       "backToAllPlans": "모든 플랜으로 돌아가기",
       "billedEachMonth": "매월 {amount} 결제. 언제든 취소할 수 있습니다.",
       "changePaymentMethod": "변경",
@@ -4283,7 +4307,11 @@
       "creditsYoullGetToday": "오늘 받을 크레딧",
       "currentMonthly": "월간 플랜",
       "discount": {
+<<<<<<< Updated upstream
         "plan": "요금제 할인",
+=======
+        "plan": "플랜 할인",
+>>>>>>> Stashed changes
         "promotion": "프로모션 코드"
       },
       "discountComposition": "할인",
@@ -4302,9 +4330,15 @@
       "promoCodePlaceholder": "프로모션 코드",
       "proratedCharge": "{plan}에 대한 일할 청구",
       "proratedRefund": "{plan}에 대한 일할 환불",
+<<<<<<< Updated upstream
       "quoteRefreshFailed": "견적이 만료되어 새로고침할 수 없습니다. 요금제를 다시 선택하세요.",
       "quoteStale": "견적이 변경되었습니다. 업데이트된 금액을 검토한 후 다시 시도하세요.",
       "quoteUnavailable": "사용 불가",
+=======
+      "quoteRefreshFailed": "견적이 만료되어 새로 고칠 수 없습니다. 플랜을 다시 선택하세요.",
+      "quoteStale": "견적이 변경되었습니다. 업데이트된 금액을 검토한 후 다시 시도하세요.",
+      "quoteUnavailable": "사용할 수 없음",
+>>>>>>> Stashed changes
       "reactivation": {
         "amountChanged": "확인 후 결제 금액이 변경되었습니다 — 다시 확인해 주세요",
         "checkboxLabel": "오늘 {amount}가 결제됨을 이해합니다",
@@ -4328,12 +4362,20 @@
       "startsOn": "{date}에 시작",
       "stayOnUntil": "{date}까지 {plan}을(를) 유지합니다.",
       "stripeMethodChoice": "결제 정보는 Stripe에서 안전하게 처리합니다.",
+<<<<<<< Updated upstream
       "stripeUnavailable": "결제 옵션을 사용할 수 없습니다. 새로고침한 후 다시 시도하세요.",
+=======
+      "stripeUnavailable": "결제 옵션을 사용할 수 없습니다. 새로 고친 후 다시 시도하세요.",
+>>>>>>> Stashed changes
       "subscribeToPlan": "{plan} 구독하기",
       "switchToPlan": "{plan}으로 전환",
       "switchesToday": "오늘 전환",
       "terms": "이용약관",
+<<<<<<< Updated upstream
       "termsAgreement": "계속하면 Comfy Org의 {terms} 및 {privacy}에 동의하고, 취소할 때까지 매 청구 기간마다 Comfy Org가 결제 수단으로 청구하는 것을 승인하게 됩니다.",
+=======
+      "termsAgreement": "계속하면 Comfy Org의 {terms} 및 {privacy}에 동의하고, 취소할 때까지 각 청구 기간마다 Comfy Org가 결제 수단으로 청구하도록 승인하게 됩니다.",
+>>>>>>> Stashed changes
       "totalDueToday": "오늘 결제 금액 합계",
       "yearlySubscription": "연간 구독",
       "youllBeCharged": "결제가 진행됩니다"
@@ -4363,8 +4405,13 @@
     "resubscribeFailed": "구독을 다시 활성화하지 못했습니다",
     "resubscribeSuccess": "구독이 성공적으로 재활성화되었습니다",
     "resubscribeTo": "{plan} 다시 구독하기",
+<<<<<<< Updated upstream
     "salesManagedRunBlockedDetail": "이 워크스페이스의 요금제가 더 이상 활성 상태가 아닙니다. 액세스를 복원하려면 Comfy 계정 관리자에게 문의하세요.",
     "salesManagedRunBlockedTitle": "요금제 비활성화됨",
+=======
+    "salesManagedRunBlockedDetail": "이 워크스페이스의 플랜은 더 이상 활성 상태가 아닙니다. 액세스를 복원하려면 Comfy 계정 관리자에게 문의하세요.",
+    "salesManagedRunBlockedTitle": "플랜 비활성",
+>>>>>>> Stashed changes
     "saveYearly": "20% 절감",
     "saveYearlyUpTo": "최대 20% 절약",
     "soloUseOnly": "개인용 전용",
@@ -4384,7 +4431,11 @@
       "inviteTitle": "팀원 초대",
       "planUpdated": "플랜이 성공적으로 업데이트되었습니다.",
       "promoApplied": "{code} 적용됨.",
+<<<<<<< Updated upstream
       "promoRenews": "{date}에 {amount}(으)로 갱신됩니다",
+=======
+      "promoRenews": "{date}에 {amount}로 갱신됩니다",
+>>>>>>> Stashed changes
       "receiptEmailed": "영수증이 이메일로 발송되었습니다.",
       "sendInvites": "초대장 보내기"
     },
@@ -4443,7 +4494,11 @@
     "title": "구독",
     "titleUnsubscribed": "Comfy Cloud 구독하기",
     "totalCredits": "총 크레딧",
+<<<<<<< Updated upstream
     "unknownTierName": "현재 요금제",
+=======
+    "unknownTierName": "현재 플랜",
+>>>>>>> Stashed changes
     "upgrade": "업그레이드",
     "upgradePlan": "플랜 업그레이드",
     "upgradeTo": "{plan}로 업그레이드",

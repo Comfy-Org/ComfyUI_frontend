@@ -346,17 +346,28 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+<<<<<<< Updated upstream
     "authenticationFailedDetail": "Nous n'avons pas pu terminer la vérification du paiement. Veuillez réessayer.",
     "authenticationManagerRequired": "La vérification du paiement nécessite l'intervention d'un responsable de la facturation de l'espace de travail.",
     "authenticationUnavailable": "L'authentification sécurisée du paiement est indisponible. Veuillez actualiser et réessayer.",
+=======
+    "authenticationFailedDetail": "Nous n’avons pas pu finaliser la vérification du paiement. Veuillez réessayer.",
+    "authenticationManagerRequired": "La vérification du paiement requiert l’intervention d’un responsable de la facturation de l’espace de travail.",
+    "authenticationUnavailable": "L’authentification sécurisée du paiement est indisponible. Actualisez la page et réessayez.",
+>>>>>>> Stashed changes
     "cancelFailed": "Échec de l'annulation de l'abonnement",
     "cancelTimeout": "Délai d'annulation de l'abonnement dépassé",
     "expiredCardDetail": "Cette carte a expiré. Utilisez un autre moyen de paiement.",
     "incorrectCvcDetail": "Le code de sécurité de la carte est incorrect. Vérifiez-le et réessayez.",
     "insufficientFundsDetail": "Ce moyen de paiement ne dispose pas de fonds suffisants. Essayez un autre moyen de paiement ou contactez votre banque.",
     "paymentDeclinedDetail": "Votre banque a refusé ce paiement. Essayez un autre moyen de paiement ou contactez votre banque.",
+<<<<<<< Updated upstream
     "processingErrorDetail": "Votre paiement n'a pas pu être traité. Réessayez ou utilisez un autre moyen de paiement.",
     "reconciliationDetail": "Votre paiement a été reçu, mais nous n'avons pas pu terminer la mise à jour de votre espace de travail. Contactez l'assistance et indiquez cet ID d'opération :",
+=======
+    "processingErrorDetail": "Votre paiement n’a pas pu être traité. Réessayez ou utilisez un autre moyen de paiement.",
+    "reconciliationDetail": "Votre paiement a été reçu, mais nous n’avons pas pu terminer la mise à jour de votre espace de travail. Contactez l’assistance et indiquez cet ID d’opération :",
+>>>>>>> Stashed changes
     "reconciliationTitle": "Paiement reçu — confirmation en attente",
     "retryVerification": "Réessayer la vérification",
     "subscriptionActionRequired": "Vérifiez votre paiement pour finaliser la configuration de votre espace de travail",
@@ -2422,8 +2433,13 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "Nœuds principaux de la version {version} :",
+<<<<<<< Updated upstream
     "newerVersionRequired": "Certains nœuds nécessitent une version plus récente de ComfyUI (actuelle : {version}). Veuillez mettre à jour pour utiliser tous les nœuds.",
     "newerVersionRequiredGeneric": "Certains nœuds nécessitent une version plus récente de ComfyUI. Veuillez mettre à jour pour utiliser tous les nœuds.",
+=======
+    "newerVersionRequired": "Certains nœuds nécessitent une version plus récente de ComfyUI (actuelle : {version}). Veuillez effectuer la mise à jour pour utiliser tous les nœuds.",
+    "newerVersionRequiredGeneric": "Certains nœuds nécessitent une version plus récente de ComfyUI. Veuillez effectuer la mise à jour pour utiliser tous les nœuds.",
+>>>>>>> Stashed changes
     "unknownVersion": "inconnue"
   },
   "logsTerminal": {
@@ -4262,7 +4278,11 @@
       "addNewPaymentMethod": "Ajouter un nouveau moyen de paiement",
       "afterThat": "Après cela",
       "alipay": "Alipay",
+<<<<<<< Updated upstream
       "alipayRenewalNote": "L'autorisation Alipay sera également utilisée pour les renouvellements automatiques et les achats futurs.",
+=======
+      "alipayRenewalNote": "L’autorisation Alipay sera également utilisée pour les renouvellements automatiques et les futurs achats.",
+>>>>>>> Stashed changes
       "applyPromoCode": "Appliquer",
       "applyQuoteBeforeContinuing": "Appliquez le code promotionnel pour actualiser votre devis avant de continuer.",
       "backToAllPlans": "Retour à toutes les offres",
@@ -4294,7 +4314,11 @@
       "hideFeatures": "Masquer les fonctionnalités",
       "newMonthlySubscription": "Nouvel abonnement mensuel",
       "nextPaymentDue": "Prochain paiement dû le {date}. Annulez à tout moment.",
+<<<<<<< Updated upstream
       "payAndSubscribe": "Payer et s'abonner",
+=======
+      "payAndSubscribe": "Payer et s’abonner",
+>>>>>>> Stashed changes
       "paymentMethod": "Moyen de paiement",
       "paymentPopupBlocked": "Impossible d'ouvrir la page de paiement — veuillez autoriser les pop-ups et réessayer.",
       "perMember": "/ membre",
@@ -4302,7 +4326,11 @@
       "promoCodePlaceholder": "Code promotionnel",
       "proratedCharge": "Facturation au prorata pour {plan}",
       "proratedRefund": "Remboursement au prorata pour {plan}",
+<<<<<<< Updated upstream
       "quoteRefreshFailed": "Votre devis a expiré et n'a pas pu être actualisé. Choisissez à nouveau votre forfait.",
+=======
+      "quoteRefreshFailed": "Votre devis a expiré et n’a pas pu être actualisé. Sélectionnez à nouveau votre forfait.",
+>>>>>>> Stashed changes
       "quoteStale": "Votre devis a changé. Vérifiez le montant mis à jour et réessayez.",
       "quoteUnavailable": "Indisponible",
       "reactivation": {
@@ -4328,12 +4356,20 @@
       "startsOn": "Commence le {date}",
       "stayOnUntil": "Vous resterez sur {plan} jusqu'au {date}.",
       "stripeMethodChoice": "Vos informations de paiement sont traitées de manière sécurisée par Stripe.",
+<<<<<<< Updated upstream
       "stripeUnavailable": "Les options de paiement sont indisponibles. Veuillez actualiser et réessayer.",
+=======
+      "stripeUnavailable": "Les options de paiement sont indisponibles. Actualisez la page et réessayez.",
+>>>>>>> Stashed changes
       "subscribeToPlan": "S’abonner au plan {plan}",
       "switchToPlan": "Passer au plan {plan}",
       "switchesToday": "Changements aujourd'hui",
       "terms": "Conditions",
+<<<<<<< Updated upstream
       "termsAgreement": "En continuant, vous acceptez les {terms} et la {privacy} de Comfy Org, et autorisez Comfy Org à débiter votre moyen de paiement à chaque période de facturation jusqu'à votre résiliation.",
+=======
+      "termsAgreement": "En continuant, vous acceptez les {terms} et la {privacy} de Comfy Org, et autorisez Comfy Org à débiter votre moyen de paiement à chaque période de facturation jusqu’à votre résiliation.",
+>>>>>>> Stashed changes
       "totalDueToday": "Total dû aujourd'hui",
       "yearlySubscription": "Abonnement annuel",
       "youllBeCharged": "Vous serez facturé"
@@ -4363,7 +4399,11 @@
     "resubscribeFailed": "Échec de la réactivation de l’abonnement",
     "resubscribeSuccess": "Abonnement réactivé avec succès",
     "resubscribeTo": "Se réabonner à {plan}",
+<<<<<<< Updated upstream
     "salesManagedRunBlockedDetail": "Le forfait de cet espace de travail n'est plus actif. Contactez votre gestionnaire de compte Comfy pour rétablir l'accès.",
+=======
+    "salesManagedRunBlockedDetail": "Le forfait de cet espace de travail n’est plus actif. Contactez votre responsable de compte Comfy pour rétablir l’accès.",
+>>>>>>> Stashed changes
     "salesManagedRunBlockedTitle": "Forfait inactif",
     "saveYearly": "Économisez 20 %",
     "saveYearlyUpTo": "Économisez jusqu’à 20 %",
@@ -4384,7 +4424,11 @@
       "inviteTitle": "Invitez votre équipe",
       "planUpdated": "Votre plan a été mis à jour avec succès.",
       "promoApplied": "{code} appliqué.",
+<<<<<<< Updated upstream
       "promoRenews": "Renouvellement à {amount} le {date}",
+=======
+      "promoRenews": "Renouvelé à {amount} le {date}",
+>>>>>>> Stashed changes
       "receiptEmailed": "Un reçu vous a été envoyé par e-mail.",
       "sendInvites": "Envoyer les invitations"
     },
