@@ -38,10 +38,7 @@ function release(rootId: string, linkId: LinkId): boolean {
   return true
 }
 
-/**
- * Replaces the links `owner` reveals in `rootId` with `linkIds`.
- * @returns `true` when the effective revealed set changed.
- */
+/** @returns `true` when the effective revealed set changed. */
 export function setRevealedLinks(
   rootId: string,
   linkIds: Iterable<LinkId>,
@@ -76,10 +73,7 @@ export function setRevealedLinks(
   return changed
 }
 
-/**
- * Releases every reveal `owner` holds, across all roots.
- * @returns `true` when the effective revealed set changed.
- */
+/** @returns `true` when the effective revealed set changed. */
 export function clearRevealedLinks(owner: OwnerToken): boolean {
   const holdings = ownerHoldings.get(owner)
   if (!holdings) return false
@@ -93,7 +87,7 @@ export function clearRevealedLinks(owner: OwnerToken): boolean {
   return changed
 }
 
-/** Clears all reveal state across roots and owners; test bootstrap only. */
+/** Test bootstrap only. */
 export function resetLinkReveals(): void {
   revealCounts.clear()
   ownerHoldings.clear()
