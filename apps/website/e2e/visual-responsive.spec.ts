@@ -78,7 +78,7 @@ test.describe('Pricing', { tag: '@visual' }, () => {
 
 const FAQ_PAGES = [
   { name: 'pricing', url: '/cloud/pricing' },
-  { name: 'enterprise', url: '/cloud/enterprise' }
+  { name: 'enterprise', url: '/enterprise' }
 ]
 
 for (const { name, url } of FAQ_PAGES) {
@@ -150,7 +150,8 @@ test.describe('Overflow guards', { tag: '@visual' }, () => {
   const pages = [
     '/',
     '/cloud',
-    '/cloud/enterprise',
+    '/enterprise',
+    '/enterprise/managed-builds',
     '/cloud/pricing',
     '/contact',
     '/download',

@@ -25,4 +25,18 @@ test.describe('canonical redirects', () => {
       'rel="canonical" href="https://comfy.org/p/supported-models/t5xxl-fp16/"'
     )
   })
+
+  test('builds the former Enterprise routes with the canonical destination', () => {
+    for (const path of [
+      'dist/cloud/enterprise/index.html',
+      'dist/zh-CN/cloud/enterprise/index.html'
+    ]) {
+      const redirectPage = readFileSync(path, 'utf8')
+
+      expect(redirectPage).toContain('url=/enterprise/')
+      expect(redirectPage).toContain(
+        'rel="canonical" href="https://comfy.org/enterprise/"'
+      )
+    }
+  })
 })
