@@ -175,6 +175,12 @@ describe('mint ports against the real layout store delivery', () => {
 
     expect(minted).toEqual([
       {
+        op: 'disconnect',
+        link_id: toLinkId(41),
+        to_node: toNodeId('2'),
+        to_slot: 0
+      },
+      {
         op: 'delete_node',
         node_id: '2',
         removed_links: [toLinkId(41)]
@@ -228,7 +234,7 @@ describe('mint ports against the real layout store delivery', () => {
     expect(minted).toEqual([])
   })
 
-  it('surfaces a real bare disconnect as divergence after the sweep', async () => {
+  it('delivers a real bare disconnect as a standalone operation', async () => {
     const linkStore = useLinkStore()
     const dangling = linkTopology(43, '9')
     linkStore.registerLink(scope, dangling)
@@ -240,7 +246,15 @@ describe('mint ports against the real layout store delivery', () => {
     linkStore.deleteLink(scope, dangling)
     await realDelivery()
 
-    expect(consoleError).toHaveBeenCalledOnce()
+    expect(minted).toEqual([
+      {
+        op: 'disconnect',
+        link_id: toLinkId(43),
+        to_node: toNodeId('9'),
+        to_slot: 0
+      }
+    ])
+    expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })
 })
