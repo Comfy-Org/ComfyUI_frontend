@@ -687,7 +687,7 @@ describe('useWorkflowStore', () => {
       vi.spyOn(workflow, 'rename').mockImplementation(
         async (renamedPath: string) => {
           workflow.path = renamedPath
-          return workflow
+          return true
         }
       )
 
