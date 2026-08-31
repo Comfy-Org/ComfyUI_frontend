@@ -212,7 +212,10 @@ describe('ReplyAssetGroup', () => {
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'data:image/png;base64,gen')
-    expect(generateModelThumbnail).toHaveBeenCalledWith('https://x/mesh.glb')
+    expect(generateModelThumbnail).toHaveBeenCalledWith(
+      'https://x/mesh.glb',
+      'mesh.glb'
+    )
   })
 
   it('refreshes the tile thumbnail after the viewer closes', async () => {
@@ -275,7 +278,8 @@ describe('ReplyAssetGroup', () => {
     await userEvent.click(toggle()!)
     await waitFor(() =>
       expect(generateModelThumbnail).toHaveBeenCalledWith(
-        'https://x/mesh-12.glb'
+        'https://x/mesh-12.glb',
+        'mesh-12.glb'
       )
     )
   })
