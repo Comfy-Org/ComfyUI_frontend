@@ -623,7 +623,12 @@ export class LGraph
 
   set last_node_id(value) {
     const numeric = Number(value)
-    if (Number.isInteger(numeric) && numeric < MINT_ID_MIN - 1) {
+    if (
+      typeof value === 'number' &&
+      Number.isSafeInteger(numeric) &&
+      numeric >= 0 &&
+      numeric < MINT_ID_MIN
+    ) {
       this.state.lastNodeId = numeric
     } else if (import.meta.env.DEV) {
       console.warn(
@@ -639,7 +644,12 @@ export class LGraph
 
   set last_link_id(value) {
     const numeric = Number(value)
-    if (Number.isInteger(numeric) && numeric < MINT_ID_MIN - 1) {
+    if (
+      typeof value === 'number' &&
+      Number.isSafeInteger(numeric) &&
+      numeric >= 0 &&
+      numeric < MINT_ID_MIN
+    ) {
       this.state.lastLinkId = toLinkId(numeric)
     } else if (import.meta.env.DEV) {
       console.warn(

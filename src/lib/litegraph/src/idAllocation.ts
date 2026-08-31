@@ -34,6 +34,20 @@ const MINT_ID_SPAN = MINT_ID_CEILING - MINT_ID_MIN
 
 const coordinationFreeStates = new WeakSet<LGraphState>()
 
+function defaultRandom(): number {
+  const crypto = globalThis.crypto
+  if (crypto?.getRandomValues) {
+    const words = new Uint32Array(2)
+    crypto.getRandomValues(words)
+    return (words[0] * 2 ** 21 + (words[1] >>> 11)) / 2 ** 53
+  }
+  return Math.random()
+}
+
+function isSequentialCounter(value: number): boolean {
+  return Number.isSafeInteger(value) && value >= 0 && value < MINT_ID_MIN
+}
+
 export function setCoordinationFreeIds(
   state: LGraphState,
   enabled: boolean
@@ -43,9 +57,13 @@ export function setCoordinationFreeIds(
 }
 
 export function mintCoordinationFreeId(
-  random: () => number = Math.random
+  random: () => number = defaultRandom
 ): number {
-  return MINT_ID_MIN + Math.floor(random() * MINT_ID_SPAN)
+  const sample = random()
+  const bounded = Number.isFinite(sample)
+    ? Math.min(Math.max(sample, 0), 1 - Number.EPSILON)
+    : 0
+  return MINT_ID_MIN + Math.floor(bounded * MINT_ID_SPAN)
 }
 
 export function mintNodeId(state: LGraphState): NodeId {
@@ -82,11 +100,7 @@ export function mintRerouteId(state: LGraphState): RerouteId {
 
 export function observeNodeId(state: LGraphState, id: NodeId): void {
   const numericId = Number(id)
-  if (
-    Number.isInteger(numericId) &&
-    numericId < MINT_ID_MIN - 1 &&
-    numericId > state.lastNodeId
-  ) {
+  if (isSequentialCounter(numericId) && numericId > state.lastNodeId) {
     state.lastNodeId = numericId
   }
 }
@@ -96,12 +110,9 @@ export function observeGroupId(state: LGraphState, id: GroupId): void {
 }
 
 export function observeLinkId(state: LGraphState, id: LinkId): void {
-  if (
-    Number.isInteger(Number(id)) &&
-    id < MINT_ID_MIN - 1 &&
-    id > state.lastLinkId
-  )
-    state.lastLinkId = id
+  const numericId = Number(id)
+  if (isSequentialCounter(numericId) && numericId > Number(state.lastLinkId))
+    state.lastLinkId = toLinkId(numericId)
 }
 
 export function observeRerouteId(state: LGraphState, id: RerouteId): void {

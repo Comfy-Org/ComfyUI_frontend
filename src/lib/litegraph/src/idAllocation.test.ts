@@ -20,6 +20,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LinkId } from '@/types/linkId'
 
 describe('idAllocation', () => {
   it('mints increasing ids for each entity kind', () => {
@@ -81,6 +82,10 @@ describe('idAllocation', () => {
     expect(mintCoordinationFreeId(() => 1 - Number.EPSILON)).toBeLessThan(
       MINT_ID_CEILING
     )
+    expect(mintCoordinationFreeId(() => 1)).toBeLessThan(MINT_ID_CEILING)
+    expect(mintCoordinationFreeId(() => Number.POSITIVE_INFINITY)).toBe(
+      MINT_ID_MIN
+    )
   })
 
   it('does not restore minted ids into sequential counters', () => {
@@ -91,6 +96,18 @@ describe('idAllocation', () => {
 
     expect(mintNodeId(state)).toBe('1')
     expect(mintLinkId(state)).toBe(1)
+  })
+
+  it('observes the last legal sequential id and coerces numeric link ids', () => {
+    const state = createLGraphState()
+
+    observeNodeId(state, toNodeId(MINT_ID_MIN - 1))
+    observeLinkId(state, String(MINT_ID_MIN - 1) as unknown as LinkId)
+
+    expect(state.lastNodeId).toBe(MINT_ID_MIN - 1)
+    expect(state.lastLinkId).toBe(MINT_ID_MIN - 1)
+    expect(() => mintNodeId(state)).toThrow(RangeError)
+    expect(() => mintLinkId(state)).toThrow(RangeError)
   })
 
   it('ignores poisoned serialized counters and deprecated setter writes', () => {
@@ -111,6 +128,19 @@ describe('idAllocation', () => {
 
     expect(Number(mintNodeId(graph.state))).toBeLessThan(MINT_ID_MIN)
     expect(Number(mintLinkId(graph.state))).toBeLessThan(MINT_ID_MIN)
+  })
+
+  it('ignores deprecated counter setter coercions and negative writes', () => {
+    const graph = new LGraph()
+    graph.state.lastNodeId = 7
+
+    graph.last_node_id = null as unknown as number
+    graph.last_link_id = [] as unknown as LinkId
+    graph.last_node_id = -1
+    graph.last_link_id = -1 as LinkId
+
+    expect(mintNodeId(graph.state)).toBe('8')
+    expect(mintLinkId(graph.state)).toBe(1)
   })
 
   it('fails before sequential counters enter the coordination-free range', () => {

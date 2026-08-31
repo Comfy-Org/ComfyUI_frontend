@@ -2,9 +2,8 @@ import type { LGraph } from '../LGraph'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
 import {
+  MINT_ID_MIN,
   mintGroupId,
-  mintLinkId,
-  mintNodeId,
   mintRerouteId,
   observeGroupId,
   observeLinkId,
@@ -254,7 +253,7 @@ function remapNodeIds(
 
     if (usedNodeIdKeys.has(key)) {
       const newId = findNextAvailableId(usedNodeIds, () =>
-        Number(mintNodeId(state))
+        mintSequentialNodeId(state)
       )
       remappedIds.set(key, newId)
       node.id = newId
@@ -273,6 +272,23 @@ function remapNodeIds(
   }
 
   return remappedIds
+}
+
+function mintSequentialNodeId(state: LGraphState): number {
+  if (state.lastNodeId + 1 >= MINT_ID_MIN) {
+    throw new Error('Node ID space exhausted')
+  }
+  state.lastNodeId += 1
+  return state.lastNodeId
+}
+
+function mintSequentialLinkId(state: LGraphState): number {
+  const next = Number(state.lastLinkId) + 1
+  if (next >= MINT_ID_MIN) {
+    throw new Error('Node ID space exhausted')
+  }
+  state.lastLinkId = toLinkId(next)
+  return next
 }
 
 /** Parses a serialized node ID as an integer, or `null` when non-numeric. */
@@ -363,7 +379,7 @@ export function deduplicateSubgraphLinkIds(
     const remapped = remapNumericIds(
       [...(subgraph.links ?? []), ...(subgraph.floatingLinks ?? [])],
       usedLinkIds,
-      () => mintLinkId(state),
+      () => mintSequentialLinkId(state),
       (id) => observeLinkId(state, toLinkId(id)),
       'link'
     )

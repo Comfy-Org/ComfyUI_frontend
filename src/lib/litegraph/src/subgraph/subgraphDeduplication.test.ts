@@ -4,6 +4,7 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { describe, expect, it } from 'vitest'
 
+import { setCoordinationFreeIds } from '@/lib/litegraph/src/idAllocation'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
@@ -131,6 +132,17 @@ describe('deduplicateSubgraphNodeIds', () => {
       remappedNodeId
     )
   })
+
+  it('uses compact sequential IDs for duplicate subgraph nodes while the root graph is coordination-armed', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    const state = freshState()
+    setCoordinationFreeIds(state, true)
+
+    const result = deduplicateSubgraphNodeIds([subgraph], new Set([1]), state)
+
+    expect(result.subgraphs[0].nodes?.[0].id).toBe(2)
+    expect(state.lastNodeId).toBe(2)
+  })
 })
 
 describe('deduplicateSubgraphLinkIds', () => {
@@ -172,6 +184,18 @@ describe('deduplicateSubgraphLinkIds', () => {
 
     expect(subgraph.links.map((link) => link.id)).toEqual([toLinkId(1)])
     expect(subgraph.floatingLinks.map((link) => link.id)).toEqual([toLinkId(2)])
+  })
+
+  it('uses compact sequential IDs for duplicate subgraph links while the root graph is coordination-armed', () => {
+    const subgraph = makeSubgraph('sg')
+    subgraph.links = [chainedLink(1)]
+    const state = freshState()
+    setCoordinationFreeIds(state, true)
+
+    deduplicateSubgraphLinkIds([subgraph], new Set([1]), state)
+
+    expect(subgraph.links[0].id).toBe(toLinkId(2))
+    expect(state.lastLinkId).toBe(toLinkId(2))
   })
 })
 
