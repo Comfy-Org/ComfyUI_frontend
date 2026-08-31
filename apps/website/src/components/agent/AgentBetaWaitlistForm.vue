@@ -11,12 +11,16 @@ type FormStatus = 'idle' | 'invalid' | 'pending' | 'error' | 'success'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/** Longer intake form the waitlist email hands off to. */
+const APPLICATION_URL = 'https://form.typeform.com/to/UqL3PpAM'
+
 const email = ref('')
 const decoy = ref('')
 const submittedEmail = ref('')
 const status = ref<FormStatus>('idle')
 const errorMessageId = useId()
 const successRegion = ref<HTMLParagraphElement | null>(null)
+const applicationOpened = ref(false)
 
 const errorMessage = computed(() => {
   if (status.value === 'invalid') return 'Please enter a valid email address.'
@@ -35,6 +39,16 @@ async function showSuccess() {
   successRegion.value?.focus()
 }
 
+// Called straight from the submit handler, before any await: the popup
+// blocker only honours window.open while the click's user activation is
+// still live, and awaiting the capture first spends it. Guarded so a retry
+// after a failed capture does not open a second tab.
+function openApplication() {
+  if (applicationOpened.value) return
+  applicationOpened.value = true
+  window.open(APPLICATION_URL, '_blank', 'noopener,noreferrer')
+}
+
 async function onSubmit() {
   if (status.value === 'pending') return
   if (decoy.value !== '') {
@@ -48,6 +62,7 @@ async function onSubmit() {
   }
   submittedEmail.value = email.value
   status.value = 'pending'
+  openApplication()
   try {
     await joinAgentBetaWaitlist(submittedEmail.value)
     await showSuccess()
@@ -110,6 +125,15 @@ async function onSubmit() {
       class="form-success"
     >
       You're on the waitlist! We'll email {{ submittedEmail }} when it's ready.
+      A few questions just opened in a new tab —
+      <a
+        :href="APPLICATION_URL"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="form-success-link"
+        >open them here</a
+      >
+      if your browser blocked it.
     </p>
   </div>
 </template>
@@ -189,6 +213,16 @@ async function onSubmit() {
 .form-success:focus {
   outline: 2px solid var(--color-primary-comfy-yellow);
   outline-offset: 3px;
+}
+
+.form-success-link {
+  color: var(--color-primary-comfy-yellow);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.form-success-link:hover {
+  opacity: 0.7;
 }
 
 @media (max-width: 560px) {
