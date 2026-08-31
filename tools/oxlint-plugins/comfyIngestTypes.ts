@@ -232,7 +232,7 @@ function driftMessage(name: string, keys: readonly string[]): string {
 
 // Imports and key aliases are only complete once the file has been walked, so
 // declarations are queued and judged on Program:exit rather than in place.
-const noDuplicateIngestType = {
+export const noDuplicateIngestType = {
   create(context: RuleContext) {
     const exportNameByLocalBinding = new Map<string, string>()
     const literalUnionAliases = new Map<string, TypeNode>()
@@ -339,9 +339,4 @@ const noDuplicateIngestType = {
       }
     }
   }
-}
-
-export default {
-  meta: { name: 'comfy' },
-  rules: { 'no-duplicate-ingest-type': noDuplicateIngestType }
 }

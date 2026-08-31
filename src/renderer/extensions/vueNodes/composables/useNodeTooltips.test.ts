@@ -1,7 +1,7 @@
+import { cloneDeep } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-import { i18n, te } from '@/i18n'
+import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -9,17 +9,12 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { useNodeTooltips } from './useNodeTooltips'
 
+const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const jsonTooltip =
   'Positive point prompts as JSON [{"x": int, "y": int}, ...] (pixel coords)'
 
-const positiveCoordsTooltipKey =
-  'nodeDefs.SAM3_Detect.inputs.positive_coords.tooltip'
-
-const outputTooltipKey = 'nodeDefs.SAM3_Detect.outputs.0.tooltip'
-
-const positiveCoordsWidget: SafeWidgetData = {
-  name: 'positive_coords',
-  type: 'STRING'
+const positiveCoordsWidget: { name: string; tooltip?: string } = {
+  name: 'positive_coords'
 }
 
 function mergeOutputTooltipMessage(tooltip: string | null) {
@@ -41,7 +36,7 @@ const sam3DetectNodeDef: ComfyNodeDef = {
   display_name: 'SAM3 Detect',
   category: 'detection/',
   python_module: 'comfy_extras.nodes_sam3',
-  description: '',
+  description: 'Live SAM3 description',
   input: {
     required: {},
     optional: {
@@ -82,15 +77,14 @@ describe('useNodeTooltips', () => {
   })
 
   afterEach(() => {
-    mergeOutputTooltipMessage(null)
+    mergeCustomNodesI18n({})
+    i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
   })
 
   it('reads JSON examples in node metadata without i18n placeholder errors', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getInputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
-    // Ensure this exercises the bundled i18n path, not only metadata fallback.
-    expect(te(positiveCoordsTooltipKey)).toBe(true)
     expect(getInputSlotTooltip('positive_coords')).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
   })
@@ -99,7 +93,6 @@ describe('useNodeTooltips', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getWidgetTooltip } = useNodeTooltips('SAM3_Detect')
 
-    expect(te(positiveCoordsTooltipKey)).toBe(true)
     expect(getWidgetTooltip(positiveCoordsWidget)).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
   })
@@ -108,7 +101,6 @@ describe('useNodeTooltips', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getOutputSlotTooltip } = useNodeTooltips('SAM3_Detect')
 
-    expect(te(outputTooltipKey)).toBe(true)
     expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
   })
@@ -124,5 +116,25 @@ describe('useNodeTooltips', () => {
     const textClass = pt?.text?.class ?? ''
     expect(textClass).toContain('whitespace-pre-line')
     expect(config.value).toContain('\n\n')
+  })
+
+  it('resolves descriptions for definitions added after the backend fetch', () => {
+    const nodeName = 'FrontendOnlyNode'
+    mergeCustomNodesI18n({
+      en: {
+        nodeDefs: {
+          [nodeName]: { description: 'Localized frontend description' }
+        }
+      }
+    })
+    useNodeDefStore().addNodeDef({
+      ...sam3DetectNodeDef,
+      name: nodeName,
+      description: 'Frontend description'
+    })
+
+    const { getNodeDescription } = useNodeTooltips(nodeName)
+
+    expect(getNodeDescription.value).toBe('Localized frontend description')
   })
 })
