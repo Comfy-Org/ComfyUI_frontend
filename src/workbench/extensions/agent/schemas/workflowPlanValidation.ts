@@ -103,6 +103,13 @@ function addSequenceDurationIssues(
         path: ['structure', 'units']
       })
     }
+    if (!hasMissingDuration && sumDurations(durations) > 3_600) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Sequence duration must not exceed 3600 seconds',
+        path: ['structure', 'units']
+      })
+    }
     return
   }
   if (hasMissingDuration) {
@@ -113,14 +120,19 @@ function addSequenceDurationIssues(
     })
     return
   }
-  let totalDuration = 0
-  for (const duration of durations) totalDuration += duration ?? 0
+  const totalDuration = sumDurations(durations)
   if (Math.abs(totalDuration - plan.targetDurationSeconds) < 0.001) return
   context.addIssue({
     code: z.ZodIssueCode.custom,
     message: 'Sequence unit durations must equal the target duration',
     path: ['structure', 'units']
   })
+}
+
+function sumDurations(durations: readonly (number | undefined)[]): number {
+  let totalDuration = 0
+  for (const duration of durations) totalDuration += duration ?? 0
+  return totalDuration
 }
 
 function addPipelineIssues(plan: WorkflowPlan, context: z.RefinementCtx): void {

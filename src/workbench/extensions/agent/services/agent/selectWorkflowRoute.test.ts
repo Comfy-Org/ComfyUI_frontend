@@ -200,6 +200,21 @@ describe('selectWorkflowRoute', () => {
     }
   })
 
+  it('prefers a free route when otherwise-identical routes tie', () => {
+    const free = route('free')
+    const paid = route('paid', { isPaid: true })
+
+    for (const candidates of [
+      [free, paid],
+      [paid, free]
+    ]) {
+      expect(selectWorkflowRoute(plan(), candidates)).toMatchObject({
+        status: 'ready',
+        route: { id: 'free' }
+      })
+    }
+  })
+
   it('uses a locale-independent id tie-breaker', () => {
     const alpha = route('alpha')
     const zulu = route('zulu')
@@ -322,6 +337,54 @@ describe('selectWorkflowRoute', () => {
     expect(selection).toMatchObject({
       status: 'ready',
       route: { id: 'eight-variants' }
+    })
+  })
+
+  it('requires a route to support every explicit batch item duration', () => {
+    const batch = plan({
+      intent: 'text-to-video',
+      outputMediaType: 'video',
+      structure: {
+        kind: 'batch',
+        unitCount: 2,
+        units: [
+          {
+            id: 'short',
+            label: 'Short clip',
+            instruction: 'Create a short variant',
+            durationSeconds: 5
+          },
+          {
+            id: 'long',
+            label: 'Long clip',
+            instruction: 'Create a long variant',
+            durationSeconds: 30
+          }
+        ]
+      }
+    })
+    const selection = selectWorkflowRoute(batch, [
+      route('short-clips', {
+        intents: ['text-to-video'],
+        outputMediaType: 'video',
+        supportedStructures: ['batch'],
+        maxWorkUnits: 2,
+        maxDurationSeconds: 5,
+        qualityScore: 100
+      }),
+      route('long-clips', {
+        intents: ['text-to-video'],
+        outputMediaType: 'video',
+        supportedStructures: ['batch'],
+        maxWorkUnits: 2,
+        maxDurationSeconds: 30,
+        qualityScore: 80
+      })
+    ])
+
+    expect(selection).toMatchObject({
+      status: 'ready',
+      route: { id: 'long-clips' }
     })
   })
 

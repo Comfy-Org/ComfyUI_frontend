@@ -187,6 +187,30 @@ describe('workflowPlanSchema', () => {
     )
   })
 
+  it('rejects an implicit sequence duration above the plan limit', () => {
+    const result = zWorkflowPlan.safeParse({
+      ...basePlan(),
+      structure: {
+        kind: 'sequence',
+        units: Array.from({ length: 7 }, (_, index) => ({
+          id: `shot-${index}`,
+          label: `Shot ${index}`,
+          instruction: `Long story beat ${index}`,
+          durationSeconds: 600
+        })),
+        continuityConstraints: ['Keep the subject consistent']
+      }
+    })
+
+    expect(result.success).toBe(false)
+    if (result.success) throw new Error('expected plan validation to fail')
+    expect(result.error.issues).toContainEqual(
+      expect.objectContaining({
+        message: 'Sequence duration must not exceed 3600 seconds'
+      })
+    )
+  })
+
   it('accepts a multi-stage screenplay pipeline', () => {
     const plan = {
       ...basePlan(),

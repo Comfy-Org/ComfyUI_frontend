@@ -132,7 +132,15 @@ function requiredWorkUnits(plan: WorkflowPlan): number {
 function requestedDurationSeconds(plan: WorkflowPlan): number | undefined {
   if (plan.targetDurationSeconds !== undefined)
     return plan.targetDurationSeconds
-  if (plan.structure.kind !== 'sequence') return undefined
+  if (plan.structure.kind === 'batch') {
+    const durations = plan.structure.units?.flatMap((unit) =>
+      unit.durationSeconds === undefined ? [] : [unit.durationSeconds]
+    )
+    return durations === undefined || durations.length === 0
+      ? undefined
+      : Math.max(...durations)
+  }
+  if (plan.structure.kind === 'single') return undefined
   const durations = plan.structure.units.map((unit) => unit.durationSeconds)
   if (durations.some((duration) => duration === undefined)) return undefined
   let totalDuration = 0
@@ -157,6 +165,8 @@ function compareRoutes(
     return -1
   if (right.executionMode === 'local' && left.executionMode !== 'local')
     return 1
+  if (!left.isPaid && right.isPaid) return -1
+  if (!right.isPaid && left.isPaid) return 1
   if (left.id === right.id) return 0
   return left.id < right.id ? -1 : 1
 }
