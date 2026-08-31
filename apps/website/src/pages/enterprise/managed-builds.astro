@@ -9,8 +9,8 @@ import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
 import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { faqAnswerPlainText } from '../../utils/faqAnswer'
-import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
+import { absoluteUrl, pageContext } from '../../utils/jsonLd'
+import { buildFaqPageNode } from './_faqMetadata'
 
 const faqs = [
   {
@@ -110,13 +110,7 @@ const { url } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
-const faqPage = faqPageNode(
-  url,
-  faqs.map((faq) => ({
-    question: faq.question,
-    answer: faqAnswerPlainText(faq.answer),
-  })),
-)
+const faqPage = buildFaqPageNode(url, faqs)
 ---
 
 <BaseLayout

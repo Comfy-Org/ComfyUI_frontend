@@ -471,20 +471,20 @@ const translations = {
   // Enterprise – TeamSection
   'enterprise.team.heading': {
     en: 'A team plan built\naround shared usage.',
-    'zh-CN': '团队工作区\n与共享资产。'
+    'zh-CN': '围绕共享用量打造的\n团队方案。'
   },
   'enterprise.team.subtitle': {
     en: 'Pool credits across the team, centralize billing, and give people the right way to use Comfy for their role.',
     'zh-CN':
-      '在共享工作区中组织工作流、模型和输出。控制谁构建、谁运行、谁部署。'
+      '为团队共享点数池，统一结算，并根据每个人的角色提供合适的 Comfy 使用方式。'
   },
   'enterprise.team.feature1.title': {
     en: 'Shared credit pool',
-    'zh-CN': '基于角色的访问控制'
+    'zh-CN': '共享点数池'
   },
   'enterprise.team.feature1.description': {
     en: 'Give the team one shared balance for Cloud GPU time and partner model usage.',
-    'zh-CN': '控制谁构建、谁运行、谁部署。'
+    'zh-CN': '为团队提供一个共享余额，用于 Cloud GPU 时长和合作伙伴模型用量。'
   },
   'enterprise.team.feature2.title': {
     en: 'Single Sign-On',
@@ -492,7 +492,7 @@ const translations = {
   },
   'enterprise.team.feature2.description': {
     en: 'Enable secure, centralized user authentication across your organization with SSO.',
-    'zh-CN': '为您的组织启用集中式安全用户认证，支持 SSO 和 SCIM 配置。'
+    'zh-CN': '通过 SSO 为组织启用安全、集中的用户身份验证。'
   },
   'enterprise.team.feature2.cta': {
     en: 'SEE CLOUD FEATURES',
@@ -504,7 +504,7 @@ const translations = {
   },
   'enterprise.team.feature3.description': {
     en: 'Let non-technical teammates run approved experiences without touching the node graph.',
-    'zh-CN': '非技术团队成员无需接触节点图即可运行工作流。'
+    'zh-CN': '让非技术团队成员无需接触节点图即可运行获批的体验。'
   },
 
   // Enterprise – ReasonSection
@@ -562,16 +562,16 @@ const translations = {
   // Enterprise – HeroSection
   'enterprise.hero.heading': {
     en: 'Govern ComfyUI across every team and runtime.',
-    'zh-CN': '你的团队已经在使用 ComfyUI。放心地扩展它。'
+    'zh-CN': '在每个团队和运行环境中治理 ComfyUI。'
   },
   'enterprise.hero.subtitle': {
     en: 'Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, team plans, commercial licensing, and hands-on implementation support.',
     'zh-CN':
-      'Comfy 企业版为你的组织已有的工作流添加托管基础设施、团队控制和专属支持。'
+      '通过 ComfyUI Managed Builds、团队方案、商业许可和实施支持，统一团队构建、运行和部署视觉 AI 的方式。'
   },
   'enterprise.hero.contactSales': {
     en: 'REQUEST DEMO',
-    'zh-CN': '联系销售'
+    'zh-CN': '申请演示'
   },
 
   // Enterprise – DataOwnershipSection
@@ -590,18 +590,18 @@ const translations = {
   'enterprise.ownership.subtitle': {
     en: 'Keep Comfy Workflows on your machines with Managed Builds, use your own provider contracts and keys, and choose the runtime that fits each workload.',
     'zh-CN':
-      '你的工作流、模型和生成输出始终保留在你的组织环境中。基于角色的访问控制和数据隔离，为最严格要求的组织而构建。'
+      '通过 Managed Builds 将 Comfy Workflows 保留在你的机器上，使用自有的服务商合约和密钥，并为每项工作负载选择合适的运行环境。'
   },
 
   // Enterprise – BYOKeySection
   'enterprise.byoKey.heading': {
     en: 'Bring your own keys. Govern the models.',
-    'zh-CN': '自带 API 密钥'
+    'zh-CN': '自带密钥。治理模型。'
   },
   'enterprise.byoKey.subtitle': {
     en: 'Use your existing provider contracts and decide which partner and private models are available to each team.',
     'zh-CN':
-      '使用你与第三方模型提供商的合约。Comfy 编排管线。你决定运行哪些模型、使用谁的 API 密钥。'
+      '使用现有的服务商合约，并决定每个团队可以使用哪些合作伙伴模型和私有模型。'
   },
   'enterprise.byoKey.card1.title': {
     en: 'API key management',
@@ -609,15 +609,15 @@ const translations = {
   },
   'enterprise.byoKey.card1.description': {
     en: 'Use supported provider keys with the contracts and pricing your organization already has.',
-    'zh-CN': '从任何模型提供商导入你自己的 API 密钥。使用你现有的合约和定价。'
+    'zh-CN': '使用受支持的服务商密钥，以及你的组织已有的合约和定价。'
   },
   'enterprise.byoKey.card2.title': {
     en: 'Model governance',
-    'zh-CN': '实时进度'
+    'zh-CN': '模型治理'
   },
   'enterprise.byoKey.card2.description': {
     en: 'Choose which partner models, open models, and private assets are approved for each environment.',
-    'zh-CN': '通过 WebSocket 逐步更新执行状态。'
+    'zh-CN': '选择每个环境获准使用的合作伙伴模型、开放模型和私有资产。'
   },
 
   // Enterprise – OrchestrationSection
@@ -653,7 +653,7 @@ const translations = {
   'enterprise.minimaxBand.text': {
     en: 'Comfy is an official reseller of MiniMax commercial-use licenses. Add local commercial rights, with LoRA training included, to your Enterprise plan.',
     'zh-CN':
-      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。在你的企业版计划之上增加完整的本地商业使用权利，并包含 LoRA 训练。'
+      'Comfy 是 MiniMax 商业使用许可的官方经销商。可将本地商业使用权添加到企业方案中，其中包括 LoRA 训练。'
   },
   'enterprise.minimaxBand.cta': { en: 'Get your license', 'zh-CN': '获取许可' },
 
@@ -3477,7 +3477,7 @@ const translations = {
   // SiteFooter
   'footer.tagline': {
     en: 'The open standard for visual AI.',
-    'zh-CN': '最强大的视觉 AI 工作流引擎。'
+    'zh-CN': '视觉 AI 的开放标准。'
   },
   'footer.products': { en: 'Products', 'zh-CN': '产品' },
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
