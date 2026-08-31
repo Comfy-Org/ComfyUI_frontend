@@ -24,6 +24,11 @@ describe('localizeHref', () => {
       '/enterprise/managed-builds'
     )
   })
+
+  it('only localizes the Japanese homepage', () => {
+    expect(localizeHref('/', 'ja')).toBe('/ja/')
+    expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
+  })
 })
 
 describe('getRoutes models', () => {

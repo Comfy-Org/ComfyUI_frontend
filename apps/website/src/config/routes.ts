@@ -79,6 +79,7 @@ const LOCALE_INVARIANT_PATHS = new Set<string>(
 export function localizeHref(href: string, locale: Locale = 'en'): string {
   if (locale === 'en' || !href.startsWith('/')) return href
   if (LOCALE_INVARIANT_PATHS.has(href)) return href
+  if (locale === 'ja') return href === '/' ? '/ja/' : href
   return `/${locale}${href}`
 }
 
