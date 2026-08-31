@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks } from '../../config/routes'
+import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import DeveloperPlatformSection from './DeveloperPlatformSection.vue'
 
@@ -21,8 +21,12 @@ describe('DeveloperPlatformSection', () => {
     const hrefOf = (name: string) =>
       screen.getByRole('link', { name }).getAttribute('href')
     expect(hrefOf(t('platform.hero.getStarted', 'en'))).toBe(
-      externalLinks.platform
+      getRoutes('en').platform
     )
+    const getStartedLink = screen.getByRole('link', {
+      name: t('platform.hero.getStarted', 'en')
+    })
+    expect(getStartedLink.getAttribute('target')).toBeNull()
     expect(hrefOf(t('platform.hero.readDocs', 'en'))).toBe(
       externalLinks.docsPlatform
     )
@@ -37,9 +41,11 @@ describe('DeveloperPlatformSection', () => {
       })
     ).toBeTruthy()
     expect(
-      screen.getByRole('link', {
-        name: t('platform.hero.getStarted', 'zh-CN')
-      })
-    ).toBeTruthy()
+      screen
+        .getByRole('link', {
+          name: t('platform.hero.getStarted', 'zh-CN')
+        })
+        .getAttribute('href')
+    ).toBe(getRoutes('zh-CN').platform)
   })
 })

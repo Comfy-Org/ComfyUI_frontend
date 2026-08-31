@@ -7578,8 +7578,8 @@ const translations = {
     'zh-CN': '支持 ComfyUI 生态中数以千计的开源模型、自定义节点和合作伙伴模型。'
   },
   'platform.products.serverless.title': {
-    en: 'Serverless API',
-    'zh-CN': 'Serverless API'
+    en: 'Serverless',
+    'zh-CN': 'Serverless'
   },
   'platform.products.serverless.description': {
     en: 'Deploy and scale your Comfy workflows with serverless. Bring custom nodes and custom environments, then scale from zero to millions of generations.',

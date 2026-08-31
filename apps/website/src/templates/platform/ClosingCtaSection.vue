@@ -26,7 +26,7 @@ const {
 
 const ctas = platformCtas(locale)
 const primaryCta = primaryHref
-  ? { ...ctas.getStarted, href: primaryHref }
+  ? { label: ctas.getStarted.label, href: primaryHref }
   : ctas.getStarted
 const isMounted = ref(false)
 const TerminalAsciiShader = defineAsyncComponent(
