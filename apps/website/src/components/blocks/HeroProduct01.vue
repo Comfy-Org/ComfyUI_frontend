@@ -42,7 +42,7 @@ const {
   <section
     :class="
       cn(
-        'max-w-9xl relative mx-auto flex flex-col items-center gap-12 px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:flex-row lg:gap-8 lg:px-16',
+        'max-w-9xl relative mx-auto flex flex-col items-center gap-12 overflow-x-clip px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:flex-row lg:gap-8 lg:px-16',
         className
       )
     "

@@ -53,7 +53,7 @@ const meta: Meta<typeof OfferGrid01> = {
         title: 'Team plans',
         description:
           'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
-        cta: { label: 'VIEW TEAM PRICING', href: '/pricing' }
+        cta: { label: 'SUBSCRIBE NOW', href: '/pricing' }
       },
       {
         id: 'commercial-licensing',

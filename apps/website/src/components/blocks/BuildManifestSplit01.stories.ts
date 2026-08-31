@@ -6,6 +6,11 @@ const meta: Meta<typeof BuildManifestSplit01> = {
   title: 'Website/Blocks/BuildManifestSplit01',
   component: BuildManifestSplit01,
   tags: ['autodocs', 'stable'],
+  decorators: [
+    () => ({
+      template: '<div class="min-h-screen bg-primary-comfy-ink"><story /></div>'
+    })
+  ],
   parameters: {
     layout: 'fullscreen',
     viewport: {

@@ -129,9 +129,8 @@ const faqPage = buildFaqPageNode(url, faqs)
   <HeroProduct01
     headingTag="h1"
     title="MANAGED BUILDS"
-    tag="BETA"
-    body="Govern the models, custom nodes, and dependencies your team runs. Create a managed distribution of ComfyUI and deploy the same build anywhere, local or serverless cloud."
-    primaryCta={{ label: 'CONTACT SALES', href: '/contact/' }}
+    body="Govern the models, custom nodes, and dependencies your team runs. Create a managed distribution of ComfyUI and deploy the same build on local infrastructure or through the Developer Platform."
+    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
   >
     <DistributionsScene slot="media" client:load />
   </HeroProduct01>
@@ -148,12 +147,11 @@ const faqPage = buildFaqPageNode(url, faqs)
     eyebrow="MANAGED BUILDS"
     panelTitle="Define your build"
     releasesLabel="COMFYUI RELEASE"
-    releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
+    releases={['v0.34.2', 'v0.34.0', 'v0.33.1']}
     environmentsLabel="PYTHON · PYTORCH · CUDA"
     environments={[
-      { id: 'env-1', python: '3.12', torch: '2.6', cuda: '12.8' },
-      { id: 'env-2', python: '3.12', torch: '2.5', cuda: '12.4' },
-      { id: 'env-3', python: '3.11', torch: '2.5', cuda: '12.4' },
+      { id: 'env-1', python: '3.12', torch: '2.12.1', cuda: '13.0' },
+      { id: 'env-2', python: '3.11', torch: '2.8.0', cuda: '12.8' },
     ]}
     nodesLabel="CUSTOM NODES"
     nodes={[
@@ -176,7 +174,11 @@ const faqPage = buildFaqPageNode(url, faqs)
       { id: 'ltx', label: 'LTX-2.5' },
       { id: 'brand-lora', label: 'brand-lora (private)', selected: true },
     ]}
-    cta={{ label: 'START BUILDING', href: '/contact/' }}
+    cta={{
+      label: 'BUILD',
+      href: externalLinks.platform,
+      target: '_blank',
+    }}
   />
 
   <FeatureGrid02

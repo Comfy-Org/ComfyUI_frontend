@@ -19,14 +19,14 @@ test.describe('Enterprise pages @smoke', () => {
       page.getByRole('link', { name: 'VIEW MANAGED BUILDS' }).first()
     ).toHaveAttribute('href', '/enterprise/managed-builds/')
     await expect(page.getByText('LEAD OFFER')).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'SUBSCRIBE NOW' })).toHaveCount(
+      2
+    )
     await expect(
-      page.getByRole('link', { name: 'VIEW TEAM PRICING' })
-    ).toHaveCount(2)
-    await expect(
-      page.getByRole('link', { name: 'VIEW TEAM PRICING' }).first()
+      page.getByRole('link', { name: 'SUBSCRIBE NOW' }).first()
     ).toHaveAttribute('href', '/pricing')
     await expect(
-      page.getByRole('link', { name: 'VIEW TEAM PRICING' }).last()
+      page.getByRole('link', { name: 'SUBSCRIBE NOW' }).last()
     ).toHaveAttribute('href', '/pricing')
     await expect(
       page.getByRole('heading', {
@@ -54,15 +54,27 @@ test.describe('Enterprise pages @smoke', () => {
       'MANAGED BUILDS'
     )
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
+    await expect(page.getByText('BETA', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'CONTACT SALES' })).toHaveCount(
+      0
+    )
     await expect(
       page.getByRole('heading', {
         level: 2,
         name: /One approved ComfyUI environment, everywhere your team runs it\./
       })
     ).toBeVisible()
+    for (const group of [
+      'COMFYUI RELEASE',
+      'PYTHON · PYTORCH · CUDA',
+      'CUSTOM NODES',
+      'MODELS'
+    ]) {
+      await expect(page.getByRole('group', { name: group })).toBeVisible()
+    }
     await expect(
-      page.getByRole('link', { name: 'START BUILDING' })
-    ).toHaveAttribute('href', '/contact/')
+      page.getByRole('link', { name: 'BUILD', exact: true })
+    ).toHaveAttribute('href', 'https://platform.comfy.org')
     await expect(
       page.getByRole('link', { name: 'REQUEST DEMO' }).first()
     ).toHaveAttribute('href', '/contact/')

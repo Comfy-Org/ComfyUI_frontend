@@ -75,6 +75,14 @@ const config: StorybookConfig = {
       resolve: {
         alias: [
           {
+            find: '@comfyorg/website',
+            replacement: process.cwd() + '/apps/website'
+          },
+          {
+            find: /^\/animations\//,
+            replacement: process.cwd() + '/apps/website/public/animations/'
+          },
+          {
             find: /^\/icons\//,
             replacement: process.cwd() + '/apps/website/public/icons/'
           },

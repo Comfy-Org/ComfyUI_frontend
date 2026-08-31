@@ -12,11 +12,11 @@ const baseProps = {
   eyebrow: 'MANAGED BUILDS',
   panelTitle: 'Define your build',
   releasesLabel: 'COMFYUI RELEASE',
-  releases: ['v0.3.41', 'v0.3.40'],
+  releases: ['v0.34.2', 'v0.34.0'],
   environmentsLabel: 'PYTHON · PYTORCH · CUDA',
   environments: [
-    { id: 'env-1', python: '3.12', torch: '2.6', cuda: '12.8' },
-    { id: 'env-2', python: '3.11', torch: '2.5', cuda: '12.4' }
+    { id: 'env-1', python: '3.12', torch: '2.12.1', cuda: '13.0' },
+    { id: 'env-2', python: '3.11', torch: '2.8.0', cuda: '12.8' }
   ],
   nodesLabel: 'CUSTOM NODES',
   nodes: [
@@ -28,7 +28,11 @@ const baseProps = {
     { id: 'flux', label: 'FLUX 3', selected: true },
     { id: 'wan', label: 'Wan 3.0' }
   ],
-  cta: { label: 'START BUILDING', href: '/contact/' }
+  cta: {
+    label: 'BUILD',
+    href: 'https://platform.comfy.org',
+    target: '_blank'
+  }
 } as const
 
 const summaryText = () =>
@@ -45,14 +49,16 @@ describe('BuildConfiguratorSplit01', () => {
       })
     ).toBeTruthy()
     expect(screen.getByText('Private custom nodes and models')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'START BUILDING' })).toBeTruthy()
+    const buildCta = screen.getByRole('link', { name: 'BUILD' })
+    expect(buildCta.getAttribute('href')).toBe('https://platform.comfy.org')
+    expect(buildCta.getAttribute('target')).toBe('_blank')
 
     expect(summaryText()).toBe(
-      'v0.3.41 · py3.12 · torch 2.6 1 nodes · 1 models · pinned'
+      'v0.34.2 · py3.12 · torch 2.12.1 1 nodes · 1 models · pinned'
     )
     expect(
       screen
-        .getByRole('button', { name: 'v0.3.41' })
+        .getByRole('button', { name: 'v0.34.2' })
         .getAttribute('aria-pressed')
     ).toBe('true')
     expect(
@@ -70,20 +76,20 @@ describe('BuildConfiguratorSplit01', () => {
   it('selects a single release and environment and re-derives the summary', async () => {
     render(BuildConfiguratorSplit01, { props: baseProps })
 
-    await userEvent.click(screen.getByRole('button', { name: 'v0.3.40' }))
+    await userEvent.click(screen.getByRole('button', { name: 'v0.34.0' }))
     await userEvent.click(
-      screen.getByRole('button', { name: '3.11 · 2.5 · 12.4' })
+      screen.getByRole('button', { name: '3.11 · 2.8.0 · 12.8' })
     )
 
-    expect(summaryText()).toContain('v0.3.40 · py3.11 · torch 2.5')
+    expect(summaryText()).toContain('v0.34.0 · py3.11 · torch 2.8.0')
     expect(
       screen
-        .getByRole('button', { name: 'v0.3.41' })
+        .getByRole('button', { name: 'v0.34.2' })
         .getAttribute('aria-pressed')
     ).toBe('false')
     expect(
       screen
-        .getByRole('button', { name: 'v0.3.40' })
+        .getByRole('button', { name: 'v0.34.0' })
         .getAttribute('aria-pressed')
     ).toBe('true')
   })
