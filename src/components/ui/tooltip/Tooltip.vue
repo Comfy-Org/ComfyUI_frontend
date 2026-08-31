@@ -49,6 +49,10 @@ const isDisabled = computed(
 )
 const lacksHoverInput =
   window.matchMedia('(hover: none)').matches || navigator.maxTouchPoints > 0
+const inputState = computed(
+  () =>
+    `${navigator.maxTouchPoints}:${lacksHoverInput}:${keyboardInteraction.value}:${automaticTooltipSuppressed.value}`
+)
 const open = ref(rootProps.open ?? rootProps.defaultOpen ?? false)
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -115,6 +119,7 @@ onBeforeUnmount(() => {
         :side-offset
         :class="contentClass ?? normalizedConfig?.contentClass"
         :aria-label="suppressDescription ? ' ' : undefined"
+        :data-tooltip-input-state="inputState"
       >
         <slot name="content">{{ text }}</slot>
       </TooltipContent>
