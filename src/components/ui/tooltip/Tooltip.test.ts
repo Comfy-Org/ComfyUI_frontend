@@ -99,14 +99,10 @@ describe('Tooltip', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderTooltip()
     const trigger = screen.getByRole('button')
-    const outside = document.createElement('button')
-    document.body.append(outside)
 
-    await user.pointer({ keys: '[MouseLeft>]', target: outside })
-    await fireEvent.focus(trigger)
+    await user.click(trigger)
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    outside.remove()
   })
 
   it('opens when mouse hover follows a pointer interaction', async () => {
@@ -159,11 +155,10 @@ describe('Tooltip', () => {
   it('only opens automatically from the keyboard without a hover input', async () => {
     vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    vi.spyOn(navigator, 'maxTouchPoints', 'get').mockReturnValue(1)
     vi.spyOn(window, 'matchMedia').mockImplementation(
       (query) =>
         ({
-          matches: false,
+          matches: query === '(hover: none)',
           media: query,
           onchange: null,
           addListener: vi.fn(),
