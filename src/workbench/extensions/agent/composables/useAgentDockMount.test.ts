@@ -5,6 +5,18 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { useAgentDockMount } from './useAgentDockMount'
 
+const distributionMock = vi.hoisted(() => ({ available: false }))
+
+vi.mock('../config/agentDistribution', () => ({
+  getAgentUiComponentsForDistribution: () =>
+    distributionMock.available
+      ? {
+          CompactAgentComposer: {},
+          AgentOnboardingGuide: {},
+          DockedAgentPanel: {}
+        }
+      : null
+}))
 vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
@@ -30,11 +42,10 @@ describe('useAgentDockMount', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    distributionMock.available = false
   })
 
   it('returns an inert mount on non-cloud distributions', () => {
-    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
-
     const { docked, DockedAgentPanel } = useAgentDockMount()
 
     expect(docked.value).toBe(false)
@@ -42,7 +53,7 @@ describe('useAgentDockMount', () => {
   })
 
   it('docks only once the gate enables and the panel opens on cloud', async () => {
-    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    distributionMock.available = true
     const store = useAgentPanelStore()
 
     const { docked, DockedAgentPanel } = useAgentDockMount()

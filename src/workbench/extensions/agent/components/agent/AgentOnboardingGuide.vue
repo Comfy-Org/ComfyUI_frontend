@@ -67,8 +67,12 @@ function onDrop(event: DragEvent): void {
 }
 
 function buildWithAgent(): void {
+  const previousDraft = composerStore.draft
   composerStore.draft = t('agent.onboarding.samplePrompt')
-  composerStore.requestSubmission()
+  if (!composerStore.requestSubmission()) {
+    composerStore.draft = previousDraft
+    return
+  }
   panelStore.open('compact_composer')
   open.value = false
 }

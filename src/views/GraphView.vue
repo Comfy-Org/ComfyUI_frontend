@@ -23,12 +23,12 @@
   <component
     :is="CompactAgentComposer"
     v-if="agentCanvasEntryEnabled && !isBuilderMode"
-    @learn="agentOnboardingGuideRef?.open()"
+    @learn="openOnboardingGuide"
   />
   <component
     :is="AgentOnboardingGuide"
     v-if="agentCanvasEntryEnabled && !isBuilderMode"
-    ref="agentOnboardingGuideRef"
+    :ref="setOnboardingGuideRef"
   />
 
   <GlobalToast />
@@ -120,14 +120,12 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
 
-interface AgentOnboardingGuideHandle {
-  open(): void
-}
-
 const {
   enabled: agentCanvasEntryEnabled,
   CompactAgentComposer,
-  AgentOnboardingGuide
+  AgentOnboardingGuide,
+  setOnboardingGuideRef,
+  openOnboardingGuide
 } = useAgentCanvasEntryMount()
 
 const settingStore = useSettingStore()
@@ -137,7 +135,6 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-const agentOnboardingGuideRef = ref<AgentOnboardingGuideHandle>()
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())

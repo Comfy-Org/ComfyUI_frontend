@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -17,7 +18,7 @@ vi.mock('@/platform/telemetry', () => ({
 describe('CompactAgentComposer', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     useAgentPanelStore().enabled = true
   })
 

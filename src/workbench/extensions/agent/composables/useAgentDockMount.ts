@@ -1,7 +1,9 @@
 import type { Component, ComputedRef } from 'vue'
-import { computed, defineAsyncComponent } from 'vue'
+import { computed } from 'vue'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
+import { getAgentUiComponentsForDistribution } from '../config/agentDistribution'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
@@ -14,15 +16,13 @@ interface AgentDockMount {
  * Development keeps the mount available for local Agent UI testing.
  */
 export function useAgentDockMount(): AgentDockMount {
-  if (__DISTRIBUTION__ !== 'cloud' && import.meta.env.MODE !== 'development') {
+  const components = getAgentUiComponentsForDistribution()
+  if (components === null) {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
   const agentPanelStore = useAgentPanelStore()
   return {
     docked: computed(() => agentPanelStore.enabled && agentPanelStore.isOpen),
-    DockedAgentPanel: defineAsyncComponent(
-      () =>
-        import('@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue')
-    )
+    DockedAgentPanel: components.DockedAgentPanel
   }
 }

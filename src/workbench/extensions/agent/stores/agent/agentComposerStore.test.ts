@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -7,7 +8,7 @@ import { useAgentComposerStore } from './agentComposerStore'
 
 describe('agentComposerStore submission bridge', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('snapshots and consumes one submission', () => {
