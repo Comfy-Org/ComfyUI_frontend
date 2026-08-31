@@ -151,7 +151,7 @@
   },
   "src/platform/assets/services/assetService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 20
+      "count": 18
     }
   },
   "src/platform/auth/session/useSessionCookie.ts": {
@@ -209,11 +209,6 @@
       "count": 2
     }
   },
-  "src/platform/workflow/management/stores/comfyWorkflow.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/platform/workflow/sharing/composables/useComfyHubProfileGate.ts": {
     "comfy/no-new-error-throw": {
       "count": 3
@@ -246,7 +241,7 @@
   },
   "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/platform/workspace/composables/useWorkspaceBilling.ts": {
@@ -415,11 +410,6 @@
     }
   },
   "src/stores/subgraphStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
-    }
-  },
-  "src/stores/userFileStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 3
     }
