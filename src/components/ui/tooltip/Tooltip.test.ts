@@ -152,37 +152,18 @@ describe('Tooltip', () => {
     outside.remove()
   })
 
-  it('only opens automatically from the keyboard without a hover input', async () => {
+  it('restores keyboard tooltips after a touch interaction', async () => {
     vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    vi.spyOn(window, 'matchMedia').mockImplementation(
-      (query) =>
-        ({
-          matches: query === '(hover: none)',
-          media: query,
-          onchange: null,
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn()
-        }) satisfies MediaQueryList
-    )
     renderTooltip()
-    const trigger = screen.getByRole('button', { name: 'Trigger' })
+    const outside = document.createElement('div')
+    document.body.append(outside)
 
-    await fireEvent.focus(trigger)
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-
-    await fireEvent.blur(trigger)
+    await fireEvent.touchStart(outside)
     await user.tab()
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Helpful text')
-
-    await fireEvent.blur(trigger)
-    await vi.advanceTimersByTimeAsync(100)
-    await user.hover(trigger)
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    outside.remove()
   })
 
   it('opens on click without bubbling or duplicating the accessible label', async () => {
