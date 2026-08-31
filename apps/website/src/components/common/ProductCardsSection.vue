@@ -71,6 +71,8 @@ const cards = excludeProduct
 
     <!-- Cards -->
     <div
+      role="group"
+      :aria-label="t('products.labelProducts', locale)"
       :class="
         cn(
           'bg-transparency-white-t4 rounded-5xl mt-16 grid grid-cols-1 gap-4 p-4 lg:p-2',

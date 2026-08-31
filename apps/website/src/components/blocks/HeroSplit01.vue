@@ -35,6 +35,7 @@ const {
   titleHighlight,
   subtitle,
   subtitleClass,
+  mediaWrapperClass,
   features = [],
   primaryCta,
   secondaryCta,
@@ -68,6 +69,7 @@ const {
   titleHighlight?: string
   subtitle?: string
   subtitleClass?: HTMLAttributes['class']
+  mediaWrapperClass?: HTMLAttributes['class']
   features?: string[]
   primaryCta: Cta
   secondaryCta?: Cta
@@ -158,6 +160,8 @@ const {
         </li>
       </ul>
 
+      <slot name="aboveCtas" />
+
       <div
         :class="cn('mt-10 flex flex-col gap-4 sm:flex-row', ctaWrapperClass)"
       >
@@ -184,7 +188,11 @@ const {
       <slot name="belowCtas" />
     </div>
 
-    <div class="order-first w-full lg:order-last lg:flex-1">
+    <div
+      :class="
+        cn('order-first w-full lg:order-last lg:flex-1', mediaWrapperClass)
+      "
+    >
       <slot name="media">
         <VideoPlayer
           v-if="videoSrc"

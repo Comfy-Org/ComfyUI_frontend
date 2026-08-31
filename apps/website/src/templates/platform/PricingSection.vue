@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Coins as CreditsIcon } from '@lucide/vue'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -50,6 +52,17 @@ const storageRates = [
     credits: '27.43/GB/mo'
   }
 ] as const
+
+const mobileGpuRows = gpuRates.map((rate) => ({
+  ...rate,
+  vramLabel: `${rate.vram} VRAM`,
+  creditsLabel: rate.credits.replace('/hr', ' credits/hr')
+}))
+
+const mobileStorageRows = storageRates.map((rate) => ({
+  ...rate,
+  creditsLabel: `${rate.credits.replace('/GB/mo', '')} credits`
+}))
 </script>
 
 <template>
@@ -69,115 +82,201 @@ const storageRates = [
       </template>
     </SectionHeader>
 
-    <div class="mx-auto mt-8 max-w-6xl rounded-4xl border border-white/10 p-2">
-      <div class="grid gap-2 lg:grid-cols-2">
-        <article
-          class="bg-transparency-white-t4 flex min-w-0 flex-col overflow-hidden rounded-3xl"
+    <div class="mx-auto mt-8 flex max-w-6xl flex-col gap-4 lg:hidden">
+      <article class="bg-transparency-white-t4 rounded-4xl px-5 py-6">
+        <p
+          class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
         >
+          {{ t('platform.pricing.gpuColumn', locale) }}
+        </p>
+        <ul class="mt-5 space-y-5">
+          <li
+            v-for="rate in mobileGpuRows"
+            :key="rate.gpu"
+            class="flex items-start justify-between gap-4"
+          >
+            <div>
+              <p class="text-sm text-primary-warm-white">{{ rate.gpu }}</p>
+              <p class="mt-0.5 text-xs text-primary-warm-gray">
+                {{ rate.vramLabel }}
+              </p>
+            </div>
+            <div class="text-right font-mono">
+              <p class="text-sm text-primary-warm-white">{{ rate.price }}</p>
+              <p
+                class="mt-0.5 flex items-center justify-end gap-1 text-xs text-primary-warm-gray"
+              >
+                <CreditsIcon
+                  class="text-primary-comfy-yellow size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
+                {{ rate.creditsLabel }}
+              </p>
+            </div>
+          </li>
+        </ul>
+        <p class="mt-6 text-xs text-primary-warm-gray">
+          {{ t('platform.pricing.billedPerSecond', locale) }}
+        </p>
+      </article>
+
+      <article class="bg-transparency-white-t4 rounded-4xl px-5 py-6">
+        <p
+          class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+        >
+          {{ t('platform.pricing.storageColumn', locale) }}
+        </p>
+        <ul class="mt-5 space-y-5">
+          <li
+            v-for="rate in mobileStorageRows"
+            :key="rate.key"
+            class="flex items-start justify-between gap-4"
+          >
+            <div>
+              <p class="text-sm text-primary-warm-white">
+                {{
+                  rate.key === 'containerDisk'
+                    ? t('platform.pricing.storage.containerDisk', locale)
+                    : t('platform.pricing.storage.networkTitle', locale)
+                }}
+              </p>
+              <p class="mt-0.5 text-xs text-primary-warm-gray">
+                {{ t(`platform.pricing.storage.sub.${rate.key}`, locale) }}
+              </p>
+            </div>
+            <div class="shrink-0 text-right font-mono">
+              <p class="text-sm text-primary-warm-white">{{ rate.price }}</p>
+              <p
+                class="mt-0.5 flex items-center justify-end gap-1 text-xs text-primary-warm-gray"
+              >
+                <CreditsIcon
+                  class="text-primary-comfy-yellow size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
+                {{ rate.creditsLabel }}
+              </p>
+            </div>
+          </li>
+        </ul>
+        <p class="mt-6 text-xs/relaxed text-primary-warm-gray">
+          {{ t('platform.pricing.storageNote', locale) }}
+        </p>
+      </article>
+    </div>
+
+    <div
+      class="bg-transparency-white-t4 mx-auto mt-8 hidden max-w-6xl overflow-hidden rounded-4xl px-4 py-6 lg:block lg:px-8"
+    >
+      <div class="grid gap-x-12 gap-y-8 lg:grid-cols-2">
+        <article class="flex min-w-0 flex-col">
           <div class="scrollbar-none overflow-x-auto">
-            <table class="w-full min-w-130 text-left text-xs">
+            <table class="w-full min-w-130 text-left text-sm">
               <thead>
                 <tr
-                  class="border-b border-white/8 text-[10px] tracking-wider uppercase"
+                  class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
                 >
-                  <th
-                    class="px-5 py-4 font-bold text-primary-comfy-canvas"
-                    scope="col"
-                  >
+                  <th class="px-2 py-4" scope="col">
                     {{ t('platform.pricing.gpuColumn', locale) }}
                   </th>
-                  <th
-                    class="p-4 font-bold text-primary-comfy-canvas"
-                    scope="col"
-                  >
+                  <th class="p-4" scope="col">
                     {{ t('platform.pricing.vramColumn', locale) }}
                   </th>
-                  <th
-                    class="p-4 text-right font-bold text-primary-comfy-canvas"
-                    scope="col"
-                  >
+                  <th class="p-4 text-right" scope="col">
                     {{ t('platform.pricing.priceColumn', locale) }}
                   </th>
-                  <th
-                    class="px-5 py-4 text-right font-bold text-primary-comfy-canvas"
-                    scope="col"
-                  >
+                  <th class="px-2 py-4 text-right" scope="col">
                     {{ t('platform.pricing.creditsColumn', locale) }}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="rate in gpuRates" :key="rate.gpu">
-                  <td class="px-5 py-3.5 text-primary-warm-white">
+                  <td class="px-2 py-3.5 text-sm text-primary-warm-white">
                     {{ rate.gpu }}
                   </td>
-                  <td class="px-4 py-3.5 text-primary-comfy-canvas">
+                  <td class="px-4 py-3.5 text-xs text-primary-warm-gray">
                     {{ rate.vram }}
                   </td>
                   <td
-                    class="px-4 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                    class="px-4 py-3.5 text-right font-mono text-sm text-primary-warm-white"
                   >
                     {{ rate.price }}
                   </td>
-                  <td class="px-5 py-3.5 text-right font-mono text-smoke-700">
-                    {{ rate.credits }}
+                  <td
+                    class="px-2 py-3.5 text-right font-mono text-xs text-primary-warm-gray"
+                  >
+                    <span class="flex items-center justify-end gap-1">
+                      <CreditsIcon
+                        class="text-primary-comfy-yellow size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
+                      {{ rate.credits }}
+                    </span>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p class="mt-auto px-5 py-3 text-2xs text-primary-warm-gray">
+          <p class="mt-auto px-2 pt-6 text-xs text-primary-warm-gray">
             {{ t('platform.pricing.billedPerSecond', locale) }}
           </p>
         </article>
 
-        <article
-          class="bg-transparency-white-t4 flex min-w-0 flex-col overflow-hidden rounded-3xl"
-        >
+        <article class="flex min-w-0 flex-col">
           <div class="scrollbar-none overflow-x-auto">
-            <table class="w-full min-w-130 text-left text-xs">
+            <table class="w-full min-w-130 text-left text-sm">
               <thead>
                 <tr
-                  class="border-b border-white/8 text-[10px] tracking-wider uppercase"
+                  class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
                 >
-                  <th
-                    class="px-5 py-4 font-bold text-primary-comfy-canvas"
-                    scope="col"
-                  >
+                  <th class="px-2 py-4" scope="col">
                     {{ t('platform.pricing.storageColumn', locale) }}
                   </th>
-                  <th
-                    class="p-4 text-right font-bold text-primary-comfy-canvas"
-                    scope="col"
-                  >
+                  <th class="p-4 text-right" scope="col">
                     {{ t('platform.pricing.priceColumn', locale) }}
                   </th>
-                  <th
-                    class="px-5 py-4 text-right font-bold text-primary-comfy-canvas"
-                    scope="col"
-                  >
+                  <th class="px-2 py-4 text-right" scope="col">
                     {{ t('platform.pricing.creditsColumn', locale) }}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="rate in storageRates" :key="rate.key">
-                  <td class="px-5 py-3.5 text-primary-warm-white">
-                    {{ t(`platform.pricing.storage.${rate.key}`, locale) }}
+                  <td class="max-w-56 px-2 py-3.5">
+                    <p class="text-sm text-primary-warm-white">
+                      {{
+                        rate.key === 'containerDisk'
+                          ? t('platform.pricing.storage.containerDisk', locale)
+                          : t('platform.pricing.storage.networkTitle', locale)
+                      }}
+                    </p>
+                    <p class="mt-0.5 text-xs text-primary-warm-gray">
+                      {{
+                        t(`platform.pricing.storage.sub.${rate.key}`, locale)
+                      }}
+                    </p>
                   </td>
                   <td
-                    class="px-4 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                    class="px-4 py-3.5 text-right font-mono text-sm text-primary-warm-white"
                   >
                     {{ rate.price }}
                   </td>
-                  <td class="px-5 py-3.5 text-right font-mono text-smoke-700">
-                    {{ rate.credits }}
+                  <td
+                    class="px-2 py-3.5 text-right font-mono text-xs text-primary-warm-gray"
+                  >
+                    <span class="flex items-center justify-end gap-1">
+                      <CreditsIcon
+                        class="text-primary-comfy-yellow size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
+                      {{ rate.credits }}
+                    </span>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p class="mt-auto px-5 py-3 text-2xs/relaxed text-primary-warm-gray">
+          <p class="mt-auto px-2 pt-6 text-xs/relaxed text-primary-warm-gray">
             {{ t('platform.pricing.storageNote', locale) }}
           </p>
         </article>

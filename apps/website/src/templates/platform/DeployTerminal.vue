@@ -10,7 +10,7 @@ interface TerminalLine {
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const lines: TerminalLine[] = [
-  { kind: 'command', text: 'comfy deploy reference2video.json' },
+  { kind: 'command', text: 'comfy deploy ./workflow_api.json' },
   { kind: 'success', text: t('platform.terminal.buildResolved', locale) },
   { kind: 'success', text: t('platform.terminal.deployed', locale) }
 ]
@@ -18,7 +18,7 @@ const lines: TerminalLine[] = [
 
 <template>
   <div
-    class="overflow-hidden rounded-3xl border border-white/10 bg-[#2a222f] font-mono text-xs shadow-2xl"
+    class="overflow-hidden rounded-3xl border border-white/10 bg-[#2a222f] font-mono text-2xs/relaxed shadow-2xl sm:text-xs/relaxed lg:text-sm/relaxed"
   >
     <div class="flex items-center gap-1.5 px-5 py-3.5">
       <span class="size-3 rounded-full bg-white/15" />
@@ -38,7 +38,7 @@ const lines: TerminalLine[] = [
           aria-hidden="true"
           v-text="line.kind === 'command' ? '$' : '✔'"
         />
-        <span class="whitespace-nowrap">{{ line.text }}</span>
+        <span class="lg:whitespace-nowrap">{{ line.text }}</span>
       </p>
     </div>
   </div>

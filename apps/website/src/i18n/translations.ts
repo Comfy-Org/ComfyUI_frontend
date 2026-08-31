@@ -7571,6 +7571,10 @@ const translations = {
     'zh-CN':
       '动画图示：请求点亮 RTX 6000 PRO、H100 和 B200 GPU 工作节点，COMFYUI 字样在网格中滚动。'
   },
+  'platform.serverlessVisual.worker': {
+    en: 'Worker',
+    'zh-CN': '工作节点'
+  },
   'platform.products.builder.title': {
     en: 'Builder',
     'zh-CN': 'Builder'
@@ -7800,6 +7804,26 @@ const translations = {
   'platform.pricing.storage.containerDisk': {
     en: 'Container disk',
     'zh-CN': '容器磁盘'
+  },
+  'platform.pricing.storage.networkTitle': {
+    en: 'Network storage',
+    'zh-CN': '网络存储'
+  },
+  'platform.pricing.storage.sub.standardUnder1tb': {
+    en: 'Standard, under 1 TB',
+    'zh-CN': '标准，1 TB 以下'
+  },
+  'platform.pricing.storage.sub.standardOver1tb': {
+    en: 'Standard, 1 TB and above',
+    'zh-CN': '标准，1 TB 及以上'
+  },
+  'platform.pricing.storage.sub.highPerformance': {
+    en: 'High performance',
+    'zh-CN': '高性能'
+  },
+  'platform.pricing.storage.sub.containerDisk': {
+    en: 'Per-worker local filesystem',
+    'zh-CN': '每个工作节点的本地文件系统'
   },
   'platform.pricing.storageNote': {
     en: "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
@@ -8068,6 +8092,10 @@ const translations = {
   'platform.closing.heading': {
     en: 'Maximize scale and control on Developer Platform',
     'zh-CN': '在开发者平台上将规模与控制力最大化'
+  },
+  'platform.closing.headingLead': {
+    en: 'Maximize scale and control on',
+    'zh-CN': '将规模与控制力最大化'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

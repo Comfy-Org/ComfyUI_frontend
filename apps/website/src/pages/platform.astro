@@ -21,11 +21,10 @@ import { t } from '../i18n/translations'
   </div>
   <SocialProofBarSection />
   <PricingSection locale="en" />
-  <ClosingCtaSection locale="en" />
+  <ClosingCtaSection locale="en" client:visible />
+  <ClosingCtaSection locale="en" visual="columns" client:visible />
   <ProductCardsSection
     locale="en"
     label-key="products.labelProducts"
-    ctaKey="products.ctaShort"
-    ctaVariant="outline"
   />
 </BaseLayout>

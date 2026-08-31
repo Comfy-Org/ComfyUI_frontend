@@ -10,13 +10,13 @@ describe('PricingSection', () => {
     render(PricingSection, { props: { locale: 'en' } })
 
     for (const gpu of ['RTX PRO 6000', 'H100', 'H200', 'B200']) {
-      expect(screen.getByText(gpu)).toBeTruthy()
+      expect(screen.getAllByText(gpu)).toHaveLength(2)
     }
-    expect(screen.getByText('$3.49/hr')).toBeTruthy()
+    expect(screen.getAllByText('$3.49/hr')).toHaveLength(2)
     expect(
-      screen.getByText(t('platform.pricing.storage.containerDisk', 'en'))
-    ).toBeTruthy()
-    expect(screen.getByText('$0.13/GB/mo')).toBeTruthy()
+      screen.getAllByText(t('platform.pricing.storage.containerDisk', 'en'))
+    ).toHaveLength(2)
+    expect(screen.getAllByText('$0.13/GB/mo')).toHaveLength(2)
   })
 
   it('uses the platform heading by default and accepts overrides', () => {
