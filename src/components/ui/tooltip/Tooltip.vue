@@ -10,16 +10,22 @@ import type { TooltipSide, TooltipValue } from './tooltipTypes'
 
 const POINTER_TOOLTIP_SUPPRESSION_MS = 700
 const automaticTooltipSuppressed = ref(false)
+const keyboardInteraction = ref(false)
 let mountedTooltipCount = 0
 let pointerSuppressionTimer: ReturnType<typeof setTimeout> | undefined
 
 function handleDocumentPointerInteraction() {
+  keyboardInteraction.value = false
   automaticTooltipSuppressed.value = true
   if (pointerSuppressionTimer) clearTimeout(pointerSuppressionTimer)
   pointerSuppressionTimer = setTimeout(() => {
     automaticTooltipSuppressed.value = false
     pointerSuppressionTimer = undefined
   }, POINTER_TOOLTIP_SUPPRESSION_MS)
+}
+
+function handleDocumentKeyboardInteraction() {
+  keyboardInteraction.value = true
 }
 
 defineOptions({ inheritAttrs: false })
@@ -57,12 +63,18 @@ const text = computed(() => {
 const isDisabled = computed(
   () => rootProps.disabled || normalizedConfig.value?.disabled || !text.value
 )
+const lacksHoverInput = window.matchMedia('(hover: none)').matches
 const open = ref(rootProps.open ?? rootProps.defaultOpen ?? false)
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 
 function updateOpen(nextOpen: boolean) {
   if (closeTimer) clearTimeout(closeTimer)
-  if (nextOpen && automaticTooltipSuppressed.value) return
+  if (
+    nextOpen &&
+    (automaticTooltipSuppressed.value ||
+      (lacksHoverInput && !keyboardInteraction.value))
+  )
+    return
 
   const hideDelay = normalizedConfig.value?.hideDelay ?? 0
   if (!nextOpen && hideDelay > 0) {
@@ -98,6 +110,7 @@ onMounted(() => {
     document.addEventListener('touchstart', handleDocumentPointerInteraction, {
       passive: true
     })
+    document.addEventListener('keydown', handleDocumentKeyboardInteraction)
   }
 })
 
@@ -109,21 +122,28 @@ onBeforeUnmount(() => {
       handleDocumentPointerInteraction
     )
     document.removeEventListener('touchstart', handleDocumentPointerInteraction)
+    document.removeEventListener('keydown', handleDocumentKeyboardInteraction)
     if (pointerSuppressionTimer) clearTimeout(pointerSuppressionTimer)
     pointerSuppressionTimer = undefined
     automaticTooltipSuppressed.value = false
+    keyboardInteraction.value = false
   }
 })
 </script>
 
 <template>
-  <TooltipProvider :delay-duration="0" disable-hoverable-content>
+  <TooltipProvider
+    :delay-duration="0"
+    disable-hoverable-content
+    ignore-non-keyboard-focus
+  >
     <TooltipRoot
       v-bind="rootProps"
       :open
       :disabled="isDisabled"
       :delay-duration="normalizedConfig?.showDelay ?? rootProps.delayDuration"
       :disable-closing-trigger="openOnClick || rootProps.disableClosingTrigger"
+      :ignore-non-keyboard-focus="rootProps.ignoreNonKeyboardFocus ?? true"
       @update:open="updateOpen"
     >
       <TooltipTrigger v-bind="$attrs" as-child @click="handleClick">
