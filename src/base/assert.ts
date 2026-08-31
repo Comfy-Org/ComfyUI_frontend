@@ -17,6 +17,10 @@ export function setAssertReporter(fn: AssertReporter | null): void {
  * - Always: console.error
  * - DEV: throws (surfaces bugs immediately)
  * - Otherwise: delegates to registered reporter (Sentry, toast, etc.)
+ *
+ * Reporters forward `message` to external telemetry, so it must be a static
+ * description of the invariant. Never interpolate user data (workflow names,
+ * paths, prompts) into it.
  */
 export function assert(condition: unknown, message: string): asserts condition {
   if (condition) return
