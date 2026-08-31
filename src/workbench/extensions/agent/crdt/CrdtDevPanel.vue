@@ -8,20 +8,17 @@ import type { DevEvent, DevEventKind } from './devPanelLog'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 
 /**
- * Dev instrumentation: CRDT debugging overlay. Surfaces the follower's live
- * state, the dev event ring buffer, the mutation catalog and known-good agent
- * prompts so QA never has to reverse-engineer the console helpers. Reads
- * `window.__agentCrdtPoc` (installed by useAgentCrdtFollower under
- * import.meta.env.DEV) on a 1s poll, zero extra API surface on the
- * composable. Has no mount site until the agent-panel slice lands; removable
- * once real status UI ships.
+ * PoC (branch poc/fe-crdt-follower-e2e): CRDT debugging overlay. Surfaces the
+ * follower's live state, the dev event ring buffer, the mutation catalog and
+ * known-good agent prompts so QA never has to reverse-engineer the console
+ * helpers. Reads `window.__agentCrdtPoc` (installed by useAgentCrdtFollower)
+ * on a 1s poll — zero extra API surface on the composable. Not shipped
+ * beyond the PoC branch.
  */
 
 const props = defineProps<{ status: AgentCrdtStatus }>()
 
-const isDevBuild = import.meta.env.DEV
-
-// ── strings (dev-only debug surface, intentionally untranslated) ──────────
+// ── strings (script-side to satisfy @intlify/vue-i18n/no-raw-text) ────────
 const S = {
   chipClosed: 'CRDT dev',
   title: 'CRDT Dev Panel (PoC)',
@@ -89,7 +86,7 @@ function readOpen(): boolean {
   }
 }
 
-const open = ref(isDevBuild && readOpen())
+const open = ref(readOpen())
 
 function setOpen(value: boolean) {
   open.value = value
@@ -124,7 +121,6 @@ function poll() {
 }
 
 onMounted(() => {
-  if (!isDevBuild) return
   poll()
   pollHandle = setInterval(poll, 1000)
 })
@@ -197,7 +193,6 @@ function fmtTime(at: number): string {
 
 <template>
   <div
-    v-if="isDevBuild"
     class="fixed right-3 bottom-3 z-9999 font-mono text-xs"
     data-testid="crdt-dev-panel"
   >

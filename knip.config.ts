@@ -55,6 +55,10 @@ const config: KnipConfig = {
     '@iconify/json'
   ],
   ignore: [
+    // TRANSITIONAL (agent-v1 cascade): main-era mock events not yet consumed
+    // by the chain's step-10 spec; later cascade steps' specs import them
+    // (verified at chain tip e81c042f8d). Remove when the consuming spec lands.
+    'browser_tests/tests/agent/agentPanelMocks.ts',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',

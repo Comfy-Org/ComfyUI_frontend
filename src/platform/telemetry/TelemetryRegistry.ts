@@ -1,8 +1,8 @@
 import type {
   AddCreditsClickMetadata,
   AgentEntryButtonClickedMetadata,
-  AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
+  AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,

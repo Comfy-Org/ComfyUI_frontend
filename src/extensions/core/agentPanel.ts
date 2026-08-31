@@ -5,12 +5,68 @@ import { useExtensionService } from '@/services/extensionService'
 // past it. OSS builds fold the guard, drop the dead remainder with its
 // import() edges, and emit no agent code; cloud builds keep the shell inline
 // in the core graph so a flag-off session fetches no separate gate chunk.
+// The graph-load hooks are async for the same reason; the extension service
+// awaits them, so the mint-port notifications keep their load bracketing.
 const IS_CLOUD_BUILD = __DISTRIBUTION__ === 'cloud'
 
 export function registerAgentPanelExtension(): void {
   if (!IS_CLOUD_BUILD) return
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
+    async beforeLoadGraph() {
+      const { notifyMintPortsBeforeGraphLoad } =
+        await import('@/workbench/extensions/agent/crdt/mintPortWiring')
+      notifyMintPortsBeforeGraphLoad()
+      const [{ useAgentPanelStore }, { useAgentNodeSelectionStore }] =
+        await Promise.all([
+          import('@/workbench/extensions/agent/stores/agent/agentPanelStore'),
+          import('@/stores/agentNodeSelectionStore')
+        ])
+      if (!useAgentPanelStore().isOpen) return
+      useAgentNodeSelectionStore().beginWorkflowLoad()
+    },
+    async afterLoadGraph(app) {
+      const [{ useAgentPanelStore }, { useAgentNodeSelectionStore }] =
+        await Promise.all([
+          import('@/workbench/extensions/agent/stores/agent/agentPanelStore'),
+          import('@/stores/agentNodeSelectionStore')
+        ])
+      const nodeSelectionStore = useAgentNodeSelectionStore()
+      if (!nodeSelectionStore.isLoadingWorkflow) return
+      if (!useAgentPanelStore().isOpen) {
+        nodeSelectionStore.finishWorkflowLoad()
+        return
+      }
+
+      const [
+        { useWorkflowStore },
+        { useCanvasStore },
+        { getNodeByLocatorId },
+        { isLGraphNode }
+      ] = await Promise.all([
+        import('@/platform/workflow/management/stores/workflowStore'),
+        import('@/renderer/core/canvas/canvasStore'),
+        import('@/utils/graphTraversalUtil'),
+        import('@/utils/litegraphUtil')
+      ])
+      const canvas = app.canvas
+      const workflowStore = useWorkflowStore()
+      const workflowPath = workflowStore.activeWorkflow?.path
+      const nodes = nodeSelectionStore
+        .nodeIds(workflowPath)
+        .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
+        .filter(isLGraphNode)
+      nodeSelectionStore.restoreNodeIds(
+        nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
+      )
+      canvas?.selectItems(nodes)
+      useCanvasStore().updateSelectedItems()
+    },
+    async afterConfigureGraph() {
+      const { notifyMintPortsAfterGraphConfigure } =
+        await import('@/workbench/extensions/agent/crdt/mintPortWiring')
+      notifyMintPortsAfterGraphConfigure()
+    },
     async setup() {
       // The service's per-extension catch owns a rejection here, so a
       // failed gate or lifetime load can never surface as an unhandled
