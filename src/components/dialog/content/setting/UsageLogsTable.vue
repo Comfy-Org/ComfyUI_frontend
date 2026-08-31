@@ -103,6 +103,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
@@ -161,7 +162,9 @@ const loadEvents = async () => {
     // Completion telemetry must run even when a mid-checkout route flip
     // supersedes this load, since legacy and workspace backends emit different
     // top-up events and the winning fetch may not carry the completion yet.
-    useTelemetry()?.checkForCompletedTopup(response?.events)
+    if (usePendingTopup().isPendingTopupCompleted(response?.events)) {
+      useTelemetry()?.trackApiCreditTopupSucceeded()
+    }
 
     if (loadToken !== latestLoadToken) return
 

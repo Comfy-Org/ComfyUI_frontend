@@ -34,8 +34,10 @@
     "cva": "catalog:",
     "gsap": "catalog:",
     "lenis": "catalog:",
+    "lottie-web": "catalog:",
     "posthog-js": "catalog:",
     "reka-ui": "catalog:",
+    "shiki": "catalog:",
     "three": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"
@@ -51,6 +53,7 @@
     "@testing-library/vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "astro": "catalog:",
+    "happy-dom": "catalog:",
     "tailwindcss": "catalog:",
     "tsx": "catalog:",
     "tw-animate-css": "catalog:",

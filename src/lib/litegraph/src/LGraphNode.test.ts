@@ -9,20 +9,25 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
+  LGraphCanvas,
   LGraphNode,
   LiteGraph,
   LGraph,
+  LLink,
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
-import { toNodeId } from '@/types/nodeId'
+import {
+  createMockCanvasRenderingContext2D,
+  createMockLGraphNodeWithArrayBoundingRect
+} from '@/utils/__tests__/litegraphTestUtils'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -364,6 +369,55 @@ describe('LGraphNode', () => {
       // Test disconnecting already disconnected output
       const alreadyDisconnected = sourceNode.disconnectOutput(0)
       expect(alreadyDisconnected).toBe(false)
+    })
+
+    test('preserves floating links during a targeted output disconnect', () => {
+      const { graph, sourceNode } = createConnectedPair()
+      const unrelated = new LGraphNode('unrelated')
+      unrelated.addInput('input', '*')
+      graph.add(unrelated)
+      const floating = new LLink(
+        toLinkId(-1),
+        '*',
+        sourceNode.id,
+        0,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+      graph.addFloatingLink(floating)
+
+      expect(sourceNode.disconnectOutput(0, unrelated)).toBe(false)
+      expect(graph.floatingLinks.get(floating.id)).toBe(floating)
+      expect(sourceNode.isOutputConnected(0)).toBe(true)
+    })
+
+    test('reports and redraws a floating-only output disconnect', () => {
+      const graph = new LGraph()
+      const sourceNode = new LGraphNode('source')
+      sourceNode.addOutput('output', '*')
+      graph.add(sourceNode)
+      const floating = new LLink(
+        toLinkId(-1),
+        '*',
+        sourceNode.id,
+        0,
+        UNASSIGNED_NODE_ID,
+        -1
+      )
+      graph.addFloatingLink(floating)
+      const canvasElement = document.createElement('canvas')
+      canvasElement.getContext = vi
+        .fn()
+        .mockReturnValue(createMockCanvasRenderingContext2D())
+      const canvas = new LGraphCanvas(canvasElement, graph, {
+        skip_render: true,
+        skip_events: true
+      })
+      canvas.dirty_bgcanvas = false
+
+      expect(sourceNode.disconnectOutput(0)).toBe(true)
+      expect(graph.floatingLinks.has(floating.id)).toBe(false)
+      expect(canvas.dirty_bgcanvas).toBe(true)
     })
   })
 

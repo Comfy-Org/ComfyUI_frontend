@@ -315,7 +315,10 @@ test.describe(
   'Animated image widget',
   { tag: ['@screenshot', '@widget'] },
   () => {
-    test('Can drag-and-drop animated webp image', async ({ comfyPage }) => {
+    test('Can drag-and-drop animated webp image', async ({
+      comfyPage,
+      comfyFiles
+    }) => {
       await comfyPage.workflow.loadWorkflow('widgets/load_animated_webp')
 
       // Get position of the load animated webp node
@@ -324,6 +327,10 @@ test.describe(
       )
       const loadAnimatedWebpNode = nodes[0]
       const { x, y } = await loadAnimatedWebpNode.getPosition()
+      comfyFiles.deleteAfterTest({
+        filename: 'animated_webp.webp',
+        type: 'input'
+      })
 
       // Drag and drop image file onto the load animated webp node
       await comfyPage.dragDrop.dragAndDropFile('animated_webp.webp', {
@@ -338,7 +345,10 @@ test.describe(
         .toContain('animated_webp.webp')
     })
 
-    test('Can preview saved animated webp image', async ({ comfyPage }) => {
+    test('Can preview saved animated webp image', async ({
+      comfyPage,
+      comfyFiles
+    }) => {
       await comfyPage.workflow.loadWorkflow('widgets/save_animated_webp')
 
       // Get position of the load animated webp node
@@ -347,6 +357,10 @@ test.describe(
       )
       const loadAnimatedWebpNode = loadNodes[0]
       const { x, y } = await loadAnimatedWebpNode.getPosition()
+      comfyFiles.deleteAfterTest({
+        filename: 'animated_webp.webp',
+        type: 'input'
+      })
 
       // Drag and drop image file onto the load animated webp node
       await comfyPage.dragDrop.dragAndDropFile('animated_webp.webp', {
