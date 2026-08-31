@@ -85,13 +85,11 @@ The maintenance history of the snapshot/restore system is the bug tracker:
   the preview stash keys by workflow _path_; PR #15361 keys execution errors
   by root-graph id. Path breaks on rename (see the compensating
   `moveDraft`/`moveWorkflowThumbnail` bookkeeping in
-  `workflowStore.renameWorkflow`). Graph id is recycled mid-session —
-  `LGraph.clear()` resets `id` to `zeroUuid` and reaches into Pinia to purge
-  the graph-keyed stores (`src/lib/litegraph/src/LGraph.ts:399-401`), so the
-  architecturally correct stores have their data deleted and their key
-  recycled on every tab switch by the switching mechanism itself. Graph id
-  also collides for files copied outside the app (the UUID travels inside
-  the JSON; only in-app flows like `duplicateWorkflow`/`saveAs` regenerate it).
+  `workflowStore.renameWorkflow`). `LGraph.resetAfterClear()` purges the
+  graph-keyed Pinia stores and reassigns the root graph's `id`, so those
+  stores lose their data on every tab switch. Graph id also collides for
+  files copied outside the app (the UUID travels inside the JSON; only
+  in-app flows like `duplicateWorkflow`/`saveAs` regenerate it).
 - **There is no close lifecycle.** Nothing tells a subsystem "this workflow
   is gone; release its resources". PR #15361 leaks a small bucket per failed
   graph because it had nowhere to evict; PR #15360 hand-routed its release
