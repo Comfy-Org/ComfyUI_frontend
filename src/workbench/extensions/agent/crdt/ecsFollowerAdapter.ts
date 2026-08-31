@@ -210,6 +210,8 @@ export class EcsFollowerAdapter {
       onLinksChanged: (_event): void => undefined
     }
 
+    session.nodes.forEach((_node, id) => session.nodeActions.set(id, 'add'))
+    session.links.forEach((_link, id) => session.changedLinks.add(id))
     session.onNodesChanged = (events) => this.onNodesChanged(session, events)
     session.onLinksChanged = (event) => this.onLinksChanged(session, event)
     return session
