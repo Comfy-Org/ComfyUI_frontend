@@ -101,11 +101,47 @@ github:<datadog-email-local-part>:<github-login>
 ```
 
 So `ben@comfy.org` → GitHub `benceruleanlu` is the tag `github:ben:benceruleanlu`.
-**Adding someone to the rotation therefore means adding their tag in the Datadog
-UI — no commit.** Tags are only settable at schedule-creation time over the API,
-so edit them in the on-call UI. Datadog rejects `@` and `+` in tags and
-lower-cases what it accepts; GitHub logins are case-insensitive, so a
-lower-cased login still resolves.
+Datadog rejects `@` and `+` in tags and lower-cases what it accepts; GitHub
+logins are case-insensitive, so a lower-cased login still resolves.
+
+Adding someone to the rotation therefore means adding their tag — no commit, but
+also no clicking: **editing tags is an API operation.** The on-call schedule
+editor exposes no tags field at all, so there is nothing in the UI to change.
+Tags are settable after creation over `PUT /api/v2/on-call/schedules/{id}`;
+`PATCH` answers `{"errors":["Not found"]}` even for a schedule that `GET`
+returns fine.
+
+`PUT` is a full replace, so read the schedule first and edit what comes back
+rather than composing a body by hand:
+
+```bash
+BASE=https://api.us5.datadoghq.com/api/v2/on-call/schedules
+AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
+      -H "DD-APPLICATION-KEY: $DATADOG_APP_KEY")
+
+curl -sS "${AUTH[@]}" \
+  "$BASE/$SCHEDULE_ID?include=layers,layers.members,layers.members.user"
+
+curl -sS -X PUT "${AUTH[@]}" -H 'Content-Type: application/json' \
+  "$BASE/$SCHEDULE_ID" -d @schedule.json
+```
+
+`schedule.json` is that response with `tags` edited and nothing else touched.
+The body has to repeat `data.id` even though the same UUID is already in the
+path, and it has to carry `layers`. Keep each layer's `id`, `rotation_start`,
+`effective_date`, `interval` and `restrictions`, and keep the members in their
+existing order — order is the rotation sequence, and a layer sent without its
+`id` is destroyed and recreated under a new one, taking its shift and override
+state with it.
+
+The trap worth stating plainly: **a `PUT` whose body omits `tags` wipes every
+tag**, returns 200, and warns about nothing. Any tags-unaware edit to the
+rotation — reordering members, adding a layer from a script — therefore destroys
+the entire bridge in one call, and the damage surfaces only on the next hourly
+run, as a fallback assignment plus a coverage failure naming every member of the
+rotation at once. Storing the mapping on the schedule is a known fragility;
+until it lives somewhere else, treat every write to this schedule as a write to
+the tags.
 
 Only `scheduleId`, `datadogSite` and `fallbackGithubLogin` stay in the `CONFIG`
 object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
