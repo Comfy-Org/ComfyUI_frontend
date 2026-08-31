@@ -91,20 +91,24 @@ const agentPanelHolder = vi.hoisted(() => ({
     toggle: ReturnType<typeof vi.fn>
   }
 }))
-vi.mock('@/workbench/extensions/agent/stores/agentPanelStore', async () => {
-  const { reactive, ref } = await import('vue')
-  agentPanelHolder.store = {
-    isOpen: ref(false),
-    enabled: ref(false),
-    gateSettled: ref(false),
-    toggle: vi.fn(() => {
-      agentPanelHolder.store.isOpen.value = !agentPanelHolder.store.isOpen.value
-    })
+vi.mock(
+  '@/workbench/extensions/agent/stores/agent/agentPanelStore',
+  async () => {
+    const { reactive, ref } = await import('vue')
+    agentPanelHolder.store = {
+      isOpen: ref(false),
+      enabled: ref(false),
+      gateSettled: ref(false),
+      toggle: vi.fn(() => {
+        agentPanelHolder.store.isOpen.value =
+          !agentPanelHolder.store.isOpen.value
+      })
+    }
+    // reactive() unwraps the holder refs on read, matching a real pinia
+    // store proxy now that the component reads properties directly.
+    return { useAgentPanelStore: () => reactive(agentPanelHolder.store) }
   }
-  // reactive() unwraps the holder refs on read, matching a real pinia
-  // store proxy now that the component reads properties directly.
-  return { useAgentPanelStore: () => reactive(agentPanelHolder.store) }
-})
+)
 
 vi.mock('@/utils/mouseDownUtil', () => ({
   whileMouseDown: vi.fn()
@@ -201,8 +205,6 @@ describe('WorkflowTabs feedback button', () => {
 
 describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
-    // The component's literal guard reads the runtime global in tests.
-    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = true
     agentPanelHolder.store.isOpen.value = false
@@ -231,6 +233,16 @@ describe('WorkflowTabs agent entry button', () => {
     expect(
       screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
     ).toBeNull()
+  })
+
+  // Two entry controls once shipped side by side after a merge, which broke
+  // every role-based lookup of the button in the Playwright suite.
+  it('renders exactly one agent entry control', () => {
+    renderComponent()
+
+    expect(
+      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toHaveLength(1)
   })
 
   it('toggles the panel and reflects the pressed state on the button', async () => {

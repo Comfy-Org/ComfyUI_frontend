@@ -14,7 +14,8 @@ import type { UUID } from '@/utils/uuid'
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
-  Vue = 'vue'
+  Vue = 'vue',
+  AgentRemote = 'agent-remote'
 }
 
 // Basic geometric types
@@ -117,6 +118,8 @@ interface OperationMeta {
   timestamp: number
   /** Actor who performed the operation (for CRDT) */
   actor?: string
+  /** Originating semantic op identity when applied by a remote follower. */
+  opId?: string
   /** Source system that initiated the operation */
   source: LayoutSource
   graphId: UUID

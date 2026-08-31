@@ -2,14 +2,20 @@
   <nav
     ref="sideToolbarRef"
     data-testid="side-toolbar"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
+    :inert="isHidden"
+    :aria-hidden="isHidden"
+    class="side-tool-bar-container flex h-full flex-col items-center overflow-hidden bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,
       'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-(--interface-stroke) shadow-interface': isConnected
+      'border-r border-(--interface-stroke) shadow-interface': isConnected,
+      'pointer-events-none opacity-0': isHidden,
+      '-translate-x-8': isHidden && sidebarLocation === 'left',
+      'translate-x-8': isHidden && sidebarLocation === 'right'
     }"
+    :style="{ maxWidth: isHidden ? '0px' : 'var(--sidebar-width)' }"
   >
     <div
       :class="
@@ -83,6 +89,7 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
@@ -118,6 +125,7 @@ const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
@@ -144,6 +152,7 @@ const tabs = computed(() => {
     : all
 })
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const isHidden = computed(() => agentNodeSelectionStore.isActionBarsHidden)
 
 /**
  * Handle sidebar tab icon click.
