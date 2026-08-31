@@ -980,6 +980,9 @@ importers:
       reka-ui:
         specifier: 'catalog:'
         version: 2.6.2(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
+      shiki:
+        specifier: 'catalog:'
+        version: 4.3.1
       three:
         specifier: 'catalog:'
         version: 0.184.0

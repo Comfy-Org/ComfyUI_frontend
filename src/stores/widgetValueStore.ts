@@ -69,6 +69,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       : undefined
   }
 
+  function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
+    const restorations = graphWidgetRestorations.get(graphId)
+    if (!restorations) return
+    restorations.delete(nodeId)
+    if (restorations.size === 0) graphWidgetRestorations.delete(graphId)
+  }
+
   function getPositionalRestoredWidgetValue(
     graphId: UUID,
     nodeId: NodeId,
@@ -138,6 +145,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (order.length === 0) graphOrders.delete(nodeId)
   }
 
+  /**
+   * @returns The existing state for the same widget type, replacement state
+   * for a different type, or `undefined` for an invalid widget ID.
+   */
   function registerWidget<TValue extends WidgetValue = WidgetValue>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>,
@@ -421,6 +432,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   return {
     registerWidget,
     setNodeWidgetRestoration,
+    clearNodeWidgetRestoration,
     getRestoredWidgetValue,
     getPositionalRestoredWidgetValue,
     getWidget,
