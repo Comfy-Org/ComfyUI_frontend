@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, reactive } from 'vue'
+import { computed, effectScope, nextTick, reactive, ref } from 'vue'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -484,7 +484,13 @@ describe('useSubscriptionCheckout', () => {
       workspaceId: 'workspace-1'
     })
     mockListSavedPaymentMethods.mockResolvedValue([])
-    mockGetOperation.mockReturnValue(undefined)
+    // Mirror the store: an id lookup finds the operation whatever its status,
+    // which is exactly the difference the re-entry adoption relies on.
+    mockGetOperation.mockImplementation((opId: string) =>
+      mockSubscriptionActionOperation.value?.opId === opId
+        ? mockSubscriptionActionOperation.value
+        : undefined
+    )
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     mockUserId.value = 'user-1'
     mockIsTeamPlan.value = false
@@ -2593,6 +2599,44 @@ describe('useSubscriptionCheckout', () => {
         expect.objectContaining({ confirmReactivation: true })
       )
       expect(checkout.checkoutStep.value).toBe('success')
+    })
+  })
+
+  describe('a charge recovered on re-entry', () => {
+    async function reentryOn(status: string, extra = {}) {
+      const operation = ref({
+        opId: 'op-reentry',
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        actionUrl: 'https://verify.example/token'
+      })
+      mockSubscriptionActionOperation.value = operation.value as never
+      mockGetOperation.mockImplementation((opId: string) =>
+        operation.value.opId === opId ? operation.value : undefined
+      )
+      const checkout = await setup()
+      expect(checkout.checkoutStep.value).toBe('verifying')
+
+      // The store's selector stops matching the moment a charge is terminal,
+      // which is the whole reason re-entry cannot read through it.
+      operation.value = { ...operation.value, status, ...extra }
+      mockSubscriptionActionOperation.value = undefined
+      await nextTick()
+      return checkout
+    }
+
+    it('reaches the declined step instead of returning to pricing', async () => {
+      const checkout = await reentryOn('failed', {
+        errorMessage: 'Insufficient funds'
+      })
+
+      expect(checkout.checkoutStep.value).toBe('declined')
+    })
+
+    it('closes on success when there is no plan selection to show', async () => {
+      await reentryOn('succeeded')
+
+      expect(emit).toHaveBeenCalledWith('close', true)
     })
   })
 

@@ -202,6 +202,16 @@ export function useSubscriptionCheckout(
       ? operation
       : undefined
   })
+  // Re-entry adopts the recovered charge by id. The store's selector matches
+  // only pending and reconciliation_needed, so reading a succeeded or failed
+  // charge through it yields "no operation" — which the verifying watcher
+  // reads as an abandoned charge and answers by returning the customer to
+  // pricing, skipping the success and declined steps entirely.
+  if (billingOperationStore.subscriptionActionOperation?.status === 'pending') {
+    activeCheckoutOperationId.value =
+      billingOperationStore.subscriptionActionOperation.opId
+  }
+
   const activeCheckoutActionUrl = computed(
     () => activeCheckoutOperation.value?.actionUrl ?? null
   )
