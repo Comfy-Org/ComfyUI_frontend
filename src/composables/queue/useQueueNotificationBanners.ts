@@ -2,6 +2,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import type {
+  PromptQueueAttemptEndedPayload,
   PromptQueuedEventPayload,
   PromptQueueingEventPayload
 } from '@/scripts/api'
@@ -172,6 +173,29 @@ export const useQueueNotificationBanners = () => {
     count
   })
 
+  /**
+   * Drops the "queuing" banner without claiming anything was queued.
+   *
+   * A run the backend refused outright used to leave that banner up forever,
+   * because the event resolving it was withheld unless something was accepted.
+   * Now that it always arrives, converting it would replace one wrong banner
+   * with a worse one: `sanitizeCount` reads an explicit 0 as "unknown, assume
+   * 1", so the user would be told a run started while the error dialog behind
+   * it says the opposite.
+   */
+  const dismissQueuedPending = (requestId: number | undefined) => {
+    const matches = (notification: { type: string; requestId?: number }) =>
+      notification.type === 'queuedPending' &&
+      (requestId === undefined || notification.requestId === requestId)
+
+    if (activeNotification.value && matches(activeNotification.value)) {
+      activeNotification.value = null
+    }
+    pendingNotifications.value = pendingNotifications.value.filter(
+      (notification) => !matches(notification)
+    )
+  }
+
   const convertQueuedPendingToQueued = (
     requestId: number | undefined,
     count: number
@@ -230,6 +254,15 @@ export const useQueueNotificationBanners = () => {
     )
   }
 
+  const handleAttemptEnded = (
+    event: CustomEvent<PromptQueueAttemptEndedPayload>
+  ) => {
+    // Only the failed case. A successful attempt has already had its pending
+    // banner converted by handlePromptQueued, and dismissing here would take
+    // down the "Queued" banner the user is meant to see.
+    if (event.detail?.queued === 0) dismissQueuedPending(event.detail.requestId)
+  }
+
   const handlePromptQueued = (event: CustomEvent<PromptQueuedEventPayload>) => {
     const payload = event.detail
     const count = sanitizeCount(payload?.batchCount)
@@ -243,6 +276,7 @@ export const useQueueNotificationBanners = () => {
 
   api.addEventListener('promptQueueing', handlePromptQueueing)
   api.addEventListener('promptQueued', handlePromptQueued)
+  api.addEventListener('promptQueueAttemptEnded', handleAttemptEnded)
 
   const queueCompletionBatchNotifications = () => {
     const startTs = lastActiveStartTs.value ?? 0
@@ -336,6 +370,7 @@ export const useQueueNotificationBanners = () => {
   onUnmounted(() => {
     api.removeEventListener('promptQueueing', handlePromptQueueing)
     api.removeEventListener('promptQueued', handlePromptQueued)
+    api.removeEventListener('promptQueueAttemptEnded', handleAttemptEnded)
     clearIdleCompletionHooks()
     clearDismissTimer()
     pendingNotifications.value = []

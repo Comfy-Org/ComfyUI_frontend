@@ -130,7 +130,7 @@ describe('API key authentication initialization', () => {
     return { apiKeyStore, ...settleLookup }
   }
 
-  it('retains and validates a persisted key while the API key store initializes', async () => {
+  it('validates a persisted Cloud key against the current Cloud user', async () => {
     localStorage.setItem('comfy_api_key', 'persisted-api-key')
     useAuthStore()
 
@@ -141,7 +141,7 @@ describe('API key authentication initialization', () => {
     expect(apiKeyStore.getApiKey()).toBe('persisted-api-key')
     expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/customers'),
+      expect.stringContaining('/api/user'),
       expect.objectContaining({
         headers: expect.objectContaining({
           'X-API-KEY': 'persisted-api-key'
@@ -164,7 +164,7 @@ describe('API key authentication initialization', () => {
 
     expect(mockFetch).toHaveBeenCalledOnce()
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/customers'),
+      expect.stringContaining('/api/user'),
       expect.objectContaining({
         headers: expect.objectContaining({ 'X-API-KEY': 'key-b' })
       })

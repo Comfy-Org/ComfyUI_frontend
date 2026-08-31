@@ -14,6 +14,7 @@ import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
 import { resolve } from 'path'
 import { defineConfig } from 'vitest/config'
+import { defaultAllowedOrigins } from 'vite'
 import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
@@ -265,6 +266,16 @@ export default defineConfig({
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     allowedHosts: process.env.AMP_ORB ? true : undefined,
+    // An extension host may run extension modules from a sandboxed
+    // (opaque-origin) realm, which sends `Origin: null` — and Vite's
+    // post-CVE origin allowlist answers that with an empty 403 before any
+    // proxy or middleware runs. Admit the null origin alongside Vite's own
+    // defaults, only in the mode that loads extensions at all. Dev server
+    // only; `null` here can read dev assets, which any local page already can.
+    cors:
+      process.env.DEV_SERVER_LOAD_EXTENSIONS === '1'
+        ? { origin: [defaultAllowedOrigins, 'null'] }
+        : undefined,
     watch: {
       ignored: [
         './browser_tests/**',
@@ -294,15 +305,34 @@ export default defineConfig({
           }
         : {}),
 
+      // OpenVSCode derives its remote WebSocket authority from Host. Keep the
+      // browser-facing dev-server authority here; the general cloud API proxy
+      // changes Host to its upstream target, which leaves the workbench shell
+      // visible but prevents the remote extension host from connecting.
+      '/api/customnodes/editor': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ws: true,
+        ...(DISTRIBUTION === 'cloud' ? { secure: false } : {})
+      },
+
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
+        // VS Code Web hosts its remote extension process over a WebSocket
+        // below the same /api/customnodes/editor path as the workbench.
+        ws: true,
         ...cloudProxyConfig,
         bypass: (req, res, _options) => {
           if (!res) return null
 
           // Return empty array for extensions API as these modules
           // are not on vite's dev server.
-          if (req.url === '/api/extensions') {
+          // DEV_SERVER_LOAD_EXTENSIONS=1 opts back in and proxies them from the
+          // backend instead — required to develop or test an extension host
+          // (e.g. sandboxed loading) against the dev server.
+          if (
+            req.url === '/api/extensions' &&
+            process.env.DEV_SERVER_LOAD_EXTENSIONS !== '1'
+          ) {
             res.end(JSON.stringify([]))
             return false
           }
@@ -344,7 +374,28 @@ export default defineConfig({
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...cloudProxyConfig,
+        // Extension scripts are static assets, and an extension host may run
+        // them from a sandboxed (opaque-origin) realm whose module fetches are
+        // all cross-origin. Two dev-only adjustments let a multi-file
+        // extension resolve its relative imports from there; without them only
+        // single-file fallback loading works. Assets only — /api stays
+        // same-origin.
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // An opaque origin sends `Origin: null` and the browser stamps
+            // `Sec-Fetch-Site: cross-site`; the backend's CSRF middleware
+            // (server.py, create_origin_only_middleware) rejects both with
+            // 403. These are public static assets, so present the fetch as
+            // same-origin to the backend…
+            proxyReq.removeHeader('origin')
+            proxyReq.removeHeader('sec-fetch-site')
+          })
+          proxy.on('proxyRes', (proxyRes) => {
+            // …and answer CORS to the sandbox on the way back.
+            proxyRes.headers['access-control-allow-origin'] = '*'
+          })
+        }
       },
 
       '/docs': {

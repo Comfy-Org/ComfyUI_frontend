@@ -1,6 +1,7 @@
 import {
   frontendResolverMap,
-  frontendSupplierMap
+  frontendSupplierMap,
+  projectedPromptInputOmissions
 } from '@/platform/nodeApi/defsRegistry'
 import { whileEmbeddingWorkflow } from '@/platform/nodeApi/serializeContext'
 import {
@@ -287,6 +288,16 @@ export const graphToPrompt = async (
         // @ts-expect-error link.origin_slot is already number.
         parseInt(resolvedInput.origin_slot)
       ]
+    }
+
+    // A node extension may remove only its own declared inputs from this one
+    // executable prompt. The embedded/saved workflow was already serialized
+    // above, so link identity and document state remain untouched.
+    for (const name of await projectedPromptInputOmissions(
+      node.comfyClass!,
+      String(node.id)
+    )) {
+      delete inputs[name]
     }
 
     output[String(node.id)] = {

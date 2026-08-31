@@ -134,6 +134,24 @@ export interface ConnectionChangeEvent {
   readonly peerIndex?: number
 }
 
+/**
+ * The only change a node extension may make to one queued API prompt.
+ *
+ * Inputs are named from that node type's own backend declaration. The saved
+ * workflow is untouched; the prompt builder removes these names only from the
+ * executable payload it is assembling now.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface PromptInputProjection {
+  readonly omitInputs: readonly string[]
+}
+
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type PromptInputProjector = (
+  node: NodeHandle
+) => PromptInputProjection | Promise<PromptInputProjection>
+
 export interface NodeDefBuilder {
   /** Current state of the definition, after any earlier extensions ran. */
   readonly def: NodeDef
@@ -258,6 +276,15 @@ export interface NodeDefBuilder {
    * workflow means.
    */
   onSerialize(callback: (node: NodeHandle) => Record<string, unknown>): void
+  /**
+   * Omits declared inputs from this node in the API prompt being built.
+   *
+   * This is not a prompt rewrite: the callback receives no prompt or input
+   * values, may not name another node, and cannot inject replacements. It is
+   * awaited on the prompt path so a sandboxed extension answers from its
+   * current read-only node snapshot rather than a stale cached value.
+   */
+  onPromptSerialize(callback: PromptInputProjector): void
   /**
    * Vetoes or permits an incoming connection *before* it is wired.
    *
@@ -483,6 +510,7 @@ export interface NodeDefinition {
   ): boolean | void | Promise<boolean | void>
   onRemoved?(node: NodeHandle): void
   onSerialize?(node: NodeHandle): Record<string, unknown>
+  onPromptSerialize?: PromptInputProjector
 }
 
 export interface DefRegistry {
@@ -764,6 +792,24 @@ const RESERVED_SERIAL_KEYS: ReadonlySet<string> = new Set([
  */
 const frontendResolvers = new Map<string, Resolver>()
 
+type BoundPromptInputProjector = {
+  run: PromptInputProjector
+  handleFor: (nodeId: string) => NodeHandle
+}
+
+type PromptInputProjectionPolicy = {
+  allowed: ReadonlySet<string>
+  projectors: readonly BoundPromptInputProjector[]
+}
+
+/**
+ * Prompt-only input projections installed for backend node types.
+ *
+ * Kept module-level because the prompt builder knows the executable node type
+ * and id, not which API-major registry installed the extension.
+ */
+const promptInputProjectors = new Map<string, PromptInputProjectionPolicy>()
+
 /**
  * Colours packs declared, kept apart from the renderer's own table.
  *
@@ -823,6 +869,66 @@ async function refreshDefs(): Promise<void> {
 /** The resolvers currently registered, for `resolveFrontendNodes`. */
 export function frontendResolverMap(): ReadonlyMap<string, Resolver> {
   return frontendResolvers
+}
+
+/**
+ * Returns the union of inputs this node's extensions omit from this prompt.
+ *
+ * Validation lives here, at the authority boundary, rather than in packs or
+ * the prompt builder. A malformed projection aborts the build with attribution
+ * and never degrades to a broader execution graph.
+ */
+export async function projectedPromptInputOmissions(
+  nodeType: string,
+  nodeId: string
+): Promise<readonly string[]> {
+  const policy = promptInputProjectors.get(nodeType)
+  if (!policy) return Object.freeze([])
+
+  const omitted = new Set<string>()
+  for (const { run, handleFor } of policy.projectors) {
+    const value: unknown = await run(handleFor(nodeId))
+    if (
+      typeof value !== 'object' ||
+      value === null ||
+      Array.isArray(value) ||
+      Object.keys(value).some((key) => key !== 'omitInputs') ||
+      !Array.isArray((value as { omitInputs?: unknown }).omitInputs)
+    ) {
+      throw new ComfyApiError(
+        `onPromptSerialize for '${nodeType}' must return only ` +
+          `{ omitInputs: string[] }.`
+      )
+    }
+
+    const names = (value as { omitInputs: unknown[] }).omitInputs
+    if (names.length > policy.allowed.size || names.length > 256) {
+      throw new ComfyApiError(
+        `onPromptSerialize for '${nodeType}' named too many inputs.`
+      )
+    }
+    const local = new Set<string>()
+    for (const name of names) {
+      if (
+        typeof name !== 'string' ||
+        name.length === 0 ||
+        name.length > 256 ||
+        !policy.allowed.has(name)
+      ) {
+        throw new ComfyApiError(
+          `onPromptSerialize for '${nodeType}' named an undeclared input.`
+        )
+      }
+      if (local.has(name)) {
+        throw new ComfyApiError(
+          `onPromptSerialize for '${nodeType}' repeated input '${name}'.`
+        )
+      }
+      local.add(name)
+      omitted.add(name)
+    }
+  }
+  return Object.freeze([...omitted])
 }
 
 /**
@@ -1008,6 +1114,9 @@ export function createDefRegistry(): {
         if (definition.onDrop) builder.onDrop(definition.onDrop)
         if (definition.onRemoved) builder.onRemoved(definition.onRemoved)
         if (definition.onSerialize) builder.onSerialize(definition.onSerialize)
+        if (definition.onPromptSerialize) {
+          builder.onPromptSerialize(definition.onPromptSerialize)
+        }
         if (definition.supply) builder.setSupply(definition.supply)
       }
     }
@@ -1022,6 +1131,7 @@ export function createDefRegistry(): {
       registrations.delete(registration)
       frontendResolvers.delete(type)
       frontendSuppliers.delete(type)
+      promptInputProjectors.delete(type)
       LiteGraph.unregisterNodeType(type)
       known.delete(type)
     }
@@ -1143,6 +1253,7 @@ export function createDefRegistry(): {
         run: (node: NodeHandle) => Record<string, unknown>
         handleFor: (nodeId: string) => NodeHandle
       }[] = []
+      const promptSerialized: BoundPromptInputProjector[] = []
       const widgets: {
         def: WidgetDef
         handleFor: Registration['handleFor']
@@ -1188,6 +1299,7 @@ export function createDefRegistry(): {
           onRemoved: (run) => removed.push({ run, handleFor }),
           onPreview: (run) => previewed.push({ run, handleFor }),
           onSerialize: (run) => serialized.push({ run, handleFor }),
+          onPromptSerialize: (run) => promptSerialized.push({ run, handleFor }),
           onBeforeConnect: (run) => beforeConnect.push({ run, handleFor }),
           onUnplacedLink: (run) => unplacedLink.push({ run, handleFor }),
           addMenuItem: (item) => menuItems.push({ item, handleFor })
@@ -1240,6 +1352,15 @@ export function createDefRegistry(): {
             ? Promise.all(parts).then((edges) => edges.flat())
             : parts.flatMap((p) => (p instanceof Promise ? [] : p))
         })
+      }
+
+      if (promptSerialized.length) {
+        promptInputProjectors.set(def.type, {
+          allowed: new Set(def.inputs.map((input) => input.name)),
+          projectors: Object.freeze([...promptSerialized])
+        })
+      } else {
+        promptInputProjectors.delete(def.type)
       }
 
       const rawDef = raw as RawNodeDef

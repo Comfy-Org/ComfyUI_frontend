@@ -44,6 +44,7 @@ if (__DISTRIBUTION__ === 'cloud') {
   registerAgentPanelExtension()
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
+  await import('@/platform/customNodes/graphMenuExtension')
 }
 
 // Feedback button for cloud and nightly builds

@@ -104,9 +104,19 @@ vi.mock('@/scripts/app', () => ({
     canvas: { ds: { offset: [0, 0], scale: 1 } },
     rootGraph: { serialize: vi.fn(() => ({})), extra: {} },
     loadGraphData: vi.fn(),
+    graphToPrompt: vi.fn(async () => ({
+      workflow: { nodes: [], extra: {} },
+      output: {}
+    })),
     nodeOutputs: {},
     nodePreviewImages: {}
   }
+}))
+
+const mockDownloadBlob = vi.fn()
+vi.mock('@/base/common/downloadUtil', () => ({
+  downloadBlob: (filename: string, blob: Blob) =>
+    mockDownloadBlob(filename, blob)
 }))
 
 vi.mock('@/scripts/defaultGraph', () => ({
@@ -202,6 +212,43 @@ describe('useWorkflowService', () => {
       pendingLoads: 0,
       closingCount: 0,
       pendingPaths: 0
+    })
+  })
+
+  describe('exportWorkflow', () => {
+    beforeEach(() => {
+      mockDownloadBlob.mockClear()
+    })
+
+    it('always downloads a .json file, even when the filename prompt is off', async () => {
+      // With Comfy.PromptFilename off — the default whenever the settings
+      // store cannot be read, e.g. the local Cloud stack where /api/settings
+      // 401s — no prompt runs, and the `.json` ensure that lived only in the
+      // prompt branch was skipped. Worse, exportWorkflow uses workflow.filename,
+      // which is the basename with the extension ALREADY stripped, so even a
+      // normally-saved workflow exported an extensionless file the OS cannot
+      // open.
+      vi.spyOn(useSettingStore(), 'get').mockReturnValue(false)
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/my-workflow.json'
+      })
+      useWorkflowStore().activeWorkflow = workflow
+
+      await useWorkflowService().exportWorkflow('workflow', 'workflow')
+
+      expect(mockDownloadBlob).toHaveBeenCalledTimes(1)
+      const [filename] = mockDownloadBlob.mock.calls[0]
+      expect(filename).toBe('my-workflow.json')
+    })
+
+    it('exports a .json file when no workflow is open (default name)', async () => {
+      vi.spyOn(useSettingStore(), 'get').mockReturnValue(false)
+      useWorkflowStore().activeWorkflow = null
+
+      await useWorkflowService().exportWorkflow('workflow', 'workflow')
+
+      const [filename] = mockDownloadBlob.mock.calls[0]
+      expect(filename).toBe('workflow.json')
     })
   })
 

@@ -1474,7 +1474,7 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Request body for minting an input-image upload grant.
+ * Request body for minting an input-image or input-audio upload grant.
  */
 export const zInputUploadUrlRequest = z.object({
   content_type: z.string().max(64)
@@ -1944,6 +1944,178 @@ export const zDesktopLoginCodeCreateRequest = z.object({
  */
 export const zDeleteSessionResponse = z.object({
   success: z.boolean()
+})
+
+export const zCustomNodeEditorDraftTestArtifact = z.object({
+  mime_type: z.enum(['image/png']),
+  name: z.string(),
+  url: z.string().optional()
+})
+
+export const zCustomNodeEditorDraftTestOutput = z.object({
+  artifacts: z.array(zCustomNodeEditorDraftTestArtifact).max(4),
+  dtype: z.string().optional(),
+  index: z.number().int().gte(0),
+  kind: z.string(),
+  max: z.number().nullish(),
+  mean: z.number().nullish(),
+  min: z.number().nullish(),
+  node_id: z.string().optional(),
+  shape: z.array(z.number().int()).optional(),
+  summary: z.string().optional(),
+  value: z.unknown().optional(),
+  value_type: z.string().optional()
+})
+
+export const zCustomNodeEditorDraftTestFrame = z.object({
+  file: z.string(),
+  function: z.string().optional(),
+  line: z.number().int().nullish(),
+  source: z.string().optional()
+})
+
+export const zCustomNodeEditorDraftTestError = z.object({
+  frames: z.array(zCustomNodeEditorDraftTestFrame).max(64),
+  message: z.string(),
+  type: z.string()
+})
+
+export const zCustomNodeEditorTestResult = z.object({
+  duration_ms: z.coerce
+    .bigint()
+    .gte(BigInt(0))
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  error: zCustomNodeEditorDraftTestError.optional(),
+  outputs: z.array(zCustomNodeEditorDraftTestOutput).max(64).optional(),
+  phase: z
+    .enum([
+      'snapshot',
+      'validate',
+      'prepare',
+      'import',
+      'execute',
+      'collect',
+      'complete'
+    ])
+    .optional(),
+  sandbox: z.string().optional(),
+  status: z.enum(['passed', 'failed', 'not_run', 'unavailable']),
+  stderr: z.string().optional(),
+  stdout: z.string().optional(),
+  summary: z.string(),
+  test_id: z.string().optional()
+})
+
+export const zCustomNodeEditorProposal = z.object({
+  changes: z
+    .array(
+      z.object({
+        destination_path: z.string().optional(),
+        kind: z.enum([
+          'modified',
+          'created',
+          'deleted',
+          'moved',
+          'directory_created'
+        ]),
+        original_content: z.string(),
+        path: z.string(),
+        proposed_content: z.string()
+      })
+    )
+    .max(32),
+  created_at: z.string().datetime(),
+  id: z.string(),
+  summary: z.string(),
+  test: zCustomNodeEditorTestResult.optional()
+})
+
+export const zCustomNodeEditorOperation = z.object({
+  content: z.string().optional(),
+  destination: z.string().optional(),
+  kind: z.enum([
+    'replace_text',
+    'replace_file',
+    'create_file',
+    'create_directory',
+    'move_file',
+    'delete_file'
+  ]),
+  new_text: z.string().optional(),
+  old_text: z.string().optional(),
+  path: z.string()
+})
+
+export const zCustomNodeEditorFiles = z.object({
+  digest: z.string(),
+  directories: z.array(z.string()).max(256),
+  files: z
+    .array(
+      z.object({
+        content: z.string(),
+        editable: z.boolean(),
+        path: z.string()
+      })
+    )
+    .max(256),
+  initial_path: z.string().optional()
+})
+
+export const zCustomNodeEditorDraftTestResult = z.object({
+  duration_ms: z.number().int().gte(0).optional(),
+  error: zCustomNodeEditorDraftTestError.optional(),
+  format: z.enum(['comfy-ephemeral-pack-test/1']),
+  guest_pid: z.number().int().optional(),
+  outputs: z.array(zCustomNodeEditorDraftTestOutput).max(64),
+  phase: z.enum([
+    'snapshot',
+    'validate',
+    'prepare',
+    'import',
+    'execute',
+    'collect',
+    'complete'
+  ]),
+  progress: z.array(z.unknown()).optional(),
+  sandbox: z.string().optional(),
+  status: z.enum(['passed', 'failed']),
+  stderr: z.string(),
+  stdout: z.string(),
+  ui: z.unknown().optional()
+})
+
+export const zCustomNodeEditorDraftTestRequest = z.object({
+  files: z
+    .array(
+      z.object({
+        content: z.string(),
+        path: z.string()
+      })
+    )
+    .min(1)
+    .max(256),
+  snapshot_digest: z.string().optional(),
+  workflow_path: z.string()
+})
+
+export const zCustomNodeEditorDraftTest = z.object({
+  created_at: z.string().datetime(),
+  draft_digest: z.string(),
+  error: z.string().optional(),
+  id: z.string(),
+  result: zCustomNodeEditorDraftTestResult.optional(),
+  status: z.enum([
+    'queued',
+    'running',
+    'cancelling',
+    'passed',
+    'failed',
+    'cancelled'
+  ]),
+  updated_at: z.string().datetime(),
+  workflow_path: z.string()
 })
 
 /**
@@ -2549,6 +2721,17 @@ export const zAgentAnswerAccepted = z.object({
 })
 
 /**
+ * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
+ */
+export const zAgentAdmissionError = z.object({
+  error: z.object({
+    message: z.string(),
+    reason: z.enum(['no_funds', 'manual_block', 'funds_unavailable']),
+    type: z.enum(['PAYMENT_REQUIRED', 'SERVICE_UNAVAILABLE'])
+  })
+})
+
+/**
  * Response returned after successfully accepting a workspace invitation.
  */
 export const zAcceptInviteResponse = z.object({
@@ -3147,6 +3330,194 @@ export const zGetBillingUsageTimeSeriesQuery = z.object({
  * Workspace usage
  */
 export const zGetBillingUsageTimeSeriesResponse = zUsageTimeSeries
+
+export const zDeleteWorkspaceCustomNodeQuery = z.object({
+  name: z.string()
+})
+
+/**
+ * Workspace packs
+ */
+export const zListWorkspaceCustomNodesResponse = z.array(
+  z.object({
+    name: z.string(),
+    owner: z.string(),
+    revision_id: z.string(),
+    snapshot: z.string(),
+    uploaded_at: z.string()
+  })
+)
+
+export const zUploadWorkspaceCustomNodeBody = z.object({
+  file: z.string(),
+  idempotency_key: z.string(),
+  name: z.string()
+})
+
+export const zDownloadWorkspaceCustomNodePath = z.object({
+  revision_id: z.string()
+})
+
+/**
+ * Custom-node pack archive
+ */
+export const zDownloadWorkspaceCustomNodeResponse = z.string()
+
+export const zCreateCustomNodeEditorSessionBody = z.object({
+  mode: z.enum(['create', 'edit']),
+  name: z.string(),
+  revision_id: z.string().optional()
+})
+
+export const zAbandonCustomNodeEditorSessionPath = z.object({
+  id: z.string()
+})
+
+export const zGetCustomNodeEditorSessionPath = z.object({
+  id: z.string()
+})
+
+export const zRenameCustomNodeEditorSessionBody = z.object({
+  name: z.string().min(1).max(80)
+})
+
+export const zRenameCustomNodeEditorSessionPath = z.object({
+  id: z.string()
+})
+
+export const zRunCustomNodeEditorActionBody = z.object({
+  action: z.enum(['submit', 'validate'])
+})
+
+export const zRunCustomNodeEditorActionPath = z.object({
+  id: z.string()
+})
+
+export const zCreateCustomNodeEditorAgentProposalBody = z.object({
+  instruction: z.string().min(1).max(4096)
+})
+
+export const zCreateCustomNodeEditorAgentProposalPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Structured proposal awaiting explicit application
+ */
+export const zCreateCustomNodeEditorAgentProposalResponse =
+  zCustomNodeEditorProposal
+
+export const zApplyCustomNodeEditorAgentProposalPath = z.object({
+  id: z.string(),
+  proposal_id: z.string()
+})
+
+/**
+ * Updated editor files
+ */
+export const zApplyCustomNodeEditorAgentProposalResponse =
+  zCustomNodeEditorFiles
+
+export const zListCustomNodeEditorFilesPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Allowlisted editor files and initial file
+ */
+export const zListCustomNodeEditorFilesResponse = zCustomNodeEditorFiles
+
+export const zSaveCustomNodeEditorFilesBody = z.intersection(
+  z.unknown(),
+  z.object({
+    baseline_digest: z.string().optional(),
+    files: z
+      .array(
+        z.object({
+          content: z.string(),
+          path: z.string()
+        })
+      )
+      .max(256)
+      .optional(),
+    operations: z.array(zCustomNodeEditorOperation).min(1).max(32).optional()
+  })
+)
+
+export const zSaveCustomNodeEditorFilesPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Saved editor files
+ */
+export const zSaveCustomNodeEditorFilesResponse = zCustomNodeEditorFiles
+
+export const zRefreshCustomNodeEditorDeploymentPath = z.object({
+  id: z.string()
+})
+
+export const zCreateCustomNodeEditorDraftTestBody =
+  zCustomNodeEditorDraftTestRequest
+
+export const zCreateCustomNodeEditorDraftTestPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Draft test accepted
+ */
+export const zCreateCustomNodeEditorDraftTestResponse =
+  zCustomNodeEditorDraftTest
+
+export const zDeleteCustomNodeEditorDraftTestPath = z.object({
+  id: z.string(),
+  test_id: z.string()
+})
+
+export const zDeleteCustomNodeEditorDraftTestResponse = z.union([
+  z.unknown(),
+  z.void()
+])
+
+export const zGetCustomNodeEditorDraftTestPath = z.object({
+  id: z.string(),
+  test_id: z.string()
+})
+
+/**
+ * Current test state and structured result
+ */
+export const zGetCustomNodeEditorDraftTestResponse = zCustomNodeEditorDraftTest
+
+export const zGetCustomNodeEditorDraftTestArtifactPath = z.object({
+  id: z.string(),
+  test_id: z.string(),
+  name: z.string().regex(/^output-[0-9]+-[0-9]+\.png$/)
+})
+
+/**
+ * Draft test preview image
+ */
+export const zGetCustomNodeEditorDraftTestArtifactResponse = z.string()
+
+export const zGetCustomNodeEditorWorkbenchPath = z.object({
+  id: z.string()
+})
+
+export const zPostCustomNodeEditorWorkbenchPath = z.object({
+  id: z.string()
+})
+
+export const zGetCustomNodeEditorResourcePath = z.object({
+  id: z.string(),
+  path: z.string()
+})
+
+export const zPostCustomNodeEditorResourcePath = z.object({
+  id: z.string(),
+  path: z.string()
+})
 
 /**
  * Embedding names

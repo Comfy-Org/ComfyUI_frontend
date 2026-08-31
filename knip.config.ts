@@ -6,7 +6,7 @@ const config: KnipConfig = {
   workspaces: {
     '.': {
       entry: [
-        '{build,scripts}/**/*.{js,ts}',
+        '{build,scripts}/**/*.{js,mjs,ts}',
         'vitest.matrix.config.mts',
         'src/assets/css/style.css',
         'public/comfy/api/v2.js',
@@ -21,7 +21,14 @@ const config: KnipConfig = {
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
-        '!src/__ecs_matrix__/**'
+        '!src/__ecs_matrix__/**',
+        // Mount point for the separately-licensed secure-nodes overlay: a
+        // tracked symlink a developer points at their overlay checkout. Its
+        // files load by runtime URL from secureNodesBootstrap, never through
+        // the build. A project negation rather than `ignore` because the link
+        // dangles on checkouts without the overlay, and an unmatched ignore
+        // entry is a config-hint failure while an unmatched negation is inert.
+        '!public/secure-nodes/**'
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
@@ -56,6 +63,10 @@ const config: KnipConfig = {
     '@iconify/json'
   ],
   ignore: [
+    // Served to custom nodes at runtime as /comfy/api/v2.js. Nothing in the
+    // build imports it — that is the point; it is the published entry point
+    // packs import from, so knip cannot see a consumer.
+    'public/comfy/api/v2.js',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
@@ -72,6 +83,10 @@ const config: KnipConfig = {
     'src/composables/billing/useNextInvoice.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
+    // The extension API contract, taken verbatim from PR #11251 so the two
+    // efforts converge on one shape. It is the reference our handles conform
+    // to, not a module anything imports yet.
+    'src/types/extensionV2.ts',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],

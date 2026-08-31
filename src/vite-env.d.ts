@@ -19,6 +19,7 @@ declare global {
 
   interface ImportMetaEnv {
     VITE_APP_VERSION?: string
+    VITE_LOCAL_CLOUD_AUTH?: string
     VITE_STAGING_API_BASE_URL?: string
     VITE_STAGING_CLOUD_BASE_URL?: string
     VITE_STAGING_PLATFORM_BASE_URL?: string

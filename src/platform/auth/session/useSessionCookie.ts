@@ -1,6 +1,7 @@
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 interface InFlightCreateSession {
@@ -40,21 +41,39 @@ export const useSessionCookie = () => {
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
     const authStore = useAuthStore()
     const firebaseToken = await authStore.getIdToken()
-    if (!firebaseToken) {
-      throw new Error('No Firebase token available for session creation')
+    if (firebaseToken) {
+      return { Authorization: `Bearer ${firebaseToken}` }
     }
 
-    return { Authorization: `Bearer ${firebaseToken}` }
+    // API-key sessions have no Firebase identity, but they still need the
+    // session cookie: <img> tags and the WebSocket handshake cannot attach
+    // X-API-KEY, so the cookie is the only credential those requests carry.
+    // The backend mints a key-carrying cookie for key-authenticated sessions.
+    const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
+    if (apiKeyHeader) {
+      return apiKeyHeader
+    }
+
+    throw new Error('No credential available for session creation')
   }
+
+  /**
+   * The session's stable identity: the Firebase uid, or — for API-key
+   * sessions, which have no Firebase user — the key itself, so swapping
+   * keys is detected exactly like switching accounts.
+   */
+  const sessionIdentity = (): string | null =>
+    useAuthStore().currentUser?.uid ??
+    useApiKeyAuthStore().getAuthHeader()?.['X-API-KEY'] ??
+    null
 
   /** Creates or refreshes the session cookie after login or token refresh. */
   const performCreateSession = async (
     expectedOwnerUid: string
   ): Promise<void> => {
-    const authStore = useAuthStore()
     const authHeader = await getSessionHeaderOrThrow()
 
-    if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) {
+    if (sessionIdentity() !== expectedOwnerUid) {
       throw new Error('Session identity changed during creation')
     }
 
@@ -85,12 +104,12 @@ export const useSessionCookie = () => {
       ownerUid,
       promise: sessionMutationTail
         .then(async () => {
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if (sessionIdentity() !== ownerUid) {
             throw new Error('Session identity changed before creation')
           }
           await performCreateSession(ownerUid)
           confirmedSessionOwnerUid = ownerUid
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if (sessionIdentity() !== ownerUid) {
             throw new Error('Session identity changed during creation')
           }
         })
@@ -107,7 +126,7 @@ export const useSessionCookie = () => {
   }
 
   const currentOwnerUidOrThrow = (): string => {
-    const ownerUid = useAuthStore().currentUser?.uid
+    const ownerUid = sessionIdentity()
     if (!ownerUid) {
       throw new Error('No authenticated user available for session creation')
     }

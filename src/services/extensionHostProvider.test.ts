@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  hasExclusiveExtensionHost,
   hasExtensionHost,
   provideExtensionHost,
   resolveExtensionHost
@@ -32,7 +31,6 @@ describe('extension host provider', () => {
     provideExtensionHost(provider)
 
     expect(hasExtensionHost()).toBe(true)
-    expect(hasExclusiveExtensionHost()).toBe(false)
     expect(resolveExtensionHost('/extensions/foo/main.js')).toBe(provider)
   })
 
@@ -43,17 +41,6 @@ describe('extension host provider', () => {
 
     expect(resolveExtensionHost('/extensions/sandboxed/main.js')).not.toBeNull()
     expect(resolveExtensionHost('/extensions/other/main.js')).toBeNull()
-  })
-
-  it('routes every third-party extension through an exclusive provider', () => {
-    const provider = makeProvider({
-      policy: 'exclusive',
-      canLoad: () => false
-    })
-    provideExtensionHost(provider)
-
-    expect(resolveExtensionHost('/extensions/other/main.js')).toBe(provider)
-    expect(hasExclusiveExtensionHost()).toBe(true)
   })
 
   it('does not break extension loading when canLoad throws', () => {

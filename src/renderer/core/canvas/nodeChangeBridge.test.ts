@@ -67,7 +67,7 @@ function install(scope: NodeChangeScope = 'visible') {
 /** A definition registered the way `createSubgraph` registers one. */
 function addSubgraph(root: LGraph, name: string) {
   const definition = root.createSubgraph(
-    createTestSubgraph({ name }).asSerialisable()
+    createTestSubgraph({ rootGraph: root, name }).asSerialisable()
   )
   const node = new LGraphNode(`${name} node`)
   definition.add(node)

@@ -239,6 +239,9 @@
   --warning-foreground: var(--color-gold-800);
   --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
+  /* Sandboxed custom-node accent (Cloud): antique gold, orangish and
+     desaturated so it reads as "protected" without shouting. */
+  --secure-outline: #b8813a;
   --border-default: var(--color-smoke-600);
   --border-subtle: var(--color-smoke-400);
   --muted-background: var(--color-smoke-700);
@@ -394,6 +397,8 @@
   --warning-foreground: var(--color-gold-600);
   --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
+  /* See the light-theme note above. Nudged brighter for dark surfaces. */
+  --secure-outline: #cf9648;
   --border-default: var(--color-charcoal-200);
   --border-subtle: var(--color-charcoal-300);
   --muted-background: var(--color-charcoal-100);
@@ -571,6 +576,7 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-on-background: var(--warning-on-background);
   --color-success-background: var(--success-background);
+  --color-secure-outline: var(--secure-outline);
   --color-border-default: var(--border-default);
   --color-border-subtle: var(--border-subtle);
   --color-muted-background: var(--muted-background);

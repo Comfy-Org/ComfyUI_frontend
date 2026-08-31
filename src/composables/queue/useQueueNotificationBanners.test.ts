@@ -183,19 +183,46 @@ describe(useQueueNotificationBanners, () => {
     }
   })
 
-  it('falls back to 1 when queued batch count is invalid', async () => {
+  it('falls back to 1 when queued batch count is missing', async () => {
     const { unmount, composable } = mountComposable()
 
     try {
-      mockApi.dispatchEvent(
-        new CustomEvent('promptQueued', { detail: { batchCount: 0 } })
-      )
+      mockApi.dispatchEvent(new CustomEvent('promptQueued', { detail: {} }))
       await nextTick()
 
       expect(composable.currentNotification.value).toEqual({
         type: 'queued',
         count: 1
       })
+    } finally {
+      unmount()
+    }
+  })
+
+  it('says nothing when the backend queued nothing', async () => {
+    // A run refused outright leaves promptQueued unsent — correctly, since
+    // that event means afterQueued and nothing was queued. So the "queuing"
+    // banner had nothing to resolve it and stayed up for good. The attempt-
+    // ended event is what closes it, without claiming a run started.
+    const { unmount, composable } = mountComposable()
+
+    try {
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueueing', {
+          detail: { batchCount: 1, requestId: 7 }
+        })
+      )
+      await nextTick()
+      expect(composable.currentNotification.value?.type).toBe('queuedPending')
+
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueueAttemptEnded', {
+          detail: { requestId: 7, queued: 0, rejected: 1 }
+        })
+      )
+      await nextTick()
+
+      expect(composable.currentNotification.value).toBeNull()
     } finally {
       unmount()
     }

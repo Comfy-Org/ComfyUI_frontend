@@ -61,6 +61,8 @@ export interface WidgetOptions {
 }
 
 /**
+ * Shapes follow `src/types/extensionV2.ts`, the agreed extension contract.
+ *
  * Accessor methods rather than properties, so a read can be a store query and
  * a write can dispatch a command.
  */

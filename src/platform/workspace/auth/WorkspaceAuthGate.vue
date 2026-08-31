@@ -119,6 +119,7 @@ async function initialize(): Promise<void> {
 
   const authStore = useAuthStore()
   const { isInitialized, currentUser } = storeToRefs(authStore)
+  const apiKeyStore = useApiKeyAuthStore()
 
   try {
     // Step 1: Wait for Firebase auth to resolve
@@ -134,7 +135,7 @@ async function initialize(): Promise<void> {
 
     // Step 2: If not authenticated, nothing more to do
     // Unauthenticated users don't have workspace context
-    if (!currentUser.value) {
+    if (!currentUser.value && !apiKeyStore.isAuthenticated) {
       initializationState.value = 'ready'
       return
     }
@@ -237,9 +238,6 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
-// The local session identity: the Firebase uid, or the validated API key for
-// key-only sessions. Workspace initialization keys off this so an API-key
-// login boots workspace context the same way a Firebase login does.
 function localSessionIdentity(): string | null {
   const { currentUser } = storeToRefs(useAuthStore())
   if (currentUser.value?.uid) return currentUser.value.uid

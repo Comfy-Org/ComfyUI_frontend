@@ -306,6 +306,23 @@ describe('WorkspaceAuthGate', () => {
     })
   })
 
+  describe('cloud builds - API-key user', () => {
+    it('initializes the workspace without a Firebase session', async () => {
+      mockIsInitialized.value = true
+      mockApiKeyAuthenticated.value = true
+
+      mountComponent()
+      await flushPromises()
+
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledWith({
+        useAuth: true,
+        signal: expect.any(AbortSignal)
+      })
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+    })
+  })
+
   describe('cloud builds - authenticated user', () => {
     beforeEach(() => {
       mockIsInitialized.value = true

@@ -77,7 +77,9 @@ export interface NodeSnapshot {
 }
 
 /**
- * Accessor methods let a read query a store and a write dispatch a command.
+ * Shapes follow `src/types/extensionV2.ts`, the agreed extension contract:
+ * accessor methods rather than properties, so a read can be a store query and
+ * a write can dispatch a command.
  */
 export interface SizeConstraints {
   minWidth?: number
