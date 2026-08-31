@@ -240,18 +240,83 @@ describe('ChatHistoryScreen', () => {
     expect(emitted().rename).toBeUndefined()
   })
 
-  it('cancels a history-row rename when focus leaves the input', async () => {
+  // Behaviour deliberately changed: blur used to discard the draft, which threw
+  // typed input away on an ordinary tab or window switch with no recovery. The
+  // sibling inline rename in LayerPanel.vue commits on blur; this now matches.
+  it('commits a history-row rename when focus leaves the input', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderScreen(groupsWithTitle('Original title'))
+    const input = await openRename(user)
+
+    await user.clear(input)
+    await user.type(input, 'Kept on blur')
+    await user.tab()
+
+    expect(screen.queryByRole('textbox', { name: 'Rename' })).toBeNull()
+    expect(emitted().rename).toEqual([['thread-1', 'Kept on blur']])
+  })
+
+  it('still discards the draft on Escape', async () => {
     const user = userEvent.setup()
     const { emitted } = renderScreen(groupsWithTitle('Original title'))
     const input = await openRename(user)
 
     await user.clear(input)
     await user.type(input, 'Discarded')
-    await user.tab()
+    await user.keyboard('{Escape}')
 
     expect(screen.queryByRole('textbox', { name: 'Rename' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Original title' })).toBeVisible()
-    expect(screen.queryByText('Discarded')).toBeNull()
+    expect(emitted().rename).toBeUndefined()
+  })
+
+  it('keeps the editor focused and the draft intact when the row changes bucket mid-rename', async () => {
+    const user = userEvent.setup()
+    const { rerender } = renderScreen(groupsWithTitle('Original title'))
+    const input = await openRename(user)
+
+    await user.clear(input)
+    await user.type(input, 'Half typed')
+
+    await rerender({
+      groups: { ...emptyGroups, yesterday: [originalSession] }
+    })
+
+    const moved = await screen.findByRole<HTMLInputElement>('textbox', {
+      name: 'Rename'
+    })
+    expect(moved).toHaveFocus()
+    expect(moved.value).toBe('Half typed')
+
+    await user.type(moved, ' and more')
+    expect(moved.value).toBe('Half typed and more')
+  })
+
+  it('caps how long a renamed title can grow', async () => {
+    const user = userEvent.setup()
+    renderScreen(groupsWithTitle('Original title'))
+    const input = await openRename(user)
+
+    await user.clear(input)
+    await user.paste('x'.repeat(250))
+
+    expect(input.value).toHaveLength(200)
+  })
+
+  it('falls back to the untitled label for a whitespace-only title', () => {
+    renderScreen(groupsWithTitle('   '))
+
+    expect(screen.getByRole('button', { name: 'Untitled' })).toBeVisible()
+  })
+
+  it('emits no rename when only surrounding whitespace differs', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderScreen(groupsWithTitle('  Padded  '))
+    const input = await openRename(user)
+
+    await user.tab()
+
+    expect(input.value).toBe('  Padded  ')
     expect(emitted().rename).toBeUndefined()
   })
 
