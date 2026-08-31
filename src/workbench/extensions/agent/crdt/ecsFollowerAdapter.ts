@@ -10,6 +10,7 @@ import type {
   SemanticLinkPayload,
   SemanticNodePayload
 } from '@/core/graph/graphMutations'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
@@ -314,7 +315,10 @@ export class EcsFollowerAdapter {
         session.reconcileNextFrame = false
       }
       return committed
-    } catch {
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_crdt_projection_failure'
+      })
       this.restoreSessionPending(
         session,
         nodeActions,
