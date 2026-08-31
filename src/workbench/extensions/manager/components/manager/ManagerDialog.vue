@@ -169,7 +169,7 @@ import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
+import { useOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -204,7 +204,7 @@ const { initialTab, initialPackId, onClose } = defineProps<{
 provide(OnCloseKey, onClose)
 
 const { t } = useI18n()
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const primeVueOverlay = useOverlayChildStyle()
 const selectContentStyle = primeVueOverlay.contentStyle
 const { buildDocsUrl } = useExternalLink()
 const comfyManagerStore = useComfyManagerStore()
