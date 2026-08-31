@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -186,11 +186,13 @@ describe('AgentPanel', () => {
     const textarea = screen.getByRole('textbox')
 
     await user.click(suggestion)
+    await nextTick()
 
     expect(textarea).toHaveValue(prompt)
     expect(textarea).toHaveFocus()
 
     await user.click(screen.getByRole('button', { name: 'New chat' }))
+    await nextTick()
 
     expect(textarea).not.toHaveFocus()
   })
@@ -216,6 +218,7 @@ describe('AgentPanel', () => {
     await user.type(textarea, 'unfinished draft')
 
     await user.click(screen.getByRole('button', { name: 'Edit' }))
+    await nextTick()
 
     expect(textarea).toHaveValue(prompt)
     expect(textarea).toHaveFocus()
@@ -247,6 +250,7 @@ describe('AgentPanel', () => {
         name: i18n.global.t('agent.showChatHistory')
       })
     )
+    await nextTick()
 
     expect(emitted().openHistory).toHaveLength(1)
     expect(screen.getByTestId('chat-history')).toBeInTheDocument()
@@ -289,11 +293,13 @@ describe('AgentPanel', () => {
     })
 
     await user.click(screen.getByRole('button', { name: 'Before title' }))
+    await nextTick()
     const renameInput = screen.getByRole('textbox', {
       name: i18n.global.t('g.rename')
     })
     await user.clear(renameInput)
     await user.type(renameInput, 'After title{Enter}')
+    await nextTick()
 
     expect(emitted().renameChat[0]).toEqual(['After title'])
     expect(screen.getByRole('button', { name: 'Before title' })).toHaveFocus()
@@ -319,10 +325,12 @@ describe('AgentPanel', () => {
     })
 
     await user.click(screen.getByRole('button', { name: 'Draft title' }))
+    await nextTick()
     await user.type(
       screen.getByRole('textbox', { name: i18n.global.t('g.rename') }),
       ' ignored{Escape}'
     )
+    await nextTick()
 
     expect(emitted().renameChat).toBeUndefined()
     expect(screen.getByRole('button', { name: 'Draft title' })).toHaveFocus()
