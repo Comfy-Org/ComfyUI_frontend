@@ -437,6 +437,12 @@ export const useSubgraphNavigationStore = defineStore(
       }
     }
 
+    async function navigateToGraph(targetGraph: LGraph): Promise<boolean> {
+      const intent = createNavigationIntent('#' + targetGraph.id, 'graph')
+      await applyNavigationIntent(intent)
+      return canvasStore.getCanvas().graph === targetGraph
+    }
+
     async function updateHash(
       source: 'graph' | 'workflow-load' = 'graph',
       workflowNavigationId?: number,
@@ -555,6 +561,7 @@ export const useSubgraphNavigationStore = defineStore(
       saveCurrentViewport,
       beginWorkflowNavigation,
       endWorkflowNavigation,
+      navigateToGraph,
       updateHash,
       /** @internal Exposed for test assertions only. */
       viewportCache

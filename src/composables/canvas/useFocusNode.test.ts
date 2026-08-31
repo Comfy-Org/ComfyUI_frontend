@@ -25,6 +25,7 @@ const { canvasStore, createCanvas } = vi.hoisted(() => {
     createCanvas
   }
 })
+const navigateToGraph = vi.hoisted(() => vi.fn())
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => canvasStore
@@ -33,6 +34,9 @@ vi.mock('@/composables/canvas/visibleCanvasViewport', () => ({
   visibleCanvasViewport: () => viewport
 }))
 vi.mock('@/scripts/app', () => ({ app: { rootGraph: {} } }))
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({ navigateToGraph })
+}))
 
 import { useFocusNode } from './useFocusNode'
 
@@ -42,6 +46,11 @@ describe('useFocusNode', () => {
   beforeEach(() => {
     canvasStore.canvas = createCanvas()
     animationFrames = []
+    navigateToGraph.mockReset()
+    navigateToGraph.mockImplementation(async (graph: LGraph) => {
+      canvasStore.canvas!.graph = graph
+      return true
+    })
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       return animationFrames.push(callback)
     })
@@ -62,8 +71,8 @@ describe('useFocusNode', () => {
     finishNavigationFrames()
     await focusPromise
 
-    expect(canvasStore.canvas!.subgraph).toBe(graph)
-    expect(canvasStore.canvas!.setGraph).toHaveBeenCalledWith(graph)
+    expect(navigateToGraph).toHaveBeenCalledWith(graph)
+    expect(canvasStore.canvas!.setGraph).not.toHaveBeenCalled()
     expect(canvasStore.canvas!.animateToBounds).toHaveBeenCalledWith(bounds, {
       viewport
     })
@@ -141,5 +150,18 @@ describe('useFocusNode', () => {
       node.boundingRect,
       { viewport }
     )
+  })
+
+  it('does not frame when navigation is superseded', async () => {
+    const graph = { isRootGraph: false } as LGraph
+    const node = {
+      graph,
+      boundingRect: [1, 2, 3, 4]
+    } as unknown as LGraphNode
+    navigateToGraph.mockResolvedValue(false)
+
+    await useFocusNode().focusNodeInstance(node)
+
+    expect(canvasStore.canvas!.animateToBounds).not.toHaveBeenCalled()
   })
 })
