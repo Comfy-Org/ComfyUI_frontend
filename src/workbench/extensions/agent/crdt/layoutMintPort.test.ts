@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
-import type { GraphOperation } from './graphOperations'
+import type { GraphMutationTarget, GraphOperation } from './graphOperations'
 import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { createMintSession } from './mintSession'
@@ -10,6 +10,8 @@ import type { MintSession } from './mintSession'
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123def'
+const ROOT = 'root-uuid'
+const TARGET: GraphMutationTarget = { workflowId: 'wf-a', rootGraphId: ROOT }
 
 function createNodeChange(
   id: string,
@@ -18,6 +20,7 @@ function createNodeChange(
   return {
     operation: {
       type: 'createNode',
+      graphId: ROOT,
       actor,
       nodeId: id,
       layout: { position: { x: 128, y: 96 } }
@@ -26,14 +29,16 @@ function createNodeChange(
 }
 
 function clearChange(actor: string = LOCAL_ACTOR): LayoutChangeView {
-  return { operation: { type: 'clearGraph', actor } }
+  return { operation: { type: 'clearGraph', graphId: ROOT, actor } }
 }
 
 function deleteChange(
   id: string,
   actor: string = LOCAL_ACTOR
 ): LayoutChangeView {
-  return { operation: { type: 'deleteNode', actor, nodeId: id } }
+  return {
+    operation: { type: 'deleteNode', graphId: ROOT, actor, nodeId: id }
+  }
 }
 
 describe('attachLayoutMintPort', () => {
@@ -42,12 +47,14 @@ describe('attachLayoutMintPort', () => {
   let enabled: boolean
   let bound: boolean
   let graphNodes: Map<string, WorkflowNode>
-  let listeners: Set<(change: LayoutChangeView) => void>
+  let listeners: Set<
+    (target: GraphMutationTarget, change: LayoutChangeView) => void
+  >
   let session: MintSession
   let severed: Map<string, (string | number)[]>
 
-  function deliver(change: LayoutChangeView): void {
-    for (const listener of listeners) listener(change)
+  function deliver(change: LayoutChangeView, target = TARGET): void {
+    for (const listener of listeners) listener(target, change)
   }
 
   beforeEach(() => {
@@ -68,15 +75,18 @@ describe('attachLayoutMintPort', () => {
         }
       },
       session,
-      severedLinks: { take: (nodeId) => severed.get(nodeId) ?? [] },
+      severedLinks: {
+        take: (_target, nodeId) => severed.get(nodeId) ?? []
+      },
       localActorPrefix: LOCAL_PREFIX,
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      target: () => TARGET,
       source: {
-        serializeNode: (id) => graphNodes.get(id) ?? null,
+        serializeNode: (_target, id) => graphNodes.get(id) ?? null,
         nodeIds: () => [...graphNodes.keys()]
       },
-      enqueue: (operations) => minted.push(...operations)
+      enqueue: (batch) => minted.push(...batch.operations)
     })
   })
 
@@ -127,6 +137,15 @@ describe('attachLayoutMintPort', () => {
   it('never mints without a bound doc', () => {
     bound = false
     deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([])
+  })
+
+  it('rejects a delayed layout event after the active target changes', () => {
+    deliver(createNodeChange('1'), {
+      workflowId: 'wf-b',
+      rootGraphId: 'other-root'
+    })
 
     expect(minted).toEqual([])
   })
@@ -224,6 +243,7 @@ describe('attachLayoutMintPort', () => {
     deliver({
       operation: {
         type,
+        graphId: ROOT,
         actor: LOCAL_ACTOR,
         nodeId: '1',
         layout: { position: { x: 1, y: 2 } }

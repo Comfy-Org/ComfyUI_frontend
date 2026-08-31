@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { GraphOperation } from './graphOperations'
+import type { GraphMutationTarget, GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
   LinkMintPort,
@@ -17,6 +17,10 @@ const ROOT_SCOPE: LinkScopeView = {
 const SUBGRAPH_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
   owningGraphId: 'subgraph-uuid'
+}
+const TARGET: GraphMutationTarget = {
+  workflowId: 'wf-a',
+  rootGraphId: ROOT_SCOPE.rootGraphId
 }
 
 function topology(id: number): LinkTopologyView {
@@ -43,18 +47,34 @@ describe('attachLinkMintPort', () => {
   let bound: boolean
   let session: MintSession
   let placedListeners: Set<
-    (scope: LinkScopeView, topology: LinkTopologyView) => void
+    (
+      target: GraphMutationTarget,
+      scope: LinkScopeView,
+      topology: LinkTopologyView
+    ) => void
   >
   let deletedListeners: Set<
-    (scope: LinkScopeView, topology: LinkTopologyView) => void
+    (
+      target: GraphMutationTarget,
+      scope: LinkScopeView,
+      topology: LinkTopologyView
+    ) => void
   >
 
-  function place(scope: LinkScopeView, link: LinkTopologyView): void {
-    for (const listener of placedListeners) listener(scope, link)
+  function place(
+    scope: LinkScopeView,
+    link: LinkTopologyView,
+    target = TARGET
+  ): void {
+    for (const listener of placedListeners) listener(target, scope, link)
   }
 
-  function remove(scope: LinkScopeView, link: LinkTopologyView): void {
-    for (const listener of deletedListeners) listener(scope, link)
+  function remove(
+    scope: LinkScopeView,
+    link: LinkTopologyView,
+    target = TARGET
+  ): void {
+    for (const listener of deletedListeners) listener(target, scope, link)
   }
 
   beforeEach(() => {
@@ -78,7 +98,7 @@ describe('attachLinkMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      enqueue: (operations) => minted.push(...operations)
+      enqueue: (batch) => minted.push(...batch.operations)
     })
   })
 
@@ -140,8 +160,18 @@ describe('attachLinkMintPort', () => {
   it('captures a severed link under both endpoints, consumed exactly once', () => {
     remove(ROOT_SCOPE, topology(41))
 
-    expect(port.severances.take('2')).toEqual([41])
-    expect(port.severances.take('1')).toEqual([])
+    expect(port.severances.take(TARGET, '2')).toEqual([41])
+    expect(port.severances.take(TARGET, '1')).toEqual([])
+  })
+
+  it('isolates identical link and node ids by workflow/root target', () => {
+    const targetB = { workflowId: 'wf-b', rootGraphId: 'root-b' }
+    const scopeB = { rootGraphId: 'root-b', owningGraphId: 'root-b' }
+    remove(ROOT_SCOPE, topology(41))
+    remove(scopeB, topology(41), targetB)
+
+    expect(port.severances.take(TARGET, '2')).toEqual([41])
+    expect(port.severances.take(targetB, '2')).toEqual([41])
   })
 
   it('surfaces an unconsumed local disconnect as divergence after the sweep', async () => {
@@ -161,7 +191,7 @@ describe('attachLinkMintPort', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
-    port.severances.take('1')
+    port.severances.take(TARGET, '1')
     await afterSweep()
 
     expect(consoleError).not.toHaveBeenCalled()
@@ -188,8 +218,17 @@ describe('attachLinkMintPort', () => {
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(port.severances.take('1')).toEqual([])
-    expect(port.severances.take('2')).toEqual([])
+    expect(port.severances.take(TARGET, '1')).toEqual([])
+    expect(port.severances.take(TARGET, '2')).toEqual([])
+  })
+
+  it('rejects a workflow target whose root does not own the link scope', () => {
+    place(ROOT_SCOPE, topology(41), {
+      workflowId: 'wf-b',
+      rootGraphId: 'other-root'
+    })
+
+    expect(minted).toEqual([])
   })
 
   it('stops minting after detach', () => {

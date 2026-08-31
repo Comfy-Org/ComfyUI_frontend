@@ -13,12 +13,16 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
-import type { GraphOperation } from './graphOperations'
+import type { GraphMutationTarget, GraphOperation } from './graphOperations'
 import type { LayoutChangeView } from './layoutMintPort'
 import { attachMintPortWiring } from './mintPortWiring'
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
 
 const ROOT_ID = 'root-uuid'
+const TARGET: GraphMutationTarget = {
+  workflowId: 'wf-a',
+  rootGraphId: ROOT_ID
+}
 
 /** Structural stand-in for the two LGraphNode members the wiring reads. */
 interface FakeGraphNode {
@@ -57,6 +61,8 @@ describe('attachMintPortWiring', () => {
   let bound: boolean
   let layoutListeners: Set<(change: LayoutChangeView) => void>
   let graphNodes: Map<string, FakeGraphNode>
+  let target: GraphMutationTarget | null
+  let mintedTargets: GraphMutationTarget[]
 
   function deliverLayoutChange(change: LayoutChangeView): void {
     for (const listener of layoutListeners) listener(change)
@@ -77,19 +83,26 @@ describe('attachMintPortWiring', () => {
     minted = []
     enabled = true
     bound = true
+    target = TARGET
+    mintedTargets = []
     layoutListeners = new Set()
     graphNodes = new Map()
     wiring = attachMintPortWiring({
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      enqueue: (operations) => minted.push(...operations),
+      target: () => target,
+      enqueue: (batch) => {
+        mintedTargets.push(batch.target)
+        minted.push(...batch.operations)
+      },
       layoutChanges: (listener) => {
         layoutListeners.add(listener)
         return () => layoutListeners.delete(listener)
       },
       withLayoutActor: (_actor, fn) => fn(),
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: (requested) =>
+        requested.rootGraphId === ROOT_ID ? graph : null
     })
   })
 
@@ -139,7 +152,12 @@ describe('attachMintPortWiring', () => {
 
     linkStore.deleteLink(ROOT_SCOPE, severed)
     deliverLayoutChange({
-      operation: { type: 'deleteNode', actor: 'user-abc', nodeId: toNodeId(2) }
+      operation: {
+        type: 'deleteNode',
+        graphId: ROOT_ID,
+        actor: 'user-abc',
+        nodeId: toNodeId(2)
+      }
     })
     await afterSweep()
 
@@ -240,6 +258,7 @@ describe('attachMintPortWiring', () => {
     deliverLayoutChange({
       operation: {
         type: 'createNode',
+        graphId: ROOT_ID,
         actor: 'user-abc',
         nodeId: toNodeId(5),
         layout: { position: { x: 10, y: 20 } }
@@ -259,6 +278,27 @@ describe('attachMintPortWiring', () => {
         }
       }
     ])
+    expect(mintedTargets).toEqual([TARGET])
+  })
+
+  it('never assigns a delayed workflow A layout event to workflow B', () => {
+    graphNodes.set('5', {
+      serialize: () => ({ id: 5, type: 'TestNode' })
+    })
+    target = { workflowId: 'wf-b', rootGraphId: 'root-b' }
+
+    deliverLayoutChange({
+      operation: {
+        type: 'createNode',
+        graphId: ROOT_ID,
+        actor: 'user-abc',
+        nodeId: toNodeId(5),
+        layout: { position: { x: 10, y: 20 } }
+      }
+    })
+
+    expect(minted).toEqual([])
+    expect(mintedTargets).toEqual([])
   })
 
   it('positive control: an unbound workflow runs normally, zero mint and zero blockage', () => {

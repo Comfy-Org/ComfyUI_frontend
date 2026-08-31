@@ -9,7 +9,10 @@
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
-import type { GraphOperation } from './graphOperations'
+import type {
+  GraphMutationTarget,
+  TargetedGraphOperations
+} from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
 
@@ -36,11 +39,19 @@ export interface LinkTopologyView {
 interface LinkEventFeed {
   /** Fires after a successful `registerLink` or `replaceLink`. */
   onPlaced(
-    listener: (scope: LinkScopeView, topology: LinkTopologyView) => void
+    listener: (
+      target: GraphMutationTarget,
+      scope: LinkScopeView,
+      topology: LinkTopologyView
+    ) => void
   ): () => void
   /** Fires after `deleteLink` removes a registered topology. */
   onDeleted(
-    listener: (scope: LinkScopeView, topology: LinkTopologyView) => void
+    listener: (
+      target: GraphMutationTarget,
+      scope: LinkScopeView,
+      topology: LinkTopologyView
+    ) => void
   ): () => void
 }
 
@@ -53,7 +64,7 @@ export interface SeveranceLog {
    * Link ids severed for `nodeId` in the current capture window, each
    * consumed globally (a link touches two nodes; only one delete carries it).
    */
-  take(nodeId: string): WireNodeId[]
+  take(target: GraphMutationTarget, nodeId: string): WireNodeId[]
 }
 
 export interface LinkMintPortDeps {
@@ -64,7 +75,7 @@ export interface LinkMintPortDeps {
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
   /** Receives minted semantic operations (the sender's inbox). */
-  enqueue(operations: GraphOperation[]): void
+  enqueue(batch: TargetedGraphOperations): void
 }
 
 export interface LinkMintPort {
@@ -74,12 +85,24 @@ export interface LinkMintPort {
 
 interface SeveranceEntry {
   linkId: WireNodeId
+  consumptionKey: string
   /** The gate was open at severance: unconsumed means a real divergence. */
   mintable: boolean
 }
 
 function isRootScope(scope: LinkScopeView): boolean {
   return String(scope.owningGraphId) === String(scope.rootGraphId)
+}
+
+function matchesTarget(
+  target: GraphMutationTarget,
+  scope: LinkScopeView
+): boolean {
+  return target.rootGraphId === String(scope.rootGraphId)
+}
+
+function severanceKey(target: GraphMutationTarget, nodeId: string): string {
+  return JSON.stringify([target.workflowId, target.rootGraphId, nodeId])
 }
 
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
@@ -105,23 +128,31 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     )
   }
 
-  function onPlaced(scope: LinkScopeView, topology: LinkTopologyView): void {
+  function onPlaced(
+    target: GraphMutationTarget,
+    scope: LinkScopeView,
+    topology: LinkTopologyView
+  ): void {
     if (!gateOpen()) return
+    if (!matchesTarget(target, scope)) return
     if (!isRootScope(scope)) {
       surfaceUnrepresentable('subgraph-interior connect', topology.id)
       return
     }
-    deps.enqueue([
-      {
-        op: 'connect',
-        link_id: topology.id,
-        from_node: topology.originNodeId,
-        from_slot: topology.originSlot,
-        to_node: topology.targetNodeId,
-        to_slot: topology.targetSlot,
-        link_type: String(topology.type)
-      }
-    ])
+    deps.enqueue({
+      target,
+      operations: [
+        {
+          op: 'connect',
+          link_id: topology.id,
+          from_node: topology.originNodeId,
+          from_slot: topology.originSlot,
+          to_node: topology.targetNodeId,
+          to_slot: topology.targetSlot,
+          link_type: String(topology.type)
+        }
+      ]
+    })
   }
 
   function scheduleSweep(): void {
@@ -136,7 +167,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
         const surfaced = new Set<string>()
         for (const entries of severancesByNode.values()) {
           for (const entry of entries) {
-            const key = String(entry.linkId)
+            const key = entry.consumptionKey
             if (!entry.mintable || consumedLinkIds.has(key)) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
@@ -149,20 +180,34 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     })
   }
 
-  function capture(nodeId: string | number, entry: SeveranceEntry): void {
-    const key = String(nodeId)
+  function capture(
+    target: GraphMutationTarget,
+    nodeId: string | number,
+    entry: SeveranceEntry
+  ): void {
+    const key = severanceKey(target, String(nodeId))
     const bucket = severancesByNode.get(key)
     if (bucket) bucket.push(entry)
     else severancesByNode.set(key, [entry])
   }
 
-  function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
+  function onDeleted(
+    target: GraphMutationTarget,
+    scope: LinkScopeView,
+    topology: LinkTopologyView
+  ): void {
+    if (!matchesTarget(target, scope)) return
     const entry: SeveranceEntry = {
       linkId: topology.id,
+      consumptionKey: JSON.stringify([
+        target.workflowId,
+        target.rootGraphId,
+        topology.id
+      ]),
       mintable: gateOpen() && isRootScope(scope)
     }
-    capture(topology.originNodeId, entry)
-    capture(topology.targetNodeId, entry)
+    capture(target, topology.originNodeId, entry)
+    capture(target, topology.targetNodeId, entry)
     scheduleSweep()
   }
 
@@ -171,10 +216,12 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
 
   return {
     severances: {
-      take(nodeId: string): WireNodeId[] {
+      take(target: GraphMutationTarget, nodeId: string): WireNodeId[] {
         const taken: WireNodeId[] = []
-        for (const entry of severancesByNode.get(nodeId) ?? []) {
-          const key = String(entry.linkId)
+        for (const entry of severancesByNode.get(
+          severanceKey(target, nodeId)
+        ) ?? []) {
+          const key = entry.consumptionKey
           if (consumedLinkIds.has(key)) continue
           consumedLinkIds.add(key)
           taken.push(entry.linkId)

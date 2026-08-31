@@ -15,3 +15,13 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   : never
 
 export type GraphOperation = DistributiveOmit<Op, keyof OpBase>
+
+export interface GraphMutationTarget {
+  readonly workflowId: string
+  readonly rootGraphId: string
+}
+
+export interface TargetedGraphOperations {
+  target: GraphMutationTarget
+  operations: GraphOperation[]
+}

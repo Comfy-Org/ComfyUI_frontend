@@ -7,6 +7,7 @@
  * the frame-handler status surface, and total teardown.
  */
 import { createPinia, setActivePinia } from 'pinia'
+import type { Op } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -14,6 +15,7 @@ import type { Ref } from 'vue'
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
+import type { TargetedGraphOperations } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -37,7 +39,7 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn((_workflowId: string, _tab: string, _ops: Op[]) => true)
 }))
 
 const adapterState = vi.hoisted(() => ({
@@ -117,24 +119,33 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  enqueue: (batch: TargetedGraphOperations) => boolean
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let enqueue!: (batch: TargetedGraphOperations) => boolean
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
         isTargetActive
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      enqueue = enqueueHumanOperations
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    enqueue
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -373,19 +384,86 @@ describe('useAgentCrdtFollower', () => {
     })
     const { unmount } = render(host)
 
-    enqueue([
-      {
-        op: 'delete_node',
-        node_id: '1',
-        removed_links: []
-      }
-    ])
+    enqueue({
+      target: { workflowId: 'wf-1', rootGraphId: 'root-1' },
+      operations: [
+        {
+          op: 'delete_node',
+          node_id: '1',
+          removed_links: []
+        }
+      ]
+    })
 
     expect(clientState.sendOps).toHaveBeenCalledWith(
       'wf-1',
       expect.any(String),
       [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
     )
+    unmount()
+  })
+
+  it('reserves and persists monotonic producer versions across rapid writes and remount', () => {
+    const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
+    const first = mountFollower('wf-1')
+
+    first.enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 1 }]
+    })
+    first.enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 2 }]
+    })
+
+    expect(sessionStorage.getItem('Comfy.Agent.CrdtProducerClock:wf-1')).toBe(
+      '43'
+    )
+    expect(clientState.sendOps.mock.calls[0][2][0].stamp).toEqual([
+      42,
+      expect.any(String)
+    ])
+    first.unmount()
+
+    const remounted = mountFollower('wf-1')
+    remounted.enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 3 }]
+    })
+
+    expect(clientState.sendOps.mock.calls[1][2][0].stamp).toEqual([
+      44,
+      expect.any(String)
+    ])
+    remounted.unmount()
+  })
+
+  it('does not regress the producer clock after reconnect observes a lower sequence', () => {
+    const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
+    const { enqueue, unmount } = mountFollower('wf-1')
+    enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 1 }]
+    })
+    const firstOp = clientState.sendOps.mock.calls[0][2][0]
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [firstOp.op_id],
+      skipped: []
+    })
+    bridge().lastSequence = 2
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 2 }]
+    })
+
+    expect(clientState.sendOps.mock.calls[1][2][0].stamp).toEqual([
+      43,
+      expect.any(String)
+    ])
     unmount()
   })
 

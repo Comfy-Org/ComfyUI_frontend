@@ -19,7 +19,10 @@ import { isRemoteMutationContext } from '@/types/graphMutationContext'
 import { parseWidgetId } from '@/types/widgetId'
 import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
 
-import type { GraphOperation } from './graphOperations'
+import type {
+  GraphMutationTarget,
+  TargetedGraphOperations
+} from './graphOperations'
 import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
@@ -40,16 +43,18 @@ export interface MintPortWiringDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** Stable workflow/root identity for the graph currently being edited. */
+  target(): GraphMutationTarget | null
   /** Receives minted semantic operations (the sender's inbox). */
-  enqueue(operations: GraphOperation[]): void
+  enqueue(batch: TargetedGraphOperations): void
   /** The layout store's `onChange`, injected by the composition root. */
   layoutChanges(listener: (change: LayoutChangeView) => void): () => void
   /** The layout store's `withActor`, injected by the composition root. */
   withLayoutActor(actor: string, fn: () => void): void
   /** `ACTOR_CONFIG.USER_PREFIX`, injected by the composition root. */
   localActorPrefix: string
-  /** The live root graph, or null when no workflow is open. */
-  getGraph(): MintableGraph | null
+  /** The target's live root graph, or null when it is no longer active. */
+  getGraph(target: GraphMutationTarget): MintableGraph | null
 }
 
 export interface MintPortWiring {
@@ -138,19 +143,27 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   })
 
   const layoutPort: LayoutMintPort = attachLayoutMintPort({
-    changes: { onChange: deps.layoutChanges },
+    changes: {
+      onChange(listener) {
+        return deps.layoutChanges((change) => {
+          const target = deps.target()
+          if (target) listener(target, change)
+        })
+      }
+    },
     session,
     severedLinks: linkPort.severances,
     localActorPrefix: deps.localActorPrefix,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    target: deps.target,
     source: {
-      serializeNode(id) {
-        const node = deps.getGraph()?.getNodeById(id as NodeId)
+      serializeNode(target, id) {
+        const node = deps.getGraph(target)?.getNodeById(id as NodeId)
         return node ? serializeForMint(node) : null
       },
-      nodeIds() {
-        return (deps.getGraph()?._nodes ?? []).map((node) => node.id)
+      nodeIds(target) {
+        return (deps.getGraph(target)?._nodes ?? []).map((node) => node.id)
       }
     },
     enqueue: deps.enqueue
@@ -166,13 +179,8 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
-    rootGraphId() {
-      const graph = deps.getGraph()
-      if (!graph) return null
-      return String(graph.rootGraph?.id ?? graph.id)
-    },
-    resolveInteriorPath(owningGraphId) {
-      const graph = deps.getGraph()
+    resolveInteriorPath(target, owningGraphId) {
+      const graph = deps.getGraph(target)
       if (!graph) return null
       return findSubgraphNodePathById(graph as unknown as LGraph, owningGraphId)
     },
@@ -186,11 +194,13 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     // The remote origin travels on the store call itself. Do not rely on the
     // old ambient MintSession scope: nested legacy setters can overwrite it.
     if (isRemoteMutationContext(args.at(-1))) return
+    const target = deps.target()
+    if (!target) return
     if (name === 'registerLink' || name === 'replaceLink') {
       const scope = args[0]
       after((placed) => {
         if (!placed || isFloatingTopology(placed)) return
-        for (const listener of placedListeners) listener(scope, placed)
+        for (const listener of placedListeners) listener(target, scope, placed)
       })
       return
     }
@@ -198,7 +208,8 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       const [scope, topology] = args
       after((removed) => {
         if (!removed || isFloatingTopology(topology)) return
-        for (const listener of deletedListeners) listener(scope, topology)
+        for (const listener of deletedListeners)
+          listener(target, scope, topology)
       })
     }
   })
@@ -206,13 +217,15 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const detachWidgetActions = widgetStore.$onAction(({ name, args, after }) => {
     if (name !== 'setValue') return
     if (isRemoteMutationContext(args[2])) return
+    const target = deps.target()
+    if (!target) return
     const widgetId = args[0] as WidgetId
     const old = widgetStore.getWidget(widgetId)?.value
     after((applied) => {
       if (!applied) return
       const { graphId, nodeId, name: widgetName } = parseWidgetId(widgetId)
       for (const listener of setListeners) {
-        listener({
+        listener(target, {
           graphId: String(graphId),
           nodeId,
           name: widgetName,

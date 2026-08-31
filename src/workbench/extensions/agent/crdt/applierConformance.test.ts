@@ -274,7 +274,7 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
 
   it('accepts every op family the mint ports emit, end to end through our envelope', () => {
     const doc = seedDoc()
-    const context = { actor: 'human:u1:tab', baseVersion: 1 }
+    const context = { actor: 'human:u1:tab', firstVersion: 1 }
     const legOps: GraphOperation[] = [
       {
         op: 'connect',
@@ -304,7 +304,7 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
     const result = applyOps(doc, mintWireOps(legOps, context), CATALOG)
     const clearResult = applyOps(
       doc,
-      mintWireOps(clearOps, { ...context, baseVersion: 2 }),
+      mintWireOps(clearOps, { ...context, firstVersion: 5 }),
       CATALOG
     )
 

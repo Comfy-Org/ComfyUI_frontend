@@ -16,7 +16,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkTopology } from '@/types/linkTopology'
-import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import type {
+  GraphMutationTarget,
+  GraphOperation
+} from '@/workbench/extensions/agent/crdt/graphOperations'
 import type {
   MintPortWiring,
   MintableGraph
@@ -75,6 +78,7 @@ describe('mint ports against the real layout store delivery', () => {
   let minted: GraphOperation[]
   let wiring: MintPortWiring
   let graphId: string
+  let target: GraphMutationTarget
   let scope: GraphScope
   let graphNodes: Map<string, FakeGraphNode>
 
@@ -94,6 +98,7 @@ describe('mint ports against the real layout store delivery', () => {
     setActivePinia(createPinia())
     minted = []
     graphId = createUuidv4()
+    target = { workflowId: 'wf-a', rootGraphId: graphId }
     scope = {
       rootGraphId: toRootGraphId(graphId),
       owningGraphId: toOwningGraphId(graphId)
@@ -112,13 +117,15 @@ describe('mint ports against the real layout store delivery', () => {
     wiring = attachMintPortWiring({
       isEnabled: () => true,
       isDocBound: () => true,
-      enqueue: (operations) => minted.push(...operations),
+      target: () => target,
+      enqueue: (batch) => minted.push(...batch.operations),
       layoutChanges: (listener) => layoutStore.onChange(listener),
       withLayoutActor: (actor, fn) => {
         layoutStore.withActor(actor, fn)
       },
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: (requested) =>
+        requested.rootGraphId === graphId ? graph : null
     })
   })
 

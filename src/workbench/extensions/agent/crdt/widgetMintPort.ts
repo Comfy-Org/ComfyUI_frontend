@@ -4,7 +4,10 @@
  * writes mint the interior form (path = resolved node-id chain,
  * inner_widget = the name); an unresolvable owner surfaces, never drops.
  */
-import type { GraphOperation } from './graphOperations'
+import type {
+  GraphMutationTarget,
+  TargetedGraphOperations
+} from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
 
@@ -22,7 +25,9 @@ export interface WidgetSetView {
 
 interface WidgetEventFeed {
   /** Fires after a `setValue` that actually applied (the action returned true). */
-  onSet(listener: (set: WidgetSetView) => void): () => void
+  onSet(
+    listener: (target: GraphMutationTarget, set: WidgetSetView) => void
+  ): () => void
 }
 
 export interface WidgetMintPortDeps {
@@ -32,16 +37,17 @@ export interface WidgetMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
-  /** The active root graph id, or null when no workflow is open. */
-  rootGraphId(): string | null
   /**
    * Subgraph-node id chain from the root to the definition owning
    * `owningGraphId`, or null when unreachable (wiring resolves it over the
    * live graph).
    */
-  resolveInteriorPath(owningGraphId: string): string[] | null
+  resolveInteriorPath(
+    target: GraphMutationTarget,
+    owningGraphId: string
+  ): string[] | null
   /** Receives minted semantic operations (the sender's inbox). */
-  enqueue(operations: GraphOperation[]): void
+  enqueue(batch: TargetedGraphOperations): void
 }
 
 export interface WidgetMintPort {
@@ -49,7 +55,7 @@ export interface WidgetMintPort {
 }
 
 export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
-  function onSet(set: WidgetSetView): void {
+  function onSet(target: GraphMutationTarget, set: WidgetSetView): void {
     const mintable = shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
@@ -58,22 +64,23 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     })
     if (!mintable) return
 
-    const root = deps.rootGraphId()
-    if (root !== null && set.graphId === root) {
-      deps.enqueue([
-        {
-          op: 'set_widget',
-          node_id: set.nodeId,
-          widget: set.name,
-          value: set.value,
-          old: set.old
-        }
-      ])
+    if (set.graphId === target.rootGraphId) {
+      deps.enqueue({
+        target,
+        operations: [
+          {
+            op: 'set_widget',
+            node_id: set.nodeId,
+            widget: set.name,
+            value: set.value,
+            old: set.old
+          }
+        ]
+      })
       return
     }
 
-    const subgraphNodePath =
-      root === null ? null : deps.resolveInteriorPath(set.graphId)
+    const subgraphNodePath = deps.resolveInteriorPath(target, set.graphId)
     if (subgraphNodePath === null || subgraphNodePath.length === 0) {
       // The doc no longer matches the local graph; observable, never silent
       // (the surfacing-honesty principle).
@@ -85,17 +92,20 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     }
 
     const [head, ...rest] = subgraphNodePath
-    deps.enqueue([
-      {
-        op: 'set_widget',
-        node_id: set.nodeId,
-        widget: set.name,
-        value: set.value,
-        old: set.old,
-        path: [head, ...rest, String(set.nodeId)],
-        inner_widget: set.name
-      }
-    ])
+    deps.enqueue({
+      target,
+      operations: [
+        {
+          op: 'set_widget',
+          node_id: set.nodeId,
+          widget: set.name,
+          value: set.value,
+          old: set.old,
+          path: [head, ...rest, String(set.nodeId)],
+          inner_widget: set.name
+        }
+      ]
+    })
   }
 
   const detach = deps.events.onSet(onSet)

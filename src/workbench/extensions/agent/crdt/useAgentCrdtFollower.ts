@@ -6,11 +6,15 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
-import type { DocFrameTransport, DocUpdate } from './docFrameClient'
+import type {
+  DocFrameTransport,
+  DocOpsResult,
+  DocUpdate
+} from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
-import type { GraphOperation } from './graphOperations'
+import type { TargetedGraphOperations } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
@@ -19,6 +23,7 @@ import { createOpSender } from './opSender'
 // panel remount / page reload loses the binding until the NEXT turn ack.
 // Persist it per-tab in sessionStorage so a remount can rebind immediately.
 const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
+const PRODUCER_CLOCK_SESSION_KEY = 'Comfy.Agent.CrdtProducerClock'
 
 function safeSessionStorage(): Storage | null {
   try {
@@ -50,6 +55,66 @@ function clearPersistedDocId(): void {
   } catch {
     // Best-effort.
   }
+}
+
+function producerClockKey(workflowId: string): string {
+  return `${PRODUCER_CLOCK_SESSION_KEY}:${workflowId}`
+}
+
+function readProducerVersion(workflowId: string): number {
+  try {
+    const stored = safeSessionStorage()?.getItem(producerClockKey(workflowId))
+    if (stored === null || stored === undefined) return 0
+    const parsed = Number(stored)
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0
+  } catch {
+    return 0
+  }
+}
+
+function persistProducerVersion(workflowId: string, version: number): boolean {
+  try {
+    const storage = safeSessionStorage()
+    if (storage === null) return false
+    storage.setItem(producerClockKey(workflowId), String(version))
+    return true
+  } catch {
+    return false
+  }
+}
+
+function createProducerClock() {
+  const versions = new Map<string, number>()
+
+  return {
+    reserve(
+      workflowId: string,
+      observed: number,
+      count: number
+    ): number | null {
+      const previous = Math.max(
+        versions.get(workflowId) ?? 0,
+        readProducerVersion(workflowId),
+        observed
+      )
+      const first = previous + 1
+      const last = previous + count
+      if (!persistProducerVersion(workflowId, last)) return null
+      versions.set(workflowId, last)
+      return first
+    }
+  }
+}
+
+function failureView(failed: unknown): OpsResultView['failure'] | undefined {
+  if (
+    typeof failed !== 'object' ||
+    failed === null ||
+    !('op_id' in failed) ||
+    typeof failed.op_id !== 'string'
+  )
+    return undefined
+  return { op_id: failed.op_id }
 }
 
 /**
@@ -123,19 +188,20 @@ export function useAgentCrdtFollower(
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = createUuidv4()
+  const producerClock = createProducerClock()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
+        const detail = event.detail as DocOpsResult
+        const failure = failureView(detail.failed)
         listener({
+          workflowId: detail.workflowId,
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed as OpsResultView['failure'] }
-            : {})
+          ...(failure && { failure })
         })
       }
       bridge.addEventListener('doc_ops_result', handler)
@@ -144,7 +210,9 @@ export function useAgentCrdtFollower(
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
-    baseVersion: () => bridge.lastSequence,
+    observedVersion: () => bridge.lastSequence,
+    reserveVersions: (target, observed, count) =>
+      producerClock.reserve(target, observed, count),
     onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
   })
 
@@ -470,7 +538,7 @@ export function useAgentCrdtFollower(
 
   return {
     status: readonly(status),
-    enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+    enqueueHumanOperations: (batch: TargetedGraphOperations) =>
+      sender.enqueue(batch)
   }
 }
