@@ -1,0 +1,65 @@
+{
+  "source": {
+    "programInventory": "reports/reorientation/w10-test-inventory.md",
+    "targetMain": "f954e479a37b168a9596aa05a1ce1dec1e9a93b4",
+    "branch": "christian-byrne/w10-test-port-batch1"
+  },
+  "portedTests": [
+    {
+      "path": "src/components/ui/dialog/dialog.variants.test.ts",
+      "sourceHead": "c7b14022c19d4b8b20456b50f7e661d3ecfad6e6",
+      "sourcePr": 16187,
+      "status": "expected-failure",
+      "reason": "main omits the non-maximized width inset and shared viewer/hug dialog exports asserted by the slice test"
+    },
+    {
+      "path": "src/platform/assets/composables/useModelUpload.test.ts",
+      "sourceHead": "c7b14022c19d4b8b20456b50f7e661d3ecfad6e6",
+      "sourcePr": 16187,
+      "status": "expected-failure",
+      "reason": "main still uses an inline upload dialog width cap instead of the shared hug token asserted by the slice test"
+    },
+    {
+      "path": "src/platform/assets/schemas/mediaAssetSchema.test.ts",
+      "sourceHead": "c7b14022c19d4b8b20456b50f7e661d3ecfad6e6",
+      "sourcePr": 16187,
+      "status": "expected-failure",
+      "reason": "main rejects the whole asset payload when optional enrichment fields are malformed"
+    },
+    {
+      "path": "src/workbench/extensions/agent/utils/downloadReplyAsset.test.ts",
+      "sourceHead": "479e3a7826d1c522511a17f2be102b0318235932",
+      "sourcePr": 16211,
+      "status": "expected-failure",
+      "reason": "main treats an embedded same-origin API URL as authenticated fetchApi input"
+    }
+  ],
+  "alreadyOnMain": [
+    "src/workbench/extensions/agent/crdt/apiTransport.test.ts",
+    "src/renderer/core/layout/store/layoutStoreMintDelivery.test.ts",
+    "src/workbench/extensions/agent/crdt/applierConformance.test.ts",
+    "src/workbench/extensions/agent/crdt/devPanelLog.test.ts",
+    "src/workbench/extensions/agent/crdt/linkMintPort.test.ts",
+    "src/workbench/extensions/agent/crdt/mintGate.test.ts",
+    "src/workbench/extensions/agent/crdt/mintSession.test.ts",
+    "src/workbench/extensions/agent/crdt/widgetMintPort.test.ts",
+    "apps/website/src/templates/fdct/HeroSection.test.ts",
+    "packages/shared-frontend-utils/src/formatUtil.test.ts",
+    "src/components/rightSidePanel/errors/TabErrors.test.ts",
+    "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
+    "src/workbench/extensions/agent/stores/agent/agentConversationEntries.test.ts",
+    "src/workbench/extensions/agent/services/agent/agentToolGlyph.test.ts",
+    "src/workbench/extensions/agent/components/agent/message/MarkdownStream.test.ts",
+    "src/workbench/extensions/agent/components/agent/message/MessageFeedback.test.ts",
+    "src/workbench/extensions/agent/components/agent/message/ReplyAudioCard.test.ts",
+    "src/workbench/extensions/agent/components/agent/message/TabLinkCard.test.ts",
+    "src/workbench/extensions/agent/components/agent/message/UserMessage.test.ts",
+    "src/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore.test.ts",
+    "src/stores/workflowTabActivityStore.test.ts",
+    "src/workbench/extensions/agent/components/agent/composer/AttachmentChip.test.ts",
+    "src/workbench/extensions/agent/composables/agent/useCanvasSelection.test.ts",
+    "src/workbench/extensions/agent/composables/agent/useComposer.test.ts",
+    "src/workbench/extensions/agent/utils/attachableFiles.test.ts"
+  ],
+  "semanticTransplantQueue": "reports/reorientation/w10-semantic-transplant-queue.md"
+}
