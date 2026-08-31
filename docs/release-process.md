@@ -128,7 +128,8 @@ WRITE_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
             -H "DD-APPLICATION-KEY: $DATADOG_WRITE_APP_KEY")
 
 curl -sS "${READ_AUTH[@]}" \
-  "$BASE/$SCHEDULE_ID?include=layers,layers.members,layers.members.user"
+  "$BASE/$SCHEDULE_ID?include=layers,layers.members,layers.members.user" \
+  --output schedule.json
 
 curl -sS -X PUT "${WRITE_AUTH[@]}" -H 'Content-Type: application/json' \
   "$BASE/$SCHEDULE_ID" -d @schedule.json
