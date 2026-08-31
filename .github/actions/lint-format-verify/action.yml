@@ -33,9 +33,10 @@ runs:
       shell: bash
       run: pnpm typecheck:tools
 
-    - name: Verify CMS lint, format and types
+    - name: Verify CMS lint, format, types and unit tests
       shell: bash
       run: |
         pnpm lint:cms
         pnpm format:check:cms
         pnpm typecheck:cms
+        pnpm test:unit:cms

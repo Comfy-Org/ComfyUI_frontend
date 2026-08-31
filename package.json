@@ -75,6 +75,7 @@
     "test:unit": "vitest run",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
+    "test:unit:cms": "pnpm --filter @comfyorg/cms run test:unit",
     "typecheck:cms": "pnpm --filter @comfyorg/cms run typecheck",
     "typecheck:desktop": "pnpm --filter @comfyorg/desktop-ui run typecheck",
     "typecheck:scripts": "vue-tsc --project scripts/tsconfig.json",
