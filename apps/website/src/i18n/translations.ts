@@ -8128,6 +8128,10 @@ const translations = {
   'platform.closing.headingLead': {
     en: 'Maximize scale and control on',
     'zh-CN': '将规模与控制力最大化'
+  },
+  'platform.closing.headingAfterBadge': {
+    en: 'Scale your custom nodes in your Comfy workflows in custom environments through serverless.',
+    'zh-CN': '通过 Serverless 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

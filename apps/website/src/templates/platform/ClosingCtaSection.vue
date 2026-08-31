@@ -12,11 +12,13 @@ const {
   locale = 'en',
   visual = 'shader',
   badgeOnly = false,
+  headingAfterBadge,
   headingLead,
   primaryHref,
   subtitle
 } = defineProps<{
   badgeOnly?: boolean
+  headingAfterBadge?: string
   headingLead?: string
   locale?: Locale
   primaryHref?: string
@@ -56,7 +58,9 @@ onMounted(() => {
           ? `${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)}`
           : headingLead
             ? `${headingLead} ${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)}`
-            : t('platform.closing.heading', locale)
+            : headingAfterBadge
+              ? `${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)} ${headingAfterBadge}`
+              : t('platform.closing.heading', locale)
       "
       :subtitle
       :subtitle-class="badgeOnly ? 'mt-6' : undefined"
@@ -78,6 +82,12 @@ onMounted(() => {
         <template v-else-if="headingLead">
           <span class="block">{{ headingLead }}</span>
           <PlatformHeroBadge class="mx-auto -my-2 scale-75" :locale />
+        </template>
+        <template v-else-if="headingAfterBadge">
+          <PlatformHeroBadge class="mx-auto -my-2 scale-75" :locale />
+          <span class="mt-5 block text-base/relaxed lg:text-xl/relaxed">
+            {{ headingAfterBadge }}
+          </span>
         </template>
         <template v-else>
           {{ t('platform.closing.heading', locale) }}
