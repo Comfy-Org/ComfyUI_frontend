@@ -27,6 +27,8 @@ const emit = defineEmits<{ select: [id: string] }>()
 
 type WorldGeoJson = NonNullable<Parameters<typeof Leaflet.geoJSON>[0]>
 
+type LeafletModule = typeof Leaflet & { default?: typeof Leaflet }
+
 const container = ref<HTMLElement | null>(null)
 
 // Leaflet touches window at import time, so it only loads in the browser
@@ -89,11 +91,23 @@ function rebuildPins() {
 }
 
 onMounted(async () => {
+  await mountMap().catch((error: unknown) => {
+    // Without this the map just stays blank: an async onMounted that throws
+    // surfaces only as an unhandled rejection, if at all.
+    console.error('[MapPins01] failed to initialise the map', error)
+  })
+})
+
+async function mountMap() {
   if (!container.value) return
-  const [L, geoJson] = await Promise.all([
-    import('leaflet'),
+  const [imported, geoJson] = await Promise.all([
+    import('leaflet') as Promise<LeafletModule>,
     fetch(worldCountriesUrl).then((res) => res.json() as Promise<WorldGeoJson>)
   ])
+  // `leaflet` publishes only a UMD build — no "module" or "exports" entry — so
+  // the bundler's CJS interop hangs the whole namespace off `default`. The
+  // named exports its types promise are not there at runtime.
+  const L = imported.default ?? imported
   leaflet = L
   map = L.map(container.value, {
     center: [30, 10],
@@ -118,7 +132,7 @@ onMounted(async () => {
   pinLayer = L.layerGroup().addTo(map)
   rebuildPins()
   map.on('zoomend moveend', rebuildPins)
-})
+}
 
 watch(
   () => markers,
