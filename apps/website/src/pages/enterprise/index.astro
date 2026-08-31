@@ -7,6 +7,7 @@ import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import OfferGrid01 from '../../components/blocks/OfferGrid01.vue'
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
+import EnterpriseHeroScene from '../../components/product/enterprise/EnterpriseHeroScene.vue'
 import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
@@ -197,9 +198,9 @@ const faqPage = buildFaqPageNode(url, faqs)
       href: externalLinks.trustCenter,
       target: '_blank',
     }}
-    imageSrc="/images/mcp/mcp-thumb-keyart.webp"
-    imageAlt="Abstract Comfy artwork"
-  />
+  >
+    <EnterpriseHeroScene slot="media" client:load />
+  </HeroSplit01>
 
   <OfferGrid01
     eyebrow="ONE ENTERPRISE RELATIONSHIP"
