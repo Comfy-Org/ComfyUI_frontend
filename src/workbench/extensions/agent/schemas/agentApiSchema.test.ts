@@ -143,7 +143,7 @@ describe('agentApiSchema contract subtleties', () => {
     }
   })
 
-  it('keeps draft frames foreign to this union', () => {
+  it('keeps the retired draft frames foreign to the union', () => {
     expect(isAgentEvent('draft_patch')).toBe(false)
     expect(isAgentEvent('draft_version')).toBe(false)
   })

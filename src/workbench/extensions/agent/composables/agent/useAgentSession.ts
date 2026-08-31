@@ -27,7 +27,6 @@ interface SentTag {
   title: string
 }
 
-/** @knipIgnoreUsedByStackedPR */
 export interface WorkflowTurnContext {
   id: string
   tabPath: string
