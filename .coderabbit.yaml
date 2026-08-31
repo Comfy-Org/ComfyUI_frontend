@@ -94,7 +94,7 @@ reviews:
 
           Pass if none of these patterns are found in the diff.
 
-          When warning, reference the specific ADR by number and link to `docs/adr/` for context. Frame findings as directional guidance since ADR-LAYOUT and 0008 are in Proposed status.
+          When warning, reference the specific ADR by identifier and link to `docs/adr/` for context. Frame findings as directional guidance since ADR-LAYOUT and ADR-ECS are in Proposed status.
 
   path_instructions:
     - path: '**/*.ts'
