@@ -100,8 +100,8 @@ const modelsTabs = modelsApiCodeTabs
           <BuilderVisual />
         </div>
         <div class="relative z-10 mt-auto w-fit pt-8">
-          <Button as="a" :href="routes.enterprise" variant="outline">
-            {{ t('platform.products.builder.enterpriseCta', locale) }}
+          <Button as="a" :href="routes.platformBuilder" variant="outline">
+            {{ t('cta.getStarted', locale) }}
           </Button>
         </div>
       </article>

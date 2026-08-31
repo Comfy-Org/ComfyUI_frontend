@@ -4,6 +4,7 @@ import ProductCardsSection from '../../../components/common/ProductCardsSection.
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
 import ServerlessDeploySection from '../../../templates/platform/ServerlessDeploySection.vue'
 import ServerlessHero from '../../../templates/platform/ServerlessHero.vue'
+import ServerlessHowItWorksSection from '../../../templates/platform/ServerlessHowItWorksSection.vue'
 import ServerlessScaleSection from '../../../templates/platform/ServerlessScaleSection.vue'
 import { t } from '../../../i18n/translations'
 ---
@@ -15,6 +16,7 @@ import { t } from '../../../i18n/translations'
   <ServerlessHero locale="zh-CN" client:load />
   <ServerlessDeploySection locale="zh-CN" client:visible />
   <ServerlessScaleSection locale="zh-CN" client:visible />
+  <ServerlessHowItWorksSection locale="zh-CN" client:visible />
   <ClosingCtaSection locale="zh-CN" client:visible />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
 </BaseLayout>

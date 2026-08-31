@@ -11,7 +11,7 @@ const routes = getRoutes(locale)
 <template>
   <ClosingCtaSection
     :locale="locale"
-    visual="columns"
+    visual="shader"
     badge-only
     :primary-href="routes.platform"
     :subtitle="t('home.platform.body', locale)"

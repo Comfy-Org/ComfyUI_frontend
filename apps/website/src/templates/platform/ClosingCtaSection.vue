@@ -79,13 +79,23 @@ onMounted(() => {
             :locale
           />
         </template>
+        <template v-else-if="badgeOnly">
+          <PlatformHeroBadge
+            class="mx-auto md:my-2"
+            center-text
+            large
+            :locale
+          />
+        </template>
         <template v-else-if="headingLead">
           <span class="block">{{ headingLead }}</span>
-          <PlatformHeroBadge class="mx-auto -my-2 scale-75" :locale />
+          <PlatformHeroBadge class="mx-auto -my-2 w-fit scale-75" :locale />
         </template>
         <template v-else-if="headingAfterBadge">
-          <PlatformHeroBadge class="mx-auto -my-2 scale-75" :locale />
-          <span class="mt-5 block text-base/relaxed lg:text-xl/relaxed">
+          <PlatformHeroBadge class="mx-auto -my-2 w-fit scale-75" :locale />
+          <span
+            class="mt-5 block text-base/relaxed whitespace-pre-line lg:text-xl/relaxed"
+          >
             {{ headingAfterBadge }}
           </span>
         </template>

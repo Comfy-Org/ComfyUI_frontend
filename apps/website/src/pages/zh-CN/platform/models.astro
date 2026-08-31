@@ -13,6 +13,10 @@ import { t } from '../../../i18n/translations'
 >
   <ModelsApiHero locale="zh-CN" client:load />
   <ModelsApiFeaturesSection locale="zh-CN" />
-  <ClosingCtaSection locale="zh-CN" client:visible />
+  <ClosingCtaSection
+    locale="zh-CN"
+    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    client:visible
+  />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
 </BaseLayout>

@@ -7323,8 +7323,8 @@ const translations = {
     'zh-CN': '开发者平台'
   },
   'home.platform.body': {
-    en: 'Deploy and scale your Comfy workflows with Serverless.',
-    'zh-CN': '使用 Serverless 部署并扩展你的 Comfy 工作流。'
+    en: 'Scale your custom nodes in your Comfy workflows in custom environments through Serverless.',
+    'zh-CN': '通过 Serverless 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
   },
   'home.platform.cta': {
     en: 'Explore the Developer Platform',
@@ -7510,11 +7510,11 @@ const translations = {
     'zh-CN': '几分钟内上线'
   },
   'platform.serverlessDeploy.shipSubtitle': {
-    en: 'Easily package up your existing ComfyUI environment or a single workflow, then deploy it to serverless.',
+    en: 'Easily package up your existing ComfyUI environment or a single workflow,\nthen deploy it to Serverless.',
     'zh-CN': '轻松打包现有的 ComfyUI 环境或单个工作流，然后部署到 Serverless。'
   },
   'platform.serverlessDeploy.subtitle': {
-    en: 'Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to serverless and scale it on demand.',
+    en: 'Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to Serverless and scale it on demand.',
     'zh-CN':
       'Builder 将你的 ComfyUI 工作流和环境打包成可复现的构建。将该构建部署到 Serverless，并按需扩展。'
   },
@@ -8130,7 +8130,7 @@ const translations = {
     'zh-CN': '将规模与控制力最大化'
   },
   'platform.closing.headingAfterBadge': {
-    en: 'Scale your custom nodes in your Comfy workflows in custom environments through serverless.',
+    en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Serverless.',
     'zh-CN': '通过 Serverless 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
   }
 } as const satisfies Record<string, Record<Locale, string>>

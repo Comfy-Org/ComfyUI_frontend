@@ -4,16 +4,8 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CodeTab } from './CodeTabs.vue'
 import CodeTabs from './CodeTabs.vue'
-import FeatureCard from './FeatureCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const stepNumbers = [1, 2, 3] as const
-
-const steps = stepNumbers.map((number) => ({
-  title: t(`platform.serverlessDeploy.${number}.title`, locale),
-  description: t(`platform.serverlessDeploy.${number}.description`, locale)
-}))
 
 // Command surface from comfy-cli's build + deploy stack (PRs #801-805):
 // `comfy build init --from-snapshot/--from-workflow`, `build push`, and
@@ -56,32 +48,13 @@ $ comfy deploy run --workflow workflow_api.json
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.serverlessDeploy.shipHeading', locale) }}
       <template #subtitle>
-        <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
+        <p
+          class="mx-auto mt-4 max-w-2xl text-sm whitespace-pre-line text-smoke-700"
+        >
           {{ t('platform.serverlessDeploy.shipSubtitle', locale) }}
         </p>
       </template>
     </SectionHeader>
-  </section>
-
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
-    <SectionHeader max-width="xl" heading-size="compact">
-      {{ t('platform.serverlessDeploy.heading', locale) }}
-      <template #subtitle>
-        <p class="mx-auto mt-4 max-w-2xl text-sm text-smoke-700">
-          {{ t('platform.serverlessDeploy.subtitle', locale) }}
-        </p>
-      </template>
-    </SectionHeader>
-
-    <ol class="mx-auto mt-8 grid max-w-5xl gap-4 md:grid-cols-3">
-      <li v-for="step in steps" :key="step.title">
-        <FeatureCard
-          class="h-full"
-          :title="step.title"
-          :description="step.description"
-        />
-      </li>
-    </ol>
 
     <div class="mx-auto mt-8 max-w-3xl">
       <CodeTabs

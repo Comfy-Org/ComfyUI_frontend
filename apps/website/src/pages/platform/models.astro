@@ -13,7 +13,11 @@ import { t } from '../../i18n/translations'
 >
   <ModelsApiHero locale="en" client:load />
   <ModelsApiFeaturesSection locale="en" />
-  <ClosingCtaSection locale="en" client:visible />
+  <ClosingCtaSection
+    locale="en"
+    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    client:visible
+  />
   <ProductCardsSection
     locale="en"
     label-key="products.labelProducts"

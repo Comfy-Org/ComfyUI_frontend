@@ -12,21 +12,14 @@ describe('ServerlessDeploySection', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.serverlessDeploy.heading', 'en')
-      })
-    ).toBeTruthy()
-    expect(
-      screen.getByRole('heading', {
         level: 2,
         name: t('platform.serverlessDeploy.shipHeading', 'en')
       })
     ).toBeTruthy()
     expect(
-      screen.getByText(t('platform.serverlessDeploy.shipSubtitle', 'en'))
-    ).toBeTruthy()
-    expect(screen.getAllByRole('listitem')).toHaveLength(3)
-    expect(
-      screen.getByText(t('platform.serverlessDeploy.2.title', 'en'))
+      screen.getByText(
+        /Easily package up your existing ComfyUI environment or a single workflow,\s+then deploy it to Serverless\./
+      )
     ).toBeTruthy()
     expect(screen.getByText(/comfy build init --from-snapshot/)).toBeTruthy()
 

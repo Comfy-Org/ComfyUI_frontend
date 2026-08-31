@@ -21,15 +21,15 @@ describe('ProductsSection', () => {
     }
   })
 
-  it('sends the Builder card to the enterprise page', () => {
+  it('sends the Builder CTA to the Builder page', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
     expect(
       screen
         .getByRole('link', {
-          name: t('platform.products.builder.enterpriseCta', 'en')
+          name: t('cta.getStarted', 'en')
         })
         .getAttribute('href')
-    ).toBe('/enterprise')
+    ).toBe('/platform/builder')
   })
 })
