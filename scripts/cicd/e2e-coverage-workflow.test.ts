@@ -84,11 +84,24 @@ describe('E2E coverage workflows', () => {
     const checkout = packageSteps.find((step) =>
       step.uses?.startsWith('actions/checkout@')
     )
+    const merge = packageSteps.find(
+      (step) => step.name === 'Merge shard coverage into single LCOV'
+    )
+    const validation = packageSteps.find(
+      (step) => step.name === 'Validate merged coverage'
+    )
     const packageJob = e2eWorkflow.jobs['upload-e2e-coverage']
 
     expect(packageWorkflow.on).toHaveProperty('workflow_call')
+    expect(checkout?.uses).toBe('actions/checkout@v7')
     expect(checkout?.with?.ref).toBe('${{ inputs.source_sha }}')
-    expect(packageSteps.some((step) => step.run?.includes('lcov '))).toBe(true)
+    expect(merge?.run).toContain(
+      "find temp/coverage-shards -name 'coverage.lcov' -type f -print0"
+    )
+    expect(merge?.run).toContain("while IFS= read -r -d '' f")
+    expect(merge?.run).toContain('lcov "${ADD_ARGS[@]}"')
+    expect(validation?.run).toContain("while IFS= read -r -d '' f")
+    expect(validation?.run).toMatch(/possible data loss"\n\s+exit 1/)
     expect(packageSteps.some((step) => step.run?.includes('genhtml '))).toBe(
       true
     )

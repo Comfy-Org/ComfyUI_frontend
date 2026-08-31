@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout sources for coverage packaging
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_sha }}
           sparse-checkout: |
@@ -56,10 +56,11 @@ jobs:
         if: steps.coverage.outputs.has-coverage == 'true'
         run: |
           mkdir -p coverage/playwright
-          LCOV_FILES=$(find temp/coverage-shards -name 'coverage.lcov' -type f)
-          ADD_ARGS=""
-          for f in $LCOV_FILES; do ADD_ARGS="$ADD_ARGS -a $f"; done
-          lcov $ADD_ARGS -o coverage/playwright/coverage.lcov
+          ADD_ARGS=()
+          while IFS= read -r -d '' f; do
+            ADD_ARGS+=(-a "$f")
+          done < <(find temp/coverage-shards -name 'coverage.lcov' -type f -print0)
+          lcov "${ADD_ARGS[@]}" -o coverage/playwright/coverage.lcov
           wc -l coverage/playwright/coverage.lcov
 
       - name: Validate merged coverage
@@ -74,15 +75,16 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Shard | Files | Lines Hit |" >> "$GITHUB_STEP_SUMMARY"
           echo "|-------|-------|-----------|" >> "$GITHUB_STEP_SUMMARY"
-          for f in $(find temp/coverage-shards -name 'coverage.lcov' -type f | sort); do
+          while IFS= read -r -d '' f; do
             SHARD=$(basename "$(dirname "$f")")
             SHARD_SF=$(grep -c '^SF:' "$f" || echo 0)
             SHARD_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' "$f")
             echo "| $SHARD | $SHARD_SF | $SHARD_LH |" >> "$GITHUB_STEP_SUMMARY"
             if [ "$MERGED_LH" -lt "$SHARD_LH" ]; then
               echo "::error::Merged LH ($MERGED_LH) < shard LH ($SHARD_LH) in $SHARD — possible data loss"
+              exit 1
             fi
-          done
+          done < <(find temp/coverage-shards -name 'coverage.lcov' -type f -print0 | sort -z)
 
       - name: Assert coverage was mapped back to source
         if: steps.coverage.outputs.has-coverage == 'true'
@@ -106,7 +108,7 @@ jobs:
 
       - name: Upload merged coverage data
         if: steps.coverage.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage
           path: coverage/playwright/
@@ -126,7 +128,7 @@ jobs:
 
       - name: Upload HTML report artifact
         if: steps.coverage.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage-html
           path: coverage/html/
