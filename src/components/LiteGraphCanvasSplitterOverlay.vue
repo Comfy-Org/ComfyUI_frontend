@@ -34,7 +34,7 @@
         >
           <!-- First panel: sidebar when left, properties when right -->
           <SplitterPanel
-            v-if="firstPanelVisible"
+            v-if="firstPanelVisible && !agentNodeSelectionActive"
             :class="
               sidebarLocation === 'left'
                 ? cn(
@@ -73,7 +73,11 @@
               :pt:gutter="
                 cn(
                   'rounded-t-lg',
-                  !(bottomPanelVisible && !focusMode) && 'hidden'
+                  !(
+                    bottomPanelVisible &&
+                    !focusMode &&
+                    !agentNodeSelectionActive
+                  ) && 'hidden'
                 )
               "
               state-key="bottom-panel-splitter"
@@ -81,12 +85,14 @@
               @resizestart="onResizestart"
             >
               <SplitterPanel
-                class="graph-canvas-panel relative overflow-visible"
+                class="graph-canvas-panel relative overflow-visible [anchor-name:--graph-canvas-panel]"
               >
                 <slot name="graph-canvas-panel" />
               </SplitterPanel>
               <SplitterPanel
-                v-show="bottomPanelVisible && !focusMode"
+                v-show="
+                  bottomPanelVisible && !focusMode && !agentNodeSelectionActive
+                "
                 class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
               >
                 <slot name="bottom-panel" />
@@ -96,7 +102,7 @@
 
           <!-- Last panel: properties when left, sidebar when right -->
           <SplitterPanel
-            v-if="lastPanelVisible"
+            v-if="lastPanelVisible && !agentNodeSelectionActive"
             :class="
               sidebarLocation === 'right'
                 ? cn(
@@ -146,15 +152,18 @@ import {
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const sidebarTabStore = useSidebarTabStore()
+const agentPanelStore = useAgentPanelStore()
 const { t } = useI18n()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -165,11 +174,17 @@ const unifiedWidth = computed(() =>
 )
 
 const { focusMode } = storeToRefs(workspaceStore)
+const { isActive: agentNodeSelectionActive } = storeToRefs(
+  useAgentNodeSelectionStore()
+)
 
 const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
+const { isOpen: agentPanelOpen } = storeToRefs(agentPanelStore)
+// The agent docks in its own `agent-panel` slot outside the splitter, so it is
+// not an offside trigger; it only discriminates the saved layout key below.
 const showOffsideSplitter = computed(
   () => rightSidePanelVisible.value || isSelectMode.value
 )
@@ -268,7 +283,7 @@ function normalizeSavedSizes() {
  * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
+  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${agentPanelOpen.value ? '-with-agent' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
 })
 
 const firstPanelStyle = computed(() => {

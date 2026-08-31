@@ -133,6 +133,18 @@ export function addToComboValues(widget: IComboWidget, value: string) {
   }
 }
 
+/**
+ * True while the canvas is a picking surface rather than an editable one - the
+ * agent's node selection mode sets `selectOnly`.
+ *
+ * Guard every editing operation with this. It is checked at each call site
+ * rather than inside litegraph itself, to keep that vendored library untouched.
+ * A new way to edit the canvas therefore has to opt in: add the guard, or the
+ * operation will run during picking.
+ */
+export const isSelectOnly = (canvas: LGraphCanvas | undefined): boolean =>
+  canvas?.selectOnly === true
+
 export const isLGraphNode = (item: unknown): item is LGraphNode => {
   return item instanceof LGraphNode
 }
