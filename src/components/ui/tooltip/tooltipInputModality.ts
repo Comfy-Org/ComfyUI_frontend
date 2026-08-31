@@ -5,40 +5,39 @@ const POINTER_MOVE_THRESHOLD_SQUARED = 16
 export const automaticTooltipSuppressed = ref(false)
 export const keyboardInteraction = ref(false)
 
-let pointerOrigin: { x: number; y: number } | undefined
+let pointerMovementSquared = 0
 
-function suppressAutomaticTooltips(x: number, y: number) {
+function suppressAutomaticTooltips() {
   keyboardInteraction.value = false
   automaticTooltipSuppressed.value = true
-  pointerOrigin = { x, y }
+  pointerMovementSquared = 0
 }
 
-function handlePointerDown(event: PointerEvent) {
-  suppressAutomaticTooltips(event.clientX, event.clientY)
+function handlePointerDown() {
+  suppressAutomaticTooltips()
 }
 
-function handleTouchStart(event: TouchEvent) {
-  const touch = event.touches[0]
-  suppressAutomaticTooltips(touch?.clientX ?? 0, touch?.clientY ?? 0)
+function handleTouchStart() {
+  suppressAutomaticTooltips()
 }
 
 function handlePointerMove(event: PointerEvent) {
-  if (!pointerOrigin || event.pointerType === 'touch') return
-  const x = event.clientX - pointerOrigin.x
-  const y = event.clientY - pointerOrigin.y
-  if (x * x + y * y <= POINTER_MOVE_THRESHOLD_SQUARED) return
-  pointerOrigin = undefined
+  if (!automaticTooltipSuppressed.value || event.pointerType === 'touch') return
+  pointerMovementSquared +=
+    event.movementX * event.movementX + event.movementY * event.movementY
+  if (pointerMovementSquared <= POINTER_MOVE_THRESHOLD_SQUARED) return
+  pointerMovementSquared = 0
   automaticTooltipSuppressed.value = false
 }
 
 function handleKeyboardInteraction() {
   keyboardInteraction.value = true
-  pointerOrigin = undefined
+  pointerMovementSquared = 0
   automaticTooltipSuppressed.value = false
 }
 
 export function resetTooltipInputModality() {
-  pointerOrigin = undefined
+  pointerMovementSquared = 0
   automaticTooltipSuppressed.value = false
   keyboardInteraction.value = false
 }
