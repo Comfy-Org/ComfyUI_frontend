@@ -3,61 +3,70 @@
     <!-- Controls row: tabs, search, invite (outside the table frame). Once the
          panel scrolls it moves into the dialog header, left of the close
          button, so the workspace name can scroll away. -->
-    <div class="mb-6 flex w-full items-center gap-4">
-      <div v-if="showViewTabs" class="flex items-center gap-2">
-        <Button
-          :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
-          size="lg"
-          @click="activeView = 'active'"
-        >
-          {{ $t('workspacePanel.members.tabs.active') }}
-        </Button>
-        <Button
-          v-if="uiConfig.showPendingTab"
-          :variant="activeView === 'pending' ? 'secondary' : 'muted-textonly'"
-          size="lg"
-          @click="activeView = 'pending'"
-        >
-          {{
-            $t(
-              'workspacePanel.members.tabs.pendingCount',
-              pendingInvites.length
-            )
-          }}
-        </Button>
+    <Teleport to="#settings-header-controls" :disabled="!isHeaderCollapsed">
+      <div
+        :class="
+          cn(
+            'flex w-full items-center gap-4',
+            isHeaderCollapsed ? 'min-w-0 flex-1' : 'mb-6'
+          )
+        "
+      >
+        <div v-if="showViewTabs" class="flex items-center gap-2">
+          <Button
+            :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
+            size="lg"
+            @click="activeView = 'active'"
+          >
+            {{ $t('workspacePanel.members.tabs.active') }}
+          </Button>
+          <Button
+            v-if="uiConfig.showPendingTab"
+            :variant="activeView === 'pending' ? 'secondary' : 'muted-textonly'"
+            size="lg"
+            @click="activeView = 'pending'"
+          >
+            {{
+              $t(
+                'workspacePanel.members.tabs.pendingCount',
+                pendingInvites.length
+              )
+            }}
+          </Button>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <SearchInput
+            v-if="showSearch"
+            v-model="searchQuery"
+            :placeholder="$t('workspacePanel.members.searchPlaceholder')"
+            size="lg"
+            class="w-64"
+          />
+          <Button
+            v-if="showInviteButton"
+            v-tooltip="
+              inviteTooltip
+                ? { value: inviteTooltip, showDelay: 0 }
+                : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
+            "
+            variant="secondary"
+            size="lg"
+            :disabled="isInviteDisabled"
+            :aria-label="$t('workspacePanel.inviteMember')"
+            @click="handleInviteMember"
+          >
+            {{ $t('workspacePanel.invite') }}
+            <i class="pi pi-plus text-sm" />
+          </Button>
+        </div>
       </div>
-      <div class="ml-auto flex items-center gap-2">
-        <SearchInput
-          v-if="showSearch"
-          v-model="searchQuery"
-          :placeholder="$t('workspacePanel.members.searchPlaceholder')"
-          size="lg"
-          class="w-64"
-        />
-        <Button
-          v-if="showInviteButton"
-          v-tooltip="
-            inviteTooltip
-              ? { value: inviteTooltip, showDelay: 0 }
-              : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
-          "
-          variant="secondary"
-          size="lg"
-          :disabled="isInviteDisabled"
-          :aria-label="$t('workspacePanel.inviteMember')"
-          @click="handleInviteMember"
-        >
-          {{ $t('workspacePanel.invite') }}
-          <i class="pi pi-plus text-sm" />
-        </Button>
-      </div>
-    </div>
+    </Teleport>
     <div
       class="border-inter flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
       <!-- Members Content -->
       <div class="flex min-h-0 flex-1 flex-col">
-        <div class="min-h-0 flex-1 overflow-y-auto">
+        <div class="min-h-0 flex-1 overflow-y-auto" @scroll="handlePanelScroll">
           <!-- Table Header with Tab Buttons and Column Headers -->
           <div
             v-if="uiConfig.showMembersList && showViewTabs"
@@ -216,6 +225,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
@@ -258,6 +269,8 @@ const {
   handleResendInvite,
   handleRevokeInvite
 } = useMembersPanel()
+
+const { isHeaderCollapsed, handlePanelScroll } = useSettingsHeaderCollapse()
 
 const { t } = useI18n()
 

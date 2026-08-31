@@ -1,5 +1,8 @@
 <template>
-  <div class="flex grow flex-col overflow-auto pt-6">
+  <div
+    class="flex grow flex-col overflow-auto pt-2"
+    @scroll="handlePanelScroll"
+  >
     <!-- Loading state while subscription is being set up -->
     <div
       v-if="isSettingUp"
@@ -404,6 +407,7 @@
 </template>
 
 <script setup lang="ts">
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
@@ -436,6 +440,8 @@ import {
   formatSubscriptionDate,
   resolveSubscriptionTierKey
 } from './subscriptionPanelWorkspace.logic'
+
+const { handlePanelScroll } = useSettingsHeaderCollapse()
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
