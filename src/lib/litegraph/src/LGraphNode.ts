@@ -1131,64 +1131,64 @@ export class LGraphNode
     }
     const namedValues = getNamedValues()
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
-    useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
-      positional: positionalValues,
-      named: namedValues ? { ...namedValues } : undefined,
-      restoreNamed: Boolean(namedValues && LiteGraph.namedValuesRestore)
-    })
-
-    if (this.widgets) {
-      for (const w of this.widgets) {
-        if (!w) continue
-
-        const input = this.inputs.find((i) => i.widget?.name === w.name)
-        if (input?.label) w.label = input.label
-
-        if (
-          w.options?.property &&
-          this.properties[w.options.property] != undefined
-        )
-          w.value = JSON.parse(
-            JSON.stringify(this.properties[w.options.property])
-          )
-      }
-
-      if (namedValues) {
-        const legacyShadow = computeLegacyWidgetShadow(
-          this.widgets,
-          info.widgets_values
-        )
-        reportNamedValuesShadowDiff(
-          this,
-          diffNamedValuesShadow(namedValues, legacyShadow),
-          Boolean(info.widgets_values_named)
-        )
-      }
-
-      let positionalIndex = 0
-      for (const widget of this.widgets) {
-        if (widget.serialize === false) continue
-        const restored = useWidgetValueStore().getRestoredWidgetValue(
-          graphId,
-          this.id,
-          widget.name,
-          positionalIndex++
-        )
-        if (restored) widget.value = restored.value
-      }
-    }
-    // Sync the state of this.resizable.
-    if (this.pinned) this.resizable = false
-
-    if (this.widgets_up) {
-      console.warn(
-        `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
-          'This property is unsupported and will be removed. ' +
-          'Use "widgets_start_y" or a custom arrange() override instead.'
-      )
-    }
-
     try {
+      useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
+        positional: positionalValues,
+        named: namedValues ? { ...namedValues } : undefined,
+        restoreNamed: Boolean(namedValues && LiteGraph.namedValuesRestore)
+      })
+
+      if (this.widgets) {
+        for (const w of this.widgets) {
+          if (!w) continue
+
+          const input = this.inputs.find((i) => i.widget?.name === w.name)
+          if (input?.label) w.label = input.label
+
+          if (
+            w.options?.property &&
+            this.properties[w.options.property] != undefined
+          )
+            w.value = JSON.parse(
+              JSON.stringify(this.properties[w.options.property])
+            )
+        }
+
+        if (namedValues) {
+          const legacyShadow = computeLegacyWidgetShadow(
+            this.widgets,
+            info.widgets_values
+          )
+          reportNamedValuesShadowDiff(
+            this,
+            diffNamedValuesShadow(namedValues, legacyShadow),
+            Boolean(info.widgets_values_named)
+          )
+        }
+
+        let positionalIndex = 0
+        for (const widget of this.widgets) {
+          if (widget.serialize === false) continue
+          const restored = useWidgetValueStore().getRestoredWidgetValue(
+            graphId,
+            this.id,
+            widget.name,
+            positionalIndex++
+          )
+          if (restored) widget.value = restored.value
+        }
+      }
+      // Sync the state of this.resizable.
+      if (this.pinned) this.resizable = false
+
+      if (this.widgets_up) {
+        console.warn(
+          `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
+            'This property is unsupported and will be removed. ' +
+            'Use "widgets_start_y" or a custom arrange() override instead.'
+        )
+      }
+
       this.onConfigure?.(extensionConfigureView(this, info))
     } finally {
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
