@@ -69,6 +69,25 @@
           <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
         </TabList>
       </div>
+      <div
+        v-if="activeTab === 'output' && !isInFolderView"
+        class="border-b border-comfy-input px-2 py-1 2xl:px-4"
+      >
+        <TabList v-model="generatedMediaKind">
+          <Tab value="all" class="flex-1">{{
+            $t('mediaAsset.generatedMediaTabs.all')
+          }}</Tab>
+          <Tab value="image" class="flex-1">{{
+            $t('mediaAsset.generatedMediaTabs.images')
+          }}</Tab>
+          <Tab value="video" class="flex-1">{{
+            $t('mediaAsset.generatedMediaTabs.videos')
+          }}</Tab>
+          <Tab value="audio" class="flex-1">{{
+            $t('mediaAsset.generatedMediaTabs.audio')
+          }}</Tab>
+        </TabList>
+      </div>
     </template>
     <template #body>
       <div
@@ -220,6 +239,7 @@ import type {
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
+import { useFlatOutputAssetsGrouped } from '@/platform/assets/composables/media/useFlatOutputAssetsGrouped'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -228,21 +248,24 @@ import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  getAssetMediaKind
+} from '@/platform/assets/utils/assetMetadataUtils'
 import {
   getAssetSubfolder,
   getAssetUrl
 } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import {
+  getTotalAssetOutputCount,
+  resolveOutputAssetItems
+} from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
+import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
-import {
-  formatDuration,
-  getMediaTypeFromFilename,
-  isPreviewableMediaType
-} from '@/utils/formatUtil'
+import { formatDuration, isPreviewableMediaType } from '@/utils/formatUtil'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -253,6 +276,8 @@ const { t } = useI18n()
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
 const activeTab = ref<'input' | 'output'>('output')
+type GeneratedMediaKind = 'all' | 'image' | 'video' | 'audio'
+const generatedMediaKind = ref<GeneratedMediaKind>('all')
 const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
@@ -286,7 +311,7 @@ const contextMenuAssetType = computed(() =>
 )
 
 const contextMenuFileKind = computed<MediaKind>(() =>
-  getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
+  contextMenuAsset.value ? getAssetMediaKind(contextMenuAsset.value) : 'other'
 )
 
 const showOutputCount = (item: AssetItem): boolean => {
@@ -304,7 +329,10 @@ const formattedExecutionTime = computed(() => {
 const toast = useToast()
 
 const inputAssets = useAssetsApi('input')
-const outputAssets = useAssetsApi('output')
+const outputAssets =
+  !isCloud && api.getServerFeature('assets', false)
+    ? useFlatOutputAssetsGrouped()
+    : useAssetsApi('output')
 
 // Asset selection
 const {
@@ -367,10 +395,31 @@ const {
   { immediate: false, resetOnExecute: true }
 )
 
+function matchesGeneratedMediaKind(
+  asset: AssetItem,
+  mediaKind: Exclude<GeneratedMediaKind, 'all'>
+): boolean {
+  if (getAssetMediaKind(asset) === mediaKind) return true
+  const outputs = getOutputAssetMetadata(asset.user_metadata)?.allOutputs
+  return (
+    outputs?.some(
+      (output) =>
+        output.mediaType === mediaKind ||
+        (mediaKind === 'image' && output.mediaType === 'images')
+    ) ?? false
+  )
+}
+
 // Base assets before search filtering
 const baseAssets = computed(() => {
   if (isInFolderView.value) {
     return folderAssets.value
+  }
+  const mediaKind = generatedMediaKind.value
+  if (activeTab.value === 'output' && mediaKind !== 'all') {
+    return mediaAssets.value.filter((asset) =>
+      matchesGeneratedMediaKind(asset, mediaKind)
+    )
   }
   return mediaAssets.value
 })
@@ -409,7 +458,7 @@ const { marqueeStyle } = useAssetGridSelection({
 
 const previewableVisibleAssets = computed(() =>
   visibleAssets.value.filter((asset) =>
-    isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+    isPreviewableMediaType(getAssetMediaKind(asset))
   )
 )
 
@@ -429,12 +478,18 @@ const isFolderLoading = computed(
 
 const showLoadingState = computed(
   () =>
-    (loading.value || isFolderLoading.value) && displayAssets.value.length === 0
+    (loading.value ||
+      isFolderLoading.value ||
+      (activeTab.value === 'output' && outputAssets.isLoadingMore.value)) &&
+    displayAssets.value.length === 0
 )
 
 const showEmptyState = computed(
   () =>
-    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
+    !loading.value &&
+    !isFolderLoading.value &&
+    !(activeTab.value === 'output' && outputAssets.isLoadingMore.value) &&
+    displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -457,7 +512,7 @@ watch(galleryActiveIndex, (index) => {
 
 const galleryItems = computed(() => {
   return previewableVisibleAssets.value.map((asset) => {
-    const mediaType = getMediaTypeFromFilename(asset.name)
+    const mediaType = getAssetMediaKind(asset)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
       subfolder: getAssetSubfolder(asset),
@@ -494,6 +549,56 @@ watch(
     void refreshAssets()
   },
   { immediate: true }
+)
+
+let generatedMediaContextVersion = 0
+watch(
+  [activeTab, isInFolderView, generatedMediaKind],
+  () => {
+    generatedMediaContextVersion += 1
+  },
+  { flush: 'sync' }
+)
+
+async function ensureGeneratedMediaResults() {
+  if (
+    activeTab.value !== 'output' ||
+    isInFolderView.value ||
+    generatedMediaKind.value === 'all' ||
+    loading.value ||
+    outputAssets.isLoadingMore.value
+  ) {
+    return
+  }
+
+  const contextVersion = generatedMediaContextVersion
+  while (
+    contextVersion === generatedMediaContextVersion &&
+    baseAssets.value.length === 0 &&
+    outputAssets.hasMore.value
+  ) {
+    const previousCount = getTotalAssetOutputCount(mediaAssets.value)
+    await outputAssets.loadMore()
+    if (
+      contextVersion !== generatedMediaContextVersion ||
+      error.value ||
+      getTotalAssetOutputCount(mediaAssets.value) === previousCount
+    ) {
+      break
+    }
+  }
+}
+
+watch(generatedMediaKind, () => {
+  clearSelection()
+  void ensureGeneratedMediaResults()
+})
+
+watch(
+  [loading, () => outputAssets.isLoadingMore.value],
+  ([isLoading, loadingMore]) => {
+    if (!isLoading && !loadingMore) void ensureGeneratedMediaResults()
+  }
 )
 
 function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
@@ -567,7 +672,7 @@ const handleDeleteSelected = async () => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
-  const mediaType = getMediaTypeFromFilename(asset.name)
+  const mediaType = getAssetMediaKind(asset)
   if (!isPreviewableMediaType(mediaType)) {
     return
   }

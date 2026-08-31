@@ -3874,6 +3874,12 @@
     }
   },
   "mediaAsset": {
+    "generatedMediaTabs": {
+      "all": "All",
+      "images": "Images",
+      "videos": "Videos",
+      "audio": "Audio"
+    },
     "deleteAssetTitle": "Delete this asset?",
     "deleteAssetDescription": "This asset will be permanently removed.",
     "deleteSelectedTitle": "Delete selected assets?",

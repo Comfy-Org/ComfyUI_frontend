@@ -1,6 +1,7 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import { isCivitaiUrl } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename, isCivitaiUrl } from '@/utils/formatUtil'
 
 // Reserved tag literals (mirror assetService's MODELS_TAG/MISSING_TAG). Kept
 // local so this leaf util doesn't pull the heavier assetService -> i18n chain.
@@ -71,6 +72,17 @@ export function getAssetBaseModels(asset: AssetItem): string[] {
  */
 export function getAssetDisplayName(asset: AssetItem): string {
   return getStringProperty(asset, 'name') || asset.display_name || asset.name
+}
+
+export function getAssetMediaKind(asset: AssetItem): MediaKind {
+  const mimeKind = asset.mime_type?.split('/', 1)[0]?.trim().toLowerCase()
+  if (mimeKind === 'image' || mimeKind === 'video' || mimeKind === 'audio') {
+    return mimeKind
+  }
+
+  const filename =
+    getStringProperty(asset, 'filename') ?? asset.display_name ?? asset.name
+  return getMediaTypeFromFilename(filename)
 }
 
 /**

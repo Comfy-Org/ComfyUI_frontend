@@ -1,35 +1,118 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { api } from '@/scripts/api'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
-const folderAsset = vi.hoisted(() => ({
-  id: 'multi-output',
-  name: 'multi-output.png',
-  tags: ['output'],
-  user_metadata: {
-    jobId: 'multi-output-job',
-    nodeId: '1',
-    subfolder: '',
-    outputCount: 2
-  }
+const flatOutputMocks = vi.hoisted(() => ({
+  media: undefined as unknown as Ref<AssetItem[]>,
+  hasMore: undefined as unknown as Ref<boolean>,
+  isLoadingMore: undefined as unknown as Ref<boolean>,
+  loadMore: vi.fn()
 }))
+
+const folderAsset = vi.hoisted(
+  () =>
+    ({
+      id: 'multi-output',
+      name: 'multi-output.png',
+      created_at: '2026-08-25T00:00:00.000Z',
+      updated_at: '2026-08-25T00:00:00.000Z',
+      tags: ['output'],
+      user_metadata: {
+        jobId: 'multi-output-job',
+        nodeId: '1',
+        subfolder: '',
+        outputCount: 2
+      }
+    }) satisfies AssetItem
+)
+
+const videoAsset = vi.hoisted(
+  () =>
+    ({
+      id: 'video-output',
+      name: 'video-output.mp4',
+      created_at: '2026-08-25T00:00:00.000Z',
+      updated_at: '2026-08-25T00:00:00.000Z',
+      mime_type: 'video/mp4',
+      tags: ['output']
+    }) satisfies AssetItem
+)
+
+const audioAsset = vi.hoisted(
+  () =>
+    ({
+      id: 'audio-output',
+      name: 'audio-output.mp3',
+      created_at: '2026-08-25T00:00:00.000Z',
+      updated_at: '2026-08-25T00:00:00.000Z',
+      mime_type: 'audio/mpeg',
+      tags: ['output']
+    }) satisfies AssetItem
+)
+
+const folderVideoAsset = vi.hoisted(
+  () =>
+    ({
+      id: 'folder-video-output',
+      name: 'folder-video-output.mp4',
+      created_at: '2026-08-25T00:00:00.000Z',
+      updated_at: '2026-08-25T00:00:00.000Z',
+      mime_type: 'video/mp4',
+      tags: ['output'],
+      user_metadata: {
+        jobId: 'folder-video-job',
+        nodeId: '2',
+        subfolder: 'nested',
+        outputCount: 2
+      }
+    }) satisfies AssetItem
+)
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
 
 vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
   const { ref } = await import('vue')
 
   return {
-    useAssetsApi: () => ({
-      media: ref([folderAsset]),
+    useAssetsApi: (directory: 'input' | 'output') => ({
+      media: ref(directory === 'input' ? [] : [folderAsset]),
       loading: ref(false),
       error: ref(null),
-      fetchMediaList: vi.fn(async () => [folderAsset]),
+      fetchMediaList: vi.fn(async () =>
+        directory === 'input' ? [] : [folderAsset]
+      ),
       loadMore: vi.fn(),
       hasMore: ref(false),
       isLoadingMore: ref(false)
+    })
+  }
+})
+
+vi.mock('@/platform/assets/composables/media/useFlatOutputAssets', async () => {
+  const { ref } = await import('vue')
+  flatOutputMocks.media = ref([folderAsset, videoAsset])
+  flatOutputMocks.hasMore = ref(false)
+  flatOutputMocks.isLoadingMore = ref(false)
+
+  return {
+    useFlatOutputAssets: () => ({
+      media: flatOutputMocks.media,
+      loading: ref(false),
+      error: ref(null),
+      fetchMediaList: vi.fn().mockResolvedValue(flatOutputMocks.media.value),
+      loadMore: flatOutputMocks.loadMore,
+      hasMore: flatOutputMocks.hasMore,
+      isLoadingMore: flatOutputMocks.isLoadingMore
     })
   }
 })
@@ -93,6 +176,14 @@ const i18n = createI18n({
         backToAssets: 'Back to all assets',
         mediaAssets: { title: 'Media Assets' },
         labels: { generated: 'Generated', imported: 'Imported' }
+      },
+      mediaAsset: {
+        generatedMediaTabs: {
+          all: 'All',
+          images: 'Images',
+          videos: 'Videos',
+          audio: 'Audio'
+        }
       }
     }
   }
@@ -115,9 +206,11 @@ const assetsGridStub = {
   emits: ['output-count-click'],
   template: `
     <button
+      v-if="assets.length"
       aria-label="Enter output folder"
       @click="$emit('output-count-click', assets[0])"
     />
+    <span v-for="asset in assets" :key="asset.id">{{ asset.name }}</span>
   `
 }
 
@@ -149,6 +242,14 @@ function renderTab() {
 }
 
 describe('AssetsSidebarTab folder navigation', () => {
+  beforeEach(() => {
+    vi.spyOn(api, 'getServerFeature').mockReturnValue(true)
+    flatOutputMocks.media.value = [folderAsset, videoAsset]
+    flatOutputMocks.hasMore.value = false
+    flatOutputMocks.isLoadingMore.value = false
+    flatOutputMocks.loadMore.mockReset()
+  })
+
   it('places accessible folder actions beside the job ID', async () => {
     renderTab()
     await userEvent.click(
@@ -176,5 +277,198 @@ describe('AssetsSidebarTab folder navigation', () => {
       screen.queryByRole('button', { name: 'Back to all assets' })
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
+  })
+
+  it('filters persisted generated assets by media type', async () => {
+    renderTab()
+
+    expect(screen.getByText('multi-output.png')).toBeVisible()
+    expect(screen.getByText('video-output.mp4')).toBeVisible()
+
+    await userEvent.click(screen.getByText('Videos'))
+    await nextTick()
+
+    expect(screen.queryByText('multi-output.png')).not.toBeInTheDocument()
+    expect(screen.getByText('video-output.mp4')).toBeVisible()
+  })
+
+  it('renders one persisted output card in each matching media tab', async () => {
+    flatOutputMocks.media.value = [
+      { ...folderAsset, job_id: 'multi-output-job' },
+      {
+        ...folderAsset,
+        id: 'multi-output-sibling',
+        name: 'multi-output-sibling.mp4',
+        mime_type: 'video/mp4',
+        job_id: 'multi-output-job'
+      }
+    ]
+    renderTab()
+
+    expect(screen.getByText('multi-output.png')).toBeVisible()
+    expect(
+      screen.queryByText('multi-output-sibling.mp4')
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByText('Videos'))
+    await nextTick()
+
+    expect(screen.getByText('multi-output.png')).toBeVisible()
+    expect(
+      screen.queryByText('multi-output-sibling.mp4')
+    ).not.toBeInTheDocument()
+  })
+
+  it('loads more persisted assets when the selected media type is absent', async () => {
+    flatOutputMocks.media.value = [folderAsset]
+    flatOutputMocks.hasMore.value = true
+    flatOutputMocks.loadMore.mockImplementation(async () => {
+      flatOutputMocks.media.value = [folderAsset, videoAsset]
+      flatOutputMocks.hasMore.value = false
+    })
+    renderTab()
+
+    await userEvent.click(screen.getByText('Videos'))
+    await nextTick()
+
+    expect(flatOutputMocks.loadMore).toHaveBeenCalledOnce()
+    expect(screen.getByText('video-output.mp4')).toBeVisible()
+  })
+
+  it('keeps paginating when an existing job gains non-matching outputs', async () => {
+    const first = { ...folderAsset, job_id: 'mixed-output-job' }
+    const second = { ...audioAsset, job_id: 'mixed-output-job' }
+    const third = { ...videoAsset, job_id: 'mixed-output-job' }
+    flatOutputMocks.media.value = [first]
+    flatOutputMocks.hasMore.value = true
+    flatOutputMocks.loadMore
+      .mockImplementationOnce(async () => {
+        flatOutputMocks.media.value = [first, second]
+      })
+      .mockImplementationOnce(async () => {
+        flatOutputMocks.media.value = [first, second, third]
+        flatOutputMocks.hasMore.value = false
+      })
+    renderTab()
+
+    await userEvent.click(screen.getByText('Videos'))
+    await vi.waitFor(() => {
+      expect(flatOutputMocks.loadMore).toHaveBeenCalledTimes(2)
+    })
+    await nextTick()
+
+    expect(screen.getByText('multi-output.png')).toBeVisible()
+    expect(screen.queryByText('video-output.mp4')).not.toBeInTheDocument()
+  })
+
+  it('waits for active pagination before loading a newly selected media type', async () => {
+    let resolveFirstLoad!: () => void
+    const firstLoad = new Promise<void>((resolve) => {
+      resolveFirstLoad = resolve
+    })
+    flatOutputMocks.media.value = [folderAsset]
+    flatOutputMocks.hasMore.value = true
+    flatOutputMocks.loadMore
+      .mockImplementationOnce(async () => {
+        flatOutputMocks.isLoadingMore.value = true
+        await firstLoad
+        flatOutputMocks.media.value = [folderAsset, videoAsset]
+        flatOutputMocks.isLoadingMore.value = false
+      })
+      .mockImplementationOnce(async () => {
+        flatOutputMocks.isLoadingMore.value = true
+        flatOutputMocks.media.value = [folderAsset, videoAsset, audioAsset]
+        flatOutputMocks.hasMore.value = false
+        flatOutputMocks.isLoadingMore.value = false
+      })
+    renderTab()
+
+    await userEvent.click(screen.getByText('Videos'))
+    await vi.waitFor(() => {
+      expect(flatOutputMocks.loadMore).toHaveBeenCalledOnce()
+    })
+
+    await userEvent.click(screen.getByText('Audio'))
+    await nextTick()
+    expect(flatOutputMocks.loadMore).toHaveBeenCalledOnce()
+
+    resolveFirstLoad()
+    await vi.waitFor(() => {
+      expect(flatOutputMocks.loadMore).toHaveBeenCalledTimes(2)
+    })
+    await nextTick()
+    expect(screen.getByText('audio-output.mp3')).toBeVisible()
+  })
+
+  it('stops generated pagination after switching to Imported', async () => {
+    let resolveLoad!: () => void
+    const pendingLoad = new Promise<void>((resolve) => {
+      resolveLoad = resolve
+    })
+    flatOutputMocks.media.value = [folderAsset]
+    flatOutputMocks.hasMore.value = true
+    flatOutputMocks.loadMore.mockImplementation(async () => {
+      flatOutputMocks.isLoadingMore.value = true
+      await pendingLoad
+      flatOutputMocks.isLoadingMore.value = false
+    })
+    renderTab()
+
+    await userEvent.click(screen.getByText('Videos'))
+    await vi.waitFor(() => {
+      expect(flatOutputMocks.loadMore).toHaveBeenCalledOnce()
+    })
+
+    await userEvent.click(screen.getByText('Imported'))
+    resolveLoad()
+    await flatOutputMocks.loadMore.mock.results[0].value
+    await nextTick()
+
+    expect(flatOutputMocks.loadMore).toHaveBeenCalledOnce()
+  })
+
+  it('stops generated pagination after entering a folder', async () => {
+    let resolveLoad!: () => void
+    const pendingLoad = new Promise<void>((resolve) => {
+      resolveLoad = resolve
+    })
+    flatOutputMocks.media.value = [folderAsset]
+    flatOutputMocks.hasMore.value = true
+    vi.mocked(resolveOutputAssetItems).mockResolvedValueOnce([])
+    flatOutputMocks.loadMore
+      .mockImplementationOnce(async () => {
+        flatOutputMocks.isLoadingMore.value = true
+        flatOutputMocks.media.value = [folderAsset, folderVideoAsset]
+        await pendingLoad
+        flatOutputMocks.isLoadingMore.value = false
+      })
+      .mockImplementationOnce(async () => {
+        flatOutputMocks.hasMore.value = false
+      })
+    renderTab()
+
+    await userEvent.click(screen.getByText('Videos'))
+    await vi.waitFor(() => {
+      expect(screen.getByText('folder-video-output.mp4')).toBeVisible()
+    })
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+
+    resolveLoad()
+    await flatOutputMocks.loadMore.mock.results[0].value
+    await nextTick()
+
+    expect(screen.getByText('folder-video-job')).toBeVisible()
+    expect(flatOutputMocks.loadMore).toHaveBeenCalledOnce()
+  })
+
+  it('keeps history-backed generated assets when the asset API is disabled', () => {
+    vi.mocked(api.getServerFeature).mockReturnValue(false)
+
+    renderTab()
+
+    expect(screen.getByText('multi-output.png')).toBeVisible()
+    expect(screen.queryByText('video-output.mp4')).not.toBeInTheDocument()
   })
 })

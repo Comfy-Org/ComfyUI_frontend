@@ -19,6 +19,7 @@ import {
   getAssetDisplayName,
   getAssetFilename,
   getAssetMetadataDimensions,
+  getAssetMediaKind,
   getAssetModelType,
   getAssetNodeCategoryCandidates,
   getAssetSourceUrl,
@@ -132,6 +133,54 @@ describe('assetMetadataUtils', () => {
     ])('$name', ({ user_metadata, display_name, expected }) => {
       const asset = { ...mockAsset, user_metadata, display_name }
       expect(getAssetDisplayName(asset)).toBe(expected)
+    })
+  })
+
+  describe('getAssetMediaKind', () => {
+    it.for([
+      { mime_type: 'image/png', expected: 'image' },
+      { mime_type: 'video/mp4', expected: 'video' },
+      { mime_type: 'audio/wav', expected: 'audio' }
+    ])('prefers $mime_type MIME metadata', ({ mime_type, expected }) => {
+      expect(
+        getAssetMediaKind({
+          ...mockAsset,
+          name: 'content-without-extension',
+          mime_type
+        })
+      ).toBe(expected)
+    })
+
+    it('falls back to the display filename', () => {
+      expect(
+        getAssetMediaKind({
+          ...mockAsset,
+          name: 'blake3:abc',
+          display_name: 'render.mp4',
+          mime_type: undefined
+        })
+      ).toBe('video')
+    })
+
+    it('falls back to filename metadata', () => {
+      expect(
+        getAssetMediaKind({
+          ...mockAsset,
+          name: 'blake3:abc',
+          metadata: { filename: 'render.mp4' },
+          mime_type: 'application/octet-stream'
+        })
+      ).toBe('video')
+    })
+
+    it('falls back to the asset name for generic MIME metadata', () => {
+      expect(
+        getAssetMediaKind({
+          ...mockAsset,
+          name: 'voice.flac',
+          mime_type: 'application/octet-stream'
+        })
+      ).toBe('audio')
     })
   })
 
