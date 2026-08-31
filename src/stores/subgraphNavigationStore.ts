@@ -438,9 +438,28 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     async function navigateToGraph(targetGraph: LGraph): Promise<boolean> {
-      const intent = createNavigationIntent('#' + targetGraph.id, 'graph')
-      await applyNavigationIntent(intent)
-      return canvasStore.getCanvas().graph === targetGraph
+      const canvas = canvasStore.canvas
+      const targetId = targetGraph.id
+      const belongsToCurrentWorkflow =
+        targetGraph === app.rootGraph ||
+        (targetGraph.rootGraph === app.rootGraph &&
+          app.rootGraph.subgraphs.get(targetId) === targetGraph)
+
+      if (!canvas || !targetId || !belongsToCurrentWorkflow) return false
+      if (canvas.graph === targetGraph) return true
+
+      const intent = createNavigationIntent('#' + targetId, 'graph')
+      await withNavBlocked(
+        async () => canvas.setGraph(targetGraph),
+        intent.hash
+      )
+      if (intent.id !== navigationIntentId) return false
+
+      await queueGraphHash(intent)
+      return (
+        intent.id === navigationIntentId &&
+        canvasStore.canvas?.graph === targetGraph
+      )
     }
 
     async function updateHash(

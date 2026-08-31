@@ -85,6 +85,7 @@ vi.mock('@/scripts/app', () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
+    canvas: app.canvas,
     getCanvas: () => app.canvas
   })
 }))
@@ -535,5 +536,61 @@ describe('useSubgraphNavigationStore', () => {
 
     expect(routeHash.value).toBe('#' + firstId)
     expect(routerPush).toHaveBeenCalledTimes(1)
+  })
+
+  it('navigates to a graph owned by the active workflow without recovery', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const targetId = '11111111-1111-4111-8111-111111111111'
+    const targetGraph = createMockSubgraph(targetId)
+    app.rootGraph.subgraphs.set(targetId, targetGraph)
+    vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
+      app.canvas.graph = graph
+    })
+
+    await expect(navigationStore.navigateToGraph(targetGraph)).resolves.toBe(
+      true
+    )
+
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(targetGraph)
+    expect(mockOpenWorkflow).not.toHaveBeenCalled()
+    expect(routerPush).toHaveBeenCalledWith(
+      expect.objectContaining({ hash: '#' + targetId })
+    )
+  })
+
+  it('rejects a graph outside the active workflow without moving the canvas', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const originalGraph = app.canvas.graph
+    const staleRoot = fromPartial<typeof app.rootGraph>({
+      id: 'stale-root',
+      subgraphs: new Map()
+    })
+    const staleGraph = createMockSubgraph(
+      '22222222-2222-4222-8222-222222222222',
+      staleRoot
+    )
+
+    await expect(navigationStore.navigateToGraph(staleGraph)).resolves.toBe(
+      false
+    )
+
+    expect(app.canvas.graph).toBe(originalGraph)
+    expect(app.canvas.setGraph).not.toHaveBeenCalled()
+    expect(mockOpenWorkflow).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('does not supersede workflow navigation when focus is already active', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const workflowNavigationId = navigationStore.beginWorkflowNavigation()
+
+    await expect(navigationStore.navigateToGraph(app.rootGraph)).resolves.toBe(
+      true
+    )
+    navigationStore.endWorkflowNavigation(workflowNavigationId)
+    await nextTick()
+
+    expect(app.canvas.setGraph).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
   })
 })
