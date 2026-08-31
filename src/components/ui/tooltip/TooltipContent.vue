@@ -39,7 +39,9 @@ const contentStyle = useModalLiftedZIndex(computed(() => true))
           )
         "
       >
-        <slot />
+        <div data-slot="tooltip-content">
+          <slot />
+        </div>
         <TooltipArrow
           :width="10"
           :height="5"
