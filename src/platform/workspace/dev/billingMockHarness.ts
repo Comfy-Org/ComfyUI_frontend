@@ -267,6 +267,33 @@ function workspaceToken(body?: string): unknown {
   }
 }
 
+// GET /api/billing/capabilities. On cloud the members panel gates Invite and the
+// row menus on can_invite_members / can_change_seats, not on the workspace role,
+// so an unmocked endpoint hides both for an owner.
+function billingCapabilities(): unknown {
+  const owner = cfg.role !== 'member'
+  const active = cfg.state !== 'inactive'
+  return {
+    capabilities: {
+      can_cancel: owner && active,
+      can_change_seats: owner && cfg.ws === 'team',
+      can_downgrade_to_personal: owner && cfg.ws === 'team',
+      can_invite_members: owner && cfg.ws === 'team',
+      can_reactivate: owner && !active,
+      can_subscribe_self_serve: owner,
+      can_top_up: owner
+    },
+    expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    resolved_for: { user_id: 'user-self', workspace_id: 'ws-active' },
+    revision: 1,
+    rollout_defaults_applied: {
+      can_downgrade_to_personal: false,
+      can_subscribe_self_serve: false,
+      can_top_up: false
+    }
+  }
+}
+
 const subStatus = () =>
   ({
     active: 'active',
@@ -2016,6 +2043,7 @@ const ROUTES: Route[] = [
   ['POST', /\/auth\/token/, workspaceToken],
   ['GET', /\/api\/workspaces(\?|$)/, workspaces],
   ['PATCH', /\/api\/workspaces\/[^/]+$/, renamedWorkspace],
+  ['GET', /\/api\/billing\/capabilities/, billingCapabilities],
   ['GET', /\/api\/billing\/status/, billingStatus],
   ['GET', /\/api\/billing\/balance/, balance],
   ['GET', /\/api\/billing\/plans/, plans],
