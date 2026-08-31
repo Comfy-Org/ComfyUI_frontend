@@ -12,10 +12,12 @@ const {
   locale = 'en',
   visual = 'shader',
   badgeOnly = false,
+  headingLead,
   primaryHref,
   subtitle
 } = defineProps<{
   badgeOnly?: boolean
+  headingLead?: string
   locale?: Locale
   primaryHref?: string
   subtitle?: string
@@ -49,7 +51,11 @@ onMounted(() => {
     <CtaCenter01
       compact
       class="relative z-10 min-h-96 justify-center"
-      :heading="t('platform.closing.heading', locale)"
+      :heading="
+        headingLead
+          ? `${headingLead} ${t('platform.hero.badge', locale)} ${t('nav.badgeBeta', locale)}`
+          : t('platform.closing.heading', locale)
+      "
       :subtitle
       :subtitle-class="badgeOnly ? 'mt-6' : undefined"
       :primary-cta="primaryCta"
@@ -58,7 +64,7 @@ onMounted(() => {
       <template #heading>
         <template v-if="visual === 'columns'">
           <span v-if="!badgeOnly" class="block">
-            {{ t('platform.closing.headingLead', locale) }}
+            {{ headingLead ?? t('platform.closing.headingLead', locale) }}
           </span>
           <PlatformHeroBadge
             :class="badgeOnly ? 'mx-auto md:my-2' : 'mx-auto -my-2 scale-75'"

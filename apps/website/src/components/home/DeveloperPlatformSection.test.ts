@@ -2,40 +2,44 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
+import { externalLinks } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import DeveloperPlatformSection from './DeveloperPlatformSection.vue'
 
 describe('DeveloperPlatformSection', () => {
-  it('links the three products and the landing page', () => {
+  it('reuses the Developer Platform closing callout', () => {
     render(DeveloperPlatformSection, { props: { locale: 'en' } })
 
     expect(
-      screen.getByRole('heading', { name: t('home.platform.heading', 'en') })
+      screen.getByRole('heading', {
+        name: `${t('home.platform.heading', 'en')} ${t('platform.hero.badge', 'en')} ${t('nav.badgeBeta', 'en')}`
+      })
     ).toBeTruthy()
     expect(screen.getByText(t('home.platform.body', 'en'))).toBeTruthy()
+    expect(screen.getByText(t('platform.hero.badge', 'en'))).toBeTruthy()
 
     const hrefOf = (name: string) =>
       screen.getByRole('link', { name }).getAttribute('href')
-    expect(hrefOf(t('platform.products.serverless.title', 'en'))).toBe(
-      '/platform/serverless'
+    expect(hrefOf(t('platform.hero.getStarted', 'en'))).toBe(
+      externalLinks.platform
     )
-    expect(hrefOf(t('platform.products.models.title', 'en'))).toBe(
-      '/platform/models'
+    expect(hrefOf(t('platform.hero.readDocs', 'en'))).toBe(
+      externalLinks.docsPlatform
     )
-    expect(hrefOf(t('platform.products.builder.title', 'en'))).toBe(
-      '/platform/builder'
-    )
-    expect(hrefOf('Explore the Developer Platform')).toBe('/platform')
   })
 
-  it('localizes links for zh-CN', () => {
+  it('passes the Chinese locale through to the shared callout', () => {
     render(DeveloperPlatformSection, { props: { locale: 'zh-CN' } })
 
     expect(
-      screen.getByRole('link', { name: '了解开发者平台' }).getAttribute('href')
-    ).toBe('/zh-CN/platform')
+      screen.getByRole('heading', {
+        name: `${t('home.platform.heading', 'zh-CN')} ${t('platform.hero.badge', 'zh-CN')} ${t('nav.badgeBeta', 'zh-CN')}`
+      })
+    ).toBeTruthy()
     expect(
-      screen.getByRole('link', { name: 'Builder' }).getAttribute('href')
-    ).toBe('/zh-CN/platform/builder')
+      screen.getByRole('link', {
+        name: t('platform.hero.getStarted', 'zh-CN')
+      })
+    ).toBeTruthy()
   })
 })

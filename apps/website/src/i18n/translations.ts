@@ -7622,6 +7622,58 @@ const translations = {
     'zh-CN':
       '调用合作伙伴模型——Seedance、Minimax H3、Nano Banana、GPT-Image-2——用一个 API 密钥即可访问最新模型。'
   },
+  'platform.modelsFeatures.1.title': {
+    en: 'Every frontier media model',
+    'zh-CN': '所有前沿媒体模型'
+  },
+  'platform.modelsFeatures.1.description': {
+    en: '36+ partner providers — Nano Banana, Veo, Kling, Seedance, Flux, Sora, GPT Image, Runway, Luma, ElevenLabs and more — behind stable model IDs.',
+    'zh-CN':
+      '36+ 家合作伙伴——Nano Banana、Veo、Kling、Seedance、Flux、Sora、GPT Image、Runway、Luma、ElevenLabs 等——都在稳定的模型 ID 之后。'
+  },
+  'platform.modelsFeatures.2.title': {
+    en: 'Never dropped',
+    'zh-CN': '永不丢弃'
+  },
+  'platform.modelsFeatures.2.description': {
+    en: 'Queued requests never die with a 429. They hold a queue position against your workspace concurrency and start the moment a slot frees.',
+    'zh-CN':
+      '排队中的请求绝不会以 429 告终。它们在你工作区的并发额度内保留队列位置，一有空位立刻开始。'
+  },
+  'platform.modelsFeatures.3.title': {
+    en: 'One credit pool',
+    'zh-CN': '一个积分池'
+  },
+  'platform.modelsFeatures.3.description': {
+    en: 'Pay per use from the same balance that powers Cloud workflows and serverless GPUs. No subscription floor.',
+    'zh-CN':
+      '按用量付费，与 Cloud 工作流和无服务器 GPU 共用同一余额。没有订阅门槛。'
+  },
+  'platform.modelsFeatures.4.title': {
+    en: 'Costs you can attribute',
+    'zh-CN': '可归因的成本'
+  },
+  'platform.modelsFeatures.4.description': {
+    en: 'Every completed request returns the credits it consumed. Failed provider calls are never billed.',
+    'zh-CN': '每个完成的请求都会返回其消耗的积分。失败的调用绝不计费。'
+  },
+  'platform.modelsFeatures.5.title': {
+    en: 'Schemas to generate against',
+    'zh-CN': '可直接生成代码的 Schema'
+  },
+  'platform.modelsFeatures.5.description': {
+    en: 'Every model publishes its own OpenAPI document — the same one the server validates your call against.',
+    'zh-CN':
+      '每个模型都发布自己的 OpenAPI 文档——服务器校验你的调用时用的正是同一份。'
+  },
+  'platform.modelsFeatures.6.title': {
+    en: 'Cancel anytime',
+    'zh-CN': '随时取消'
+  },
+  'platform.modelsFeatures.6.description': {
+    en: 'A queued request cancels immediately and costs nothing; in-progress calls get a best-effort cancel.',
+    'zh-CN': '排队中的请求立即取消且不产生费用；进行中的调用会尽力取消。'
+  },
   'platform.examples.heading': {
     en: 'Built on the Developer Platform',
     'zh-CN': '基于开发者平台构建'
