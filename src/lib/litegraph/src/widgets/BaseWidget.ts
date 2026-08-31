@@ -14,8 +14,7 @@ import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
-  NodeBindable,
-  TWidgetType
+  NodeBindable
 } from '@/lib/litegraph/src/types/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -40,6 +39,12 @@ interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   /** The amount of padding to add to the right of the text. */
   rightPadding?: number
 }
+
+type BaseWidgetState<TWidget extends IBaseWidget> = WidgetState<
+  TWidget['value'],
+  TWidget['type'],
+  TWidget['options']
+>
 
 export interface WidgetEventOptions {
   e: CanvasPointerEvent
@@ -107,7 +112,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   get options(): TWidget['options'] {
-    return this._state.options as TWidget['options']
+    return this._state.options
   }
   set options(value: TWidget['options']) {
     const hidden = this._state.options.hidden
@@ -122,8 +127,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   computedDisabled?: boolean
   tooltip?: string
 
-  private _state: Omit<WidgetState, 'nodeId'> &
-    Partial<Pick<WidgetState, 'nodeId'>>
+  private _state: Omit<BaseWidgetState<TWidget>, 'nodeId'> &
+    Partial<Pick<BaseWidgetState<TWidget>, 'nodeId'>>
 
   get label(): string | undefined {
     return this._state.label
@@ -169,7 +174,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   ): boolean
 
   get value(): TWidget['value'] {
-    return this._state.value as TWidget['value']
+    return this._state.value
   }
   set value(value: TWidget['value']) {
     this._state.value = value
@@ -253,7 +258,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     this._state = {
       name: this.name,
-      type: this.type as TWidgetType,
+      type: this.type,
       value,
       label,
       disabled: disabled ?? false,
