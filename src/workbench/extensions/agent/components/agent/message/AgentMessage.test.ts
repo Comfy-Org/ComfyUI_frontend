@@ -33,15 +33,17 @@ function thinkingMessage(thinkingText?: string): AssistantMessage {
 
 describe('AgentMessage thinking narration', () => {
   it('T-10 / PM-656 / FE-1328 renders complete asset URLs as hyperlinks', () => {
-    const message = createAssistantMessage('msg-link' as TurnId)
-    message.streaming = false
-    message.parts = [
-      {
-        type: 'text',
-        text: '[Download result](https://assets.example/result.png)',
-        state: 'done'
-      }
-    ]
+    const message: AssistantMessage = {
+      ...createAssistantMessage('msg-link' as TurnId),
+      streaming: false,
+      parts: [
+        {
+          type: 'text',
+          text: '[Download result](https://assets.example/result.png)',
+          state: 'done'
+        }
+      ]
+    }
     render(AgentMessage, {
       props: { message },
       global: { plugins: [i18n] }
@@ -53,9 +55,11 @@ describe('AgentMessage thinking narration', () => {
   })
 
   it('T-32 / PM-663 / FE-1292 opens the Markdown copy action menu', async () => {
-    const message = createAssistantMessage('msg-actions' as TurnId)
-    message.streaming = false
-    message.parts = [{ type: 'text', text: '**Ready**', state: 'done' }]
+    const message: AssistantMessage = {
+      ...createAssistantMessage('msg-actions' as TurnId),
+      streaming: false,
+      parts: [{ type: 'text', text: '**Ready**', state: 'done' }]
+    }
     render(AgentMessage, {
       props: { message },
       global: { plugins: [i18n] }
