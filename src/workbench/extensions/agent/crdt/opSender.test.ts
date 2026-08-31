@@ -2,7 +2,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
-import { createOpSender } from './opSender'
+import { createOpSender, toOpsResultView } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
 const WORKFLOW = 'wf-1'
@@ -227,6 +227,36 @@ describe('createOpSender', () => {
 
     expect(settled).toHaveLength(1)
     expect(settled[0].state).toBe('acknowledged')
+  })
+
+  it('normalizes shipped doc_ops_result failed object and array shapes', () => {
+    expect(
+      toOpsResultView({
+        ok: false,
+        applied: [],
+        skipped: [],
+        failed: { index: 0, op: { op_id: 'a'.repeat(32) } }
+      })
+    ).toEqual({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: { op_id: 'a'.repeat(32) }
+    })
+
+    expect(
+      toOpsResultView({
+        ok: false,
+        applied: [],
+        skipped: [],
+        failed: [{ index: 0 }, { op_id: 'b'.repeat(32) }]
+      })
+    ).toEqual({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: { op_id: 'b'.repeat(32) }
+    })
   })
 
   it('an identified failure for other ops never settles the in-flight batch', () => {

@@ -113,8 +113,9 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
-  it('mints a concrete connect when the real link store places a link', () => {
+  it('mints a concrete connect when the real link store places a link', async () => {
     useLinkStore().registerLink(ROOT_SCOPE, topology(41))
+    await afterSweep()
 
     expect(minted).toEqual([
       {
@@ -155,6 +156,7 @@ describe('attachMintPortWiring', () => {
     const linkStore = useLinkStore()
     const severed = topology(41)
     linkStore.registerLink(ROOT_SCOPE, severed)
+    await afterSweep()
     minted.length = 0
 
     linkStore.deleteLink(ROOT_SCOPE, severed)
@@ -165,6 +167,42 @@ describe('attachMintPortWiring', () => {
 
     expect(minted).toEqual([
       { op: 'delete_node', node_id: '2', removed_links: [toLinkId(41)] }
+    ])
+  })
+
+  it('orders a same-task createNode before its connect', async () => {
+    graphNodes.set('1', {
+      serialize: () => ({ id: 1, type: 'LoadImage' })
+    })
+    graphNodes.set('2', {
+      serialize: () => ({ id: 2, type: 'PreviewImage' })
+    })
+
+    queueMicrotask(() => {
+      deliverLayoutChange({
+        operation: {
+          type: 'createNode',
+          actor: 'user-abc',
+          nodeId: toNodeId(1),
+          layout: { position: { x: 10, y: 20 } }
+        }
+      })
+      deliverLayoutChange({
+        operation: {
+          type: 'createNode',
+          actor: 'user-abc',
+          nodeId: toNodeId(2),
+          layout: { position: { x: 30, y: 40 } }
+        }
+      })
+    })
+    useLinkStore().registerLink(ROOT_SCOPE, topology(41))
+    await afterSweep()
+
+    expect(minted.map((operation) => operation.op)).toEqual([
+      'add_node',
+      'add_node',
+      'connect'
     ])
   })
 
@@ -227,7 +265,7 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([])
   })
 
-  it('suppresses mints between the load-bracket hooks, fail-closed on a failed load', () => {
+  it('suppresses mints between the load-bracket hooks, fail-closed on a failed load', async () => {
     wiring.onBeforeGraphLoad()
     useLinkStore().registerLink(ROOT_SCOPE, topology(41))
     expect(minted).toEqual([])
@@ -240,6 +278,7 @@ describe('attachMintPortWiring', () => {
 
     wiring.onAfterGraphConfigure()
     useLinkStore().registerLink(ROOT_SCOPE, topology(43, 4))
+    await afterSweep()
     expect(minted).toHaveLength(1)
   })
 

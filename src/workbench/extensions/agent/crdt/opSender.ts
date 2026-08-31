@@ -32,6 +32,35 @@ export interface OpsResultView {
   failure?: { op_id?: string }
 }
 
+function failureOpId(value: unknown): string | undefined {
+  if (value === null || typeof value !== 'object') return undefined
+  const record = value as Record<string, unknown>
+  if (typeof record.op_id === 'string') return record.op_id
+  const nested = record.op
+  if (nested !== null && typeof nested === 'object') {
+    const opId = (nested as Record<string, unknown>).op_id
+    if (typeof opId === 'string') return opId
+  }
+  return undefined
+}
+
+export function toOpsResultView(
+  detail: OpsResultView & { failed?: unknown }
+): OpsResultView {
+  const failures = Array.isArray(detail.failed)
+    ? detail.failed
+    : detail.failed === undefined
+      ? []
+      : [detail.failed]
+  const opId = failures.map(failureOpId).find((id) => id !== undefined)
+  return {
+    ok: detail.ok,
+    applied: detail.applied,
+    skipped: detail.skipped,
+    ...(opId !== undefined ? { failure: { op_id: opId } } : {})
+  }
+}
+
 export interface OpSenderDeps {
   /** `DocFrameClient.sendOps` shape: false = the transport cannot carry it now. */
   sendOps(workflowId: string, tab: string, ops: Op[]): boolean

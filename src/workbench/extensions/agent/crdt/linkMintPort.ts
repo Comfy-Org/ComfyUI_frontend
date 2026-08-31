@@ -86,6 +86,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   const severancesByNode = new Map<string, SeveranceEntry[]>()
   const consumedLinkIds = new Set<string>()
   let sweepScheduled = false
+  let detached = false
 
   function gateOpen(): boolean {
     return shouldMint({
@@ -111,17 +112,18 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       surfaceUnrepresentable('subgraph-interior connect', topology.id)
       return
     }
-    deps.enqueue([
-      {
-        op: 'connect',
-        link_id: topology.id,
-        from_node: topology.originNodeId,
-        from_slot: topology.originSlot,
-        to_node: topology.targetNodeId,
-        to_slot: topology.targetSlot,
-        link_type: String(topology.type)
-      }
-    ])
+    const operation: GraphOperation = {
+      op: 'connect',
+      link_id: topology.id,
+      from_node: topology.originNodeId,
+      from_slot: topology.originSlot,
+      to_node: topology.targetNodeId,
+      to_slot: topology.targetSlot,
+      link_type: String(topology.type)
+    }
+    queueMicrotask(() => {
+      if (!detached) deps.enqueue([operation])
+    })
   }
 
   function scheduleSweep(): void {
@@ -183,6 +185,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       }
     },
     detach() {
+      detached = true
       detachPlaced()
       detachDeleted()
     }
