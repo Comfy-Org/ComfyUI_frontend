@@ -40,11 +40,11 @@ Code facts this rule is grounded on (cmp `8636af3e4`; FE `poc/fe-crdt-follower` 
 
 ### The split, stated explicitly (what KA-8's text demands)
 
-| Concern                                                                  | Home                              | Merge semantics                                                                         |
-| ------------------------------------------------------------------------ | --------------------------------- | --------------------------------------------------------------------------------------- |
-| Creation-time placement (`pos` at `add_node`)                            | Shared semantic doc (cmp)         | Written once per incarnation, verbatim; whole-node LWW under duplicate-create per DQ-15 |
-| Live position after creation, pan/zoom, groups, geometry, cosmetic flags | FE-owned layout Y.Doc (per DQ-18) | This ADR's rule below                                                                   |
-| In-flight drag positions (the node moving under the cursor)              | Awareness channel only            | Ephemeral; never doc state (KA-7, KA-9, FORECLOSE 6)                                    |
+| Concern                                                     | Home                              | Merge semantics                                                                         |
+| ----------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------- |
+| Creation-time placement (`pos` at `add_node`)               | Shared semantic doc (cmp)         | Written once per incarnation, verbatim; whole-node LWW under duplicate-create per DQ-15 |
+| Live node position after creation                           | FE-owned layout Y.Doc (per DQ-18) | Whole-value per-node register; this ADR's rule below                                    |
+| In-flight drag positions (the node moving under the cursor) | Awareness channel only            | Ephemeral; never doc state (KA-7, KA-9, FORECLOSE 6)                                    |
 
 ### Reconciliation rule for concurrent drags of one node
 
