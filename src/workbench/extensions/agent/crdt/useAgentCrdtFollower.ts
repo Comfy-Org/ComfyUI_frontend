@@ -322,10 +322,13 @@ export function useAgentCrdtFollower(
   }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
-    const detail = event.detail as DocOpsResult
+    const detail = event.detail as Partial<DocOpsResult> | null
+    if (detail === null) return
+    const resultWorkflowId = detail?.workflowId
     if (
       !isTargetActive.value ||
-      detail?.workflowId !== subscribedWorkflowId.value
+      typeof resultWorkflowId !== 'string' ||
+      resultWorkflowId !== subscribedWorkflowId.value
     )
       return
     if (staleProbeTimer !== null) armStaleProbe()
@@ -334,12 +337,12 @@ export function useAgentCrdtFollower(
     if (detail.ok) return
 
     const nack: OpNack = {
-      workflowId: detail.workflowId,
+      workflowId: resultWorkflowId,
       code: detail.code ?? null,
       message: detail.message ?? null,
       failed: detail.failed ?? null,
-      applied: detail.applied.length,
-      skipped: detail.skipped.length
+      applied: detail.applied?.length ?? 0,
+      skipped: detail.skipped?.length ?? 0
     }
     opNacks.value += 1
     lastOpNack.value = nack
