@@ -231,10 +231,8 @@ jobs:
         needs.changes.outputs.should-run == 'true' &&
         needs.playwright-tests-chromium-sharded.result != 'cancelled'
       }}
-    uses: ./.github/workflows/ci-tests-e2e-coverage.yaml
+    uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
     with:
-      source_branch: ${{ github.head_ref || github.ref_name }}
-      source_pr: ${{ format('{0}', github.event.pull_request.number) }}
       source_run_id: ${{ format('{0}', github.run_id) }}
       source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
 

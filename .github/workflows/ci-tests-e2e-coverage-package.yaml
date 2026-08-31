@@ -1,0 +1,133 @@
+name: 'CI: E2E Coverage Package'
+
+on:
+  workflow_call:
+    inputs:
+      source_run_id:
+        required: true
+        type: string
+      source_sha:
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  package:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout sources for coverage packaging
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+          sparse-checkout: |
+            src
+            packages
+
+      - name: Download all shard coverage data
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          run_id: ${{ inputs.source_run_id }}
+          name: e2e-coverage-shard-.*
+          name_is_regexp: true
+          path: temp/coverage-shards
+          if_no_artifact_found: warn
+
+      - name: Detect shard coverage data
+        id: coverage
+        run: |
+          if [ -d temp/coverage-shards ] && find temp/coverage-shards -name 'coverage.lcov' -type f | grep -q .; then
+            echo "has-coverage=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-coverage=false" >> "$GITHUB_OUTPUT"
+            echo "No E2E coverage shard artifacts found; treating this run as skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Install lcov
+        if: steps.coverage.outputs.has-coverage == 'true'
+        run: sudo apt-get install -y -qq lcov
+
+      - name: Merge shard coverage into single LCOV
+        if: steps.coverage.outputs.has-coverage == 'true'
+        run: |
+          mkdir -p coverage/playwright
+          LCOV_FILES=$(find temp/coverage-shards -name 'coverage.lcov' -type f)
+          ADD_ARGS=""
+          for f in $LCOV_FILES; do ADD_ARGS="$ADD_ARGS -a $f"; done
+          lcov $ADD_ARGS -o coverage/playwright/coverage.lcov
+          wc -l coverage/playwright/coverage.lcov
+
+      - name: Validate merged coverage
+        if: steps.coverage.outputs.has-coverage == 'true'
+        run: |
+          MERGED_SF=$(grep -c '^SF:' coverage/playwright/coverage.lcov || echo 0)
+          MERGED_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' coverage/playwright/coverage.lcov)
+          MERGED_LF=$(awk -F: '/^LF:/{s+=$2}END{print s+0}' coverage/playwright/coverage.lcov)
+          echo "### Merged coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **$MERGED_SF** source files" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **$MERGED_LH / $MERGED_LF** lines hit" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Shard | Files | Lines Hit |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|-----------|" >> "$GITHUB_STEP_SUMMARY"
+          for f in $(find temp/coverage-shards -name 'coverage.lcov' -type f | sort); do
+            SHARD=$(basename "$(dirname "$f")")
+            SHARD_SF=$(grep -c '^SF:' "$f" || echo 0)
+            SHARD_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' "$f")
+            echo "| $SHARD | $SHARD_SF | $SHARD_LH |" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$MERGED_LH" -lt "$SHARD_LH" ]; then
+              echo "::error::Merged LH ($MERGED_LH) < shard LH ($SHARD_LH) in $SHARD — possible data loss"
+            fi
+          done
+
+      - name: Assert coverage was mapped back to source
+        if: steps.coverage.outputs.has-coverage == 'true'
+        run: |
+          MAPPED_SF=$(grep -cE '^SF:(src|packages)/' coverage/playwright/coverage.lcov || true)
+          echo "Source-mapped files: $MAPPED_SF" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${MAPPED_SF:-0}" -lt 100 ]; then
+            echo "::error::Only $MAPPED_SF files under src/ or packages/ in the merged tracefile. Observed paths: $(grep -m 5 '^SF:' coverage/playwright/coverage.lcov | tr '\n' ' '). Served bundle paths mean the E2E build dropped its '//# sourceMappingURL=' comment — check it ran with COLLECT_COVERAGE=true (vite.config.mts build.sourcemap)."
+            exit 1
+          fi
+
+      - name: Strip non-source entries from coverage
+        if: steps.coverage.outputs.has-coverage == 'true'
+        run: |
+          lcov --remove coverage/playwright/coverage.lcov \
+            '*localhost-8188*' \
+            'assets/images/*' \
+            -o coverage/playwright/coverage.lcov \
+            --ignore-errors unused
+          wc -l coverage/playwright/coverage.lcov
+
+      - name: Upload merged coverage data
+        if: steps.coverage.outputs.has-coverage == 'true'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: e2e-coverage
+          path: coverage/playwright/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Generate HTML coverage report
+        if: steps.coverage.outputs.has-coverage == 'true'
+        run: |
+          genhtml coverage/playwright/coverage.lcov \
+            -o coverage/html \
+            --title "ComfyUI E2E Coverage" \
+            --no-function-coverage \
+            --precision 1 \
+            --ignore-errors source,unmapped \
+            --synthesize-missing
+
+      - name: Upload HTML report artifact
+        if: steps.coverage.outputs.has-coverage == 'true'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: e2e-coverage-html
+          path: coverage/html/
+          retention-days: 30
