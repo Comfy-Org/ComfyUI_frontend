@@ -20,6 +20,8 @@ export type DevEventKind =
   | 'rebind'
   | 'human_ops_rejected'
   | 'human_ops_retry'
+  | 'ops_result_reconciled'
+  | 'skipped_shadows_cleared'
 
 export interface DevEvent {
   seq: number

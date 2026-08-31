@@ -11,6 +11,7 @@ import type { DocFrameTransport, DocOp } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { resolveFollowerEnabled } from './followerGate'
 import { createHumanOpDispatcher } from './humanOpDispatcher'
+import { createOpsResultReconciler } from './opsResultReconciler'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { LitegraphMutator } from './litegraphMutator'
 import { createPendingOpLedger } from './pendingOpLedger'
@@ -171,6 +172,16 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     shadow: pendingShadow,
     send: (ops) => bridge.sendHumanOps(tabId, [...ops])
   })
+  // ── s3-opt-2: outcome-aware doc_ops_result reconciliation ────────────────
+  // Each host acceptance frame transitions its batch per-outcome: applied
+  // prefix kept pending its effect, failed op + unprocessed suffix rolled
+  // back, skipped duplicates cleared only once the projection covers the
+  // ack's seq (`currentSeq` reads the composable's own projected `lastSeq`).
+  const reconciler = createOpsResultReconciler({
+    ledger: pendingLedger,
+    shadow: pendingShadow,
+    currentSeq: () => lastSeq
+  })
   const shadowTargetsFor = (op: DocOp): ShadowTarget[] => {
     const nodeId = (op as Record<string, unknown>).node_id
     return nodeId == null ? [] : [{ kind: 'node', nodeId: String(nodeId) }]
@@ -274,6 +285,15 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
       lastSeq = Math.max(lastSeq, event.detail.seq)
     projector.project(bridge.follower.doc)
+    // s3-opt-2: the projection just folded authoritative state — the ONLY
+    // trigger allowed to clear a skipped-duplicate shadow (never the ack).
+    const clearedSkipped = reconciler.onAuthoritativeState(
+      event instanceof CustomEvent && typeof event.detail?.seq === 'number'
+        ? event.detail.seq
+        : null
+    )
+    if (clearedSkipped.length > 0)
+      recordDevEvent('skipped_shadows_cleared', { opIds: clearedSkipped })
     if (event instanceof CustomEvent) {
       const detail = event.detail as {
         workflowId?: string
@@ -301,6 +321,14 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     if (event instanceof CustomEvent) {
       lastOpsResult = event.detail ?? null
       recordDevEvent('doc_ops_result', event.detail ?? null)
+      // s3-opt-2: reconcile the frame against the as-sent batches. The
+      // reconciler validates internally; malformed or unmatched frames are
+      // recorded no-ops rather than guesses.
+      const report = reconciler.reconcile(
+        event.detail,
+        dispatcher.sentBatches()
+      )
+      if (report.matched) recordDevEvent('ops_result_reconciled', report)
     }
   }
   const onDocReset: EventListener = (event) => {
@@ -317,6 +345,8 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // drop batches, ledger entries, and shadows rather than retry them into
     // a doc they no longer describe.
     dispatcher.reset()
+    // s3-opt-2: awaiting-skipped seqs belong to the dead lineage's numbering.
+    reconciler.reset()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -409,6 +439,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       clearSubscribeRetry()
       // s3-opt-6 / FEB-5: no pending entry outlives its composable.
       dispatcher.reset()
+      reconciler.reset()
       delete (window as unknown as Record<string, unknown>).__agentCrdtPoc
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
