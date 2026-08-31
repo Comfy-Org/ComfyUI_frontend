@@ -77,6 +77,21 @@ describe('Tooltip', () => {
     outside.remove()
   })
 
+  it('suppresses hover tooltips that begin immediately after touch', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderTooltip({ value: 'Delayed text', showDelay: 300 })
+    const outside = document.createElement('div')
+    document.body.append(outside)
+
+    await fireEvent.touchStart(outside)
+    await user.hover(screen.getByRole('button'))
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    outside.remove()
+  })
+
   it('opens on click without bubbling or duplicating the accessible label', async () => {
     const cardClick = vi.fn()
     const user = userEvent.setup()
