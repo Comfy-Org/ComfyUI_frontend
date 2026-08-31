@@ -1,12 +1,26 @@
 <script setup lang="ts">
 import type { TooltipRootEmits, TooltipRootProps } from 'reka-ui'
 import { TooltipRoot } from 'reka-ui'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import TooltipContent from './TooltipContent.vue'
 import TooltipProvider from './TooltipProvider.vue'
 import TooltipTrigger from './TooltipTrigger.vue'
 import type { TooltipSide, TooltipValue } from './tooltipTypes'
+
+const TOUCH_TOOLTIP_SUPPRESSION_MS = 700
+const touchInteractionActive = ref(false)
+let mountedTooltipCount = 0
+let touchSuppressionTimer: ReturnType<typeof setTimeout> | undefined
+
+function handleDocumentTouchStart() {
+  touchInteractionActive.value = true
+  if (touchSuppressionTimer) clearTimeout(touchSuppressionTimer)
+  touchSuppressionTimer = setTimeout(() => {
+    touchInteractionActive.value = false
+    touchSuppressionTimer = undefined
+  }, TOUCH_TOOLTIP_SUPPRESSION_MS)
+}
 
 defineOptions({ inheritAttrs: false })
 
@@ -45,10 +59,10 @@ const isDisabled = computed(
 )
 const open = ref(rootProps.open ?? rootProps.defaultOpen ?? false)
 let closeTimer: ReturnType<typeof setTimeout> | undefined
-let clearTouchStartListener: (() => void) | undefined
 
 function updateOpen(nextOpen: boolean) {
   if (closeTimer) clearTimeout(closeTimer)
+  if (nextOpen && touchInteractionActive.value) return
 
   const hideDelay = normalizedConfig.value?.hideDelay ?? 0
   if (!nextOpen && hideDelay > 0) {
@@ -61,11 +75,6 @@ function updateOpen(nextOpen: boolean) {
 function setOpen(nextOpen: boolean) {
   open.value = nextOpen
   emit('update:open', nextOpen)
-  if (nextOpen) {
-    listenForTouchStart(() => setOpen(false))
-  } else {
-    clearTouchStartListener?.()
-  }
 }
 
 function handleClick(event: MouseEvent) {
@@ -74,35 +83,29 @@ function handleClick(event: MouseEvent) {
   setOpen(true)
 }
 
-function listenForTouchStart(closeTooltip: () => void) {
-  if (clearTouchStartListener || typeof document === 'undefined') return
-
-  const handleTouchStart = () => {
-    clearTouchStartListener = undefined
-    closeTooltip()
-  }
-  document.addEventListener('touchstart', handleTouchStart, {
-    once: true,
-    passive: true
-  })
-  clearTouchStartListener = () => {
-    document.removeEventListener('touchstart', handleTouchStart)
-    clearTouchStartListener = undefined
-  }
-}
-
-function handleTriggerPointerMove(event: PointerEvent) {
-  const trigger = event.currentTarget as HTMLElement
-  listenForTouchStart(() => trigger.dispatchEvent(new Event('pointerleave')))
-}
-
 watch(isDisabled, (disabled) => {
   if (disabled) setOpen(false)
+})
+watch(touchInteractionActive, (active) => {
+  if (active) setOpen(false)
+})
+
+onMounted(() => {
+  if (mountedTooltipCount++ === 0) {
+    document.addEventListener('touchstart', handleDocumentTouchStart, {
+      passive: true
+    })
+  }
 })
 
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer)
-  clearTouchStartListener?.()
+  if (--mountedTooltipCount === 0) {
+    document.removeEventListener('touchstart', handleDocumentTouchStart)
+    if (touchSuppressionTimer) clearTimeout(touchSuppressionTimer)
+    touchSuppressionTimer = undefined
+    touchInteractionActive.value = false
+  }
 })
 </script>
 
@@ -116,13 +119,7 @@ onBeforeUnmount(() => {
       :disable-closing-trigger="openOnClick || rootProps.disableClosingTrigger"
       @update:open="updateOpen"
     >
-      <TooltipTrigger
-        v-bind="$attrs"
-        as-child
-        @click="handleClick"
-        @pointermove="handleTriggerPointerMove"
-        @pointerleave="clearTouchStartListener?.()"
-      >
+      <TooltipTrigger v-bind="$attrs" as-child @click="handleClick">
         <slot />
       </TooltipTrigger>
       <TooltipContent
