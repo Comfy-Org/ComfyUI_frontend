@@ -121,6 +121,7 @@ rather than composing a body by hand:
 
 ```bash
 BASE=https://api.us5.datadoghq.com/api/v2/on-call/schedules
+SCHEDULE_ID=f3258942-c040-4c33-8228-63a03e9092d6
 READ_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
            -H "DD-APPLICATION-KEY: $DATADOG_APP_KEY")
 WRITE_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
