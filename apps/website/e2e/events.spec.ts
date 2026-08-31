@@ -12,7 +12,10 @@ import {
 } from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
-import { filterDirectoryEvents } from '../src/utils/eventsDirectory'
+import {
+  EVENT_CATEGORIES,
+  filterDirectoryEvents
+} from '../src/utils/eventsDirectory'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/events'
@@ -298,6 +301,59 @@ test.describe('Events page — desktop @smoke', () => {
     ).toBeVisible()
   })
 
+  test('map renders and its pins track the active filters', async ({
+    page
+  }) => {
+    const mappable = directoryEvents.filter((event) => event.coords)
+    test.skip(mappable.length === 0, 'needs at least one event with coords')
+
+    const inCategory = (category: string) =>
+      directoryEvents.filter((event) => event.category === category)
+    // A category whose events all lack coords must empty the map; one with a
+    // single mappable event must show exactly one pin (no clustering to fold).
+    const emptyCategory = EVENT_CATEGORIES.find(
+      (category) =>
+        inCategory(category).length > 0 &&
+        inCategory(category).every((event) => !event.coords)
+    )
+    const singlePinCategory = EVENT_CATEGORIES.find(
+      (category) =>
+        inCategory(category).filter((event) => event.coords).length === 1
+    )
+
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    // Leaflet only loads in the browser, so the container appears on hydration.
+    await expect(section.locator('.leaflet-container')).toBeVisible()
+
+    // Pins cluster by pixel distance, so the unfiltered count is bounded by the
+    // mappable events rather than equal to them.
+    const pins = section.locator('.leaflet-marker-icon')
+    await expect.poll(() => pins.count()).toBeGreaterThan(0)
+    await expect.poll(() => pins.count()).toBeLessThanOrEqual(mappable.length)
+
+    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+
+    if (singlePinCategory) {
+      await typeFilter.selectOption(singlePinCategory)
+      await expect(pins).toHaveCount(1)
+    }
+
+    if (emptyCategory) {
+      await typeFilter.selectOption(emptyCategory)
+      await expect(pins).toHaveCount(0)
+      // The list still carries those events; only the map drops them.
+      await expect(section.getByTestId('events-directory-row')).toHaveCount(
+        inCategory(emptyCategory).length
+      )
+    }
+
+    await typeFilter.selectOption('all')
+    await expect.poll(() => pins.count()).toBeGreaterThan(0)
+  })
+
   test('directory type filter composes with the search box', async ({
     page
   }) => {
@@ -493,6 +549,44 @@ test.describe('Events page — desktop @smoke', () => {
 })
 
 test.describe('Events page — mobile @mobile', () => {
+  test('directory stacks the map above the list without overflowing', async ({
+    page
+  }) => {
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    const map = section.locator('.leaflet-container')
+    await expect(map).toBeVisible()
+
+    const viewport = page.viewportSize()
+    expect(viewport, 'viewport size').not.toBeNull()
+
+    // The map sits above the list rather than beside it.
+    const list = section.getByRole('list', {
+      name: t('events.directory.allEvents', 'en')
+    })
+    await expect
+      .poll(async () => {
+        const mapBox = await map.boundingBox()
+        const listBox = await list.boundingBox()
+        if (!mapBox || !listBox) return false
+        return listBox.y >= mapBox.y + mapBox.height
+      })
+      .toBe(true)
+
+    // Nothing in the section pushes the page wider than the viewport.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.documentElement.scrollWidth <=
+            document.documentElement.clientWidth
+        )
+      )
+      .toBe(true)
+  })
+
   test('past event cards stack in a single column at mobile width', async ({
     page
   }) => {

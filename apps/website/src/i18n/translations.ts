@@ -6287,6 +6287,10 @@ Enterprise`
   'events.directory.view.cards': { en: 'Cards', 'zh-CN': '卡片' },
   'events.directory.view.calendar': { en: 'Calendar', 'zh-CN': '日历' },
   'events.directory.allEvents': { en: 'All events', 'zh-CN': '所有活动' },
+  'events.directory.mapLabel': {
+    en: 'Map of events around the world',
+    'zh-CN': '世界各地活动地图'
+  },
   'events.directory.saveTheDate': {
     en: 'Save the date?',
     'zh-CN': '标记日期？'

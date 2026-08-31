@@ -4,9 +4,11 @@ import { computed, reactive, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { MapPinMarker } from '../../components/blocks/MapPins01.vue'
 import type { Locale } from '../../i18n/translations'
 import type { EventsDirectoryView } from '../../utils/eventsDirectory'
 
+import MapPins01 from '../../components/blocks/MapPins01.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { externalLinks } from '../../config/routes'
 import { directoryEvents } from '../../data/events'
@@ -30,6 +32,26 @@ const view = ref<EventsDirectoryView>('map')
 
 const visibleEvents = computed(() =>
   filterDirectoryEvents(directoryEvents, filters, locale)
+)
+
+// Pins are the filtered events that have coordinates; virtual events stay in
+// the list and never reach the map. The block takes a generic markers prop, so
+// the events -> markers mapping lives here rather than inside it.
+const markers = computed<MapPinMarker[]>(() =>
+  visibleEvents.value.flatMap((event) =>
+    event.coords
+      ? [{ id: event.id, coords: event.coords, label: event.title[locale] }]
+      : []
+  )
+)
+
+// A pin click selects its event; the list scrolls to that row and highlights
+// it. Filtering the event away deselects it without a second piece of state.
+const pinnedId = ref<string | null>(null)
+const selectedEventId = computed(() =>
+  visibleEvents.value.some((event) => event.id === pinnedId.value)
+    ? pinnedId.value
+    : null
 )
 
 // `t()` has neither interpolation nor plurals, so both are resolved here.
@@ -204,14 +226,18 @@ const caretClass =
     </div>
 
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
-      <!-- Ticket 04 replaces this slot with the MapPins01 block. -->
-      <div
-        class="flex h-140 items-center justify-center rounded-3xl border-2 border-dashed border-primary-comfy-canvas/20"
-      >
-        <code class="text-sm text-primary-comfy-canvas/40">MapPins01</code>
-      </div>
+      <MapPins01
+        :markers
+        :aria-label="t('events.directory.mapLabel', locale)"
+        class="h-80 sm:h-96 lg:h-140"
+        @select="pinnedId = $event"
+      />
 
-      <EventsDirectoryList :events="visibleEvents" :locale />
+      <EventsDirectoryList
+        :events="visibleEvents"
+        :locale
+        :selected-event-id="selectedEventId"
+      />
     </div>
   </section>
 </template>

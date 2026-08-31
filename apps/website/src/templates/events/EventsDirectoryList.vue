@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { CalendarDays, MapPin } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ComfyEvent } from '../../data/events'
 import type { Locale } from '../../i18n/translations'
@@ -18,9 +20,15 @@ import { t } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 import { eventDateLabel } from '../../utils/eventsDirectory'
 
-const { events, locale = 'en' } = defineProps<{
+const {
+  events,
+  locale = 'en',
+  selectedEventId = null
+} = defineProps<{
   events: readonly ComfyEvent[]
   locale?: Locale
+  /** The event whose map pin was clicked; its row highlights and scrolls in. */
+  selectedEventId?: string | null
 }>()
 
 // `directoryEvents` is already split into upcoming-then-past against the
@@ -74,6 +82,22 @@ const rows = computed<DirectoryRow[]>(() =>
   })
 )
 
+const listElement = useTemplateRef<HTMLElement>('listElement')
+
+// Bringing the selected row into view is a one-way sync with the DOM: nothing
+// reads back from it. `nextTick` covers the case where the selection arrives in
+// the same tick as a filter change that re-renders the rows.
+watch(
+  () => selectedEventId,
+  async (id) => {
+    if (!id) return
+    await nextTick()
+    listElement.value
+      ?.querySelector(`[data-event-id="${CSS.escape(id)}"]`)
+      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }
+)
+
 const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
 
 // Shared by the two row CTAs — the calendar-menu trigger and the watch link.
@@ -100,13 +124,21 @@ const chipClass =
 
     <ul
       v-else
+      ref="listElement"
       class="divide-y divide-white/8 overflow-y-auto"
       :aria-label="t('events.directory.allEvents', locale)"
     >
       <li
         v-for="row in rows"
         :key="row.event.id"
-        class="flex gap-3 px-6 py-4"
+        :data-event-id="row.event.id"
+        :class="
+          cn(
+            'flex gap-3 px-6 py-4 transition-colors',
+            row.event.id === selectedEventId &&
+              'bg-primary-comfy-yellow/10 ring-primary-comfy-yellow/40 ring-1 ring-inset'
+          )
+        "
         data-testid="events-directory-row"
       >
         <img
