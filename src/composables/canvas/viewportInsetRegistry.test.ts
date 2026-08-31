@@ -36,4 +36,19 @@ describe('viewportInsetRegistry', () => {
     unregisterCurrent()
     expect(getViewportInset()).toBe(0)
   })
+
+  it('does not let a stale disposer remove a same-function replacement', () => {
+    const provider = () => 160
+    const unregisterOld = registerViewportInset('test-same-provider', provider)
+    const unregisterCurrent = registerViewportInset(
+      'test-same-provider',
+      provider
+    )
+
+    unregisterOld()
+    expect(getViewportInset()).toBe(160)
+
+    unregisterCurrent()
+    expect(getViewportInset()).toBe(0)
+  })
 })
