@@ -141,6 +141,7 @@ function getFailedDownloadLabel(
       : 'templateWorkflows.detail.downloadFailed'
   )
 }
+
 </script>
 
 <template>
@@ -255,9 +256,37 @@ function getFailedDownloadLabel(
               "
             >
               <span
-                class="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary-background text-muted-foreground"
+                class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary-background text-muted-foreground"
               >
-                <i aria-hidden="true" class="icon-[lucide--box] size-4" />
+                <img
+                  v-if="
+                    row.kind === 'input' && row.preview?.mediaType === 'image'
+                  "
+                  :src="row.preview.src"
+                  alt=""
+                  loading="lazy"
+                  class="size-full object-cover"
+                />
+                <video
+                  v-else-if="
+                    row.kind === 'input' && row.preview?.mediaType === 'video'
+                  "
+                  :src="row.preview.src"
+                  aria-hidden="true"
+                  muted
+                  playsinline
+                  preload="metadata"
+                  class="size-full object-cover"
+                />
+                <i
+                  v-else
+                  aria-hidden="true"
+                  :class="
+                    row.kind === 'input'
+                      ? 'icon-[lucide--file-input] size-4'
+                      : 'icon-[lucide--box] size-4'
+                  "
+                />
               </span>
 
               <span class="flex min-w-0 flex-1 flex-col gap-0.5">

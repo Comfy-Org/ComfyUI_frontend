@@ -1200,6 +1200,12 @@
       "openInCloud": "Open in Cloud",
       "requirements": "Template requirements",
       "models": "Models",
+      "inputAssets": "Input Assets",
+      "inputMediaTypes": {
+        "image": "Image",
+        "video": "Video",
+        "audio": "Audio"
+      },
       "installed": "Installed",
       "unavailable": "Unavailable",
       "unknown": "Unknown",

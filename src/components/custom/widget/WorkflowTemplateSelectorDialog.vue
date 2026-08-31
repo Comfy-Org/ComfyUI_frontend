@@ -1011,6 +1011,7 @@ function toModelDetailRow(
 ): TemplateDetailRow {
   const detailRow: TemplateDetailRow = {
     id: `model:${getModelFileKey(row.model)}`,
+    kind: 'model',
     name: row.model.name,
     description: getModelDetailDescription(row)
   }
@@ -1063,29 +1064,56 @@ function toModelDetailRow(
   }
 }
 
+function toInputDetailRow(asset: ComfyTemplateInputAsset): TemplateDetailRow {
+  return {
+    id: `input:${asset.assetId}`,
+    kind: 'input',
+    name: t(`templateWorkflows.detail.inputMediaTypes.${asset.mediaType}`),
+    description: asset.filename,
+    ...(asset.previewUrl && {
+      preview: { src: asset.previewUrl, mediaType: asset.mediaType }
+    })
+  }
+}
+
 function buildTemplateDetailGroups(
   setup: TemplateModelSetupResult,
-  rowDownloads: TemplateModelRowDownloads
+  rowDownloads: TemplateModelRowDownloads,
+  inputAssets: readonly ComfyTemplateInputAsset[]
 ): readonly TemplateDetailGroup[] {
-  if (setup.rows.length === 0) return []
+  const groups: TemplateDetailGroup[] = []
 
-  return [
-    {
+  if (setup.rows.length > 0) {
+    groups.push({
       id: 'models',
       label: t('templateWorkflows.detail.models'),
       ...(setup.declarationTotal.isComplete && {
         total: formatSize(setup.declarationTotal.bytes)
       }),
       rows: setup.rows.map((row) => toModelDetailRow(row, rowDownloads))
-    }
-  ]
+    })
+  }
+
+  if (inputAssets.length > 0) {
+    groups.push({
+      id: 'input-assets',
+      label: t('templateWorkflows.detail.inputAssets'),
+      rows: inputAssets.map(toInputDetailRow)
+    })
+  }
+
+  return groups
 }
 
 const activeDetailGroups = computed<readonly TemplateDetailGroup[]>(() => {
-  const setup = activeDetail.value?.modelSetup
-  return setup
-    ? buildTemplateDetailGroups(setup.result, setup.rowDownloads)
-    : []
+  const detail = activeDetail.value
+  if (!detail) return []
+
+  return buildTemplateDetailGroups(
+    detail.modelSetup.result,
+    detail.modelSetup.rowDownloads,
+    detail.inputAssets
+  )
 })
 
 function isModelRowComplete(
