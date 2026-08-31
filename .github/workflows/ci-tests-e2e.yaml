@@ -229,9 +229,6 @@ jobs:
       ${{
         always() &&
         needs.changes.outputs.should-run == 'true' &&
-        github.event_name == 'pull_request' &&
-        github.event.pull_request.head.repo.fork == false &&
-        github.event.pull_request.user.login != 'dependabot[bot]' &&
         needs.playwright-tests-chromium-sharded.result != 'cancelled'
       }}
     uses: ./.github/workflows/ci-tests-e2e-coverage.yaml
@@ -240,7 +237,6 @@ jobs:
       source_pr: ${{ format('{0}', github.event.pull_request.number) }}
       source_run_id: ${{ format('{0}', github.run_id) }}
       source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
-    secrets: inherit
 
   # Records video only for spec files newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:
