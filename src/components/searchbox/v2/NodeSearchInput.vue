@@ -13,7 +13,7 @@
         :key="filterKey(filter)"
         :value="filterKey(filter)"
         data-testid="filter-chip"
-        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
+        class="data-[state=active]:ring-primary -my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2"
       >
         <span class="text-sm opacity-80">
           {{ t(`g.${filter.filterDef.id}`) }}:
