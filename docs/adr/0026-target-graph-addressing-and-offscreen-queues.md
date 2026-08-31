@@ -39,11 +39,14 @@ Every remote or agent mutation batch carries an explicit target document/workflo
 and the FE applies it through a target-keyed ECS mutation path regardless of which canvas is
 active.
 
-The target identity is the canonical `workflow_id` on the V1 wire; implementations may
-expose it as `document_id` internally only when the value remains the same stable identity.
-The identity is mandatory on the agent command record, the emitted document frame, and the
-adapter dispatch. The adapter rejects a frame whose target does not match the target session
-that received it; it never falls back to the active graph.
+The target identity is the canonical `workflow_id` on the V1 wire. The document registry
+resolves it through a stable one-to-one `workflow_id` → `GraphDocument.document_id` mapping
+and rejects duplicate or stale mappings. Target sessions are keyed by `document_id`; a
+nested `GraphId`, including the root graph ID, identifies a scope inside that document and
+cannot create another target session. The wire identity is mandatory on the agent command
+record, emitted document frame, and adapter dispatch. The adapter rejects a frame whose
+resolved document does not match the receiving target session; it never falls back to the
+active graph.
 
 The FE end shape is a registry of target sessions:
 
@@ -159,12 +162,14 @@ hand-rolled scoping scheme.
 
 ### What the TDD decides that this ADR now adopts
 
-1. **Key per-target state by root graph id and evict explicitly on workflow close**
+1. **Key graph-scoped containers by root graph ID and evict explicitly on workflow close**
    (TDD option 6, workflow-scoped containers) — not a provider registry (rejected: only
    justified when state crosses the reload boundary with a serializable payload), not new
-   ChangeTracker fields. The ADR-015 target-session registry is an instance of this
-   pattern and must use the same keying convention so target sessions and existing
-   graph-scoped stores agree on identity.
+   ChangeTracker fields. The target-session registry composes with this pattern rather than
+   reusing its scope key: it keys one session by stable `GraphDocument.document_id`, resolves
+   the canonical wire `workflow_id` through the registry's one-to-one mapping, and then
+   resolves root and nested graph scopes inside that document. Tab switches, reloads, and
+   nested scopes therefore cannot create duplicate sessions for one workflow.
 2. **The missing primitive is a workflow-close hook.** `LGraph.clear()` fires on every tab
    switch, so nothing that must survive tab switches can use it for eviction. Target
    sessions have the same need: a queue for an offscreen target must survive tab switches
@@ -188,11 +193,12 @@ hand-rolled scoping scheme.
 
 ### Consequence for implementation sequencing
 
-The fec-9 adapter's target-session registry should land keyed by root graph id from the
-start, with eviction wired to `doc_reset` now and to the workflow-close hook when P1
-lands. Interim tab-switch behavior: retain, never evict. This keeps the adapter aligned
-with the TDD's migration path (P1 close hook → P2 migrate 15360/15361 → P3 nodeOutputs)
-instead of requiring a re-key later.
+The fec-9 adapter's target-session registry should land keyed by stable `document_id` from
+the start, after resolving the canonical wire `workflow_id`; graph-scoped containers remain
+keyed by root graph ID inside that document. Eviction is wired to `doc_reset` now and to the
+workflow-close hook when P1 lands. Interim tab-switch behavior: retain, never evict. This
+keeps the adapter aligned with the TDD's migration path (P1 close hook → P2 migrate
+15360/15361 → P3 nodeOutputs) instead of requiring a re-key later.
 
 ## Alternatives Considered
 
