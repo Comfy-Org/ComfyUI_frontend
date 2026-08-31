@@ -17,7 +17,7 @@ on:
         type: string
     secrets:
       CODECOV_TOKEN:
-        required: true
+        required: false
   workflow_run:
     workflows: ['CI: Tests E2E']
     types:
@@ -32,41 +32,48 @@ permissions:
 
 jobs:
   merge:
-    # Not gated on full success: fail-fast:false means one flaky shard flips the whole run to failure, which would skip merging every other shard's real coverage.
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       (github.event_name == 'workflow_call' ||
-        github.event.workflow_run.event != 'pull_request' ||
-        github.event.workflow_run.head_repository.full_name != github.repository ||
-        github.event.workflow_run.actor.login == 'dependabot[bot]') &&
-      github.event.workflow_run.conclusion != 'cancelled'
+        github.event.workflow_run.conclusion != 'cancelled')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       has-coverage: ${{ steps.coverage-shards.outputs.has-coverage }}
 
     steps:
-      - name: Checkout sources for genhtml
+      - name: Checkout sources for coverage packaging
+        if: github.event_name == 'workflow_call'
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.source_sha || github.event.workflow_run.head_sha }}
+          ref: ${{ inputs.source_sha }}
           sparse-checkout: |
             src
             packages
 
       - name: Download all shard coverage data
+        if: github.event_name == 'workflow_call'
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
-          run_id: ${{ inputs.source_run_id || github.event.workflow_run.id }}
+          run_id: ${{ inputs.source_run_id }}
           name: e2e-coverage-shard-.*
           name_is_regexp: true
           path: temp/coverage-shards
           if_no_artifact_found: warn
 
+      - name: Download packaged coverage data
+        if: github.event_name == 'workflow_run'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: e2e-coverage
+          path: coverage/playwright
+          if_no_artifact_found: warn
+
       - name: Detect shard coverage data
         id: coverage-shards
         run: |
-          if [ -d temp/coverage-shards ] && find temp/coverage-shards -name 'coverage.lcov' -type f | grep -q .; then
+          if [ -f coverage/playwright/coverage.lcov ] || { [ -d temp/coverage-shards ] && find temp/coverage-shards -name 'coverage.lcov' -type f | grep -q .; }; then
             echo "has-coverage=true" >> "$GITHUB_OUTPUT"
           else
             echo "has-coverage=false" >> "$GITHUB_OUTPUT"
@@ -74,11 +81,11 @@ jobs:
           fi
 
       - name: Install lcov
-        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        if: github.event_name == 'workflow_call' && steps.coverage-shards.outputs.has-coverage == 'true'
         run: sudo apt-get install -y -qq lcov
 
       - name: Merge shard coverage into single LCOV
-        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        if: github.event_name == 'workflow_call' && steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
           mkdir -p coverage/playwright
           LCOV_FILES=$(find temp/coverage-shards -name 'coverage.lcov' -type f)
@@ -88,7 +95,7 @@ jobs:
           wc -l coverage/playwright/coverage.lcov
 
       - name: Validate merged coverage
-        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        if: github.event_name == 'workflow_call' && steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
           MERGED_SF=$(grep -c '^SF:' coverage/playwright/coverage.lcov || echo 0)
           MERGED_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' coverage/playwright/coverage.lcov)
@@ -110,7 +117,7 @@ jobs:
           done
 
       - name: Assert coverage was mapped back to source
-        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        if: github.event_name == 'workflow_call' && steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
           MAPPED_SF=$(grep -cE '^SF:(src|packages)/' coverage/playwright/coverage.lcov || true)
           echo "Source-mapped files: $MAPPED_SF" >> "$GITHUB_STEP_SUMMARY"
@@ -120,7 +127,7 @@ jobs:
           fi
 
       - name: Strip non-source entries from coverage
-        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        if: github.event_name == 'workflow_call' && steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
           lcov --remove coverage/playwright/coverage.lcov \
             '*localhost-8188*' \
@@ -139,7 +146,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload E2E coverage to Codecov
-        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        if: github.event_name == 'workflow_run' && steps.coverage-shards.outputs.has-coverage == 'true'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: coverage/playwright/coverage.lcov
@@ -151,7 +158,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Generate HTML coverage report
-        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        if: github.event_name == 'workflow_call' && steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
           genhtml coverage/playwright/coverage.lcov \
             -o coverage/html \
@@ -160,6 +167,15 @@ jobs:
             --precision 1 \
             --ignore-errors source,unmapped \
             --synthesize-missing
+
+      - name: Download packaged HTML report
+        if: github.event_name == 'workflow_run' && steps.coverage-shards.outputs.has-coverage == 'true'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: e2e-coverage-html
+          path: coverage/html
+          if_no_artifact_found: warn
 
       - name: Upload HTML report artifact
         if: steps.coverage-shards.outputs.has-coverage == 'true'
