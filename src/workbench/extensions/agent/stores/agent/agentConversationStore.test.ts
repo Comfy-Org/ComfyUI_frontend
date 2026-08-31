@@ -285,6 +285,51 @@ describe('useAgentConversationStore', () => {
     revoke.mockRestore()
   })
 
+  it('orders persisted rows by sequence and groups them by stable turn identity', () => {
+    const store = useAgentConversationStore()
+
+    store.hydrate([
+      historyRow(4, 'assistant', 'turn-b', 'Second reply', 'row-4'),
+      historyRow(2, 'assistant', 'turn-a', 'First reply', 'row-2'),
+      historyRow(1, 'user', 'turn-a', 'First prompt', 'row-1'),
+      historyRow(3, 'user', 'turn-b', 'Second prompt', 'row-3')
+    ])
+
+    expect(store.messages.map((message) => message.id)).toEqual([
+      'turn-a',
+      'turn-b'
+    ])
+    expect(store.entries).toMatchObject([
+      { id: 'turn-a', role: 'user', text: 'First prompt' },
+      {
+        id: 'turn-a',
+        parts: [{ type: 'text', text: 'First reply', state: 'done' }]
+      },
+      { id: 'turn-b', role: 'user', text: 'Second prompt' },
+      {
+        id: 'turn-b',
+        parts: [{ type: 'text', text: 'Second reply', state: 'done' }]
+      }
+    ])
+  })
+
+  it('keeps turn identity stable when persisted row ids change', () => {
+    const store = useAgentConversationStore()
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'Prompt', 'user-row-v1'),
+      historyRow(2, 'assistant', 'turn-a', 'Reply', 'assistant-row-v1')
+    ])
+    const firstId = store.messages[0].id
+
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'Prompt', 'user-row-v2'),
+      historyRow(2, 'assistant', 'turn-a', 'Reply', 'assistant-row-v2')
+    ])
+
+    expect(store.messages[0].id).toBe(firstId)
+    expect(store.messages[0].id).toBe('turn-a')
+  })
+
   it('keeps a stashed background turn across reset so returning to the thread resumes it', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
