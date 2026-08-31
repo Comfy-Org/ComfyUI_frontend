@@ -3,6 +3,7 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -306,6 +307,7 @@ function removeIncidentLinks(
 export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const nodeStore = useNodeDataStore()
   const linkStore = useLinkStore()
+  const linkPresentationStore = useLinkPresentationStore()
   const widgetStore = useWidgetValueStore()
 
   function fail(message: string): false {
@@ -592,7 +594,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     context: RemoteMutationContext
   ): void {
     detachLinkSlots(scope, topology, context)
-    linkStore.deleteLink(scope, topology, context)
+    if (linkStore.deleteLink(scope, topology, context)) {
+      linkPresentationStore.take(scope, topology.id)
+    }
   }
 
   function deleteNode(
@@ -761,6 +765,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           deps.layout.deleteNodes(scope, mutation.nodeIds, context)
           linkStore.clearOwner(scope, context)
+          linkPresentationStore.clearOwner(scope)
           nodeStore.clearOwner(scope, context)
           break
       }
