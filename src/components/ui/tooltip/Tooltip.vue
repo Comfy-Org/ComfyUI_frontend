@@ -48,9 +48,11 @@ const isDisabled = computed(
   () => rootProps.disabled || normalizedConfig.value?.disabled || !text.value
 )
 const open = ref(rootProps.open ?? rootProps.defaultOpen ?? false)
+let openTimer: ReturnType<typeof setTimeout> | undefined
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 
 function updateOpen(nextOpen: boolean) {
+  if (openTimer) clearTimeout(openTimer)
   if (closeTimer) clearTimeout(closeTimer)
   if (nextOpen && touchInteraction.value) return
 
@@ -67,6 +69,19 @@ function setOpen(nextOpen: boolean) {
   emit('update:open', nextOpen)
 }
 
+function handlePointerEnter(event: PointerEvent) {
+  if (event.pointerType === 'touch' || isDisabled.value) return
+  if (openTimer) clearTimeout(openTimer)
+  const showDelay =
+    normalizedConfig.value?.showDelay ?? rootProps.delayDuration ?? 0
+  openTimer = setTimeout(() => updateOpen(true), showDelay)
+}
+
+function handlePointerLeave() {
+  if (openTimer) clearTimeout(openTimer)
+  updateOpen(false)
+}
+
 function handleClick(event: MouseEvent) {
   if (!openOnClick) return
   event.stopPropagation()
@@ -77,10 +92,14 @@ watch(isDisabled, (disabled) => {
   if (disabled) setOpen(false)
 })
 watch(automaticTooltipSuppressed, (suppressed) => {
-  if (suppressed) setOpen(false)
+  if (suppressed) {
+    if (openTimer) clearTimeout(openTimer)
+    setOpen(false)
+  }
 })
 
 onBeforeUnmount(() => {
+  if (openTimer) clearTimeout(openTimer)
   if (closeTimer) clearTimeout(closeTimer)
 })
 </script>
@@ -100,7 +119,13 @@ onBeforeUnmount(() => {
       :ignore-non-keyboard-focus="rootProps.ignoreNonKeyboardFocus ?? true"
       @update:open="updateOpen"
     >
-      <TooltipTrigger v-bind="$attrs" as-child @click="handleClick">
+      <TooltipTrigger
+        v-bind="$attrs"
+        as-child
+        @click="handleClick"
+        @pointerenter="handlePointerEnter"
+        @pointerleave="handlePointerLeave"
+      >
         <slot />
       </TooltipTrigger>
       <TooltipContent
