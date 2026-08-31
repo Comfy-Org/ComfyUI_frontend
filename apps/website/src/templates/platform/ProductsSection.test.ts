@@ -9,19 +9,16 @@ describe('ProductsSection', () => {
   it('links each product card to its platform page', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
-    const hrefs = screen
-      .getAllByRole('link')
-      .map((link) => link.getAttribute('href'))
-    for (const href of [
-      '/platform/serverless',
-      '/platform/models',
-      '/platform/builder'
-    ]) {
-      expect(hrefs).toContain(href)
+    const cardLinks = [
+      ['platform.products.serverless.title', '/platform/serverless'],
+      ['platform.products.models.title', '/platform/models'],
+      ['platform.products.builder.title', '/platform/builder']
+    ] as const
+    for (const [key, href] of cardLinks) {
+      expect(
+        screen.getByRole('link', { name: t(key, 'en') }).getAttribute('href')
+      ).toBe(href)
     }
-    expect(
-      screen.getByText(t('platform.products.serverless.title', 'en'))
-    ).toBeTruthy()
   })
 
   it('sends the Builder card to the enterprise page', () => {
