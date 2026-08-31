@@ -1,8 +1,9 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { StyleValue } from 'vue'
 import { nextTick, ref } from 'vue'
+
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import Select from './Select.vue'
 import SelectContent from './SelectContent.vue'
@@ -54,7 +55,7 @@ let openModal: HTMLElement | undefined
 
 afterEach(() => {
   if (openModal) {
-    ZIndex.clear(openModal)
+    zIndexManager.clear(openModal)
     openModal = undefined
   }
 })
@@ -62,7 +63,7 @@ afterEach(() => {
 describe('SelectContent z-index', () => {
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
+    zIndexManager.set('modal', openModal, 3702)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderSelect()
 
@@ -90,7 +91,7 @@ describe('SelectContent z-index', () => {
 
   it('preserves caller styles while lifting above a dialog', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
+    zIndexManager.set('modal', openModal, 3702)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderSelect({ maxWidth: '100px' })
 
