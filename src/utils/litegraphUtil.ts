@@ -376,9 +376,7 @@ export function mapLiveWidgetsById(
         // Fall through to a compatible live adapter below.
       }
       if (widget.name !== name) {
-        const descriptors = Object.getOwnPropertyDescriptors(widget)
-        descriptors.name = { ...descriptors.name, value: name }
-        widget = Object.create(Object.getPrototypeOf(widget), descriptors)
+        widget = { ...widget, name }
         widgets[index] = widget
       }
     }

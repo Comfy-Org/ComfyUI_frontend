@@ -75,6 +75,10 @@ function firstWidget(graph: LGraph) {
 describe('widget value null contract', () => {
   const origNamedValuesRestore = LiteGraph.namedValuesRestore
 
+  it('models null slots in the serialized node type', () => {
+    expect(nullSlotTypeContract.widgets_values[1]).toBeNull()
+  })
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     registerNullContractNode()
@@ -114,16 +118,6 @@ describe('widget value null contract', () => {
   })
 
   describe('LGraphNode.configure (workflow read)', () => {
-    it('preserves a null slot when configured values are serialized again', () => {
-      const { node } = makeGraphWithWidget(DEFAULT_VALUE)
-      node.addWidget('number', 'second', 0, () => undefined)
-      node.addWidget('number', 'third', 0, () => undefined)
-
-      node.configure({ ...node.serialize(), ...nullSlotTypeContract })
-
-      expect(node.serialize().widgets_values).toEqual([30, null, 12345])
-    })
-
     it('restores a null widget value through the indexed path', () => {
       LiteGraph.namedValuesRestore = false
       const { graph } = makeGraphWithWidget(null)

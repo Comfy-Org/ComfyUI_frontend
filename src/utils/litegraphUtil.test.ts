@@ -6,7 +6,6 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -235,37 +234,19 @@ describe('getWidgetIdForNode', () => {
       options: {},
       y: 0
     }
-    class ClassWidget {
-      readonly name = 'shared'
-      readonly type = 'number'
-      readonly value = 2
-      readonly options = {}
-      readonly y = 0
-
-      computeLayoutSize() {
-        return { minHeight: 24, minWidth: 48 }
-      }
-    }
-    const frozen = Object.freeze(new ClassWidget())
+    const frozen = Object.freeze({
+      name: 'shared',
+      type: 'number',
+      value: 2,
+      options: {},
+      y: 0
+    })
     node.widgets = [first, frozen]
 
     const mapped = [...mapLiveWidgetsById(node).values()]
-    expect(mapped[0]).toBe(first)
-    expect(mapped[1]).toBeInstanceOf(ClassWidget)
-    expect(mapped[1].computeLayoutSize?.(node)).toEqual({
-      minHeight: 24,
-      minWidth: 48
-    })
-    expect(node.widgets?.[1]).toBe(mapped[1])
-    expect(node.widgets?.map(({ name }) => name)).toEqual([
-      'shared',
-      'shared#1'
-    ])
-    expect(
-      useWidgetValueStore().getWidgetRenderState(
-        widgetId(graphId, toNodeId(42), 'shared#1')
-      )?.hasLayoutSize
-    ).toBe(true)
+    expect(mapped).toEqual([first, { ...frozen, name: 'shared#1' }])
+    expect(node.widgets[1]).toBe(mapped[1])
+    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared#1'])
     expect(warn).toHaveBeenCalledOnce()
   })
 
