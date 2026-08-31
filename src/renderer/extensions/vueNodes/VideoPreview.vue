@@ -126,11 +126,11 @@
 
 <script setup lang="ts">
 import { useToast } from '@/components/ui/toast'
-import Skeleton from 'primevue/skeleton'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
