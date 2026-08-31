@@ -26,6 +26,9 @@ mutually distinct runtime profiles.
 ### Normal local profile
 
 - V1 custom nodes and API V2 custom nodes may coexist.
+- Each pack contributes one entrypoint: its `/v2` subtree when present,
+  otherwise its root. The two implementations of one converted pack are never
+  loaded together.
 - Existing V1 discovery and in-process loading remain available, subject to
   the existing command-line controls and allowlists.
 - API V2 Python operations use the standard in-process providers.
