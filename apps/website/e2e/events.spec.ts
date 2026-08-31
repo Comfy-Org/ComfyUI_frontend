@@ -589,6 +589,53 @@ test.describe('Events page — desktop @smoke', () => {
     await expect(rows).toHaveCount(directoryEvents.length)
   })
 
+  test('host section steps open one at a time, by pointer and keyboard', async ({
+    page
+  }) => {
+    for (const [path, locale] of LOCALES) {
+      await page.goto(path)
+      const section = page.locator('section').filter({
+        has: page.getByRole('heading', {
+          level: 2,
+          name: t('events.host.title', locale)
+        })
+      })
+      await section.scrollIntoViewIfNeeded()
+
+      const step = (n: 1 | 2 | 3 | 4 | 5) =>
+        section.getByRole('button', {
+          name: `${n}. ${t(`events.host.step${n}.title`, locale)}`
+        })
+
+      // The first step is open on load; the rest are collapsed.
+      await expect(step(1)).toHaveAttribute('aria-expanded', 'true')
+      for (const n of [2, 3, 4, 5] as const) {
+        await expect(step(n)).toHaveAttribute('aria-expanded', 'false')
+      }
+      await expect(
+        section.getByText(t('events.host.step1.whoTitle', locale))
+      ).toBeVisible()
+
+      // Opening another step closes the first — single-select.
+      await expect(async () => {
+        await step(2).click()
+        await expect(step(2)).toHaveAttribute('aria-expanded', 'true', {
+          timeout: 1000
+        })
+      }).toPass()
+      await expect(step(1)).toHaveAttribute('aria-expanded', 'false')
+      await expect(
+        section.getByText(t('events.host.step2.body', locale))
+      ).toBeVisible()
+
+      // The trigger is a real button, so the keyboard reaches it.
+      await step(3).focus()
+      await page.keyboard.press('Enter')
+      await expect(step(3)).toHaveAttribute('aria-expanded', 'true')
+      await expect(step(2)).toHaveAttribute('aria-expanded', 'false')
+    }
+  })
+
   test('an upcoming streamed event page opens with the video dialog', async ({
     page
   }) => {
