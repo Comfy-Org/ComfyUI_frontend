@@ -755,7 +755,7 @@ describe('Store-driven serialization parity', () => {
     expect(graph.asSerialisable().nodes).toEqual([])
     expect(error).toHaveBeenCalledWith(
       expect.stringMatching(
-        /Cannot serialize graph .* from store: node .* has no live adapter; using live graph nodes/
+        /Cannot serialize graph .* from store: stored node .* has no live adapter; using live graph nodes/
       )
     )
   })
