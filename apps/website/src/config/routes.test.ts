@@ -127,3 +127,65 @@ describe('getRoutes minimaxLicense', () => {
     expect(getRoutes('zh-CN').minimaxLicense).toBe('/zh-CN/minimax/license')
   })
 })
+
+describe('getRoutes pricing', () => {
+  it('serves the pricing page at its canonical path for en', () => {
+    expect(getRoutes('en').pricing).toBe('/pricing')
+  })
+
+  it('serves a localized pricing path for zh-CN', () => {
+    expect(getRoutes('zh-CN').pricing).toBe('/zh-CN/pricing')
+  })
+})
+
+describe('getRoutes enterprise', () => {
+  it('serves the enterprise page at its canonical path for en', () => {
+    expect(getRoutes('en').enterprise).toBe('/enterprise')
+  })
+
+  it('serves a localized enterprise path for zh-CN', () => {
+    expect(getRoutes('zh-CN').enterprise).toBe('/zh-CN/enterprise')
+  })
+})
+
+describe('getRoutes enterpriseManagedBuilds', () => {
+  it('serves the managed builds page at its canonical path for en', () => {
+    expect(getRoutes('en').enterpriseManagedBuilds).toBe(
+      '/enterprise/managed-builds'
+    )
+  })
+
+  it('serves a localized managed builds path for zh-CN', () => {
+    expect(getRoutes('zh-CN').enterpriseManagedBuilds).toBe(
+      '/zh-CN/enterprise/managed-builds'
+    )
+  })
+})
+
+describe('getRoutes platform', () => {
+  it('serves the platform page at its canonical path for en', () => {
+    expect(getRoutes('en').platform).toBe('/platform')
+  })
+
+  it('serves a localized platform path for zh-CN', () => {
+    expect(getRoutes('zh-CN').platform).toBe('/zh-CN/platform')
+  })
+})
+
+describe('getRoutes platform product pages', () => {
+  it('serves the platform product pages at their canonical paths for en', () => {
+    const routes = getRoutes('en')
+
+    expect(routes.platformServerless).toBe('/platform/serverless')
+    expect(routes.platformModels).toBe('/platform/models')
+    expect(routes.platformBuilder).toBe('/platform/builder')
+  })
+
+  it('serves localized platform product paths for zh-CN', () => {
+    const routes = getRoutes('zh-CN')
+
+    expect(routes.platformServerless).toBe('/zh-CN/platform/serverless')
+    expect(routes.platformModels).toBe('/zh-CN/platform/models')
+    expect(routes.platformBuilder).toBe('/zh-CN/platform/builder')
+  })
+})

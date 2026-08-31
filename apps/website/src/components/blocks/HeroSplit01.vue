@@ -117,7 +117,7 @@ const {
       <h1
         :class="
           cn(
-            'mt-8 leading-[125%] font-light whitespace-pre-line text-primary-comfy-canvas',
+            'mt-8 leading-tight font-light whitespace-pre-line text-primary-comfy-canvas',
             compact
               ? 'text-xl tracking-tight md:text-2xl lg:text-3xl'
               : 'text-2xl tracking-[-1.44px] md:text-4xl lg:text-5xl',

@@ -15,7 +15,9 @@ import { prefersReducedMotion } from '../../composables/useReducedMotion'
  * through in lockstep with every other cycling segment (index-synced, so a
  * model id and its matching prompt/filename change together).
  */
-type CodeSegment = string | { values: string[]; highlight?: boolean }
+type CodeSegment =
+  | string
+  | { values: readonly [string, ...string[]]; highlight?: boolean }
 
 export interface CodeTab {
   name: string
@@ -82,7 +84,7 @@ watchEffect(() => {
   else pause()
 })
 
-function cycleValue(values: string[]): string {
+function cycleValue(values: readonly [string, ...string[]]): string {
   return values[cycleIndex.value % values.length]
 }
 </script>

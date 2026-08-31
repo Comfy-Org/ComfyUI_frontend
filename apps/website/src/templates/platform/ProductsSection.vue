@@ -27,7 +27,7 @@ const modelsTabs = modelsApiCodeTabs
     >
       <a
         :href="routes.platformServerless"
-        :label="t('platform.products.serverless.title', locale)"
+        :aria-label="t('platform.products.serverless.title', locale)"
         class="absolute inset-0 rounded-4xl"
       ></a>
       <div>
@@ -65,7 +65,7 @@ const modelsTabs = modelsApiCodeTabs
       >
         <a
           :href="routes.platformModels"
-          :label="t('platform.products.models.title', locale)"
+          :aria-label="t('platform.products.models.title', locale)"
           class="absolute inset-0 rounded-4xl"
         ></a>
         <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">
@@ -99,7 +99,7 @@ const modelsTabs = modelsApiCodeTabs
       >
         <a
           :href="routes.platformBuilder"
-          :label="t('platform.products.builder.title', locale)"
+          :aria-label="t('platform.products.builder.title', locale)"
           class="absolute inset-0 rounded-4xl"
         ></a>
         <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">

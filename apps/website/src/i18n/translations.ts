@@ -7600,9 +7600,9 @@ const translations = {
     'zh-CN': 'Models API'
   },
   'platform.products.models.description': {
-    en: 'Call partner models including Seedance, Minimax H3, Nano Banana, and GPT-Image-2. Access the latest models with a single API key.',
+    en: 'Call partner models including Seedance, MiniMax H3, Nano Banana, and GPT-Image-2. Access the latest models with a single API key.',
     'zh-CN':
-      '调用合作伙伴模型——Seedance、Minimax H3、Nano Banana、GPT-Image-2——用一个 API 密钥即可访问最新模型。'
+      '调用合作伙伴模型——Seedance、MiniMax H3、Nano Banana、GPT-Image-2——用一个 API 密钥即可访问最新模型。'
   },
   'platform.examples.heading': {
     en: 'Built on the Developer Platform',

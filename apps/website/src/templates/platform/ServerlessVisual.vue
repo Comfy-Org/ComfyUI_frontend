@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementVisibility, useRafFn } from '@vueuse/core'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
@@ -62,7 +62,7 @@ interface ActivityCell {
 const stageRef = useTemplateRef<HTMLElement>('stageRef')
 const onScreen = useElementVisibility(stageRef)
 const elapsed = ref(0)
-const reducedMotion = prefersReducedMotion()
+const reducedMotion = computed(prefersReducedMotion)
 
 const frameTime = computed(() => elapsed.value % CYCLE_DURATION)
 const activityCells: ActivityCell[] = Array.from(
@@ -81,7 +81,7 @@ const activityCells: ActivityCell[] = Array.from(
 )
 
 function cellState(cell: ActivityCell, now: number): CellState {
-  const marqueeOffset = reducedMotion
+  const marqueeOffset = reducedMotion.value
     ? 0
     : Math.floor(now / CELL_STEP_DURATION) - WORD_WIDTH
   const sourceColumn = cell.column - marqueeOffset
@@ -105,14 +105,10 @@ const { pause, resume } = useRafFn(
   { immediate: false }
 )
 
-watch(
-  onScreen,
-  (visible) => {
-    if (visible && !reducedMotion) resume()
-    else pause()
-  },
-  { immediate: true }
-)
+watchEffect(() => {
+  if (onScreen.value && !reducedMotion.value) resume()
+  else pause()
+})
 </script>
 
 <template>

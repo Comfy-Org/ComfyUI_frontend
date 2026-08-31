@@ -43,3 +43,27 @@ describe('ManagedBuildsSection', () => {
     ).toBe('/zh-CN/contact')
   })
 })
+
+// The Partner Models card flattens description + link label + suffix into one
+// sentence, so the separators must come from the copy, not from markup.
+describe('ManagedBuildsSection partner models copy', () => {
+  it('reads as a complete sentence in English', () => {
+    render(ManagedBuildsSection, { props: { locale: 'en' } })
+
+    expect(
+      screen.getByText(
+        'Dynamically control which partner models are available to your team (e.g. Seedance, GPT-Image-2). Run models with your own key (BYOK).'
+      )
+    ).toBeTruthy()
+  })
+
+  it('reads as a complete sentence in zh-CN, which needs no spaces', () => {
+    render(ManagedBuildsSection, { props: { locale: 'zh-CN' } })
+
+    expect(
+      screen.getByText(
+        '动态控制团队可以使用哪些合作伙伴模型（如 Seedance、GPT-Image-2），还可以用你自己的密钥运行模型（BYOK）。'
+      )
+    ).toBeTruthy()
+  })
+})

@@ -2,13 +2,13 @@ import type { CodeTab } from './CodeTabs.vue'
 
 // Cycling segments are index-synced: the model id, prompt, and output
 // filename switch together (Seedance video → GPT-Image-2 image).
-const MODELS = ['seedance/v2-pro', 'openai/gpt-image-2']
+const MODELS = ['seedance/v2-pro', 'openai/gpt-image-2'] as const
 const PROMPTS = [
   'aerial dolly shot over a neon reef',
   'a holographic sticker of a koi fish'
-]
-const OUTPUTS = ['reef.mp4', 'koi.png']
-const PROVIDERS = ['default', 'fal', 'replicate']
+] as const
+const OUTPUTS = ['reef.mp4', 'koi.png'] as const
+const PROVIDERS = ['default', 'fal', 'replicate'] as const
 
 export const modelsApiCodeTabs: Record<string, CodeTab> = {
   python: {
