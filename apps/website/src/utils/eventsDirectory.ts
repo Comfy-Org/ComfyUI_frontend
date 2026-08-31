@@ -1,5 +1,15 @@
 import type { ComfyEvent, EventCategory, EventProgram } from '../data/events'
 import type { Locale } from '../i18n/translations'
+import type { CalendarEvent } from './calendar'
+
+import { localizeHref } from '../config/routes'
+import {
+  eventPath,
+  eventStatus,
+  eventVideoId,
+  toCalendarEvent
+} from '../data/events'
+import { t } from '../i18n/translations'
 
 /** Sentinel for the "no filter" option in the type and program selects. */
 export const DIRECTORY_FILTER_ALL = 'all'
@@ -94,4 +104,129 @@ export function eventDateLabel(event: ComfyEvent, locale: Locale): string {
     day: 'numeric',
     timeZone: 'UTC'
   }).format(inEventOffset(event.startDateTime))
+}
+
+/** Everything the map, list, and cards views need about one event, resolved
+ * once so the views stay presentational and agree on the CTA rules. */
+export type DirectoryRow = {
+  event: ComfyEvent
+  /** Set once here so no view needs its own clock to classify a row. */
+  upcoming: boolean
+  category: string
+  date: string
+  location: string
+  media?: { src: string; alt: string; poster?: string; isVideo: boolean }
+  /** Past rows link out; upcoming rows offer the calendar menu instead. */
+  watch?: { href: string; newTab: boolean }
+  calendar?: CalendarEvent
+}
+
+function mediaOf(event: ComfyEvent, locale: Locale): DirectoryRow['media'] {
+  // Events that became past before dedicated card art existed fall back to
+  // their carousel art, the same way the past gallery does.
+  const media = event.media ?? event.featured?.media
+  if (!media) return undefined
+  const isVideo = media.type === 'video'
+  return {
+    src: media.src,
+    alt: media.alt[locale],
+    poster: isVideo ? media.poster : undefined,
+    isVideo
+  }
+}
+
+/** Mirrors the past-gallery cards: a recording opens its own /events/[slug]
+ * page, anything else links out to the event's own page. An event with
+ * neither gets no CTA rather than a link to a page that does not exist. */
+function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {
+  if (eventVideoId(event)) {
+    return { href: localizeHref(eventPath(event), locale), newTab: false }
+  }
+  if (!event.link) return undefined
+  return { href: event.link.href[locale], newTab: event.link.newTab ?? false }
+}
+
+export function directoryRows(
+  events: readonly ComfyEvent[],
+  locale: Locale,
+  now: Date
+): DirectoryRow[] {
+  return events.map((event) => {
+    const upcoming = eventStatus(event, now) === 'upcoming'
+    return {
+      event,
+      upcoming,
+      category: t(`events.category.${event.category}`, locale),
+      date: eventDateLabel(event, locale),
+      location:
+        event.location?.[locale] ?? t('events.directory.virtual', locale),
+      media: mediaOf(event, locale),
+      watch: upcoming ? undefined : watchOf(event, locale),
+      calendar: upcoming ? toCalendarEvent(event, locale) : undefined
+    }
+  })
+}
+
+export type DirectoryMonth = {
+  /** `YYYY-MM` in the event's own offset — stable across locales. Pass it to
+   * `monthLabel` for the heading. */
+  key: string
+  upcoming: boolean
+  rows: DirectoryRow[]
+}
+
+function monthKey(startDateTime: string): string {
+  return inEventOffset(startDateTime).toISOString().slice(0, 7)
+}
+
+/** Group the agenda by calendar month: upcoming months ascending, then past
+ * months descending, mirroring the list's upcoming-first rule. A month counts
+ * as upcoming when any event in it still lies ahead, so the current month sits
+ * with the upcoming ones even once some of its events have passed.
+ *
+ * Takes rows rather than events and a clock: `DirectoryRow.upcoming` already
+ * carries the one classification, so the agenda cannot disagree with the list
+ * about where the boundary falls. */
+export function groupRowsByMonth(
+  rows: readonly DirectoryRow[]
+): DirectoryMonth[] {
+  const months = new Map<string, DirectoryMonth>()
+  for (const row of rows) {
+    const key = monthKey(row.event.startDateTime)
+    const month = months.get(key)
+    if (month) {
+      month.rows.push(row)
+      month.upcoming ||= row.upcoming
+    } else {
+      months.set(key, { key, upcoming: row.upcoming, rows: [row] })
+    }
+  }
+
+  const byStart = (a: DirectoryRow, b: DirectoryRow) =>
+    Date.parse(a.event.startDateTime) - Date.parse(b.event.startDateTime)
+
+  const ordered = [...months.values()]
+  for (const month of ordered) {
+    // An agenda counts forward through what is coming and backward through
+    // what already happened.
+    month.rows.sort(month.upcoming ? byStart : (a, b) => byStart(b, a))
+  }
+
+  const upcoming = ordered
+    .filter((month) => month.upcoming)
+    .sort((a, b) => a.key.localeCompare(b.key))
+  const past = ordered
+    .filter((month) => !month.upcoming)
+    .sort((a, b) => b.key.localeCompare(a.key))
+
+  return [...upcoming, ...past]
+}
+
+/** Month headings come from `Intl`, so no month names enter the i18n table. */
+export function monthLabel(key: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC'
+  }).format(new Date(`${key}-01T00:00:00Z`))
 }
