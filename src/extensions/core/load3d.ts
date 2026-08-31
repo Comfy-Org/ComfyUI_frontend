@@ -1,5 +1,4 @@
 import { nextTick } from 'vue'
-import { viewerDialogContentClass } from '@/components/ui/dialog/dialog.variants'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
@@ -277,7 +276,8 @@ useExtensionService().registerExtension({
           dialogComponentProps: {
             renderer: 'reka',
             size: 'full',
-            contentClass: viewerDialogContentClass,
+            contentClass:
+              'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
             maximizable: true,
             onClose: async () => {
               await useLoad3dService().handleViewerClose(props.node)

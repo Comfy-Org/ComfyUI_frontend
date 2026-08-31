@@ -121,8 +121,7 @@ test.describe('Workflow tabs', () => {
       if (graph && node) graph.add(node)
     })
 
-    // WorkflowTab renders the dirty-indicator dot when the workflow has
-    // unsaved changes
+    // WorkflowTab renders the dirty-state dot when the workflow has unsaved changes
     const activeTab = topbar.getActiveTab()
     await expect(
       activeTab.getByTestId('workflow-dirty-indicator')

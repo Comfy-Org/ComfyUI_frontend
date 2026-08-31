@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
-import { GRAPH_CANVAS_ANCHOR } from '@/constants/splitterConstants'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 const toastService = vi.hoisted(() => ({
   add: vi.fn(),
@@ -66,32 +66,81 @@ describe('GlobalToast', () => {
     expect(toastStore.removeAllRequested).toBe(false)
   })
 
-  it('anchors the main toast to the canvas panel with viewport fallbacks', () => {
+  it('holds messages raised during node selection mode until it exits', async () => {
     renderToast()
-    // Toast is stubbed, so the outlets carry no roles or text; the stub
-    // elements' attributes are the only assertion surface.
-    // eslint-disable-next-line testing-library/no-node-access -- the auto-stub renders no role or testid, so no Testing Library query can select it
-    const [main] = document.body.querySelectorAll('toast-stub')
-    const classes = main.getAttribute('class') ?? ''
+    const toastStore = useToastStore()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    const message = { severity: 'error' as const, summary: 'Failed' }
 
-    // Both sides build from GRAPH_CANVAS_ANCHOR; each anchor() carries a
-    // fallback so the toast still renders before the panel mounts.
-    expect(main.getAttribute('position')).toBe('bottom-right')
-    expect(classes).toContain(`anchor(${GRAPH_CANVAS_ANCHOR}_top,1rem)`)
-    expect(classes).toContain(
-      `anchor(${GRAPH_CANVAS_ANCHOR}_right,calc(100vw-var(--workspace-inset-right,0px)-0.75rem))`
-    )
+    nodeSelectionStore.isActive = true
+    await nextTick()
+
+    toastStore.messagesToAdd = [message]
+    await nextTick()
+
+    // Held back rather than added to a hidden layer, where a message carrying
+    // a `life` would expire unseen.
+    expect(toastService.add).not.toHaveBeenCalled()
+    expect(toastStore.messagesToAdd).toEqual([])
+
+    nodeSelectionStore.isActive = false
+    await nextTick()
+
+    expect(toastService.add).toHaveBeenCalledWith(message)
   })
 
-  it('keeps the billing-operation toast group on its own top-right outlet', () => {
+  it('replays held messages in the order they were raised', async () => {
     renderToast()
-    // eslint-disable-next-line testing-library/no-node-access -- the auto-stub renders no role or testid, so no Testing Library query can select it
-    const stubs = document.body.querySelectorAll('toast-stub')
+    const toastStore = useToastStore()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    const first = { severity: 'error' as const, summary: 'First' }
+    const second = { severity: 'error' as const, summary: 'Second' }
 
-    expect(stubs).toHaveLength(2)
-    expect(stubs[1].getAttribute('group')).toBe('billing-operation')
-    expect(stubs[1].getAttribute('position')).toBe('top-right')
-    // The main outlet stays ungrouped so it never swallows billing messages.
-    expect(stubs[0].getAttribute('group')).toBeNull()
+    nodeSelectionStore.isActive = true
+    await nextTick()
+
+    toastStore.messagesToAdd = [first]
+    await nextTick()
+    toastStore.messagesToAdd = [second]
+    await nextTick()
+
+    nodeSelectionStore.isActive = false
+    await nextTick()
+
+    expect(toastService.add.mock.calls).toEqual([[first], [second]])
+  })
+
+  it('does not replay anything when nothing was raised during the mode', async () => {
+    renderToast()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+
+    nodeSelectionStore.isActive = true
+    await nextTick()
+    nodeSelectionStore.isActive = false
+    await nextTick()
+
+    expect(toastService.add).not.toHaveBeenCalled()
+  })
+
+  it('drops held messages when everything is dismissed mid-mode', async () => {
+    renderToast()
+    const toastStore = useToastStore()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+
+    nodeSelectionStore.isActive = true
+    await nextTick()
+
+    toastStore.messagesToAdd = [{ severity: 'error' as const, summary: 'Old' }]
+    await nextTick()
+
+    // A dismiss-everything clears the hidden queue too, or exiting would
+    // resurrect exactly what the caller just cleared.
+    toastStore.removeAllRequested = true
+    await nextTick()
+
+    nodeSelectionStore.isActive = false
+    await nextTick()
+
+    expect(toastService.add).not.toHaveBeenCalled()
   })
 })
