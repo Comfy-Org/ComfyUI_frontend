@@ -41,6 +41,17 @@ function envelope(tag: string, actor: string, version: number) {
   };
 }
 
+function winningPresence(): Op {
+  return {
+    op: "add_node",
+    ...envelope("winning-add", "agent:a", 9),
+    node_id: 10,
+    class_type: "LoadImage",
+    pos: [],
+    node: source,
+  };
+}
+
 function seededDoc(): Y.Doc {
   const doc = mint(workflow, catalog);
   const connect: Op = {
@@ -53,16 +64,8 @@ function seededDoc(): Y.Doc {
     to_slot: 0,
     link_type: "IMAGE",
   };
-  const winningPresence: Op = {
-    op: "add_node",
-    ...envelope("winning-add", "agent:a", 9),
-    node_id: 10,
-    class_type: "LoadImage",
-    pos: [],
-    node: source,
-  };
 
-  expect(applyOps(doc, [connect, winningPresence], catalog).outcomes.map(({ outcome }) => outcome)).toEqual([
+  expect(applyOps(doc, [connect, winningPresence()], catalog).outcomes.map(({ outcome }) => outcome)).toEqual([
     "applied",
     "applied",
   ]);
@@ -98,8 +101,19 @@ describe("delete_node LWW loser removed_links cleanup", () => {
   });
 
   it("returns lww-dropped when the losing delete names no installed link", () => {
-    const doc = seededDoc();
+    const base = mint(workflow, catalog);
+    const snapshot = Y.encodeStateAsUpdate(base);
+    const fork = () => {
+      const doc = new Y.Doc();
+      Y.applyUpdate(doc, snapshot);
+      return doc;
+    };
+
+    const doc = fork();
+    const reverse = fork();
+    const winner = winningPresence();
     const op = losingDelete([999]);
+    expect(applyOps(doc, [winner], catalog).outcomes.map(({ outcome }) => outcome)).toEqual(["applied"]);
     const stampBefore = stampsMap(doc).toJSON();
     const bytesBefore = Y.encodeStateAsUpdate(doc);
 
@@ -108,12 +122,27 @@ describe("delete_node LWW loser removed_links cleanup", () => {
     expect(result.outcomes[0]).toEqual({ op_id: op.op_id, outcome: "lww-dropped" });
     expect(project(doc, catalog).nodes.some(({ id }) => id === 10)).toBe(true);
     expect(stampsMap(doc).toJSON()).toEqual(stampBefore);
-    expect(project(doc, catalog).links).toEqual([[1, 10, 0, 20, 0, "IMAGE"]]);
+    expect(project(doc, catalog).links).toEqual([]);
     expect(appliedMap(doc).has(op.op_id)).toBe(true);
     const bytesAfter = Y.encodeStateAsUpdate(doc);
     expect(bytesAfter).not.toEqual(bytesBefore);
 
-    expect(applyOps(doc, [op], catalog).outcomes).toEqual([{ op_id: op.op_id, outcome: "no-op" }]);
+    expect(applyOps(doc, [winner, op], catalog).outcomes).toEqual([
+      { op_id: winner.op_id, outcome: "no-op" },
+      { op_id: op.op_id, outcome: "no-op" },
+    ]);
     expect(Y.encodeStateAsUpdate(doc)).toEqual(bytesAfter);
+
+    expect(applyOps(reverse, [op, winner], catalog).outcomes.map(({ outcome }) => outcome)).toEqual([
+      "applied",
+      "applied",
+    ]);
+    expect(project(reverse, catalog)).toEqual(project(doc, catalog));
+    const reverseBytes = Y.encodeStateAsUpdate(reverse);
+    expect(applyOps(reverse, [op, winner], catalog).outcomes.map(({ outcome }) => outcome)).toEqual([
+      "no-op",
+      "no-op",
+    ]);
+    expect(Y.encodeStateAsUpdate(reverse)).toEqual(reverseBytes);
   });
 });
