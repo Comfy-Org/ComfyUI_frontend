@@ -1188,7 +1188,11 @@ export class LGraphNode
       )
     }
 
-    this.onConfigure?.(extensionConfigureView(this, info))
+    try {
+      this.onConfigure?.(extensionConfigureView(this, info))
+    } finally {
+      useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
+    }
   }
 
   /**
@@ -3351,7 +3355,7 @@ export class LGraphNode
     const output = this.outputs[slot]
     if (!output) return false
 
-    if (this.graph) {
+    if (!target_node && this.graph) {
       for (const link of slotFloatingLinks(
         this.graph,
         'output',

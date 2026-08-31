@@ -558,13 +558,14 @@ describe('LLink ↔ linkStore integration', () => {
     expect(first.target_slot).toBe(0)
   })
 
-  it('applies split endpoint writes atomically once they form a valid target', () => {
+  it('does not replay a rejected endpoint write', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     const firstTarget = new LGraphNode('First target')
     const secondTarget = new LGraphNode('Second target')
     source.addOutput('out', 'INT')
-    firstTarget.addInput('in', 'INT')
+    firstTarget.addInput('first', 'INT')
+    firstTarget.addInput('second', 'INT')
     secondTarget.addInput('occupied', 'INT')
     secondTarget.addInput('destination', 'INT')
     graph.add(source)
@@ -581,10 +582,11 @@ describe('LLink ↔ linkStore integration', () => {
     expect(moving.target_id).toBe(firstTarget.id)
     moving.target_slot = 1
 
-    expect(moving.target_id).toBe(secondTarget.id)
+    expect(moving.target_id).toBe(firstTarget.id)
     expect(moving.target_slot).toBe(1)
     expect(firstTarget.inputs[0].link).toBeNull()
-    expect(secondTarget.inputs[1].link).toBe(moving.id)
+    expect(firstTarget.inputs[1].link).toBe(moving.id)
+    expect(secondTarget.inputs[1].link).toBeNull()
   })
 
   it('updates regular and floating views after endpoint changes', () => {
