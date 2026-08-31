@@ -116,8 +116,13 @@ describe('BaseWidget store integration', () => {
     })
 
     it('writes to store when registered', () => {
-      const widget = createTestWidget(node, { name: 'writeWidget' })
-      widget.setNodeId(toNodeId(1))
+      const widget = node.addWidget(
+        'number',
+        'writeWidget',
+        42,
+        () => undefined,
+        {}
+      )
 
       widget.label = 'Updated Label'
       widget.hidden = true
@@ -128,9 +133,13 @@ describe('BaseWidget store integration', () => {
         widgetId(graph.id, toNodeId(1), 'writeWidget')
       )
       expect(state?.label).toBe('Updated Label')
+      expect(state?.options.hidden).toBe(true)
       expect(state?.disabled).toBe(true)
 
-      expect(widget.hidden).toBe(true)
+      widget.hidden = false
+
+      expect(state?.options.hidden).toBe(false)
+      expect(widget.hidden).toBe(false)
       expect(widget.advanced).toBe(true)
     })
 
@@ -173,7 +182,7 @@ describe('BaseWidget store integration', () => {
       expect(state?.value).toBe(100)
       expect(state?.label).toBe('Auto Label')
       expect(state?.disabled).toBe(true)
-      expect(state?.options).toEqual({ min: 0, max: 100 })
+      expect(state?.options).toEqual({ min: 0, max: 100, hidden: true })
 
       expect(widget.hidden).toBe(true)
       expect(widget.advanced).toBe(true)

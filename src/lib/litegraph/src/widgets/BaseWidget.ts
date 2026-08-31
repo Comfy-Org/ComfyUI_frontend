@@ -124,7 +124,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.label = value
   }
 
-  hidden?: boolean
+  get hidden(): boolean | undefined {
+    return (this._state?.options ?? this.options).hidden
+  }
+  set hidden(value: boolean | undefined) {
+    const options = this._state?.options ?? this.options
+    options.hidden = value
+  }
+
   advanced?: boolean
 
   get disabled(): boolean | undefined {
