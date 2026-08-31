@@ -7313,15 +7313,25 @@ const translations = {
   'fdct.closing.title': {
     en: 'Build your custom workflows with Comfy experts.',
     'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'
+  },
+  'test.emptyValue': {
+    en: 'Fallback Text',
+    'zh-CN': ''
   }
-} as const satisfies Record<string, Record<Locale, string>>
+} as const satisfies Record<
+  string,
+  { en: string; 'zh-CN': string } & Partial<Record<Locale, string>>
+>
 
 type TranslationKey = keyof typeof translations
 
-type LocalizedText = Record<Locale, string>
+type LocalizedText = { en: string; 'zh-CN': string } & Partial<
+  Record<Locale, string>
+>
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
-  return translations[key][locale] ?? translations[key].en
+  const entry = translations[key] as LocalizedText
+  return entry[locale] ?? entry.en
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]

@@ -20,7 +20,9 @@ const hubspotContactFormIds: Record<Locale, string> = {
 }
 
 const hasEmbedLoadError = ref(false)
-const hubspotContactFormId = computed(() => hubspotContactFormIds[locale])
+const hubspotContactFormId = computed(
+  () => hubspotContactFormIds[locale] || hubspotContactFormIds.en
+)
 
 const hubspotFormStyles: Record<`--${string}`, string> = {
   '--hsf-global__font-family': "'PP Formula', sans-serif",
