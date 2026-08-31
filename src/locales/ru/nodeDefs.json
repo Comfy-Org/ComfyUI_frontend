@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Создавайте видео со звуком по текстовому запросу с помощью моделей Gemini Omni Flash от Google. При необходимости добавьте эталонные изображения и/или видео, чтобы направить генерацию или отредактировать результат. Укажите желаемую длительность (3–10 с) непосредственно в запросе.",
+    "display_name": "Google Gemini Omni (Видео)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Gemini для видео, используемая для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "Преобразует файл 3D-модели (GLB, GLTF, OBJ, STL) в редактируемый MESH для узлов обработки сеток (упрощение, ремешинг, UV-развёртка, запекание, ...). Все узлы/примитивы сцены объединяются в одну сетку с применёнными преобразованиями; текстуры и параметры материала берутся из первого материала. Аналог MeshToFile3D.",
+    "display_name": "Получить 3D-компоненты",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D-модели из Load 3D или другого 3D-узла. FBX/USDZ не поддерживаются — сначала преобразуйте в GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
