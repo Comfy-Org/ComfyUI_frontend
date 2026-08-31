@@ -41,7 +41,7 @@ const lazyPublishDialog = () =>
 
 /**
  * Shrink-wrap the Reka DialogContent around the content's intrinsic width,
- * like the auto-sized PrimeVue root it replaces.
+ * like the auto-sized legacy root it replaces.
  */
 const HUG_CONTENT_CLASS =
   'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
@@ -824,7 +824,7 @@ export const useDialogService = () => {
       props: {
         onClose: () => dialogStore.closeDialog({ key }),
         // Falls through to the BaseModalLayout root — keeps the e2e
-        // publish-dialog selector working without the PrimeVue pt hook.
+        // Keep the publish-dialog selector working for the dialog content.
         'data-testid': 'publish-dialog'
       },
       dialogComponentProps: {

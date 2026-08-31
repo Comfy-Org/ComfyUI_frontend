@@ -272,7 +272,7 @@ describe('FormSelectButton Core Component', () => {
     })
   })
 
-  describe('PrimeVue Compatibility', () => {
+  describe('object options', () => {
     it('uses custom optionLabel prop', () => {
       const options = [
         { title: 'First Item', value: 'first' },
