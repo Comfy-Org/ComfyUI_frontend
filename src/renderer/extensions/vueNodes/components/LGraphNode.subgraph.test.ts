@@ -99,10 +99,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     return render(LGraphNode, {
       props,
       global: {
-        plugins: [pinia, i18n],
-        mocks: {
-          $primevue: { config: {} }
-        }
+        plugins: [pinia, i18n]
       }
     })
   }

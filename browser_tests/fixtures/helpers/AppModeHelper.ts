@@ -40,7 +40,7 @@ export class AppModeHelper {
   public readonly validationWarning: Locator
   /** The action that opens graph mode errors from the validation warning. */
   public readonly viewErrorsInGraphButton: Locator
-  /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
+  /** The image picker popover (renders with role="dialog"). */
   public readonly imagePickerPopover: Locator
   /** The Run button in the app mode footer. */
   public readonly runButton: Locator

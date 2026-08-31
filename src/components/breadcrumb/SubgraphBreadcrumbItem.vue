@@ -11,11 +11,11 @@
       :data-testid="`subgraph-breadcrumb-item-${item.key}`"
       :data-active="isActive ? '' : undefined"
       draggable="false"
-      class="p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none"
+      class="breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none"
       :class="{
         'gap-1': isActive,
-        'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-        'p-breadcrumb-item-link-icon-visible': isActive,
+        'breadcrumb-item-link-menu-visible': menu?.overlayVisible,
+        'breadcrumb-item-link-icon-visible': isActive,
         'text-text-primary': isActive
       }"
       @click="handleClick"
@@ -25,7 +25,7 @@
         data-testid="subgraph-breadcrumb-missing-nodes-icon"
         class="icon-[lucide--triangle-alert] text-warning-background"
       />
-      <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
+      <span class="breadcrumb-item-label max-w-72 truncate px-2">
         {{ item.label }}
       </span>
       <Tag
