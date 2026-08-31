@@ -28,7 +28,7 @@ function outputPage(after: string | null): ListAssetsResponse {
     return {
       assets: [
         createOutputAsset(
-          '10000000-0000-4000-8000-000000000003',
+          TARGET_JOB_ID,
           TARGET_JOB_ID,
           'queue-focus-target.png'
         )
