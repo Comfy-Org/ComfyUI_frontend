@@ -7,7 +7,7 @@ const ADR_FILE_PATTERN =
   /^([A-Z][A-Z0-9]{1,11})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/
 const INDEX_ROW_PATTERN =
   /^\| \[([A-Z][A-Z0-9]{1,11})\]\(([^)]+\.md)\)\s*\| ([^|]+?)\s*\| (Proposed|Accepted|Rejected|Deprecated|Superseded)\s*\| (\d{4}-\d{2}-\d{2}) \|$/
-const INDEX_ROW_CANDIDATE_PATTERN = /^\|\s*\[[^\]]+\]\([^)]+\.md\)\s*\|/
+const INDEX_ROW_CANDIDATE_PATTERN = /^\|\s*\[[^\]]+\]\([^)]+\)\s*\|/
 const LEGACY_REFERENCE_PATTERN =
   /ADR(?:[- ]?\d{4}(?!-\d{2})|(?:-[A-Z][A-Z0-9]*)?\s*(?:\/\s*|\(\s*)\d{4}(?!-\d{2}))|(?:docs\/)?adr\/\d{4}-/
 

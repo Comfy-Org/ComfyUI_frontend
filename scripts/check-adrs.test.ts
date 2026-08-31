@@ -66,7 +66,7 @@ describe('validateAdrDirectory', () => {
       join(directory, 'README.md'),
       [
         '| [ECS](ECS-entity-component-system.md) | Entity Component System | Proposed | 2026-03-23 |',
-        '| [0008](0008-entity.md) | Legacy duplicate | Proposed | 2026-03-23 |'
+        '| [0008](0008-entity) | Legacy duplicate | Proposed | 2026-03-23 |'
       ].join('\n')
     )
 
