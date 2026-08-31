@@ -252,7 +252,6 @@ describe('the agent panel flag gate', () => {
 describe('selection persistence across workflow loads', () => {
   beforeEach(async () => {
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     hookMocks.nodeSelectionStore.isLoadingWorkflow = false
     hookMocks.workflowStore.activeWorkflow = null
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
@@ -283,6 +282,9 @@ describe('selection persistence across workflow loads', () => {
     })
 
     expect(hookMocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, '12')
+    expect(hookMocks.nodeSelectionStore.nodeIds).toHaveBeenCalledWith(
+      'workflows/second.json'
+    )
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(hookMocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith([
       '12'
