@@ -41,9 +41,18 @@ test.describe('Enterprise pages @smoke', () => {
     await page.goto('/enterprise/managed-builds')
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      /One approved ComfyUI environment\.\s+Across your team and deployment targets\./
+      'MANAGED BUILDS'
     )
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
+    await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: /One approved ComfyUI environment, everywhere your team runs it\./
+      })
+    ).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'START BUILDING' })
+    ).toHaveAttribute('href', '/contact/')
     await expect(
       page.getByRole('link', { name: 'REQUEST DEMO' }).first()
     ).toHaveAttribute('href', '/contact/')
