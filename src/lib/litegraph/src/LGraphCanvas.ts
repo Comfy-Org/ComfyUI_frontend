@@ -57,7 +57,7 @@ import {
   getLinkBadgeFrameState,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
-import type { LinkBadgeFrameState, LinkBadgeTips } from './canvas/linkBadges'
+import type { LinkBadgeTips } from './canvas/linkBadges'
 import {
   hideLink,
   promptRenameLinkBadge,
@@ -735,14 +735,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   visible_area: Rectangle
   /** Contains all links and reroutes that were rendered.  Repopulated every render cycle. */
   renderedPaths: Set<LinkSegment> = new Set()
-  /**
-   * @internal Window-reachable read view of this canvas's badge frame state.
-   * Exists so E2E specs can aim pointer gestures at badge hit areas; assertions
-   * and first-party code must use {@link getLinkBadgeFrameState} directly.
-   */
-  get linkBadgeFrameState(): LinkBadgeFrameState {
-    return getLinkBadgeFrameState(this)
-  }
   /** @deprecated Replaced by {@link renderedPaths}, but length is set to 0 by some extensions. */
   visible_links: LLink[] = []
   /** @deprecated This array is populated and cleared to support legacy extensions. The contents are ignored by Litegraph. */

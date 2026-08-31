@@ -5,7 +5,7 @@ import { LGraphBadge } from '../LGraphBadge'
 import type { LinkId, LLink } from '../LLink'
 import { overlapBounding } from '../measure'
 
-const BADGE_GAP = 14
+export const BADGE_GAP = 14
 const BADGE_HEIGHT = 18
 const BADGE_FONT_SIZE = 11
 const CONNECTOR_WIDTH = 3

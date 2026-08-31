@@ -1,4 +1,5 @@
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { BADGE_GAP } from '@/lib/litegraph/src/canvas/linkBadges'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -40,12 +41,13 @@ async function firstLinkMidpoint(comfyPage: ComfyPage): Promise<Point> {
 }
 
 async function firstBadgeCenter(comfyPage: ComfyPage): Promise<Point> {
-  const handle = await comfyPage.page.waitForFunction(() => {
-    const badge = window.app!.canvas.linkBadgeFrameState.hitAreas[0]
-    return badge
-      ? { x: badge.x + badge.width / 2, y: badge.y + badge.height / 2 }
-      : null
-  })
+  const handle = await comfyPage.page.waitForFunction((gap) => {
+    const link = window.app!.graph!.links.values().next().value
+    if (!link?.hidden) return null
+    const origin = window.app!.graph!.getNodeById(link.origin_id)
+    const socket = origin?.getOutputPos(link.origin_slot)
+    return socket ? { x: socket[0] + gap + 4, y: socket[1] } : null
+  }, BADGE_GAP)
   const point = await handle.jsonValue()
   if (!point) throw new Error('Hidden link badge was not found')
   return point

@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import { getLinkBadgeFrameState } from '@/lib/litegraph/src/canvas/linkBadges'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -645,7 +646,7 @@ describe('drawConnections hidden links', () => {
     canvas.drawConnections(createMockCtx())
 
     expect(canvas.renderedPaths.has(link)).toBe(false)
-    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
+    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
   })
 
   it('keeps offscreen badge rows for stable stacking but skips their paint', () => {
@@ -658,8 +659,8 @@ describe('drawConnections hidden links', () => {
 
     canvas.drawConnections(createMockCtx())
 
-    expect(canvas.linkBadgeFrameState.hitAreas).toHaveLength(2)
-    expect(canvas.linkBadgeFrameState.pendingBadges).toHaveLength(0)
+    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
+    expect(getLinkBadgeFrameState(canvas).pendingBadges).toHaveLength(0)
   })
 
   it('skips node occlusion lookup in Vue mode when there are no badges', () => {
@@ -680,7 +681,7 @@ describe('drawConnections hidden links', () => {
   it('opens rename from a badge double-click', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = canvas.linkBadgeFrameState.hitAreas[0]
+    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
     const event = new PointerEvent('pointerdown', {
       button: 0,
       clientX: badge.x + badge.width / 2,
@@ -707,7 +708,7 @@ describe('drawConnections hidden links', () => {
   it('pans when dragging from a badge', () => {
     createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = canvas.linkBadgeFrameState.hitAreas[0]
+    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
     const event = new PointerEvent('pointerdown', {
       button: 0,
       clientX: badge.x + badge.width / 2,
@@ -781,8 +782,8 @@ describe('drawConnections hidden links', () => {
 
     const outputSocketX = sourceNode.getOutputPos(0)[0]
     const inputSocketX = firstImageTarget.getInputPos(0)[0]
-    const outputBadgeLinkIds = canvas.linkBadgeFrameState.hitAreas
-      .filter((area) => {
+    const outputBadgeLinkIds = getLinkBadgeFrameState(canvas)
+      .hitAreas.filter((area) => {
         const centerX = area.x + area.width / 2
         return (
           Math.abs(centerX - outputSocketX) < Math.abs(centerX - inputSocketX)

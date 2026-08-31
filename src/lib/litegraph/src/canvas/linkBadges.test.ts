@@ -6,6 +6,7 @@ import { toLinkId } from '@/types/linkId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
+  BADGE_GAP,
   clearLinkBadgeFrameState,
   createLinkBadgeFrameState,
   drawPendingLinkBadges,
@@ -87,6 +88,21 @@ describe('link badge frame layout', () => {
     expect(tips.outputTip[1]).toBe(100)
     expect(tips.inputTip[0]).toBeLessThan(400)
     expect(tips.inputTip[1]).toBe(200)
+  })
+
+  it('offsets an unstacked output badge from its socket by the badge gap', () => {
+    const state = createLinkBadgeFrameState()
+    enqueueBadgesInView(
+      state,
+      createContext(),
+      createLink(7),
+      [100, 100],
+      [400, 200]
+    )
+
+    expect(queryLinkBadgeAtPoint(state, 100 + BADGE_GAP + 4, 100)).toBe(
+      toLinkId(7)
+    )
   })
 
   it('clears hit areas and pending paint between frames', () => {
