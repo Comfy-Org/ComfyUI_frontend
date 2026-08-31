@@ -355,6 +355,7 @@ describe('AgentPanel', () => {
       global: {
         plugins: [i18n],
         stubs: {
+          ChatHistoryScreen: chatHistoryStub,
           Composer: eventComposerStub,
           EmptyState: true,
           PanelHeader: eventPanelHeaderStub,
@@ -363,7 +364,17 @@ describe('AgentPanel', () => {
       }
     })
 
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await nextTick()
+    expect(screen.getByTestId('chat-history')).toBeInTheDocument()
+
     await user.click(screen.getByRole('button', { name: 'Header new chat' }))
+    await nextTick()
+    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Header toggle size' }))
     await user.click(screen.getByRole('button', { name: 'Header close' }))
     await user.click(screen.getByRole('button', { name: 'Composer send' }))
