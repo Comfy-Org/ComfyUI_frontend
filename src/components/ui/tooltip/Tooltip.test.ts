@@ -36,6 +36,18 @@ describe('Tooltip', () => {
     expect(screen.getByRole('tooltip')).toHaveTextContent('Delayed text')
   })
 
+  it('opens from pointer entry without requiring pointer movement', async () => {
+    vi.useFakeTimers()
+    renderTooltip({ value: 'Delayed text', showDelay: 300 })
+
+    screen
+      .getByRole('button')
+      .dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }))
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Delayed text')
+  })
+
   it('opens on keyboard focus and describes its trigger', async () => {
     const user = userEvent.setup()
     renderTooltip()
