@@ -310,7 +310,7 @@ onMounted(() => {
 }
 
 .floating-sidebar .sidebar-item-group {
-  border-color: var(--p-panel-border-color);
+  border-color: var(--theme-content-border);
 }
 
 .connected-sidebar {

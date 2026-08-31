@@ -718,7 +718,7 @@ onBeforeUnmount(() => {
   height: 8px;
   background: #ff3b30;
   border-radius: 50%;
-  border: 1.5px solid var(--p-content-background);
+  border: 1.5px solid var(--theme-content-background);
   z-index: 1;
 }
 

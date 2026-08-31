@@ -138,11 +138,11 @@ const computedTooltip = computed(() => {
 
 .comfyui-body-left .side-bar-button.side-bar-button-selected,
 .comfyui-body-left .side-bar-button.side-bar-button-selected:hover {
-  border-left: 4px solid var(--p-button-text-primary-color);
+  border-left: 4px solid var(--theme-primary);
 }
 
 .comfyui-body-right .side-bar-button.side-bar-button-selected,
 .comfyui-body-right .side-bar-button.side-bar-button-selected:hover {
-  border-right: 4px solid var(--p-button-text-primary-color);
+  border-right: 4px solid var(--theme-primary);
 }
 </style>
