@@ -1241,9 +1241,9 @@ export class LGraphNode
     if (this.constructor === LGraphNode && state.lastSerialization) {
       // Only an expanded placeholder whose file recorded a size has a live
       // size worth keeping. Vue nodes mode drops the CSS width/height floors
-      // on collapse, so a collapsed node's size is a measurement of the
-      // collapsed card, and `flags` is replayed from the file — keeping both
-      // would pair `collapsed: false` with collapsed dimensions. With no
+      // on collapse, so a collapsed node's `size` measures the collapsed card
+      // rather than the expanded geometry a reload has to restore — which
+      // `collapse()` has already captured into `last_serialization`. With no
       // recorded size there is no definition to compute a real one from, so
       // keeping the live size would invent a dimension the file never had.
       const carriesLiveSize =

@@ -1,5 +1,4 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { omit, pickBy } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -8,9 +7,10 @@ import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
 } from '@/core/graph/nodeShell/nodeShellState'
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { Point, Size } from '@/lib/litegraph/src/interfaces'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   NodeSlotType,
   RenderShape
@@ -27,15 +27,6 @@ import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
-/** Mirrors `PLACEHOLDER_LIVE_DECORATIONS` in LGraphNode. */
-const PLACEHOLDER_LIVE_DECORATIONS = [
-  'title',
-  'color',
-  'bgcolor',
-  'boxcolor',
-  'shape'
-] as const
-
 vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
   return {
@@ -48,7 +39,8 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
   }
 })
 
-vi.mock('@/core/graph/nodeShell/nodeShellState', () => ({
+vi.mock('@/core/graph/nodeShell/nodeShellState', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   canTransferReplacementOwnership: vi.fn(() => true),
   transferReplacementOwnership: vi.fn(
     (node: LGraphNode, replacement: LGraphNode) => {
@@ -201,54 +193,28 @@ function createPlaceholderNode(
   outputs: { name: string; links: number[] | null }[] = [],
   graph?: LGraph
 ): LGraphNode {
-  const node = fromAny<LGraphNode, unknown>({
+  const lastSerialization = fromAny<ISerialisedNode, unknown>({
     id,
     type,
-    pos: [100, 200],
-    size: [200, 100],
+    pos: [100, 200] satisfies Point,
+    size: [200, 100] satisfies Size,
+    flags: {},
     order: 0,
     mode: 0,
-    flags: {},
-    has_errors: true,
-    last_serialization: {
-      id,
-      type,
-      pos: [100, 200],
-      size: [200, 100],
-      flags: {},
-      order: 0,
-      mode: 0,
-      inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
-      outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
-      widgets_values: []
-    },
     inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
     outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
-    graph: graph ?? null
+    widgets_values: []
   })
 
-  // Mirrors the placeholder branch of LGraphNode.serialize(): the loaded file's
-  // structural fields replayed verbatim, with the recorded decorations dropped
-  // before the live ones are re-applied, so a cleared decoration cannot
-  // resurrect the recorded one.
-  node.serialize = vi.fn(() => ({
-    ...omit(node.last_serialization!, PLACEHOLDER_LIVE_DECORATIONS),
-    mode: node.mode,
-    pos: [node.pos[0], node.pos[1]] satisfies Point,
-    ...pickBy(
-      {
-        title:
-          node.title === (node.constructor as { title?: string }).title
-            ? undefined
-            : node.title,
-        color: node.color,
-        bgcolor: node.bgcolor,
-        boxcolor: node.boxcolor,
-        shape: node.shape
-      },
-      Boolean
-    )
-  }))
+  // A real node, recorded and configured from one object the way
+  // `LGraph.configure` builds a placeholder for an unregistered type, so these
+  // tests exercise the production `serialize()` placeholder branch rather than
+  // a copy of it.
+  const node = new LGraphNode('', type)
+  node.last_serialization = lastSerialization
+  node.has_errors = true
+  node.configure(lastSerialization)
+  node.graph = graph ?? null
 
   return node
 }
@@ -334,7 +300,7 @@ describe('useNodeReplacement', () => {
 
       expect(result).toEqual(['Load3DAnimation'])
       expect(newNode.configure).not.toHaveBeenCalled()
-      expect(newNode.id).toBe(1)
+      expect(newNode.id).toBe(toNodeId(1))
       expect(newNode.has_errors).toBe(false)
     })
 
@@ -798,7 +764,7 @@ describe('useNodeReplacement', () => {
       ])
 
       expect(newNode.widgets![0].value).toBe(512)
-      expect(setNodeId).toHaveBeenCalledWith(1)
+      expect(setNodeId).toHaveBeenCalledWith(toNodeId(1))
     })
 
     it('should skip replacement when new node type is not registered', () => {
@@ -958,14 +924,16 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(newNode.id).toBe(42)
+      expect(newNode.id).toBe(toNodeId(42))
       expect(replacementGeometryBeforeTransfer).toEqual([
         { pos: [0, 0], size: [100, 50] }
       ])
       expect(newNode.pos).toEqual([300, 400])
       expect(newNode.size).toEqual([250, 150])
       expect(newNode.order).toBe(6)
-      expect(placeholder.order).toBe(6)
+      // Order is graph-scoped, and replacement detaches the placeholder, so
+      // the handover is complete rather than shared.
+      expect(placeholder.graph).toBeNull()
       expect(graph._nodes[0]).toBe(newNode)
       expect(placeholder.onRemoved).toHaveBeenCalledOnce()
     })
@@ -1112,7 +1080,7 @@ describe('useNodeReplacement', () => {
       ])
 
       // Default mapping transfers connections and widget values by name
-      expect(newNode.id).toBe(13)
+      expect(newNode.id).toBe(toNodeId(13))
       expect(link.target_id).toBe(toNodeId(13))
       expect(link.target_slot).toBe(0)
       expect(outLink.origin_id).toBe(toNodeId(13))
