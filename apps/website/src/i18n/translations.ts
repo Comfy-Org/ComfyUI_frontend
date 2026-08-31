@@ -5194,12 +5194,20 @@ const translations = {
       '从设计工作室到制作公司，我们正在构建一个平台，让您的团队按需获取强大的创作能力。让我们一起探索适合您需求的方案。'
   },
   'contact.form.supportLink': {
-    en: 'Looking for technical or product support?',
-    'zh-CN': '需要技术或产品支持？'
+    en: 'Looking for technical or product support? This form reaches our sales team — visit the',
+    'zh-CN': '需要技术或产品支持？此表单会发送给销售团队 — 请访问'
   },
   'contact.form.supportLinkCta': {
-    en: 'Find your answer here',
-    'zh-CN': '在这里找到答案'
+    en: 'Help Center',
+    'zh-CN': '帮助中心'
+  },
+  'contact.form.supportLinkMiddle': {
+    en: 'or email',
+    'zh-CN': '或发送邮件至'
+  },
+  'contact.form.supportLinkSuffix': {
+    en: 'for a faster answer.',
+    'zh-CN': '以更快获得答复。'
   },
   'contact.form.embedLoadErrorPrefix': {
     en: 'Unable to load the contact form. Email us at',

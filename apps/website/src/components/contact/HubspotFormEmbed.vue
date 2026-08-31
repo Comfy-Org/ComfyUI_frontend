@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import { defaultWindow, useEventListener } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
+import {
+  captureContactFormSubmitted,
+  captureContactFormViewed
+} from '../../scripts/posthog'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -77,7 +82,124 @@ const hubspotFormStyles: Record<`--${string}`, string> = {
   '--hsf-infoalert__font-family': "'PP Formula', sans-serif"
 }
 
+// HubSpot signals a successful submission differently per form version: v3
+// embeds postMessage from their iframe, v4 dispatches a window event. Line 20
+// pins this portal to the v4 loader, so v3 is only a hedge for a form that was
+// never migrated, and only for the iframed flavour of it — the origin check
+// below cannot accept a legacy form rendered inline, because a same-origin
+// message is indistinguishable from a forged one.
+const HUBSPOT_V4_SUBMISSION_EVENT = 'hs-form-event:on-submission:success'
+
+// The form guid is public (it ships in the markup below), so payload shape
+// alone does not establish that a message came from HubSpot. Without this an
+// embedding page could forge a submission, which would both count a phantom
+// conversion and consume the latch that the real submission needs.
+const HUBSPOT_ORIGIN_PATTERN = /^https:\/\/([\w-]+\.)?hsforms\.(com|net)$/
+
+function isHubspotSubmittedMessage(data: unknown): boolean {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'type' in data &&
+    data.type === 'hsFormCallback' &&
+    'eventName' in data &&
+    data.eventName === 'onFormSubmitted'
+  )
+}
+
+function readField(source: unknown, field: string): unknown {
+  if (typeof source !== 'object' || source === null || !(field in source)) {
+    return undefined
+  }
+  return (source as Record<string, unknown>)[field]
+}
+
+function readStringField(source: unknown, field: string): string | undefined {
+  return asNonEmptyString(readField(source, field))
+}
+
+interface HubspotFormInstance {
+  getFormId?: () => unknown
+  getConversionId?: () => unknown
+}
+
+interface HubspotFormsGlobal {
+  getFormFromEvent?: (event: Event) => HubspotFormInstance | undefined
+}
+
+function asNonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value !== '' ? value : undefined
+}
+
+// The conversion id is what lets a submission be matched to its HubSpot record
+// without sending any of the submitted field values, and the global form API is
+// the only place it is exposed. Form identity is read from the same lookup
+// because it is authoritative, with the event's own detail.formId as fallback.
+// HubSpot publishes the API under two spellings, and it is absent entirely when
+// the embed script never loaded.
+function readV4Submission(event: Event): {
+  formId: string | undefined
+  conversionId: string | undefined
+} {
+  const globals = window as unknown as Record<
+    string,
+    HubspotFormsGlobal | undefined
+  >
+  const hubspotForms = globals.HubSpotFormsV4 ?? globals.HubspotFormsV4
+
+  try {
+    const form = hubspotForms?.getFormFromEvent?.(event)
+    return {
+      formId: asNonEmptyString(form?.getFormId?.()),
+      conversionId: asNonEmptyString(form?.getConversionId?.())
+    }
+  } catch {
+    return { formId: undefined, conversionId: undefined }
+  }
+}
+
+let hasCapturedSubmission = false
+
+// Both listeners are bound to the window, so a submission has to prove it came
+// from this form before it is counted or allowed to consume the latch. An
+// unattributable submission is dropped rather than recorded: a conversion count
+// that reads zero is a visible failure, whereas one inflated by phantom
+// conversions is indistinguishable from a real one downstream.
+function captureSubmission(
+  submittedFormId: string | undefined,
+  conversionId?: string
+) {
+  if (submittedFormId === undefined) {
+    console.warn(
+      'Ignoring a contact form submission that named no form. A real HubSpot ' +
+        'submission always identifies its form, so this came from something else.'
+    )
+    return
+  }
+  if (submittedFormId !== hubspotContactFormId.value) return
+  if (hasCapturedSubmission) return
+  hasCapturedSubmission = true
+  captureContactFormSubmitted(locale, hubspotContactFormId.value, conversionId)
+}
+
+useEventListener('message', (event: MessageEvent) => {
+  if (!HUBSPOT_ORIGIN_PATTERN.test(event.origin)) return
+  if (!isHubspotSubmittedMessage(event.data)) return
+  captureSubmission(
+    readStringField(event.data, 'id'),
+    readStringField(readField(event.data, 'data'), 'conversionId')
+  )
+})
+
+useEventListener(defaultWindow, HUBSPOT_V4_SUBMISSION_EVENT, (event: Event) => {
+  const { formId, conversionId } = readV4Submission(event)
+  const detail = event instanceof CustomEvent ? event.detail : undefined
+  captureSubmission(formId ?? readStringField(detail, 'formId'), conversionId)
+})
+
 onMounted(() => {
+  captureContactFormViewed(locale)
+
   if (document.getElementById(HUBSPOT_CONTACT_SCRIPT_ID)) return
 
   const script = document.createElement('script')
@@ -101,7 +223,7 @@ onMounted(() => {
   <div class="min-h-[640px] w-full">
     <p
       v-if="hasEmbedLoadError"
-      class="text-primary-comfy-canvas text-sm/6"
+      class="text-sm/6 text-primary-comfy-canvas"
       role="status"
     >
       {{ t('contact.form.embedLoadErrorPrefix', locale) }}
