@@ -65,6 +65,8 @@ beforeEach(() => {
   LiteGraph.registerNodeType('dummy', DummyNode)
 })
 
+afterEach(() => LiteGraph.unregisterNodeType('dummy'))
+
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
   const lastNode = nodes[nodes.length - 1]
@@ -1568,6 +1570,8 @@ describe('persisted duplicate links', () => {
     LiteGraph.registerNodeType('test/DupTestNode', TestNode)
   })
 
+  afterEach(() => LiteGraph.unregisterNodeType('test/DupTestNode'))
+
   it('rejects persisted duplicate links via root graph configure()', () => {
     const graph = new LGraph()
     graph.configure(duplicateLinksRoot)
@@ -1638,6 +1642,8 @@ describe('Subgraph Unpacking', () => {
   beforeEach(() => {
     LiteGraph.registerNodeType('test/TestNode', TestNode)
   })
+
+  afterEach(() => LiteGraph.unregisterNodeType('test/TestNode'))
 
   function createSubgraphOnGraph(rootGraph: LGraph) {
     return rootGraph.createSubgraph(createTestSubgraphData())
