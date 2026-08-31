@@ -7,6 +7,32 @@ import { LegacyWidget } from './LegacyWidget'
 import { TextWidget } from './TextWidget'
 import { toConcreteWidget } from './widgetMap'
 
+class AccessorHeightWidget implements IBaseWidget {
+  [symbol: symbol]: boolean
+  #height = 24
+  name = 'custom'
+  type = 'legacy_test'
+  value = 0
+  options = {}
+  y = 0
+  heightWrites = 0
+
+  get height() {
+    return this.#height
+  }
+
+  set height(value: number) {
+    this.heightWrites++
+    this.#height = value
+  }
+}
+
+class SetterOnlyHeightWidget extends AccessorHeightWidget {
+  override set height(_value: number) {
+    this.heightWrites++
+  }
+}
+
 describe('toConcreteWidget', () => {
   it('preserves the identity of a plain native widget', () => {
     const node = new LGraphNode('test')
@@ -74,5 +100,28 @@ describe('toConcreteWidget', () => {
     expect(result).not.toBe(widget)
     expect(result).toBeInstanceOf(LegacyWidget)
     expect(result.name).toBe('custom')
+  })
+
+  it('preserves a foreign height accessor', () => {
+    const node = new LGraphNode('test')
+    const widget = new AccessorHeightWidget()
+
+    const result = toConcreteWidget(widget, node)
+    widget.height = 48
+
+    expect(result).toBe(widget)
+    expect(widget.heightWrites).toBe(1)
+    expect(widget.height).toBe(48)
+  })
+
+  it('combines a foreign height setter with the concrete getter', () => {
+    const node = new LGraphNode('test')
+    const widget = new SetterOnlyHeightWidget()
+
+    const result = toConcreteWidget(widget, node)
+    widget.height = 48
+
+    expect(widget.heightWrites).toBe(1)
+    expect(result.height).not.toBeUndefined()
   })
 })

@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
 import { readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
+import { markdownTwins } from './src/integrations/markdown-twins'
 import {
   clusterAlternates,
   mirroredRoutes,
@@ -85,7 +86,8 @@ export default defineConfig({
         }))
         return { ...item, links }
       }
-    })
+    }),
+    markdownTwins()
   ],
   vite: {
     plugins: [tailwindcss()],
