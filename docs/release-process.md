@@ -135,7 +135,7 @@ printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
   "$DATADOG_API_KEY" "$DATADOG_WRITE_APP_KEY" >"$WRITE_CONFIG"
 
 curl --fail-with-body -sS --config "$READ_CONFIG" \
-  "$BASE/$SCHEDULE_ID?include=layers,layers.members,layers.members.user" \
+  "$BASE/$SCHEDULE_ID?include=teams,layers,layers.members,layers.members.user" \
   --output "$WORK_DIR/schedule.response.original.json"
 
 jq '
@@ -180,7 +180,9 @@ The GET response is JSON:API: layers and members live in `included`. The `jq`
 step converts them to the PUT shape under `data.attributes.layers` and maps
 each member to `{ "user": { "id": "..." } }`. Edit only `tags` in
 `$WORK_DIR/schedule.put.edited.json`; the untouched response and transformed
-PUT body remain beside it until the shell exits.
+PUT body remain beside it until the shell exits. The conversion preserves the
+schedule's `name`, `time_zone`, `tags`, and team references; every layer's
+complete attributes and `id`; and member order.
 
 The trap worth stating plainly: **a `PUT` whose body omits `tags` wipes every
 tag**, returns 200, and warns about nothing. Any tags-unaware edit to the
