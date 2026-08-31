@@ -1,12 +1,10 @@
-@layer theme, base, primevue, components, utilities;
+@layer theme, base, components, utilities;
 
 @import './fonts.css';
 @import './_palette.css';
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
 @import 'tw-animate-css';
-
-@plugin 'tailwindcss-primeui';
 
 @plugin "./iconifyDynamicPlugin.ts";
 
@@ -1388,11 +1386,6 @@ audio.comfy-audio.empty-audio-widget {
   height: 100%;
 }
 
-/* Set auto complete panel's width as it is not accessible within vue-root */
-.p-autocomplete-overlay {
-  max-width: 25vw;
-}
-
 /* [Desktop] Electron window specific styles */
 .app-drag {
   app-region: drag;
@@ -1929,18 +1922,4 @@ audio.comfy-audio.empty-audio-widget {
     300% 14px,
     300% 14px;
   background-attachment: local, local, scroll, scroll;
-}
-
-/*
-  PrimeVue overlays teleport to body. When a Reka modal dialog is open it sets
-  body { pointer-events: none } via DismissableLayer, which propagates to the
-  body-portaled overlays and makes them unclickable. PrimeVue's own Dialog
-  sets pointer-events inline, but Select / ColorPicker / Popover / Autocomplete
-  overlays do not, so they need to opt in here.
-*/
-.p-select-overlay,
-.p-colorpicker-panel,
-.p-popover,
-.p-autocomplete-overlay {
-  pointer-events: auto;
 }

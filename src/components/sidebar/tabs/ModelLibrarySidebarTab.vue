@@ -54,7 +54,7 @@
     <template #body>
       <ElectronDownloadItems v-if="isDesktop" />
 
-      <Divider type="dashed" class="m-2" />
+      <div class="m-2 border-t border-dashed border-border-subtle" />
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
         class="model-lib-tree-explorer"
@@ -73,7 +73,6 @@
 <script setup lang="ts">
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 
-import { Divider } from 'primevue'
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
