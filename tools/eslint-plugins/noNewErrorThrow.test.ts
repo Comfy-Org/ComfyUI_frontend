@@ -11,7 +11,7 @@ const config = [
     },
     rules: { 'comfy/no-new-error-throw': 'error' }
   }
-]
+] satisfies Linter.Config[]
 
 describe('no-new-error-throw', () => {
   it('reports direct construction of the global Error', () => {
