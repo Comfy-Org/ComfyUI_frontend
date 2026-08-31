@@ -242,15 +242,17 @@ describe('AgentMessage thinking narration', () => {
 
 describe('AgentMessage fallback content', () => {
   it('groups adjacent workflow links and renders notice severities', () => {
-    const message = thinkingMessage()
-    message.streaming = false
-    message.thinking = false
-    message.parts = [
-      { type: 'tabLink', workflowId: 'workflow-1', name: 'First workflow' },
-      { type: 'tabLink', workflowId: 'workflow-2', name: 'Second workflow' },
-      { type: 'notice', level: 'info', text: 'Saved locally' },
-      { type: 'notice', level: 'error', text: 'Could not publish' }
-    ]
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        { type: 'tabLink', workflowId: 'workflow-1', name: 'First workflow' },
+        { type: 'tabLink', workflowId: 'workflow-2', name: 'Second workflow' },
+        { type: 'notice', level: 'info', text: 'Saved locally' },
+        { type: 'notice', level: 'error', text: 'Could not publish' }
+      ]
+    }
 
     render(AgentMessage, {
       props: { message },
@@ -274,10 +276,12 @@ describe('AgentMessage fallback content', () => {
   })
 
   it('forwards feedback from a completed text response', async () => {
-    const message = thinkingMessage()
-    message.streaming = false
-    message.thinking = false
-    message.parts = [{ type: 'text', text: 'Finished', state: 'done' }]
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [{ type: 'text', text: 'Finished', state: 'done' }]
+    }
 
     const { emitted } = render(AgentMessage, {
       props: { message },
