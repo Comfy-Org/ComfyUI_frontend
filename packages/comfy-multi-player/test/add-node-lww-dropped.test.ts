@@ -54,7 +54,7 @@ function addNode(tag: string, actor: string, version: number, node: WorkflowNode
 }
 
 describe("add_node presence LWW gate", () => {
-  it("drops a lower-or-equal re-add without mutating the existing node or stamp", () => {
+  it("drops a lower-clock or tied-clock/lower-op-id re-add without changing the winning node or stamp", () => {
     const snapshot = Y.encodeStateAsUpdate(mint(base(), catalog));
     const fork = () => {
       const forked = new Y.Doc();
@@ -100,25 +100,37 @@ describe("add_node presence LWW gate", () => {
     expect(project(doc, catalog).nodes).toEqual([projectedWinner]);
     expect(readStamps(doc)[nodeStampKey]).toEqual(winningStamp);
 
-    const equal = addNode("equal", "agent:a", 5, {
+    const tiedClockLowerOpId = addNode("tied-clock-lower-op-id", "agent:a", 5, {
       ...baseNode(),
-      title: "equal loser",
-      widgets_values: ["equal.png"],
+      title: "tied-clock loser",
+      widgets_values: ["tied-clock.png"],
       pos: [70, 80],
     });
-    const beforeEqual = Buffer.from(Y.encodeStateAsUpdate(doc));
-    expect(applyOps(doc, [equal], catalog).outcomes).toEqual([{ op_id: equal.op_id, outcome: "lww-dropped" }]);
-    expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(beforeEqual)).toBe(false);
+    const beforeTiedClock = Buffer.from(Y.encodeStateAsUpdate(doc));
+    expect(applyOps(doc, [tiedClockLowerOpId], catalog).outcomes).toEqual([
+      { op_id: tiedClockLowerOpId.op_id, outcome: "lww-dropped" },
+    ]);
+    expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(beforeTiedClock)).toBe(false);
     expect(project(doc, catalog).nodes).toEqual([projectedWinner]);
     expect(readStamps(doc)[nodeStampKey]).toEqual(winningStamp);
-    expect(appliedOpIds(doc)).toContain(equal.op_id);
+    expect(appliedOpIds(doc)).toContain(tiedClockLowerOpId.op_id);
 
-    const reverse = fork();
-    expect(applyOps(reverse, [equal, lower, winner], catalog).outcomes).toEqual([
-      { op_id: equal.op_id, outcome: "applied" },
-      { op_id: lower.op_id, outcome: "lww-dropped" },
-      { op_id: winner.op_id, outcome: "applied" },
-    ]);
-    expect(project(reverse, catalog)).toEqual(project(doc, catalog));
+    const orders = [
+      [winner, lower, tiedClockLowerOpId],
+      [winner, tiedClockLowerOpId, lower],
+      [lower, winner, tiedClockLowerOpId],
+      [lower, tiedClockLowerOpId, winner],
+      [tiedClockLowerOpId, winner, lower],
+      [tiedClockLowerOpId, lower, winner],
+    ];
+    expect(orders).toHaveLength(6);
+    const winningProjection = project(doc, catalog);
+    for (const order of orders) {
+      const candidate = fork();
+      const label = order.map(({ op_id }) => op_id).join(" -> ");
+      expect(applyOps(candidate, order, catalog).outcomes.some(({ outcome }) => outcome === "rejected"), label).toBe(false);
+      expect(project(candidate, catalog), label).toEqual(winningProjection);
+      expect(readStamps(candidate)[nodeStampKey], label).toEqual(winningStamp);
+    }
   });
 });
