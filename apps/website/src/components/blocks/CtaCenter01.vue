@@ -21,6 +21,7 @@ type TermsLink = {
 const {
   heading,
   subtitle,
+  subtitleClass,
   primaryCta,
   secondaryCta,
   termsLink,
@@ -28,6 +29,7 @@ const {
 } = defineProps<{
   heading: string
   subtitle?: string
+  subtitleClass?: string
   primaryCta: Cta
   secondaryCta?: Cta
   termsLink?: TermsLink
@@ -55,7 +57,12 @@ const {
 
     <p
       v-if="subtitle"
-      class="mt-4 max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas/80 lg:text-lg/relaxed"
+      :class="
+        cn(
+          'mt-4 max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas/80 lg:text-lg/relaxed',
+          subtitleClass
+        )
+      "
     >
       {{ subtitle }}
     </p>

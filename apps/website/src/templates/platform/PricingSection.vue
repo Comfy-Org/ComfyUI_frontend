@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Coins as CreditsIcon } from '@lucide/vue'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -102,7 +104,13 @@ const mobileStorageRows = storageRates.map((rate) => ({
             </div>
             <div class="text-right font-mono">
               <p class="text-sm text-primary-warm-white">{{ rate.price }}</p>
-              <p class="mt-0.5 text-xs text-primary-warm-gray">
+              <p
+                class="mt-0.5 flex items-center justify-end gap-1 text-xs text-primary-warm-gray"
+              >
+                <CreditsIcon
+                  class="text-primary-comfy-yellow size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
                 {{ rate.creditsLabel }}
               </p>
             </div>
@@ -139,7 +147,13 @@ const mobileStorageRows = storageRates.map((rate) => ({
             </div>
             <div class="shrink-0 text-right font-mono">
               <p class="text-sm text-primary-warm-white">{{ rate.price }}</p>
-              <p class="mt-0.5 text-xs text-primary-warm-gray">
+              <p
+                class="mt-0.5 flex items-center justify-end gap-1 text-xs text-primary-warm-gray"
+              >
+                <CreditsIcon
+                  class="text-primary-comfy-yellow size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
                 {{ rate.creditsLabel }}
               </p>
             </div>
@@ -159,50 +173,46 @@ const mobileStorageRows = storageRates.map((rate) => ({
           <div class="scrollbar-none overflow-x-auto">
             <table class="w-full min-w-130 text-left text-sm">
               <thead>
-                <tr class="uppercase">
-                  <th
-                    class="px-2 py-4 font-medium text-primary-warm-white"
-                    scope="col"
-                  >
+                <tr
+                  class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+                >
+                  <th class="px-2 py-4" scope="col">
                     {{ t('platform.pricing.gpuColumn', locale) }}
                   </th>
-                  <th
-                    class="p-4 font-medium text-primary-warm-white"
-                    scope="col"
-                  >
+                  <th class="p-4" scope="col">
                     {{ t('platform.pricing.vramColumn', locale) }}
                   </th>
-                  <th
-                    class="p-4 text-right font-medium text-primary-warm-white"
-                    scope="col"
-                  >
+                  <th class="p-4 text-right" scope="col">
                     {{ t('platform.pricing.priceColumn', locale) }}
                   </th>
-                  <th
-                    class="px-2 py-4 text-right font-medium text-primary-warm-white"
-                    scope="col"
-                  >
+                  <th class="px-2 py-4 text-right" scope="col">
                     {{ t('platform.pricing.creditsColumn', locale) }}
                   </th>
                 </tr>
               </thead>
-              <tbody class="text-xs">
+              <tbody>
                 <tr v-for="rate in gpuRates" :key="rate.gpu">
-                  <td class="px-2 py-3.5 text-primary-comfy-canvas">
+                  <td class="px-2 py-3.5 text-sm text-primary-warm-white">
                     {{ rate.gpu }}
                   </td>
-                  <td class="px-4 py-3.5 text-primary-comfy-canvas">
+                  <td class="px-4 py-3.5 text-xs text-primary-warm-gray">
                     {{ rate.vram }}
                   </td>
                   <td
-                    class="px-4 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                    class="px-4 py-3.5 text-right font-mono text-sm text-primary-warm-white"
                   >
                     {{ rate.price }}
                   </td>
                   <td
-                    class="px-2 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                    class="px-2 py-3.5 text-right font-mono text-xs text-primary-warm-gray"
                   >
-                    {{ rate.credits }}
+                    <span class="flex items-center justify-end gap-1">
+                      <CreditsIcon
+                        class="text-primary-comfy-yellow size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
+                      {{ rate.credits }}
+                    </span>
                   </td>
                 </tr>
               </tbody>
@@ -217,41 +227,51 @@ const mobileStorageRows = storageRates.map((rate) => ({
           <div class="scrollbar-none overflow-x-auto">
             <table class="w-full min-w-130 text-left text-sm">
               <thead>
-                <tr class="uppercase">
-                  <th
-                    class="px-2 py-4 font-medium text-primary-warm-white"
-                    scope="col"
-                  >
+                <tr
+                  class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+                >
+                  <th class="px-2 py-4" scope="col">
                     {{ t('platform.pricing.storageColumn', locale) }}
                   </th>
-                  <th
-                    class="p-4 text-right font-medium text-primary-warm-white"
-                    scope="col"
-                  >
+                  <th class="p-4 text-right" scope="col">
                     {{ t('platform.pricing.priceColumn', locale) }}
                   </th>
-                  <th
-                    class="px-2 py-4 text-right font-medium text-primary-warm-white"
-                    scope="col"
-                  >
+                  <th class="px-2 py-4 text-right" scope="col">
                     {{ t('platform.pricing.creditsColumn', locale) }}
                   </th>
                 </tr>
               </thead>
-              <tbody class="text-xs">
+              <tbody>
                 <tr v-for="rate in storageRates" :key="rate.key">
-                  <td class="max-w-56 px-2 py-3.5 text-primary-comfy-canvas">
-                    {{ t(`platform.pricing.storage.${rate.key}`, locale) }}
+                  <td class="max-w-56 px-2 py-3.5">
+                    <p class="text-sm text-primary-warm-white">
+                      {{
+                        rate.key === 'containerDisk'
+                          ? t('platform.pricing.storage.containerDisk', locale)
+                          : t('platform.pricing.storage.networkTitle', locale)
+                      }}
+                    </p>
+                    <p class="mt-0.5 text-xs text-primary-warm-gray">
+                      {{
+                        t(`platform.pricing.storage.sub.${rate.key}`, locale)
+                      }}
+                    </p>
                   </td>
                   <td
-                    class="px-4 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                    class="px-4 py-3.5 text-right font-mono text-sm text-primary-warm-white"
                   >
                     {{ rate.price }}
                   </td>
                   <td
-                    class="px-2 py-3.5 text-right font-mono text-primary-comfy-canvas"
+                    class="px-2 py-3.5 text-right font-mono text-xs text-primary-warm-gray"
                   >
-                    {{ rate.credits }}
+                    <span class="flex items-center justify-end gap-1">
+                      <CreditsIcon
+                        class="text-primary-comfy-yellow size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
+                      {{ rate.credits }}
+                    </span>
                   </td>
                 </tr>
               </tbody>

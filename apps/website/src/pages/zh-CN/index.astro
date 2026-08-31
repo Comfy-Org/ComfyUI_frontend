@@ -4,13 +4,13 @@ import ProductCardsSection from '../../components/home/ProductCardsSection.vue'
 import HeroGraphSection from '../../components/hero/HeroGraphSection.vue'
 import SocialProofBarSection from '../../components/common/SocialProofBarSection.vue'
 import MinimaxLicenseHeroSection from '../../components/common/MinimaxLicenseHeroSection.vue'
-import DeveloperPlatformBandSection from '../../components/common/DeveloperPlatformBandSection.vue'
 import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import ModelReleaseSection from '../../components/home/ModelReleaseSection.vue'
 import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
 import FeaturedWorkflowsSection from '../../components/home/FeaturedWorkflowsSection.vue'
 import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightSection.vue'
 import GetStartedSection from '../../components/home/GetStartedSection.vue'
+import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 import { t } from '../../i18n/translations'
 import {
   comfyUiApplicationNode,
@@ -36,7 +36,14 @@ const { siteUrl } = pageContext(
   <HeroGraphSection locale="zh-CN" client:load />
   <SocialProofBarSection />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
-  <DeveloperPlatformBandSection locale="zh-CN" />
+  <ClosingCtaSection
+    badge-only
+    locale="zh-CN"
+    primary-href="/zh-CN/platform"
+    visual="columns"
+    subtitle={t('platform.closing.homeSubtitle', 'zh-CN')}
+    client:visible
+  />
   <ModelReleaseSection locale="zh-CN" client:visible />
   <FeaturedWorkflowsSection locale="zh-CN" client:load />
   <ProductShowcaseSection locale="zh-CN" client:load />

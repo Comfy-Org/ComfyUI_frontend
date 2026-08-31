@@ -7426,9 +7426,9 @@ const translations = {
     'zh-CN': '几分钟内上线'
   },
   'platform.serverlessDeploy.subtitle': {
-    en: 'Easily package up your existing ComfyUI environment — or a single workflow — and deploy to Serverless API.',
+    en: 'Easily package your existing ComfyUI environment or a single workflow, then deploy it to Serverless API.',
     'zh-CN':
-      '轻松打包你现有的 ComfyUI 环境——或单个工作流——并部署到 Serverless API。'
+      '轻松打包现有的 ComfyUI 环境或单个工作流，然后部署到 Serverless API。'
   },
   'platform.serverlessDeploy.tabInstall': {
     en: 'Start with installation',
@@ -7443,9 +7443,9 @@ const translations = {
     'zh-CN': '为规模而生'
   },
   'platform.serverlessScale.subtitle': {
-    en: 'Deploy on the Developer Platform across thousands of GPUs — autoscaling, logs, and performance controls built in.',
+    en: 'Deploy on the Developer Platform across thousands of GPUs. Autoscaling, logs, and performance controls are built in.',
     'zh-CN':
-      '在开发者平台上跨数千块 GPU 部署——自动扩缩、日志和性能控制开箱即用。'
+      '在开发者平台上跨数千块 GPU 部署。自动扩缩、日志和性能控制均已内置。'
   },
   'platform.serverlessScale.1.title': {
     en: 'Autoscaling',
@@ -7477,9 +7477,9 @@ const translations = {
     'zh-CN': 'Serverless API'
   },
   'platform.products.serverless.description': {
-    en: "Scale from 0 to millions of generations on Comfy's serverless engine. No GPUs to configure, no cold starts — only pay for what you use.",
+    en: "Scale from 0 to millions of generations on Comfy's serverless engine. No GPUs to configure or cold starts. You only pay for what you use.",
     'zh-CN':
-      '在 Comfy 无服务器引擎上从 0 扩展到数百万次生成。无需配置 GPU，没有冷启动——只为实际用量付费。'
+      '在 Comfy 无服务器引擎上从 0 扩展到数百万次生成。无需配置 GPU，也没有冷启动。你只需为实际用量付费。'
   },
   'platform.serverlessVisual.ariaLabel': {
     en: 'Animated diagram showing serverless activity moving through RTX 6000 PRO, H100, and B200 GPU workers.',
@@ -7700,18 +7700,6 @@ const translations = {
     en: 'Storage',
     'zh-CN': '存储'
   },
-  'platform.pricing.storage.standardUnder1tb': {
-    en: 'Network storage — standard, under 1 TB',
-    'zh-CN': '网络存储——标准，1 TB 以下'
-  },
-  'platform.pricing.storage.standardOver1tb': {
-    en: 'Network storage — standard, 1 TB and above',
-    'zh-CN': '网络存储——标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.highPerformance': {
-    en: 'Network storage — high performance',
-    'zh-CN': '网络存储——高性能'
-  },
   'platform.pricing.storage.containerDisk': {
     en: 'Container disk',
     'zh-CN': '容器磁盘'
@@ -7737,9 +7725,9 @@ const translations = {
     'zh-CN': '每个工作节点的本地文件系统'
   },
   'platform.pricing.storageNote': {
-    en: "Models live on network storage — persistent and shared across a deployment's workers. Container disk is each worker's own local filesystem, billed separately.",
+    en: "Models live on network storage. It is persistent and shared across a deployment's workers. Container disk is each worker's own local filesystem, billed separately.",
     'zh-CN':
-      '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
+      '模型存放在网络存储上，并持久化共享至部署的所有工作节点。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
   },
   'platform.pricing.billedPerSecond': {
     en: 'Billed by the GPU second',
@@ -8065,6 +8053,11 @@ const translations = {
   'platform.closing.headingLead': {
     en: 'Maximize scale and control on',
     'zh-CN': '将规模与控制力最大化'
+  },
+  'platform.closing.homeSubtitle': {
+    en: 'Deploy and scale your ComfyUI workflows with Serverless API, Models API, and Builder. All through a single API key.',
+    'zh-CN':
+      '使用 Serverless API、Models API 和 Builder 部署并扩展你的 ComfyUI 工作流。只需一个 API 密钥。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
