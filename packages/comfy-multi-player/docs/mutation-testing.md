@@ -25,6 +25,16 @@ The unpinned rows show what the pins are for. Unpinned and idle the number happe
 
 `stryker.config.mjs` pins `timeoutMS`, `timeoutFactor`, `concurrency` and `coverageAnalysis` for exactly this reason. **Do not unpin them.** A score produced with different values is not comparable to any score recorded here.
 
+`dryRunTimeoutMinutes` is pinned separately from the mutation score knobs. It
+only bounds Stryker's initial unmutated Vitest pass; it does not decide whether
+any mutant is `Killed`, `Survived` or `Timeout`. The scheduled workflow reached
+Stryker's default 5 minute initial dry-run ceiling on 2026-08-31 before it could
+write `reports/mutation/mutation.json`, so the report checker and artifact
+upload failed only as downstream symptoms. Raising this dry-run cap keeps the
+nightly from failing before the measured mutation phase while preserving the
+per-mutant `timeoutMS`, `timeoutFactor`, `concurrency` and `coverageAnalysis`
+pins that make scores comparable.
+
 Incremental mode reuses results only when Stryker proves that the mutant and its
 covering tests are unchanged. CI restores `reports/stryker-incremental.json` from
 a cache keyed by the operating system, `package-lock.json`, and

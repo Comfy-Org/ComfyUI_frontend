@@ -44,6 +44,11 @@ export default {
   incremental: true,
   incrementalFile: "reports/stryker-incremental.json",
   coverageAnalysis: "all",
+  // Separate from per-mutant timeout scoring. The scheduled workflow has grown
+  // past Stryker's default 5 minute initial dry-run ceiling, so pin this cap
+  // high enough for the unmutated test corpus to finish without changing how
+  // individual mutants are judged.
+  dryRunTimeoutMinutes: 20,
   // Per-mutant budget = netTime * timeoutFactor + timeoutMS. Generous on
   // purpose: only a genuinely non-terminating mutant should ever time out.
   timeoutMS: 60000,
