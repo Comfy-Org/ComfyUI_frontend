@@ -17,6 +17,7 @@ import {
   frontendResolverMap,
   frontendSupplierMap,
   offerUnplacedLink,
+  projectedPromptInputOmissions,
   provideGraphLoadingState,
   reapplyPackTypeColors
 } from './defsRegistry'
@@ -1144,6 +1145,124 @@ describe('onSerialize', () => {
     expect(serialized.type).not.toBe('SomethingElse')
     expect(serialized.widgets_values).not.toEqual(['hijacked'])
     expect(serialized.mine).toBe('ok')
+  })
+})
+
+describe('onPromptSerialize', () => {
+  let graph: LGraph
+  let comfy: Comfy
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    graph = new LGraph()
+    comfy = createComfyApi(() => graph)
+  })
+
+  function install(
+    type: string,
+    project: (node: NodeHandle) => { omitInputs: readonly string[] }
+  ) {
+    const registry = createDefRegistry()
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend(type, (builder) => builder.onPromptSerialize(project))
+    const Generated = nodeClass(type)
+    registry.applyTo(Generated, {
+      name: type,
+      output: ['STRING'],
+      output_name: ['text'],
+      input: {
+        required: { use_input_text: ['BOOLEAN', {}] },
+        optional: { text: ['STRING', { forceInput: true }] }
+      }
+    })
+    return Generated
+  }
+
+  it('projects current state without changing the saved link', async () => {
+    const Generated = install('PromptProjectionNode', (node) => ({
+      omitInputs:
+        node.widgets.get('use_input_text')?.getValue() === true ? [] : ['text']
+    }))
+    const source = new LGraphNode('Source')
+    source.comfyClass = 'Source'
+    source.addOutput('text', 'STRING')
+    graph.add(source)
+
+    const target = new Generated()
+    target.addInput('text', 'STRING')
+    target.addWidget('toggle', 'use_input_text', false, () => undefined, {})
+    graph.add(target)
+    source.connect(0, target, 0)
+
+    expect(
+      await projectedPromptInputOmissions(
+        'PromptProjectionNode',
+        String(target.id)
+      )
+    ).toEqual(['text'])
+    const before = graph.serialize()
+    const savedTarget = before.nodes.find(
+      (node) => String(node.id) === String(target.id)
+    )
+    expect(savedTarget?.inputs?.[0].link).not.toBeNull()
+
+    const toggle = target.widgets?.find(
+      (widget) => widget.name === 'use_input_text'
+    )
+    expect(toggle).toBeDefined()
+    toggle!.value = true
+    expect(
+      await projectedPromptInputOmissions(
+        'PromptProjectionNode',
+        String(target.id)
+      )
+    ).toEqual([])
+    expect(
+      graph
+        .serialize()
+        .nodes.find((node) => String(node.id) === String(target.id))
+        ?.inputs?.[0].link
+    ).toBe(savedTarget?.inputs?.[0].link)
+  })
+
+  it('composes omissions by union', async () => {
+    const type = 'ComposedPromptProjectionNode'
+    const registry = createDefRegistry()
+    const api = registry.forMajor((id) => comfy.graph.node(id)!)
+    api.extend(type, (builder) =>
+      builder.onPromptSerialize(() => ({ omitInputs: ['text'] }))
+    )
+    api.extend(type, (builder) =>
+      builder.onPromptSerialize(() => ({ omitInputs: ['use_input_text'] }))
+    )
+    registry.applyTo(nodeClass(type), {
+      name: type,
+      input: {
+        required: { use_input_text: ['BOOLEAN', {}] },
+        optional: { text: ['STRING', {}] }
+      }
+    })
+
+    expect(await projectedPromptInputOmissions(type, '7')).toEqual([
+      'text',
+      'use_input_text'
+    ])
+  })
+
+  it('fails closed on undeclared, duplicate, or broader results', async () => {
+    const cases = [
+      { omitInputs: ['other'] },
+      { omitInputs: ['text', 'text'] },
+      { omitInputs: [], replaceInputs: { text: 'no' } }
+    ]
+    for (const [index, result] of cases.entries()) {
+      const type = `InvalidPromptProjectionNode${index}`
+      install(type, () => result as { omitInputs: readonly string[] })
+      await expect(projectedPromptInputOmissions(type, '9')).rejects.toThrow(
+        /onPromptSerialize/
+      )
+    }
   })
 })
 
