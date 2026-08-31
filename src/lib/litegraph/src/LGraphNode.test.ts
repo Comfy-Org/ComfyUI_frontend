@@ -9,10 +9,10 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
+  LGraphCanvas,
   LGraphNode,
   LiteGraph,
   LGraph,
@@ -22,7 +22,10 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  createMockLGraphNodeWithArrayBoundingRect
+} from '@/utils/__tests__/litegraphTestUtils'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
@@ -402,11 +405,19 @@ describe('LGraphNode', () => {
         -1
       )
       graph.addFloatingLink(floating)
-      sourceNode.setDirtyCanvas = vi.fn()
+      const canvasElement = document.createElement('canvas')
+      canvasElement.getContext = vi
+        .fn()
+        .mockReturnValue(createMockCanvasRenderingContext2D())
+      const canvas = new LGraphCanvas(canvasElement, graph, {
+        skip_render: true,
+        skip_events: true
+      })
+      canvas.dirty_bgcanvas = false
 
       expect(sourceNode.disconnectOutput(0)).toBe(true)
       expect(graph.floatingLinks.has(floating.id)).toBe(false)
-      expect(sourceNode.setDirtyCanvas).toHaveBeenCalledWith(false, true)
+      expect(canvas.dirty_bgcanvas).toBe(true)
     })
   })
 

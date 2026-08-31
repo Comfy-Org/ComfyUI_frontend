@@ -231,6 +231,22 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets![0].value).toBe(0)
     })
 
+    it('clears restoration when widget assignment throws', () => {
+      const widget = node.addWidget('number', 'seed', 0, null, {})
+      Object.defineProperty(widget, 'value', {
+        configurable: true,
+        set() {
+          throw new Error('restore failed')
+        }
+      })
+
+      expect(() => node.configure(mockNode([12345]))).toThrow('restore failed')
+      node.widgets = []
+      node.addWidget('number', 'seed', 0, null, {})
+
+      expect(node.widgets[0].value).toBe(0)
+    })
+
     it('should support restoration even when order has changed', () => {
       node.addWidget('number', 'steps', 20, null, {})
       node.addWidget('number', 'seed', 5, null, {})
