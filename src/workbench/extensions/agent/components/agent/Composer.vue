@@ -18,7 +18,6 @@ import {
   getAssetUrlFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -62,8 +61,6 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
   'agentAssetDragActive',
   ref(false)
 )
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
-
 const duplicateIdClass =
   'shrink-0 rounded-[26px] bg-charcoal-400 px-1 py-0.5 font-mono text-xs/4 font-medium text-smoke-800'
 
@@ -317,11 +314,6 @@ function onPrimaryAction(): void {
   else composer.submit()
 }
 
-function onSelectNodes(): void {
-  agentNodeSelectionStore.enter()
-  emit('selectNodes')
-}
-
 const textareaRef = useTemplateRef<InstanceType<typeof Textarea>>('textareaRef')
 
 function insert(text: string): void {
@@ -500,7 +492,7 @@ defineExpose({
           <button
             type="button"
             class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1"
-            @click="onSelectNodes"
+            @click="emit('selectNodes')"
           >
             <span
               class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
@@ -531,7 +523,7 @@ defineExpose({
             >
               <DropdownMenuItem
                 class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
-                @select="onSelectNodes"
+                @select="emit('selectNodes')"
               >
                 <span
                   class="icon-[lucide--mouse-pointer-click] size-4 shrink-0"
