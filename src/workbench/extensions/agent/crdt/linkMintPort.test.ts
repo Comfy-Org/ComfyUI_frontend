@@ -138,15 +138,17 @@ describe('attachLinkMintPort', () => {
     expect(port.severances.take('1')).toEqual([])
   })
 
-  it('surfaces an unconsumed local disconnect as divergence after the sweep', async () => {
+  it('mints a standalone disconnect for a local link deletion', async () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
     await afterSweep()
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    expect(consoleError.mock.calls[0][1]).toBe(41)
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
+    expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })
 
@@ -158,6 +160,9 @@ describe('attachLinkMintPort', () => {
     port.severances.take('1')
     await afterSweep()
 
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
     expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })

@@ -2,10 +2,9 @@
  * The blessed connect port: litegraph's registerLinkTopology bridge calls
  * linkStore synchronously for EVERY link change, so nothing escapes this seam.
  * Register/replace mint a CONCRETE connect (a replace displaces the incumbent
- * register by LWW - no severance). Deletes cannot mint (no disconnect op in
- * the frozen vocabulary): they feed the severance log for delete_node, and an
- * unconsumed local severance surfaces as observable divergence after a double
- * microtask (strictly after the layout store's single-microtask delivery).
+ * register by LWW - no severance). Deletes mint a standalone disconnect and
+ * also feed the severance log so delete_node can carry removed_links when the
+ * link deletion was part of node removal.
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
@@ -74,6 +73,7 @@ export interface LinkMintPort {
 
 interface SeveranceEntry {
   linkId: WireNodeId
+  topology: LinkTopologyView
   /** The gate was open at severance: unconsumed means a real divergence. */
   mintable: boolean
 }
@@ -139,7 +139,6 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
             if (!entry.mintable || consumedLinkIds.has(key)) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
-            surfaceUnrepresentable('link disconnect', entry.linkId)
           }
         }
         severancesByNode.clear()
@@ -158,10 +157,21 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
     const entry: SeveranceEntry = {
       linkId: topology.id,
+      topology,
       mintable: gateOpen() && isRootScope(scope)
     }
     capture(topology.originNodeId, entry)
     capture(topology.targetNodeId, entry)
+    if (entry.mintable) {
+      deps.enqueue([
+        {
+          op: 'disconnect',
+          link_id: topology.id,
+          to_node: topology.targetNodeId,
+          to_slot: topology.targetSlot
+        }
+      ])
+    }
     scheduleSweep()
   }
 
