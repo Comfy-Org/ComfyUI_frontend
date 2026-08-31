@@ -20,6 +20,8 @@ import {
 import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
+import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
+
 const extraFileExtensions = ['.vue']
 
 const commonGlobals = {
@@ -452,6 +454,28 @@ export default defineConfig([
       globals: {
         ...globals.browser
       }
+    }
+  },
+
+  {
+    name: 'comfy/no-new-error-throw',
+    files: ['src/**/*.{ts,tsx,vue}'],
+    ignores: [
+      'src/**/*.d.ts',
+      'src/**/*.{test,spec,stories}.{ts,tsx,vue}',
+      'src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**',
+      'src/**/{generated,vendor}/**',
+      'src/__ecs_matrix__/**',
+      'src/extensions/core/**',
+      'src/scripts/**',
+      'src/types/generatedManagerTypes.ts',
+      'src/types/vue-shim.d.ts'
+    ],
+    plugins: {
+      comfy: { rules: { 'no-new-error-throw': noNewErrorThrow } }
+    },
+    rules: {
+      'comfy/no-new-error-throw': 'error'
     }
   },
 
