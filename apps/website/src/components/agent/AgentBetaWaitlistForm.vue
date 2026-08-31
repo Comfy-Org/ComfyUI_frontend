@@ -1,29 +1,56 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, useId } from 'vue'
 
 import {
+  isDownloadLinkRequestEnabled,
   joinAgentBetaWaitlist,
   preloadDownloadLinkAnalytics
 } from '../../scripts/customerio'
 
-type FormStatus = 'idle' | 'pending' | 'error' | 'success'
+type FormStatus = 'idle' | 'invalid' | 'pending' | 'error' | 'success'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const email = ref('')
+const decoy = ref('')
 const submittedEmail = ref('')
 const status = ref<FormStatus>('idle')
+const errorMessageId = useId()
 const successRegion = ref<HTMLParagraphElement | null>(null)
 
-onMounted(preloadDownloadLinkAnalytics)
+const errorMessage = computed(() => {
+  if (status.value === 'invalid') return 'Please enter a valid email address.'
+  if (status.value === 'error') return 'Something went wrong. Please try again.'
+  return ''
+})
+
+onMounted(() => {
+  if (isDownloadLinkRequestEnabled) preloadDownloadLinkAnalytics()
+})
+
+// Removing the form drops keyboard/SR focus, so move it to the success message.
+async function showSuccess() {
+  status.value = 'success'
+  await nextTick()
+  successRegion.value?.focus()
+}
 
 async function onSubmit() {
   if (status.value === 'pending') return
+  if (decoy.value !== '') {
+    submittedEmail.value = email.value
+    await showSuccess()
+    return
+  }
+  if (!EMAIL_PATTERN.test(email.value)) {
+    status.value = 'invalid'
+    return
+  }
   submittedEmail.value = email.value
   status.value = 'pending'
   try {
     await joinAgentBetaWaitlist(submittedEmail.value)
-    status.value = 'success'
-    await nextTick()
-    successRegion.value?.focus()
+    await showSuccess()
   } catch {
     status.value = 'error'
   }
@@ -31,41 +58,60 @@ async function onSubmit() {
 </script>
 
 <template>
-  <form
-    v-if="status !== 'success'"
-    class="waitlist-form"
-    @submit.prevent="onSubmit"
-  >
-    <label for="agent-beta-email" class="sr-only">Email address</label>
-    <input
-      id="agent-beta-email"
-      v-model="email"
-      type="email"
-      name="email"
-      autocomplete="email"
-      placeholder="Type your email"
-      required
-    />
-    <button
-      type="submit"
-      :disabled="status === 'pending'"
-      :aria-busy="status === 'pending'"
+  <div v-if="isDownloadLinkRequestEnabled">
+    <form
+      v-if="status !== 'success'"
+      novalidate
+      class="waitlist-form"
+      @submit.prevent="onSubmit"
     >
-      {{ status === 'pending' ? 'Joining…' : 'Join the waitlist' }}
-    </button>
-    <p v-if="status === 'error'" role="alert" class="form-error">
-      Something went wrong. Please try again.
+      <label for="agent-beta-email" class="sr-only">Email address</label>
+      <input
+        v-model="decoy"
+        type="text"
+        name="company"
+        tabindex="-1"
+        aria-hidden="true"
+        autocomplete="off"
+        class="absolute left-[-9999px] size-px"
+      />
+      <input
+        id="agent-beta-email"
+        v-model="email"
+        type="email"
+        name="email"
+        autocomplete="email"
+        placeholder="Type your email"
+        required
+        :aria-invalid="status === 'invalid' || undefined"
+        :aria-describedby="errorMessage ? errorMessageId : undefined"
+      />
+      <button
+        type="submit"
+        :disabled="status === 'pending'"
+        :aria-busy="status === 'pending'"
+      >
+        {{ status === 'pending' ? 'Joining…' : 'Join the waitlist' }}
+      </button>
+      <p
+        v-if="errorMessage"
+        :id="errorMessageId"
+        role="alert"
+        class="form-error"
+      >
+        {{ errorMessage }}
+      </p>
+    </form>
+    <p
+      v-else
+      ref="successRegion"
+      role="status"
+      tabindex="-1"
+      class="form-success"
+    >
+      You're on the waitlist! We'll email {{ submittedEmail }} when it's ready.
     </p>
-  </form>
-  <p
-    v-else
-    ref="successRegion"
-    role="status"
-    tabindex="-1"
-    class="form-success"
-  >
-    You're on the waitlist! We'll email {{ submittedEmail }} when it's ready.
-  </p>
+  </div>
 </template>
 
 <style scoped>
