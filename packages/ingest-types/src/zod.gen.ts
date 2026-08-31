@@ -1474,7 +1474,7 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Request body for minting an input-image upload grant.
+ * Request body for minting an input-image or input-audio upload grant.
  */
 export const zInputUploadUrlRequest = z.object({
   content_type: z.string().max(64)
@@ -2473,6 +2473,22 @@ export const zAgentSkillListResponse = z.object({
 })
 
 /**
+ * The run mode to save.
+ */
+export const zAgentRunModePutRequest = z.object({
+  credit_limit: z.number().int().gte(1).lte(2147483647).nullish(),
+  mode: z.enum(['ask_approval', 'auto', 'auto_limited'])
+})
+
+/**
+ * How the agent may spend the caller's credits by running workflows from chat. The saved choice, or the default (ask_approval, no limit) for a caller who never chose.
+ */
+export const zAgentRunMode = z.object({
+  credit_limit: z.number().int().gte(1).lte(2147483647).nullable(),
+  mode: z.enum(['ask_approval', 'auto', 'auto_limited'])
+})
+
+/**
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
@@ -2546,6 +2562,17 @@ export const zAgentAnswerRequest = z.object({
  */
 export const zAgentAnswerAccepted = z.object({
   status: z.enum(['answered'])
+})
+
+/**
+ * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
+ */
+export const zAgentAdmissionError = z.object({
+  error: z.object({
+    message: z.string(),
+    reason: z.enum(['no_funds', 'manual_block', 'funds_unavailable']),
+    type: z.enum(['PAYMENT_REQUIRED', 'SERVICE_UNAVAILABLE'])
+  })
 })
 
 /**
@@ -2653,6 +2680,18 @@ export const zAgentGetDraftQuery = z.object({
  * Current draft snapshot
  */
 export const zAgentGetDraftResponse = zAgentDraftSnapshot
+
+/**
+ * The caller's run mode (the saved choice, or the default).
+ */
+export const zAgentGetRunModeResponse = zAgentRunMode
+
+export const zAgentPutRunModeBody = zAgentRunModePutRequest
+
+/**
+ * The saved run mode.
+ */
+export const zAgentPutRunModeResponse = zAgentRunMode
 
 /**
  * The caller's skill packs.
