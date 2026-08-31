@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import * as publicLiteGraph from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
@@ -36,6 +37,18 @@ function createConnectedGraph(targetCount: number) {
 
 describe('slotLinks', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
+  it('keeps internal slot helpers out of the public barrel', () => {
+    for (const name of [
+      'inputHasLink',
+      'outputHasLinks',
+      'outputLinkIds',
+      'inputLink',
+      'outputLinks'
+    ]) {
+      expect(publicLiteGraph).not.toHaveProperty(name)
+    }
+  })
 
   it('reports presence, ids, and resolved links for an output slot', () => {
     const { graph, source } = createConnectedGraph(2)

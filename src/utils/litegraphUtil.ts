@@ -351,14 +351,18 @@ export function mapLiveWidgetsById(
 ): Map<WidgetId, IBaseWidget> {
   const byId = new Map<WidgetId, IBaseWidget>()
   const widgets = node.widgets ?? []
-  if (!ensureUniqueWidgetNames(widgets)) return byId
+  const namesAreUnique = ensureUniqueWidgetNames(widgets)
   const graphId = node.graph?.rootGraph.id
   const nodeId = parseNodeId(node.id)
-  for (const widget of widgets) {
+  const usedNames = new Set<string>()
+  for (const [index, widget] of widgets.entries()) {
+    let name = widget.name
+    if (!namesAreUnique && usedNames.has(name)) name = `${name}#${index}`
+    usedNames.add(name)
     const id =
       widget.widgetId ??
       (graphId && nodeId && nodeId !== UNASSIGNED_NODE_ID
-        ? widgetId(graphId, nodeId, widget.name)
+        ? widgetId(graphId, nodeId, name)
         : undefined)
     if (id) byId.set(id, widget)
   }

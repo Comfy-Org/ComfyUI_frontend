@@ -224,6 +224,29 @@ describe('getWidgetIdForNode', () => {
     ])
   })
 
+  it('maps every widget when one duplicate cannot be renamed', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = fakeNode(42)
+    const first = {
+      name: 'shared',
+      type: 'number',
+      value: 1,
+      options: {},
+      y: 0
+    }
+    const frozen = Object.freeze({
+      name: 'shared',
+      type: 'number',
+      value: 2,
+      options: {},
+      y: 0
+    })
+    node.widgets = [first, frozen]
+
+    expect([...mapLiveWidgetsById(node).values()]).toEqual([first, frozen])
+    expect(warn).toHaveBeenCalledOnce()
+  })
+
   it('returns undefined when the node has no graph', () => {
     const node = fakeNode(1, { detached: true })
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()

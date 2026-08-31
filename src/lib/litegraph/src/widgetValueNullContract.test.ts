@@ -12,6 +12,7 @@ import {
 
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
@@ -26,6 +27,10 @@ vi.mock('@/platform/nodeReplacement/cnrIdUtil', () => ({
 
 const NODE_TYPE = 'test/NullContractNode'
 const DEFAULT_VALUE = 'default'
+
+const nullSlotTypeContract = {
+  widgets_values: [30, null, 12345]
+} satisfies Partial<ISerialisedNode>
 
 function registerNullContractNode(): void {
   class NullContractNode extends LGraphNode {
@@ -69,6 +74,10 @@ function firstWidget(graph: LGraph) {
 
 describe('widget value null contract', () => {
   const origNamedValuesRestore = LiteGraph.namedValuesRestore
+
+  it('models null slots in the serialized node type', () => {
+    expect(nullSlotTypeContract.widgets_values[1]).toBeNull()
+  })
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

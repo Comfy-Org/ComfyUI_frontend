@@ -63,6 +63,29 @@ describe('plain-object copies of LLink (uncovered)', () => {
     expect(copy.parentId).toBe(link.parentId)
   })
 
+  it('spreads the seven live topology fields after store-backed mutations', () => {
+    const { graph, link } = connectedPair(toRerouteId(7))
+    const stored = graph.links[link.id]
+    stored.type = 'FLOAT'
+    stored.parentId = toRerouteId(8)
+
+    const copy: Partial<LLink> = { ...stored }
+
+    expect(Object.keys(copy).sort()).toEqual(
+      [
+        'id',
+        'type',
+        'origin_id',
+        'origin_slot',
+        'target_id',
+        'target_slot',
+        'parentId'
+      ].sort()
+    )
+    expect(copy.type).toBe('FLOAT')
+    expect(copy.parentId).toBe(toRerouteId(8))
+  })
+
   it('rewires Custom-Scripts consumers from copied links (#15594)', () => {
     const { graph, source, consumers, inserted } = insertionScenario(2)
     const saved: Partial<LLink>[] = source.outputs[1].links!.map((id) => ({

@@ -381,7 +381,10 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     const adapter = adapters.get(state.id)
     return adapter ? [{ adapter, state }] : []
   })
-  if (serialisers.length !== ordered.length) {
+  if (
+    serialisers.length !== ordered.length ||
+    ordered.length !== owner._nodes.length
+  ) {
     const missing = ordered.find((state) => !adapters.has(state.id))
     console.error(
       `Cannot serialize graph ${owner.id} from store: node ${missing?.id} has no live adapter; using live graph nodes`

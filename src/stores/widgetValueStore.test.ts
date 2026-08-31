@@ -84,6 +84,19 @@ describe('useWidgetValueStore', () => {
   })
 
   describe('widget registration', () => {
+    it('returns state for a matching re-registration and rejects an empty name', () => {
+      const store = useWidgetValueStore()
+
+      expect(store.registerWidget(seedA, state('number', 1))).toBeTruthy()
+      expect(store.registerWidget(seedA, state('number', 2))).toBeTruthy()
+      expect(
+        store.registerWidget(
+          widgetId(graphA, toNodeId('node-1'), ''),
+          state('number', 1)
+        )
+      ).toBeFalsy()
+    })
+
     it('registers a widget with minimal properties', () => {
       const store = useWidgetValueStore()
       const registered = store.registerWidget(seedA, state('number', 12345))!

@@ -8,7 +8,10 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  ISerialisedGraph,
+  ISerialisedNode
+} from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 
@@ -76,6 +79,25 @@ describe('LGraph Serialisation', () => {
     expect(copiedLink).toMatchObject(expectedLink)
   })
 
+  test('falls back to live adapters when a node is missing from the store', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const adapterOnly = new LGraphNode('Adapter only')
+    graph._nodes.push(adapterOnly)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual([
+      'Registered',
+      'Adapter only'
+    ])
+    expect(error).toHaveBeenCalledOnce()
+  })
+
   test('round trips namespaced node and graph extension payloads', ({
     expect,
     minimalGraph
@@ -130,22 +152,55 @@ describe('LGraph Serialisation', () => {
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
   })
 
-  test('passes the original serialized object to configure hooks', ({
+  test('passes an isolated serialized object to configure hooks', ({
     expect
   }) => {
     const node = new LGraphNode('Extended')
-    const saved = Object.assign(node.serialize(), {
+    node.addInput('input', 'number')
+    const saved: ISerialisedNode = Object.assign(node.serialize(), {
+      inputs: node.inputs,
       legacyData: { retained: true }
     })
-    let configuredData: object | undefined
+    let configuredData: ISerialisedNode | undefined
     node.onConfigure = (data) => {
       configuredData = data
     }
 
     node.configure(saved)
 
-    expect(configuredData).toBe(saved)
+    expect(configuredData).not.toBe(saved)
+    expect(configuredData?.inputs?.[0]).toMatchObject({
+      name: 'input',
+      type: 'number'
+    })
+    expect(configuredData?.inputs?.[0]).not.toBe(saved.inputs?.[0])
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
+  })
+
+  test('isolates configure-hook mutations from serialized extension data', ({
+    expect
+  }) => {
+    const node = new LGraphNode('Extended')
+    const saved = Object.assign(node.serialize(), {
+      extensions: { 'example.node': { enabled: true } }
+    })
+    node.onConfigure = (data) => {
+      const extension = data.extensions?.['example.node'] as {
+        enabled: boolean
+      }
+      extension.enabled = false
+      Object.assign(data, { 'example.node': { promoted: true } })
+    }
+
+    node.configure(saved)
+
+    expect(saved.extensions).toEqual({
+      'example.node': { enabled: true }
+    })
+    expect(node.serialize().extensions).toEqual({
+      'example.node': { enabled: true }
+    })
+    expect(node.serialize()).not.toHaveProperty('example.node')
   })
 
   test('does not apply unsafe extension keys to the configure view', ({

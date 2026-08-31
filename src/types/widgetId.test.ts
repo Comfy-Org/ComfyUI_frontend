@@ -65,6 +65,27 @@ describe('widgetId', () => {
     const id = widgetId(graphId, toNodeId('node-7'), 'value')
     expect(id).toBe(`${graphId}:node-7:value`)
   })
+
+  it('percent-encodes separator-colliding node ids and names', () => {
+    const first = widgetId(graphId, toNodeId('node:7'), 'value')
+    const second = widgetId(graphId, toNodeId('node'), '7:value')
+
+    expect(first).not.toBe(second)
+    expect(first).toContain('node%3A7:value')
+    expect(second).toContain('node:7%3Avalue')
+    expect(parseWidgetId(first)).toEqual({
+      graphId,
+      nodeId: toNodeId('node:7'),
+      name: 'value'
+    })
+  })
+
+  it('classifies only empty-name keys as un-keyable', () => {
+    expect(
+      isWidgetId(widgetId(graphId, toNodeId(1), 'name:with:separator'))
+    ).toBe(true)
+    expect(isWidgetId(widgetId(graphId, toNodeId(1), ''))).toBe(false)
+  })
 })
 
 describe('parseWidgetId', () => {
