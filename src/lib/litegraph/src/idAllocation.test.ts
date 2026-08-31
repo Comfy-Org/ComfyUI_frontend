@@ -19,6 +19,7 @@ import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
+import { LGraph } from '@/lib/litegraph/src/LGraph'
 
 describe('idAllocation', () => {
   it('mints increasing ids for each entity kind', () => {
@@ -90,5 +91,36 @@ describe('idAllocation', () => {
 
     expect(mintNodeId(state)).toBe('1')
     expect(mintLinkId(state)).toBe(1)
+  })
+
+  it('ignores poisoned serialized counters and deprecated setter writes', () => {
+    const graph = new LGraph()
+    const poisoned = MINT_ID_MIN + 5
+
+    graph.configure({
+      ...new LGraph().asSerialisable(),
+      state: {
+        lastGroupId: 0,
+        lastNodeId: poisoned,
+        lastLinkId: toLinkId(poisoned),
+        lastRerouteId: toRerouteId(0)
+      }
+    })
+    graph.last_node_id = poisoned
+    graph.last_link_id = toLinkId(poisoned)
+
+    expect(Number(mintNodeId(graph.state))).toBeLessThan(MINT_ID_MIN)
+    expect(Number(mintLinkId(graph.state))).toBeLessThan(MINT_ID_MIN)
+  })
+
+  it('fails before sequential counters enter the coordination-free range', () => {
+    const state = createLGraphState()
+    state.lastNodeId = MINT_ID_MIN - 2
+    state.lastLinkId = toLinkId(MINT_ID_MIN - 2)
+
+    expect(mintNodeId(state)).toBe(String(MINT_ID_MIN - 1))
+    expect(mintLinkId(state)).toBe(MINT_ID_MIN - 1)
+    expect(() => mintNodeId(state)).toThrow(RangeError)
+    expect(() => mintLinkId(state)).toThrow(RangeError)
   })
 })
