@@ -2,6 +2,7 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   createRouteMockJob,
@@ -83,7 +84,7 @@ const multiOutputJobDetail: JobDetail = {
 }
 
 const previewableCountJob = createRouteMockJob({
-  id: 'previewable-count-job',
+  id: '00000000-0000-4000-a000-000000000003',
   create_time: routeMockJobTimestamp - 4_000,
   execution_start_time: routeMockJobTimestamp - 4_000,
   execution_end_time: routeMockJobTimestamp,
@@ -149,6 +150,84 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
     await route.fulfill({ json: [...files] })
   })
 }
+
+const mobileCloudAssets = [
+  'previewable-count-a.png',
+  'previewable-count-b.png'
+].map((name, index) => ({
+  id: `mobile-smoke-${index}`,
+  name,
+  job_id: previewableCountJob.id,
+  mime_type: 'image/png',
+  tags: ['output'],
+  preview_url: `/api/view?filename=${name}&type=output`,
+  created_at: new Date(
+    previewableCountJob.create_time - index * 1_000
+  ).toISOString(),
+  updated_at: new Date(
+    previewableCountJob.create_time - index * 1_000
+  ).toISOString()
+}))
+
+async function verifyMobileListFilterGroupDelete(comfyPage: ComfyPage) {
+  const tab = comfyPage.menu.assetsTab
+
+  await tab.open()
+  await tab.openSettingsMenu()
+  await tab.listViewOption.tap()
+  const firstAsset = tab.listViewItems.filter({
+    hasText: 'previewable-count-a'
+  })
+  await expect(firstAsset).toBeVisible()
+
+  await tab.searchInput.fill('previewable-count-a')
+  await expect(tab.listViewItems).toHaveCount(1)
+  await tab.searchInput.clear()
+
+  const groupButton = firstAsset.getByRole('button', {
+    name: 'See more outputs'
+  })
+  await expect(groupButton).toBeInViewport({ ratio: 1 })
+  await groupButton.tap()
+  await expect(groupButton).toHaveAttribute('aria-expanded', 'true')
+  await expect(
+    tab.listViewItems.filter({ hasText: 'previewable-count-b' })
+  ).toBeVisible()
+
+  await tab.openSettingsMenu()
+  await tab.gridLargeOption.tap()
+  await tab.waitForAssets()
+  await tab.getAssetCardByName('previewable-count-a').tap()
+  await expect(tab.deleteSelectedButton).toBeInViewport({ ratio: 1 })
+  await tab.deleteSelectedButton.tap()
+  await expect(comfyPage.confirmDialog.delete).toBeInViewport({ ratio: 1 })
+  await expect(comfyPage.confirmDialog.reject).toBeInViewport({ ratio: 1 })
+  await comfyPage.confirmDialog.reject.tap()
+  await expect(comfyPage.confirmDialog.root).toBeHidden()
+}
+
+const mobileListSmokeTest = comfyPageFixture.extend({
+  page: async ({ page }, use) => {
+    const jobsRoutes = new JobsRouteMocker(page)
+    await jobsRoutes.mockJobsQueue([])
+    await jobsRoutes.mockJobsHistory([previewableCountJob])
+    await jobsRoutes.mockJobDetail(
+      previewableCountJob.id,
+      previewableCountJobDetail
+    )
+    await page.route(/\/api\/assets(?:\?.*)?$/, (route) =>
+      route.fulfill({
+        json: {
+          assets: mobileCloudAssets,
+          total: mobileCloudAssets.length,
+          has_more: false
+        }
+      })
+    )
+    await mockViewFiles(page, viewFiles)
+    await use(page)
+  }
+})
 
 function isGeneratedAssetVerificationResponse(response: Response): boolean {
   const url = new URL(response.url())
@@ -296,7 +375,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
 
     await jobsRoutes.mockJobsHistory([previewableCountJob])
     await jobsRoutes.mockJobDetail(
-      'previewable-count-job',
+      previewableCountJob.id,
       previewableCountJobDetail
     )
 
@@ -337,6 +416,22 @@ test.describe('FE-130 assets sidebar route mocks', () => {
       'Deletion successful'
     )
   })
+})
+
+mobileListSmokeTest.describe('FE-130 assets sidebar route mocks', () => {
+  mobileListSmokeTest(
+    '@mobile list, filter, group, and delete controls remain usable',
+    async ({ comfyPage }) => {
+      await verifyMobileListFilterGroupDelete(comfyPage)
+    }
+  )
+
+  mobileListSmokeTest(
+    '@mobile-ios @cloud list, filter, group, and delete controls remain usable',
+    async ({ comfyPage }) => {
+      await verifyMobileListFilterGroupDelete(comfyPage)
+    }
+  )
 })
 
 bulkInsertionTest.describe(
