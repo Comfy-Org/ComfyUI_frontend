@@ -92,6 +92,21 @@ describe('Tooltip', () => {
     outside.remove()
   })
 
+  it('does not open from focus transferred by a pointer interaction', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderTooltip()
+    const trigger = screen.getByRole('button')
+    const outside = document.createElement('button')
+    document.body.append(outside)
+
+    await user.click(outside)
+    await fireEvent.focus(trigger)
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    outside.remove()
+  })
+
   it('opens on click without bubbling or duplicating the accessible label', async () => {
     const cardClick = vi.fn()
     const user = userEvent.setup()
