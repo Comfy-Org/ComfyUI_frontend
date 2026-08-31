@@ -288,11 +288,20 @@ Rules:
   transition — the document remains fully live — and the requester re-issues
   or abandons the close when the decision resolves. `Close`/`PostClose`
   themselves are always synchronous and unvetoable.
-- Late registration receives synthetic catch-up events (`Open`, plus
-  `Activate` for the active document) for documents that already exist.
+- Late registration receives synthetic catch-up events in normal lifecycle
+  order. For each existing document the bus emits `Open` then `PostOpen` while
+  the view is still considered unattached; if the document is active, a
+  synthetic `Activate` follows only after that allocation phase. Synthetic
+  events are marked as catch-up, but their guarantee windows are the same as
+  live events.
 - **Transitions are serialized.** At most one transition pipeline runs at a
   time per document manager; transition requests arriving while one is in
-  flight are queued (and may be coalesced). The current switch path is a
+  flight are queued. Coalescing is allowed only for redundant requests that
+  preserve every required lifecycle event and never hide an exit from a
+  sidecar; `switch(A→B)` followed by `close(A)` still observes `Deactivate`,
+  `PreClose` when applicable, `Close`, and `PostClose` for `A`, and
+  close-while-activating is serialized after the activation pipeline. The
+  current switch path is a
   multi-await chain whose overlapping invocations are acknowledged in code
   comments (`workflowService.ts` idempotent-load guard); the bus must not
   inherit that ambiguity — guarantee windows are meaningless without a
