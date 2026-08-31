@@ -89,7 +89,9 @@ shared `@comfyorg/comfy-multi-player` applier remain authoritative. A bounded qu
 process restart, or lost target session is recovered by a target-scoped state-vector
 resubscribe, not by applying a different graph's bytes or wiping an ordinary follower doc.
 An explicit `doc_reset` is the only event that permits replacing that target session's
-follower document, after dispatching reset to every projector/store consumer.
+follower document. Before replacement or eviction, the FE dispatches reset and waits at an
+acknowledgement or observation barrier until every projector/store consumer has processed
+it. The new lineage cannot become visible before that barrier completes.
 
 Target sessions also carry the document lineage needed by reconnect/replay. DQ-11(c)'s
 `node_incarnation` is semantic payload data produced by the shared applier: the adapter
