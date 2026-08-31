@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
@@ -16,8 +15,10 @@ import {
   LiteGraph,
   LLink,
   Reroute,
+  Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { serialiseMutableGraphParts } from '@/lib/litegraph/src/LGraph'
 import type {
   ExportedSubgraph,
   SerialisableGraph,
@@ -26,12 +27,16 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { useExecutionOrderStore } from '@/stores/executionOrderStore'
+import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toRerouteId } from '@/types/rerouteId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -77,6 +82,104 @@ class DummyNode extends LGraphNode {
 }
 
 describe('LGraph', () => {
+  it('batches version updates while keeping distinct mutations distinct', () => {
+    const graph = new LGraph()
+    const version = graph._version
+
+    graph.batchVersionUpdates(() => {
+      graph.add(new DummyNode())
+      graph.add(new DummyNode())
+    })
+    expect(graph._version).toBe(version + 1)
+
+    graph.add(new DummyNode())
+    graph.add(new DummyNode())
+    expect(graph._version).toBe(version + 3)
+  })
+
+  it('invalidates once when removing a node disconnects multiple links', () => {
+    const graph = new LGraph()
+    const source = new DummyNode()
+    const firstTarget = new DummyNode()
+    const secondTarget = new DummyNode()
+    source.addOutput('value', 'number')
+    firstTarget.addInput('value', 'number')
+    secondTarget.addInput('value', 'number')
+    graph.add(source)
+    graph.add(firstTarget)
+    graph.add(secondTarget)
+    source.connect(0, firstTarget, 0)
+    source.connect(0, secondTarget, 0)
+    const version = graph._version
+
+    graph.remove(source)
+
+    expect(graph._version).toBe(version + 1)
+  })
+
+  it('allows an empty graph to adopt a new ID', () => {
+    const graph = new LGraph()
+    const nextId = createUuidv4()
+
+    graph.id = nextId
+
+    expect(graph.id).toBe(nextId)
+  })
+
+  it('keeps its ID when another live graph already owns the requested ID', () => {
+    const source = new LGraph()
+    const destination = new LGraph()
+    const metadata = useGraphMetadataStore()
+    const entityIds = useEntityIdStore()
+    const destinationMetadata = metadata.get(destination.id)
+    const destinationEntityIds = entityIds.get(destination.id)
+    const sourceId = source.id
+
+    expect(() => {
+      source.id = destination.id
+    }).not.toThrow()
+    expect(source.id).toBe(sourceId)
+    expect(metadata.get(destination.id)).toBe(destinationMetadata)
+    expect(entityIds.get(destination.id)).toBe(destinationEntityIds)
+  })
+
+  it('remints a configured graph when another live graph owns its ID', () => {
+    const incumbent = new LGraph()
+    incumbent.extra = { marker: 'incumbent' }
+    const serialized = structuredClone(incumbent.asSerialisable())
+
+    const configured = new LGraph(serialized)
+
+    expect(configured.id).not.toBe(incumbent.id)
+    expect(configured.extra).toEqual({ marker: 'incumbent' })
+    expect(incumbent.extra).toEqual({ marker: 'incumbent' })
+  })
+
+  it('remints a subgraph instead of replacing a live definition', () => {
+    const root = new LGraph()
+    const incumbent = createTestSubgraph({ rootGraph: root })
+    incumbent.addInput('value', 'number')
+
+    const configured = new Subgraph(
+      root,
+      structuredClone(incumbent.asSerialisable())
+    )
+
+    expect(configured.id).not.toBe(incumbent.id)
+    expect(configured.inputs[0]?.name).toBe('value')
+    expect(incumbent.inputs[0]?.name).toBe('value')
+  })
+
+  it('does not rekey an empty subgraph to its root graph ID', () => {
+    const root = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: root })
+    const originalId = subgraph.id
+
+    subgraph.id = root.id
+
+    expect(subgraph.id).toBe(originalId)
+  })
+
   it('should serialize deterministic node order', async () => {
     LiteGraph.registerNodeType('dummy', DummyNode)
     const node1 = new DummyNode()
@@ -91,6 +194,73 @@ describe('LGraph', () => {
     expect(result1).toEqual(result2)
   })
 
+  it('sorts numeric and non-numeric node IDs deterministically', () => {
+    const graph = new LGraph()
+    for (const id of ['beta', '10', 'alpha', '2']) {
+      const node = new DummyNode()
+      node.id = toNodeId(id)
+      graph.add(node)
+    }
+
+    expect(
+      graph.serialize({ sortNodes: true }).nodes.map((node) => String(node.id))
+    ).toEqual(['2', '10', 'alpha', 'beta'])
+  })
+
+  it('projects graph-scoped derived execution order to extensions and wire data', () => {
+    const root = new LGraph()
+    const rootNode = new DummyNode()
+    root.add(rootNode)
+    const subgraph = createTestSubgraph({ rootGraph: root })
+    const subgraphNode = new DummyNode()
+    subgraph.add(subgraphNode)
+    const store = useExecutionOrderStore()
+
+    store.set(graphScopeOf(root), rootNode.id, 7)
+    store.set(graphScopeOf(subgraph), subgraphNode.id, 9)
+
+    expect(rootNode.order).toBe(7)
+    expect(subgraphNode.order).toBe(9)
+    expect(rootNode.serialize().order).toBe(7)
+    expect(subgraphNode.serialize().order).toBe(9)
+
+    root.updateExecutionOrder()
+    expect(rootNode.order).toBe(0)
+    expect(subgraphNode.order).toBe(9)
+  })
+
+  it('cleans derived order on removal while preserving the detached projection', () => {
+    const graph = new LGraph()
+    const first = new DummyNode()
+    const removed = new DummyNode()
+    graph.add(first)
+    graph.add(removed)
+    const scope = graphScopeOf(graph)
+    const store = useExecutionOrderStore()
+
+    expect(removed.order).toBe(1)
+    graph.remove(removed)
+
+    expect(store.get(scope, removed.id)).toBeUndefined()
+    expect(removed.order).toBe(1)
+    expect(first.order).toBe(0)
+  })
+
+  it('hydrates wire order before topology recomputation replaces it', () => {
+    const node = new DummyNode()
+    const data = node.serialize()
+    data.order = 12
+
+    node.configure(data)
+    expect(node.order).toBe(12)
+    expect(node.serialize().order).toBe(12)
+
+    const graph = new LGraph()
+    graph.add(node)
+    expect(node.order).toBe(0)
+    expect(node.serialize().order).toBe(0)
+  })
+
   it('should handle adding null node gracefully', () => {
     const graph = new LGraph()
     const initialNodeCount = graph.nodes.length
@@ -99,6 +269,38 @@ describe('LGraph', () => {
 
     expect(result).toBeUndefined()
     expect(graph.nodes.length).toBe(initialNodeCount)
+  })
+
+  it('configures and serializes graph metadata through the store', () => {
+    const graph = new LGraph()
+    const id = createUuidv4()
+    graph.configure({
+      id,
+      version: 1,
+      revision: 4,
+      state: {
+        lastGroupId: 0,
+        lastNodeId: 0,
+        lastLinkId: 0,
+        lastRerouteId: 0
+      },
+      config: { links_ontop: true },
+      extra: { workflowRendererVersion: 'Vue' }
+    })
+
+    const metadata = useGraphMetadataStore().get(id)
+    expect(metadata).toMatchObject({
+      revision: 4,
+      config: { links_ontop: true },
+      extra: { workflowRendererVersion: 'Vue' }
+    })
+
+    graph.config.links_ontop = false
+    expect(graph.asSerialisable()).toMatchObject({
+      revision: 4,
+      config: { links_ontop: false },
+      extra: { workflowRendererVersion: 'Vue' }
+    })
   })
   it('normalizes legacy numeric node ids when adding nodes', () => {
     const graph = new LGraph()
@@ -424,7 +626,9 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect,
     linkedNodesGraph
   }) => {
-    const first = new LGraph(linkedNodesGraph).asSerialisable()
+    const graph = new LGraph(linkedNodesGraph)
+    const first = graph.asSerialisable()
+    graph.clear()
     const second = new LGraph(first).asSerialisable()
 
     expect(first.links?.length).toBeGreaterThan(0)
@@ -437,6 +641,7 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     reroutesComplexGraph
   }) => {
     const first = reroutesComplexGraph.asSerialisable()
+    reroutesComplexGraph.clear()
     const second = new LGraph(first).asSerialisable()
 
     const chainedLinks = (first.links ?? []).filter(
@@ -451,7 +656,9 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect,
     floatingLinkGraph
   }) => {
-    const first = new LGraph(floatingLinkGraph).asSerialisable()
+    const graph = new LGraph(floatingLinkGraph)
+    const first = graph.asSerialisable()
+    graph.clear()
     const second = new LGraph(first).asSerialisable()
 
     expect(first.floatingLinks?.length).toBeGreaterThan(0)
@@ -478,6 +685,7 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     reroutesComplexGraph
   }) => {
     const first = reroutesComplexGraph.asSerialisable()
+    reroutesComplexGraph.clear()
     const second = new LGraph(first).asSerialisable()
 
     const reroutes = first.reroutes ?? []
@@ -486,6 +694,84 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect(reroutes.some((r) => r.parentId === undefined)).toBe(true)
     for (const reroute of reroutes) expectRerouteContractKeyOrder(reroute)
     expect(JSON.stringify(second.reroutes)).toBe(JSON.stringify(first.reroutes))
+  })
+})
+
+describe('Store-driven serialization parity', () => {
+  test('matches normalized mutable serialization across topology variants', ({
+    expect,
+    linkedNodesGraph,
+    reroutesComplexGraph,
+    floatingLinkGraph
+  }) => {
+    for (const graph of [
+      new LGraph(linkedNodesGraph),
+      reroutesComplexGraph,
+      new LGraph(floatingLinkGraph)
+    ]) {
+      const stored = graph.asSerialisable({ sortNodes: true })
+      const mutable = serialiseMutableGraphParts(graph, true)
+      const normalizedStored = {
+        nodes: stored.nodes,
+        groups: stored.groups,
+        links: stored.links,
+        floatingLinks: stored.floatingLinks,
+        reroutes: stored.reroutes
+      }
+      expect(JSON.parse(JSON.stringify(normalizedStored))).toEqual(
+        JSON.parse(JSON.stringify(mutable))
+      )
+    }
+  })
+
+  test('falls back safely when a stored node has no live adapter', ({
+    expect
+  }) => {
+    const graph = createGraph(new DummyNode())
+    graph._nodes = []
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(graph.asSerialisable().nodes).toEqual([])
+    expect(error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /Cannot serialize graph .* from store: node .* has no live adapter; using live graph nodes/
+      )
+    )
+  })
+
+  test('rejects additive configuration before mutating a populated graph', ({
+    expect
+  }) => {
+    const graph = createGraph(new DummyNode())
+    const before = graph.asSerialisable()
+
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(graph.configure(before, true)).toBe(false)
+    expect(error).toHaveBeenCalledWith(
+      'Cannot additively configure a populated graph'
+    )
+    expect(graph.asSerialisable()).toEqual(before)
+  })
+
+  test('serializes a reroute from its detached position', ({
+    expect,
+    linkedNodesGraph
+  }) => {
+    const graph = new LGraph(linkedNodesGraph)
+    const link = graph.links.values().next().value!
+    const reroute = graph.createReroute([10, 20], link)!
+    layoutStore.applyOperation({
+      type: 'deleteReroute',
+      graphId: graph.id,
+      rerouteId: reroute.id,
+      source: LayoutSource.Canvas,
+      timestamp: Date.now()
+    })
+
+    expect(graph.asSerialisable().reroutes).toContainEqual(
+      expect.objectContaining({ id: reroute.id, pos: [10, 20] })
+    )
   })
 })
 
@@ -579,6 +865,47 @@ describe('Graph Clearing and Callbacks', () => {
     expect(previewExposureStore.getExposures(graphId, `${graphId}:1`)).toEqual(
       []
     )
+  })
+
+  test('configure clears state already stored under the incoming graph id', () => {
+    const incoming = new LGraph()
+    const incomingId = 'graph-configure-cleanup' as UUID
+    incoming.id = incomingId
+    const data = incoming.asSerialisable()
+    const staleNodeId = toNodeId(77)
+    const staleWidgetId = widgetId(incomingId, staleNodeId, 'seed')
+    useWidgetValueStore().registerWidget(staleWidgetId, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(incomingId, String(staleNodeId), {
+      sourceNodeId: '10',
+      sourcePreviewName: '$$canvas-image-preview'
+    })
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: incomingId,
+      nodeId: staleNodeId,
+      layout: {
+        id: staleNodeId,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        zIndex: 1,
+        visible: true,
+        bounds: { x: 0, y: 0, width: 100, height: 100 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    incoming.configure(data)
+
+    expect(useWidgetValueStore().getWidget(staleWidgetId)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(incomingId, String(staleNodeId))
+    ).toEqual([])
+    expect(layoutStore.getNodeLayout(incomingId, staleNodeId)).toBeNull()
   })
 })
 
@@ -910,6 +1237,55 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(removedNodeIds.size).toBe(2)
+  })
+
+  it('removing a node clears its widget and preview exposure records', () => {
+    const rootGraph = new LGraph()
+    const node = new LGraphNode('owned state')
+    rootGraph.add(node)
+    const id = widgetId(rootGraph.id, node.id, 'value')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(rootGraph.id, String(node.id), {
+      sourceNodeId: node.id,
+      sourcePreviewName: 'preview'
+    })
+
+    rootGraph.remove(node)
+
+    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(rootGraph.id, String(node.id))
+    ).toEqual([])
+  })
+
+  it('released subgraphs clear inner node-owned records', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 1)
+    const innerNode = innerNodes[0]
+    const id = widgetId(rootGraph.id, innerNode.id, 'value')
+    const locator = createNodeLocatorId(subgraph.id, innerNode.id)
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(rootGraph.id, locator, {
+      sourceNodeId: innerNode.id,
+      sourcePreviewName: 'preview'
+    })
+    const host = createTestSubgraphNode(subgraph)
+    rootGraph.add(host)
+
+    rootGraph.remove(host)
+
+    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(rootGraph.id, locator)
+    ).toEqual([])
   })
 
   it('removing SubgraphNode fires onNodeRemoved callback', () => {
@@ -1630,6 +2006,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     )
     try {
       const graph = new LGraph()
+      serialized.id = graph.id
       graph.configure(serialized)
 
       const migrationCall = warn.mock.calls.find(
@@ -1906,7 +2283,12 @@ describe('graph teardown drops layout entries', () => {
     ['clear', (graph: LGraph) => graph.clear()],
     [
       'reconfigure',
-      (graph: LGraph) => graph.configure(new LGraph().serialize())
+      (graph: LGraph) => {
+        const replacement = new LGraph()
+        const data = replacement.serialize()
+        replacement.clear()
+        graph.configure(data)
+      }
     ]
   ] as const)('drops every entry on %s', ([, teardown]) => {
     const populated = createGraphWithEveryLayoutEntryType()

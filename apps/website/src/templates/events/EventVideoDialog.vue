@@ -14,6 +14,7 @@ import type { Locale } from '../../i18n/translations'
 import type { CalendarEvent } from '../../utils/calendar'
 
 import { t } from '../../i18n/translations'
+import { isUrlUnderPath, previousEntryUrl } from '../../utils/previousEntry'
 
 const {
   title,
@@ -37,27 +38,12 @@ const embedUrl = computed(
     `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1&rel=0`
 )
 
-// Prefer the Navigation API's previous same-origin entry; referrer is a
-// fallback for browsers without it and is often stripped.
-const previousEntryUrl = () => {
-  const nav = window.navigation
-  if (nav) return nav.entries()[nav.currentEntry.index - 1]?.url ?? null
-  return document.referrer || null
-}
-
-const cameFromDirectory = () => {
-  const previous = previousEntryUrl()
-  if (!previous) return false
-  try {
-    const url = new URL(previous)
-    return (
-      url.origin === location.origin &&
-      url.pathname.startsWith(localizeHref('/events', locale))
-    )
-  } catch {
-    return false
-  }
-}
+const cameFromDirectory = () =>
+  isUrlUnderPath(
+    previousEntryUrl(window.navigation, document.referrer),
+    location.origin,
+    localizeHref('/events', locale)
+  )
 
 const closeDialog = () => {
   // Navigation replaces the document; skip restoring the locked scroll.

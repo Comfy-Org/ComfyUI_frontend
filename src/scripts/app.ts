@@ -5,8 +5,6 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -14,6 +12,7 @@ import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
   inputAsSerialisable,
   LGraph,
@@ -247,6 +246,47 @@ export interface QueuePromptOptions {
   intent?: WorkflowQueueIntent
 }
 
+function createNodeOutputsMutationView(
+  outputs: Record<string, NodeExecutionOutput>,
+  commit: (id: string, output: NodeExecutionOutput | undefined) => void
+): Record<string, NodeExecutionOutput> {
+  const views = new WeakMap<object, Map<string, object>>()
+  const wrapNestedValue = (id: string, value: unknown): unknown => {
+    if (value === null || typeof value !== 'object') return value
+    const existing = views.get(value)?.get(id)
+    if (existing) return existing
+    const view = createMutationView(value, {
+      commit: () => commit(id, outputs[id]),
+      mapValue: (_property, nestedValue) => wrapNestedValue(id, nestedValue)
+    })
+    const viewsById = views.get(value) ?? new Map<string, object>()
+    viewsById.set(id, view)
+    views.set(value, viewsById)
+    return view
+  }
+  return new Proxy(outputs, {
+    get(target, property) {
+      const value = Reflect.get(target, property, target)
+      if (typeof value === 'function') return value.bind(target)
+      return wrapNestedValue(String(property), value)
+    },
+    set(target, property, value) {
+      const previous = Reflect.get(target, property, target)
+      const updated = Reflect.set(target, property, value, target)
+      if (updated && previous !== value) {
+        commit(String(property), value as NodeExecutionOutput)
+      }
+      return updated
+    },
+    deleteProperty(target, property) {
+      const existed = Reflect.has(target, property)
+      const deleted = Reflect.deleteProperty(target, property)
+      if (deleted && existed) commit(String(property), undefined)
+      return deleted
+    }
+  })
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -278,7 +318,16 @@ export class ComfyApp {
   api: ComfyApi
   ui: ComfyUI
   extensionManager!: ExtensionManager
-  private _nodeOutputs!: Record<string, NodeExecutionOutput>
+  private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
+  private readonly _nodeOutputs = createNodeOutputsMutationView(
+    this.nodeOutputsData,
+    (id, output) => {
+      if (!this.vueAppReady) return
+      const store = useNodeOutputStore()
+      if (output === undefined) store.removeOutputFromLegacy(id)
+      else store.setOutputFromLegacy(id, output)
+    }
+  )
   nodePreviewImages: Record<string, string[]>
 
   private rootGraphInternal: LGraph | undefined
@@ -443,9 +492,15 @@ export class ComfyApp {
   }
 
   set nodeOutputs(value) {
-    this._nodeOutputs = value
-    if (this.vueAppReady)
+    if (value !== this._nodeOutputs) {
+      for (const key of Object.keys(this.nodeOutputsData))
+        delete this.nodeOutputsData[key]
+      Object.assign(this.nodeOutputsData, value)
+    }
+    if (this.vueAppReady) {
+      useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
       useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
+    }
   }
 
   /**
@@ -507,8 +562,7 @@ export class ComfyApp {
     const combinedIndex = imgs ? imgs.length + 2 : 2
 
     // for vueNodes mode
-    const images =
-      node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
+    const images = useNodeOutputStore().getNodeOutputs(node)?.images
 
     ComfyApp.clipspace = {
       widgets: widgets,
@@ -543,16 +597,11 @@ export class ComfyApp {
       if (ComfyApp.clipspace.imgs && node.imgs) {
         // Update node.images even if it's initially undefined (vueNodes mode)
         if (ComfyApp.clipspace.images) {
-          if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            node.images = [
-              ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-            ]
-          } else {
-            node.images = ComfyApp.clipspace.images
-          }
-
-          if (app.nodeOutputs[node.id + ''])
-            app.nodeOutputs[node.id + ''].images = node.images
+          const images =
+            ComfyApp.clipspace['img_paste_mode'] == 'selected'
+              ? [ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]]
+              : ComfyApp.clipspace.images
+          useNodeOutputStore().setNodeOutputImages(node, images)
         }
 
         if (ComfyApp.clipspace.imgs) {
@@ -643,8 +692,6 @@ export class ComfyApp {
       }
 
       app.canvas.setDirty(true)
-
-      useNodeOutputStore().updateNodeImages(node)
     }
   }
 
@@ -889,29 +936,15 @@ export class ComfyApp {
   private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
-      // Set pending sync flag to suppress link rendering until slots are synced
-      if (LiteGraph.vueNodesMode) {
-        layoutStore.setPendingSlotSync(true)
-      }
+      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
+      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      try {
-        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
+      const r = onConfigure?.apply(this, args)
 
-        const r = onConfigure?.apply(this, args)
+      // Fire after onConfigure, used by primitives to generate widget using input nodes config
+      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 
-        // Fire after onConfigure, used by primitives to generate widget using input nodes config
-        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
-
-        return r
-      } finally {
-        // Flush pending slot layout syncs to fix link alignment after undo/redo
-        // Using finally ensures links aren't permanently suppressed if an error occurs
-        if (LiteGraph.vueNodesMode) {
-          flushScheduledSlotLayoutSync()
-          app.canvas?.setDirty(true, true)
-        }
-      }
+      return r
     }
   }
 
@@ -1223,17 +1256,20 @@ export class ComfyApp {
       deferWarnings?: boolean
       skipAssetScans?: boolean
       silentAssetErrors?: boolean
+      workflowNavigationId?: number
     } = {}
-  ) {
+  ): Promise<boolean> {
     const {
       checkForRerouteMigration = false,
       openSource,
       shareId,
       deferWarnings = false,
       skipAssetScans = false,
-      silentAssetErrors = false
+      silentAssetErrors = false,
+      workflowNavigationId
     } = options
-    useWorkflowService().beforeLoadNewGraph()
+    useWorkflowService().beforeLoadNewGraph(clean !== false)
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     if (skipAssetScans) {
       // Only reset candidates; preserve UI state (fileSizes, etc.)
@@ -1433,7 +1469,8 @@ export class ComfyApp {
           reportType: 'loadWorkflowError'
         })
         console.error(error)
-        return
+        // Resolves rather than throws: the close/replacement guards read this outcome.
+        return false
       }
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
@@ -1517,6 +1554,7 @@ export class ComfyApp {
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
         effectiveShareId
       )
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
       // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
@@ -1557,11 +1595,16 @@ export class ComfyApp {
         })
       }
 
-      void useSubgraphNavigationStore().updateHash()
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
       })
+      return true
     } finally {
+      // Finally: a throwing load still repairs the URL.
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
       ChangeTracker.isLoadingGraph = false
     }
   }
@@ -1653,7 +1696,19 @@ export class ComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    if (executionWorkspaceId && !comfyOrgAuthToken) {
+    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // An API-key session mints no workspace JWT: the key itself is the
+    // execution credential and the server resolves its bound workspace. Only a
+    // key-authenticated session may pass without a token — a Firebase session
+    // whose token mint failed must still fail closed rather than fall back to
+    // a stored key and charge the key's workspace.
+    const isApiKeySessionExecution =
+      !useAuthStore().currentUser && useApiKeyAuthStore().isAuthenticated
+    if (
+      executionWorkspaceId &&
+      !comfyOrgAuthToken &&
+      !isApiKeySessionExecution
+    ) {
       useDialogService().showErrorDialog(
         new Error(t('toastMessages.userNotAuthenticated')),
         {
@@ -1665,7 +1720,6 @@ export class ComfyApp {
       this.processingQueue = false
       return false
     }
-    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
       while (this.queueItems.length) {
@@ -1706,9 +1760,7 @@ export class ComfyApp {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
-            applyPromotedWidgetControl(node, 'beforeQueued', {
-              isPartialExecution
-            })
+            applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
           // Capture workflow before await — activeWorkflow may change if the
@@ -1912,9 +1964,7 @@ export class ComfyApp {
             isPartialExecution
           })
           for (const node of queuedNodes) {
-            applyPromotedWidgetControl(node, 'afterQueued', {
-              isPartialExecution
-            })
+            applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
@@ -2051,7 +2101,8 @@ export class ComfyApp {
     if (parameters && typeof parameters === 'string') {
       const outcome = await importA1111(this.rootGraph, parameters, () => {
         try {
-          useWorkflowService().beforeLoadNewGraph()
+          // false: final destination; no later load republishes the hash.
+          useWorkflowService().beforeLoadNewGraph(false)
         } finally {
           useMissingNodesErrorStore().setMissingNodeTypes([])
         }
@@ -2217,7 +2268,8 @@ export class ComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void> {
-    useWorkflowService().beforeLoadNewGraph()
+    // false: no workflow load follows to republish the hash.
+    useWorkflowService().beforeLoadNewGraph(false)
     this.canvas.setGraph(this.rootGraph)
     this.clean()
 
