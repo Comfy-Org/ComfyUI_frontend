@@ -208,8 +208,6 @@ export const useDialogStore = defineStore('dialog', () => {
 
   /**
    * Ensures only the top-most dialog in the stack can be closed with the Escape key.
-   * This is necessary because PrimeVue Dialogs do not handle `closeOnEscape` prop
-   * correctly when multiple dialogs are open.
    */
   function updateCloseOnEscapeStates() {
     const topDialog = dialogStack.value.find((d) => d.key === activeKey.value)

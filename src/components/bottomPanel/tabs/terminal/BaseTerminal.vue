@@ -4,7 +4,7 @@
     data-testid="terminal-root"
     class="relative size-full overflow-hidden bg-neutral-900"
   >
-    <div class="p-terminal size-full rounded-none p-2">
+    <div class="terminal-container size-full rounded-none p-2">
       <div
         ref="terminalEl"
         data-testid="terminal-host"
@@ -115,11 +115,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-:deep(.p-terminal) .xterm {
+:deep(.terminal-container) .xterm {
   overflow: hidden;
 }
 
-:deep(.p-terminal) .xterm-screen {
+:deep(.terminal-container) .xterm-screen {
   overflow: hidden;
   background-color: var(--color-neutral-900);
 }
