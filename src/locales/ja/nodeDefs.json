@@ -147,6 +147,7 @@
     }
   },
   "AddTextPrefix": {
+    "description": "すべてのテキストに接頭辞を追加します。",
     "display_name": "テキストの接頭辞を追加",
     "inputs": {
       "prefix": {
@@ -166,6 +167,7 @@
     }
   },
   "AddTextSuffix": {
+    "description": "すべてのテキストに接尾辞を追加します。",
     "display_name": "テキストの接尾辞を追加",
     "inputs": {
       "suffix": {
@@ -266,6 +268,36 @@
       },
       "strength": {
         "name": "強度"
+      }
+    }
+  },
+  "ApplyTextureToMesh": {
+    "description": "ベイクしたテクスチャ IMAGE をメッシュの UV レイアウトに適用して SaveGLB 用にします。ベイクに使用した同じメッシュを入力してください",
+    "display_name": "メッシュにテクスチャを適用",
+    "inputs": {
+      "base_color": {
+        "name": "base_color"
+      },
+      "mesh": {
+        "name": "mesh"
+      },
+      "metallic": {
+        "name": "metallic"
+      },
+      "normal_map": {
+        "name": "normal_map"
+      },
+      "occlusion": {
+        "name": "occlusion"
+      },
+      "roughness": {
+        "name": "roughness"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
       }
     }
   },
@@ -395,6 +427,106 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BakeAmbientOcclusion": {
+    "description": "高ポリゴンメッシュからアンビエントオクルージョンマップを低ポリゴンメッシュの UV レイアウトにベイクします（白 = 開放部、暗色 = 隙間）。UV 展開済みの low_poly と、それを簡略化する前の high_poly を入力してください。Apply Texture To Mesh の occlusion 入力用のグレースケール画像を出力します（ORM マップ / occlusionTexture にパックされます）。",
+    "display_name": "アンビエントオクルージョンをベイク",
+    "inputs": {
+      "bias": {
+        "name": "bias",
+        "tooltip": "バウンディングボックスの対角線に対する割合で指定する、レイ原点の表面からのオフセット。平坦な面にも暗い斑点や穴が現れる場合は増やしてください。"
+      },
+      "high_poly": {
+        "name": "high_poly"
+      },
+      "low_poly": {
+        "name": "low_poly"
+      },
+      "max_distance": {
+        "name": "max_distance",
+        "tooltip": "バウンディングボックスの対角線に対する割合で指定するレイの長さ。小さいほど、より局所的で狭い範囲のオクルージョンになります。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "samples": {
+        "name": "samples",
+        "tooltip": "テクセルあたりのレイ数。多いほど滑らかになりますが、遅くなります。粒状感がある場合は増やしてください。"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "オクルージョンの強さを調整します。>1 で暗くなり、<1 で明るくなります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "occlusion",
+        "tooltip": null
+      }
+    }
+  },
+  "BakeNormalMapFromMesh": {
+    "description": "高ポリゴンメッシュから接空間ノーマルマップ（glTF/OpenGL +Y）を低ポリゴンメッシュの UV レイアウトにベイクし、簡略化時に失われたディテールを取得します。UV 展開済みの low_poly と、それを簡略化する前の high_poly を入力してください。Apply Texture To Mesh の normal_map 入力用の画像を出力します。",
+    "display_name": "メッシュからノーマルマップをベイク",
+    "inputs": {
+      "cage_distance": {
+        "name": "cage_distance",
+        "tooltip": "バウンディングボックスの対角線に対する割合で指定する表面検索範囲。大幅に簡略化した際にパッチが誤っていたり欠落したりする場合は増やしてください。隙間をまたいで取得する場合は減らしてください。"
+      },
+      "high_poly": {
+        "name": "high_poly"
+      },
+      "ignore_backfaces": {
+        "name": "ignore_backfaces",
+        "tooltip": "テクセルから背を向けている高ポリゴン表面をスキップし、隙間や閉鎖空間で反対側の壁を取得しないようにします。high_poly の面の頂点順序に一貫性がない場合にのみ無効にしてください。"
+      },
+      "low_poly": {
+        "name": "low_poly"
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "normal_map",
+        "tooltip": null
+      }
+    }
+  },
+  "BakeTextureFromVoxel": {
+    "description": "メッシュの既存の UV レイアウトに PBR テクスチャをベイクします（疎なボクセルボリュームをトリリニアサンプリング）。UV 展開は行いません。上流に UV 展開ノードを接続してください。base_color と metallic/roughness のグレースケール IMAGE を出力します（PBR がない場合は黒）。SaveGLB 用に ApplyTextureToMesh へ入力してください（同じメッシュを使用）。",
+    "display_name": "ボクセルからテクスチャをベイク",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "reference_mesh": {
+        "name": "reference_mesh",
+        "tooltip": "任意の高密度な簡略化前メッシュ。サンプリング前に各テクセルを実際のサーフェスへ逆投影し、粗いメッシュでの角張ったベイクを除去します。"
+      },
+      "texture_size": {
+        "name": "texture_size",
+        "tooltip": "正方形UVアトラスの解像度。"
+      },
+      "voxel_colors": {
+        "name": "voxel_colors"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "metallic",
+        "tooltip": null
+      },
+      "2": {
+        "name": "roughness",
         "tooltip": null
       }
     }
@@ -638,6 +770,110 @@
       }
     }
   },
+  "BriaEraser": {
+    "description": "Briaを使用して、画像からmaskで指定したオブジェクトまたは領域を削除します。",
+    "display_name": "Bria 消去",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "白い領域は消去され、黒い領域は保持されます。送信前にmaskは二値化されるため、部分的に塗られた領域も白として扱われます。画像と同じアスペクト比である必要があります。"
+      },
+      "mask_type": {
+        "name": "mask_type",
+        "tooltip": "手描きまたはブラシのmaskにはmanual、SAMなどのセグメンテーションモデルで生成したmaskにはautomaticを使用します。"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "モデレーション設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaExpandImage": {
+    "description": "Briaを使用して、生成コンテンツで画像を境界の外側まで拡張します。",
+    "display_name": "Bria 画像拡張",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "expand_mode": {
+        "name": "expand_mode",
+        "tooltip": "拡張後の画像のターゲット形状。プリセットのアスペクト比、カスタム比率、またはキャンバス上への元画像の手動配置を選択できます。1:2より縦長のキャンバスにできるのはManualモードのみです。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "モデレーション設定"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "拡張するシーンの任意の説明。空の場合、Briaが画像から生成します。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": "拡張に使用したprompt。prompt入力が空の場合はBriaにより自動生成されます。"
+      }
+    }
+  },
+  "BriaGenFill": {
+    "description": "Briaを使用して、画像のmask領域内にオブジェクトまたは風景を生成します。",
+    "display_name": "Bria 生成塗り",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control_after_generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "白い領域は生成コンテンツで塗りつぶされ、黒い領域は保持されます。送信前にmaskは二値化されるため、部分的に塗られた領域も白として扱われます。画像と同じアスペクト比である必要があります。"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "モデレーション設定"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "mask領域内に生成する内容の説明。"
+      },
+      "refine_prompt": {
+        "name": "refine_prompt",
+        "tooltip": "より良い結果のためにpromptを自動調整します。無効にすると、記述したとおりのpromptを使用します。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "Briaの最新モデルを使って画像を編集します",
     "display_name": "Bria画像編集",
@@ -687,6 +923,32 @@
       },
       "1": {
         "name": "構造化プロンプト",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaIncreaseResolution": {
+    "description": "Bria を使用して元のコンテンツを保持しながら、画像を2倍または4倍にアップスケールします。",
+    "display_name": "Bria 解像度を上げる",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "出力が制限を超える場合、倍率を自動的に下げ、それでも不十分な場合は入力画像をダウンスケールします。"
+      },
+      "desired_increase": {
+        "name": "desired_increase",
+        "tooltip": "解像度の倍率。出力は各辺8192ピクセル以内に収まる必要があります。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "モデレーション設定"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -865,6 +1127,53 @@
       }
     }
   },
+  "BuildPoseFile": {
+    "description": "ポーズデータからアニメーションGLBを作成するか、BVHモーションキャプチャファイルを保存します。",
+    "display_name": "3Dアニメーションファイルを作成",
+    "inputs": {
+      "camera_translation": {
+        "name": "camera_translation",
+        "tooltip": "pred_cam_t をルートの移動にベイクします。'off' = バインド位置、'centered' = フレーム0からの差分、'absolute' = 生データ（Zはカメラ深度、通常は数メートル先）。"
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "ディスクに書き込むために、どちらも Save 3D Model に渡される出力形式です。'glb' = アニメーションGLB（メッシュ / ボーン / openpose / scail）。'bvh' = BVHモーションキャプチャクリップ（1つのスケルトン。モデルが必要）。"
+      },
+      "format_bone_smooth_window": {
+        "name": "bone_smooth_window"
+      },
+      "format_mesh_style": {
+        "name": "mesh_style"
+      },
+      "format_mesh_style_bone_vis": {
+        "name": "bone_vis"
+      },
+      "format_mesh_style_shader": {
+        "name": "shader"
+      },
+      "fps": {
+        "name": "fps",
+        "tooltip": "アニメーションのフレームレート。"
+      },
+      "pose_data": {
+        "name": "pose_data",
+        "tooltip": "3Dポーズデータ。"
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "track_index": {
+        "name": "track_index",
+        "tooltip": "-1 = すべてのトラック、≥0 = 単一トラック。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
     "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
@@ -890,7 +1199,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5。最高品質と1080p/4kにはSeedance 2.0。速度最適化にはFast。最速かつ最低コストの生成にはMini。"
+        "tooltip": "最新モデルには Seedance 2.5（最大30秒の動画とmp4/mov出力）を、最高品質と4kには Seedance 2.0を、速度最適化には Fastを、最速・最低コストの生成には Miniを使用します。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -924,14 +1233,14 @@
   },
   "ByteDance2ReferenceNode": {
     "description": "Seedance 2.0 を使い、リファレンス画像・動画・音声から動画を生成・編集・拡張します。マルチモーダルリファレンス、動画編集、動画拡張に対応しています。",
-    "display_name": "ByteDance Seedance 2.0 リファレンスから動画生成",
+    "display_name": "ByteDance Seedance 2.5 参照から動画（レガシー）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5。最高品質と1080p/4kにはSeedance 2.0。速度最適化にはFast。最速かつ最低コストの生成にはMini。"
+        "tooltip": "最新モデルには Seedance 2.5（最大30秒の動画とmp4/mov出力）を、最高品質と4kには Seedance 2.0を、速度最適化には Fastを、最速・最低コストの生成には Miniを使用します。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -975,6 +1284,59 @@
       }
     }
   },
+  "ByteDance2ReferenceNodeV2": {
+    "description": "参照画像、動画、音声とともに Seedance 2.5 または2.0を使用して、動画を生成、編集、または拡張します。マルチモーダル参照、動画編集、動画拡張に対応しています。",
+    "display_name": "ByteDance Seedance 2.5 参照から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "最新モデルには Seedance 2.5（最大30秒の動画とmp4/mov出力）を、最高品質と4kには Seedance 2.0を、速度最適化には Fastを、最速・最低コストの生成には Miniを使用します。"
+      },
+      "model_auto_downscale": {
+        "name": "自動ダウンスケール"
+      },
+      "model_auto_upscale": {
+        "name": "自動アップスケール"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_generate_audio": {
+        "name": "音声を生成"
+      },
+      "model_output_format": {
+        "name": "出力形式"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "比率"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_task_type": {
+        "name": "タスクタイプ"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed はノードを再実行するかどうかを制御します。seed に関係なく、結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "動画に透かしを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2TextToVideoNode": {
     "description": "テキストプロンプトに基づいて Seedance 2.0 モデルで動画を生成します。",
     "display_name": "ByteDance Seedance 2.0 テキストから動画生成",
@@ -984,7 +1346,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5。最高品質と1080p/4kにはSeedance 2.0。速度最適化にはFast。最速かつ最低コストの生成にはMini。"
+        "tooltip": "Seedance 2.5は最新モデル向けで、最大30秒の動画とmp4/mov出力に対応します。Seedance 2.0は最高品質と4K向けです。Fastは速度最適化向け、Miniは最速・最低コストの生成向けです。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1268,7 +1630,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "ByteDance Seed Audio 1.0 で、1つのプロンプトから音声、音楽、効果音、複数話者の対話を生成します。プロンプト内で声の特徴、感情、雰囲気、BGM、効果音を記述し、話すセリフも含めてください。内蔵プリセットボイスの選択、最大3つの参照clip（プロンプト内で@Audio1-3とタグ付け）からのボイスクローン、またはキャラクター画像からのボイス生成も可能です。1回の実行で最大2分の音声を生成できます。",
+    "description": "ByteDance Seed Audio 1.0を使用して、単一のプロンプトから音声、音楽、効果音、複数話者の会話を生成します。プロンプトには声質、感情、環境音、BGM、効果音を記述し、話すセリフも含めてください。必要に応じて内蔵プリセット音声を選択するか、最大3つの参照クリップから音声をクローンできます（プロンプト内で {'@'}Audio1～3 としてタグ付け）。または、キャラクター画像から音声を生成できます。1回の実行で最大2分の音声を生成できます。この多言語モデルは20言語とタイムスタンプベースのタイミング制御をサポートします。",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1468,7 +1830,7 @@
   },
   "ByteDanceSeedreamNodeV2": {
     "description": "統合されたテキストから画像生成と、最大4K解像度での正確な単一文編集。",
-    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "display_name": "ByteDance Seedream 4.5 & 5.0（レガシー）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -1500,6 +1862,48 @@
       "watermark": {
         "name": "ウォーターマーク",
         "tooltip": "画像に「AI生成」のウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNodeV3": {
+    "description": "最大4K解像度での統合テキストから画像への生成と、正確な1文編集。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_prompt_optimization": {
+        "name": "プロンプト最適化"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size_preset": {
+        "name": "サイズプリセット"
+      },
+      "model_thinking": {
+        "name": "思考"
+      },
+      "model_watermark": {
+        "name": "透かし"
+      },
+      "model_width": {
+        "name": "幅"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像の作成または編集に使用するテキストプロンプト。"
       }
     },
     "outputs": {
@@ -1549,6 +1953,43 @@
       "watermark": {
         "name": "透かし",
         "tooltip": "動画に「AI生成」の透かしを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceVideoEnhanceNode": {
+    "description": "ByteDance vCubeで動画をアップスケールおよび復元します。最大8Kの超解像、圧縮アーティファクトとノイズの除去、色彩と鮮明さの強化、任意のフレーム補間に対応しています。",
+    "display_name": "ByteDance vCube 動画エンハンス",
+    "inputs": {
+      "bitrate_level": {
+        "name": "ビットレートレベル",
+        "tooltip": "配信ファイルの目標ビットレート。出力解像度とフレームレートに応じて調整されます。"
+      },
+      "fps": {
+        "name": "fps",
+        "tooltip": "出力フレームレート。元より高いレートではAIフレーム補間が有効になり、低いレートではフレームが削除されます。'source'は元のレートを維持し、最大120 fpsです。30 fps超は2倍、60 fps超は4倍のコストがかかります。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力解像度。短辺は選択したレベルに設定され、長辺は元のアスペクト比に従います。'source'は元のサイズを維持し、'custom'は短辺をピクセル単位で設定します。幅または高さが約2.2:1を超えるソースは、1段階上の解像度として課金されます。"
+      },
+      "tool_version": {
+        "name": "ツールバージョン",
+        "tooltip": "'standard'は10種類以上の強化アルゴリズムにより、速度と品質のバランスを取ります。'professional'は30種類以上のアルゴリズムを使用して映画品質の復元を行いますが、所要時間は約3倍、コストは10倍になります。"
+      },
+      "tool_version_enhance_style": {
+        "name": "強化スタイル"
+      },
+      "tool_version_scene": {
+        "name": "シーン"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "強化する動画。元の解像度は最大2560x1440（2K）である必要があります。出力サイズは解像度入力で設定します。"
       }
     },
     "outputs": {
@@ -1663,7 +2104,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[レシピ]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl",
+    "description": "レシピ:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（226トークンのパディング）\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推奨）または t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL または Music3 Qwen/RVQ",
     "display_name": "CLIPを読み込む",
     "inputs": {
       "clip_name": {
@@ -3251,7 +3692,11 @@
       },
       "bit_depth": {
         "name": "bit_depth",
-        "tooltip": "作成される動画のビット深度。10ビットはグラデーションがより滑らかでバンディングが少なくなりますが、一部のプレーヤーや下流ノードではサポートされない場合があります。"
+        "tooltip": "自動では、sRGB に 8ビット、HDR に 10ビットを使用します。明示的な 8ビットおよび 10ビットの選択はカラースペースに依存しません。"
+      },
+      "color_space": {
+        "name": "color_space",
+        "tooltip": "入力画像のカラースペース。HDR は BT.2020/HLG を、HDR PQ は BT.2020/PQ を選択します。"
       },
       "fps": {
         "name": "fps"
@@ -3449,6 +3894,29 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DecimateMesh": {
+    "description": "アクティブな計算デバイスで QEM を使用し、メッシュを目標面数まで簡略化します。'midpoint' は cumesh に忠実なプリセット（最高品質、細い特徴や髪を保持）です。'qem' はライン/特徴エッジ制御を使用して頂点を QEM 最適位置に配置します。出力は溶接された状態を維持します。",
+    "display_name": "メッシュを簡略化",
+    "inputs": {
+      "mesh": {
+        "name": "メッシュ"
+      },
+      "placement_mode": {
+        "name": "placement_mode",
+        "tooltip": "midpoint: cumesh-faithful（推奨）。qem: QEM 最適配置。"
+      },
+      "target_face_count": {
+        "name": "target_face_count",
+        "tooltip": "目標の最大面数。0 で無効化します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
         "tooltip": null
       }
     }
@@ -4257,6 +4725,23 @@
       }
     }
   },
+  "EmptyMiniMaxMusic3LatentAudio": {
+    "description": "指定された長さの空の MiniMax Music3 オーディオ latent を作成します。",
+    "display_name": "Empty MiniMax Music3 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "空のMochi潜在ビデオ",
     "inputs": {
@@ -4312,6 +4797,20 @@
       },
       "width": {
         "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyTrellis2LatentStructure": {
+    "display_name": "EmptyTrellis2LatentStructure",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "バッチ内の latent 画像数。"
       }
     },
     "outputs": {
@@ -4417,6 +4916,146 @@
     "outputs": {
       "0": {
         "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
+  "FillHoles": {
+    "description": "既存のジオメトリ/UV を保持しながら、最大周長までの穴を埋めます。GPU ベクトル化されており、巻き方向の自動補正とループ平均の重心カラーを使用します。",
+    "display_name": "穴を埋める",
+    "inputs": {
+      "fill_chains": {
+        "name": "fill_chains",
+        "tooltip": "開いたチェーンも埋めます（サイクルのみではありません）。ノイズが発生しやすく、OFF は cumesh と一致します。"
+      },
+      "max_perimeter": {
+        "name": "max_perimeter",
+        "tooltip": "埋める穴の最大周長。0 で無効化します。"
+      },
+      "max_vertices": {
+        "name": "max_vertices",
+        "tooltip": "サイクルごとの境界頂点数の上限。重心ファンは小さく、ほぼ平面の穴でのみ機能します。16 以下にしてください。"
+      },
+      "mesh": {
+        "name": "メッシュ"
+      },
+      "weld_epsilon_rel": {
+        "name": "weld_epsilon_rel",
+        "tooltip": "事前溶接の許容値（バウンディングボックス対角線の割合）。境界検出には溶接済みの頂点が必要です。0 でスキップします。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioInstantVoiceClone": {
+    "description": "音声サンプルからプライベートなクローン音声を作成し、すぐにテキスト読み上げに使用できます。録音は 1～20 件、各 10～30 秒、合計 270 秒未満を推奨します。",
+    "display_name": "Fish Audio 即時音声クローン",
+    "inputs": {
+      "enhance_audio_quality": {
+        "name": "enhance_audio_quality",
+        "tooltip": "トレーニング前に参照音声の品質を向上させます。"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "音声クローン用の録音データ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音声",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioSpeechToText": {
+    "description": "言語を自動検出して音声をテキストに文字起こしします。",
+    "display_name": "Fish Audio 音声からテキスト",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "文字起こしする音声。"
+      },
+      "language": {
+        "name": "language",
+        "tooltip": "ISO 639-1 言語ヒント（例: 'en'、'zh'）。言語は指定にかかわらず自動検出されます。"
+      },
+      "precise_timestamps": {
+        "name": "precise_timestamps",
+        "tooltip": "単語レベルのタイムスタンプ付きセグメントを返します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "language_code",
+        "tooltip": null
+      },
+      "2": {
+        "name": "segments_json",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioTextToSpeech": {
+    "description": "テキストを音声に変換します。テキスト内の感情キュー（s2.1-pro では [happy]、[whispering]、s1 では (happy)）と、複数の音声を接続した {'@'}Voice1/{'@'}Voice2 タグによる複数話者の会話に対応しています。",
+    "display_name": "Fish Audio テキスト読み上げ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "テキスト読み上げに使用するモデル。"
+      },
+      "model_normalize": {
+        "name": "normalize"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_volume": {
+        "name": "volume"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed はノードを再実行するかどうかを制御します。結果は seed に関係なく非決定的です。"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "音声に変換するテキスト。2つ以上の音声を接続している場合は、@Voice1、@Voice2 などで話者の切り替わりを指定します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioVoiceSelector": {
+    "description": "テキスト読み上げ生成用に Fish Audio ライブラリから音声を選択します。",
+    "display_name": "Fish Audio 音声セレクター",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "音声を選択するか、任意の fish.audio 音声モデル ID を入力するには 'custom' を選択します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
         "tooltip": null
       }
     }
@@ -5044,6 +5683,48 @@
       }
     }
   },
+  "FluxVideoUpscaleNode": {
+    "description": "FLUX 超解像を使用して動画を1.5～3倍にアップスケールし、ソースを忠実に保持するか、ディテールを創造的に強調します。",
+    "display_name": "Flux 動画アップスケール",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "入力上限に収まるよう、3840x2160ピクセルを超えるソースを自動的に縮小します。アスペクト比は維持され、小さい動画は変更されません。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "'creative' は細部を復元・生成し、生成映像、テクスチャ、風景に最適です。'precise' はソースを変更せずにシャープ化し、顔、製品、実写映像に適しています。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "強調するディテールを導く clip の任意の説明。ニュートラルなアップスケールを行うには空欄のままにします。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "モデレーションの許容度。0が最も厳格です。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。FLUXは独自のシードを選択するため、この値にかかわらず実際の結果は非決定的です。"
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "ソースに対する出力サイズ。フレームごとの上限により、非常に大きなソースは要求した倍率より低い倍率でアップスケールされます。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "アスペクト比が1:4～4:1の、1～20秒のソース clip。出力は24 fpsでレンダリングされ、フレームあたり約1,440万画素に制限されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FrameInterpolate": {
     "display_name": "フレーム補間",
     "inputs": {
@@ -5617,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "GoogleのGemini Omni Flashモデルを使用して、テキストプロンプトから音声付き動画を生成します。必要に応じて、参照画像や動画を指定して結果を誘導または編集できます。希望する長さ（3～10秒）をプロンプトに直接記述してください。",
+    "display_name": "Google Gemini Omni（動画）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画の生成に使用するGemini動画モデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -5683,6 +6400,22 @@
       }
     }
   },
+  "Get3DComponents": {
+    "description": "3Dモデルファイル（GLB、GLTF、OBJ、STL）を解析し、メッシュ処理ノード（decimate、remesh、UV unwrap、bake、...）用の編集可能なMESHに変換します。すべてのシーンノード／プリミティブは変換を適用した状態で1つのメッシュに結合されます。テクスチャとマテリアル係数は最初のマテリアルから取得されます。MeshToFile3Dの対になるノードです。",
+    "display_name": "3Dコンポーネントを取得",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Load 3Dまたは別の3Dノードからの3Dモデルファイル。FBX/USDZはサポートされていません。先にGLBへ変換してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
+        "tooltip": null
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "LoRA読み込み済みモデルのsafetensorsメタデータからIC-LoRAパラメータを抽出し、LTXVAddGuide（例：reference_downscale_factor）用に出力します。",
     "display_name": "IC-LoRAパラメータの取得",
@@ -5722,6 +6455,24 @@
       }
     }
   },
+  "GetMeshInfo": {
+    "display_name": "メッシュ情報を取得",
+    "inputs": {
+      "mesh": {
+        "name": "メッシュ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "情報",
+        "tooltip": null
+      }
+    }
+  },
   "GetSplatCount": {
     "description": "バッチ全体で合計されたスプラットの数を返します。",
     "display_name": "スプラット数を取得",
@@ -5742,7 +6493,7 @@
     }
   },
   "GetVideoComponents": {
-    "description": "ビデオからすべてのコンポーネント（フレーム、オーディオ、フレームレート）を抽出します。",
+    "description": "動画フレーム、音声、フレームレート、ビット深度、カラースペースを抽出します。",
     "display_name": "ビデオコンポーネントの取得",
     "inputs": {
       "video": {
@@ -5765,6 +6516,10 @@
       },
       "3": {
         "name": "bit_depth",
+        "tooltip": null
+      },
+      "4": {
+        "name": "color_space",
         "tooltip": null
       }
     }
@@ -6378,7 +7133,7 @@
       },
       "mode": {
         "name": "モード",
-        "tooltip": "「speed」は高速、「precision」は2倍の価格で高品質なリップシンクを生成します。"
+        "tooltip": "'speed' はより高速です。'precision' は高価ですが、より高品質なリップシンクを生成します。"
       },
       "output_language": {
         "name": "出力言語",
@@ -6815,7 +7570,7 @@
   },
   "IdeogramPImage": {
     "description": "P-Image（Ideogramの高速テキストから画像生成モデル）を使用して画像を生成します。強力なタイポグラフィとフォトリアリズムを実現し、Ideogram 4.0の構造化JSONキャプションによる正確なテキスト、色、レイアウト指定に対応しています。",
-    "display_name": "Ideogram P-Image",
+    "display_name": "Ideogram & Pruna P-Image",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -7115,6 +7870,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropToMask": {
+    "display_name": "画像をマスクに合わせて切り抜き",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "maskされた被写体の背後の背景色。"
+      },
+      "grow_mask": {
+        "name": "grow_mask",
+        "tooltip": "切り抜き前に、このピクセル数だけマスクを拡大または縮小します。"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "出力の高さ（ピクセル）。"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "masks": {
+        "name": "マスク"
+      },
+      "pad_factor": {
+        "name": "pad_factor",
+        "tooltip": "マスクのバウンディングボックス周囲に追加する余白の倍率。"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "出力の幅（ピクセル）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
         "tooltip": null
       }
     }
@@ -11410,6 +12202,21 @@
       }
     }
   },
+  "MergeMeshes": {
+    "description": "面インデックスをオフセットし、頂点、面、UV、カラーを積み重ねて、N個のメッシュを1つに連結します。",
+    "display_name": "メッシュを結合",
+    "inputs": {
+      "meshes": {
+        "name": "メッシュ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
+        "tooltip": null
+      }
+    }
+  },
   "MergeSplat": {
     "description": "任意の数のガウススプラットを1つに連結します。同じ latent を異なるシードで複数回デコードして結合すると、表面が密になり、メッシュ化時の表面品質が向上します。",
     "display_name": "スプラットを結合",
@@ -11426,6 +12233,7 @@
     }
   },
   "MergeTextLists": {
+    "description": "複数のテキストリストを1つに連結します。",
     "display_name": "テキストリストを結合",
     "inputs": {
       "texts": {
@@ -11437,6 +12245,71 @@
       "0": {
         "name": "テキスト",
         "tooltip": "処理済みテキスト"
+      }
+    }
+  },
+  "MeshSmoothNormals": {
+    "description": "頂点ごとの滑らかな法線を計算し、メッシュに追加します。法線のないメッシュはglTFビューアーでフラット（面ごと）にシェーディングされますが、これにより滑らかにシェーディングされます。crease_angleが180未満の場合、しきい値より鋭いエッジは、そのエッジに沿って頂点を分割することでハードエッジとして維持されます。",
+    "display_name": "メッシュ法線をスムージング",
+    "inputs": {
+      "crease_angle": {
+        "name": "crease_angle",
+        "tooltip": "二面角がこの値（度）を超えるエッジはハードエッジとして維持されます（頂点が分割されます）。180 = 完全にスムーズ、より低い値ではシャープなエッジを維持します（例：ハードサーフェスでは約30～60）。"
+      },
+      "mesh": {
+        "name": "メッシュ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshTextureToImage": {
+    "description": "メッシュのベイク済みテクスチャを、base_color、metallic、roughness、occlusion、normal_mapの個別IMAGEとして抽出します。ベイクされていないチャンネルはニュートラルな状態で返されます（occlusionは白、normalはフラット）。",
+    "display_name": "メッシュテクスチャを画像へ",
+    "inputs": {
+      "mesh": {
+        "name": "メッシュ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "metallic",
+        "tooltip": null
+      },
+      "2": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "3": {
+        "name": "occlusion",
+        "tooltip": null
+      },
+      "4": {
+        "name": "normal_map",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshToFile3D": {
+    "description": "メッシュをGLB File3Dオブジェクトにシリアライズし、Save / Preview 3Dノード用にUV、カラー、法線、テクスチャ、normal/occlusion/emissiveマップ、マテリアルを保持します。バッチごとに1項目のみ対応しています。",
+    "display_name": "3Dファイルを作成（メッシュから）",
+    "inputs": {
+      "mesh": {
+        "name": "メッシュ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
       }
     }
   },
@@ -11507,8 +12380,15 @@
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
       },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "より精細な表面ディテールを持つ高忠実度のジオメトリのために、追加のリファインパスを実行します。"
       }
     },
     "outputs": {
@@ -11570,6 +12450,9 @@
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
       },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
       "symmetry_mode": {
         "name": "symmetry_mode"
       }
@@ -11599,7 +12482,7 @@
     "inputs": {
       "enable_pbr": {
         "name": "enable_pbr",
-        "tooltip": "ベースカラーに加えてPBRマップ（金属度、粗さ、法線）を生成します。注意：Sculptureスタイルを使用する場合はfalseに設定してください。Sculptureスタイルは独自のPBRマップを生成します。"
+        "tooltip": "ベースカラーに加えてPBRマップ（metallic、roughness、normal）を生成します。"
       },
       "meshy_task_id": {
         "name": "meshy_task_id"
@@ -11614,6 +12497,10 @@
       "texture_prompt": {
         "name": "texture_prompt",
         "tooltip": "テクスチャリングプロセスをガイドするテキストプロンプトを入力してください。最大600文字。「texture_image」と同時に使用することはできません。"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "ベースカラーテクスチャの解像度。解像度を高くすると、より多くの表面ディテールを捉えられます。"
       }
     },
     "outputs": {
@@ -11705,11 +12592,60 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "より精細な表面ディテールを持つ高忠実度のジオメトリのために、追加のリファインパスを実行します。"
       }
     },
     "outputs": {
       "0": {
         "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureMultiViewNode": {
+    "description": "同じオブジェクトの1～4個の参照ビューを使用して、以前に作成したモデルをテクスチャ化します。",
+    "display_name": "Meshy: モデルをテクスチャ化（マルチビュー）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "新しいUVを生成する代わりに、モデル本来のUVを使用します。有効にすると、Meshyはアップロードしたモデルの既存テクスチャを保持します。モデルに元のUVがない場合、出力品質が低下することがあります。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "multiview_images": {
+        "name": "multiview_images",
+        "tooltip": "同一オブジェクトの参照ビューです。最初の画像がメイン（正面）ビューで、残りのビューの順序は問いません。"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "ベースカラーテクスチャの解像度です。解像度を上げると、より多くの表面ディテールを取得できます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
       },
       "1": {
@@ -11749,6 +12685,10 @@
       "text_style_prompt": {
         "name": "テキストスタイルプロンプト",
         "tooltip": "オブジェクトの希望するテクスチャスタイルをテキストで説明してください。最大600文字。'image_style'と同時に使用することはできません。"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "ベースカラーテクスチャの解像度です。解像度を上げると、より多くの表面ディテールを取得できます。"
       }
     },
     "outputs": {
@@ -11766,6 +12706,44 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3AddGuide": {
+    "description": "MiniMax H3動画の任意のフレームに、画像、短いクリップ、音声、または音声付きクリップを固定します。複数のノードを連結して、複数のフレームを固定できます。",
+    "display_name": "MiniMax H3用ガイドを追加",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "同じフレームインデックスから固定するサウンドトラックです。動画の残り時間に合わせて切り詰められます。"
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "音声が接続されている場合に必要なオーディオVAEです。"
+      },
+      "frame_idx": {
+        "name": "frame_idx",
+        "tooltip": "画像またはクリップの先頭フレームを固定するフレームインデックスです。負の値は動画の末尾から数えます。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "固定する画像または動画フレームです。複数フレームのバッチはクリップとして固定され、モデルで有効なクリップ長（5、22、39...（17k + 5）フレーム）に切り詰められます。5フレーム未満のバッチでは、最初の画像のみ使用されます。"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "画像が接続されている場合に必要な動画VAEです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       }
     }
@@ -11882,6 +12860,78 @@
       }
     }
   },
+  "MiniMaxMusic3TextEncode": {
+    "description": "MiniMax Music3 CLIP モデルを使用して音響コンディショニングシーケンスを生成します。",
+    "display_name": "MiniMax Music3 テキストエンコード",
+    "inputs": {
+      "caption": {
+        "name": "caption"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最大時間（秒）。モデルはそれより早く曲を終了する場合があります。"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "top_k": {
+        "name": "top_k"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ContextIRNode": {
+    "description": "MiniMax H3 Context IRでテキストとメディアのコンテキストを分析し、強化された構造化動画プロンプトを生成します。出力をMiniMax H3動画ノードのプロンプトに入力し、同じメディアを同じ順序で接続してください。強化されたプロンプトは、接続されたメディアを位置で参照します。",
+    "display_name": "MiniMax H3 Context IR（プロンプト強化）",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "生成する動画の最初のフレームです。参照メディアとは併用できません。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "生成する動画の最後のフレームです。参照メディアとは併用できません。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "プロンプト強化に使用するモデルです。"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "MiniMax H3モデルを使用し、最初のフレーム画像と（オプションで）最後のフレーム画像から動画を生成します。動画のアスペクト比は入力画像に従います。",
     "display_name": "MiniMax H3 最初・最後フレームから動画生成",
@@ -11955,6 +13005,43 @@
       "watermark": {
         "name": "ウォーターマーク",
         "tooltip": "ビデオにAIGCウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03RegenerateNode": {
+    "description": "MiniMax H3の768P出力を2K解像度で再レンダリングします。未変更の768P動画と、生成時に使用した正確なプロンプトを接続してください。元の生成で最初・最後のフレームまたは参照メディアを使用した場合は、同じ入力を接続してください。",
+    "display_name": "MiniMax H3を2Kに再生成",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "使用されている場合、元の生成時の最初のフレーム画像。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "使用されている場合、元の生成時の最後のフレーム画像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "動画の再生成に使用するモデル。"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "再レンダリングする MiniMax H3 768P 出力動画。MiniMax H3 動画ノードの未加工の出力（24 FPS、4～15秒）を接続してください。2K 出力は使用できません。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "動画に AIGC ウォーターマークを追加するかどうか。"
       }
     },
     "outputs": {
@@ -12091,6 +13178,33 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeGeometryToFOV": {
+    "description": "MoGe の内部パラメーターから視野角と焦点距離を導出します。",
+    "display_name": "MoGe Geometry から FoV を取得",
+    "inputs": {
+      "axis": {
+        "name": "axis",
+        "tooltip": "'vertical'（fov_y）、'horizontal'（fov_x）、または 'diagonal'。"
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "unit": {
+        "name": "unit",
+        "tooltip": "FOV の出力単位。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fov",
+        "tooltip": null
+      },
+      "1": {
+        "name": "focal_pixels",
         "tooltip": null
       }
     }
@@ -15036,6 +16150,24 @@
       }
     }
   },
+  "PaintMesh": {
+    "description": "入力ボクセルフィールドから最も近いボクセルの色で、各メッシュ頂点をペイントします。",
+    "display_name": "メッシュをペイント",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "voxel_colors": {
+        "name": "voxel_colors"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "Painter": {
     "display_name": "Painter",
     "inputs": {
@@ -15350,6 +16482,33 @@
       }
     }
   },
+  "Pixal3DConditioning": {
+    "display_name": "Pixal3DConditioning",
+    "inputs": {
+      "camera_angle_x": {
+        "name": "camera_angle_x",
+        "tooltip": "水平方向の視野角（度）。画像ごとの FoV には MoGeGeometryToFOV（axis='horizontal'、unit='degrees'）を接続します（upstream のデフォルトに一致）。"
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "ImageCropToMask で前処理された画像（Pixal3D の場合は pad_factor=1.1）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "プロンプトと出力サイズに基づいて同期的に動画を生成します。",
     "display_name": "PixVerse 画像から動画へ",
@@ -15481,6 +16640,238 @@
       "seed": {
         "name": "シード",
         "tooltip": "ビデオ生成用のシード値。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ExtendVideoNode": {
+    "description": "PixVerse で既存の動画を延長します。必要に応じてネイティブ音声も使用できます。入力動画は40秒未満かつ、いずれの辺も1920px以下である必要があります。出力は入力動画の解像度を維持するため、quality はフレームサイズではなく延長部分のレンダリング品質を設定します。",
+    "display_name": "PixVerse V6 動画を延長",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "延長する動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "PixVerse を使用して、最初のフレームから最後のフレームへ遷移する動画を生成します。必要に応じてネイティブ音声も使用できます。出力は最初のフレームのアスペクト比を維持します。",
+    "display_name": "PixVerse V6 最初と最後のフレームから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "PixVerse を使用して、参照する被写体、背景、動画から動画を合成します。プロンプト内で名前を指定して、参照をシーンに配置します。例:「{'@'}Subject1 が {'@'}Background1 の中を歩く」。参照動画を接続するとモデルは Omni モードに切り替わり、出力の長さは最も長い参照動画に一致します。",
+    "display_name": "PixVerse V6 フュージョン（参照から動画）",
+    "inputs": {
+      "backgrounds": {
+        "name": "背景",
+        "tooltip": "被写体を配置するシーンの参照画像。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "subjects": {
+        "name": "被写体",
+        "tooltip": "シーンに配置する被写体の参照画像。"
+      },
+      "videos": {
+        "name": "動画",
+        "tooltip": "被写体、動き、フレーミング、スタイルを参照するための動画。最大2本、合計15秒まで。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "PixVerseで画像をアニメーション化します。ネイティブ音声も任意で使用できます。出力は入力画像のアスペクト比を維持します。",
+    "display_name": "PixVerse V6 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "PixVerseでテキストプロンプトから動画を生成します。ネイティブ音声も任意で使用できます。",
+    "display_name": "PixVerse V6 テキストから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
       }
     },
     "outputs": {
@@ -16433,7 +17824,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "realistic_imageスタイルとオプションのサブスタイルを選択します。",
+    "description": "logo_rasterのスタイルとサブスタイルを選択します。",
     "display_name": "Recraft Style - ロゴラスタ",
     "inputs": {
       "substyle": {
@@ -16544,6 +17935,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "1～10枚の参照画像から、再利用可能なRecraft V4スタイルを作成します。返されたstyle_idは、同じ出力タイプのすべてのRecraft V4およびV4.1モデルで使用できます。すべての画像の合計サイズは10 MBまでです。",
+    "display_name": "Recraft V4 スタイルを作成",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "スタイルを定義する参照画像です。類似した参照は一致精度を高め、多様な参照は適用範囲を広げます。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "スタイルを作成する出力タイプ：ラスタ画像はrecraftv4_styles、SVGはrecraftv4_styles_vector。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Recraft V4またはV4 Proモデルを使用して画像を生成します。",
     "display_name": "Recraft V4 テキストから画像生成",
@@ -16553,7 +17964,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデル。"
+        "tooltip": "生成に使用するモデルです。recraftv4_stylesモデルはスタイル一貫性のある生成向けに構築されており、常にstyle_idまたはstyle_referencesが必要です。"
       },
       "model_size": {
         "name": "サイズ"
@@ -16577,10 +17988,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "適用するRecraft V4スタイルのUUIDです。例：Recraft V4 Create Styleノード、または前回の実行のstyle_id出力。style_referencesとは併用できません。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "スタイルへの追従度：preciseは細部まで再現し、flexibleは全体的な見た目に合わせます。スタイルが指定されている場合にのみ使用されます。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "その場でスタイルを作成するための参照画像です。生成料金に加えて課金されます。作成されたスタイルは再利用用のstyle_idとして返されます。style_idとは併用できません。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -16594,7 +18021,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデル。"
+        "tooltip": "生成に使用するモデルです。recraftv4_stylesモデルはスタイル一貫性のある生成向けに構築されており、常にstyle_idまたはstyle_referencesが必要です。"
       },
       "model_size": {
         "name": "サイズ"
@@ -16618,10 +18045,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "適用するRecraft V4ベクタースタイルのUUIDです。例：Recraft V4 Create Styleノード、または前回の実行のstyle_id出力。style_referencesとは併用できません。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "スタイルへの追従度：preciseは細部まで再現し、flexibleは全体的な見た目に合わせます。スタイルが指定されている場合にのみ使用されます。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "その場でベクタースタイルを作成するための参照画像です。生成料金に加えて課金されます。作成されたスタイルは再利用用のstyle_idとして返されます。style_idとは併用できません。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -16765,6 +18208,62 @@
       }
     }
   },
+  "RemeshMesh": {
+    "description": "アクティブな演算デバイス上で、狭帯域距離場＋Dual Contouringにより、均一にテッセレーションされたメッシュを再抽出します。複雑な／非多様体／自己交差するトポロジーを正規化します。正確な面数にするには、Decimate Meshの前に実行してください。出力は結合された状態を維持します。",
+    "display_name": "メッシュをリメッシュ（狭帯域DC）",
+    "inputs": {
+      "band": {
+        "name": "band",
+        "tooltip": "ボクセル単位の狭帯域幅です。UDFモードではサーフェスもオフセットします。"
+      },
+      "drop_small_components": {
+        "name": "drop_small_components",
+        "tooltip": "最大コンポーネントの面数に対するこの割合未満のコンポーネントを削除します。0で無効化します。"
+      },
+      "fix_poles": {
+        "name": "fix_poles",
+        "tooltip": "バレンス3の頂点ペアを統合します（DCのT字接合アーティファクト）。"
+      },
+      "mesh": {
+        "name": "メッシュ"
+      },
+      "precluster_max_verts": {
+        "name": "precluster_max_verts",
+        "tooltip": "フィールドクエリ前の入力頂点数の上限です。これを超える入力は、先にこの数までクラスターデシメーションされます。巨大なメッシュでのOOMを防ぎます。"
+      },
+      "project_back": {
+        "name": "project_back",
+        "tooltip": "頂点を元のサーフェスに向けて線形補間します（0 = 純粋なDC、1 = スナップ）。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "ボクセルグリッドの解像度（出力密度）。256で約10万面、512で約100万面。正確な面数にするには、後段にDecimate Meshを使用してください。"
+      },
+      "sign_mode": {
+        "name": "sign_mode",
+        "tooltip": "udf：複雑な／非多様体の入力に対して堅牢です。sdf：QEF（Quadratic Error Function）によるシャープな特徴の復元を備えたクリーンな単一サーフェスですが、一貫した巻き方向が必要です。"
+      },
+      "sign_mode_drop_enclosed_components": {
+        "name": "drop_enclosed_components"
+      },
+      "sign_mode_drop_inverted_components": {
+        "name": "drop_inverted_components"
+      },
+      "sign_mode_qef": {
+        "name": "qef"
+      },
+      "smooth_iters": {
+        "name": "smooth_iters",
+        "tooltip": "Taubinスムージングの反復回数（0 = オフ）。2～3でDCの階段状アーティファクトを除去します。値を上げるとQEFエッジが過度にスムージングされます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
+        "tooltip": null
+      }
+    }
+  },
   "RemoveBackground": {
     "description": "背景除去モデルを使用して画像から背景を削除するための前景マスクを生成します。",
     "display_name": "背景を除去",
@@ -16782,6 +18281,46 @@
       "0": {
         "name": "マスク",
         "tooltip": "生成された前景マスク"
+      }
+    }
+  },
+  "RenderMesh": {
+    "description": "メッシュの単一ビューをレイキャストします。カメラと任意のモデル変換は、Load3D / Preview3Dビューアから取得できます。",
+    "display_name": "メッシュをレンダリング",
+    "inputs": {
+      "background": {
+        "name": "背景"
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Load3D / Preview3DビューアまたはCreate Camera Infoノードからのカメラです。接続されていない場合、デフォルトの正面ビューが自動的にフレーミングされます。"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "mesh": {
+        "name": "メッシュ"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "レンダリングする内容。auto：テクスチャがある場合はテクスチャ、なければ頂点カラー、それもなければ陰影付きクレイ。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info",
+        "tooltip": "同じLoad3D / Preview3Dビューアからのモデル変換です。camera_infoと接続すると、ビューアのフレーミングに一致します。"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "マスク",
+        "tooltip": null
       }
     }
   },
@@ -16845,6 +18384,24 @@
       }
     }
   },
+  "RenderUVAtlas": {
+    "description": "メッシュのUVレイアウトを画像としてレンダリングします。",
+    "display_name": "UVアトラスをレンダリング",
+    "inputs": {
+      "mesh": {
+        "name": "メッシュ"
+      },
+      "resolution": {
+        "name": "解像度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -16892,6 +18449,7 @@
     }
   },
   "ReplaceText": {
+    "description": "すべてのテキスト内の文字列を置換します。",
     "display_name": "テキスト置換",
     "inputs": {
       "find": {
@@ -17518,6 +19076,33 @@
       }
     }
   },
+  "RotateMesh": {
+    "description": "メッシュを回転します。Euler XYZはワールド軸を基準にX、Y、Zの順で適用します（度）。Quaternionは(w, x, y, z)で、自動的に正規化されます。",
+    "display_name": "メッシュを回転",
+    "inputs": {
+      "mesh": {
+        "name": "メッシュ"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "mode_angle_x": {
+        "name": "angle_x"
+      },
+      "mode_angle_y": {
+        "name": "angle_y"
+      },
+      "mode_angle_z": {
+        "name": "angle_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
+        "tooltip": null
+      }
+    }
+  },
   "RunwayAleph2KeyframeNode": {
     "description": "ガイダンス画像を入力（ソース）ビデオの特定の瞬間に固定し、その時点で Aleph2 が編集を誘導します。これを Runway Aleph2 Video to Video ノードの「keyframes」入力に接続してください。下のオプション「keyframes」入力を使って最大5つまで連結できます。",
     "display_name": "Runway Aleph2 キーフレーム",
@@ -17728,6 +19313,180 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_FaceExpression": {
+    "description": "コアMediaPipe Face LandmarkerからMHRの顔ブレンドシェイプを駆動します。",
+    "display_name": "顔の表情からSAM3D Body",
+    "inputs": {
+      "blendshape_smooth_window": {
+        "name": "blendshape_smooth_window",
+        "tooltip": "MHRマッピング前のMediaPipeのフレームごとの信号に適用するガウス窓。MediaPipeの生出力は、静止した顔でもフレーム間で30～70%変動します。1 = 無効。奇数値を使用してください。"
+      },
+      "brow_strength": {
+        "name": "brow_strength",
+        "tooltip": "眉/頬/しかめ面のシェイプに対する倍率。MediaPipeの出力は約0.1～0.3です。2～3倍。"
+      },
+      "eye_strength": {
+        "name": "eye_strength",
+        "tooltip": "目のシェイプに対する倍率。MediaPipeは0.5を超えることが稀なため、2～3倍が必要になることがよくあります。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "input_threshold": {
+        "name": "input_threshold",
+        "tooltip": "MediaPipeの生出力に対するデッドゾーン（未満 = ゼロ、以上 = 線形リマップ）。"
+      },
+      "mhr_pose_data": {
+        "name": "mhr_pose_data"
+      },
+      "mouth_strength": {
+        "name": "mouth_strength",
+        "tooltip": "口/顎のシェイプに対する倍率。MediaPipeのjawOpenは1.0付近で飽和します。"
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "すべてのblendshapeに対するグローバル倍率。>1で強調されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Loader": {
+    "display_name": "SAM3D Bodyモデルを読み込む",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sam3d_body_model",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Predict": {
+    "display_name": "SAM3D Body予測を実行",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "バッチとして処理する人物クロップの最大数。値を大きくすると、VRAM使用量は増えますが推論が高速になります。"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "検出精度向上に使用するフレームごとのバウンディングボックス。トラッキングデータの代替として使用できます。"
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "垂直FoV（度）。予測される深度と絶対スケールに影響します。0 = 約53°（16:9）にフォールバック。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "run_hand_refinement": {
+        "name": "run_hand_refinement",
+        "tooltip": "追加の推論時間とメモリ使用量を要しますが、手のポーズを改善します"
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "track_data": {
+        "name": "track_data",
+        "tooltip": "SAM3 Video Trackからのトラッキングデータ。複数人物の検出に必要です"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Render": {
+    "display_name": "3Dボディポーズをレンダリング",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "フレームごとの背景。省略時は黒いキャンバスです。"
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "自由な6DOFカメラのオーバーライド。接続すると、予測されたカメラではなく、このカメラ（位置/ターゲット/ズーム/回転/FoV）を通してポーズが再投影されます。 "
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "出力高さ（ピクセル）。0 = ポーズデータのネイティブimage_sizeを使用。width/heightの片方のみを設定した場合、もう片方は元のアスペクト比を維持して算出されます。"
+      },
+      "pose_data": {
+        "name": "pose_data",
+        "tooltip": "MHRポーズデータ、または外部のY-upリグポーズデータ（KimodoSample）。_skeleton_overrideにOpenPoseジョイントマップを持つ外部リグでは、すべてのレンダースタイルが機能します（KimodoSampleはこれに該当します）。"
+      },
+      "render_style": {
+        "name": "render_style",
+        "tooltip": "'mesh' = カメラを通してラスタライズされた3D MHRメッシュ。'silhouette' = メッシュのバイナリmask。'openpose_2d' = フラットな2Dスケルトン。'openpose_3d' = フラットシェーディングされた3Dモデルとしてのopenposeスケルトン。'scail' = SCAIL 3Dカプセル "
+      },
+      "render_style_opacity": {
+        "name": "不透明度"
+      },
+      "render_style_person_palette_falloff": {
+        "name": "person_palette_falloff"
+      },
+      "render_style_region": {
+        "name": "領域"
+      },
+      "render_style_shader": {
+        "name": "シェーダー"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "出力幅（ピクセル）。0 = ポーズデータのネイティブimage_sizeを使用。width/heightの片方のみを設定した場合、もう片方は元のアスペクト比を維持して算出されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Smooth": {
+    "description": "時間的平滑化によりフレーム間のジッターを低減します。",
+    "display_name": "SAM3Dボディポーズデータをスムーズ化",
+    "inputs": {
+      "method": {
+        "name": "方式",
+        "tooltip": "gaussian: 対称加重平均。汎用的な平滑化に最適です。\nsavgol: スライディング多項式フィット。鋭いピークを保持します。"
+      },
+      "mhr_pose_data": {
+        "name": "mhr_pose_data"
+      },
+      "rotation_threshold_degrees": {
+        "name": "rotation_threshold_degrees",
+        "tooltip": "高速な回転を維持するため、このルート回転速度（度/フレーム）では平滑化を無効にします。30°はほとんどのコンテンツに適しています。低い値では通常のジッターでも平滑化が無効になり、品質に影響する可能性があります。0 = 無効。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "平滑化の強度。0 = 生データ、1 = 平滑化。"
+      },
+      "window": {
+        "name": "ウィンドウ",
+        "tooltip": "フレーム単位の時間ウィンドウ（奇数値）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
         "tooltip": null
       }
     }
@@ -19079,7 +20838,7 @@
     "inputs": {
       "codec": {
         "name": "コーデック",
-        "tooltip": "ビデオに使用するコーデック。"
+        "tooltip": "出力動画コーデック。Autoは互換性のあるソースストリームを維持します。H.264およびAV1の再エンコードはSDR、HDR（HLG）、HDR PQに対応します。"
       },
       "filename_prefix": {
         "name": "ファイル名プレフィックス",
@@ -19087,7 +20846,10 @@
       },
       "format": {
         "name": "フォーマット",
-        "tooltip": "ビデオを保存するフォーマット。"
+        "tooltip": "出力コンテナ。AutoはAuto/H.264ではMP4、AV1ではWebMを使用します。MP4、MKV、WebMでは特定のコンテナを選択します。"
+      },
+      "format_codec": {
+        "name": "コーデック"
       },
       "video": {
         "name": "ビデオ",
@@ -19097,7 +20859,7 @@
     "outputs": {
       "0": {
         "name": "video",
-        "tooltip": null
+        "tooltip": "変更されていない入力動画。"
       }
     }
   },
@@ -20186,6 +21948,7 @@
     }
   },
   "StripWhitespace": {
+    "description": "すべてのテキストから先頭と末尾の空白を削除します。",
     "display_name": "空白文字の削除",
     "inputs": {
       "texts": {
@@ -21059,6 +22822,7 @@
     }
   },
   "TextToLowercase": {
+    "description": "テキストを小文字に変換します。",
     "display_name": "テキストを小文字に変換",
     "inputs": {
       "texts": {
@@ -21074,6 +22838,7 @@
     }
   },
   "TextToUppercase": {
+    "description": "テキストを大文字に変換します。",
     "display_name": "テキストを大文字に変換",
     "inputs": {
       "texts": {
@@ -21483,6 +23248,118 @@
     "outputs": {
       "0": {
         "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2Conditioning": {
+    "display_name": "Trellis2Conditioning",
+    "inputs": {
+      "clip_vision_model": {
+        "name": "clip_vision_model"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "ImageCropToMaskからの前処理済み画像（TRELLIS.2ではpad_factor=1.0）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2ShapeStage": {
+    "display_name": "Trellis2ShapeStage",
+    "inputs": {
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "voxel": {
+        "name": "ボクセル",
+        "tooltip": "VaeDecodeStructureTrellis2からの高密度構造ボクセル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2TextureStage": {
+    "display_name": "Trellis2TextureStage",
+    "inputs": {
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "shape_latent": {
+        "name": "shape_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2UpsampleStage": {
+    "display_name": "Trellis2 アップサンプルステージ",
+    "inputs": {
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "shape_latent": {
+        "name": "shape_latent",
+        "tooltip": "最初の形状ステージのKSamplerから出力される、解像度512のshape latent。"
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "アップサンプリングされた形状のボクセル解像度。高いほど詳細になりますが、VRAM使用量も増えます。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
         "tooltip": null
       }
     }
@@ -21911,30 +23788,6 @@
       }
     }
   },
-  "TripoRefineNode": {
-    "description": "v1.4 Tripoモデルでのみ作成されたドラフトモデルをリファインします。",
-    "display_name": "Tripo: ドラフトモデルのリファイン",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id",
-        "tooltip": "v1.4 Tripoモデルである必要があります"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "モデルファイル",
-        "tooltip": null
-      },
-      "1": {
-        "name": "モデルタスクID",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
   "TripoRetargetNode": {
     "display_name": "Tripo: リグ付きモデルのリターゲット",
     "inputs": {
@@ -22177,6 +24030,7 @@
     }
   },
   "TruncateText": {
+    "description": "テキストを最大長まで切り詰めます。",
     "display_name": "テキストを切り詰める",
     "inputs": {
       "max_length": {
@@ -22292,6 +24146,37 @@
       },
       "model_patch": {
         "name": "モデルパッチ"
+      }
+    }
+  },
+  "UnwrapMesh": {
+    "description": "UVアトラスを生成します。サーフェスをチャートに分割し、それぞれをパラメーター化して、[0,1]アトラスにパックします。チャートのシーム上の頂点は複製されます（チャートごとに1つ、位置は同じで固有のUVを持つ）。そのため、出力メッシュの頂点数は入力より多くなります。Remesh/Decimateの後、テクスチャベイクの前に実行してください。",
+    "display_name": "メッシュUVをアンラップ",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "チャート間のテクセル余白。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "テクセル密度の自動スケール用ターゲットアトラス解像度（0 = コンテンツに合わせる）。"
+      },
+      "segmenter": {
+        "name": "segmenter",
+        "tooltip": "pec: GPU上での高速な並列エッジコラプスによるチャート化。adaptive: CPU使用、低速。"
+      },
+      "weld_distance": {
+        "name": "weld_distance",
+        "tooltip": "メッシュ範囲に対する一致頂点の結合半径（0 = 自動）。三角形ごとのチャートが生成される場合（入力が未結合）、~0.001まで上げてください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
       }
     }
   },
@@ -22673,6 +24558,68 @@
       }
     }
   },
+  "VaeDecodeShapeTrellis": {
+    "display_name": "VaeDecodeShapeTrellis",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      },
+      "1": {
+        "name": "shape_subdivides",
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeStructureTrellis2": {
+    "display_name": "VaeDecodeStructureTrellis2",
+    "inputs": {
+      "resolution": {
+        "name": "resolution"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voxel",
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeTextureTrellis": {
+    "display_name": "VaeDecodeTextureTrellis",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "shape_subdivides": {
+        "name": "shape_subdivides",
+        "tooltip": "デコード中に高詳細な再構築を導くために使用する形状情報です。高解像度での構造的一貫性の維持に役立ちます。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voxel_colors",
+        "tooltip": null
+      }
+    }
+  },
   "Veo3FirstLastFrameNode": {
     "description": "プロンプトと最初・最後のフレームを使って動画を生成します。",
     "display_name": "Google Veo 3 ファースト・ラストフレームから動画生成",
@@ -22770,61 +24717,11 @@
       },
       "resolution": {
         "name": "解像度",
-        "tooltip": "出力動画の解像度。4Kはveo-3.1-liteおよびveo-3.0モデルでは利用できません。"
+        "tooltip": "出力動画の解像度です。veo-3.1-liteモデルでは4Kは利用できません。"
       },
       "seed": {
         "name": "シード",
         "tooltip": "ビデオ生成のシード値（0でランダム）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Google の Veo API を使用してテキストプロンプトからビデオを生成します",
-    "display_name": "Google Veo2 ビデオ生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "出力ビデオのアスペクト比"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "出力ビデオの長さ（秒）"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "AIアシストでプロンプトを強化するかどうか"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "ビデオ生成の参考となる画像（オプション）"
-      },
-      "model": {
-        "name": "モデル",
-        "tooltip": "ビデオ生成に使用するVeo 2モデル"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "ビデオで避けたい内容を指定するネガティブプロンプト"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "ビデオ内で人物生成を許可するかどうか"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "ビデオのテキスト説明"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ビデオ生成用のシード値（0でランダム）"
       }
     },
     "outputs": {
@@ -22850,6 +24747,23 @@
       },
       "video": {
         "name": "ビデオ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "動画をクロップ",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "ピクセル単位のクロップ領域です。幅または高さがゼロの場合はフルフレームを維持します。"
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -22959,6 +24873,27 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "動画をトリミング（詳細）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Trueの場合、指定した長さが不可能なときにエラーが発生します。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "開始フレームと終了フレームを使用してトリミング範囲を指定します。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -23832,6 +25767,100 @@
       "watermark": {
         "name": "ウォーターマーク",
         "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan3ImageToVideoApi": {
+    "description": "Wan 3.0モデルを使用して、最初のフレーム画像から動画を生成します。最後のフレーム制御は任意です。",
+    "display_name": "Wan 3.0 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "最初のフレーム画像です。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "最後のフレーム画像です。モデルは最初のフレームから最後のフレームへ遷移する動画を生成します。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_extend": {
+        "name": "prompt_extend"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシードです。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "結果にAI生成のウォーターマークを追加するかどうかです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan3ReferenceToVideoApi": {
+    "description": "Wan 3.0モデルを使用して、テキストプロンプトと任意の参照画像、動画、音声から動画を生成します。参照メディアは自由に組み合わせられ、{'@'}Image1、{'@'}Video1、{'@'}Audio1としてプロンプト内で言及できます。",
+    "display_name": "Wan 3.0 参照から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_audio": {
+        "name": "音声"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_prompt_extend": {
+        "name": "prompt_extend"
+      },
+      "model_ratio": {
+        "name": "比率"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "透かし",
+        "tooltip": "結果にAI生成の透かしを追加するかどうか。"
       }
     },
     "outputs": {
@@ -25443,6 +27472,29 @@
       "waiting for camera___": {},
       "width": {
         "name": "幅"
+      }
+    }
+  },
+  "WeldVertices": {
+    "description": "L_infグリッド量子化により一致する頂点を結合します。メッシュが未結合（面ごとの頂点、共有エッジなし）で読み込まれる場合に使用してください。FillHoles、DecimateMesh、またはトポロジー対応操作の前処理です。クラスタごとに色を平均化します。",
+    "display_name": "頂点を結合",
+    "inputs": {
+      "epsilon_abs": {
+        "name": "epsilon_abs",
+        "tooltip": "絶対結合許容値（> 0 の場合はepsilon_relを上書き）。"
+      },
+      "epsilon_rel": {
+        "name": "epsilon_rel",
+        "tooltip": "結合の許容値（bbox対角線の割合）。浮動小数点の重複除去には1e-5、見た目には近いが異なる頂点には1e-3。"
+      },
+      "mesh": {
+        "name": "メッシュ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
+        "tooltip": null
       }
     }
   },
