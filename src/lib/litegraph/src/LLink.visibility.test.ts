@@ -56,6 +56,21 @@ describe('LLink visibility serialization', () => {
     expect(target.label).toBe('Latent')
   })
 
+  it('copies presentation when configured from another LLink instance', () => {
+    const source = makeLink()
+    source.hidden = true
+    source.label = 'Latent'
+    const target = makeLink(2)
+
+    target.configure(source)
+
+    expect(target.id).toBe(source.id)
+    expect(target.origin_id).toBe(source.origin_id)
+    expect(target.target_id).toBe(source.target_id)
+    expect(target.hidden).toBe(true)
+    expect(target.label).toBe('Latent')
+  })
+
   it('clears the label when set to an empty string', () => {
     const link = makeLink()
     link.label = 'Named'
@@ -158,6 +173,32 @@ describe('LLink visibility serialization', () => {
 })
 
 describe('link presentation store integration', () => {
+  it('serializes no presentation sidecar once every link is default again', () => {
+    const graph = new LGraph()
+    const link = makeLink()
+    graph._addLink(link)
+    link.hidden = true
+
+    expect(graph.serialize().extra?.linkPresentation).toEqual({
+      '1': { hidden: true }
+    })
+
+    link.hidden = false
+
+    expect(graph.serialize().extra?.linkPresentation).toBeUndefined()
+  })
+
+  it('drops orphaned presentation entries when the graph is cleared', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const store = useLinkPresentationStore()
+    store.patch(scope, toLinkId(999), { hidden: true })
+
+    graph.clear()
+
+    expect(store.take(scope, toLinkId(999))).toBeUndefined()
+  })
+
   it('flushes buffered presentation into the store on registration', () => {
     const graph = new LGraph()
     const link = makeLink()

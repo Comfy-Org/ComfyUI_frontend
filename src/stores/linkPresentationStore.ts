@@ -24,11 +24,18 @@ export type LinkPresentationPatch = LinkPresentation
  * Builds the canonical compact record — `hidden` only when true, `label` only
  * when defined — or `undefined` for the default (empty) presentation.
  */
+export function isDefaultLinkPresentation(
+  hidden: boolean | undefined,
+  label: string | undefined
+): boolean {
+  return !hidden && label === undefined
+}
+
 export function compactLinkPresentation(
   hidden: boolean | undefined,
   label: string | undefined
 ): LinkPresentation | undefined {
-  if (!hidden && label === undefined) return undefined
+  if (isDefaultLinkPresentation(hidden, label)) return undefined
   return {
     ...(hidden && { hidden: true }),
     ...(label !== undefined && { label })

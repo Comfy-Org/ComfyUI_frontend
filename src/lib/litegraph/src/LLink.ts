@@ -5,7 +5,10 @@ import {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import {
+  isDefaultLinkPresentation,
+  useLinkPresentationStore
+} from '@/stores/linkPresentationStore'
 import type {
   LinkPresentation,
   LinkPresentationPatch
@@ -264,8 +267,12 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       return
     }
     const pending = { ...this._pendingPresentation, ...partial }
-    this._pendingPresentation =
-      !pending.hidden && pending.label === undefined ? undefined : pending
+    this._pendingPresentation = isDefaultLinkPresentation(
+      pending.hidden,
+      pending.label
+    )
+      ? undefined
+      : pending
   }
 
   private _color?: CanvasColour | null

@@ -54,8 +54,10 @@ over the link topology store. Several homes were considered and rejected:
    endpoint moves, subgraph convert/unpack, workflow insertion, duplicate-link
    normalization) must carry presentation across the old→new link mapping via
    `transferLinkPresentation`. Fan-out merges move presentation onto a merged
-   boundary link only when every grouped link agrees. (The transfer wiring and
-   its regression tests land in the transfer slice of this stack.)
+   boundary link only when every grouped link agrees. (The transfer wiring,
+   the matching presentation cleanup for remote-mutation deletion paths
+   (`removeLink`/`clearSemanticGraph` in `graphMutations`), and the regression
+   tests for both land in the transfer slice of this stack.)
 6. Mutations are validated store actions; the first-party mutation helpers
    that arrive with the canvas slice bracket them with the existing
    before/after-change lifecycle. Wrapping them in a serializable
@@ -82,8 +84,11 @@ over the link topology store. Several homes were considered and rejected:
   `hidden: false` is never stored or serialized).
 - `hidden`/`label` become live prototype accessors on `LLink`: an extension
   that previously used those names as inert expando properties now mutates
-  core presentation state. Ecosystem usage has not been verified; this needs a
-  release note.
+  core presentation state. A GitHub-wide code search (2026-08-31) for
+  `link.hidden`/`link.label` in ComfyUI-related JavaScript found no extension
+  using either name, and the accessors are prototype-level and non-enumerable,
+  so `JSON.stringify(link)` and `for..in` output are unchanged. The accessor
+  change still warrants a release note.
 
 ## Additional Notes
 
