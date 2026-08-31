@@ -93,7 +93,7 @@ watch(
             }
             const { generateModelThumbnail } =
               await import('@/components/load3d/modelThumbnail')
-            const generated = await generateModelThumbnail(url)
+            const generated = await generateModelThumbnail(url, filename)
             if (mounted && generated) modelThumbnails.value[url] = generated
           })
           .catch(() => {})
