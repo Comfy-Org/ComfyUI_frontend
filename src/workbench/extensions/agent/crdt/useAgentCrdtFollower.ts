@@ -63,25 +63,24 @@ function producerClockKey(workflowId: string): string {
   return `${PRODUCER_CLOCK_SESSION_KEY}:${workflowId}`
 }
 
-function readProducerVersion(workflowId: string): number {
+function readProducerVersion(workflowId: string): number | null {
   try {
     const stored = safeSessionStorage()?.getItem(producerClockKey(workflowId))
     if (stored === null || stored === undefined) return 0
     const parsed = Number(stored)
-    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null
   } catch {
     return 0
   }
 }
 
-function persistProducerVersion(workflowId: string, version: number): boolean {
+function persistProducerVersion(workflowId: string, version: number): void {
   try {
     const storage = safeSessionStorage()
-    if (storage === null) return false
+    if (storage === null) return
     storage.setItem(producerClockKey(workflowId), String(version))
-    return true
   } catch {
-    return false
+    // Quota / privacy mode: the in-memory clock keeps this tab monotonic.
   }
 }
 
@@ -94,14 +93,18 @@ function createProducerClock() {
       observed: number,
       count: number
     ): number | null {
+      const persisted = readProducerVersion(workflowId)
+      if (persisted === null) return null
       const previous = Math.max(
         versions.get(workflowId) ?? 0,
-        readProducerVersion(workflowId),
+        persisted,
         observed
       )
       const first = previous + 1
       const last = previous + count
-      if (!persistProducerVersion(workflowId, last)) return null
+      if (!Number.isSafeInteger(first) || !Number.isSafeInteger(last))
+        return null
+      persistProducerVersion(workflowId, last)
       versions.set(workflowId, last)
       return first
     }
@@ -560,7 +563,9 @@ export function useAgentCrdtFollower(
 
   return {
     status: readonly(status),
-    enqueueHumanOperations: (batch: TargetedGraphOperations) =>
-      sender.enqueue(batch)
+    enqueueHumanOperations: (batch: TargetedGraphOperations) => {
+      armCoordinationFreeIds()
+      return sender.enqueue(batch)
+    }
   }
 }

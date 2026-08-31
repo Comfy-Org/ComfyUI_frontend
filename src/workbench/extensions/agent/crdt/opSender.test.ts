@@ -179,7 +179,14 @@ describe('createOpSender', () => {
 
     expect(accepted).toBe(false)
     expect(sent).toHaveLength(0)
-    expect(settled).toEqual([])
+    expect(settled).toEqual([
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(1)],
+        reason: 'target_mismatch'
+      }
+    ])
     expect(producerVersion).toBe(0)
   })
 
@@ -188,7 +195,14 @@ describe('createOpSender', () => {
 
     expect(enqueue(addNode(1))).toBe(false)
     expect(sent).toEqual([])
-    expect(settled).toEqual([])
+    expect(settled).toEqual([
+      {
+        state: 'rejected',
+        target: TARGET,
+        operations: [addNode(1)],
+        reason: 'version_reservation_failed'
+      }
+    ])
   })
 
   it('resends the same ops exactly once after result silence, then reports unacknowledged', () => {
@@ -279,8 +293,11 @@ describe('createOpSender', () => {
     })
 
     expect(settled).toHaveLength(1)
-    expect(settled[0].state).toBe('acknowledged')
-    expect(settled[0].batchId).toBe(opId)
+    const outcome = settled[0]
+    expect(outcome.state).toBe('acknowledged')
+    if (outcome.state !== 'acknowledged')
+      throw new Error('expected acknowledged outcome')
+    expect(outcome.batchId).toBe(opId)
   })
 
   it('an identified failure for other ops never settles the in-flight batch', () => {

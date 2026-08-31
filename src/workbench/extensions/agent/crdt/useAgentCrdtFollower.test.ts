@@ -463,6 +463,45 @@ describe('useAgentCrdtFollower', () => {
     remounted.unmount()
   })
 
+  it('continues minting when sessionStorage cannot persist the producer clock', () => {
+    const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
+    const setItem = vi
+      .spyOn(window.sessionStorage.__proto__, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('quota')
+      })
+    const { enqueue, unmount } = mountFollower('wf-1')
+
+    expect(
+      enqueue({
+        target,
+        operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 1 }]
+      })
+    ).toBe(true)
+
+    expect(clientState.sendOps.mock.calls[0][2][0].stamp).toEqual([
+      42,
+      expect.any(String)
+    ])
+    setItem.mockRestore()
+    unmount()
+  })
+
+  it('rejects a corrupt persisted producer clock instead of minting stale versions', () => {
+    sessionStorage.setItem('Comfy.Agent.CrdtProducerClock:wf-1', 'not-a-clock')
+    const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
+    const { enqueue, unmount } = mountFollower('wf-1')
+
+    expect(
+      enqueue({
+        target,
+        operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 1 }]
+      })
+    ).toBe(false)
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    unmount()
+  })
+
   it('does not regress the producer clock after reconnect observes a lower sequence', () => {
     const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
     const { enqueue, unmount } = mountFollower('wf-1')

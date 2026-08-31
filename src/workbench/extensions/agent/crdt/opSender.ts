@@ -19,6 +19,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type {
   GraphMutationTarget,
+  GraphOperation,
   TargetedGraphOperations
 } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
@@ -67,6 +68,12 @@ export type BatchOutcome =
   | (BatchIdentity & { state: 'acknowledged'; result: OpsResultView })
   | (BatchIdentity & { state: 'unacknowledged' })
   | (BatchIdentity & { state: 'undeliverable' })
+  | {
+      state: 'rejected'
+      target: GraphMutationTarget
+      operations: GraphOperation[]
+      reason: 'target_mismatch' | 'version_reservation_failed'
+    }
 
 export interface OpSender {
   enqueue(batch: TargetedGraphOperations): boolean
@@ -177,14 +184,30 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   return {
     enqueue({ target, operations }) {
       if (detached || operations.length === 0) return false
-      if (deps.workflowId() !== target.workflowId) return false
+      if (deps.workflowId() !== target.workflowId) {
+        deps.onBatchSettled({
+          state: 'rejected',
+          target: { ...target },
+          operations,
+          reason: 'target_mismatch'
+        })
+        return false
+      }
       const stableTarget = { ...target }
       const firstVersion = deps.reserveVersions(
         stableTarget.workflowId,
         deps.observedVersion(),
         operations.length
       )
-      if (firstVersion === null) return false
+      if (firstVersion === null) {
+        deps.onBatchSettled({
+          state: 'rejected',
+          target: stableTarget,
+          operations,
+          reason: 'version_reservation_failed'
+        })
+        return false
+      }
       const minted = mintWireOps(operations, {
         actor: deps.actor(),
         firstVersion

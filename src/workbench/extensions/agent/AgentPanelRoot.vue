@@ -118,15 +118,16 @@ const graphMutationsByWorkflow = new Map<
 const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
-  const rootGraphId = boundTabFor(workflowId)?.activeState?.id
-  const scope = rootGraphId
-    ? {
-        rootGraphId: toRootGraphId(rootGraphId),
-        owningGraphId: toOwningGraphId(rootGraphId)
-      }
-    : null
   const mutations = createGraphMutations({
-    getScope: () => scope,
+    getScope: () => {
+      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
+      return rootGraphId
+        ? {
+            rootGraphId: toRootGraphId(rootGraphId),
+            owningGraphId: toOwningGraphId(rootGraphId)
+          }
+        : null
+    },
     layout: {
       createNode(scope, nodeId, layout, context) {
         const { position, size } = layout
