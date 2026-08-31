@@ -8,18 +8,18 @@ import TooltipProvider from './TooltipProvider.vue'
 import TooltipTrigger from './TooltipTrigger.vue'
 import type { TooltipSide, TooltipValue } from './tooltipTypes'
 
-const TOUCH_TOOLTIP_SUPPRESSION_MS = 700
-const touchInteractionActive = ref(false)
+const POINTER_TOOLTIP_SUPPRESSION_MS = 700
+const automaticTooltipSuppressed = ref(false)
 let mountedTooltipCount = 0
-let touchSuppressionTimer: ReturnType<typeof setTimeout> | undefined
+let pointerSuppressionTimer: ReturnType<typeof setTimeout> | undefined
 
-function handleDocumentTouchStart() {
-  touchInteractionActive.value = true
-  if (touchSuppressionTimer) clearTimeout(touchSuppressionTimer)
-  touchSuppressionTimer = setTimeout(() => {
-    touchInteractionActive.value = false
-    touchSuppressionTimer = undefined
-  }, TOUCH_TOOLTIP_SUPPRESSION_MS)
+function handleDocumentPointerInteraction() {
+  automaticTooltipSuppressed.value = true
+  if (pointerSuppressionTimer) clearTimeout(pointerSuppressionTimer)
+  pointerSuppressionTimer = setTimeout(() => {
+    automaticTooltipSuppressed.value = false
+    pointerSuppressionTimer = undefined
+  }, POINTER_TOOLTIP_SUPPRESSION_MS)
 }
 
 defineOptions({ inheritAttrs: false })
@@ -62,7 +62,7 @@ let closeTimer: ReturnType<typeof setTimeout> | undefined
 
 function updateOpen(nextOpen: boolean) {
   if (closeTimer) clearTimeout(closeTimer)
-  if (nextOpen && touchInteractionActive.value) return
+  if (nextOpen && automaticTooltipSuppressed.value) return
 
   const hideDelay = normalizedConfig.value?.hideDelay ?? 0
   if (!nextOpen && hideDelay > 0) {
@@ -86,13 +86,16 @@ function handleClick(event: MouseEvent) {
 watch(isDisabled, (disabled) => {
   if (disabled) setOpen(false)
 })
-watch(touchInteractionActive, (active) => {
-  if (active) setOpen(false)
+watch(automaticTooltipSuppressed, (suppressed) => {
+  if (suppressed) setOpen(false)
 })
 
 onMounted(() => {
   if (mountedTooltipCount++ === 0) {
-    document.addEventListener('touchstart', handleDocumentTouchStart, {
+    document.addEventListener('pointerdown', handleDocumentPointerInteraction, {
+      passive: true
+    })
+    document.addEventListener('touchstart', handleDocumentPointerInteraction, {
       passive: true
     })
   }
@@ -101,10 +104,14 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (closeTimer) clearTimeout(closeTimer)
   if (--mountedTooltipCount === 0) {
-    document.removeEventListener('touchstart', handleDocumentTouchStart)
-    if (touchSuppressionTimer) clearTimeout(touchSuppressionTimer)
-    touchSuppressionTimer = undefined
-    touchInteractionActive.value = false
+    document.removeEventListener(
+      'pointerdown',
+      handleDocumentPointerInteraction
+    )
+    document.removeEventListener('touchstart', handleDocumentPointerInteraction)
+    if (pointerSuppressionTimer) clearTimeout(pointerSuppressionTimer)
+    pointerSuppressionTimer = undefined
+    automaticTooltipSuppressed.value = false
   }
 })
 </script>
