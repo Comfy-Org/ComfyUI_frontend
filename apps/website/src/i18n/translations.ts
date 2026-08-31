@@ -6317,6 +6317,76 @@ Enterprise`
       '有即将举办的活动，或正在酝酿的想法？提交审核，即可获得 Comfy 的支持。'
   },
   'events.host.applyToHost': { en: 'Apply to host', 'zh-CN': '申请主办' },
+  // Step 1 is transcribed from the Figma frame. Steps 2-5 are collapsed in the
+  // design with no copy, so their bodies are written here and want a content
+  // pass (ticket 08).
+  'events.host.step1.title': {
+    en: 'Check your event is a good match',
+    'zh-CN': '确认你的活动是否合适'
+  },
+  'events.host.step1.intro': {
+    en: 'Comfy events are community-run and community-sized. A quick check before you spend time on an application.',
+    'zh-CN':
+      'Comfy 活动由社区自行组织、规模也由社区决定。在你花时间填写申请之前，先做个快速自查。'
+  },
+  'events.host.step1.checklistLead': {
+    en: 'Before you apply, make sure your event ticks these boxes:',
+    'zh-CN': '申请前，请确认你的活动符合以下条件：'
+  },
+  'events.host.step1.check1': {
+    en: 'Builders and artists as the primary audience',
+    'zh-CN': '以创作者和艺术家为主要受众'
+  },
+  'events.host.step1.check2': {
+    en: '20+ participants expected',
+    'zh-CN': '预计有 20 位以上参与者'
+  },
+  'events.host.step1.check3': {
+    en: 'At least 2 weeks away — so we have time to review your application and get you set up',
+    'zh-CN': '至少还有两周时间，以便我们审核申请并帮你做好准备'
+  },
+  'events.host.step1.whoTitle': {
+    en: 'Who can host?',
+    'zh-CN': '谁可以主办？'
+  },
+  'events.host.step1.whoBody': {
+    en: "Anyone passionate about bringing builders together. Our hosts include student organizers, studio leads, custom node authors, community organizers, and people who just love to build. You don't need event planning experience or a large following.",
+    'zh-CN':
+      '任何热衷于把创作者聚在一起的人。我们的主办方包括学生组织者、工作室负责人、自定义节点作者、社区组织者，以及单纯热爱创作的人。你不需要办活动的经验，也不需要大量粉丝。'
+  },
+  'events.host.step2.title': {
+    en: 'Plan your event',
+    'zh-CN': '筹划你的活动'
+  },
+  'events.host.step2.body': {
+    en: 'Settle the date, the venue, and the shape of the day — a talk, a workshop, a build night. Tell us roughly how many people you expect and what you want them to leave with.',
+    'zh-CN':
+      '确定日期、场地和当天的形式——演讲、工作坊或共创之夜。告诉我们你预计的人数，以及希望参与者带走什么。'
+  },
+  'events.host.step3.title': { en: 'Apply', 'zh-CN': '提交申请' },
+  'events.host.step3.body': {
+    en: 'Send the details through the application form. One form per event; you can come back and update it if plans move.',
+    'zh-CN':
+      '通过申请表提交活动详情。每场活动填写一份；如果计划有变，你可以随时回来更新。'
+  },
+  'events.host.step4.title': {
+    en: 'Get approved and receive your event kit',
+    'zh-CN': '通过审核并领取活动礼包'
+  },
+  'events.host.step4.body': {
+    en: 'We review applications as they arrive and reply either way. Approved events get a kit: brand assets, slide templates, and swag for your attendees.',
+    'zh-CN':
+      '我们会在收到申请后尽快审核，无论结果如何都会回复。通过审核的活动会获得一份礼包：品牌素材、幻灯片模板，以及给参与者的周边。'
+  },
+  'events.host.step5.title': {
+    en: 'Host your event',
+    'zh-CN': '举办你的活动'
+  },
+  'events.host.step5.body': {
+    en: 'Run the day. Share what happened afterwards and we will help get it in front of the wider Comfy community.',
+    'zh-CN':
+      '把活动办起来。结束后与我们分享现场情况，我们会帮你把它传播给更广泛的 Comfy 社区。'
+  },
   'events.upcoming.addToCalendar': {
     en: 'Add to calendar',
     'zh-CN': '添加到日历'
