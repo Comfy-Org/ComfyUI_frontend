@@ -20,10 +20,6 @@ export interface LinkPresentation {
  */
 export type LinkPresentationPatch = LinkPresentation
 
-/**
- * Builds the canonical compact record — `hidden` only when true, `label` only
- * when defined — or `undefined` for the default (empty) presentation.
- */
 export function isDefaultLinkPresentation(
   hidden: boolean | undefined,
   label: string | undefined
@@ -67,11 +63,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     return created
   }
 
-  /**
-   * Merges a {@link LinkPresentationPatch} into a link's entry; an entry with
-   * no remaining fields is deleted. The first-writing graph owns the entry: a
-   * different owner cannot overwrite it.
-   */
+  /** First writer owns the entry; a different owner cannot overwrite it. */
   function patch(
     scope: GraphScope,
     linkId: LinkId,
@@ -103,7 +95,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     })
   }
 
-  /** Removes and returns a link's presentation, for stashing across a transfer. */
+  /** For stashing presentation across a transfer. */
   function take(
     scope: GraphScope,
     linkId: LinkId
@@ -116,7 +108,6 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     return entry.presentation
   }
 
-  /** Returns the live presentation record for a link `scope` owns. */
   function getPresentation(
     scope: GraphScope,
     linkId: LinkId
@@ -127,7 +118,6 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
       : undefined
   }
 
-  /** Ids of the hidden links `scope` owns. */
   function graphHiddenLinkIds(scope: GraphScope): LinkId[] {
     const bucket = roots.get(scope.rootGraphId)
     if (!bucket) return []
