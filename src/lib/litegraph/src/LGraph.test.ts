@@ -20,6 +20,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraph,
+  ISerialisedGraph,
   SerialisableGraph,
   SerialisableLLink,
   SerialisableReroute
@@ -58,7 +59,12 @@ import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  LiteGraph.registerNodeType('dummy', DummyNode)
+})
+
+afterEach(() => LiteGraph.unregisterNodeType('dummy'))
 
 function swapNodes(nodes: LGraphNode[]) {
   const firstNode = nodes[0]
@@ -180,7 +186,6 @@ describe('LGraph', () => {
   })
 
   it('should serialize deterministic node order', async () => {
-    LiteGraph.registerNodeType('dummy', DummyNode)
     const node1 = new DummyNode()
     const node2 = new DummyNode()
     const graph = createGraph(node1, node2)
@@ -1284,6 +1289,7 @@ describe('Subgraph Definition Garbage Collection', () => {
     const innerNode = innerNodes[0]
     const id = widgetId(rootGraph.id, innerNode.id, 'value')
     const locator = createNodeLocatorId(subgraph.id, innerNode.id)
+    if (locator === null) throw new Error('Expected an inner-node locator')
     useWidgetValueStore().registerWidget(id, {
       type: 'number',
       value: 1,
@@ -1576,12 +1582,13 @@ describe('persisted duplicate links', () => {
     }
   }
 
-  function registerTestNodes() {
+  beforeEach(() => {
     LiteGraph.registerNodeType('test/DupTestNode', TestNode)
-  }
+  })
+
+  afterEach(() => LiteGraph.unregisterNodeType('test/DupTestNode'))
 
   it('rejects persisted duplicate links via root graph configure()', () => {
-    registerTestNodes()
     const graph = new LGraph()
     graph.configure(duplicateLinksRoot)
 
@@ -1594,7 +1601,6 @@ describe('persisted duplicate links', () => {
   })
 
   it('normalizes duplicate aliases before callbacks without mutating input', () => {
-    registerTestNodes()
     const graph = new LGraph()
     const data = structuredClone(duplicateLinksRoot)
     data.nodes![0].outputs![0].links = [2]
@@ -1613,7 +1619,6 @@ describe('persisted duplicate links', () => {
   })
 
   it('preserves link integrity after configure() with slot-shifted duplicates', () => {
-    registerTestNodes()
     const graph = new LGraph()
     graph.configure(duplicateLinksSlotShift)
 
@@ -1650,16 +1655,17 @@ describe('Subgraph Unpacking', () => {
     }
   }
 
-  function registerTestNodes() {
+  beforeEach(() => {
     LiteGraph.registerNodeType('test/TestNode', TestNode)
-  }
+  })
+
+  afterEach(() => LiteGraph.unregisterNodeType('test/TestNode'))
 
   function createSubgraphOnGraph(rootGraph: LGraph) {
     return rootGraph.createSubgraph(createTestSubgraphData())
   }
 
   it('clears subgraph geometry only for the owning root graph', () => {
-    registerTestNodes()
     const firstRoot = new LGraph()
     const secondRoot = new LGraph()
     firstRoot.id = createUuidv4()
@@ -1707,7 +1713,6 @@ describe('Subgraph Unpacking', () => {
   })
 
   it('offsets unpacked group geometry in the layout store too', () => {
-    registerTestNodes()
     const rootGraph = new LGraph()
     const subgraph = createSubgraphOnGraph(rootGraph)
 
@@ -1768,11 +1773,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
   const SUBGRAPH_A = '11111111-1111-4111-8111-111111111111' as UUID
   const SUBGRAPH_B = '22222222-2222-4222-8222-222222222222' as UUID
   const SHARED_NODE_IDS = [3, 8, 37]
-
-  beforeEach(() => {
-    LiteGraph.registerNodeType('dummy', DummyNode)
-  })
-
   function loadFixture(): SerialisableGraph {
     return structuredClone(duplicateSubgraphNodeIds)
   }
@@ -2001,47 +2001,58 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     }
   })
 
-  it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
-    const subgraph = createTestSubgraph()
-    const sourceHost = createTestSubgraphNode(subgraph)
-    sourceHost.graph!.add(sourceHost)
-    sourceHost.properties.proxyWidgets = [['9999', 'seed']]
-    const serialized = sourceHost.rootGraph.serialize()
-    const instanceData = sourceHost.serialize()
+  describe('legacy proxyWidget warning', () => {
+    let subgraph: Subgraph
+    let serialized: ISerialisedGraph
+    let instanceData: ReturnType<SubgraphNode['serialize']>
 
-    const previous = LGraph.proxyWidgetMigrationFlush
-    LGraph.proxyWidgetMigrationFlush = undefined
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    LiteGraph.registerNodeType(
-      subgraph.id,
-      class TestSubgraphNode extends SubgraphNode {
-        constructor() {
-          super(new LGraph(), subgraph, instanceData)
+    beforeEach(() => {
+      subgraph = createTestSubgraph()
+      const sourceHost = createTestSubgraphNode(subgraph)
+      sourceHost.graph!.add(sourceHost)
+      sourceHost.properties.proxyWidgets = [['9999', 'seed']]
+      serialized = sourceHost.rootGraph.serialize()
+      instanceData = sourceHost.serialize()
+      LiteGraph.registerNodeType(
+        subgraph.id,
+        class TestSubgraphNode extends SubgraphNode {
+          constructor() {
+            super(new LGraph(), subgraph, instanceData)
+          }
         }
-      }
-    )
-    try {
-      const graph = new LGraph()
-      serialized.id = graph.id
-      graph.configure(serialized)
+      )
+    })
 
-      const migrationCall = warn.mock.calls.find(
-        (call) =>
-          typeof call[0] === 'string' &&
-          call[0].includes('Legacy proxyWidgets were not migrated')
-      )
-      expect(migrationCall).toBeDefined()
-      expect(migrationCall![1]).toEqual(
-        expect.objectContaining({
-          hostNodeId: expect.any(String),
-          proxyWidgets: expect.anything()
-        })
-      )
-    } finally {
-      LGraph.proxyWidgetMigrationFlush = previous
-      LiteGraph.unregisterNodeType(subgraph.id)
-      warn.mockRestore()
-    }
+    afterEach(() => LiteGraph.unregisterNodeType(subgraph.id))
+
+    it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
+      const previous = LGraph.proxyWidgetMigrationFlush
+      LGraph.proxyWidgetMigrationFlush = undefined
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const graph = new LGraph()
+        serialized.id = graph.id
+        graph.configure(serialized)
+
+        const migrationCall = warn.mock.calls.find(
+          (call) =>
+            typeof call[0] === 'string' &&
+            call[0].includes('Legacy proxyWidgets were not migrated')
+        )
+        expect(migrationCall).toBeDefined()
+        if (!migrationCall)
+          throw new Error('Expected proxy widget migration warning')
+        expect(migrationCall[1]).toEqual(
+          expect.objectContaining({
+            hostNodeId: expect.any(String),
+            proxyWidgets: expect.anything()
+          })
+        )
+      } finally {
+        LGraph.proxyWidgetMigrationFlush = previous
+        warn.mockRestore()
+      }
+    })
   })
 
   it('throws when node ID space is exhausted', () => {
