@@ -364,8 +364,9 @@ Phase 4.)
   database engine serves many databases — provided every entry is keyed by
   document uid and each slice is conceptually one document's data. Stores
   then take one of two shapes: a sidecar (its own uid-keyed map, evicted at
-  `PostClose` after its resources are released) or a reactive facade exposing
-  the active document's slice to components. What we stop adding — and
+  `Close` when it holds core document data, or at `PostClose` after release
+  when it holds external resources) or a reactive facade exposing the active
+  document's slice to components. What we stop adding — and
   migrate away from — is the third shape, the one that produced the bug
   class: a singleton holding a _single, unkeyed_ copy of "the current
   document's" data, overwritten in place on every switch. Keyed storage
