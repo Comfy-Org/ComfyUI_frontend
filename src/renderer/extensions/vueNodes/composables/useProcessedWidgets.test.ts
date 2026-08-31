@@ -114,6 +114,7 @@ function processWidgets({
   nodeId = toNodeId(1),
   nodeType = 'TestNode',
   showAdvanced = false,
+  forceDisabled = false,
   subgraphId,
   rootGraph = null
 }: {
@@ -121,6 +122,7 @@ function processWidgets({
   nodeId?: NodeId
   nodeType?: string
   showAdvanced?: boolean
+  forceDisabled?: boolean
   subgraphId?: string | null
   rootGraph?: LGraph | null
 }) {
@@ -139,6 +141,7 @@ function processWidgets({
     widgetIds,
     graphId: GRAPH_ID,
     showAdvanced,
+    forceDisabled,
     isGraphReady: rootGraph !== null,
     rootGraph,
     ui: noopUi
@@ -401,6 +404,24 @@ describe('promoted subgraph widgets', () => {
 })
 
 describe('computeProcessedWidgets', () => {
+  it('disables every widget when forceDisabled is set', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
+    registerWidgetState(id, { type: 'text' })
+
+    const result = processWidgets({ widgetIds: [id], forceDisabled: true })
+
+    expect(result[0].simplified.options?.disabled).toBe(true)
+  })
+
+  it('leaves widgets enabled when forceDisabled is not set', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
+    registerWidgetState(id, { type: 'text' })
+
+    const result = processWidgets({ widgetIds: [id] })
+
+    expect(result[0].simplified.options?.disabled).toBeUndefined()
+  })
+
   it('applies advanced border styling to advanced widgets', () => {
     const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
     registerWidgetState(id, { type: 'text', options: { advanced: true } })

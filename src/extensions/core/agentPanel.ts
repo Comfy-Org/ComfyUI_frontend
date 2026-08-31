@@ -6,10 +6,13 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 // The initTelemetry.ts idiom: the guard lives INSIDE the unconditionally
-// retained function, and every agent-specific module is imported dynamically
-// past it. OSS builds fold the guard, drop the dead remainder with its
-// import() edges, and emit no agent code; cloud builds keep the shell inline
-// in the core graph so a flag-off session fetches no separate gate chunk.
+// retained function, and every agent-chunk module is imported dynamically
+// past it. agentNodeSelectionStore is the deliberate carve-out: it already
+// lives in the core graph (canvas files import it statically), so a static
+// import here adds no agent bytes to OSS builds. OSS builds fold the guard,
+// drop the dead remainder with its import() edges, and emit no agent code;
+// cloud builds keep the shell inline in the core graph so a flag-off session
+// fetches no separate gate chunk.
 const IS_CLOUD_BUILD = __DISTRIBUTION__ === 'cloud'
 
 export function registerAgentPanelExtension(): void {
