@@ -365,9 +365,10 @@ describe('minted stamps (property) — order-independent LWW', () => {
  * DQ-11 resolved to incarnation-namespaced stamps: a stale stamp minted before
  * a reconnect (life 1) must never defeat a live write from the same client
  * after it (life 2). This branch pins `@comfyorg/comfy-multi-player` at a
- * revision that PREDATES that change — `Stamp` here is the 2-tuple
- * `[base_version, actor]` with no incarnation component and `SCHEMA_VERSION`
- * is 1 — and `opEnvelope.ts` mints exactly that shape. So the guarantee is not
+ * revision that still uses the 2-tuple `Stamp` `[base_version, actor]` with no
+ * incarnation component. `SCHEMA_VERSION` is 2 for the node-incarnation wire
+ * changes, but those changes do not namespace a reconnecting actor's stamp;
+ * `opEnvelope.ts` still mints exactly the 2-tuple shape. So the guarantee is not
  * merely untested at this head, it is unrepresentable: a life-1 op that
  * happened to carry a higher `base_version` wins, permanently.
  *
@@ -376,9 +377,9 @@ describe('minted stamps (property) — order-independent LWW', () => {
  * is where the write leg gets updated. Nothing here is a claim that the current
  * outcome is correct.
  */
-describe('minted stamps — DQ-11 incarnation gap at this pin', () => {
-  it('pins the pre-DQ-11 stamp shape the write leg mints', () => {
-    expect(SCHEMA_VERSION).toBe(1)
+describe('minted stamps — DQ-11 actor-incarnation gap at this pin', () => {
+  it('pins the actor-incarnation-free stamp shape the write leg mints', () => {
+    expect(SCHEMA_VERSION).toBe(2)
 
     const [op] = mintWireOps([setWidget(1, 'v')], MINT)
 
