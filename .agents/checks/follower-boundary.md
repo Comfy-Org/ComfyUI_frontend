@@ -1,13 +1,13 @@
 ---
 name: follower-boundary
-description: Checks in-app-agent CRDT follower code against the load-bearing follower/distribution invariants in ADR 0016 (and ADR 0003)
+description: Checks in-app-agent CRDT follower code against the load-bearing follower/distribution invariants in ADR 0025 (and ADR 0003)
 severity-default: high
 tools: [Read, Grep, glob]
 ---
 
 Check changes under `src/workbench/extensions/agent/**` (and anything importing
 `@comfyorg/comfy-multi-player` or the agent CRDT seam) against the follower invariants in
-[ADR 0016](../../docs/adr/0016-in-app-agent-crdt-follower-and-distribution.md) and the CRDT
+[ADR 0025](../../docs/adr/0025-in-app-agent-crdt-follower-and-distribution.md) and the CRDT
 layout split in [ADR 0003](../../docs/adr/0003-crdt-based-layout-system.md).
 
 These are load-bearing: a low-context change that violates one can silently foreclose the
@@ -37,7 +37,7 @@ Flag:
 
 ## Priority 2: state seam — stores, not litegraph; layout stays separate
 
-Per ADR 0016 the durable follower integrates updates into the yjs-backed FE domain stores
+Per ADR 0025 the durable follower integrates updates into the yjs-backed FE domain stores
 (the `layoutStore` pattern), and litegraph is a render target, not the state seam.
 
 Flag:
@@ -45,7 +45,7 @@ Flag:
 - **New durable dependence on `LitegraphMutator` / snapshot-diff / `SemanticProjector`** —
   these are the disposable POC stopgap mounted with the flag-gated agent panel. New code
   that treats them as the permanent seam, or extends them instead of routing state into a
-  domain store, should be questioned against ADR 0016.
+  domain store, should be questioned against ADR 0025.
 - **Layout/view fields written into the shared semantic doc** — `pos`, `size`, pan/zoom,
   live drags, or group geometry placed in the semantic doc. Layout is a separate FE-owned
   `Y.Doc` (ADR 0003, KEEP-ALIVE #8); the two docs are composed, not merged.
@@ -73,7 +73,7 @@ Flag:
 
 ## Priority 4: distribution seam — one boundary, unified auth
 
-Per ADR 0016 the follower APPLY path is distribution-agnostic; surface differences
+Per ADR 0025 the follower APPLY path is distribution-agnostic; surface differences
 (endpoint, ingest-vs-direct route, auth) live behind one small distribution-resolved
 boundary keyed on `DISTRIBUTION`.
 
@@ -97,5 +97,5 @@ Flag:
 Seam violations should also fail loudly at runtime via the centralized `assert(cond, msg)`
 from `src/base/assert.ts` (DEV throws, prod reports to Sentry), with a message that names
 the broken invariant and links this ADR, e.g. `assert(!isFollower, 'followers never write
-the shared doc — see ADR 0016')`. Flag a follower-boundary change that adds no such guard
+the shared doc — see ADR 0025')`. Flag a follower-boundary change that adds no such guard
 where one is warranted.

@@ -1,6 +1,6 @@
 # Core Extensions
 
-This directory contains the core extensions that provide essential functionality to the ComfyUI frontend.
+Reference for the core extensions in `src/extensions/core/` that provide essential functionality to the ComfyUI frontend.
 
 ## Table of Contents
 
@@ -25,62 +25,65 @@ ComfyUI's extension system follows these key principles:
 
 ## Core Extensions List
 
-The following table lists ALL core extensions in the system as of 2025-01-30:
+The modules below live in `src/extensions/core/`. This list is maintained by
+hand, so treat the directory listing as the source of truth if the two disagree.
 
 ### Main Extensions
 
-| Extension               | Description                                                  | Category  |
-| ----------------------- | ------------------------------------------------------------ | --------- |
-| clipspace.ts            | Implements the Clipspace feature for temporary image storage | Image     |
-| contextMenuFilter.ts    | Provides context menu filtering capabilities                 | UI        |
-| dynamicPrompts.ts       | Provides dynamic prompt generation capabilities              | Prompts   |
-| editAttention.ts        | Implements attention editing functionality                   | Text      |
-| electronAdapter.ts      | Adapts functionality for Electron environment                | Platform  |
-| groupNode.ts            | Migrates deprecated group nodes to subgraphs on load         | Graph     |
-| groupOptions.ts         | Handles group node configuration options                     | Graph     |
-| index.ts                | Main extension registration and coordination                 | Core      |
-| load3d.ts               | Supports 3D model loading and visualization                  | 3D        |
-| maskeditor.ts           | Implements the mask editor for image masking operations      | Image     |
-| nodeTemplates.ts        | Provides node template functionality                         | Templates |
-| noteNode.ts             | Adds note nodes for documentation within workflows           | Graph     |
-| previewAny.ts           | Universal preview functionality for various data types       | Preview   |
-| rerouteNode.ts          | Implements reroute nodes for cleaner workflow connections    | Graph     |
-| saveImageExtraOutput.ts | Handles additional image output saving                       | Image     |
-| saveMesh.ts             | Implements 3D mesh saving functionality                      | 3D        |
-| simpleTouchSupport.ts   | Provides basic touch interaction support                     | Input     |
-| slotDefaults.ts         | Manages default values for node slots                        | Nodes     |
-| uploadAudio.ts          | Handles audio file upload functionality                      | Audio     |
-| uploadImage.ts          | Handles image upload functionality                           | Image     |
-| webcamCapture.ts        | Provides webcam capture capabilities                         | Media     |
-| widgetInputs.ts         | Implements various widget input types                        | Widgets   |
+| Extension                    | Description                                                          | Category  |
+| ---------------------------- | -------------------------------------------------------------------- | --------- |
+| agentPanel.ts                | Registers the in-app agent panel and its graph-load port wiring      | Agent     |
+| cameraInfo.ts                | Custom widget and viewport overlay for the `CreateCameraInfo` node   | 3D        |
+| clipspace.ts                 | Implements the Clipspace feature for temporary image storage         | Image     |
+| cloudBadges.ts               | Server health and status badges for the cloud distribution           | Cloud     |
+| cloudFeedbackTopbarButton.ts | Adds the feedback button to the cloud topbar                         | Cloud     |
+| cloudRemoteConfig.ts         | Polls for remote config updates (cloud only)                         | Cloud     |
+| cloudSessionCookie.ts        | Creates, refreshes and deletes the auth session cookie (cloud only)  | Cloud     |
+| contextMenuFilter.ts         | Provides context menu filtering capabilities                         | UI        |
+| createBoundingBoxes.ts       | Bounding-box editing UI for the `CreateBoundingBoxes` node           | Image     |
+| customWidgets.ts             | Registers Comfy custom widget types and prompt-time input resolution | Widgets   |
+| dynamicPrompts.ts            | Provides dynamic prompt generation capabilities                      | Prompts   |
+| editAttention.ts             | Implements attention editing functionality                           | Text      |
+| electronAdapter.ts           | Adapts functionality for Electron environment                        | Platform  |
+| groupNode.ts                 | Migrates deprecated group nodes to subgraphs on load                 | Graph     |
+| groupOptions.ts              | Handles group node configuration options                             | Graph     |
+| imageCompare.ts              | Side-by-side comparison widget for the `ImageCompare` node           | Image     |
+| imageCompositor.ts           | Compositing UI for the `ImageCompositor` node                        | Image     |
+| imageCrop.ts                 | Crop UI for the `ImageCropV2` node                                   | Image     |
+| index.ts                     | Main extension registration and coordination                         | Core      |
+| layerEditor.ts               | Registers the "Open Layer Editor for Selected Node" command          | Image     |
+| load3d.ts                    | Supports 3D model loading and visualization                          | 3D        |
+| load3dAdvanced.ts            | Advanced Load3D viewport state and controls                          | 3D        |
+| load3dLazy.ts                | Defers the THREE.js bundle until a 3D node is actually used          | 3D        |
+| load3dPreviewExtensions.ts   | Preview/save extensions for Gaussian splat and point cloud nodes     | 3D        |
+| maskeditor.ts                | Implements the mask editor for image masking operations              | Image     |
+| nightlyBadges.ts             | Topbar badge marking nightly builds                                  | UI        |
+| nodeTemplates.ts             | Provides node template functionality                                 | Templates |
+| noteNode.ts                  | Adds note nodes for documentation within workflows                   | Graph     |
+| painter.ts                   | Painting canvas for the `Painter` node                               | Image     |
+| previewAny.ts                | Universal preview functionality for various data types               | Preview   |
+| rerouteNode.ts               | Implements reroute nodes for cleaner workflow connections            | Graph     |
+| saveImageExtraOutput.ts      | Handles additional image output saving                               | Image     |
+| saveMesh.ts                  | Implements 3D mesh saving functionality                              | 3D        |
+| saveText.ts                  | Text output saving for the `SaveText` node                           | Text      |
+| selectionBorder.ts           | Zoom-invariant dashed border around selected items                   | Canvas    |
+| simpleTouchSupport.ts        | Provides basic touch interaction support                             | Input     |
+| slotDefaults.ts              | Manages default values for node slots                                | Nodes     |
+| textPreviewWidgets.ts        | Text and Markdown preview widgets                                    | Preview   |
+| uploadAudio.ts               | Handles audio file upload functionality                              | Audio     |
+| uploadImage.ts               | Handles image upload functionality                                   | Image     |
+| webcamCapture.ts             | Provides webcam capture capabilities                                 | Media     |
+| widgetInputs.ts              | `PrimitiveNode` and widget-to-input conversion                       | Widgets   |
+| widgetValuePropagation.ts    | Propagates a node's first widget value to downstream linked nodes    | Widgets   |
 
-### Conditional Lines Subdirectory
+### Subdirectories
 
-Located in `extensions/core/load3d/conditional-lines/`:
-
-| File                        | Description                             |
-| --------------------------- | --------------------------------------- |
-| ColoredShadowMaterial.js    | Material for colored shadow rendering   |
-| ConditionalEdgesGeometry.js | Geometry for conditional edge rendering |
-| ConditionalEdgesShader.js   | Shader for conditional edges            |
-| OutsideEdgesGeometry.js     | Geometry for outside edge detection     |
-
-### Lines2 Subdirectory
-
-Located in `extensions/core/load3d/conditional-lines/Lines2/`:
-
-| File                               | Description                             |
-| ---------------------------------- | --------------------------------------- |
-| ConditionalLineMaterial.js         | Material for conditional line rendering |
-| ConditionalLineSegmentsGeometry.js | Geometry for conditional line segments  |
-
-### ThreeJS Override Subdirectory
-
-Located in `extensions/core/load3d/threejsOverride/`:
-
-| File                 | Description                                   |
-| -------------------- | --------------------------------------------- |
-| OverrideMTLLoader.js | Custom MTL loader with enhanced functionality |
+| Directory        | Contents                                                                 |
+| ---------------- | ------------------------------------------------------------------------ |
+| `cameraInfo/`    | Camera overlay, viewport, transform math and widget bridge               |
+| `load3d/`        | Load3D managers (scene, camera, lighting, controls, recording), adapters |
+| `load3d/loader/` | `FastPLYLoader`                                                          |
+| `maskeditor/`    | Mask editor types                                                        |
 
 ## Extension Development
 

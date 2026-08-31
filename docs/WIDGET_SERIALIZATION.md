@@ -20,8 +20,8 @@ These correspond to the two data formats in `ComfyMetadata` embedded in output f
 ## Gotchas
 
 - `addWidget('combo', name, value, cb, { serialize: false })` puts `serialize` into `widget.options`, **not** onto `widget` directly. These are different properties consumed by different systems.
-- `LGraphNode.serialize()` checks `widget.serialize === false` (line 967). It does **not** check `widget.options.serialize`. A widget with `options.serialize = false` is still included in `widgets_values`.
-- `LGraphNode.serialize()` only writes `widgets_values` if `this.widgets` is truthy. Nodes that create widgets dynamically (like `PrimitiveNode`) will have no `widgets_values` in serialized output if serialized before widget creation — even if `this.widgets_values` exists on the instance from a prior `configure()` call.
+- `LGraphNode.serialize()` checks `widget.serialize === false` (in its `serialiseWidgetValues()` helper). It does **not** check `widget.options.serialize`. A widget with `options.serialize = false` is still included in `widgets_values`.
+- `LGraphNode.serialize()` only writes `widgets_values` if `this.widgets` is non-empty (`widgets?.length && this.serialize_widgets`). Nodes that create widgets dynamically (like `PrimitiveNode`) will have no `widgets_values` in serialized output if serialized before widget creation — even if `this.widgets_values` exists on the instance from a prior `configure()` call.
 - `widget.options.serialize` is typed as `IWidgetOptions.serialize` — both properties share the name `serialize` but live at different levels of the widget object.
 
 ## PrimitiveNode and copy/paste
@@ -30,19 +30,19 @@ These correspond to the two data formats in `ComfyMetadata` embedded in output f
 
 ### The clone→serialize gap
 
-`LGraphCanvas._serializeItems()` copies nodes via `item.clone()?.serialize()` (line 3911). For PrimitiveNode this fails:
+`LGraphCanvas._serializeItems()` copies nodes via `item.clone()?.serialize()`. For PrimitiveNode this fails:
 
 1. `clone()` calls `this.serialize()` on the **original** node (which has widgets, so `widgets_values` is captured correctly).
 2. `clone()` creates a **fresh** PrimitiveNode via `LiteGraph.createNode()` and calls `configure(data)` on it — this stores `widgets_values` on the instance.
-3. But the fresh PrimitiveNode has no `this.widgets` (widgets are created only on connection), so when `serialize()` is called on the clone, `LGraphNode.serialize()` skips the `widgets_values` block entirely (line 964: `if (widgets && this.serialize_widgets)`).
+3. But the fresh PrimitiveNode has no `this.widgets` (widgets are created only on connection), so when `serialize()` is called on the clone, `LGraphNode.serialize()` skips the `widgets_values` block entirely (`if (widgets?.length && this.serialize_widgets)`).
 
 Result: `widgets_values` is silently dropped from the clipboard data.
 
 ### Why seed survives but control_after_generate doesn't
 
-When the pasted PrimitiveNode reconnects to the pasted target node, `_createWidget()` copies `theirWidget.value` from the target (line 254). This restores the **primary** widget value (e.g., `seed`).
+When the pasted PrimitiveNode reconnects to the pasted target node, `_createWidget()` copies `theirWidget.value` from the target. This restores the **primary** widget value (e.g., `seed`).
 
-But `control_after_generate` is a **secondary** widget created by `addValueControlWidgets()`, which reads its initial value from `this.widgets_values?.[1]` (line 263). That value was lost during clone→serialize, so it falls back to `'fixed'` (line 265).
+But `control_after_generate` is a **secondary** widget. `_createWidget()` looks up its initial value with `useWidgetValueStore().getPositionalRestoredWidgetValue(graphId, this.id, 1)` before handing it to `addValueControlWidgets()`. The positional value at index 1 was lost during clone→serialize, so the lookup misses and it falls back to `'fixed'`.
 
 See [ADR-0006](adr/0006-primitive-node-copy-paste-lifecycle.md) for proposed fixes and design tradeoffs.
 
@@ -54,5 +54,6 @@ See [ADR-0006](adr/0006-primitive-node-copy-paste-lifecycle.md) for proposed fix
 - `widget.serialize` set: `src/composables/node/useNodeImage.ts`, `src/extensions/core/previewAny.ts`, etc.
 - Metadata types: `src/types/metadataTypes.ts`
 - PrimitiveNode: `src/extensions/core/widgetInputs.ts`
+- Positional widget-value restore: `src/stores/widgetValueStore.ts` `getPositionalRestoredWidgetValue()`
 - Copy/paste serialization: `src/lib/litegraph/src/LGraphCanvas.ts` `_serializeItems()`
 - Clone: `src/lib/litegraph/src/LGraphNode.ts` `clone()`
