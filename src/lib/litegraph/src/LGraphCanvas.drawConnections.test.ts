@@ -9,15 +9,15 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import {
   createMockCanvas2DContext,
-  createTestCanvas
+  createTestCanvas,
+  createTestLink
 } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore')
@@ -52,31 +52,6 @@ function createMockCtx(): CanvasRenderingContext2D {
     shadowOffsetY: 0,
     imageSmoothingEnabled: true
   })
-}
-
-/**
- * Creates a link between two nodes by directly mutating graph state,
- * bypassing the layout store integration in connect().
- */
-function createTestLink(
-  graph: LGraph,
-  sourceNode: LGraphNode,
-  outputSlot: number,
-  targetNode: LGraphNode,
-  inputSlot: number
-): LLink {
-  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
-  graph.state.lastLinkId = linkId
-  const link = new LLink(
-    linkId,
-    sourceNode.outputs[outputSlot].type,
-    sourceNode.id,
-    outputSlot,
-    targetNode.id,
-    inputSlot
-  )
-  graph._addLink(link)
-  return link
 }
 
 describe('drawConnections', () => {

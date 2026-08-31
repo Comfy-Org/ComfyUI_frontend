@@ -51,7 +51,7 @@ const frameStates = new WeakMap<object, LinkBadgeFrameState>()
 
 /**
  * Per-canvas badge frame state, owned by this module rather than the canvas
- * (ADR 0008: no new state on the god object). Keyed weakly by the canvas.
+ * (ADR 0008: no new state on the god object).
  */
 export function getLinkBadgeFrameState(host: object): LinkBadgeFrameState {
   const existing = frameStates.get(host)

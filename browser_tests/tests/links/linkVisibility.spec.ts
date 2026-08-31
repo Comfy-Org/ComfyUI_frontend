@@ -13,7 +13,6 @@ interface Point {
   y: number
 }
 
-/** Converts a graph-space point to viewport coordinates for pointer aiming. */
 async function graphPointToClient(
   comfyPage: ComfyPage,
   point: Point
@@ -29,7 +28,6 @@ async function graphPointToClient(
   }, point)
 }
 
-/** Graph-space midpoint of the first rendered link — pointer aiming only. */
 async function firstLinkMidpoint(comfyPage: ComfyPage): Promise<Point> {
   const handle = await comfyPage.page.waitForFunction(() => {
     const link = window.app!.graph!.links.values().next().value
@@ -41,7 +39,6 @@ async function firstLinkMidpoint(comfyPage: ComfyPage): Promise<Point> {
   return point
 }
 
-/** Graph-space centre of the first hidden-link badge — pointer aiming only. */
 async function firstBadgeCenter(comfyPage: ComfyPage): Promise<Point> {
   const handle = await comfyPage.page.waitForFunction(() => {
     const badge = window.app!.canvas.linkBadgeFrameState.hitAreas[0]
@@ -54,7 +51,6 @@ async function firstBadgeCenter(comfyPage: ComfyPage): Promise<Point> {
   return point
 }
 
-/** Hides the link under `graphPoint` through the user-facing context menu. */
 async function hideLinkViaMenu(
   comfyPage: ComfyPage,
   graphPoint: Point
