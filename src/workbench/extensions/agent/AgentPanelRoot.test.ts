@@ -248,9 +248,16 @@ vi.mock('@/stores/executionErrorStore', () => ({
   useExecutionErrorStore: () => executionErrors
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
-}))
+vi.mock('@/composables/auth/useCurrentUser', async () => {
+  const { ref } = await import('vue')
+  const resolvedUserInfo = ref({ id: 'user-1' } as { id: string } | null)
+  return {
+    useCurrentUser: () => ({
+      userDisplayName: { value: 'Jo Rivera' },
+      resolvedUserInfo
+    })
+  }
+})
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
