@@ -249,14 +249,36 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
-  it('does not rebuild promoted widget bindings when added to a graph', () => {
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    const rebuild = vi.spyOn(subgraphNode, 'rebuildInputWidgetBindings')
+  it('migrates promoted widget bindings when added to a graph', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(input, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: -1 })
+    const promotedInput = subgraphNode.inputs[0]
+    const previousId = promotedInput.widgetId
+    if (!previousId) throw new Error('Missing transient widgetId')
+    useWidgetValueStore().setValue(previousId, 'edited')
 
     subgraph.rootGraph.add(subgraphNode)
 
-    expect(rebuild).not.toHaveBeenCalled()
+    const nextId = promotedInput.widgetId
+    expect(nextId).toBeDefined()
+    expect(nextId).not.toBe(previousId)
+    if (!nextId) throw new Error('Missing settled widgetId')
+    expect(useWidgetValueStore().getWidget(previousId)).toBeUndefined()
+    expect(useWidgetValueStore().getWidget(nextId)?.value).toBe('edited')
+    expect(promotedInput.widget).toMatchObject({ name: 'text' })
+    expect(subgraphNode.getWidgetFromSlot(promotedInput)).toBe(
+      promotedInput._widget
+    )
+    expect(subgraphNode.widgets).toContain(promotedInput._widget)
   })
 
   it('preserves a promoted widget when re-resolution fails', () => {
