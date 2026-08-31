@@ -329,21 +329,34 @@ export function findSubgraphPathById(
   rootGraph: LGraph,
   targetId: string
 ): string[] | null {
+  return findSubgraphPathBy(rootGraph, targetId, (_node, subgraph) =>
+    String(subgraph.id)
+  )
+}
+
+function findSubgraphPathBy(
+  rootGraph: LGraph,
+  targetId: string,
+  segment: (node: LGraphNode, subgraph: Subgraph) => string
+): string[] | null {
   const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
     { graph: rootGraph, path: [] }
   ]
+  const visited = new Set<LGraph | Subgraph>()
 
   while (stack.length > 0) {
     const { graph, path } = stack.pop()!
 
-    // Check if graph exists and has _nodes property
+    if (visited.has(graph)) continue
+    visited.add(graph)
+
     if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
       continue
     }
 
     for (const node of graph._nodes) {
       if (node.isSubgraphNode?.() && node.subgraph) {
-        const newPath = [...path, String(node.subgraph.id)]
+        const newPath = [...path, segment(node, node.subgraph)]
         if (node.subgraph.id === targetId) {
           return newPath
         }
@@ -353,6 +366,53 @@ export function findSubgraphPathById(
   }
 
   return null
+}
+
+/**
+ * Iteratively finds the path of subgraph NODE ids (not subgraph UUIDs) to a
+ * target subgraph - the address form node-scoped consumers need (e.g. the
+ * agent write leg's interior `set_widget`, whose wire `path` is a resolved
+ * node-id chain).
+ * @param rootGraph The graph to start searching from.
+ * @param targetUuid The UUID of the subgraph to find.
+ * @returns Subgraph-node ids from the root down to the node whose definition
+ * is the target, or `null` if not found.
+ */
+export function findSubgraphNodePathById(
+  rootGraph: LGraph,
+  targetUuid: string
+): string[] | null {
+  const stack: {
+    graph: LGraph | Subgraph
+    path: string[]
+    ancestors: ReadonlySet<LGraph | Subgraph>
+  }[] = [{ graph: rootGraph, path: [], ancestors: new Set() }]
+  let match: string[] | null = null
+
+  while (stack.length > 0) {
+    const { graph, path, ancestors } = stack.pop()!
+    if (ancestors.has(graph) || !Array.isArray(graph?._nodes)) continue
+    const nextAncestors = new Set(ancestors).add(graph)
+
+    for (const node of graph._nodes) {
+      if (!node.isSubgraphNode?.() || !node.subgraph) continue
+      const nextPath = [...path, String(node.id)]
+      if (node.subgraph.id === targetUuid) {
+        // A definition can have multiple instances. Its UUID alone cannot
+        // choose an instance path, so fail closed rather than write a sibling.
+        if (match !== null) return null
+        match = nextPath
+      } else {
+        stack.push({
+          graph: node.subgraph,
+          path: nextPath,
+          ancestors: nextAncestors
+        })
+      }
+    }
+  }
+
+  return match
 }
 
 /**

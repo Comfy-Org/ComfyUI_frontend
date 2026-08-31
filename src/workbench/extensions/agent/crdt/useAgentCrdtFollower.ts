@@ -1,10 +1,18 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import {
+  mintCoordinationFreeId,
+  setCoordinationFreeIds
+} from '@/lib/litegraph/src/idAllocation'
+import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useAuthStore } from '@/stores/authStore'
+import { createUuidv4 } from '@/utils/uuid'
 
+import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport, DocOp } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -93,15 +101,73 @@ export const apiTransport: DocFrameTransport = {
   }
 }
 
+/**
+ * Frame type, workflow correlation, op ids/types, counts, and byte size -
+ * never the payload itself.
+ */
+export function summarizeOutboundDocFrame(
+  frame: string
+): Record<string, unknown> {
+  const summary: Record<string, unknown> = { bytes: frame.length }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(frame)
+  } catch {
+    return summary
+  }
+  if (typeof parsed !== 'object' || parsed === null) return summary
+  const { type, data } = parsed as { type?: unknown; data?: unknown }
+  if (typeof type === 'string') summary.type = type
+  if (typeof data !== 'object' || data === null) return summary
+  const { workflow_id, ops } = data as { workflow_id?: unknown; ops?: unknown }
+  if (typeof workflow_id === 'string') summary.workflow_id = workflow_id
+  if (Array.isArray(ops)) {
+    summary.op_count = ops.length
+    summary.ops = ops.map((op) => {
+      const record =
+        typeof op === 'object' && op !== null
+          ? (op as { op_id?: unknown; op?: unknown })
+          : {}
+      return {
+        ...(typeof record.op_id === 'string' && { op_id: record.op_id }),
+        ...(typeof record.op === 'string' && { op: record.op })
+      }
+    })
+  }
+  return summary
+}
+
+// One follower instance per tab: id arming is graph-scoped, not
+// refcounted, so a second concurrent instance would disarm the first's
+// graph state on its own teardown.
+let followerInstanceMounted = false
+
 export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
+  if (import.meta.env.DEV && followerInstanceMounted) {
+    console.warn(
+      'useAgentCrdtFollower: second concurrent instance; id arming assumes one per tab'
+    )
+  }
+  followerInstanceMounted = true
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
 
+  // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
+  // Wraps locally instead of modifying the exported apiTransport, whose
+  // never-throw contract is covered by tests. Only frame METADATA is
+  // recorded: a doc_ops payload carries node and widget values (prompts,
+  // filenames), which is more user data than the debugging panel needs even
+  // in a development build.
   const transport: DocFrameTransport = {
     send(frame) {
-      return apiTransport.send(frame)
+      const delivered = apiTransport.send(frame)
+      recordDevEvent('ws_out', {
+        delivered,
+        ...summarizeOutboundDocFrame(frame)
+      })
+      return delivered
     },
     addEventListener(type, listener) {
       apiTransport.addEventListener(type, listener)
@@ -112,7 +178,12 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
-  const tabId = crypto.randomUUID()
+  const tabId = createUuidv4()
+  // Highest doc_update seq seen — used as base_version for human-minted ops.
+  // The ws path has no ceiling gate; this only feeds LWW stamps, so a slightly
+  // stale value is safe (ties break by [base_version, actor, op_id]).
+  let lastSeq = 0
+  let lastOpsResult: unknown = null
   // Post-ECS main removed the global layout source scope
   // (`LayoutSource.External` / `layoutStore.setSource`), so remote batches
   // apply directly. Echo suppression becomes load-bearing only when the
@@ -124,6 +195,42 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   })
   const projector = new SemanticProjector(mutator, { actor: tabId })
 
+  // Arming is graph-scoped: the doc projects onto `app.graph`, so only THAT
+  // graph's state mints coordination-free ids. `LGraph.clear()` replaces the
+  // state object on every workflow load, which drops the arm (fails closed);
+  // re-arming rides the frames that prove the binding is live - the
+  // subscribe confirm and every doc_update - so a swapped-in graph is armed
+  // again by the next doc frame and an unbound graph is never armed at all.
+  let armedIdState: LGraphState | null = null
+
+  function armCoordinationFreeIds(): void {
+    const state = app.graph?.state ?? null
+    if (armedIdState !== null && armedIdState !== state)
+      setCoordinationFreeIds(armedIdState, false)
+    armedIdState = state
+    if (state !== null) setCoordinationFreeIds(state, true)
+  }
+
+  function disarmCoordinationFreeIds(): void {
+    if (armedIdState !== null) setCoordinationFreeIds(armedIdState, false)
+    armedIdState = null
+  }
+
+  // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
+  // exactly which nodes each doc_update added/removed. Rebuilt from zero on
+  // doc_reset (remint) because the lineage broke.
+  let knownDocNodeIds: Set<string> = new Set()
+  const currentDocNodeIds = (): Set<string> => {
+    try {
+      const doc = bridge.follower.doc as unknown as {
+        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
+      }
+      return new Set(Object.keys(doc.getMap('nodes').toJSON()))
+    } catch {
+      return new Set()
+    }
+  }
+
   // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.
   // the subscribe raced the doc-host before the turn ack minted the doc. The
   // bridge's transport-level reconcile can never repair it: the frame WAS
@@ -133,6 +240,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
   let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeRetryAttempt = 0
+  // Failsafe for a silent server: the last retry's resubscribe may get NO
+  // answer at all, leaving no refusal to trigger the exhaustion disarm.
+  let subscribeFailsafeTimer: ReturnType<typeof setTimeout> | null = null
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
@@ -152,6 +262,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     clearStaleProbe()
     staleProbeTimer = setTimeout(() => {
       staleProbeTimer = null
+      recordDevEvent('stale_probe', {
+        workflowId: subscribedWorkflowId.value
+      })
       bridge.resubscribe()
       armStaleProbe()
     }, STALE_AFTER_MS)
@@ -162,12 +275,21 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       clearTimeout(subscribeRetryTimer)
       subscribeRetryTimer = null
     }
+    if (subscribeFailsafeTimer !== null) {
+      clearTimeout(subscribeFailsafeTimer)
+      subscribeFailsafeTimer = null
+    }
     subscribeRetryAttempt = 0
   }
 
   const scheduleSubscribeRetry = (): void => {
     if (subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      // Definitive binding failure: the budget is spent, so the doc is not
+      // coming. Restore counter allocation until a later confirm re-arms.
+      disarmCoordinationFreeIds()
+      return
+    }
     const target = subscribedWorkflowId.value
     if (target === null) return
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
@@ -176,7 +298,20 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       subscribeRetryTimer = null
       // The desired doc changed while we waited — the watch owns that path.
       if (subscribedWorkflowId.value !== target) return
+      recordDevEvent('subscribe_retry', {
+        attempt: subscribeRetryAttempt,
+        workflowId: target
+      })
       bridge.resubscribe()
+      if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+        subscribeFailsafeTimer = setTimeout(
+          () => {
+            subscribeFailsafeTimer = null
+            disarmCoordinationFreeIds()
+          },
+          SUBSCRIBE_RETRY_BASE_MS * 2 ** SUBSCRIBE_RETRY_MAX_ATTEMPTS
+        )
+      }
     }, delay)
   }
 
@@ -186,13 +321,18 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     const ok = detail.ok === true
     connected.value = ok
     lastFrameType.value = event.type
+    recordDevEvent('doc_subscribed', detail)
     if (ok) {
       clearSubscribeRetry()
-      armStaleProbe()
-      // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
-      // a remount — persist on ok, not on intent.
-      if (subscribedWorkflowId.value !== null)
+      // FE-1902 (poc-3): only a CONFIRMED binding is worth acting on after a
+      // remount — the bridge re-dispatches a confirm even when the workflow
+      // was just dropped, so the stale probe, the id arm, and the persist
+      // all apply the same currently-bound rule.
+      if (subscribedWorkflowId.value !== null) {
+        armStaleProbe()
+        armCoordinationFreeIds()
         persistDocId(subscribedWorkflowId.value)
+      }
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
@@ -201,14 +341,45 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const onUpdate: EventListener = (event) => {
     if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     if (staleProbeTimer !== null) armStaleProbe()
+    // An update proves the binding is live: the retry budget and the
+    // silent-server failsafe must not outlive it.
+    clearSubscribeRetry()
+    armCoordinationFreeIds()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
+    if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
+      lastSeq = Math.max(lastSeq, event.detail.seq)
     projector.project(bridge.follower.doc)
+    if (event instanceof CustomEvent) {
+      const detail = event.detail as {
+        workflowId?: string
+        seq?: number
+        update?: Uint8Array
+        actor?: string
+      } | null
+      recordDevEvent('doc_update', {
+        workflowId: detail?.workflowId,
+        seq: detail?.seq,
+        actor: detail?.actor,
+        bytes:
+          detail?.update instanceof Uint8Array ? detail.update.length : null
+      })
+    }
+    const ids = currentDocNodeIds()
+    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
+    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
+    if (added.length > 0 || removed.length > 0)
+      recordDevEvent('doc_nodes_changed', { added, removed })
+    knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
     if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
     if (staleProbeTimer !== null) armStaleProbe()
     lastFrameType.value = event.type
+    if (event instanceof CustomEvent) {
+      lastOpsResult = event.detail ?? null
+      recordDevEvent('doc_ops_result', event.detail ?? null)
+    }
   }
   const onDocReset: EventListener = (event) => {
     if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
@@ -223,6 +394,11 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     updatesApplied.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
+    knownDocNodeIds = new Set()
+    recordDevEvent(
+      'doc_reset',
+      event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
   }
   const onSchemaError: EventListener = (event) => {
     if (boundFrameDetail(event, subscribedWorkflowId.value) === null) return
@@ -232,6 +408,11 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     connected.value = false
     lastFrameType.value = event.type
     clearStaleProbe()
+    disarmCoordinationFreeIds()
+    recordDevEvent(
+      'schema_error',
+      event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
   }
   const onReconnected: EventListener = () => {
     // Same-lineage recovery: the bridge keeps its doc and catches up via its
@@ -240,6 +421,8 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // EMPTY -> full against the already-materialized canvas and let LiteGraph
     // reassign IDs for duplicate adds.
     connected.value = false
+    clearStaleProbe()
+    recordDevEvent('reconnected', null)
     bridge.resubscribe()
     // The server might never acknowledge this subscribe. Keep probing until a
     // bound frame confirms the channel or lifecycle teardown cancels it.
@@ -293,24 +476,33 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
         initialBind = false
         if (persisted !== null) {
           projectedWorkflowId = persisted
+          recordDevEvent('rebind', { workflowId: persisted })
           subscribedWorkflowId.value = persisted
           bridge.subscribe(persisted)
+          armCoordinationFreeIds()
           return
         }
         clearPersistedDocId()
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
+        disarmCoordinationFreeIds()
         return
       }
       initialBind = false
       // A detach does not clear the user's active graph, so retaining this
       // snapshot prevents a same-workflow rebind from re-adding every node.
       // A true workflow change replaces the canvas and needs a fresh baseline.
-      if (projectedWorkflowId !== null && projectedWorkflowId !== next)
+      if (projectedWorkflowId !== null && projectedWorkflowId !== next) {
         projector.reset()
+        knownDocNodeIds = new Set()
+      }
       projectedWorkflowId = next
       subscribedWorkflowId.value = next
       bridge.subscribe(next)
+      // Doc-bound workflows allocate contract-scheme (coordination-free) node
+      // and link ids at local creation, so replicas seeded from one snapshot
+      // cannot mint colliding ids; a real detach restores the counters.
+      armCoordinationFreeIds()
     },
     { immediate: true }
   )
@@ -322,8 +514,13 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // failure-tolerant by construction now, but the try/finally makes the
     // "client.destroy() always runs" guarantee local and readable.
     try {
+      followerInstanceMounted = false
+      disarmCoordinationFreeIds()
       clearSubscribeRetry()
       clearStaleProbe()
+      if (import.meta.env.DEV) {
+        delete (window as unknown as Record<string, unknown>).__agentCrdtPoc
+      }
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)
@@ -337,6 +534,158 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       client.destroy()
     }
   })
+
+  // ── Dev-only console helper (installed only under import.meta.env.DEV) ───
+  // Lets the e2e proof mint a REAL human add_node op from the devtools console
+  // / Playwright without waiting for the canvas-command adapter. Mints the
+  // exact envelope the doc-host validates: op_id 32-hex, actor
+  // `human:<firebase-uid>:<tab>` (server recomputes and rejects mismatches),
+  // base_version = last doc_update seq, stamp [base_version, actor], and the
+  // full save-format node payload (inserted verbatim by the host applier).
+  // The sender tab does NOT apply locally — the doc_update echo is the only
+  // application, so there is no double-apply on this path.
+  const mintOpId = (): string => {
+    const bytes = crypto.getRandomValues(new Uint8Array(16))
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  }
+  const pocAddNode = (
+    classType: string,
+    pos: [number, number] = [100, 100],
+    nodeOverride?: Record<string, unknown>
+  ): DocOp => {
+    const userId = useAuthStore().userId ?? 'anonymous'
+    const actor = `human:${userId}:${tabId}`
+    const nodeId = mintCoordinationFreeId()
+    let node: Record<string, unknown>
+    if (nodeOverride) {
+      node = { ...nodeOverride, id: nodeId, type: classType, pos }
+    } else {
+      let serialized: Record<string, unknown> | null = null
+      try {
+        const lgNode = LiteGraph.createNode(classType)
+        if (lgNode) {
+          lgNode.id = nodeId as unknown as typeof lgNode.id
+          lgNode.pos = [...pos]
+          serialized = lgNode.serialize() as unknown as Record<string, unknown>
+          // The doc host name-keys widgets via the pinned catalog's
+          // widget_order; litegraph's positional serialize() can emit MORE
+          // entries than the catalog names (e.g. LoadImage's upload-button
+          // slot), which the host rejects (invalid_node_payload). Name-keyed
+          // objects are accepted as-is (widgetsToYMap), and this litegraph
+          // already emits widgets_values_named alongside the positional
+          // array — send the named form and drop the extra key.
+          if (serialized.widgets_values_named != null) {
+            // Filter to real value-bearing widgets: the host's projection
+            // throws (opaque 500) on ANY key outside the pinned catalog's
+            // widget_order, and control widgets (e.g. LoadImage's `upload`
+            // button) serialize a named entry but are not in widget_order.
+            const named = serialized.widgets_values_named as Record<
+              string,
+              unknown
+            >
+            const filtered: Record<string, unknown> = {}
+            for (const [name, value] of Object.entries(named)) {
+              const w = lgNode.widgets?.find((x) => x.name === name)
+              if (w && w.type !== 'button' && w.serialize !== false) {
+                filtered[name] = value
+              }
+            }
+            serialized.widgets_values = filtered
+            delete serialized.widgets_values_named
+          }
+        }
+      } catch {
+        serialized = null
+      }
+      node = serialized
+        ? { ...serialized, id: nodeId, type: classType, pos }
+        : { id: nodeId, type: classType, pos, size: [270, 100] }
+    }
+    const baseVersion = lastSeq
+    const op: DocOp = {
+      op: 'add_node',
+      op_id: mintOpId(),
+      actor,
+      base_version: baseVersion,
+      stamp: [baseVersion, actor],
+      node_id: nodeId,
+      class_type: classType,
+      pos,
+      node
+    }
+    bridge.sendHumanOps(tabId, [op])
+    return op
+  }
+  // Same envelope/actor path as pocAddNode, for the delete_node op. The host
+  // rejects actors whose userId doesn't match the authenticated session, so
+  // this must mint from useAuthStore() exactly like pocAddNode does.
+  const pocDeleteNode = (
+    nodeId: number,
+    removedLinks: number[] = []
+  ): DocOp => {
+    const userId = useAuthStore().userId ?? 'anonymous'
+    const actor = `human:${userId}:${tabId}`
+    const baseVersion = lastSeq
+    const op: DocOp = {
+      op: 'delete_node',
+      op_id: mintOpId(),
+      actor,
+      base_version: baseVersion,
+      stamp: [baseVersion, actor],
+      node_id: nodeId,
+      removed_links: removedLinks
+    }
+    bridge.sendHumanOps(tabId, [op])
+    return op
+  }
+  const pocHelpers = {
+    addNode: pocAddNode,
+    deleteNode: pocDeleteNode,
+    // Bind a fresh tab to an existing doc without waiting for a turn ack
+    // (gap #2: doc id is otherwise in-memory only, set on turn ack). Drives
+    // the same watch → bridge.subscribe path as the real binding.
+    bindDoc: (id: string) => {
+      // Mirror the watch path so status/persistence agree with the binding
+      // (otherwise the dev panel shows "no document" on a live subscription).
+      clearSubscribeRetry()
+      subscribedWorkflowId.value = id
+      bridge.subscribe(id)
+    },
+    sendOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops),
+    resubscribe: () => bridge.resubscribe(),
+    reconcile: () => bridge.reconcile(),
+    project: () => projector.project(bridge.follower.doc),
+    tabId,
+    get lastSeq() {
+      return lastSeq
+    },
+    get lastOpsResult() {
+      return lastOpsResult
+    },
+    docNodes: () => {
+      const doc = bridge.follower.doc as unknown as {
+        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
+      }
+      try {
+        return doc.getMap('nodes').toJSON()
+      } catch {
+        return null
+      }
+    },
+    get status() {
+      return {
+        enabled: true,
+        connected: connected.value,
+        workflowId: subscribedWorkflowId.value,
+        updatesApplied: updatesApplied.value,
+        lastFrameType: lastFrameType.value
+      }
+    }
+  }
+  if (import.meta.env.DEV) {
+    ;(window as unknown as Record<string, unknown>).__agentCrdtPoc = pocHelpers
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   const status = computed<AgentCrdtStatus>(() => ({
     enabled: true,

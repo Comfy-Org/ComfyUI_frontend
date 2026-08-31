@@ -3,6 +3,7 @@ import { computed, ref, shallowReactive } from 'vue'
 import type { ComputedRef } from 'vue'
 import * as Y from 'yjs'
 
+import { assert } from '@/base/assert'
 import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
@@ -746,6 +747,36 @@ class LayoutStoreImpl {
     return operation.actor === undefined
       ? { ...operation, actor: this.currentActor }
       : operation
+  }
+
+  /**
+   * Runs `fn` with every actor-less operation stamped as `actor` instead of
+   * this session's actor. The per-mutation command source remote appliers and
+   * provenance-aware listeners key on: stamping happens synchronously at
+   * apply time, so deferred change delivery still carries the scoped actor on
+   * `change.operation.actor`. Asserts when `fn` returns a thenable: the
+   * scope ends when the call returns, so work after an await would be
+   * stamped with the session actor. DEV throws; production reports through
+   * the assert seam and returns the thenable, leaving that continuation
+   * session-stamped.
+   */
+  withActor<T>(actor: string, fn: () => T): T {
+    const previous = this.currentActor
+    this.currentActor = actor
+    try {
+      const result = fn()
+      const thenable =
+        typeof (result as { then?: unknown } | null | undefined)?.then ===
+        'function'
+      if (result instanceof Promise) void result.catch(() => {})
+      assert(
+        !thenable,
+        'withActor requires a synchronous callback: work after an await would be stamped with the session actor'
+      )
+      return result
+    } finally {
+      this.currentActor = previous
+    }
   }
 
   /**

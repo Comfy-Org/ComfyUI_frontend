@@ -68,6 +68,15 @@ vi.mock('./docFrameClient', () => ({
   }
 }))
 
+const idAllocationState = vi.hoisted(() => ({
+  setCoordinationFreeIds: vi.fn()
+}))
+
+vi.mock('@/lib/litegraph/src/idAllocation', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  setCoordinationFreeIds: idAllocationState.setCoordinationFreeIds
+}))
+
 const projectorState = vi.hoisted(() => ({
   current: null as {
     project: ReturnType<typeof vi.fn>
@@ -85,13 +94,31 @@ vi.mock('./semanticProjector', () => ({
   }
 }))
 
+vi.mock('./devPanelLog', () => ({
+  recordDevEvent: vi.fn()
+}))
+
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
-vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
+
+const appState = vi.hoisted(() => ({
+  app: {
+    graph: { state: { lastNodeId: 0 } } as {
+      state: Record<string, unknown>
+    } | null,
+    canvas: null
+  }
+}))
+
+vi.mock('@/scripts/app', () => ({ app: appState.app }))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
-import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
+import {
+  STALE_AFTER_MS,
+  summarizeOutboundDocFrame,
+  useAgentCrdtFollower
+} from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 function mountFollower(initial: string | null = null): {
@@ -132,8 +159,10 @@ describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     sessionStorage.clear()
+    appState.app.graph = { state: { lastNodeId: 0 } }
     bridgeState.current = null
     projectorState.current = null
+    idAllocationState.setCoordinationFreeIds.mockClear()
     clientState.destroy.mockClear()
     apiState.api.removeEventListener.mockClear()
   })
@@ -232,6 +261,193 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-persisted')
     expect(status().workflowId).toBe('wf-persisted')
+    // The rebound doc is a live binding: the panel-remount/reload path must
+    // arm coordination-free allocation exactly like a fresh bind.
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      appState.app.graph!.state,
+      true
+    )
+    unmount()
+  })
+
+  it('arms the bound graph state and restores counters on detach and unmount', async () => {
+    const boundState = appState.app.graph!.state
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    // Bound: local node/link creation on THIS graph allocates
+    // coordination-free ids; every other graph state stays on counters.
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      true
+    )
+
+    // A persisted id must not hijack a LATER null into a rebind - only the
+    // mount-time null rebinds; this one is a real detach.
+    sessionStorage.setItem('Comfy.Agent.CrdtDocId', 'wf-stale')
+    workflowId.value = null
+    await nextTick()
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      false
+    )
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      true
+    )
+
+    unmount()
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      false
+    )
+  })
+
+  it('re-arms the swapped-in graph state on the next doc frame', () => {
+    const initialState = appState.app.graph!.state
+    const { unmount } = mountFollower('wf-1')
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      initialState,
+      true
+    )
+
+    // A workflow load replaces the graph state (LGraph.clear()), dropping
+    // the arm. The subscribe confirm re-arms the new state and releases the
+    // old one; a doc_update does the same for later swaps.
+    const confirmState = { lastNodeId: 0 }
+    appState.app.graph = { state: confirmState }
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenCalledWith(
+      initialState,
+      false
+    )
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      confirmState,
+      true
+    )
+
+    const updateState = { lastNodeId: 0 }
+    appState.app.graph = { state: updateState }
+    dispatchFrame('doc_update', { seq: 1 })
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      updateState,
+      true
+    )
+    unmount()
+  })
+
+  it('a stale confirm for a just-dropped workflow does not arm', async () => {
+    const boundState = appState.app.graph!.state
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    workflowId.value = null
+    await nextTick()
+    // The bridge re-dispatches confirms unconditionally; one in flight for
+    // the dropped workflow must not arm the unbound graph.
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(
+      idAllocationState.setCoordinationFreeIds
+    ).not.toHaveBeenLastCalledWith(boundState, true)
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      false
+    )
+    unmount()
+  })
+
+  it('disarms when the server stays silent after the last retry', () => {
+    vi.useFakeTimers()
+    const boundState = appState.app.graph!.state
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    // The sixth retry has fired its resubscribe; the server never answers,
+    // so no refusal arrives to trigger the exhaustion disarm.
+    idAllocationState.setCoordinationFreeIds.mockClear()
+    vi.advanceTimersByTime(500 * 2 ** 6)
+
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      false
+    )
+    unmount()
+  })
+
+  it('a stale confirm does not arm the stale probe on a detached panel', () => {
+    vi.useFakeTimers()
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    workflowId.value = null
+    return Promise.resolve().then(async () => {
+      await Promise.resolve()
+      dispatchFrame('doc_subscribed', { ok: true })
+      vi.advanceTimersByTime(STALE_AFTER_MS + 1)
+
+      // An armed probe would fire resubscribe on the self-re-arming timer.
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      unmount()
+    })
+  })
+
+  it('warns in dev when a second follower mounts concurrently', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const first = mountFollower('wf-1')
+    expect(warn).not.toHaveBeenCalled()
+    const second = mountFollower('wf-2')
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('second concurrent instance')
+    )
+    second.unmount()
+    first.unmount()
+    warn.mockRestore()
+  })
+
+  it('a doc_update cancels the silent-server failsafe', () => {
+    vi.useFakeTimers()
+    const boundState = appState.app.graph!.state
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    // Updates flow without a confirm; one proves the binding is live.
+    dispatchFrame('doc_update', { seq: 1 })
+    idAllocationState.setCoordinationFreeIds.mockClear()
+    vi.advanceTimersByTime(500 * 2 ** 6)
+
+    expect(idAllocationState.setCoordinationFreeIds).not.toHaveBeenCalledWith(
+      boundState,
+      false
+    )
+    unmount()
+  })
+
+  it('disarms when the subscribe retry budget is exhausted', () => {
+    vi.useFakeTimers()
+    const boundState = appState.app.graph!.state
+    const { unmount } = mountFollower('wf-1')
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    idAllocationState.setCoordinationFreeIds.mockClear()
+    dispatchFrame('doc_subscribed', { ok: false })
+
+    // Definitive binding failure: the doc is not coming, so counter
+    // allocation is restored instead of stranding the arm.
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      boundState,
+      false
+    )
     unmount()
   })
 
@@ -328,6 +544,12 @@ describe('useAgentCrdtFollower', () => {
 
     expect(status().connected).toBe(false)
     expect(status().workflowId).toBe('wf-1')
+    // Fail-closed for allocation too: nothing projects from an unreadable
+    // doc, so nothing should mint against it.
+    expect(idAllocationState.setCoordinationFreeIds).toHaveBeenLastCalledWith(
+      appState.app.graph!.state,
+      false
+    )
     unmount()
   })
 
@@ -454,5 +676,45 @@ describe('useAgentCrdtFollower', () => {
       'status',
       expect.any(Function)
     )
+  })
+})
+
+describe('summarizeOutboundDocFrame', () => {
+  it('records metadata only, never the doc_ops payload', () => {
+    const frame = JSON.stringify({
+      type: 'doc_ops',
+      data: {
+        v: 1,
+        workflow_id: 'wf-1',
+        tab: 'tab-1',
+        ops: [
+          {
+            op_id: 'op-1',
+            op: 'set_widget',
+            actor: 'human:u:t',
+            value: 'a private prompt string'
+          },
+          { op_id: 'op-2', op: 'add_node', actor: 'human:u:t' }
+        ]
+      }
+    })
+
+    const summary = summarizeOutboundDocFrame(frame)
+
+    expect(summary).toEqual({
+      bytes: frame.length,
+      type: 'doc_ops',
+      workflow_id: 'wf-1',
+      op_count: 2,
+      ops: [
+        { op_id: 'op-1', op: 'set_widget' },
+        { op_id: 'op-2', op: 'add_node' }
+      ]
+    })
+    expect(JSON.stringify(summary)).not.toContain('private prompt')
+  })
+
+  it('degrades to byte size alone for a non-JSON frame', () => {
+    expect(summarizeOutboundDocFrame('not json')).toEqual({ bytes: 8 })
   })
 })
