@@ -1,26 +1,27 @@
 ---
+import ProductHeroBadge from '../components/common/ProductHeroBadge.vue'
 import BaseLayout from '../layouts/BaseLayout.astro'
 
 const cards = [
   {
     tag: 'Creative knowledge',
-    title: 'Fpo title here',
-    body: 'Lorem ipsumd'
+    title: 'Best practice can be delivered end to end',
+    body: "Up-to-date knowledge of all the latest models, ComfyUI extensions, parameters, and best workflows, curated by ComfyUI experts. Describe the content and asset you want. It is Comfy Agent's job to learn the technology and model details. It can run a project in auto mode and deliver the best result end to end."
   },
   {
-    tag: 'Multi payer and canvas-aware',
-    title: 'It builds on your canvas',
-    body: 'Watch the graph assemble. Mention a node or a workflow and it pulls it in. Click an error and it fixes it.'
+    tag: 'Human-agent Multiplayer',
+    title: 'Two of you edit at the same time',
+    body: "Build a big workflow with the agent in parallel. Watch the graph assemble. Mention a node or reference another workflow. Point at an error and it fixes it. Comfy Agent is fully aware of what's happening on the canvas."
   },
   {
-    tag: 'Control',
+    tag: 'Control & Iterate',
     title: 'The craft stays yours',
-    body: 'You review the graph and you keep the controls. Newcomers never open a node view; power users get a pair-builder.'
+    body: 'Every control ComfyUI gives you stays exactly where it is. You spend your time on composition, camera angles, masks, parameters, and polishing the details. Power users can always take over: open the nodes and check every single pixel.'
   },
   {
-    tag: 'Multi-environemnt',
+    tag: 'Local and Cloud',
     title: 'It runs where you run',
-    body: 'Same agent, same memory, on your machine and in Comfy Cloud. It reads your hardware and picks a pipeline that fits.'
+    body: 'Same agent, works with you on your local machine or in Comfy Cloud. It walks you through all setups, builds the workflows, and chooses models based on your hardware. It suggests environment and deployment solutions for your workflow and dependencies.'
   }
 ]
 ---
@@ -38,27 +39,16 @@ const cards = [
     <div class="vignette" aria-hidden="true"></div>
 
     <div class="inner">
-      <div class="mark">
-        <video
-          autoplay
-          loop
-          muted
-          playsinline
-          disablepictureinpicture
-          poster="/assets/agent-beta/comfy-mark_156x156.png"
-          aria-label="Comfy"
-        >
-          <source src="/assets/agent-beta/comfy-mark.webm" type="video/webm" />
-          <img src="/assets/agent-beta/comfy-mark_156x156.png" alt="Comfy" />
-        </video>
+      <div class="badge-lockup">
+        <ProductHeroBadge text="AGENT" />
       </div>
 
       <h1>The first agent for craft</h1>
 
       <p class="sub">
-        The Comfy Agent lives inside ComfyUI, local and cloud. Describe what you
-        want: it builds the workflow on your canvas, runs it, and hands back the
-        result.
+        An agent that lives inside ComfyUI, local and cloud. Describe what you
+        want: it builds the workflow on your canvas with you, reviews assets,
+        runs generations, and iterates until the result is production ready.
       </p>
 
       <form class="waitlist-form" action="#" method="post">
@@ -74,7 +64,7 @@ const cards = [
       </form>
 
       <p class="note">
-        We'll prepare your account and email when it's ready.
+        We'll prepare your account and email you when it's ready.
       </p>
     </div>
   </section>
@@ -106,13 +96,13 @@ const cards = [
     --paper: #f5f5f5;
     --dot: 5px;
     position: relative;
-    min-height: 66vh;
+    min-height: 56vh;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     isolation: isolate;
-    padding: 100px 24px 60px;
+    padding: 100px 24px 48px;
     color: var(--paper);
   }
 
@@ -220,18 +210,11 @@ const cards = [
     margin: 0 auto;
     text-align: center;
   }
-  .mark {
-    width: 68px;
-    aspect-ratio: 880 / 912;
-    margin: 0 auto 28px auto;
-    display: block;
-  }
-  .mark video,
-  .mark img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: contain;
+  .badge-lockup {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 40px auto;
+    zoom: 0.85;
   }
 
   .eyebrow {
@@ -245,8 +228,8 @@ const cards = [
 
   h1 {
     margin: 0 0 28px 0;
-    font-size: clamp(36px, 6vw, 64px);
-    line-height: 1.22;
+    font-size: clamp(28px, 4.2vw, 48px);
+    line-height: 1.18;
     font-weight: 300;
     letter-spacing: -0.02em;
     color: var(--color-primary-warm-white);
@@ -337,14 +320,14 @@ const cards = [
   }
 
   .agent-section {
-    padding: 72px 24px 140px 24px;
+    padding: 60px 24px 140px 24px;
     max-width: 1180px;
     margin: 0 auto;
   }
 
   .section-head {
     text-align: center;
-    margin: 0 auto 64px auto;
+    margin: 0 auto 54px auto;
     max-width: 720px;
   }
   .section-head .eyebrow {
@@ -382,16 +365,16 @@ const cards = [
 
   .card h3 {
     margin: 0 0 12px 0;
-    font-size: 23px;
+    font-size: 20px;
     line-height: 1.25;
     font-weight: 500;
     letter-spacing: -0.01em;
-    color: #ffffff;
+    color: var(--color-primary-comfy-canvas);
   }
 
   .card p {
     margin: 0;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1.62;
     color: rgba(245, 245, 245, 0.66);
   }
