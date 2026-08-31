@@ -754,6 +754,7 @@ export const useWorkflowService = () => {
       }
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      if (!loadedWorkflow) return
       activateRunErrors(loadedWorkflow)
       return
     }
