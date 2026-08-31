@@ -5143,6 +5143,12 @@
     "credits": "credits",
     "dontWorkInWorkflow": "Don’t work in a workflow",
     "dragAndDropAssets": "Drag and drop assets here",
+    "nodeSelection": {
+      "bannerTitle": "Add nodes from graph",
+      "bannerSubtitle": "Select one or many nodes to add as reference",
+      "exit": "Exit mode",
+      "selectNode": "Select node"
+    },
     "focusNode": "Show on canvas",
     "focusNodeLabel": "Show {node} on canvas",
     "placeholder": "Describe ideas, {'@'} to reference,\nadd nodes from graph or drag in assets",

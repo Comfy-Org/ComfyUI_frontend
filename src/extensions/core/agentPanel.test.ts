@@ -38,7 +38,43 @@ vi.mock('posthog-js', () => ({
 }))
 
 const registered = vi.hoisted(() => ({
-  setup: null as (() => void) | null
+  setup: null as (() => void) | null,
+  extension: null as {
+    beforeLoadGraph?: () => Promise<void>
+    afterLoadGraph?: (app: unknown) => Promise<void>
+  } | null
+}))
+
+const hookMocks = vi.hoisted(() => ({
+  nodeSelectionStore: {
+    isLoadingWorkflow: false,
+    beginWorkflowLoad: vi.fn(),
+    finishWorkflowLoad: vi.fn(),
+    nodeIds: vi.fn((): string[] => []),
+    restoreNodeIds: vi.fn()
+  },
+  workflowStore: {
+    activeWorkflow: null as { path: string } | null,
+    nodeToNodeLocatorId: vi.fn((node: { id: unknown }) => String(node.id))
+  },
+  canvasStore: { updateSelectedItems: vi.fn() },
+  getNodeByLocatorId: vi.fn()
+}))
+
+vi.mock('@/stores/agentNodeSelectionStore', () => ({
+  useAgentNodeSelectionStore: () => hookMocks.nodeSelectionStore
+}))
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => hookMocks.workflowStore
+}))
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => hookMocks.canvasStore
+}))
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getNodeByLocatorId: hookMocks.getNodeByLocatorId
+}))
+vi.mock('@/utils/litegraphUtil', () => ({
+  isLGraphNode: (node: unknown) => node != null
 }))
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
@@ -51,6 +87,7 @@ vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({
     registerExtension: (extension: { setup?: () => void }) => {
       registered.setup = extension.setup ?? null
+      registered.extension = extension as typeof registered.extension
     }
   })
 }))
@@ -207,5 +244,75 @@ describe('the agent panel flag gate', () => {
       errorType: 'agent_flag_gate_load_failure'
     })
     consoleError.mockRestore()
+  })
+})
+
+// Seam receipt: the selection-persistence hooks reach the panel store through
+// the same dynamic-import boundary as the rest of the shell, and still fire.
+describe('selection persistence across workflow loads', () => {
+  beforeEach(async () => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    hookMocks.nodeSelectionStore.isLoadingWorkflow = false
+    hookMocks.workflowStore.activeWorkflow = null
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    vi.resetModules()
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    useAgentPanelStore().isOpen = true
+  })
+
+  it('restores each workflow reference after the shared graph load', async () => {
+    const secondNode = { id: 12 }
+    const rootGraph = {}
+    const selectItems = vi.fn()
+
+    await registered.extension!.beforeLoadGraph!()
+    expect(
+      hookMocks.nodeSelectionStore.beginWorkflowLoad
+    ).toHaveBeenCalledOnce()
+
+    hookMocks.nodeSelectionStore.isLoadingWorkflow = true
+    hookMocks.nodeSelectionStore.nodeIds.mockReturnValue(['12'])
+    hookMocks.getNodeByLocatorId.mockReturnValue(secondNode)
+    hookMocks.workflowStore.activeWorkflow = { path: 'workflows/second.json' }
+
+    await registered.extension!.afterLoadGraph!({
+      rootGraph,
+      canvas: { selectItems }
+    })
+
+    expect(hookMocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, '12')
+    expect(selectItems).toHaveBeenCalledWith([secondNode])
+    expect(hookMocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith([
+      '12'
+    ])
+    expect(hookMocks.canvasStore.updateSelectedItems).toHaveBeenCalledOnce()
+    expect(
+      hookMocks.nodeSelectionStore.finishWorkflowLoad
+    ).not.toHaveBeenCalled()
+  })
+
+  it('skips the whole flow while the panel is closed', async () => {
+    useAgentPanelStore().isOpen = false
+
+    await registered.extension!.beforeLoadGraph!()
+
+    expect(
+      hookMocks.nodeSelectionStore.beginWorkflowLoad
+    ).not.toHaveBeenCalled()
+  })
+
+  it('finishes restoration when the panel closes during graph load', async () => {
+    useAgentPanelStore().isOpen = false
+    hookMocks.nodeSelectionStore.isLoadingWorkflow = true
+
+    await registered.extension!.afterLoadGraph!({})
+
+    expect(
+      hookMocks.nodeSelectionStore.finishWorkflowLoad
+    ).toHaveBeenCalledOnce()
+    expect(hookMocks.getNodeByLocatorId).not.toHaveBeenCalled()
+    expect(hookMocks.canvasStore.updateSelectedItems).not.toHaveBeenCalled()
   })
 })

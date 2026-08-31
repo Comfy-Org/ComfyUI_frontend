@@ -1,4 +1,9 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 // The initTelemetry.ts idiom: the guard lives INSIDE the unconditionally
 // retained function, and every agent-specific module is imported dynamically
@@ -11,6 +16,39 @@ export function registerAgentPanelExtension(): void {
   if (!IS_CLOUD_BUILD) return
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
+    // Selection persistence across workflow loads. The panel store lives past
+    // the cloud-guard chunk boundary, so it loads dynamically like every other
+    // agent module here; both hooks are awaited by invokeExtensionsAsync.
+    async beforeLoadGraph() {
+      const { useAgentPanelStore } =
+        await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
+      if (!useAgentPanelStore().isOpen) return
+
+      useAgentNodeSelectionStore().beginWorkflowLoad()
+    },
+    async afterLoadGraph(app) {
+      const nodeSelectionStore = useAgentNodeSelectionStore()
+      if (!nodeSelectionStore.isLoadingWorkflow) return
+      const { useAgentPanelStore } =
+        await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
+      if (!useAgentPanelStore().isOpen) {
+        nodeSelectionStore.finishWorkflowLoad()
+        return
+      }
+
+      const canvas = app.canvas
+      const workflowStore = useWorkflowStore()
+      const workflowPath = workflowStore.activeWorkflow?.path
+      const nodes = nodeSelectionStore
+        .nodeIds(workflowPath)
+        .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
+        .filter(isLGraphNode)
+      nodeSelectionStore.restoreNodeIds(
+        nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
+      )
+      canvas?.selectItems(nodes)
+      useCanvasStore().updateSelectedItems()
+    },
     async setup() {
       // The service's per-extension catch owns a rejection here, so a
       // failed gate or lifetime load can never surface as an unhandled

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 const testState = vi.hoisted(
   (): { canvasStore: { canvas: LGraphCanvas | null } | null } => ({
@@ -76,5 +77,55 @@ describe('useLitegraphSettings', () => {
 
     expect(canvasStore.canvas.show_info).toBe(true)
     expect(secondDraw).toHaveBeenCalledOnce()
+  })
+
+  // The overlay is drawn onto the canvas rather than composed in the DOM, so it
+  // cannot be hidden with CSS alongside the rest of the chrome.
+  it('suppresses the canvas info overlay during node selection mode and restores it on exit', async () => {
+    const canvasStore = getCanvasStore()
+    const settingStore = useSettingStore()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    settingStore.settingValues['Comfy.Graph.CanvasInfo'] = true
+    const canvas = fromPartial<LGraphCanvas>({
+      show_info: false,
+      draw: vi.fn(),
+      setDirty: vi.fn()
+    })
+    canvasStore.canvas = canvas
+
+    scope.run(useLitegraphSettings)
+    expect(canvas.show_info).toBe(true)
+
+    nodeSelectionStore.isActive = true
+    await nextTick()
+    expect(canvas.show_info).toBe(false)
+
+    nodeSelectionStore.isActive = false
+    await nextTick()
+    // The user's setting is untouched: exit restores the overlay from it.
+    expect(canvas.show_info).toBe(true)
+    expect(settingStore.settingValues['Comfy.Graph.CanvasInfo']).toBe(true)
+  })
+
+  it('leaves the overlay off during the mode when the setting is disabled', async () => {
+    const canvasStore = getCanvasStore()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    const canvas = fromPartial<LGraphCanvas>({
+      show_info: true,
+      draw: vi.fn(),
+      setDirty: vi.fn()
+    })
+    canvasStore.canvas = canvas
+
+    scope.run(useLitegraphSettings)
+    expect(canvas.show_info).toBe(false)
+
+    nodeSelectionStore.isActive = true
+    await nextTick()
+    expect(canvas.show_info).toBe(false)
+
+    nodeSelectionStore.isActive = false
+    await nextTick()
+    expect(canvas.show_info).toBe(false)
   })
 })
