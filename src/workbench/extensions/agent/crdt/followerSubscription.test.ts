@@ -427,6 +427,10 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
 
     expect(projected).toHaveLength(1)
     expect(bridge.follower.updatesApplied).toBe(1)
+    expect(nodesMap(bridge.follower.doc).get('1')?.toJSON()).toEqual({
+      type: 'LoadImage',
+      pos: [10, 20]
+    })
   })
 
   it('applies contiguous seqs without resubscribing', () => {
