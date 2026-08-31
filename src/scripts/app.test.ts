@@ -333,7 +333,6 @@ describe('ComfyApp', () => {
         42
       )
     })
-
     it('suppresses the workflow reset for a default clean load', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
