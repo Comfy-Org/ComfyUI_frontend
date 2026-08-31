@@ -3355,6 +3355,7 @@ export class LGraphNode
     const output = this.outputs[slot]
     if (!output) return false
 
+    let removedFloating = false
     if (!target_node && this.graph) {
       for (const link of slotFloatingLinks(
         this.graph,
@@ -3363,12 +3364,13 @@ export class LGraphNode
         slot
       )) {
         this.graph.removeFloatingLink(link)
+        removedFloating = true
       }
     }
 
     const graph = this.graph
     if (!graph) return false
-    if (!outputHasLinks(graph, this.id, slot)) return false
+    if (!outputHasLinks(graph, this.id, slot) && !removedFloating) return false
 
     const onlyTarget =
       typeof target_node === 'number'
@@ -3422,7 +3424,7 @@ export class LGraphNode
       if (onlyTarget) break
     }
 
-    if (!disconnected) return false
+    if (!disconnected && !removedFloating) return false
 
     this.setDirtyCanvas(false, true)
     return true
@@ -3468,7 +3470,11 @@ export class LGraphNode
     // Break floating links, except the one whose reroute chain is being
     // reconnected (its reroute would be pruned before the new link is added).
     for (const link of slotFloatingLinks(graph, 'input', this.id, slot)) {
-      if (link.parentId === keepFloatingReroute) continue
+      if (
+        keepFloatingReroute !== undefined &&
+        link.parentId === keepFloatingReroute
+      )
+        continue
       graph.removeFloatingLink(link)
     }
 

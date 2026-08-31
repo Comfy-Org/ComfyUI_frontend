@@ -37,8 +37,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     const slot = indexOf(this)
     const { graph } = this._node
     if (!graph || slot === -1) return
-    if (inputHasLink(graph, this._node.id, slot))
-      this._node.disconnectInput(slot)
+    this._node.disconnectInput(slot)
   }
 
   get isWidgetInputSlot(): boolean {

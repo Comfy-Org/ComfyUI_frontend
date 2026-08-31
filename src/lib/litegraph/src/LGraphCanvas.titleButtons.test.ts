@@ -10,6 +10,10 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 
+class TestNode extends LGraphNode {
+  static shape: RenderShape = RenderShape.ROUND
+}
+
 describe('LGraphCanvas Title Button Rendering', () => {
   let canvas: LGraphCanvas
   let ctx: CanvasRenderingContext2D
@@ -57,7 +61,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
       skip_events: true
     })
 
-    node = new LGraphNode('Test Node')
+    node = new TestNode('Test Node')
     node.pos = [100, 200]
     node.size = [200, 100]
 
@@ -88,9 +92,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
 
   describe('drawNode title button rendering', () => {
     it('clips using the node rendering shape', () => {
-      Object.defineProperty(node, 'constructor', {
-        value: { shape: RenderShape.ROUND }
-      })
+      TestNode.shape = RenderShape.ROUND
       node.clip_area = true
 
       canvas.drawNode(node, ctx)
@@ -100,9 +102,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
     })
 
     it('clips card nodes with square bottom corners', () => {
-      Object.defineProperty(node, 'constructor', {
-        value: { shape: RenderShape.CARD }
-      })
+      TestNode.shape = RenderShape.CARD
       node.clip_area = true
 
       canvas.drawNode(node, ctx)

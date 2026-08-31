@@ -64,7 +64,7 @@ function defineEnumerableTopologyFacade(link: LLink): void {
       'parentId'
     ].map((key) => {
       const descriptor = Object.getOwnPropertyDescriptor(LLink.prototype, key)
-      if (!descriptor) throw new Error(`Missing LLink descriptor: ${key}`)
+      if (!descriptor) throw new TypeError(`Missing LLink descriptor: ${key}`)
       return [key, { ...descriptor, enumerable: true }]
     })
   )
