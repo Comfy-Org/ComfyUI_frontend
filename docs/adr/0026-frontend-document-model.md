@@ -473,7 +473,11 @@ registered sidecar._
 - Emit `Close` from every death path: both branches of `closeWorkflow`
   (including temporary-workflow deletion, which never calls `unload()`
   today) and the `syncWorkflows` background-unload (as a forced close; a
-  fresh `Open` follows on next activation).
+  fresh `Open` follows on next activation). Forced-close ordering is:
+  dispatch `Close`, release core document data and clear the ephemeral uid,
+  then dispatch `PostClose` with the closing uid carried on the event so
+  sidecars can clean up their last bucket before evicting it. No death path
+  may complete with a live uid.
 - Stamp websocket ingress with the resolved uid via the existing
   `jobIdToWorkflow` maps (D2).
 - Migrate `widgetValueStore` / `previewExposureStore` onto the key helper
