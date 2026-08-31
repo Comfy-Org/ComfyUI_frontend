@@ -127,17 +127,19 @@ BASE=https://api.us5.datadoghq.com/api/v2/on-call/schedules
 SCHEDULE_ID=f3258942-c040-4c33-8228-63a03e9092d6
 WORK_DIR=$(mktemp -d "${TMPDIR:-/tmp}/release-sheriff.XXXXXX")
 trap 'rm -rf "$WORK_DIR"' EXIT
-READ_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
-           -H "DD-APPLICATION-KEY: $DATADOG_APP_KEY")
-WRITE_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
-            -H "DD-APPLICATION-KEY: $DATADOG_WRITE_APP_KEY")
+READ_CONFIG="$WORK_DIR/read.curl"
+WRITE_CONFIG="$WORK_DIR/write.curl"
+printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
+  "$DATADOG_API_KEY" "$DATADOG_APP_KEY" >"$READ_CONFIG"
+printf 'header = "DD-API-KEY: %s"\nheader = "DD-APPLICATION-KEY: %s"\n' \
+  "$DATADOG_API_KEY" "$DATADOG_WRITE_APP_KEY" >"$WRITE_CONFIG"
 
-curl --fail-with-body -sS "${READ_AUTH[@]}" \
+curl --fail-with-body -sS --config "$READ_CONFIG" \
   "$BASE/$SCHEDULE_ID?include=layers,layers.members,layers.members.user" \
   --output "$WORK_DIR/schedule.original.json"
 cp "$WORK_DIR/schedule.original.json" "$WORK_DIR/schedule.json"
 
-curl --fail-with-body -sS -X PUT "${WRITE_AUTH[@]}" \
+curl --fail-with-body -sS -X PUT --config "$WRITE_CONFIG" \
   -H 'Content-Type: application/json' \
   "$BASE/$SCHEDULE_ID" -d @"$WORK_DIR/schedule.json"
 ```
