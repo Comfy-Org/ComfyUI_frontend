@@ -248,7 +248,9 @@ export class VueNodeHelpers {
   }
 
   getVisibleWidgetTooltip(): Locator {
-    return this.page.getByRole('tooltip')
+    return this.page
+      .getByRole('tooltip')
+      .locator('[data-slot="tooltip-content"]')
   }
 
   /**
