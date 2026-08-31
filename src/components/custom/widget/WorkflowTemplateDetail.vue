@@ -303,13 +303,13 @@ function getFailedDownloadLabel(
               :key="row.id"
               :class="
                 cn(
-                  'flex min-h-14 items-center gap-3 rounded-md p-2',
+                  'grid min-h-14 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-md p-2',
                   row.status?.kind === 'installed' && 'opacity-60'
                 )
               "
             >
               <span
-                class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary-background text-muted-foreground"
+                class="col-start-1 row-start-1 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary-background text-muted-foreground"
               >
                 <img
                   v-if="
@@ -342,7 +342,9 @@ function getFailedDownloadLabel(
                 />
               </span>
 
-              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span
+                class="col-start-2 row-start-1 flex min-w-0 flex-col gap-0.5"
+              >
                 <span class="truncate text-sm" :title="row.name">
                   {{ row.name }}
                 </span>
@@ -359,7 +361,7 @@ function getFailedDownloadLabel(
                 :href="row.status.href"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="focus-visible:ring-ring shrink-0 text-xs text-base-foreground no-underline hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:outline-none"
+                class="focus-visible:ring-ring col-start-3 row-start-1 shrink-0 text-xs text-base-foreground no-underline hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:outline-none"
               >
                 {{ row.status.label }}
                 <span aria-hidden="true">↗</span>
@@ -378,7 +380,7 @@ function getFailedDownloadLabel(
                 :aria-label="getDownloadAriaLabel(row)"
                 variant="textonly"
                 size="unset"
-                class="size-8 shrink-0 rounded-md p-1.5"
+                class="col-start-3 row-start-1 size-8 shrink-0 rounded-md p-1.5"
                 @click="emit('download-model', row.id)"
               >
                 <i aria-hidden="true" class="icon-[tabler--download] size-4" />
@@ -390,10 +392,19 @@ function getFailedDownloadLabel(
                   (row.status.downloadState?.status === 'queued' ||
                     row.status.downloadState?.status === 'starting')
                 "
-                role="status"
-                class="shrink-0 text-xs text-muted-foreground"
+                class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3 text-xs text-muted-foreground"
               >
-                {{ getPassiveDownloadLabel(row.status.downloadState) }}
+                <span
+                  aria-hidden="true"
+                  class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
+                >
+                  <span
+                    class="block h-full w-1/3 animate-pulse rounded-full bg-primary-background"
+                  />
+                </span>
+                <span role="status" class="shrink-0">
+                  {{ getPassiveDownloadLabel(row.status.downloadState) }}
+                </span>
               </span>
 
               <span
@@ -401,7 +412,7 @@ function getFailedDownloadLabel(
                   row.status?.kind === 'downloadable' &&
                   row.status.downloadState?.status === 'downloading'
                 "
-                class="flex shrink-0 items-center gap-2"
+                class="col-[2/-1] row-start-2 flex min-w-0 items-center gap-3"
               >
                 <span
                   role="progressbar"
@@ -412,7 +423,7 @@ function getFailedDownloadLabel(
                   aria-valuemax="100"
                   :aria-valuenow="getProgressPercent(row.status.downloadState)"
                   :aria-valuetext="getProgressText(row.status.downloadState)"
-                  class="block h-1 w-24 overflow-hidden rounded-full bg-secondary-background"
+                  class="block h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
                 >
                   <span
                     :class="
@@ -433,7 +444,7 @@ function getFailedDownloadLabel(
                     "
                   />
                 </span>
-                <span class="text-xs text-muted-foreground">
+                <span class="shrink-0 text-xs text-muted-foreground">
                   {{ getProgressText(row.status.downloadState) }}
                 </span>
               </span>
@@ -447,7 +458,7 @@ function getFailedDownloadLabel(
                 :aria-label="t('templateWorkflows.detail.installed')"
                 :label="t('templateWorkflows.detail.installed')"
                 variant="label"
-                class="h-5 bg-success-background/20 px-2 py-0.5 text-xs font-medium text-success-background normal-case"
+                class="col-start-3 row-start-1 h-5 bg-success-background/20 px-2 py-0.5 text-xs font-medium text-success-background normal-case"
               />
 
               <span
@@ -455,7 +466,7 @@ function getFailedDownloadLabel(
                   row.status?.kind === 'downloadable' &&
                   row.status.downloadState?.status === 'failed'
                 "
-                class="flex shrink-0 items-center gap-2"
+                class="col-start-3 row-start-1 flex shrink-0 items-center gap-2"
               >
                 <Badge
                   v-tooltip.top="{
@@ -488,17 +499,17 @@ function getFailedDownloadLabel(
                 role="img"
                 :aria-label="row.status.label"
                 :title="row.status.label"
-                class="flex size-6 shrink-0 items-center justify-center"
+                class="col-start-3 row-start-1 flex size-8 shrink-0 items-center justify-center text-success-background"
               >
                 <i
                   aria-hidden="true"
-                  class="icon-[lucide--circle-check] size-4 text-success-background"
+                  class="icon-[lucide--circle-check] size-4"
                 />
               </span>
 
               <span
                 v-else-if="row.status"
-                class="flex shrink-0 items-center gap-2"
+                class="col-start-3 row-start-1 flex shrink-0 items-center gap-2"
               >
                 <Badge
                   :label="row.status.label"
