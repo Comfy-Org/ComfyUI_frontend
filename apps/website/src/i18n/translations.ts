@@ -6264,6 +6264,45 @@ Enterprise`
     'zh-CN':
       '每场活动都各不相同，但都洋溢着同样的能量：一屋子用 ComfyUI 创作的人。如果你有观众、有想法，我们期待听到你的声音。'
   },
+  'events.directory.count': { en: '{count} events', 'zh-CN': '{count} 场活动' },
+  // zh-CN has no plural form; the key exists so English can say "1 event".
+  'events.directory.countOne': {
+    en: '{count} event',
+    'zh-CN': '{count} 场活动'
+  },
+  'events.directory.searchLabel': {
+    en: 'Search events',
+    'zh-CN': '搜索活动'
+  },
+  'events.directory.searchPlaceholder': {
+    en: 'Search by location, title, or description…',
+    'zh-CN': '按地点、标题或描述搜索…'
+  },
+  'events.directory.typeLabel': { en: 'Event type', 'zh-CN': '活动类型' },
+  'events.directory.allTypes': { en: 'All types', 'zh-CN': '所有类型' },
+  'events.directory.programLabel': { en: 'Program', 'zh-CN': '项目' },
+  'events.directory.allPrograms': { en: 'All programs', 'zh-CN': '所有项目' },
+  'events.directory.viewLabel': { en: 'View', 'zh-CN': '视图' },
+  'events.directory.view.map': { en: 'Map', 'zh-CN': '地图' },
+  'events.directory.view.cards': { en: 'Cards', 'zh-CN': '卡片' },
+  'events.directory.view.calendar': { en: 'Calendar', 'zh-CN': '日历' },
+  'events.directory.allEvents': { en: 'All events', 'zh-CN': '所有活动' },
+  'events.directory.saveTheDate': {
+    en: 'Save the date?',
+    'zh-CN': '标记日期？'
+  },
+  'events.directory.virtual': { en: 'Virtual event', 'zh-CN': '线上活动' },
+  'events.directory.empty': {
+    en: 'No events match those filters yet. Try a broader search.',
+    'zh-CN': '没有符合筛选条件的活动。请尝试放宽搜索条件。'
+  },
+  'events.program.student': { en: 'Student', 'zh-CN': '学生' },
+  'events.program.communityHosts': {
+    en: 'Community hosts',
+    'zh-CN': '社区主办'
+  },
+  'events.program.official': { en: 'Official', 'zh-CN': '官方' },
+  'events.program.partner': { en: 'Partner', 'zh-CN': '合作伙伴' },
   'events.host.title': {
     en: 'How to host your event',
     'zh-CN': '如何主办你的活动'
@@ -6274,11 +6313,6 @@ Enterprise`
       '有即将举办的活动，或正在酝酿的想法？提交审核，即可获得 Comfy 的支持。'
   },
   'events.host.applyToHost': { en: 'Apply to host', 'zh-CN': '申请主办' },
-  'events.upcoming.title': {
-    en: 'Upcoming events',
-    'zh-CN': '即将举行的活动'
-  },
-  'events.upcoming.livestream': { en: 'Livestream', 'zh-CN': '直播' },
   'events.upcoming.addToCalendar': {
     en: 'Add to calendar',
     'zh-CN': '添加到日历'

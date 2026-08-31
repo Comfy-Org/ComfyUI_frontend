@@ -57,7 +57,7 @@ const breadcrumbs = [
   extraJsonLd={[eventList, ...upcomingEventNodes]}
 >
   <EventsHeroSection locale={locale} client:load />
-  <EventsDirectorySection locale={locale} />
+  <EventsDirectorySection locale={locale} client:visible />
   <HostEventSection locale={locale} />
   <PastEventsSection locale={locale} client:visible />
 </BaseLayout>
