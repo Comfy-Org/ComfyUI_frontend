@@ -243,7 +243,10 @@ describe('getWidgetIdForNode', () => {
     })
     node.widgets = [first, frozen]
 
-    expect([...mapLiveWidgetsById(node).values()]).toEqual([first, frozen])
+    const mapped = [...mapLiveWidgetsById(node).values()]
+    expect(mapped).toEqual([first, { ...frozen, name: 'shared#1' }])
+    expect(node.widgets[1]).toBe(mapped[1])
+    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared#1'])
     expect(warn).toHaveBeenCalledOnce()
   })
 

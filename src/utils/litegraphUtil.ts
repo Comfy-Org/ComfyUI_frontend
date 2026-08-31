@@ -20,10 +20,12 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -355,16 +357,55 @@ export function mapLiveWidgetsById(
   const graphId = node.graph?.rootGraph.id
   const nodeId = parseNodeId(node.id)
   const usedNames = new Set<string>()
-  for (const [index, widget] of widgets.entries()) {
+  const reservedNames = new Set(widgets.map(({ name }) => name))
+  for (const [index, originalWidget] of widgets.entries()) {
+    let widget = originalWidget
     let name = widget.name
-    if (!namesAreUnique && usedNames.has(name)) name = `${name}#${index}`
+    if (!namesAreUnique && usedNames.has(name)) {
+      let suffix = 1
+      while (
+        usedNames.has(`${name}#${suffix}`) ||
+        reservedNames.has(`${name}#${suffix}`)
+      ) {
+        suffix++
+      }
+      name = `${name}#${suffix}`
+      try {
+        widget.name = name
+      } catch {
+        // Fall through to a compatible live adapter below.
+      }
+      if (widget.name !== name) {
+        widget = { ...widget, name }
+        widgets[index] = widget
+      }
+    }
     usedNames.add(name)
     const id =
       widget.widgetId ??
       (graphId && nodeId && nodeId !== UNASSIGNED_NODE_ID
         ? widgetId(graphId, nodeId, name)
         : undefined)
-    if (id) byId.set(id, widget)
+    if (id) {
+      byId.set(id, widget)
+      const store = useWidgetValueStore()
+      if (!store.getWidget(id)) {
+        store.registerWidget(
+          id,
+          {
+            disabled: widget.disabled,
+            label: widget.label,
+            name,
+            options: widget.options,
+            serialize: widget.serialize,
+            type: widget.type,
+            value: widget.value,
+            y: widget.y
+          },
+          deriveWidgetRenderState(widget)
+        )
+      }
+    }
   }
   return byId
 }
