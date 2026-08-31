@@ -60,9 +60,20 @@ export interface NotifyDef {
   readonly life?: number
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export interface PlaySoundDef {
+  /**
+   * A browser-readable audio asset. Sandboxed hosts restrict this to pack files.
+   */
+  readonly src: string
+  /** Range 0–1. Defaults to 1. */
+  readonly volume?: number
+}
+
 export interface CommandsHandle {
   register(def: CommandDef): void
   notify(def: NotifyDef): void
+  playSound(def: PlaySoundDef): Promise<void>
   /**
    * Runs a command the host or another pack registered, by id.
    *
@@ -121,6 +132,16 @@ export function createCommandsApi(): CommandsHandle {
         detail: def.detail,
         life: def.life
       })
+    },
+
+    async playSound(def: PlaySoundDef) {
+      const volume = def.volume ?? 1
+      if (!Number.isFinite(volume) || volume < 0 || volume > 1) {
+        throw new ComfyApiError('Sound volume must be a number from 0 to 1.')
+      }
+      const audio = new Audio(def.src)
+      audio.volume = volume
+      await audio.play()
     }
   }
   return Object.freeze(handle)

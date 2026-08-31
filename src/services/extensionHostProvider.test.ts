@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { hasExtensionHost, provideExtensionHost, resolveExtensionHost } from './extensionHostProvider';
-import type { ExtensionHostProvider } from './extensionHostProvider';
+import {
+  hasExtensionHost,
+  provideExtensionHost,
+  resolveExtensionHost
+} from './extensionHostProvider'
+import type { ExtensionHostProvider } from './extensionHostProvider'
 
 const makeProvider = (
   overrides: Partial<ExtensionHostProvider> = {}

@@ -152,4 +152,32 @@ describe('pack commands', () => {
       expect.objectContaining({ severity: 'warn', summary: 'Careful' })
     )
   })
+
+  it('plays an audio asset at the requested volume', async () => {
+    class AudioStub {
+      static readonly instances: AudioStub[] = []
+      readonly play = vi.fn(async () => {})
+      volume = 1
+
+      constructor(readonly src: string) {
+        AudioStub.instances.push(this)
+      }
+    }
+    vi.stubGlobal('Audio', AudioStub)
+
+    await commands.playSound({ src: '/extensions/Test/sound.mp3', volume: 0.4 })
+
+    expect(AudioStub.instances).toHaveLength(1)
+    expect(AudioStub.instances[0]).toMatchObject({
+      src: '/extensions/Test/sound.mp3',
+      volume: 0.4
+    })
+    expect(AudioStub.instances[0].play).toHaveBeenCalledOnce()
+  })
+
+  it('refuses an invalid sound volume', async () => {
+    await expect(
+      commands.playSound({ src: '/sound.mp3', volume: 2 })
+    ).rejects.toThrow(ComfyApiError)
+  })
 })

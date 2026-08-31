@@ -890,7 +890,7 @@ describe('setSupply', () => {
     expect(Generated.prototype.isVirtualNode).toBeUndefined()
   })
 
-  it('composes suppliers registered by different extensions', () => {
+  it('composes suppliers registered by different extensions', async () => {
     const registry = createDefRegistry()
     const first = vi.fn(() => [])
     const second = vi.fn(() => [])
@@ -899,7 +899,7 @@ describe('setSupply', () => {
     api.extend('KSampler', (b) => b.setSupply(second))
     registry.applyTo(nodeClass('KSampler'), RAW_DEF)
 
-    frontendSupplierMap().get('KSampler')!(undefined as never)
+    await frontendSupplierMap().get('KSampler')!(undefined as never)
 
     expect(first).toHaveBeenCalledOnce()
     expect(second).toHaveBeenCalledOnce()

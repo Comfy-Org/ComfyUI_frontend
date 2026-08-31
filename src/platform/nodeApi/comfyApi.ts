@@ -138,6 +138,7 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
   ['node.menu', '2.0'],
   ['settings', '2.0'],
   ['commands', '2.0'],
+  ['commands.playSound', '2.0'],
   ['backend', '2.0'],
   ['storage', '2.0'],
   ['ui.sidebarTab', '2.0'],
