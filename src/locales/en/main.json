@@ -1863,6 +1863,7 @@
     "hunyhuan video": "hunyhuan video",
     "mochi": "mochi",
     "ltxv": "ltxv",
+    "minimax music": "minimax music",
     "minimax": "minimax",
     "preprocessors": "preprocessors",
     "video_models": "video_models",
@@ -1910,6 +1911,10 @@
     "kandinsky": "kandinsky",
     "autoregressive": "autoregressive",
     "shader": "shader",
+    "trellis2": "trellis2",
+    "trellis": "trellis",
+    "mesh": "mesh",
+    "texturing": "texturing",
     "detection": "detection",
     "background removal": "background removal",
     "scail": "scail",
@@ -1925,6 +1930,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2000,6 +2006,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "FLOAT",
     "FLOATS": "FLOATS",
     "GEMINI_INPUT_FILES": "GEMINI_INPUT_FILES",
@@ -2013,6 +2020,7 @@
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
     "INTERP_MODEL": "INTERP_MODEL",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
@@ -2030,6 +2038,7 @@
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
@@ -2050,7 +2059,9 @@
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAMPLER": "SAMPLER",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "SIGMAS",
     "SPLAT": "SPLAT",
     "STRING": "STRING",
@@ -2061,6 +2072,7 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -4018,7 +4030,15 @@
     "uploadWorkflowButton": "Upload my workflow"
   },
   "desktopDialogs": {
-    "": {
+    "reinstallVenv": {
+      "title": "Reinstall ComfyUI (Fresh Start)?",
+      "message": "Sorry, we can't launch ComfyUI because some installed packages aren't compatible.\n\nClick Reinstall to restore ComfyUI and get back up and running.\n\nPlease note: if you've added custom nodes, you'll need to reinstall them after this process.",
+      "buttons": {
+        "Learn More": "Learn More",
+        "Reinstall": "Reinstall"
+      }
+    },
+    "invalidDialog": {
       "title": "Invalid Dialog",
       "message": "Invalid dialog ID was provided.",
       "buttons": {

@@ -147,6 +147,7 @@
     }
   },
   "AddTextPrefix": {
+    "description": "为所有文本添加前缀。",
     "display_name": "文本前添加",
     "inputs": {
       "prefix": {
@@ -166,6 +167,7 @@
     }
   },
   "AddTextSuffix": {
+    "description": "为所有文本添加后缀。",
     "display_name": "文本后添加",
     "inputs": {
       "suffix": {
@@ -266,6 +268,36 @@
       },
       "strength": {
         "name": "强度"
+      }
+    }
+  },
+  "ApplyTextureToMesh": {
+    "description": "将烘焙的纹理 IMAGE 附加到网格的 UV 布局以供 SaveGLB 使用。输入进行烘焙时使用的同一 mesh",
+    "display_name": "将纹理应用到网格",
+    "inputs": {
+      "base_color": {
+        "name": "base_color"
+      },
+      "mesh": {
+        "name": "mesh"
+      },
+      "metallic": {
+        "name": "metallic"
+      },
+      "normal_map": {
+        "name": "normal_map"
+      },
+      "occlusion": {
+        "name": "occlusion"
+      },
+      "roughness": {
+        "name": "roughness"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
       }
     }
   },
@@ -395,6 +427,106 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BakeAmbientOcclusion": {
+    "description": "将高模网格的环境光遮蔽贴图烘焙到低模的 UV 布局中（白色 = 开放区域，深色 = 缝隙）。输入已展开 UV 的 low_poly 及其简化前的 high_poly。输出用于“将纹理应用到网格”节点 occlusion 输入的灰度图像（打包到 ORM 贴图 / occlusionTexture 中）。",
+    "display_name": "烘焙环境光遮蔽",
+    "inputs": {
+      "bias": {
+        "name": "bias",
+        "tooltip": "射线起点离开表面的距离，占边界框对角线的比例。如果平坦表面也出现深色斑点/孔洞，请提高。"
+      },
+      "high_poly": {
+        "name": "high_poly"
+      },
+      "low_poly": {
+        "name": "low_poly"
+      },
+      "max_distance": {
+        "name": "max_distance",
+        "tooltip": "射线长度，占边界框对角线的比例。更小 = 遮蔽更紧凑、更局部。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "samples": {
+        "name": "samples",
+        "tooltip": "每个纹素的射线数。更多 = 更平滑、更慢。若有颗粒感请提高。"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "缩放遮蔽效果。>1 变暗，<1 变亮。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "occlusion",
+        "tooltip": null
+      }
+    }
+  },
+  "BakeNormalMapFromMesh": {
+    "description": "将高模网格的切线空间法线贴图（glTF/OpenGL +Y）烘焙到低模的 UV 布局中，捕捉简化时丢失的细节。输入已展开 UV 的 low_poly 及其简化前的 high_poly。输出用于“将纹理应用到网格”节点 normal_map 输入的图像。",
+    "display_name": "从网格烘焙法线贴图",
+    "inputs": {
+      "cage_distance": {
+        "name": "cage_distance",
+        "tooltip": "表面搜索范围，占边界框对角线的比例。重度简化后出现错误或缺失区域时请提高；若跨越间隙采样则降低。"
+      },
+      "high_poly": {
+        "name": "high_poly"
+      },
+      "ignore_backfaces": {
+        "name": "ignore_backfaces",
+        "tooltip": "跳过背向纹素的高模表面，避免缝隙/封闭空间采样到对面的墙。仅当高模绕序不一致时禁用。"
+      },
+      "low_poly": {
+        "name": "low_poly"
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "normal_map",
+        "tooltip": null
+      }
+    }
+  },
+  "BakeTextureFromVoxel": {
+    "description": "将 PBR 纹理烘焙到网格现有的 UV 布局上（对稀疏体素体积进行三线性采样）。不会展开 UV——请在上游连接 UV 展开节点。输出 base_color 以及 metallic/roughness 灰度 IMAGE（无 PBR 时为黑色）；将它们输入“将纹理应用到网格”（同一 mesh）以供 SaveGLB 使用。",
+    "display_name": "从体素烘焙纹理",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "reference_mesh": {
+        "name": "参考网格",
+        "tooltip": "可选的稠密预减面网格；在采样前将每个纹素反投影到其真实表面，消除粗糙网格上的分面烘焙效果。"
+      },
+      "texture_size": {
+        "name": "texture_size",
+        "tooltip": "正方形 UV 图集分辨率。"
+      },
+      "voxel_colors": {
+        "name": "voxel_colors"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "基础颜色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "金属度",
+        "tooltip": null
+      },
+      "2": {
+        "name": "粗糙度",
         "tooltip": null
       }
     }
@@ -638,6 +770,110 @@
       }
     }
   },
+  "BriaEraser": {
+    "description": "使用 Bria 从图像中移除由蒙版勾勒的对象或区域。",
+    "display_name": "Bria 擦除",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "mask": {
+        "name": "蒙版",
+        "tooltip": "白色区域将被擦除，黑色区域将被保留。蒙版会在发送前二值化，因此部分涂抹的区域也会视为白色。必须与图像具有相同的宽高比。"
+      },
+      "mask_type": {
+        "name": "蒙版类型",
+        "tooltip": "手动适用于手绘或画笔蒙版，自动适用于由 SAM 等分割模型生成的蒙版。"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaExpandImage": {
+    "description": "使用 Bria 以生成内容将图像扩展到其边界之外。",
+    "display_name": "Bria 扩展图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "expand_mode": {
+        "name": "扩展模式",
+        "tooltip": "扩展后图像的目标形状：预设宽高比、自定义比例，或在画布上手动放置原始图像。只有手动模式可生成高度超过 1:2 的画布。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "negative_prompt": {
+        "name": "负面提示词"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "扩展场景的可选描述；留空时，Bria 会根据图像生成描述。"
+      },
+      "seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "提示词",
+        "tooltip": "用于扩展的提示词；当提示词输入为空时由 Bria 自动生成。"
+      }
+    }
+  },
+  "BriaGenFill": {
+    "description": "使用 Bria 在图像的蒙版区域内生成对象或场景。",
+    "display_name": "Bria 生成式填充",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "mask": {
+        "name": "蒙版",
+        "tooltip": "白色区域将填充生成内容，黑色区域将被保留。蒙版会在发送前二值化，因此部分涂抹的区域也会视为白色。必须与图像具有相同的宽高比。"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "negative_prompt": {
+        "name": "负面提示词"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述要在蒙版区域内生成的内容。"
+      },
+      "refine_prompt": {
+        "name": "优化提示词",
+        "tooltip": "自动调整提示词以获得更佳结果；禁用后将完全按原样使用提示词。"
+      },
+      "seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "使用 Bria 最新模型编辑图像",
     "display_name": "Bria FIBO 图像编辑",
@@ -687,6 +923,32 @@
       },
       "1": {
         "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaIncreaseResolution": {
+    "description": "使用 Bria 将图像放大 2 倍或 4 倍，同时保留原始内容。",
+    "display_name": "Bria 提高分辨率",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "当输出超过限制时，自动降低倍数；如果仍然不够，则缩小输入图像。"
+      },
+      "desired_increase": {
+        "name": "desired_increase",
+        "tooltip": "分辨率倍数。输出图像的每条边必须在 8192 像素以内。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -865,6 +1127,53 @@
       }
     }
   },
+  "BuildPoseFile": {
+    "description": "根据姿态数据构建动画 GLB，或保存 BVH 动作捕捉文件。",
+    "display_name": "创建 3D 动画文件",
+    "inputs": {
+      "camera_translation": {
+        "name": "camera_translation",
+        "tooltip": "将 pred_cam_t 烘焙到根节点的位移中。'off' = 绑定位置，'centered' = 相对于第 0 帧的增量，'absolute' = 原始值（Z 为相机深度，通常以米为单位）。"
+      },
+      "format": {
+        "name": "格式",
+        "tooltip": "输出格式，两者均传递给 Save 3D Model 以写入磁盘。'glb' = 动画 GLB（网格 / 骨骼 / openpose / scail）。'bvh' = BVH 动作捕捉片段（单个骨架；需要模型）。"
+      },
+      "format_bone_smooth_window": {
+        "name": "bone_smooth_window"
+      },
+      "format_mesh_style": {
+        "name": "mesh_style"
+      },
+      "format_mesh_style_bone_vis": {
+        "name": "bone_vis"
+      },
+      "format_mesh_style_shader": {
+        "name": "shader"
+      },
+      "fps": {
+        "name": "fps",
+        "tooltip": "动画帧率。"
+      },
+      "pose_data": {
+        "name": "pose_data",
+        "tooltip": "3D 姿态数据。"
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "track_index": {
+        "name": "track_index",
+        "tooltip": "-1 = 所有轨道；≥0 = 单个轨道。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0 从首帧图像和可选的末帧图像生成视频。",
     "display_name": "ByteDance Seedance 2.0 首帧-末帧生成视频",
@@ -890,7 +1199,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 使用最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 提供最高质量和 1080p/4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5 用于最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 用于最高质量和 4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
       },
       "model_duration": {
         "name": "时长"
@@ -924,14 +1233,14 @@
   },
   "ByteDance2ReferenceNode": {
     "description": "使用 Seedance 2.0 结合参考图像、视频和音频生成、编辑或扩展视频。支持多模态参考、视频编辑和视频扩展。",
-    "display_name": "ByteDance Seedance 2.0 参考生成视频",
+    "display_name": "ByteDance Seedance 2.5 参考图转视频（旧版）",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 使用最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 提供最高质量和 1080p/4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5 用于最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 用于最高质量和 4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
       },
       "model_auto_downscale": {
         "name": "自动降采样"
@@ -975,6 +1284,59 @@
       }
     }
   },
+  "ByteDance2ReferenceNodeV2": {
+    "description": "使用 Seedance 2.5 或 2.0，结合参考图像、视频和音频生成、编辑或扩展视频。支持多模态参考、视频编辑和视频扩展。",
+    "display_name": "ByteDance Seedance 2.5 参考图转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Seedance 2.5 用于最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 用于最高质量和 4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+      },
+      "model_auto_downscale": {
+        "name": "自动缩小"
+      },
+      "model_auto_upscale": {
+        "name": "自动放大"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_generate_audio": {
+        "name": "生成音频"
+      },
+      "model_output_format": {
+        "name": "输出格式"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_task_type": {
+        "name": "任务类型"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果均不具有确定性。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否为视频添加水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2TextToVideoNode": {
     "description": "基于文本提示词，使用 Seedance 2.0 模型生成视频。",
     "display_name": "ByteDance Seedance 2.0 文本生成视频",
@@ -984,7 +1346,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5 使用最新模型，支持最长 30 秒视频及 mp4/mov 输出；Seedance 2.0 提供最高质量和 1080p/4k；Fast 用于速度优化；Mini 用于最快、成本最低的生成。"
+        "tooltip": "Seedance 2.5 为最新模型，视频最长可达 30 秒并支持 mp4/mov 输出；Seedance 2.0 提供最高质量和 4K；Fast 针对速度优化；Mini 可实现最快、成本最低的生成。"
       },
       "model_duration": {
         "name": "时长"
@@ -1268,7 +1630,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "使用 ByteDance Seed Audio 1.0，通过单个提示生成语音、音乐、音效和多说话人对话。在提示中描述声音、情感、氛围、背景音乐和音效，并包含要说的台词。可选内置预设声音，从最多 3 个参考 clip（在提示中标记为 @Audio1-3）克隆声音，或从角色图像推导声音。每次最多生成 2 分钟音频。",
+    "description": "使用 ByteDance Seed Audio 1.0，根据单个提示词生成语音、音乐、音效和多说话人对话。在提示词中描述声音、情绪、环境氛围、背景音乐和音效，并包含要说的台词。可选择内置预设声音、从最多 3 个参考片段克隆声音（在提示词中标记为 {'@'}Audio1-3），或从角色图像衍生声音。每次最多生成 2 分钟音频。多语言模型支持 20 种语言及基于时间戳的时序控制。",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1468,7 +1830,7 @@
   },
   "ByteDanceSeedreamNodeV2": {
     "description": "统一的文本生成图像与精确的单句编辑，最高支持4K分辨率。",
-    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "display_name": "ByteDance Seedream 4.5 和 5.0（旧版）",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -1500,6 +1862,48 @@
       "watermark": {
         "name": "水印",
         "tooltip": "是否在图像上添加“AI生成”水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNodeV3": {
+    "description": "统一的文生图生成和精确的单句编辑，最高支持 4K 分辨率。",
+    "display_name": "ByteDance Seedream 4.5 和 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_prompt_optimization": {
+        "name": "提示词优化"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_size_preset": {
+        "name": "尺寸预设"
+      },
+      "model_thinking": {
+        "name": "思考"
+      },
+      "model_watermark": {
+        "name": "水印"
+      },
+      "model_width": {
+        "name": "宽度"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于创建或编辑图像的文本提示词。"
       }
     },
     "outputs": {
@@ -1549,6 +1953,43 @@
       "watermark": {
         "name": "水印",
         "tooltip": "是否在视频中添加“AI生成”水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceVideoEnhanceNode": {
+    "description": "使用 ByteDance vCube 放大并修复视频：最高支持 8K 超分辨率、去除压缩伪影和噪点、增强色彩与清晰度，并可选帧插值。",
+    "display_name": "ByteDance vCube 视频增强",
+    "inputs": {
+      "bitrate_level": {
+        "name": "比特率级别",
+        "tooltip": "交付文件的目标比特率，会根据输出分辨率和帧率进行调整。"
+      },
+      "fps": {
+        "name": "fps",
+        "tooltip": "输出帧率。高于源帧率时启用 AI 帧插值；低于源帧率时会丢帧。“source”保持源帧率，最高可达 120 fps。超过 30 fps 的帧率成本为 2 倍，超过 60 fps 为 4 倍。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "输出分辨率。短边设为所选级别，长边遵循源宽高比。“source”保持源尺寸，“custom”以像素设置短边。宽度或高度比例超过约 2.2:1 的源素材将按高一级分辨率档位计费。"
+      },
+      "tool_version": {
+        "name": "工具版本",
+        "tooltip": "“standard”通过 10 多种增强算法平衡速度和质量。“professional”使用 30 多种算法进行影院级修复，耗时约为 3 倍，成本为 10 倍。"
+      },
+      "tool_version_enhance_style": {
+        "name": "增强风格"
+      },
+      "tool_version_scene": {
+        "name": "scene"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要增强的视频。源分辨率最大不得超过 2560x1440（2K）；输出尺寸由分辨率输入设置。"
       }
     },
     "outputs": {
@@ -1663,7 +2104,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[配方]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: 旧 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推荐）或 t5\nomnigen2: qwen vl 2.5 3B",
+    "description": "推荐配置：\nsd：clip-l\nstable cascade：clip-g\nsd3：t5 xxl / clip-g / clip-l\nstable audio：t5 base\nmochi：t5 xxl\ncogvideox：t5 xxl（226 个 token 填充）\ncosmos：旧版 t5 xxl\nlumina2：gemma 2 2B\nwan：umt5 xxl\nhidream：llama-3.1（推荐）或 t5\nomnigen2：qwen vl 2.5 3B\njoyimage：qwen3-vl 8B\nlens：gpt-oss-20b\npixeldit：gemma 2 2B elm\nminimax：MiniMax H3 Qwen3-VL 或 Music3 Qwen/RVQ",
     "display_name": "加载CLIP",
     "inputs": {
       "clip_name": {
@@ -3251,7 +3692,11 @@
       },
       "bit_depth": {
         "name": "bit_depth",
-        "tooltip": "所创建视频的位深度。10位可以保持更平滑的渐变并减少色带，但部分播放器和下游节点可能不支持。"
+        "tooltip": "自动模式对 sRGB 使用 8 位，对 HDR 使用 10 位。明确选择 8 位或 10 位时不受色彩空间影响。"
+      },
+      "color_space": {
+        "name": "color_space",
+        "tooltip": "输入图像的色彩空间。HDR 选择 BT.2020/HLG，HDR PQ 选择 BT.2020/PQ。"
       },
       "fps": {
         "name": "帧率"
@@ -3449,6 +3894,29 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DecimateMesh": {
+    "description": "在当前计算设备上使用 QEM 将网格简化至目标面数。“midpoint”为忠实于 cumesh 的预设（最佳质量，可保留细小特征/毛发）；“qem”将顶点置于 QEM 最优位置，并提供线条/特征边控制。输出保持焊接状态。",
+    "display_name": "简化网格",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "placement_mode": {
+        "name": "placement_mode",
+        "tooltip": "midpoint：忠实于 cumesh（推荐）。qem：QEM 最优放置。"
+      },
+      "target_face_count": {
+        "name": "target_face_count",
+        "tooltip": "目标最大面数。0 表示禁用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -4257,6 +4725,23 @@
       }
     }
   },
+  "EmptyMiniMaxMusic3LatentAudio": {
+    "description": "为请求的时长创建空的 MiniMax Music3 音频 latent。",
+    "display_name": "空 MiniMax Music3 latent 音频",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "空Latent视频（Mochi）",
     "inputs": {
@@ -4312,6 +4797,20 @@
       },
       "width": {
         "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyTrellis2LatentStructure": {
+    "display_name": "EmptyTrellis2LatentStructure",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "批次中的 latent 图像数量。"
       }
     },
     "outputs": {
@@ -4417,6 +4916,146 @@
     "outputs": {
       "0": {
         "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
+  "FillHoles": {
+    "description": "填充周长不超过最大值的孔洞，同时保留现有几何体/UV。使用 GPU 向量化处理，自动校正绕序并采用循环平均的质心颜色。",
+    "display_name": "填充孔洞",
+    "inputs": {
+      "fill_chains": {
+        "name": "fill_chains",
+        "tooltip": "同时填充开放链（而不仅是循环）。可能产生噪声；关闭时与 cumesh 一致。"
+      },
+      "max_perimeter": {
+        "name": "max_perimeter",
+        "tooltip": "要填充的最大孔洞周长。0 表示禁用。"
+      },
+      "max_vertices": {
+        "name": "max_vertices",
+        "tooltip": "限制每个循环的边界顶点数；质心扇形仅适用于较小且接近平面的孔洞。请保持 ≤16。"
+      },
+      "mesh": {
+        "name": "mesh"
+      },
+      "weld_epsilon_rel": {
+        "name": "weld_epsilon_rel",
+        "tooltip": "预焊接容差（包围盒对角线的比例）；边界检测需要焊接后的顶点。0 表示跳过。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioInstantVoiceClone": {
+    "description": "根据音频样本创建私有克隆声音，可立即用于文本转语音。请提供 1–20 段录音，建议每段 10–30 秒，总时长不超过 270 秒。",
+    "display_name": "Fish Audio 即时声音克隆",
+    "inputs": {
+      "enhance_audio_quality": {
+        "name": "enhance_audio_quality",
+        "tooltip": "训练前增强参考音频质量。"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "用于声音克隆的音频录音。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioSpeechToText": {
+    "description": "通过自动语言检测将音频转录为文本。",
+    "display_name": "Fish Audio 语音转文本",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "要转录的音频。"
+      },
+      "language": {
+        "name": "语言",
+        "tooltip": "ISO 639-1 语言提示（例如“en”“zh”）。无论如何都会自动检测语言。"
+      },
+      "precise_timestamps": {
+        "name": "精确时间戳",
+        "tooltip": "返回带有词级时间戳的片段。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "language_code",
+        "tooltip": null
+      },
+      "2": {
+        "name": "segments_json",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioTextToSpeech": {
+    "description": "将文本转换为语音。支持文本中的情感提示（s2.1-pro 使用 [happy]、[whispering]；s1 使用 (happy)），并可通过 {'@'}Voice1/{'@'}Voice2 标签和连接多个语音实现多说话者对话。",
+    "display_name": "Fish Audio 文本转语音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于文本转语音的模型。"
+      },
+      "model_normalize": {
+        "name": "归一化"
+      },
+      "model_speed": {
+        "name": "速度"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_volume": {
+        "name": "音量"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果均不确定。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "要转换为语音的文本。连接两个或更多语音时，请使用 @Voice1、@Voice2 等标记说话者切换。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioVoiceSelector": {
+    "description": "从 Fish Audio 语音库中选择用于文本转语音生成的语音。",
+    "display_name": "Fish Audio 语音选择器",
+    "inputs": {
+      "voice": {
+        "name": "语音",
+        "tooltip": "选择一种语音，或选择“custom”以输入任意 fish.audio 语音模型 ID。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "语音",
         "tooltip": null
       }
     }
@@ -5044,6 +5683,48 @@
       }
     }
   },
+  "FluxVideoUpscaleNode": {
+    "description": "使用 FLUX 超分辨率将视频放大 1.5 至 3 倍，可精确保留源内容，或创造性地增强其细节。",
+    "display_name": "Flux 视频放大",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动缩小",
+        "tooltip": "自动缩小面积大于 3840x2160 像素的源视频，以符合输入限制。保留宽高比；较小的视频不受影响。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "“creative”会恢复并创造精细细节，最适合生成的视频、纹理和景观。“precise”会在不改变源内容的情况下锐化，适用于人脸、产品和真实视频。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于引导增强细节的视频片段可选描述。留空则进行中性放大。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "审核容忍度，0 为最严格。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于确定节点是否应重新运行的种子；FLUX 会自行选择种子，因此无论此值为何，实际结果均不具确定性。"
+      },
+      "upscale_factor": {
+        "name": "放大倍数",
+        "tooltip": "相对于源内容的输出尺寸。由于每帧上限，非常大的源内容实际放大倍数会低于请求值。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "时长为 1 至 20 秒、宽高比介于 1:4 和 4:1 之间的源视频片段。输出以 24 fps 渲染，每帧上限约为 1440 万像素。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FrameInterpolate": {
     "display_name": "帧插值",
     "inputs": {
@@ -5617,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "使用 Google 的 Gemini Omni Flash 模型，根据文本提示生成带音频的视频。可选提供参考图像和/或视频，以引导或编辑结果。请直接在提示词中描述所需时长（3-10 秒）。",
+    "display_name": "Google Gemini Omni（视频）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的 Gemini 视频模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "生成轨道",
     "inputs": {
@@ -5683,6 +6400,22 @@
       }
     }
   },
+  "Get3DComponents": {
+    "description": "将 3D 模型文件（GLB、GLTF、OBJ、STL）解析为可编辑的 MESH，供网格处理节点（简化、重建网格、UV 展开、烘焙等）使用。所有场景节点/图元将合并为一个网格，并应用其变换；纹理和材质因子取自第一个材质。MeshToFile3D 的对应节点。",
+    "display_name": "获取 3D 组件",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "来自 Load 3D 或其他 3D 节点的 3D 模型文件。不支持 FBX/USDZ，请先转换为 GLB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "网格",
+        "tooltip": null
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "从已加载 LoRA 模型的 safetensors 元数据中提取 IC-LoRA 参数，并将其输出用于 LTXVAddGuide（例如 reference_downscale_factor）。",
     "display_name": "获取 IC-LoRA 参数",
@@ -5722,6 +6455,24 @@
       }
     }
   },
+  "GetMeshInfo": {
+    "display_name": "获取网格信息",
+    "inputs": {
+      "mesh": {
+        "name": "网格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "网格",
+        "tooltip": null
+      },
+      "1": {
+        "name": "信息",
+        "tooltip": null
+      }
+    }
+  },
   "GetSplatCount": {
     "description": "返回批处理中所有 splat 的总数。",
     "display_name": "获取 Splat 数量",
@@ -5742,7 +6493,7 @@
     }
   },
   "GetVideoComponents": {
-    "description": "提取视频中的所有元素：帧、音频和帧率。",
+    "description": "提取视频帧、音频、帧率、位深度和色彩空间。",
     "display_name": "获取视频元素",
     "inputs": {
       "video": {
@@ -5765,6 +6516,10 @@
       },
       "3": {
         "name": "bit_depth",
+        "tooltip": null
+      },
+      "4": {
+        "name": "color_space",
         "tooltip": null
       }
     }
@@ -6378,7 +7133,7 @@
       },
       "mode": {
         "name": "模式",
-        "tooltip": "“speed”速度更快；“precision”可生成更高质量的唇形同步，但价格翻倍。"
+        "tooltip": "'speed' 更快；'precision' 可实现更高质量的唇形同步，但价格更高。"
       },
       "output_language": {
         "name": "目标语言",
@@ -6815,7 +7570,7 @@
   },
   "IdeogramPImage": {
     "description": "使用 P-Image（Ideogram 的快速文本生成图像模型）生成图像。具备强大的字体排版和照片级真实感；支持 Ideogram 4.0 结构化 JSON 标注，实现精确文本、颜色和布局。",
-    "display_name": "Ideogram P-Image",
+    "display_name": "Ideogram & Pruna P-Image",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -7115,6 +7870,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropToMask": {
+    "display_name": "将图像裁剪至蒙版",
+    "inputs": {
+      "background": {
+        "name": "background",
+        "tooltip": "蒙版主体后方的背景颜色。"
+      },
+      "grow_mask": {
+        "name": "grow_mask",
+        "tooltip": "裁剪前按此像素数扩展或收缩蒙版。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "输出高度（像素）。"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "masks": {
+        "name": "蒙版"
+      },
+      "pad_factor": {
+        "name": "pad_factor",
+        "tooltip": "蒙版边界框周围的额外边距倍数。"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "输出宽度（像素）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
         "tooltip": null
       }
     }
@@ -11410,6 +12202,21 @@
       }
     }
   },
+  "MergeMeshes": {
+    "description": "通过偏移面索引并堆叠顶点、面、UV 和颜色，将 N 个网格连接为一个。",
+    "display_name": "合并网格",
+    "inputs": {
+      "meshes": {
+        "name": "meshes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "MergeSplat": {
     "description": "将任意数量的高斯 splat 拼接为一个。对同一 latent 在不同种子下的多次解码进行合并，可以使表面更密集，从而提升网格化时的表面质量。",
     "display_name": "合并 Splats",
@@ -11426,6 +12233,7 @@
     }
   },
   "MergeTextLists": {
+    "description": "将多个文本列表连接为一个。",
     "display_name": "融合文本序列",
     "inputs": {
       "texts": {
@@ -11437,6 +12245,71 @@
       "0": {
         "name": "文本",
         "tooltip": "已处理的文本"
+      }
+    }
+  },
+  "MeshSmoothNormals": {
+    "description": "计算平滑的逐顶点法线并将其附加到网格。没有法线的网格在 glTF 查看器中会以平面方式（逐面）着色；此操作会使其平滑着色。当 crease_angle 小于 180 时，二面角大于阈值的边会通过沿边拆分顶点来保持硬边。",
+    "display_name": "平滑网格法线",
+    "inputs": {
+      "crease_angle": {
+        "name": "crease_angle",
+        "tooltip": "二面角超过此值（度）的边会保持硬边（顶点会被拆分）。180 = 完全平滑；较低值会保留锐利边缘（例如硬表面可使用约 30-60）。"
+      },
+      "mesh": {
+        "name": "mesh"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshTextureToImage": {
+    "description": "将网格的烘焙纹理提取为单独的 IMAGE：base_color、metallic、roughness、occlusion 和 normal_map。未烘焙任何内容的通道将返回中性值（occlusion 为白色，normal 为平坦）。",
+    "display_name": "网格纹理转图像",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "metallic",
+        "tooltip": null
+      },
+      "2": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "3": {
+        "name": "occlusion",
+        "tooltip": null
+      },
+      "4": {
+        "name": "normal_map",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshToFile3D": {
+    "description": "将网格序列化为供 Save / Preview 3D 节点使用的 GLB File3D 对象，包含其 UV、颜色、法线、纹理、法线/遮蔽/自发光贴图和材质。每个批次仅支持一个项目。",
+    "display_name": "创建 3D 文件（从网格）",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
       }
     }
   },
@@ -11507,8 +12380,15 @@
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
       },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "额外执行一次细化处理，以获得保真度更高的几何体和更精细的表面细节。"
       }
     },
     "outputs": {
@@ -11570,6 +12450,9 @@
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
       },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
       "symmetry_mode": {
         "name": "symmetry_mode"
       }
@@ -11599,7 +12482,7 @@
     "inputs": {
       "enable_pbr": {
         "name": "enable_pbr",
-        "tooltip": "在基础色之外生成PBR贴图（金属度、粗糙度、法线）。注意：使用雕塑风格时应设置为false，因为雕塑风格会生成其专属的PBR贴图。"
+        "tooltip": "除基础颜色外，还生成 PBR 贴图（金属度、粗糙度、法线）。"
       },
       "meshy_task_id": {
         "name": "meshy_task_id"
@@ -11614,6 +12497,10 @@
       "texture_prompt": {
         "name": "texture_prompt",
         "tooltip": "提供文本提示以引导材质生成。最多600个字符。不能与'texture_image'同时使用。"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "基础颜色纹理分辨率。更高的分辨率可捕捉更多表面细节。"
       }
     },
     "outputs": {
@@ -11705,11 +12592,60 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "额外执行一次细化处理，以获得保真度更高的几何体和更精细的表面细节。"
       }
     },
     "outputs": {
       "0": {
         "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureMultiViewNode": {
+    "description": "使用同一对象的 1 至 4 个参考视图为先前创建的模型生成纹理。",
+    "display_name": "Meshy：纹理化模型（多视图）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "使用模型的原始 UV，而非生成新的 UV。启用后，Meshy 会保留上传模型中的现有纹理。如果模型没有原始 UV，输出质量可能会不够好。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "multiview_images": {
+        "name": "multiview_images",
+        "tooltip": "同一对象的参考视图。第一张图像为主视图（正面）；其余视图的顺序无关紧要。"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "基础颜色纹理分辨率。更高的分辨率可捕捉更多表面细节。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
       },
       "1": {
@@ -11749,6 +12685,10 @@
       "text_style_prompt": {
         "name": "文本风格提示",
         "tooltip": "用文本描述你想要的物体纹理风格。最多600个字符。不能与“image_style”同时使用。"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "基础颜色纹理分辨率。更高的分辨率可捕捉更多表面细节。"
       }
     },
     "outputs": {
@@ -11766,6 +12706,44 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3AddGuide": {
+    "description": "在 MiniMax H3 视频的任意帧锚定图像、短片段、音频，或带原声的片段。串联多个节点可锚定多个帧。",
+    "display_name": "为 MiniMax H3 添加引导",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "从相同帧索引开始锚定的原声，会裁剪至视频的剩余时长。"
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "音频 VAE，连接音频时需要。"
+      },
+      "frame_idx": {
+        "name": "frame_idx",
+        "tooltip": "用于锚定图像或片段首帧的帧索引。负值从视频末尾开始计数。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要锚定的图像或视频帧。多帧批次会作为片段锚定，并裁剪为模型支持的有效片段长度：5、22、39……（17k + 5）帧。少于 5 帧的批次仅使用第一张图像。"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "视频 VAE，连接图像时需要。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       }
     }
@@ -11882,6 +12860,78 @@
       }
     }
   },
+  "MiniMaxMusic3TextEncode": {
+    "description": "使用 MiniMax Music3 CLIP 模型生成声学条件序列。",
+    "display_name": "MiniMax Music3 文本编码",
+    "inputs": {
+      "caption": {
+        "name": "字幕"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "lyrics": {
+        "name": "歌词"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最大时长（秒）；模型可能会提前结束歌曲。"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "top_k": {
+        "name": "top_k"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ContextIRNode": {
+    "description": "使用 MiniMax H3 Context IR 分析文本和媒体上下文，并生成增强的结构化视频提示词。将输出接入 MiniMax H3 视频节点的提示词，并以相同顺序附加相同媒体，因为增强后的提示词会按位置引用所附媒体。",
+    "display_name": "MiniMax H3 Context IR（提示词增强器）",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "计划生成的视频首帧。不能与参考媒体结合使用。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "计划生成的视频末帧。不能与参考媒体结合使用。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于提示词增强的模型。"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "使用 MiniMax H3 模型，根据首帧图像和可选的末帧图像生成视频。视频的宽高比与所提供的图像一致。",
     "display_name": "MiniMax H3 首帧-末帧生成视频",
@@ -11951,6 +13001,43 @@
       "seed": {
         "name": "随机种子",
         "tooltip": "随机种子。相同请求和相同种子会生成相似但不保证完全相同的结果。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否为视频添加 AIGC 水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03RegenerateNode": {
+    "description": "以 2K 分辨率重新渲染 MiniMax H3 的 768P 输出。请连接未经修改的 768P 视频及生成该视频时使用的准确提示词；如果原始生成使用了首帧、末帧或参考媒体，请附加相同的输入。",
+    "display_name": "将 MiniMax H3 重新生成至 2K",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "原始生成中使用的首帧图像（如有）。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "原始生成中使用的末帧图像（如有）。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频重新生成的模型。"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要重新渲染的 MiniMax H3 768P 输出视频。请连接 MiniMax H3 视频节点未经修改的输出（24 FPS，4-15 秒）。无法使用 2K 输出。"
       },
       "watermark": {
         "name": "水印",
@@ -12091,6 +13178,33 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeGeometryToFOV": {
+    "description": "从 MoGe 内参推导视场角和焦距。",
+    "display_name": "从 MoGe 几何数据获取视场角",
+    "inputs": {
+      "axis": {
+        "name": "轴",
+        "tooltip": "“vertical”（fov_y）、“horizontal”（fov_x）或“diagonal”。"
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "unit": {
+        "name": "单位",
+        "tooltip": "FOV 的输出单位。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视场角",
+        "tooltip": null
+      },
+      "1": {
+        "name": "focal_pixels",
         "tooltip": null
       }
     }
@@ -15036,6 +16150,24 @@
       }
     }
   },
+  "PaintMesh": {
+    "description": "使用输入体素场中每个网格顶点最近的体素颜色进行绘制。",
+    "display_name": "绘制网格",
+    "inputs": {
+      "mesh": {
+        "name": "网格"
+      },
+      "voxel_colors": {
+        "name": "voxel_colors"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "网格",
+        "tooltip": null
+      }
+    }
+  },
   "Painter": {
     "display_name": "Painter",
     "inputs": {
@@ -15350,6 +16482,33 @@
       }
     }
   },
+  "Pixal3DConditioning": {
+    "display_name": "Pixal3DConditioning",
+    "inputs": {
+      "camera_angle_x": {
+        "name": "camera_angle_x",
+        "tooltip": "以度为单位的水平视场角。连接 MoGeGeometryToFOV（axis='horizontal', unit='degrees'）以获取每张图像的 FoV（与上游默认值一致）。"
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "来自 ImageCropToMask 的预处理图像（Pixal3D 使用 pad_factor=1.1）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "根据提示词和输出尺寸同步生成视频。",
     "display_name": "PixVerse 图像转视频",
@@ -15481,6 +16640,238 @@
       "seed": {
         "name": "种子",
         "tooltip": "用于视频生成的种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ExtendVideoNode": {
+    "description": "使用 PixVerse 延续现有视频，可选择生成原生音频。源视频必须短于 40 秒，且任一边不得超过 1920px。输出将保持源视频的分辨率，因此质量决定的是续接内容的渲染效果，而非帧尺寸。",
+    "display_name": "PixVerse V6 延长视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要延续的视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "使用 PixVerse 生成从首帧过渡到尾帧的视频，可选择生成原生音频。输出将保持首帧的宽高比。",
+    "display_name": "PixVerse V6 首尾帧转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "使用 PixVerse 根据参考主体、背景和视频合成视频。在提示词中通过名称引用参考对象，即可将其放入场景，例如“{'@'}Subject1 穿过 {'@'}Background1”。连接参考视频后，模型将切换至 Omni 模式，输出时长将与最长的参考视频一致。",
+    "display_name": "PixVerse V6 融合（参考转视频）",
+    "inputs": {
+      "backgrounds": {
+        "name": "背景",
+        "tooltip": "放置主体的场景参考图像。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_style": {
+        "name": "风格"
+      },
+      "subjects": {
+        "name": "主体",
+        "tooltip": "要放入场景中的主体参考图像。"
+      },
+      "videos": {
+        "name": "视频",
+        "tooltip": "用于借鉴主体、动作、构图或风格的参考视频。最多两个，总时长最多 15 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "使用 PixVerse 为图像添加动画，可选择生成原生音频。输出将保留输入图像的宽高比。",
+    "display_name": "PixVerse V6 图像转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_style": {
+        "name": "风格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "使用 PixVerse 根据文本提示词生成视频，可选择生成原生音频。",
+    "display_name": "PixVerse V6 文本转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型和生成设置。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_style": {
+        "name": "风格"
       }
     },
     "outputs": {
@@ -16433,7 +17824,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "选择 realistic_image 风格和可选的子风格。",
+    "description": "选择 logo_raster 风格和子风格。",
     "display_name": "Recraft 风格 - 标志光栅图",
     "inputs": {
       "substyle": {
@@ -16544,6 +17935,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "基于 1-10 张参考图像创建可复用的 Recraft V4 风格。返回的 style_id 可用于相同输出类型的所有 Recraft V4 和 V4.1 模型。所有图像总大小限制为 10 MB。",
+    "display_name": "Recraft V4 创建风格",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "用于定义风格的参考图像。相似参考会提高匹配精度，多样参考会扩展风格范围。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "为风格创建的输出类型：recraftv4_styles 用于光栅图像，recraftv4_styles_vector 用于 SVG。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "使用Recraft V4或V4 Pro模型生成图像。",
     "display_name": "Recraft V4 文本转图像",
@@ -16553,7 +17964,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而设计，且始终需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -16577,10 +17988,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要应用的 Recraft V4 风格的 UUID，例如来自 Recraft V4 创建风格节点或上一次运行的 style_id 输出。不能与 style_references 组合使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "与风格的贴合程度：precise 会细致复现风格，flexible 会匹配整体外观。仅在提供风格时使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "用于即时创建风格的参考图像，除生成费用外另行计费。创建的风格将作为 style_id 返回以供复用。不能与 style_id 组合使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -16594,7 +18021,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而设计，且始终需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -16618,10 +18045,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要应用的 Recraft V4 矢量风格的 UUID，例如来自 Recraft V4 创建风格节点或上一次运行的 style_id 输出。不能与 style_references 组合使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "与风格的贴合程度：precise 会细致复现风格，flexible 会匹配整体外观。仅在提供风格时使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "用于即时创建矢量风格的参考图像，除生成费用外另行计费。创建的风格将作为 style_id 返回以供复用。不能与 style_id 组合使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -16765,6 +18208,62 @@
       }
     }
   },
+  "RemeshMesh": {
+    "description": "通过窄带距离场 + 对偶轮廓法，在当前计算设备上重新提取均匀镶嵌的网格。规范化杂乱、非流形或自相交的拓扑；在 Decimate Mesh 前运行以达到精确面数。输出保持焊接。",
+    "display_name": "重网格化网格（窄带 DC）",
+    "inputs": {
+      "band": {
+        "name": "带宽",
+        "tooltip": "以体素为单位的窄带宽度。在 UDF 模式下也会偏移表面。"
+      },
+      "drop_small_components": {
+        "name": "drop_small_components",
+        "tooltip": "丢弃面数低于最大组件面数此比例的组件。0 禁用。"
+      },
+      "fix_poles": {
+        "name": "修复极点",
+        "tooltip": "合并价为 3 的顶点对（DC T 形接缝伪影）。"
+      },
+      "mesh": {
+        "name": "网格"
+      },
+      "precluster_max_verts": {
+        "name": "precluster_max_verts",
+        "tooltip": "在场查询前限制输入顶点数，超过此值的输入会先聚类简化至该值。防止大型网格发生 OOM。"
+      },
+      "project_back": {
+        "name": "投影回原表面",
+        "tooltip": "将顶点向原始表面线性插值（0 = 纯 DC，1 = 吸附）。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "体素网格分辨率（输出密度）。256 ~ 10 万个面，512 ~ 100 万个面。若需精确面数，请后接 Decimate Mesh。"
+      },
+      "sign_mode": {
+        "name": "sign_mode",
+        "tooltip": "udf：可稳健处理杂乱或非流形输入。sdf：使用 QEF（二次误差函数）恢复锐利特征的干净单表面，但需要一致的绕向。"
+      },
+      "sign_mode_drop_enclosed_components": {
+        "name": "drop_enclosed_components"
+      },
+      "sign_mode_drop_inverted_components": {
+        "name": "drop_inverted_components"
+      },
+      "sign_mode_qef": {
+        "name": "qef"
+      },
+      "smooth_iters": {
+        "name": "smooth_iters",
+        "tooltip": "Taubin 平滑迭代次数（0 = 关闭）。2-3 次可清除 DC 阶梯状伪影；更高值会过度平滑 QEF 边缘。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "网格",
+        "tooltip": null
+      }
+    }
+  },
   "RemoveBackground": {
     "description": "使用背景移除模型生成前景mask，从图像中移除背景。",
     "display_name": "移除背景",
@@ -16782,6 +18281,46 @@
       "0": {
         "name": "mask",
         "tooltip": "生成的前景 mask"
+      }
+    }
+  },
+  "RenderMesh": {
+    "description": "对网格进行单视图光线投射渲染。相机和可选模型变换可来自 Load3D / Preview3D 查看器。",
+    "display_name": "渲染网格",
+    "inputs": {
+      "background": {
+        "name": "背景"
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "来自 Load3D / Preview3D 查看器或 Create Camera Info 节点的相机。若未连接，将自动取景为默认正视图。"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "mesh": {
+        "name": "网格"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "要渲染的内容。auto：若存在纹理则使用纹理，否则使用顶点颜色，再否则使用着色黏土效果。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info",
+        "tooltip": "来自同一 Load3D / Preview3D 查看器的模型变换。将其与 camera_info 连接以匹配查看器取景。"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "遮罩",
+        "tooltip": null
       }
     }
   },
@@ -16845,6 +18384,24 @@
       }
     }
   },
+  "RenderUVAtlas": {
+    "description": "将网格的 UV 布局渲染为图像。",
+    "display_name": "渲染 UV 图集",
+    "inputs": {
+      "mesh": {
+        "name": "网格"
+      },
+      "resolution": {
+        "name": "分辨率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": null
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -16892,6 +18449,7 @@
     }
   },
   "ReplaceText": {
+    "description": "替换所有文本中的内容。",
     "display_name": "替换文本",
     "inputs": {
       "find": {
@@ -17518,6 +19076,33 @@
       }
     }
   },
+  "RotateMesh": {
+    "description": "旋转网格。欧拉 XYZ 按世界轴依次应用 X、Y、Z 旋转（度）。四元数为 (w, x, y, z)，会自动归一化。",
+    "display_name": "旋转网格",
+    "inputs": {
+      "mesh": {
+        "name": "网格"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "mode_angle_x": {
+        "name": "angle_x"
+      },
+      "mode_angle_y": {
+        "name": "angle_y"
+      },
+      "mode_angle_z": {
+        "name": "angle_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "网格",
+        "tooltip": null
+      }
+    }
+  },
   "RunwayAleph2KeyframeNode": {
     "description": "将引导图像锚定到输入（源）视频的某一时刻，使 Aleph2 在该时刻引导你的素材编辑。将此节点连接到 Runway Aleph2 视频转视频节点的 'keyframes' 输入；可通过下方可选的 'keyframes' 输入串联多个（最多 5 个）。",
     "display_name": "Runway Aleph2 关键帧",
@@ -17728,6 +19313,180 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_FaceExpression": {
+    "description": "使用核心 MediaPipe 面部标志点检测器驱动 MHR 面部混合形状。",
+    "display_name": "面部表情转 SAM3D 身体",
+    "inputs": {
+      "blendshape_smooth_window": {
+        "name": "blendshape_smooth_window",
+        "tooltip": "在 MHR 映射前应用于 MediaPipe 每帧信号的高斯窗口。MediaPipe 的原始输出在静态人脸上会在帧间波动 30-70%。1 = 禁用。请使用奇数值。"
+      },
+      "brow_strength": {
+        "name": "brow_strength",
+        "tooltip": "眉部/脸颊/嘲讽形状的倍率。MediaPipe 输出约为 0.1-0.3；使用 2-3 倍。"
+      },
+      "eye_strength": {
+        "name": "eye_strength",
+        "tooltip": "眼部形状的倍率。MediaPipe 很少超过 0.5；通常需要 2-3 倍。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "input_threshold": {
+        "name": "input_threshold",
+        "tooltip": "MediaPipe 原始输出的死区（低于此值 = 零，高于此值 = 线性重映射）。"
+      },
+      "mhr_pose_data": {
+        "name": "mhr_pose_data"
+      },
+      "mouth_strength": {
+        "name": "mouth_strength",
+        "tooltip": "嘴部/下颌形状的倍率。MediaPipe 的 jawOpen 在接近 1.0 时饱和。"
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "所有混合形状的全局倍率。>1 会夸张化。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Loader": {
+    "display_name": "加载 SAM3D 身体模型",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sam3d_body_model",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Predict": {
+    "display_name": "运行 SAM3D 身体预测",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "作为一个批次处理的最大人物裁剪区域数。较大的值会使用更多 VRAM 以加快推理。"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "用于改善检测的逐帧边界框。可作为跟踪数据的替代方案。"
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "垂直 FoV（度）。影响预测深度和绝对比例。0 = 回退至约 53°（16:9）。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "run_hand_refinement": {
+        "name": "run_hand_refinement",
+        "tooltip": "以额外的推理时间和显存占用为代价改善手部姿态"
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "track_data": {
+        "name": "track_data",
+        "tooltip": "来自 SAM3 Video Track 的跟踪数据，多人物检测时必需"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Render": {
+    "display_name": "渲染 3D 身体姿态",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "逐帧背景。省略时为黑色画布。"
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "自由 6DOF 相机覆盖。连接后，姿势将通过此相机（位置/目标/缩放/旋转/FoV）重新投影，而非使用预测的相机。"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "输出高度（像素）。0 = 使用姿态数据原生的 image_size。若仅设置 width/height 其中一个，另一个将按原始宽高比推导。"
+      },
+      "pose_data": {
+        "name": "pose_data",
+        "tooltip": "MHR 姿态数据，或外部 Y-up 骨架姿态数据 (KimodoSample)。所有渲染样式均适用于在其 _skeleton_override 中携带 OpenPose 关节映射的外部骨架（KimodoSample 即是如此）。"
+      },
+      "render_style": {
+        "name": "render_style",
+        "tooltip": "'mesh' = 通过相机栅格化的 3D MHR 网格。'silhouette' = 网格的二值遮罩。'openpose_2d' = 平面 2D 骨架。'openpose_3d' = 作为平面着色 3D 模型的 openpose 骨架。'scail' = SCAIL 3D 胶囊体。"
+      },
+      "render_style_opacity": {
+        "name": "不透明度"
+      },
+      "render_style_person_palette_falloff": {
+        "name": "person_palette_falloff"
+      },
+      "render_style_region": {
+        "name": "区域"
+      },
+      "render_style_shader": {
+        "name": "着色器"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "输出宽度（像素）。0 = 使用姿态数据原生的 image_size。若仅设置 width/height 其中一个，另一个将按原始宽高比推导。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Smooth": {
+    "description": "通过时间平滑减少帧间抖动。",
+    "display_name": "平滑 SAM3D 身体姿势数据",
+    "inputs": {
+      "method": {
+        "name": "方法",
+        "tooltip": "gaussian：对称加权平均，最适合通用平滑。\nsavgol：滑动多项式拟合，可保留尖锐峰值。"
+      },
+      "mhr_pose_data": {
+        "name": "mhr_pose_data"
+      },
+      "rotation_threshold_degrees": {
+        "name": "rotation_threshold_degrees",
+        "tooltip": "达到此根旋转速率（度/帧）时禁用平滑，以保留快速旋转。30° 适合大多数内容，较低值可能会在普通抖动时禁用平滑，并悄然影响质量。0 = 禁用。"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "平滑强度。0 = 原始，1 = 已平滑。"
+      },
+      "window": {
+        "name": "窗口",
+        "tooltip": "以帧为单位的时间窗口（奇数值）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
         "tooltip": null
       }
     }
@@ -19079,7 +20838,7 @@
     "inputs": {
       "codec": {
         "name": "编码器",
-        "tooltip": "用于视频的编码器。"
+        "tooltip": "输出视频编解码器。Auto 会保留兼容的源流。H.264 和 AV1 重新编码支持 SDR、HDR (HLG) 和 HDR PQ。"
       },
       "filename_prefix": {
         "name": "文件名前缀",
@@ -19087,7 +20846,10 @@
       },
       "format": {
         "name": "格式",
-        "tooltip": "保存视频的格式。"
+        "tooltip": "输出容器。Auto 对于 Auto/H.264 使用 MP4，对于 AV1 使用 WebM。MP4、MKV 和 WebM 选择特定容器。"
+      },
+      "format_codec": {
+        "name": "编解码器"
       },
       "video": {
         "name": "视频",
@@ -19097,7 +20859,7 @@
     "outputs": {
       "0": {
         "name": "video",
-        "tooltip": null
+        "tooltip": "输入视频，保持不变。"
       }
     }
   },
@@ -20186,6 +21948,7 @@
     }
   },
   "StripWhitespace": {
+    "description": "移除所有文本的前导和尾随空白字符。",
     "display_name": "清理空字符",
     "inputs": {
       "texts": {
@@ -21059,6 +22822,7 @@
     }
   },
   "TextToLowercase": {
+    "description": "将文本转换为小写。",
     "display_name": "文本半角",
     "inputs": {
       "texts": {
@@ -21074,6 +22838,7 @@
     }
   },
   "TextToUppercase": {
+    "description": "将文本转换为大写。",
     "display_name": "文本全角",
     "inputs": {
       "texts": {
@@ -21483,6 +23248,118 @@
     "outputs": {
       "0": {
         "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2Conditioning": {
+    "display_name": "Trellis2Conditioning",
+    "inputs": {
+      "clip_vision_model": {
+        "name": "clip_vision_model"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "来自 ImageCropToMask 的预处理图像（TRELLIS.2 使用 pad_factor=1.0）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面",
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2ShapeStage": {
+    "display_name": "Trellis2ShapeStage",
+    "inputs": {
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "voxel": {
+        "name": "体素",
+        "tooltip": "来自 VaeDecodeStructureTrellis2 的稠密结构体素。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面",
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2TextureStage": {
+    "display_name": "Trellis2TextureStage",
+    "inputs": {
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "shape_latent": {
+        "name": "形状 latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面",
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2UpsampleStage": {
+    "display_name": "Trellis2 上采样阶段",
+    "inputs": {
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "shape_latent": {
+        "name": "形状 latent",
+        "tooltip": "第一个形状阶段 KSampler 输出的 512 分辨率形状 latent。"
+      },
+      "target_resolution": {
+        "name": "目标分辨率",
+        "tooltip": "上采样形状的体素分辨率。越高 = 细节越多、显存占用越大。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面",
+        "tooltip": null
+      },
+      "2": {
         "tooltip": null
       }
     }
@@ -21911,30 +23788,6 @@
       }
     }
   },
-  "TripoRefineNode": {
-    "description": "仅精修由v1.4 Tripo模型创建的草稿模型。",
-    "display_name": "Tripo: 精修草稿模型",
-    "inputs": {
-      "model_task_id": {
-        "name": "模型任务ID",
-        "tooltip": "必须是v1.4 Tripo模型"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任务ID",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
   "TripoRetargetNode": {
     "display_name": "Tripo: 重定向绑定模型",
     "inputs": {
@@ -22177,6 +24030,7 @@
     }
   },
   "TruncateText": {
+    "description": "将文本截断至最大长度。",
     "display_name": "截断文本",
     "inputs": {
       "max_length": {
@@ -22292,6 +24146,37 @@
       },
       "model_patch": {
         "name": "模型补丁"
+      }
+    }
+  },
+  "UnwrapMesh": {
+    "description": "生成 UV 图集：将表面分割为图表，对每个图表进行参数化，并打包到 [0,1] 图集中。图表接缝处的顶点会被复制（每个图表一份，位置相同，但各自拥有 UV），因此输出网格的顶点数会多于输入。请在 Remesh/Decimate 之后、纹理烘焙之前运行。",
+    "display_name": "展开网格 UV",
+    "inputs": {
+      "mesh": {
+        "name": "网格"
+      },
+      "padding": {
+        "name": "边距",
+        "tooltip": "图表之间的纹素边距。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "用于纹素密度自动缩放的目标图集分辨率（0 = 适配内容）。"
+      },
+      "segmenter": {
+        "name": "分割器",
+        "tooltip": "pec：在 GPU 上快速进行并行边折叠分图。adaptive：CPU，较慢。"
+      },
+      "weld_distance": {
+        "name": "weld_distance",
+        "tooltip": "重合顶点合并半径，占网格范围的比例（0 = 自动）。若出现每三角形一个图表（输入未焊接），请提高至约 0.001。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "网格",
+        "tooltip": null
       }
     }
   },
@@ -22673,6 +24558,68 @@
       }
     }
   },
+  "VaeDecodeShapeTrellis": {
+    "display_name": "VaeDecodeShapeTrellis",
+    "inputs": {
+      "samples": {
+        "name": "样本"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "网格",
+        "tooltip": null
+      },
+      "1": {
+        "name": "形状细分",
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeStructureTrellis2": {
+    "display_name": "VaeDecodeStructureTrellis2",
+    "inputs": {
+      "resolution": {
+        "name": "分辨率"
+      },
+      "samples": {
+        "name": "样本"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "体素",
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeTextureTrellis": {
+    "display_name": "VaeDecodeTextureTrellis",
+    "inputs": {
+      "samples": {
+        "name": "样本"
+      },
+      "shape_subdivides": {
+        "name": "形状细分",
+        "tooltip": "用于在解码期间引导更高细节重建的形状信息。有助于在更高分辨率下保持结构一致性。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "体素颜色",
+        "tooltip": null
+      }
+    }
+  },
   "Veo3FirstLastFrameNode": {
     "description": "使用首尾帧和提示词生成视频",
     "display_name": "Google Veo 3 首尾帧视频",
@@ -22770,61 +24717,11 @@
       },
       "resolution": {
         "name": "分辨率",
-        "tooltip": "输出视频分辨率。veo-3.1-lite 和 veo-3.0 模型不支持 4K。"
+        "tooltip": "输出视频分辨率。veo-3.1-lite 模型不支持 4K。"
       },
       "seed": {
         "name": "随机种",
         "tooltip": "视频生成的种子值（0 表示随机）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "使用 Google 的 Veo API 根据文本提示生成视频",
-    "display_name": "Google Veo2 视频生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "输出视频的宽高比"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration_seconds": {
-        "name": "时长",
-        "tooltip": "输出视频的时长（秒）"
-      },
-      "enhance_prompt": {
-        "name": "优化提示词",
-        "tooltip": "是否使用 AI 辅助增强提示词"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "可选的参考图像，用于引导视频生成"
-      },
-      "model": {
-        "name": "模型",
-        "tooltip": "用于视频生成的 Veo 2 模型"
-      },
-      "negative_prompt": {
-        "name": "负面提示词",
-        "tooltip": "用于指导视频中应避免内容的负面文本提示"
-      },
-      "person_generation": {
-        "name": "生成人类",
-        "tooltip": "是否允许在视频中生成人物"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "视频的文本描述"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "视频生成的种子（0 表示随机）"
       }
     },
     "outputs": {
@@ -22847,6 +24744,23 @@
       "strict_duration": {
         "name": "严格时长",
         "tooltip": "如为 True，当指定时长无法实现时将报错。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "裁剪视频",
+    "inputs": {
+      "crop": {
+        "name": "裁剪",
+        "tooltip": "以像素为单位的裁剪区域。宽度或高度为零时保留完整画面。"
       },
       "video": {
         "name": "视频"
@@ -22959,6 +24873,27 @@
       },
       "model": {
         "name": "模型"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "修剪视频（高级）",
+    "inputs": {
+      "strict_duration": {
+        "name": "严格时长",
+        "tooltip": "如果为 True，无法满足指定时长时将引发错误。"
+      },
+      "trim": {
+        "name": "修剪",
+        "tooltip": "使用起始/结束帧修剪窗口。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -23832,6 +25767,100 @@
       "watermark": {
         "name": "watermark",
         "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan3ImageToVideoApi": {
+    "description": "使用 Wan 3.0 模型根据首帧图像生成视频，并可选使用末帧控制。",
+    "display_name": "Wan 3.0 图像转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "first_frame": {
+        "name": "首帧",
+        "tooltip": "首帧图像。"
+      },
+      "last_frame": {
+        "name": "末帧",
+        "tooltip": "末帧图像。模型会生成从首帧过渡到末帧的视频。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_prompt_extend": {
+        "name": "扩展提示词"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否为结果添加 AI 生成水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan3ReferenceToVideoApi": {
+    "description": "使用 Wan 3.0 模型根据文本提示词以及可选的参考图像、视频和音频生成视频。参考媒体可自由组合，并可在提示词中以 {'@'}Image1、{'@'}Video1、{'@'}Audio1 的形式提及。",
+    "display_name": "Wan 3.0 参考转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_audio": {
+        "name": "音频"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_prompt_extend": {
+        "name": "prompt_extend"
+      },
+      "model_ratio": {
+        "name": "比例"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否为结果添加 AI 生成水印。"
       }
     },
     "outputs": {
@@ -25443,6 +27472,29 @@
       "waiting for camera___": {},
       "width": {
         "name": "宽度"
+      }
+    }
+  },
+  "WeldVertices": {
+    "description": "通过 L_inf 网格量化合并重合顶点。当网格未焊接（每个面都有独立顶点，没有共享边）时使用——在 FillHoles、DecimateMesh 或任何拓扑感知操作之前进行预处理。每个簇的颜色取平均值。",
+    "display_name": "焊接顶点",
+    "inputs": {
+      "epsilon_abs": {
+        "name": "epsilon_abs",
+        "tooltip": "绝对焊接容差（当 > 0 时覆盖 epsilon_rel）。"
+      },
+      "epsilon_rel": {
+        "name": "epsilon_rel",
+        "tooltip": "焊接容差（包围盒对角线的比例）。1e-5 用于浮点去重；1e-3 用于视觉上接近但不同的顶点。"
+      },
+      "mesh": {
+        "name": "网格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "网格",
+        "tooltip": null
       }
     }
   },
