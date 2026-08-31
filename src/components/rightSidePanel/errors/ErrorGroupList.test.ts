@@ -43,12 +43,6 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
   }))
 }))
 
-vi.mock('@/composables/canvas/useFocusNode', () => ({
-  useFocusNode: vi.fn(() => ({
-    focusNode: vi.fn()
-  }))
-}))
-
 vi.mock('@/platform/missingModel/missingModelDownload', () => ({
   downloadModel: vi.fn(),
   fetchModelMetadata: vi.fn().mockResolvedValue({
@@ -59,8 +53,22 @@ vi.mock('@/platform/missingModel/missingModelDownload', () => ({
   toBrowsableUrl: vi.fn((url: string) => url)
 }))
 
-const SAMPLER_NODE = { id: '1', title: 'SamplerNode' }
-const LOADER_NODE = { id: '2', title: 'LoaderNode' }
+const ROOT_GRAPH = { isRootGraph: true }
+const SUBGRAPH = { isRootGraph: false }
+const SAMPLER_BOUNDS = [10, 20, 30, 40] as const
+const LOADER_BOUNDS = [50, 60, 70, 80] as const
+const SAMPLER_NODE = {
+  id: '1',
+  title: 'SamplerNode',
+  graph: ROOT_GRAPH,
+  boundingRect: SAMPLER_BOUNDS
+}
+const LOADER_NODE = {
+  id: '2',
+  title: 'LoaderNode',
+  graph: ROOT_GRAPH,
+  boundingRect: LOADER_BOUNDS
+}
 
 function seedTwoErrorGroups(pinia: TestingPinia) {
   const executionErrorStore = useExecutionErrorStore(pinia)
@@ -110,6 +118,23 @@ function createPinia() {
   return createTestingPinia({ createSpy: vi.fn, stubActions: false })
 }
 
+function createCanvasFixture(pinia: TestingPinia, graph = ROOT_GRAPH) {
+  const canvasElement = document.createElement('canvas')
+  canvasElement.width = 900
+  canvasElement.height = 700
+  const canvas = {
+    graph,
+    subgraph: undefined,
+    canvas: canvasElement,
+    setGraph: vi.fn((nextGraph) => {
+      canvas.graph = nextGraph
+    }),
+    animateToBounds: vi.fn()
+  }
+  useCanvasStore(pinia).canvas = fromAny(canvas)
+  return canvas
+}
+
 function getSectionByTitle(title: string) {
   const sections = screen.getAllByTestId('error-group-execution')
   const section = sections.find((s) => within(s).queryByText(title))
@@ -127,9 +152,23 @@ describe('ErrorGroupList selection emphasis', () => {
     vi.mocked(isLGraphNode).mockReturnValue(true)
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
       fromAny<LGraphNode, unknown>(
-        String(nodeId) === '1' ? SAMPLER_NODE : LOADER_NODE
+        String(nodeId) === '1'
+          ? {
+              ...SAMPLER_NODE,
+              graph: ROOT_GRAPH,
+              boundingRect: SAMPLER_BOUNDS
+            }
+          : {
+              ...LOADER_NODE,
+              graph: ROOT_GRAPH,
+              boundingRect: LOADER_BOUNDS
+            }
       )
     )
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0)
+      return 0
+    })
   })
 
   it('expands matched groups, collapses others, and restores on deselect', async () => {
@@ -286,5 +325,49 @@ describe('ErrorGroupList selection emphasis', () => {
       screen.getByRole('button', { name: /Locate A & B <C>/ })
     ).toBeInTheDocument()
     expect(screen.queryAllByLabelText(/&(?:amp|lt|gt);/)).toHaveLength(0)
+  })
+
+  it('locates an execution error through the real root-graph focus path', async () => {
+    const pinia = createPinia()
+    seedTwoErrorGroups(pinia)
+    const { user } = renderList(pinia)
+    const canvas = createCanvasFixture(pinia, ROOT_GRAPH)
+
+    await user.click(screen.getByRole('button', { name: 'SamplerNode - clip' }))
+
+    expect(canvas.setGraph).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(canvas.animateToBounds).toHaveBeenCalledWith(SAMPLER_BOUNDS, {
+        viewport: [0, 0, 900, 700]
+      })
+    })
+  })
+
+  it('locates an execution error through the real subgraph navigation path', async () => {
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      fromAny<LGraphNode, unknown>(
+        String(nodeId) === '2'
+          ? {
+              ...LOADER_NODE,
+              graph: SUBGRAPH,
+              boundingRect: LOADER_BOUNDS
+            }
+          : SAMPLER_NODE
+      )
+    )
+    const pinia = createPinia()
+    seedTwoErrorGroups(pinia)
+    const { user } = renderList(pinia)
+    const canvas = createCanvasFixture(pinia, ROOT_GRAPH)
+
+    await user.click(screen.getByRole('button', { name: 'LoaderNode' }))
+
+    await waitFor(() => {
+      expect(canvas.subgraph).toBe(SUBGRAPH)
+      expect(canvas.setGraph).toHaveBeenCalledWith(SUBGRAPH)
+      expect(canvas.animateToBounds).toHaveBeenCalledWith(LOADER_BOUNDS, {
+        viewport: [0, 0, 900, 700]
+      })
+    })
   })
 })
