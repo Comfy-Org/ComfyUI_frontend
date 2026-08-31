@@ -344,8 +344,8 @@ describe('workflowPlanSchema', () => {
           {
             id: 'audio',
             intent: 'text-to-audio',
-            dependsOnStageIds: [],
-            inputMediaTypes: [],
+            dependsOnStageIds: ['image'],
+            inputMediaTypes: ['image'],
             outputMediaType: 'audio',
             instruction: 'Create narration'
           }
@@ -354,6 +354,12 @@ describe('workflowPlanSchema', () => {
     })
 
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('expected plan validation to fail')
+    expect(result.error.issues).toContainEqual(
+      expect.objectContaining({
+        message: 'The final pipeline stage must produce the planned output'
+      })
+    )
   })
 
   it('rejects output media that conflicts with the plan intent', () => {

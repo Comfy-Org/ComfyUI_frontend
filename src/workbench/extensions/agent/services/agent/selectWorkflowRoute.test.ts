@@ -156,12 +156,18 @@ describe('selectWorkflowRoute', () => {
   })
 
   it('prefers local when otherwise-identical routes tie', () => {
-    const selection = selectWorkflowRoute(plan(), [
-      route('cloud', { executionMode: 'cloud' }),
-      route('local')
-    ])
+    const local = route('local')
+    const cloud = route('cloud', { executionMode: 'cloud' })
 
-    expect(selection).toMatchObject({ status: 'ready', route: { id: 'local' } })
+    for (const candidates of [
+      [cloud, local],
+      [local, cloud]
+    ]) {
+      expect(selectWorkflowRoute(plan(), candidates)).toMatchObject({
+        status: 'ready',
+        route: { id: 'local' }
+      })
+    }
   })
 
   it('requires enough capacity for every referenced input', () => {

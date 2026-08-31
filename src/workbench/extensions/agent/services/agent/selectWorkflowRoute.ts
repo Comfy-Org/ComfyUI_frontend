@@ -138,8 +138,10 @@ function compareRoutes(
   const scoreDifference =
     scoreExperience(right, qualityGoal) - scoreExperience(left, qualityGoal)
   if (scoreDifference !== 0) return scoreDifference
-  if (left.availability.status === 'ready') return -1
-  if (right.availability.status === 'ready') return 1
+  const availabilityDifference =
+    Number(left.availability.status !== 'ready') -
+    Number(right.availability.status !== 'ready')
+  if (availabilityDifference !== 0) return availabilityDifference
   if (left.executionMode === 'local' && right.executionMode !== 'local')
     return -1
   if (right.executionMode === 'local' && left.executionMode !== 'local')
