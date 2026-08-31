@@ -7,8 +7,7 @@ import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import {
   isAssetPreviewSupported,
-  persistThumbnailFromDataUrl,
-  THUMBNAIL_CAPTURE_SIZE
+  persistThumbnail
 } from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
@@ -507,22 +506,15 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     }
   }
 
-  // Invalidates in-flight captures when a newer model load starts, so a
-  // capture that completes after the switch cannot persist the new model's
-  // pixels under the previous model's name.
-  let thumbnailGeneration = 0
-
   const persistStandaloneThumbnail = (modelUrl: string) => {
     if (!load3d || !isAssetPreviewSupported()) return
     const name = standaloneAssetName(modelUrl)
     if (!name) return
-    const generation = thumbnailGeneration
     void load3d
-      .captureThumbnail(THUMBNAIL_CAPTURE_SIZE, THUMBNAIL_CAPTURE_SIZE)
-      .then((dataUrl) => {
-        if (generation !== thumbnailGeneration) return
-        return persistThumbnailFromDataUrl(name, dataUrl)
-      })
+      .captureThumbnail(256, 256)
+      .then((dataUrl) => fetch(dataUrl))
+      .then((response) => response.blob())
+      .then((blob) => persistThumbnail(name, blob))
       .catch(() => {})
   }
 
@@ -534,7 +526,6 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     if (!load3d) return
 
     try {
-      thumbnailGeneration += 1
       saveStandaloneConfig()
       await load3d.loadModel(modelUrl)
       currentModelUrl = modelUrl

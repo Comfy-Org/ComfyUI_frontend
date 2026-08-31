@@ -1,4 +1,4 @@
-import type { PostHog, PostHogConfig } from 'posthog-js'
+import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 
@@ -13,8 +13,8 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 import type {
   AddCreditsClickMetadata,
   AgentEntryButtonClickedMetadata,
-  AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
+  AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -149,20 +149,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       { immediate: true }
     )
 
-    // Env fallback is dev-only: a production build with the variable exported
-    // must never route traffic to the staging project.
     const apiKey =
       window.__CONFIG__?.posthog_project_token ??
-      (import.meta.env.DEV
-        ? import.meta.env.VITE_POSTHOG_PROJECT_TOKEN
-        : undefined)
+      import.meta.env.VITE_POSTHOG_PROJECT_TOKEN
     if (apiKey) {
       try {
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
             const serverConfig = remoteConfig.value?.posthog_config ?? {}
-            const initConfig: Partial<PostHogConfig> = {
+            this.posthog!.init(apiKey, {
               api_host:
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
@@ -171,16 +167,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
+              person_profiles: 'identified_only',
+              ...serverConfig,
               // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
               // to clear localStorage on other subdomains, causing identity bleed on logout.
-              ...serverConfig,
-              person_profiles: serverConfig.person_profiles ?? 'identified_only'
-            }
-            // Post-spread: remote config cannot displace the PII strip.
-            initConfig.before_send = createPostHogBeforeSend()
-            this.posthog!.init(apiKey, initConfig)
+              before_send: createPostHogBeforeSend()
+            })
             this.isInitialized = true
             // Before flushEventQueue so pre-init events also carry the
             // platform super properties.
@@ -690,7 +684,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAgentCloseButtonClicked(): void {
-    this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED)
+    this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED, {})
   }
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
@@ -702,7 +696,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAgentAttachButtonClicked(): void {
-    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED)
+    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, {})
   }
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {

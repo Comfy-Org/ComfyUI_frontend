@@ -85,11 +85,11 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
-      :data-agent-gate-settled="agentPanelStore?.gateSettled || undefined"
+      :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelStore?.enabled"
+        v-if="agentPanelStore.enabled"
         variant="link"
         size="sm"
         :aria-pressed="agentPanelStore.isOpen"
@@ -98,10 +98,10 @@
             'no-drag shrink-0 border border-solid text-base-foreground',
             agentPanelStore.isOpen
               ? 'border-plum-500 bg-plum-600/20'
-              : 'border-plum-600 bg-secondary-background hover:border-plum-500'
+              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
           )
         "
-        @click="agentPanelStore.toggle()"
+        @click="onAgentEntryClick"
       >
         <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
         <span>{{ $t('agent.askComfyAgent') }}</span>
@@ -110,12 +110,12 @@
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
-        size="unset"
-        class="size-8 shrink-0 rounded-lg p-2 text-base-foreground"
+        size="icon"
+        class="shrink-0 text-base-foreground"
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i class="icon-[hugeicons--megaphone-03] size-4" />
+        <i class="icon-[lucide--megaphone]" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
@@ -144,7 +144,6 @@ import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -155,6 +154,9 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
@@ -174,11 +176,16 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
-const { isLoggedIn } = useCurrentUser()
-// The literal keeps the agent store out of OSS builds entirely.
-const agentPanelStore =
-  __DISTRIBUTION__ === 'cloud' ? useAgentPanelStore() : null
+const agentPanelStore = useAgentPanelStore()
+const tabActivity = useWorkflowTabActivityStore()
 
+function onAgentEntryClick(): void {
+  useTelemetry()?.trackAgentEntryButtonClicked({
+    resulting_state: agentPanelStore.isOpen ? 'closed' : 'opened'
+  })
+  agentPanelStore.toggle()
+}
+const { isLoggedIn } = useCurrentUser()
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
 
@@ -296,6 +303,17 @@ watch(
   { immediate: true }
 )
 
+watch(
+  () => tabActivity.creatingTab,
+  async (creating) => {
+    if (!creating) return
+    await nextTick()
+    containerRef.value
+      ?.querySelector('[data-testid="creating-tab-skeleton"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }
+)
+
 let overflowObserver: ReturnType<typeof useOverflowObserver> | null = null
 let stopArrivedWatch: WatchStopHandle | null = null
 let stopOverflowWatch: WatchStopHandle | null = null
@@ -405,11 +423,6 @@ onUpdated(() => {
 
 :deep(.p-togglebutton:not(.p-togglebutton-checked)) {
   opacity: 0.75;
-}
-
-:deep(.p-togglebutton-checked) .close-button,
-:deep(.p-togglebutton:hover) .close-button {
-  visibility: visible;
 }
 
 :deep(.p-scrollpanel-content) {

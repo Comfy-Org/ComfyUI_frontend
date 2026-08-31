@@ -5,7 +5,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 interface AssetRecord {
   id: string
   name: string
-  hash?: string
+  hash?: string | null
   preview_url?: string
   preview_id?: string | null
 }
@@ -97,9 +97,6 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob)
   })
 }
-
-/** Offscreen capture edge for generated model thumbnails, in pixels. */
-export const THUMBNAIL_CAPTURE_SIZE = 256
 
 /**
  * Persist a captured thumbnail from its data URL. Best-effort: a failed

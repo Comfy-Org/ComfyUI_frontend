@@ -26,13 +26,17 @@
 
 <script setup lang="ts">
 import Toast from 'primevue/toast'
+import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { watch } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
+let deferredMessages: ToastMessageOptions[] = []
 
 watch(
   () => toastStore.messagesToAdd,
@@ -42,11 +46,20 @@ watch(
     }
 
     newMessages.forEach((message) => {
-      toast.add(message)
+      if (agentNodeSelectionStore.isActive) deferredMessages.push(message)
+      else toast.add(message)
     })
     toastStore.messagesToAdd = []
   },
   { deep: true }
+)
+
+watch(
+  () => agentNodeSelectionStore.isActive,
+  (active) => {
+    if (active) return
+    deferredMessages.splice(0).forEach((message) => toast.add(message))
+  }
 )
 
 watch(
@@ -69,6 +82,7 @@ watch(
   (requested) => {
     if (requested) {
       toast.removeAllGroups()
+      deferredMessages = []
       toastStore.removeAllRequested = false
     }
   }
