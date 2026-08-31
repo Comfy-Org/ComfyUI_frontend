@@ -6298,6 +6298,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "使用 Google 的 Gemini Omni Flash 模型，根據文字提示詞生成含音訊的影片。可選擇提供參考圖片及／或影片來引導或編輯結果。請直接在提示詞中描述所需時長（3–10 秒）。",
+    "display_name": "Google Gemini Omni（影片）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的 Gemini 影片模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6360,6 +6396,22 @@
       },
       "1": {
         "name": "track_length",
+        "tooltip": null
+      }
+    }
+  },
+  "Get3DComponents": {
+    "description": "將 3D 模型檔案（GLB、GLTF、OBJ、STL）解析為可編輯的 MESH，以供網格處理節點使用（減面、重新網格化、UV 展開、烘焙等）。所有場景節點／基本體都會合併為單一網格並套用其變換；紋理與材質係數取自第一個材質。與 MeshToFile3D 相對應。",
+    "display_name": "取得 3D 元件",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "來自 Load 3D 或其他 3D 節點的 3D 模型檔案。不支援 FBX/USDZ，請先轉換為 GLB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -7081,7 +7133,7 @@
       },
       "mode": {
         "name": "模式",
-        "tooltip": "「speed」速度較快；「precision」可產生更高品質的唇形同步，但價格為兩倍。"
+        "tooltip": "「speed」較快；「precision」可產生品質更高的唇形同步，但價格較高。"
       },
       "output_language": {
         "name": "目標語言",
@@ -17772,7 +17824,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "選擇 realistic_image 風格及可選的子風格。",
+    "description": "選擇 logo_raster 樣式與子樣式。",
     "display_name": "Recraft Style - 標誌點陣圖",
     "inputs": {
       "substyle": {
@@ -17883,6 +17935,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "從 1–10 張參考圖片建立可重複使用的 Recraft V4 樣式。傳回的 style_id 可搭配相同輸出類型的所有 Recraft V4 與 V4.1 模型使用。所有圖片的總大小限制為 10 MB。",
+    "display_name": "Recraft V4 建立樣式",
+    "inputs": {
+      "images": {
+        "name": "圖片",
+        "tooltip": "用於定義樣式的參考圖片。相似的參考圖片可提高吻合度，多樣的參考圖片可擴大樣式範圍。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "建立樣式所對應的輸出類型：recraftv4_styles 用於點陣圖片，recraftv4_styles_vector 用於 SVG。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "使用 Recraft V4 或 V4 Pro 模型產生圖像。",
     "display_name": "Recraft V4 文字轉圖像",
@@ -17892,7 +17964,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17916,10 +17988,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不保證可重現。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要套用的 Recraft V4 樣式 UUID，例如來自 Recraft V4 建立樣式節點或前一次執行的 style_id 輸出。無法與 style_references 合併使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "與樣式的貼合程度：precise 會細緻重現樣式，flexible 則匹配整體外觀。僅在提供樣式時使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "即時從參考圖片建立樣式，費用會加計於生成費用。建立的樣式會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +18021,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17957,10 +18045,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不保證可重現。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要套用的 Recraft V4 向量樣式 UUID，例如來自 Recraft V4 建立樣式節點或前一次執行的 style_id 輸出。無法與 style_references 合併使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "與樣式的貼合程度：precise 會細緻重現樣式，flexible 則匹配整體外觀。僅在提供樣式時使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "即時從參考圖片建立向量樣式，費用會加計於生成費用。建立的樣式會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,61 +24717,11 @@
       },
       "resolution": {
         "name": "解析度",
-        "tooltip": "輸出影片解析度。veo-3.1-lite 與 veo-3.0 模型不支援 4K。"
+        "tooltip": "輸出影片解析度。veo-3.1-lite 模型不支援 4K。"
       },
       "seed": {
         "name": "種子值",
         "tooltip": "影片生成的種子值（0表示隨機）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "使用 Google 的 Veo API 根據文字提示生成影片",
-    "display_name": "Google Veo2 影片生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "輸出影片的長寬比"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration_seconds": {
-        "name": "持續秒數",
-        "tooltip": "輸出影片的秒數"
-      },
-      "enhance_prompt": {
-        "name": "增強提示詞",
-        "tooltip": "是否使用 AI 協助增強提示詞"
-      },
-      "image": {
-        "name": "影像",
-        "tooltip": "可選的參考圖片，用於引導影片生成"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "用於影片生成的 Veo 2 模型"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "用於引導影片中應避免內容的負面文字提示"
-      },
-      "person_generation": {
-        "name": "生成人物",
-        "tooltip": "是否允許在影片中生成人物"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "影片的文字描述"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "影片生成的種子（0 為隨機）"
       }
     },
     "outputs": {
@@ -24693,6 +24747,23 @@
       },
       "video": {
         "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "裁切影片",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "以像素為單位的裁切區域。寬度／高度為零時保留完整畫面。"
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -24802,6 +24873,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "修剪影片（進階）",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "若為 True，且無法使用指定的時長，將引發錯誤。"
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "使用起始／結束影格修剪範圍。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

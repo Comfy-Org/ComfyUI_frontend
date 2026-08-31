@@ -346,8 +346,19 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticationFailedDetail": "支払い確認を完了できませんでした。もう一度お試しください。",
+    "authenticationManagerRequired": "支払い確認にはワークスペースの請求管理者による対応が必要です。",
+    "authenticationUnavailable": "安全な支払い認証を利用できません。更新してもう一度お試しください。",
     "cancelFailed": "サブスクリプションのキャンセルに失敗しました",
     "cancelTimeout": "サブスクリプションのキャンセルがタイムアウトしました",
+    "expiredCardDetail": "このカードの有効期限が切れています。別のお支払い方法を使用してください。",
+    "incorrectCvcDetail": "カードのセキュリティコードが正しくありません。確認してもう一度お試しください。",
+    "insufficientFundsDetail": "このお支払い方法の残高が不足しています。別のお支払い方法を試すか、銀行にお問い合わせください。",
+    "paymentDeclinedDetail": "銀行によりこの支払いが拒否されました。別のお支払い方法を試すか、銀行にお問い合わせください。",
+    "processingErrorDetail": "お支払いを処理できませんでした。もう一度試すか、別のお支払い方法を使用してください。",
+    "reconciliationDetail": "お支払いは受領しましたが、ワークスペースの更新を完了できませんでした。サポートに連絡し、次の操作IDをお伝えください:",
+    "reconciliationTitle": "支払いを受領しました — 確認待ち",
+    "retryVerification": "確認を再試行",
     "subscriptionActionRequired": "ワークスペースの設定を完了するにはお支払いを確認してください",
     "subscriptionFailed": "サブスクリプションの更新に失敗しました",
     "subscriptionFailedDetail": "サブスクリプションの更新に失敗しました。もう一度お試しください。",
@@ -808,7 +819,7 @@
       "buy": "購入",
       "buyCredits": "支払いに進む",
       "buyNow": "今すぐ購入",
-      "chargedImmediatelyNote": "ご登録のカードには即時に請求されます。",
+      "chargedImmediatelyNote": "保存済みのお支払い方法に直ちに請求されます。",
       "confirmSubtitle": "お支払いが完了すると、クレジットがこのワークスペースに追加されます。",
       "confirmTitle": "確認",
       "contactUs": "お問い合わせ",
@@ -963,6 +974,7 @@
     "UPSCALE_MODEL": "アップスケールモデル",
     "VAE": "VAE",
     "VIDEO": "ビデオ",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "ボクセル",
     "WAN_CAMERA_EMBEDDING": "WANカメラ埋め込み",
     "WEBCAM": "ウェブカメラ"
@@ -2410,8 +2422,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "バージョン{version}のコアノード:",
-    "outdatedVersion": "このワークフローは新しいバージョンのComfyUI（{version}）で作成されました。一部のノードが正しく動作しない場合があります。",
-    "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。",
+    "newerVersionRequired": "一部のノードには新しいバージョンのComfyUIが必要です（現在: {version}）。すべてのノードを使用するには更新してください。",
+    "newerVersionRequiredGeneric": "一部のノードには新しいバージョンのComfyUIが必要です。すべてのノードを使用するには更新してください。",
     "unknownVersion": "不明"
   },
   "logsTerminal": {
@@ -4247,9 +4259,15 @@
     "prepaidDescription": "プリペイドクレジット",
     "preview": {
       "addCreditCard": "クレジットカードを追加",
+      "addNewPaymentMethod": "新しいお支払い方法を追加",
       "afterThat": "その後",
+      "alipay": "Alipay",
+      "alipayRenewalNote": "Alipayの認可は、自動更新および今後の購入にも使用されます。",
+      "applyPromoCode": "適用",
+      "applyQuoteBeforeContinuing": "続行する前にプロモーションコードを適用して見積もりを更新してください。",
       "backToAllPlans": "すべてのプランに戻る",
       "billedEachMonth": "毎月{amount}請求されます。いつでもキャンセル可能です。",
+      "changePaymentMethod": "変更",
       "commitment": "契約期間",
       "completeVerification": "認証を完了する",
       "confirm": "確認",
@@ -4264,6 +4282,11 @@
       "creditsRefillTo": "クレジットが補充されます：",
       "creditsYoullGetToday": "本日付与されるクレジット",
       "currentMonthly": "月間プラン",
+      "discount": {
+        "plan": "プラン割引",
+        "promotion": "プロモーションコード"
+      },
+      "discountComposition": "割引",
       "eachMonthCreditsRefill": "毎月クレジットが補充されます",
       "eachYearCreditsRefill": "毎年クレジットが補充されます",
       "ends": "{date}に終了",
@@ -4271,11 +4294,17 @@
       "hideFeatures": "機能を隠す",
       "newMonthlySubscription": "新しい月間サブスクリプション",
       "nextPaymentDue": "次回のお支払いは{date}です。いつでもキャンセルできます。",
+      "payAndSubscribe": "支払って購読",
+      "paymentMethod": "お支払い方法",
       "paymentPopupBlocked": "支払いページを開けませんでした。ポップアップを許可して再試行してください。",
       "perMember": "/ メンバー",
       "privacyPolicy": "プライバシーポリシー",
+      "promoCodePlaceholder": "プロモーションコード",
       "proratedCharge": "{plan}の按分請求",
       "proratedRefund": "{plan}の按分返金",
+      "quoteRefreshFailed": "見積もりの有効期限が切れ、更新できませんでした。もう一度プランを選択してください。",
+      "quoteStale": "見積もりが変更されました。更新後の金額を確認して、もう一度お試しください。",
+      "quoteUnavailable": "利用不可",
       "reactivation": {
         "amountChanged": "確認後に請求額が変更されました — 内容を確認して再度お試しください",
         "checkboxLabel": "本日 {amount} が請求されることを理解しました",
@@ -4291,16 +4320,20 @@
         "upgradeBody": "あなたの {plan} は {date} に終了予定でした。今アップグレードすると再有効化されます — 本日 {amount} が請求され、{nextDate} から自動更新されます（終了しません）。"
       },
       "refillReplacesNote": "月間補充を置き換えます。既存の残高は保持されます。",
+      "renewsAt": "{date}に{amount}で更新されます。いつでもキャンセルできます。",
+      "savedPaymentMethod": "お支払い方法",
       "showMoreFeatures": "さらに機能を表示",
       "starting": "{date}から開始",
       "startingToday": "本日から開始",
       "startsOn": "{date}に開始",
       "stayOnUntil": "{date}まで{plan}が継続されます。",
+      "stripeMethodChoice": "お支払い情報はStripeによって安全に処理されます。",
+      "stripeUnavailable": "お支払いオプションを利用できません。更新してもう一度お試しください。",
       "subscribeToPlan": "{plan}に加入",
       "switchToPlan": "{plan}に切り替え",
       "switchesToday": "本日の切り替え",
       "terms": "利用規約",
-      "termsAgreement": "続行することで、Comfy Orgの{terms}および{privacy}に同意したものとみなされます。",
+      "termsAgreement": "続行すると、Comfy Orgの{terms}および{privacy}に同意し、キャンセルするまで各請求期間にComfy Orgがお支払い方法に請求することを承認したものとみなされます。",
       "totalDueToday": "本日のお支払い合計",
       "yearlySubscription": "年間サブスクリプション",
       "youllBeCharged": "ご請求額："
@@ -4330,6 +4363,8 @@
     "resubscribeFailed": "サブスクリプションの再有効化に失敗しました",
     "resubscribeSuccess": "サブスクリプションが再開されました",
     "resubscribeTo": "{plan}を再購読する",
+    "salesManagedRunBlockedDetail": "このワークスペースのプランはすでに有効ではありません。アクセスを復元するには、Comfyのアカウントマネージャーにお問い合わせください。",
+    "salesManagedRunBlockedTitle": "プランは無効です",
     "saveYearly": "20%お得",
     "saveYearlyUpTo": "最大20%お得",
     "soloUseOnly": "個人利用のみ",
@@ -4348,6 +4383,8 @@
       "inviteSubtext": "設定から後で招待することもできます",
       "inviteTitle": "チームを招待",
       "planUpdated": "プランが正常に更新されました。",
+      "promoApplied": "{code}を適用しました。",
+      "promoRenews": "{date} に {amount} で更新されます",
       "receiptEmailed": "領収書をメールで送信しました。",
       "sendInvites": "招待を送信"
     },
@@ -4384,6 +4421,9 @@
         "feature1": "独自モデルのインポート",
         "name": "クリエイター"
       },
+      "enterprise": {
+        "name": "エンタープライズ"
+      },
       "founder": {
         "name": "ファウンダーエディション"
       },
@@ -4403,6 +4443,7 @@
     "title": "サブスクリプション",
     "titleUnsubscribed": "Comfy Cloudにサブスクライブ",
     "totalCredits": "総クレジット",
+    "unknownTierName": "現在のプラン",
     "upgrade": "アップグレード",
     "upgradePlan": "プランをアップグレード",
     "upgradeTo": "{plan}にアップグレード",
@@ -4795,7 +4836,8 @@
         "bodyNoDate": "チームのクレジットがすべて使用されました。クレジットを追加して生成を続けてください。",
         "dismiss": "閉じる",
         "memberBody": "チームのクレジットがすべて使用されました。ワークスペース管理者がクレジットを追加する必要があります。",
-        "title": "クレジットが不足しています"
+        "title": "クレジットが不足しています",
+        "upgradeBody": "プランをアップグレードしてクレジットを追加し、生成を続けましょう。"
       },
       "paused": {
         "body": "このワークスペースのサブスクリプションは一時停止されています。お支払い方法を更新して再開してください。",

@@ -346,8 +346,19 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticationFailedDetail": "לא הצלחנו להשלים את אימות התשלום. יש לנסות שוב.",
+    "authenticationManagerRequired": "אימות התשלום דורש טיפול של מנהל חיוב בסביבת העבודה.",
+    "authenticationUnavailable": "אימות מאובטח של תשלום אינו זמין. יש לרענן ולנסות שוב.",
     "cancelFailed": "ביטול המנוי נכשל",
     "cancelTimeout": "פג זמן ההמתנה לביטול המנוי",
+    "expiredCardDetail": "תוקף הכרטיס פג. השתמש באמצעי תשלום אחר.",
+    "incorrectCvcDetail": "קוד האבטחה של הכרטיס שגוי. בדוק אותו ונסה שוב.",
+    "insufficientFundsDetail": "באמצעי תשלום זה אין מספיק כספים. נסה אמצעי תשלום אחר או פנה לבנק שלך.",
+    "paymentDeclinedDetail": "הבנק שלך דחה תשלום זה. נסה אמצעי תשלום אחר או פנה לבנק שלך.",
+    "processingErrorDetail": "לא ניתן היה לעבד את התשלום שלך. נסה שוב או השתמש באמצעי תשלום אחר.",
+    "reconciliationDetail": "התשלום שלך התקבל, אך לא הצלחנו לסיים את עדכון סביבת העבודה שלך. פנה לתמיכה וכלול את מזהה הפעולה הזה:",
+    "reconciliationTitle": "התשלום התקבל — ממתין לאישור",
+    "retryVerification": "נסה שוב את האימות",
     "subscriptionActionRequired": "אמת את התשלום שלך כדי להשלים את הגדרת סביבת העבודה",
     "subscriptionFailed": "עדכון המנוי נכשל",
     "subscriptionFailedDetail": "לא הצלחנו לעדכן את המנוי שלכם. אנא נסו שוב.",
@@ -808,7 +819,7 @@
       "buy": "קנה",
       "buyCredits": "המשך לתשלום",
       "buyNow": "קנה עכשיו",
-      "chargedImmediatelyNote": "הכרטיס השמור שלך מחויב מיידית.",
+      "chargedImmediatelyNote": "אמצעי התשלום השמור שלך מחויב באופן מיידי.",
       "confirmSubtitle": "קרדיטים מתווספים לסביבת עבודה זו מיד עם סיום התשלום.",
       "confirmTitle": "אישור",
       "contactUs": "צור קשר",
@@ -963,6 +974,7 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
+    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -2410,8 +2422,8 @@
   },
   "loadWorkflowWarning": {
     "coreNodesFromVersion": "צמתי ליבה מגרסה {version}:",
-    "outdatedVersion": "תהליך עבודה זה נוצר בגרסה חדשה יותר של ComfyUI ({version}). ייתכן שחלק מהצמתים לא יעבדו כראוי.",
-    "outdatedVersionGeneric": "תהליך עבודה זה נוצר בגרסה חדשה יותר של ComfyUI. ייתכן שחלק מהצמתים לא יעבדו כראוי.",
+    "newerVersionRequired": "חלק מהצמתים דורשים גרסה חדשה יותר של ComfyUI (נוכחית: {version}). יש לעדכן כדי להשתמש בכל הצמתים.",
+    "newerVersionRequiredGeneric": "חלק מהצמתים דורשים גרסה חדשה יותר של ComfyUI. יש לעדכן כדי להשתמש בכל הצמתים.",
     "unknownVersion": "לא ידוע"
   },
   "logsTerminal": {
@@ -4247,9 +4259,15 @@
     "prepaidDescription": "קרדיטים ששולמו מראש",
     "preview": {
       "addCreditCard": "הוספת כרטיס אשראי",
+      "addNewPaymentMethod": "הוסף אמצעי תשלום חדש",
       "afterThat": "לאחר מכן",
+      "alipay": "Alipay",
+      "alipayRenewalNote": "ההרשאה של Alipay תשמש גם לחידושים אוטומטיים ולרכישות עתידיות.",
+      "applyPromoCode": "החל",
+      "applyQuoteBeforeContinuing": "החל את קוד הקידום כדי לרענן את הצעת המחיר לפני ההמשך.",
       "backToAllPlans": "חזרה לכל המסלולים",
       "billedEachMonth": "{amount} מחויב כל חודש. ניתן לבטל בכל עת.",
+      "changePaymentMethod": "שנה",
       "commitment": "התחייבות",
       "completeVerification": "השלם אימות",
       "confirm": "אישור",
@@ -4264,6 +4282,11 @@
       "creditsRefillTo": "הקרדיטים מתמלאים מחדש ל-",
       "creditsYoullGetToday": "הקרדיטים שתקבל היום",
       "currentMonthly": "תוכנית חודשית",
+      "discount": {
+        "plan": "הנחת תוכנית",
+        "promotion": "קוד קידום"
+      },
+      "discountComposition": "הנחות",
       "eachMonthCreditsRefill": "בכל חודש הקרדיטים מתמלאים ל",
       "eachYearCreditsRefill": "כל שנה הקרדיטים מתמלאים מחדש ל-",
       "ends": "מסתיים ב-{date}",
@@ -4271,11 +4294,17 @@
       "hideFeatures": "הסתרת תכונות",
       "newMonthlySubscription": "מנוי חודשי חדש",
       "nextPaymentDue": "התשלום הבא ב-{date}. ניתן לבטל בכל עת.",
+      "payAndSubscribe": "שלם והירשם",
+      "paymentMethod": "אמצעי תשלום",
       "paymentPopupBlocked": "לא ניתן היה לפתוח את דף התשלום — אפשר חלונות קופצים ונסה שוב.",
       "perMember": "/ חבר",
       "privacyPolicy": "מדיניות הפרטיות",
+      "promoCodePlaceholder": "קוד קידום",
       "proratedCharge": "חיוב יחסי עבור {plan}",
       "proratedRefund": "החזר יחסי עבור {plan}",
+      "quoteRefreshFailed": "תוקף הצעת המחיר שלך פג ולא ניתן היה לרענן אותה. בחר שוב את התוכנית שלך.",
+      "quoteStale": "הצעת המחיר שלך השתנתה. בדוק את הסכום המעודכן ונסה שוב.",
+      "quoteUnavailable": "לא זמין",
       "reactivation": {
         "amountChanged": "סכום החיוב השתנה מאז האישור — נא בדוק ונסה שוב",
         "checkboxLabel": "אני מבין/ה שאחויב {amount} היום",
@@ -4291,16 +4320,20 @@
         "upgradeBody": "המנוי שלך ({plan}) היה אמור להסתיים בתאריך {date}. שדרוג כעת מחדש אותו — תחויב {amount} היום, והוא יתחדש אוטומטית בתאריך {nextDate} במקום להסתיים."
       },
       "refillReplacesNote": "מחליף את המילוי החודשי שלך. היתרה הקיימת נשמרת.",
+      "renewsAt": "חידוש בסך {amount} בתאריך {date}. ניתן לבטל בכל עת.",
+      "savedPaymentMethod": "אמצעי תשלום",
       "showMoreFeatures": "הצגת תכונות נוספות",
       "starting": "החל מ-{date}",
       "startingToday": "החל מהיום",
       "startsOn": "מתחיל ב-{date}",
       "stayOnUntil": "תישאר ב-{plan} עד {date}.",
+      "stripeMethodChoice": "פרטי התשלום שלך מטופלים באופן מאובטח על ידי Stripe.",
+      "stripeUnavailable": "אפשרויות התשלום אינן זמינות. יש לרענן ולנסות שוב.",
       "subscribeToPlan": "הירשם לתוכנית {plan}",
       "switchToPlan": "עבור לתוכנית {plan}",
       "switchesToday": "מתחלף היום",
       "terms": "תנאים",
-      "termsAgreement": "בהמשך, אתה מסכים ל{terms} ול{privacy} של Comfy Org.",
+      "termsAgreement": "בהמשך, אתה מסכים ל-{terms} ול-{privacy} של Comfy Org, ומאשר ל-Comfy Org לחייב את אמצעי התשלום שלך בכל תקופת חיוב עד לביטול.",
       "totalDueToday": "סך לתשלום היום",
       "yearlySubscription": "מנוי שנתי",
       "youllBeCharged": "תחויב"
@@ -4330,6 +4363,8 @@
     "resubscribeFailed": "נכשל ניסיון להפעיל מחדש את המנוי",
     "resubscribeSuccess": "המנוי הופעל מחדש בהצלחה",
     "resubscribeTo": "הירשם מחדש ל-{plan}",
+    "salesManagedRunBlockedDetail": "התוכנית של סביבת עבודה זו אינה פעילה עוד. פנה למנהל החשבון שלך ב-Comfy כדי לשחזר את הגישה.",
+    "salesManagedRunBlockedTitle": "התוכנית אינה פעילה",
     "saveYearly": "חסוך 20%",
     "saveYearlyUpTo": "חסוך עד 20%",
     "soloUseOnly": "לשימוש יחיד בלבד",
@@ -4348,6 +4383,8 @@
       "inviteSubtext": "תוכל גם להזמין אנשים מאוחר יותר מהגדרות",
       "inviteTitle": "הזמן את הצוות שלך",
       "planUpdated": "התוכנית שלך עודכנה בהצלחה.",
+      "promoApplied": "{code} הוחל.",
+      "promoRenews": "מתחדש במחיר {amount} בתאריך {date}",
       "receiptEmailed": "קבלה נשלחה אליך בדוא\"ל.",
       "sendInvites": "שלח הזמנות"
     },
@@ -4384,6 +4421,9 @@
         "feature1": "ייבא מודלים משלך",
         "name": "Creator"
       },
+      "enterprise": {
+        "name": "ארגוני"
+      },
       "founder": {
         "name": "מהדורת מייסדים"
       },
@@ -4403,6 +4443,7 @@
     "title": "מנוי",
     "titleUnsubscribed": "הירשם ל-Comfy Cloud",
     "totalCredits": "סך הקרדיטים",
+    "unknownTierName": "התוכנית הנוכחית",
     "upgrade": "שדרוג",
     "upgradePlan": "שדרוג המסלול",
     "upgradeTo": "שדרג ל-{plan}",
@@ -4795,7 +4836,8 @@
         "bodyNoDate": "הצוות שלך השתמש בכל הקרדיטים. הוסף קרדיטים כדי להמשיך ביצירה.",
         "dismiss": "סגור",
         "memberBody": "הצוות שלך השתמש בכל הקרדיטים. מנהלי סביבת העבודה צריכים להוסיף קרדיטים נוספים כדי להמשיך ביצירה.",
-        "title": "אזלו הקרדיטים"
+        "title": "אזלו הקרדיטים",
+        "upgradeBody": "שדרגו את התוכנית שלכם כדי להוסיף קרדיטים ולהמשיך ביצירה."
       },
       "paused": {
         "body": "המנוי של סביבת עבודה זו מושהה. עדכן את התשלום כדי להמשיך.",
