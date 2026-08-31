@@ -1,5 +1,6 @@
 import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
+import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -79,6 +80,36 @@ function createDownloadHarness({
 }
 
 describe('useTemplateModelRowDownloads', () => {
+  it('reactively updates a row whose idle state was observed before download', () => {
+    const request = model('reactive.safetensors')
+    const { downloads, emitDesktop } = createDownloadHarness()
+    const renderedState = computed(() => downloads.stateFor(request))
+
+    expect(renderedState.value).toEqual({ status: 'idle', attempt: 0 })
+
+    downloads.request(request)
+
+    expect(renderedState.value).toEqual({ status: 'starting', attempt: 1 })
+
+    emitDesktop({
+      url: request.url,
+      filename: request.name,
+      directory: request.directory,
+      progress: 0.25,
+      receivedBytes: 256,
+      totalBytes: 1024,
+      status: 'downloading'
+    })
+    expect(renderedState.value).toEqual({
+      status: 'downloading',
+      attempt: 1,
+      activity: 'active',
+      receivedBytes: 256,
+      totalBytes: 1024,
+      fraction: 0.25
+    })
+  })
+
   it('subscribes before direct host dispatch without loading folder paths', async () => {
     const order: string[] = []
     const loadFolderPaths = vi.fn<() => Promise<FolderPaths>>()
