@@ -1,4 +1,5 @@
 ---
+import AgentBetaWaitlistForm from '../components/agent/AgentBetaWaitlistForm.vue'
 import ProductHeroBadge from '../components/common/ProductHeroBadge.vue'
 import BaseLayout from '../layouts/BaseLayout.astro'
 
@@ -51,17 +52,7 @@ const cards = [
         runs generations, and iterates until the result is production ready.
       </p>
 
-      <form class="waitlist-form" action="#" method="post">
-        <label for="email" class="sr-only">Email address</label>
-        <input
-          id="email"
-          type="email"
-          name="email"
-          placeholder="Type your email"
-          required
-        />
-        <button type="submit">Join the waitlist</button>
-      </form>
+      <AgentBetaWaitlistForm client:load />
 
       <p class="note">
         We'll prepare your account and email you when it's ready.
@@ -243,80 +234,11 @@ const cards = [
     color: rgba(245, 245, 245, 0.82);
   }
 
-  .waitlist-form {
-    display: flex;
-    align-items: center;
-    max-width: 520px;
-    margin: 0 auto;
-    background: #2a2230;
-    border: 1px solid rgba(245, 245, 245, 0.25);
-    border-radius: 24px;
-    padding: 8px;
-  }
-  .waitlist-form input {
-    flex: 1;
-    min-width: 0;
-    border: 0;
-    outline: none;
-    background: transparent;
-    padding: 14px 20px;
-    font-family: inherit;
-    font-size: 14px;
-    color: var(--color-primary-comfy-canvas);
-  }
-  .waitlist-form input::placeholder {
-    color: rgba(194, 191, 185, 0.7);
-  }
-  .waitlist-form button {
-    flex: 0 0 auto;
-    border: 0;
-    cursor: pointer;
-    background: var(--color-primary-comfy-yellow);
-    color: var(--color-primary-comfy-ink);
-    border-radius: 16px;
-    padding: 15px 28px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    transition:
-      filter 0.18s ease,
-      transform 0.18s ease;
-  }
-  .waitlist-form button:hover {
-    filter: brightness(1.06);
-  }
-  .waitlist-form button:active {
-    transform: scale(0.98);
-  }
-
   .note {
     margin: 20px auto 0 auto;
     font-size: 11px;
     line-height: 1.5;
     color: rgba(245, 245, 245, 0.55);
-  }
-
-  @media (max-width: 560px) {
-    .waitlist-form {
-      flex-direction: column;
-      background: transparent;
-      border: 0;
-      padding: 0;
-      gap: 12px;
-    }
-    .waitlist-form input {
-      width: 100%;
-      background: #2a2230;
-      border: 1px solid rgba(245, 245, 245, 0.25);
-      border-radius: 24px;
-      padding: 16px 22px;
-    }
-    .waitlist-form button {
-      width: 100%;
-      padding: 17px 26px;
-    }
   }
 
   .agent-section {
