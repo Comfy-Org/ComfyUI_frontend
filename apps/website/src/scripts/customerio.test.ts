@@ -65,6 +65,20 @@ describe('customerio', () => {
     )
   })
 
+  it('identifies by email then tracks an agent beta waitlist signup', async () => {
+    const { joinAgentBetaWaitlist } = await importModule('test-key')
+
+    await joinAgentBetaWaitlist('someone@example.com')
+
+    expect(hoisted.mockIdentify).toHaveBeenCalledWith('someone@example.com', {
+      email: 'someone@example.com'
+    })
+    expect(hoisted.mockTrack).toHaveBeenCalledWith(
+      'agent_beta_waitlist_joined',
+      { page: window.location.pathname }
+    )
+  })
+
   it('retries the SDK load on the next submit instead of caching a failed load', async () => {
     const { preloadDownloadLinkAnalytics, requestDownloadLink } =
       await importModule('test-key')
