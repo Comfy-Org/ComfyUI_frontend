@@ -42,15 +42,16 @@ describe('legacy slot link compatibility', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('treats input.link = null as a read-only compatibility write', () => {
+  it('disconnects when legacy code assigns input.link = null', () => {
     const { source, target, link } = connectedPair()
 
     target.inputs[0].link = null
 
-    expect(target.isInputConnected(0)).toBe(true)
-    expect(source.isOutputConnected(0)).toBe(true)
-    expect(source.outputs[0].links).toEqual([link.id])
-    expect(source.getOutputNodes(0)).toEqual([target])
+    expect(target.isInputConnected(0)).toBe(false)
+    expect(source.isOutputConnected(0)).toBe(false)
+    expect(source.outputs[0].links).toBeNull()
+    expect(source.getOutputNodes(0)).toBeNull()
+    expect(target.graph!.links.has(link.id)).toBe(false)
   })
 
   it('disconnects the links a filter-and-reassign drops', () => {
@@ -116,8 +117,8 @@ describe('legacy slot link additions', () => {
     target.inputs[0].link = null
     target.inputs[0].link = saved
 
-    expect(target.inputs[0].link).toBe(saved)
-    expect(source.isOutputConnected(0)).toBe(true)
+    expect(target.inputs[0].link).toBeNull()
+    expect(source.isOutputConnected(0)).toBe(false)
   })
 
   it('ignores adding a disconnected id to an output view', () => {
@@ -133,13 +134,13 @@ describe('legacy slot link additions', () => {
     expect(output.links).toEqual([])
   })
 
-  it('does not let a plain-object input mirror mutate topology', () => {
+  it('normalises a copied slot before applying null-assignment compatibility', () => {
     const { source, target } = connectedPair()
     target.inputs[0] = { ...target.inputs[0] }
 
     target.inputs[0].link = null
 
-    expect(source.isOutputConnected(0)).toBe(true)
+    expect(source.isOutputConnected(0)).toBe(false)
   })
 })
 

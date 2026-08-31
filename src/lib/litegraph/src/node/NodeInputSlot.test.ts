@@ -82,8 +82,8 @@ describe('NodeInputSlot', () => {
     expect(input?.isConnected).toBe(true)
   })
 
-  it('ignores null assignment as a read-only compatibility accessor', () => {
-    const { target, link } = createConnectedPair()
+  it('disconnects from null assignment for legacy compatibility', () => {
+    const { graph, target, link } = createConnectedPair()
     const input: { link?: LinkId | null } = target.inputs[0]
 
     expect(() => {
@@ -93,7 +93,8 @@ describe('NodeInputSlot', () => {
       expect.stringContaining('Assignment to input.link is deprecated'),
       undefined
     )
-    expect(target.inputs[0].link).toBe(link.id)
+    expect(target.inputs[0].link).toBeNull()
+    expect(graph.links.has(link.id)).toBe(false)
   })
 
   it('does not move a link from an id-only assignment', () => {

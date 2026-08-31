@@ -30,9 +30,15 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
   set link(value: LinkId | null) {
     warnDeprecated(
-      'Assignment to input.link is deprecated and ignored. Mutate via node.connect() / node.disconnectInput().'
+      'Assignment to input.link is deprecated. Use node.connect() / node.disconnectInput().'
     )
-    void value
+    if (value !== null) return
+
+    const slot = indexOf(this)
+    const { graph } = this._node
+    if (!graph || slot === -1) return
+    if (inputHasLink(graph, this._node.id, slot))
+      this._node.disconnectInput(slot)
   }
 
   get isWidgetInputSlot(): boolean {
