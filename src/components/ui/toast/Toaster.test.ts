@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { ZIndex } from '@primeuix/utils/zindex'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import Toaster from './Toaster.vue'
 import { useToast } from './toastStore'
@@ -18,7 +19,7 @@ describe('Toaster', () => {
   const dialogs: HTMLElement[] = []
 
   afterEach(() => {
-    dialogs.splice(0).forEach((dialog) => ZIndex.clear(dialog))
+    dialogs.splice(0).forEach((dialog) => zIndexManager.clear(dialog))
   })
 
   function renderToaster() {
@@ -43,7 +44,7 @@ describe('Toaster', () => {
     renderToaster()
     const dialog = document.createElement('div')
     dialogs.push(dialog)
-    ZIndex.set('modal', dialog, 1700)
+    zIndexManager.set('modal', dialog, 1700)
 
     useToast().info('Ready')
     await nextTick()
