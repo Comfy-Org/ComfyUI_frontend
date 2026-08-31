@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
-    "ci": "pnpm run migrate && pnpm run build",
+    "ci": "if [ \"$VERCEL_ENV\" = \"production\" ]; then pnpm run migrate; fi && pnpm run build",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "format": "prettier --write .",

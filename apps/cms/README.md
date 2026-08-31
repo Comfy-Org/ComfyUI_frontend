@@ -58,8 +58,11 @@ server-side and the endpoint requires the `admin` role.
 
 The Postgres adapter only pushes schema automatically when `NODE_ENV !== 'production'`,
 so production schema comes from the committed migrations in `src/migrations`. The
-Vercel build runs `pnpm run ci` — `payload migrate && next build` — so a deploy
-applies pending migrations before it builds.
+Vercel build runs `pnpm run ci`, which applies pending migrations before `next build` —
+but only when `VERCEL_ENV` is `production`. Preview deploys share the production
+`DATABASE_URL`, and Postgres DDL from a branch would outlive the preview (a failed
+build or a closed PR doesn't roll it back), so previews build against the schema
+production already has.
 
 After changing a collection:
 
@@ -89,14 +92,14 @@ pushes that don't touch `apps/cms` skip the build. The admin panel is `noindex`.
 
 Environment variables to set on the Vercel project (Production + Preview):
 
-| Key                                                    | Notes                                                                                                                                                              |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`                                         | Supabase **session pooler** URI (port 5432 on `*.pooler.supabase.com`). The direct `db.<ref>.supabase.co` host is IPv6-only and unreachable from Vercel Functions. |
-| `PAYLOAD_SECRET`                                       | Fresh `openssl rand -hex 24` — do not reuse the local dev value.                                                                                                   |
-| `GCS_BUCKET`, `GCS_PROJECT_ID`, `GCS_CREDENTIALS_JSON` | Required in production: Vercel's filesystem is read-only, so local-disk media storage cannot work.                                                                 |
-| `GCS_MEDIA_PREFIX`, `GCS_PUBLIC_BASE_URL`              | Optional; defaults are `website/cms` and `https://media.comfy.org`.                                                                                                |
-| `WEBSITE_DEPLOY_HOOK_URL`                              | Vercel deploy hook on the website project; powers "Rebuild site".                                                                                                  |
-| `WEBSITE_PREVIEW_URL`                                  | Optional; enables the admin "Preview" link.                                                                                                                        |
+| Key                                                    | Notes                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                         | Supabase **session pooler** URI (port 5432 on `*.pooler.supabase.com`). The direct `db.<ref>.supabase.co` host is IPv6-only and unreachable from Vercel Functions. Preview uses the same database as Production; migrations only run on production deploys (see [Migrations](#migrations)). |
+| `PAYLOAD_SECRET`                                       | Fresh `openssl rand -hex 24` — do not reuse the local dev value.                                                                                                                                                                                                                            |
+| `GCS_BUCKET`, `GCS_PROJECT_ID`, `GCS_CREDENTIALS_JSON` | Required in production: Vercel's filesystem is read-only, so local-disk media storage cannot work.                                                                                                                                                                                          |
+| `GCS_MEDIA_PREFIX`, `GCS_PUBLIC_BASE_URL`              | Optional; defaults are `website/cms` and `https://media.comfy.org`.                                                                                                                                                                                                                         |
+| `WEBSITE_DEPLOY_HOOK_URL`                              | Vercel deploy hook on the website project; powers "Rebuild site".                                                                                                                                                                                                                           |
+| `WEBSITE_PREVIEW_URL`                                  | Optional; enables the admin "Preview" link.                                                                                                                                                                                                                                                 |
 
 Do **not** set `PAYLOAD_ADMIN_EMAIL` / `PAYLOAD_ADMIN_PASSWORD` on Vercel. They only
 drive the local login prefill, which requires `NODE_ENV === 'development'` with `VERCEL`
