@@ -89,6 +89,18 @@ describe('useLinkPresentationStore', () => {
     expect(store.graphHiddenLinkIds(graphA)).toEqual([toLinkId(1)])
   })
 
+  it('stops indexing a released link id for its previous owner', () => {
+    const store = useLinkPresentationStore()
+    store.patch(graphA, toLinkId(9), { hidden: true })
+    store.patch(graphA, toLinkId(1), { hidden: true })
+    store.take(graphA, toLinkId(1))
+
+    store.patch(graphASibling, toLinkId(1), { hidden: true })
+
+    expect(store.graphHiddenLinkIds(graphA)).toEqual([toLinkId(9)])
+    expect(store.graphHiddenLinkIds(graphASibling)).toEqual([toLinkId(1)])
+  })
+
   it('clearOwner leaves sibling owners intact and clearGraph wipes one root', () => {
     const store = useLinkPresentationStore()
     store.patch(graphA, toLinkId(1), { hidden: true })
