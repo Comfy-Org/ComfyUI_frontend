@@ -258,6 +258,18 @@ describe('AgentPanel', () => {
       screen.queryByText('The AI agent can make mistakes')
     ).not.toBeInTheDocument()
 
+    await user.click(screen.getByRole('button', { name: 'Back to chat' }))
+    await nextTick()
+
+    expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await nextTick()
+
     await user.click(screen.getByRole('button', { name: 'Delete saved chat' }))
     await user.click(screen.getByRole('button', { name: 'Copy saved chat' }))
     await user.click(screen.getByRole('button', { name: 'Rename saved chat' }))
