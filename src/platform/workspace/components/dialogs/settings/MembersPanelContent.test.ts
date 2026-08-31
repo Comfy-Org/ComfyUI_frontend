@@ -584,13 +584,13 @@ describe('MembersPanelContent', () => {
       const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       renderComponent()
       expect(
-        screen.getByText('workspacePanel.members.needMoreMembers')
+        screen.getByText(/workspacePanel\.members\.needMoreMembers/)
       ).toBeTruthy()
       await userEvent.click(
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://comfysupport.portal.usepylon.com/forms/team-plan-requests',
+        'https://comfy-org.portal.usepylon.com/forms/team-plan-requests',
         '_blank',
         'noopener,noreferrer'
       )
@@ -612,7 +612,7 @@ describe('MembersPanelContent', () => {
       mockMembers.value = mockFilteredMembers.value
       renderComponent()
       expect(
-        screen.getByText(/workspacePanel\.members\.membersCount/)
+        screen.getByText(/workspacePanel\.members\.totalMembersCount/)
       ).toBeTruthy()
     })
   })
