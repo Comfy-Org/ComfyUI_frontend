@@ -97,7 +97,6 @@
     "@formkit/auto-animate": "catalog:",
     "@iconify/json": "catalog:",
     "@primeuix/utils": "catalog:",
-    "@primevue/forms": "catalog:",
     "@primevue/themes": "catalog:",
     "@sentry/vue": "catalog:",
     "@sparkjsdev/spark": "catalog:",
