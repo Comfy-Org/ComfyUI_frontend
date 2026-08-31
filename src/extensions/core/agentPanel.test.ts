@@ -6,11 +6,12 @@ const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   notifyAfterGraphConfigure: vi.fn(),
   notifyBeforeGraphLoad: vi.fn(),
-  agentStore: { enabled: false, isOpen: true, close: vi.fn() },
+  agentStore: { enabled: false, isOpen: true, width: 500, close: vi.fn() },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
   flagListener: null as (() => void) | null,
+  registerViewportInset: vi.fn(),
   nodeSelectionStore: {
     beginWorkflowLoad: vi.fn(),
     finishWorkflowLoad: vi.fn(),
@@ -34,6 +35,10 @@ vi.mock('@/services/extensionService', () => ({
       mocks.capturedExtensions.push(ext)
     }
   })
+}))
+
+vi.mock('@/composables/canvas/viewportInsetRegistry', () => ({
+  registerViewportInset: mocks.registerViewportInset
 }))
 
 vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
@@ -105,8 +110,10 @@ describe('AgentPanel extension flag gate', () => {
     mocks.notifyBeforeGraphLoad.mockClear()
     mocks.agentStore.close.mockClear()
     mocks.agentStore.enabled = false
+    mocks.agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
+    mocks.registerViewportInset.mockClear()
     mocks.registerTracker.mockClear()
     mocks.canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
@@ -144,6 +151,21 @@ describe('AgentPanel extension flag gate', () => {
   it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {
     await loadEntryAndSetup()
     expect(mocks.registerTracker).toHaveBeenCalledTimes(1)
+  })
+
+  it('registers its visible width through the feature-neutral viewport seam', async () => {
+    await loadEntryAndSetup()
+
+    expect(mocks.registerViewportInset).toHaveBeenCalledOnce()
+    const [source, provider] = mocks.registerViewportInset.mock.calls[0]
+    expect(source).toBe('agent-panel')
+    expect(provider()).toBe(0)
+
+    mocks.agentStore.enabled = true
+    expect(provider()).toBe(500)
+
+    mocks.agentStore.isOpen = false
+    expect(provider()).toBe(0)
   })
 
   it('enables the panel when the flag turns true', async () => {

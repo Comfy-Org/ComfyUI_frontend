@@ -1,5 +1,6 @@
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { registerViewportInset } from '@/composables/canvas/viewportInsetRegistry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
@@ -55,6 +56,12 @@ export function registerAgentPanelExtension(): void {
     },
     setup() {
       registerWorkflowTabActivityTracker()
+      const agentPanelStore = useAgentPanelStore()
+      registerViewportInset('agent-panel', () =>
+        agentPanelStore.enabled && agentPanelStore.isOpen
+          ? agentPanelStore.width
+          : 0
+      )
       return setupFlagGate()
     }
   })
