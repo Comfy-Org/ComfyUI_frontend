@@ -242,6 +242,19 @@ export class EcsFollowerAdapter {
       session.links.has(id) ? [] : [Number(id)]
     )
     session.mutations.batch(frameContext(update), (batch) => {
+      if (reconcile) {
+        batch.clearSemanticGraph()
+        session.nodes.forEach((_node, id) => {
+          const payload = readSemanticNode(session.follower.doc, id)
+          if (payload) batch.addNode(payload)
+        })
+        session.links.forEach((_link, id) => {
+          const link = readSemanticLink(session.follower.doc, id)
+          if (link) batch.connect(link)
+        })
+        return
+      }
+
       batch.removeLinks(removedLinkIds)
       for (const [id, action] of nodeActions) {
         if (action === 'delete' || action === 'update')
@@ -251,8 +264,7 @@ export class EcsFollowerAdapter {
         if (action === 'delete') continue
         const payload = readSemanticNode(session.follower.doc, id)
         if (!payload) continue
-        if (reconcile && action === 'add') batch.reconcileNode(payload)
-        else batch.addNode(payload)
+        batch.addNode(payload)
       }
       for (const [id, names] of changedWidgets) {
         if (nodeActions.has(id)) continue
