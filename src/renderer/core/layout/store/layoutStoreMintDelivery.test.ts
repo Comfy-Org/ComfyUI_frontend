@@ -161,6 +161,7 @@ describe('mint ports against the real layout store delivery', () => {
     const linkStore = useLinkStore()
     const severed = linkTopology(41, '2')
     linkStore.registerLink(scope, severed)
+    await realDelivery()
     minted.length = 0
     const consoleError = vi
       .spyOn(console, 'error')

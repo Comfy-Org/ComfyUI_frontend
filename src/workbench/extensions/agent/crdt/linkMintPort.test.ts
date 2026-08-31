@@ -82,8 +82,9 @@ describe('attachLinkMintPort', () => {
     })
   })
 
-  it('mints a concrete connect for a local link placement', () => {
+  it('mints a concrete connect for a local link placement', async () => {
     place(ROOT_SCOPE, topology(41))
+    await Promise.resolve()
 
     expect(minted).toEqual([
       {

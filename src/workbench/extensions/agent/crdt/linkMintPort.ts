@@ -85,6 +85,10 @@ function isRootScope(scope: LinkScopeView): boolean {
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   const severancesByNode = new Map<string, SeveranceEntry[]>()
   const consumedLinkIds = new Set<string>()
+  const pendingPlacements = new Map<
+    string,
+    { operation: GraphOperation; linkId: string | number }
+  >()
   let sweepScheduled = false
   let detached = false
 
@@ -112,18 +116,31 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       surfaceUnrepresentable('subgraph-interior connect', topology.id)
       return
     }
-    const operation: GraphOperation = {
-      op: 'connect',
-      link_id: topology.id,
-      from_node: topology.originNodeId,
-      from_slot: topology.originSlot,
-      to_node: topology.targetNodeId,
-      to_slot: topology.targetSlot,
-      link_type: String(topology.type)
-    }
-    queueMicrotask(() => {
-      if (!detached) deps.enqueue([operation])
+    const key = String(topology.id)
+    pendingPlacements.set(key, {
+      linkId: topology.id,
+      operation: {
+        op: 'connect',
+        link_id: topology.id,
+        from_node: topology.originNodeId,
+        from_slot: topology.originSlot,
+        to_node: topology.targetNodeId,
+        to_slot: topology.targetSlot,
+        link_type: String(topology.type)
+      }
     })
+    queueMicrotask(() => flushPlacement(key))
+  }
+
+  function flushPlacement(key: string): void {
+    const pending = pendingPlacements.get(key)
+    if (!pending) return
+    pendingPlacements.delete(key)
+    if (detached || !gateOpen()) {
+      surfaceUnrepresentable('link connect', pending.linkId)
+      return
+    }
+    deps.enqueue([pending.operation])
   }
 
   function scheduleSweep(): void {
@@ -159,6 +176,8 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
+    // Preserve mutation order when placement and deletion share a task.
+    flushPlacement(String(topology.id))
     const entry: SeveranceEntry = {
       linkId: topology.id,
       mintable: gateOpen() && isRootScope(scope)
@@ -186,6 +205,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     },
     detach() {
       detached = true
+      for (const key of pendingPlacements.keys()) flushPlacement(key)
       detachPlaced()
       detachDeleted()
     }
