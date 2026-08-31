@@ -120,8 +120,13 @@ or reuse the CI secret for this destructive operation.
 rather than composing a body by hand:
 
 ```bash
+set -euo pipefail
+umask 077
+
 BASE=https://api.us5.datadoghq.com/api/v2/on-call/schedules
 SCHEDULE_ID=f3258942-c040-4c33-8228-63a03e9092d6
+WORK_DIR=$(mktemp -d "${TMPDIR:-/tmp}/release-sheriff.XXXXXX")
+trap 'rm -rf "$WORK_DIR"' EXIT
 READ_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
            -H "DD-APPLICATION-KEY: $DATADOG_APP_KEY")
 WRITE_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
@@ -129,13 +134,15 @@ WRITE_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
 
 curl -sS "${READ_AUTH[@]}" \
   "$BASE/$SCHEDULE_ID?include=layers,layers.members,layers.members.user" \
-  --output schedule.json
+  --output "$WORK_DIR/schedule.original.json"
+cp "$WORK_DIR/schedule.original.json" "$WORK_DIR/schedule.json"
 
 curl -sS -X PUT "${WRITE_AUTH[@]}" -H 'Content-Type: application/json' \
-  "$BASE/$SCHEDULE_ID" -d @schedule.json
+  "$BASE/$SCHEDULE_ID" -d @"$WORK_DIR/schedule.json"
 ```
 
-`schedule.json` is that response with `tags` edited and nothing else touched.
+Edit `$WORK_DIR/schedule.json`; the untouched response remains beside it as
+`schedule.original.json` until the shell exits.
 The body has to repeat `data.id` even though the same UUID is already in the
 path, and it has to carry `layers`. Keep each layer's `id`, `rotation_start`,
 `effective_date`, `interval` and `restrictions`, and keep the members in their
