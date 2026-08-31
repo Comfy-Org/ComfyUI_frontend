@@ -24,6 +24,18 @@ describe('workflowPlanSchema', () => {
     expect(zWorkflowPlan.parse(basePlan())).toEqual(basePlan())
   })
 
+  it('accepts the existing text-to-3d product capability', () => {
+    const plan = {
+      ...basePlan(),
+      brief: 'Create a textured chair model from a description',
+      summary: 'Generate a chair model',
+      intent: 'text-to-3d',
+      outputMediaType: '3d'
+    } satisfies WorkflowPlan
+
+    expect(zWorkflowPlan.parse(plan)).toEqual(plan)
+  })
+
   it('keeps quality independent from the allowed execution boundary', () => {
     const plan = {
       ...basePlan(),
@@ -142,6 +154,37 @@ describe('workflowPlanSchema', () => {
     })
 
     expect(result.success).toBe(false)
+  })
+
+  it('rejects a partially timed sequence without a declared total', () => {
+    const result = zWorkflowPlan.safeParse({
+      ...basePlan(),
+      structure: {
+        kind: 'sequence',
+        units: [
+          {
+            id: 'known-duration',
+            label: 'Known duration',
+            instruction: 'A shot whose requested duration must be honored',
+            durationSeconds: 20
+          },
+          {
+            id: 'unknown-duration',
+            label: 'Unknown duration',
+            instruction: 'A shot that still needs a duration'
+          }
+        ],
+        continuityConstraints: ['Keep the subject consistent']
+      }
+    })
+
+    expect(result.success).toBe(false)
+    if (result.success) throw new Error('expected plan validation to fail')
+    expect(result.error.issues).toContainEqual(
+      expect.objectContaining({
+        message: 'A partially timed sequence requires a duration for every unit'
+      })
+    )
   })
 
   it('accepts a multi-stage screenplay pipeline', () => {
@@ -410,6 +453,44 @@ describe('workflowPlanSchema', () => {
         expect.objectContaining({ message: 'image-edit requires image input' }),
         expect.objectContaining({ message: 'image-edit must produce image' })
       ])
+    )
+  })
+
+  it('rejects duplicate media inputs within a pipeline stage', () => {
+    const result = zWorkflowPlan.safeParse({
+      ...basePlan(),
+      intent: 'text-to-video',
+      outputMediaType: 'video',
+      structure: { kind: 'single' },
+      pipeline: {
+        stages: [
+          {
+            id: 'image',
+            intent: 'text-to-image',
+            dependsOnStageIds: [],
+            inputMediaTypes: [],
+            outputMediaType: 'image',
+            instruction: 'Create a keyframe'
+          },
+          {
+            id: 'motion',
+            intent: 'image-to-video',
+            dependsOnStageIds: ['image'],
+            inputMediaTypes: ['image', 'image'],
+            outputMediaType: 'video',
+            instruction: 'Animate the keyframe'
+          }
+        ]
+      }
+    })
+
+    expect(result.success).toBe(false)
+    if (result.success) throw new Error('expected plan validation to fail')
+    expect(result.error.issues).toContainEqual(
+      expect.objectContaining({
+        path: ['pipeline', 'stages', 1, 'inputMediaTypes'],
+        message: 'Values must be unique'
+      })
     )
   })
 

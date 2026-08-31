@@ -21,7 +21,7 @@ export interface WorkflowRouteCandidate {
   outputMediaType: WorkflowMediaType
   supportedStructures: readonly WorkflowPlan['structure']['kind'][]
   supportedPipelineIntents: readonly WorkflowIntent[]
-  maxOutputUnits: number
+  maxWorkUnits: number
   maxDurationSeconds?: number
   executionMode: 'local' | 'cloud'
   isPaid: boolean
@@ -31,15 +31,18 @@ export interface WorkflowRouteCandidate {
   availability: WorkflowRouteAvailability
 }
 
+type RunnableWorkflowRouteSelection =
+  | { status: 'ready'; route: WorkflowRouteCandidate }
+  | { status: 'approval-required'; route: WorkflowRouteCandidate }
+
 export type WorkflowRouteSelection =
   | { status: 'needs-input' }
   | { status: 'no-match' }
-  | { status: 'ready'; route: WorkflowRouteCandidate }
-  | { status: 'approval-required'; route: WorkflowRouteCandidate }
+  | RunnableWorkflowRouteSelection
   | {
       status: 'setup-required'
       route: WorkflowRouteCandidate
-      readyFallback?: WorkflowRouteCandidate
+      fallback?: RunnableWorkflowRouteSelection
     }
 
 export function selectWorkflowRoute(
@@ -55,18 +58,27 @@ export function selectWorkflowRoute(
   if (route === undefined) return { status: 'no-match' }
 
   if (route.availability.status === 'setup-required') {
-    const readyFallback = ranked.find(
+    const fallbackRoute = ranked.find(
       (candidate) => candidate.availability.status === 'ready'
     )
     return {
       status: 'setup-required',
       route,
-      ...(readyFallback === undefined ? {} : { readyFallback })
+      ...(fallbackRoute === undefined
+        ? {}
+        : { fallback: selectRunnableRoute(fallbackRoute) })
     }
   }
 
-  if (route.isPaid) return { status: 'approval-required', route }
-  return { status: 'ready', route }
+  return selectRunnableRoute(route)
+}
+
+function selectRunnableRoute(
+  route: WorkflowRouteCandidate
+): RunnableWorkflowRouteSelection {
+  return route.isPaid
+    ? { status: 'approval-required', route }
+    : { status: 'ready', route }
 }
 
 function isEligible(
@@ -84,7 +96,7 @@ function isEligible(
     )
   )
     return false
-  if (requiredOutputUnits(plan) > candidate.maxOutputUnits) return false
+  if (requiredWorkUnits(plan) > candidate.maxWorkUnits) return false
   const durationSeconds = requestedDurationSeconds(plan)
   if (
     durationSeconds !== undefined &&
@@ -111,7 +123,7 @@ function isEligible(
   )
 }
 
-function requiredOutputUnits(plan: WorkflowPlan): number {
+function requiredWorkUnits(plan: WorkflowPlan): number {
   if (plan.structure.kind === 'batch') return plan.structure.unitCount
   if (plan.structure.kind === 'sequence') return plan.structure.units.length
   return 1
@@ -135,9 +147,8 @@ function compareRoutes(
 ): number {
   const taskFitDifference = right.taskFitScore - left.taskFitScore
   if (taskFitDifference !== 0) return taskFitDifference
-  const scoreDifference =
-    scoreExperience(right, qualityGoal) - scoreExperience(left, qualityGoal)
-  if (scoreDifference !== 0) return scoreDifference
+  const experienceDifference = compareExperience(left, right, qualityGoal)
+  if (experienceDifference !== 0) return experienceDifference
   const availabilityDifference =
     Number(left.availability.status !== 'ready') -
     Number(right.availability.status !== 'ready')
@@ -146,17 +157,28 @@ function compareRoutes(
     return -1
   if (right.executionMode === 'local' && left.executionMode !== 'local')
     return 1
-  return left.id.localeCompare(right.id)
+  if (left.id === right.id) return 0
+  return left.id < right.id ? -1 : 1
 }
 
-function scoreExperience(
-  candidate: WorkflowRouteCandidate,
+function compareExperience(
+  left: WorkflowRouteCandidate,
+  right: WorkflowRouteCandidate,
   qualityGoal: WorkflowPlan['qualityGoal']
 ): number {
-  const qualityWeight = qualityGoal === 'best' ? 8 : 4
-  const speedWeight =
-    qualityGoal === 'draft' ? 8 : qualityGoal === 'best' ? 1 : 4
+  if (qualityGoal === 'best') {
+    const qualityDifference = right.qualityScore - left.qualityScore
+    return qualityDifference === 0
+      ? right.speedScore - left.speedScore
+      : qualityDifference
+  }
+  if (qualityGoal === 'draft') {
+    const speedDifference = right.speedScore - left.speedScore
+    return speedDifference === 0
+      ? right.qualityScore - left.qualityScore
+      : speedDifference
+  }
   return (
-    candidate.qualityScore * qualityWeight + candidate.speedScore * speedWeight
+    right.qualityScore + right.speedScore - left.qualityScore - left.speedScore
   )
 }

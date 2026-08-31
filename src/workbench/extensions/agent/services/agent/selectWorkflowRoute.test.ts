@@ -33,7 +33,7 @@ function route(
     outputMediaType: 'image',
     supportedStructures: ['single'],
     supportedPipelineIntents: [],
-    maxOutputUnits: 1,
+    maxWorkUnits: 1,
     executionMode: 'local',
     isPaid: false,
     taskFitScore: 80,
@@ -61,8 +61,8 @@ describe('selectWorkflowRoute', () => {
 
   it('selects the highest-quality route for a best-quality plan', () => {
     const selection = selectWorkflowRoute(plan({ qualityGoal: 'best' }), [
-      route('fast', { qualityScore: 60, speedScore: 100 }),
-      route('quality', { qualityScore: 95, speedScore: 40 })
+      route('fast', { qualityScore: 94, speedScore: 100 }),
+      route('quality', { qualityScore: 95, speedScore: 0 })
     ])
 
     expect(selection).toMatchObject({
@@ -73,8 +73,8 @@ describe('selectWorkflowRoute', () => {
 
   it('selects the fastest route for a draft plan with equal task fit', () => {
     const selection = selectWorkflowRoute(plan({ qualityGoal: 'draft' }), [
-      route('slow', { qualityScore: 95, speedScore: 30 }),
-      route('fast', { qualityScore: 60, speedScore: 100 })
+      route('slow', { qualityScore: 100, speedScore: 94 }),
+      route('fast', { qualityScore: 0, speedScore: 95 })
     ])
 
     expect(selection).toMatchObject({ status: 'ready', route: { id: 'fast' } })
@@ -108,7 +108,37 @@ describe('selectWorkflowRoute', () => {
     expect(selection).toMatchObject({
       status: 'setup-required',
       route: { id: 'best-local' },
-      readyFallback: { id: 'installed-fallback' }
+      fallback: {
+        status: 'ready',
+        route: { id: 'installed-fallback' }
+      }
+    })
+  })
+
+  it('preserves approval for a paid fallback', () => {
+    const selection = selectWorkflowRoute(plan({ qualityGoal: 'best' }), [
+      route('paid-cloud-fallback', {
+        executionMode: 'cloud',
+        isPaid: true,
+        qualityScore: 70
+      }),
+      route('best-local', {
+        qualityScore: 98,
+        availability: {
+          status: 'setup-required',
+          missingModels: ['best-model.safetensors'],
+          missingNodeTypes: []
+        }
+      })
+    ])
+
+    expect(selection).toMatchObject({
+      status: 'setup-required',
+      route: { id: 'best-local' },
+      fallback: {
+        status: 'approval-required',
+        route: { id: 'paid-cloud-fallback' }
+      }
     })
   })
 
@@ -166,6 +196,21 @@ describe('selectWorkflowRoute', () => {
       expect(selectWorkflowRoute(plan(), candidates)).toMatchObject({
         status: 'ready',
         route: { id: 'local' }
+      })
+    }
+  })
+
+  it('uses a locale-independent id tie-breaker', () => {
+    const alpha = route('alpha')
+    const zulu = route('zulu')
+
+    for (const candidates of [
+      [zulu, alpha],
+      [alpha, zulu]
+    ]) {
+      expect(selectWorkflowRoute(plan(), candidates)).toMatchObject({
+        status: 'ready',
+        route: { id: 'alpha' }
       })
     }
   })
@@ -247,7 +292,7 @@ describe('selectWorkflowRoute', () => {
         inputCapacity: { image: 2 },
         outputMediaType: 'video',
         supportedStructures: ['sequence'],
-        maxOutputUnits: 8,
+        maxWorkUnits: 8,
         maxDurationSeconds: 60,
         qualityScore: 80
       })
@@ -266,11 +311,11 @@ describe('selectWorkflowRoute', () => {
     const selection = selectWorkflowRoute(batch, [
       route('four-variants', {
         supportedStructures: ['batch'],
-        maxOutputUnits: 4
+        maxWorkUnits: 4
       }),
       route('eight-variants', {
         supportedStructures: ['batch'],
-        maxOutputUnits: 8
+        maxWorkUnits: 8
       })
     ])
 

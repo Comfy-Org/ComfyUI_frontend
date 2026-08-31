@@ -17,6 +17,7 @@ const OUTPUT_MEDIA_BY_INTENT: Record<WorkflowIntent, WorkflowMediaType> = {
   'video-edit': 'video',
   'text-to-audio': 'audio',
   'audio-edit': 'audio',
+  'text-to-3d': '3d',
   'image-to-3d': '3d'
 }
 
@@ -87,13 +88,24 @@ function addSequenceDurationIssues(
   plan: WorkflowPlan,
   context: z.RefinementCtx
 ): void {
-  if (
-    plan.structure.kind !== 'sequence' ||
-    plan.targetDurationSeconds === undefined
-  )
-    return
+  if (plan.structure.kind !== 'sequence') return
   const durations = plan.structure.units.map((unit) => unit.durationSeconds)
-  if (durations.some((duration) => duration === undefined)) {
+  const hasDuration = durations.some((duration) => duration !== undefined)
+  const hasMissingDuration = durations.some(
+    (duration) => duration === undefined
+  )
+  if (plan.targetDurationSeconds === undefined) {
+    if (hasDuration && hasMissingDuration) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'A partially timed sequence requires a duration for every unit',
+        path: ['structure', 'units']
+      })
+    }
+    return
+  }
+  if (hasMissingDuration) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'A timed sequence requires a duration for every unit',
@@ -123,6 +135,11 @@ function addPipelineIssues(plan: WorkflowPlan, context: z.RefinementCtx): void {
     addDuplicateIssue(
       stage.dependsOnStageIds,
       ['pipeline', 'stages', index, 'dependsOnStageIds'],
+      context
+    )
+    addDuplicateIssue(
+      stage.inputMediaTypes,
+      ['pipeline', 'stages', index, 'inputMediaTypes'],
       context
     )
     addIntentCompatibilityIssues(

@@ -14,6 +14,7 @@ const zWorkflowIntent = z.enum([
   'video-edit',
   'text-to-audio',
   'audio-edit',
+  'text-to-3d',
   'image-to-3d'
 ])
 export type WorkflowIntent = z.infer<typeof zWorkflowIntent>
