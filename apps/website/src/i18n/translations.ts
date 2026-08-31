@@ -5201,11 +5201,12 @@ const translations = {
     en: 'Find your answer here',
     'zh-CN': '在这里找到答案'
   },
-  'contact.form.embedLoadErrorPrefix': {
-    en: 'Unable to load the contact form. Email us at',
-    'zh-CN': '联系表单无法加载。请发送邮件至'
+
+  'hubspotForm.embedLoadErrorPrefix': {
+    en: 'Unable to load the form. Email us at',
+    'zh-CN': '表单无法加载。请发送邮件至'
   },
-  'contact.form.embedLoadErrorSuffix': {
+  'hubspotForm.embedLoadErrorSuffix': {
     en: "and we'll route your request.",
     'zh-CN': '我们会为您处理请求。'
   },

@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import HubspotFormEmbed from '../../../components/common/HubspotFormEmbed.vue'
+import { getRoutes } from '../../../config/routes'
+import { t } from '../../../i18n/translations'
+import { absoluteUrl } from '../../../utils/jsonLd'
+
+// "MiniMax Commercial License - Professional" on HubSpot portal 244637579.
+const HUBSPOT_FORM_ID = '40ef858c-374a-4958-8180-bfa54f0a67fb'
+
+const TITLE = 'Request MiniMax Professional License'
+const DESCRIPTION =
+  'Request a MiniMax Professional commercial license through Comfy, the official reseller of MiniMax commercial-use licenses. Fixed monthly price, up to 10 licensed users.'
+
+const routes = getRoutes('en')
+---
+
+<BaseLayout
+  title={`${TITLE} - Comfy`}
+  description={DESCRIPTION}
+  breadcrumbs={[
+    { name: t('breadcrumb.home'), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('minimaxLicense.breadcrumb.model'),
+      url: absoluteUrl(Astro.site, routes.minimaxLicense),
+    },
+    { name: TITLE },
+  ]}
+>
+  <section class="px-6 pt-20 pb-24 lg:pt-32 lg:pb-32">
+    <div class="mx-auto max-w-2xl">
+      <h1 class="text-4xl font-light text-primary-comfy-canvas lg:text-5xl">
+        {TITLE}
+      </h1>
+
+      <p class="mt-6 text-sm text-primary-comfy-canvas">
+        Tell us about your team and we'll get your license set up. Professional
+        is a fixed-price monthly license covering up to 10 users — <a
+          href={routes.minimaxLicense}
+          class="text-primary-comfy-yellow underline underline-offset-4 hover:no-underline"
+          >see what it includes</a
+        >.
+      </p>
+
+      <div class="mt-12">
+        <HubspotFormEmbed formId={HUBSPOT_FORM_ID} client:load />
+      </div>
+    </div>
+  </section>
+</BaseLayout>
