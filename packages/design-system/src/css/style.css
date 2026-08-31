@@ -10,6 +10,14 @@
 
 @plugin "./lucideStrokePlugin.js";
 
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+}
+
 /* Safelist dynamic comfy icons for node library folders */
 @source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-cloud,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
