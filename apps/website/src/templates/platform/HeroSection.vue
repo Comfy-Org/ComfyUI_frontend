@@ -4,7 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { platformCtas } from './ctas'
 import DeployTerminal from './DeployTerminal.vue'
-import PlatformHeroShader from './PlatformHeroShader.vue'
+import PlatformHeroBadge from './PlatformHeroBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -12,11 +12,7 @@ const ctas = platformCtas(locale)
 </script>
 
 <template>
-  <div class="relative isolate overflow-hidden md:overflow-visible">
-    <PlatformHeroShader />
-    <div
-      class="pointer-events-none absolute inset-0 z-0 bg-linear-to-r from-primary-comfy-ink via-primary-comfy-ink/45 to-transparent md:-bottom-48 md:mask-[linear-gradient(to_bottom,black_0%,black_64%,transparent_100%)]"
-    />
+  <div class="relative">
     <HeroSplit01
       :locale="locale"
       compact
@@ -27,11 +23,20 @@ const ctas = platformCtas(locale)
       :title="t('platform.hero.heading', locale)"
       title-class="sr-only"
       :subtitle="t('platform.hero.subtitle', locale)"
-      subtitle-class="mt-6 max-w-md text-sm leading-relaxed"
+      subtitle-class="mt-6 max-w-md whitespace-pre-line text-sm leading-relaxed"
       cta-wrapper-class="mt-6"
+      media-wrapper-class="hidden lg:block"
       :primary-cta="ctas.getStarted"
       :secondary-cta="ctas.docs"
     >
+      <template #badge>
+        <PlatformHeroBadge :locale="locale" />
+      </template>
+      <template #aboveCtas>
+        <div class="mt-8 lg:hidden">
+          <DeployTerminal :locale="locale" />
+        </div>
+      </template>
       <template #media>
         <DeployTerminal :locale="locale" />
       </template>

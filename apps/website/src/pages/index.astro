@@ -4,13 +4,14 @@ import ProductCardsSection from "../components/home/ProductCardsSection.vue";
 import HeroGraphSection from "../components/hero/HeroGraphSection.vue";
 import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
 import MinimaxLicenseHeroSection from "../components/common/MinimaxLicenseHeroSection.vue";
-import DeveloperPlatformBandSection from "../components/common/DeveloperPlatformBandSection.vue";
 import IndustriesSection from "../components/home/IndustriesSection.vue";
 import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
 import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
+import ModelCardsSection from "../components/home/ModelCardsSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
 import GetStartedSection from "../components/home/GetStartedSection.vue";
+import ClosingCtaSection from "../templates/platform/ClosingCtaSection.vue";
 import { t } from "../i18n/translations";
 import {
   comfyUiApplicationNode,
@@ -49,9 +50,17 @@ const { siteUrl } = pageContext(
   <HeroGraphSection client:load />
   <SocialProofBarSection />
   <MinimaxLicenseHeroSection client:visible />
-  <DeveloperPlatformBandSection />
+  <ClosingCtaSection
+    badge-only
+    locale="en"
+    primary-href="/platform"
+    visual="columns"
+    subtitle={t("platform.closing.homeSubtitle", "en")}
+    client:visible
+  />
   <ModelReleaseSection client:visible />
   <FeaturedWorkflowsSection client:load />
+  <ModelCardsSection />
   <ProductShowcaseSection client:load />
   <IndustriesSection client:load />
   <GetStartedSection />

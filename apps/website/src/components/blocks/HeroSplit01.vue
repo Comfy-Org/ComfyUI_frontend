@@ -35,6 +35,7 @@ const {
   titleHighlight,
   subtitle,
   subtitleClass,
+  mediaWrapperClass,
   features = [],
   primaryCta,
   secondaryCta,
@@ -68,6 +69,7 @@ const {
   titleHighlight?: string
   subtitle?: string
   subtitleClass?: HTMLAttributes['class']
+  mediaWrapperClass?: HTMLAttributes['class']
   features?: string[]
   primaryCta: Cta
   secondaryCta?: Cta
@@ -103,15 +105,17 @@ const {
   >
     <div class="w-full lg:flex-1">
       <div class="flex items-center gap-3">
-        <ProductHeroBadge
-          :text="badgeText"
-          :logo-src="badgeLogoSrc"
-          :logo-alt="badgeLogoAlt"
-          :show-logo="badgeShowLogo"
-        />
-        <Badge v-if="beta" variant="accent" size="xs">
-          {{ t('nav.badgeBeta', locale) }}
-        </Badge>
+        <slot name="badge">
+          <ProductHeroBadge
+            :text="badgeText"
+            :logo-src="badgeLogoSrc"
+            :logo-alt="badgeLogoAlt"
+            :show-logo="badgeShowLogo"
+          />
+          <Badge v-if="beta" variant="accent" size="xs">
+            {{ t('nav.badgeBeta', locale) }}
+          </Badge>
+        </slot>
       </div>
 
       <h1
@@ -156,6 +160,8 @@ const {
         </li>
       </ul>
 
+      <slot name="aboveCtas" />
+
       <div
         :class="cn('mt-10 flex flex-col gap-4 sm:flex-row', ctaWrapperClass)"
       >
@@ -182,7 +188,11 @@ const {
       <slot name="belowCtas" />
     </div>
 
-    <div class="order-first w-full lg:order-last lg:flex-1">
+    <div
+      :class="
+        cn('order-first w-full lg:order-last lg:flex-1', mediaWrapperClass)
+      "
+    >
       <slot name="media">
         <VideoPlayer
           v-if="videoSrc"

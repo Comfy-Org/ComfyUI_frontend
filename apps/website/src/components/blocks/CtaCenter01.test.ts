@@ -31,4 +31,15 @@ describe('CtaCenter01', () => {
     ).toContain('text-2xl/snug')
     expect(buttonSizes()).toEqual(['default', 'default'])
   })
+
+  it('supports rich heading content without changing its accessible name', () => {
+    render(CtaCenter01, {
+      props: ctas,
+      slots: { heading: '<span>Rich heading</span>' }
+    })
+
+    expect(screen.getByRole('heading', { name: 'Ship it' }).textContent).toBe(
+      'Rich heading'
+    )
+  })
 })

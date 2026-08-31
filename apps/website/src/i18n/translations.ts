@@ -424,6 +424,26 @@ const translations = {
     en: 'SEE ENTERPRISE FEATURES',
     'zh-CN': '查看企业版属性'
   },
+  'products.models.label': {
+    en: 'Featured models',
+    'zh-CN': '精选模型'
+  },
+  'products.models.minimaxTextToVideo': {
+    en: 'MiniMax H3\nMax Text to\nVideo',
+    'zh-CN': 'MiniMax H3\nMax 文生\n视频'
+  },
+  'products.models.fluxImageToVideo': {
+    en: 'FLUX 3\nImage to\nVideo',
+    'zh-CN': 'FLUX 3\n图生\n视频'
+  },
+  'products.models.seedanceImageToVideo': {
+    en: 'Seedance 2.5\nImage to\nVideo',
+    'zh-CN': 'Seedance 2.5\n图生\n视频'
+  },
+  'products.models.minimaxImageToVideo': {
+    en: 'MiniMax H3\nImage to\nVideo',
+    'zh-CN': 'MiniMax H3\n图生\n视频'
+  },
 
   // CaseStudySpotlightSection
   'caseStudy.label': {
@@ -7382,7 +7402,7 @@ const translations = {
     'zh-CN': 'Comfy 开发者平台'
   },
   'platform.hero.subtitle': {
-    en: 'The fastest way from ComfyUI workflow to production endpoint.',
+    en: 'The fastest way from ComfyUI workflow\nto production endpoint.',
     'zh-CN': '从 ComfyUI 工作流到生产端点的最快路径。'
   },
   'platform.hero.getStarted': {
@@ -7406,26 +7426,26 @@ const translations = {
     'zh-CN': '几分钟内上线'
   },
   'platform.serverlessDeploy.subtitle': {
-    en: 'Easily package up your existing ComfyUI environment — or a single workflow — and deploy to Serverless.',
+    en: 'Easily package your existing ComfyUI environment or a single workflow, then deploy it to Serverless API.',
     'zh-CN':
-      '轻松打包你现有的 ComfyUI 环境——或单个工作流——并部署到 Serverless。'
+      '轻松打包现有的 ComfyUI 环境或单个工作流，然后部署到 Serverless API。'
   },
   'platform.serverlessDeploy.tabInstall': {
-    en: 'Start with your installation',
-    'zh-CN': '从你的安装开始'
+    en: 'Start with installation',
+    'zh-CN': '从安装开始'
   },
   'platform.serverlessDeploy.tabWorkflow': {
-    en: 'Start with your workflow',
-    'zh-CN': '从你的工作流开始'
+    en: 'Start with workflow',
+    'zh-CN': '从工作流开始'
   },
   'platform.serverlessScale.heading': {
     en: 'Engineered for scale',
     'zh-CN': '为规模而生'
   },
   'platform.serverlessScale.subtitle': {
-    en: 'Deploy on the Developer Platform across thousands of GPUs — autoscaling, logs, and performance controls built in.',
+    en: 'Deploy on the Developer Platform across thousands of GPUs. Autoscaling, logs, and performance controls are built in.',
     'zh-CN':
-      '在开发者平台上跨数千块 GPU 部署——自动扩缩、日志和性能控制开箱即用。'
+      '在开发者平台上跨数千块 GPU 部署。自动扩缩、日志和性能控制均已内置。'
   },
   'platform.serverlessScale.1.title': {
     en: 'Autoscaling',
@@ -7457,33 +7477,18 @@ const translations = {
     'zh-CN': 'Serverless API'
   },
   'platform.products.serverless.description': {
-    en: "Scale from 0 to millions of generations on Comfy's serverless engine. No GPUs to configure, no cold starts — only pay for what you use.",
+    en: "Scale from 0 to millions of generations on Comfy's serverless engine. No GPUs to configure or cold starts. You only pay for what you use.",
     'zh-CN':
-      '在 Comfy 无服务器引擎上从 0 扩展到数百万次生成。无需配置 GPU，没有冷启动——只为实际用量付费。'
+      '在 Comfy 无服务器引擎上从 0 扩展到数百万次生成。无需配置 GPU，也没有冷启动。你只需为实际用量付费。'
   },
   'platform.serverlessVisual.ariaLabel': {
-    en: 'Animated diagram showing serverless activity moving through B200 GPU workers.',
-    'zh-CN': '动画图示：无服务器活动在 B200 GPU 工作节点之间移动。'
-  },
-  'platform.serverlessVisual.client': {
-    en: 'Client request',
-    'zh-CN': '客户端请求'
-  },
-  'platform.serverlessVisual.gateway': {
-    en: 'API gateway',
-    'zh-CN': 'API 网关'
-  },
-  'platform.serverlessVisual.functions': {
-    en: 'Serverless functions',
-    'zh-CN': '无服务器函数'
-  },
-  'platform.serverlessVisual.database': {
-    en: 'Database  B200s',
-    'zh-CN': '数据库  B200s'
+    en: 'Animated diagram showing serverless activity moving through RTX 6000 PRO, H100, and B200 GPU workers.',
+    'zh-CN':
+      '动画图示：无服务器活动在 RTX 6000 PRO、H100 和 B200 GPU 工作节点之间移动。'
   },
   'platform.serverlessVisual.worker': {
-    en: 'B200s',
-    'zh-CN': 'B200s'
+    en: 'Worker',
+    'zh-CN': '工作节点'
   },
   'platform.products.builder.title': {
     en: 'Builder',
@@ -7699,26 +7704,34 @@ const translations = {
     en: 'Storage',
     'zh-CN': '存储'
   },
-  'platform.pricing.storage.standardUnder1tb': {
-    en: 'Standard network storage, under 1 TB',
-    'zh-CN': '网络存储——标准，1 TB 以下'
-  },
-  'platform.pricing.storage.standardOver1tb': {
-    en: 'Standard network storage, 1 TB and above',
-    'zh-CN': '网络存储——标准，1 TB 及以上'
-  },
-  'platform.pricing.storage.highPerformance': {
-    en: 'High-performance network storage',
-    'zh-CN': '网络存储——高性能'
-  },
   'platform.pricing.storage.containerDisk': {
     en: 'Container disk',
     'zh-CN': '容器磁盘'
   },
+  'platform.pricing.storage.networkTitle': {
+    en: 'Network storage',
+    'zh-CN': '网络存储'
+  },
+  'platform.pricing.storage.sub.standardUnder1tb': {
+    en: 'Standard, under 1 TB',
+    'zh-CN': '标准，1 TB 以下'
+  },
+  'platform.pricing.storage.sub.standardOver1tb': {
+    en: 'Standard, 1 TB and above',
+    'zh-CN': '标准，1 TB 及以上'
+  },
+  'platform.pricing.storage.sub.highPerformance': {
+    en: 'High performance',
+    'zh-CN': '高性能'
+  },
+  'platform.pricing.storage.sub.containerDisk': {
+    en: 'Per-worker local filesystem',
+    'zh-CN': '每个工作节点的本地文件系统'
+  },
   'platform.pricing.storageNote': {
-    en: "Models live on persistent network storage shared across a deployment's workers. Container disk is each worker's local filesystem and is billed separately.",
+    en: "Models live on network storage. It is persistent and shared across a deployment's workers. Container disk is each worker's own local filesystem, billed separately.",
     'zh-CN':
-      '模型存放在网络存储上——持久化并在部署的所有工作节点间共享。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
+      '模型存放在网络存储上，并持久化共享至部署的所有工作节点。容器磁盘是每个工作节点自己的本地文件系统，单独计费。'
   },
   'platform.pricing.billedPerSecond': {
     en: 'Billed by the GPU second',
@@ -7904,14 +7917,6 @@ const translations = {
       '测试期限额——10 个并发工作节点、10 个构建、3 个部署、每个部署 500 GB 模型——均可申请提高。'
   },
   // ── Router subpage ────────────────────────────────────────────
-  'platform.modelsCalls.heading': {
-    en: 'Three calls, one queue',
-    'zh-CN': '三种调用，一个队列'
-  },
-  'platform.modelsCalls.subtitle': {
-    en: 'Direct, queued, or fire-and-forget — pick the call shape. The queue makes sure nothing is dropped.',
-    'zh-CN': '直接、排队或即发即忘——选择你要的调用方式。队列确保请求永不丢失。'
-  },
   'platform.modelsFeatures.heading': {
     en: 'One key, every frontier model',
     'zh-CN': '一个密钥，所有前沿模型'
@@ -8048,6 +8053,15 @@ const translations = {
   'platform.closing.heading': {
     en: 'Maximize scale and control on Developer Platform',
     'zh-CN': '在开发者平台上将规模与控制力最大化'
+  },
+  'platform.closing.headingLead': {
+    en: 'Maximize scale and control on',
+    'zh-CN': '将规模与控制力最大化'
+  },
+  'platform.closing.homeSubtitle': {
+    en: 'Deploy and scale your ComfyUI workflows with Serverless API, Models API, and Builder. All through a single API key.',
+    'zh-CN':
+      '使用 Serverless API、Models API 和 Builder 部署并扩展你的 ComfyUI 工作流。只需一个 API 密钥。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
