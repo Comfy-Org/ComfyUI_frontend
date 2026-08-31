@@ -1817,6 +1817,19 @@ describe('AgentPanelRoot lifecycle', () => {
 
     expect(urls.some((url) => url.endsWith('/cancel'))).toBe(false)
   })
+
+  it('clears workflow activity when the panel unmounts', () => {
+    const activity = useWorkflowTabActivityStore()
+    activity.setEditing('workflows/active.json')
+    activity.setCreating(true)
+
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    unmount()
+
+    expect(activity.$state.editingTabPath).toBeNull()
+    expect(activity.$state.creatingTab).toBe(false)
+  })
 })
 
 describe('AgentPanelRoot greeting', () => {
