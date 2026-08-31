@@ -229,6 +229,11 @@ describe('WidgetSelectDropdown', () => {
       isAssetMode: true
     })
 
+    expect(
+      screen.getByRole('button', {
+        name: 'widgets.uploadSelect.placeholderModel'
+      })
+    ).not.toHaveAttribute('nodeType')
     expect(consoleWarn.mock.calls.flat().join(' ')).not.toContain(
       'Failed setting prop "nodeType"'
     )
