@@ -4,6 +4,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CodeTab } from './CodeTabs.vue'
 import CodeTabs from './CodeTabs.vue'
+import FeatureCard from './FeatureCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -62,17 +63,12 @@ $ comfy deploy run --workflow workflow_api.json
     </SectionHeader>
 
     <ol class="mx-auto mt-8 grid max-w-5xl gap-4 md:grid-cols-3">
-      <li
-        v-for="step in steps"
-        :key="step.title"
-        class="bg-transparency-white-t4 rounded-3xl p-5"
-      >
-        <h3 class="text-lg font-light text-primary-comfy-canvas">
-          {{ step.title }}
-        </h3>
-        <p class="mt-2 text-sm/relaxed font-light text-smoke-700">
-          {{ step.description }}
-        </p>
+      <li v-for="step in steps" :key="step.title">
+        <FeatureCard
+          class="h-full"
+          :title="step.title"
+          :description="step.description"
+        />
       </li>
     </ol>
 

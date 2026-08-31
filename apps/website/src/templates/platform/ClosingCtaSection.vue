@@ -75,6 +75,10 @@ onMounted(() => {
             :locale
           />
         </template>
+        <template v-else-if="headingLead">
+          <span class="block">{{ headingLead }}</span>
+          <PlatformHeroBadge class="mx-auto -my-2 scale-75" :locale />
+        </template>
         <template v-else>
           {{ t('platform.closing.heading', locale) }}
         </template>
