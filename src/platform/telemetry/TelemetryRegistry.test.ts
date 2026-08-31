@@ -258,7 +258,7 @@ describe('TelemetryRegistry', () => {
     } satisfies AgentNodeTaggedMetadata
     const workflowAppliedMetadata = {
       workflow_id: 'w1',
-      target: 'new_tab'
+      target: 'active_tab_open'
     } satisfies AgentWorkflowAppliedMetadata
 
     const cases: Array<{

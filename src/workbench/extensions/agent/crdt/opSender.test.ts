@@ -2,7 +2,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
-import { createOpSender, toOpsResultView } from './opSender'
+import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
 const WORKFLOW = 'wf-1'
@@ -99,27 +99,17 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(2)
   })
 
-  it('orders same-base writes from one actor by their op ids', () => {
-    sender.enqueue([addNode(1)])
-    sender.enqueue([addNode(2)])
-    const firstId = sent[0].ops[0].op_id
-
-    ackInFlight()
-
-    expect(sent[1].ops[0].base_version).toBe(sent[0].ops[0].base_version)
-    expect(sent[1].ops[0].actor).toBe(sent[0].ops[0].actor)
-    expect(sent[1].ops[0].op_id > firstId).toBe(true)
-  })
-
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
     expect(sent).toHaveLength(0)
 
+    boundWorkflow = 'wf-2'
     transportUp = true
     vi.advanceTimersByTime(500)
 
     expect(sent).toHaveLength(1)
+    expect(sent[0].workflowId).toBe(WORKFLOW)
     const firstIds = sent[0].ops.map((op) => op.op_id)
 
     ackInFlight()
@@ -130,16 +120,14 @@ describe('createOpSender', () => {
     ).toEqual(firstIds)
   })
 
-  it('cancels a pending transport retry when the batch settles', () => {
-    transportUp = false
+  it('keeps queued batches addressed to the workflow active when they were minted', () => {
     sender.enqueue([addNode(1)])
-    resultListener?.({ ok: false, applied: [], skipped: [] })
+    sender.enqueue([addNode(2)])
+    boundWorkflow = 'wf-2'
 
-    transportUp = true
-    vi.advanceTimersByTime(500)
+    ackInFlight()
 
-    expect(settled).toHaveLength(1)
-    expect(sent).toHaveLength(0)
+    expect(sent[1].workflowId).toBe(WORKFLOW)
   })
 
   it('settles undeliverable after the transport retry budget', () => {
@@ -270,19 +258,6 @@ describe('createOpSender', () => {
     expect(settled[1].state).toBe('acknowledged')
   })
 
-  it('expires stale anonymous credits before a later batch', () => {
-    sender.enqueue([addNode(1)])
-    vi.advanceTimersByTime(20_000)
-    expect(settled[0].state).toBe('unacknowledged')
-
-    vi.advanceTimersByTime(10_001)
-    sender.enqueue([addNode(2)])
-    resultListener?.({ ok: false, applied: [], skipped: [] })
-
-    expect(settled).toHaveLength(2)
-    expect(settled[1].state).toBe('acknowledged')
-  })
-
   it('stops sending after detach', () => {
     sender.enqueue([addNode(1)])
     ackInFlight()
@@ -290,109 +265,5 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(2)])
 
     expect(sent).toHaveLength(1)
-  })
-
-  it('invalidates an in-flight batch instead of resending it after a rebind', () => {
-    sender.enqueue([addNode(1)])
-    expect(sent).toHaveLength(1)
-
-    boundWorkflow = 'wf-2'
-    vi.advanceTimersByTime(10_000)
-
-    // The silent-result resend re-checks the batch's minted workflow: the
-    // ops (and their wf-1 base_version) are never routed to wf-2.
-    expect(sent).toHaveLength(1)
-    expect(settled).toHaveLength(1)
-    expect(settled[0].state).toBe('undeliverable')
-  })
-
-  it('invalidates a queued batch minted before a rebind', () => {
-    sender.enqueue([addNode(1)])
-    sender.enqueue([addNode(2)])
-    expect(sent).toHaveLength(1)
-
-    boundWorkflow = 'wf-2'
-    ackInFlight()
-
-    expect(sent).toHaveLength(1)
-    expect(settled.map((s) => s.state)).toEqual([
-      'acknowledged',
-      'undeliverable'
-    ])
-  })
-
-  it('ignores a result naming a different workflow', () => {
-    sender.enqueue([addNode(1)])
-
-    resultListener?.({
-      workflowId: 'wf-other',
-      ok: false,
-      applied: [],
-      skipped: []
-    })
-    expect(settled).toHaveLength(0)
-
-    resultListener?.({
-      workflowId: WORKFLOW,
-      ok: true,
-      applied: sent[0].ops.map((op) => op.op_id),
-      skipped: []
-    })
-    expect(settled).toHaveLength(1)
-    expect(settled[0].state).toBe('acknowledged')
-  })
-})
-
-describe('toOpsResultView', () => {
-  it('carries the workflow and normalizes the single-object failed shape', () => {
-    const view = toOpsResultView({
-      workflowId: 'wf-1',
-      ok: false,
-      applied: ['a'],
-      skipped: [],
-      failed: { op_id: 'op-9', code: 'rejected', message: 'no' }
-    })
-
-    expect(view).toEqual({
-      workflowId: 'wf-1',
-      ok: false,
-      applied: ['a'],
-      skipped: [],
-      failure: { op_id: 'op-9' }
-    })
-  })
-
-  it('resolves the op_id from the newer index/op failed shape', () => {
-    const view = toOpsResultView({
-      ok: false,
-      applied: [],
-      skipped: [],
-      failed: { index: 2, op: { op_id: 'op-7' }, code: 'x', message: 'y' }
-    })
-
-    expect(view.failure).toEqual({ op_id: 'op-7' })
-  })
-
-  it('takes the first entry of an array failed shape', () => {
-    const view = toOpsResultView({
-      ok: false,
-      applied: [],
-      skipped: [],
-      failed: [{ op_id: 'op-3' }, { op_id: 'op-4' }]
-    })
-
-    expect(view.failure).toEqual({ op_id: 'op-3' })
-  })
-
-  it('keeps an anonymous failure anonymous and drops non-string ids', () => {
-    const view = toOpsResultView({
-      ok: false,
-      applied: ['a', 7 as unknown as string],
-      skipped: [],
-      failed: 'boom'
-    })
-
-    expect(view.applied).toEqual(['a'])
-    expect(view.failure).toEqual({})
   })
 })

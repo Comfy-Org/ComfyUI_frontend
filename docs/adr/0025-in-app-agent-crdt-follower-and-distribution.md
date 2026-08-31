@@ -14,12 +14,11 @@ The In-App Agent runs server-side and needs to read a user's live workflow and w
 graph changes back into the canvas. On the frontend this arrives as a Yjs document
 update produced by a single authoritative writer (the agent's doc-host, running the
 shared `@comfyorg/comfy-multi-player` applier). The frontend's job is to **follow**:
-integrate that update into frontend state and re-render. This follower apply path never
-writes the shared document; concurrent human edits take the separate semantic `doc_ops`
-write path described in the Amendment below.
+integrate that update into frontend state and re-render. It does not author semantic
+operations in V1.
 
-The POC (originally branch `poc/fe-crdt-follower`, to be mounted with the
-flag-gated agent panel when that slice lands) ships an interim follower that diffs the
+The POC (originally branch `poc/fe-crdt-follower`, now mounted with the
+flag-gated agent panel) ships an interim follower that diffs the
 semantic Y.Doc into a `GraphMutation[]` and applies them to `app.graph` through a
 `LitegraphMutator` (`src/workbench/extensions/agent/crdt/`). That path renders, but it
 writes the imperative litegraph layer that the store migration
@@ -78,8 +77,8 @@ snapshot-diff, no `LitegraphMutator` in the end state.
   graph-mutations API" half stands; the sequencing half does not.
 
 This supersedes the ADR-009-style `LitegraphMutator`/snapshot-diff/semantic-projector
-direction recorded in the workspace; that code remains only as the interim POC,
-unmounted until the agent-panel slice mounts it.
+direction recorded in the workspace; that code remains only as the interim POC behind the
+env gate.
 
 **Distribution boundaries.** Keep one branch and one follower implementation, with
 surface differences isolated behind a small distribution-resolved boundary (rejecting
@@ -145,8 +144,7 @@ op-layer package DOM/litegraph-free via the import-graph guard.
 
 - The end-state follower depends on the semantic domain stores becoming Yjs-backed; only
   `layoutStore` is Yjs-backed today, so the real dependency is extending that pattern per
-  store. Until then the interim `LitegraphMutator` POC remains the disposable
-  product-flag-gated stopgap, unmounted until the agent-panel slice.
+  store. Until then the interim `LitegraphMutator` POC remains behind the env gate.
 - The largest risk is accidental cloud coupling in the existing same-origin `/ws`
   transport: if ingest-specific paths, M2M assumptions, or Vite proxy behavior leak past
   the seam, Local/Desktop can pass contract tests while failing as products. Boundary

@@ -1,3 +1,5 @@
+import type { Op } from '@comfyorg/comfy-multi-player'
+
 const DOC_PROTOCOL_VERSION = 1
 
 export interface DocOp {
@@ -11,6 +13,8 @@ export interface DocUpdate {
   seq: number
   update: Uint8Array
   actor?: string
+  /** Accepted semantic op identities folded into this effect frame (DQ-9). */
+  opIds?: string[]
 }
 
 export interface DocSubscribed {
@@ -19,12 +23,6 @@ export interface DocSubscribed {
   seq?: number
   code?: string
   message?: string
-}
-
-interface DocOpFailure {
-  op_id: string
-  code: string
-  message: string
 }
 
 interface DocOpsResult {
@@ -36,10 +34,10 @@ interface DocOpsResult {
   code?: string
   message?: string
   /**
-   * PoC diagnostics: the batch's failure. The wire type is a single object,
-   * not an array.
+   * PoC diagnostics: the batch's failure, forwarded verbatim. The wire type is
+   * a single object (`DocOpFailure {op_id, code, message}`), not an array.
    */
-  failed?: DocOpFailure
+  failed?: unknown
 }
 
 interface DocAwareness {
@@ -61,24 +59,12 @@ export interface DocReset {
   actor?: string
 }
 
-/**
- * Typed failure surface for an inbound frame that named a workflow but could
- * not be decoded. The frame's bytes are lost, so the only sound recovery is a
- * same-lineage state-vector replay - the bridge owns that; this frame carries
- * the report.
- */
-interface DocFrameError {
-  workflowId: string
-  reason: 'decode_failed'
-}
-
 export type ServerDocFrame =
   | { type: 'doc_update'; data: DocUpdate }
   | { type: 'doc_subscribed'; data: DocSubscribed }
   | { type: 'doc_ops_result'; data: DocOpsResult }
   | { type: 'doc_reset'; data: DocReset }
   | { type: 'awareness'; data: DocAwareness }
-  | { type: 'frame_error'; data: DocFrameError }
 
 export interface DocFrameTransport {
   /**
@@ -90,7 +76,7 @@ export interface DocFrameTransport {
    * awaiting its auth token — not an exception. Throwing here aborted the
    * `watch(..., { immediate: true })` subscribe (leaving the follower
    * permanently inert) and aborted `onBeforeUnmount` before `client.destroy()`
-   * (leaking listeners and a live projector). Callers reconcile intent against
+   * (leaking listeners and a live adapter). Callers reconcile intent against
    * the returned boolean instead.
    */
   send(frame: string): boolean
@@ -104,6 +90,7 @@ interface WireData {
   seq?: unknown
   update_b64?: unknown
   actor?: unknown
+  op_ids?: unknown
   ok?: unknown
   code?: unknown
   message?: unknown
@@ -135,23 +122,6 @@ function parseRecord(value: unknown): Record<string, unknown> | null {
     : null
 }
 
-function parseDocOpFailure(value: unknown): DocOpFailure | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value))
-    return null
-  const failure = value as Record<string, unknown>
-  if (
-    typeof failure.op_id !== 'string' ||
-    typeof failure.code !== 'string' ||
-    typeof failure.message !== 'string'
-  )
-    return null
-  return {
-    op_id: failure.op_id,
-    code: failure.code,
-    message: failure.message
-  }
-}
-
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   if (typeof value !== 'object' || value === null) return null
   const frame = value as { type?: unknown; data?: unknown }
@@ -168,26 +138,18 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     typeof data.seq === 'number' &&
     typeof data.update_b64 === 'string'
   ) {
-    // A payload that cannot decode is a LOST update, not a malformed frame to
-    // drop silently: the doc now has a hole only a state-vector replay can
-    // fill. Report it typed so the bridge can recover without replacing the
-    // document.
-    let update: Uint8Array
-    try {
-      update = decodeBase64(data.update_b64)
-    } catch {
-      return {
-        type: 'frame_error',
-        data: { workflowId: data.workflow_id, reason: 'decode_failed' }
-      }
-    }
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
-        update,
-        ...(typeof data.actor === 'string' && { actor: data.actor })
+        update: decodeBase64(data.update_b64),
+        ...(typeof data.actor === 'string' && { actor: data.actor }),
+        ...(Array.isArray(data.op_ids) && {
+          opIds: data.op_ids.filter(
+            (item): item is string => typeof item === 'string'
+          )
+        })
       }
     }
   }
@@ -206,7 +168,6 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
   }
 
   if (frame.type === 'doc_ops_result' && typeof data.ok === 'boolean') {
-    const failed = parseDocOpFailure(data.failed)
     return {
       type: frame.type,
       data: {
@@ -225,7 +186,8 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
         ...(typeof data.seq === 'number' && { seq: data.seq }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message }),
-        ...(failed !== null && { failed })
+        // PoC diagnostics: surface the failure verbatim (object, not array).
+        ...(data.failed != null && { failed: data.failed })
       }
     }
   }
@@ -275,9 +237,7 @@ export class DocFrameClient extends EventTarget {
         if (!(event instanceof CustomEvent)) return
         const parsed = parseServerDocFrame({ type, data: event.detail })
         if (parsed)
-          this.dispatchEvent(
-            new CustomEvent(parsed.type, { detail: parsed.data })
-          )
+          this.dispatchEvent(new CustomEvent(type, { detail: parsed.data }))
       }
       this.listeners.set(type, listener)
       transport.addEventListener(type, listener)
@@ -302,7 +262,7 @@ export class DocFrameClient extends EventTarget {
   }
 
   /** @returns whether the ops frame actually left the transport. */
-  sendOps(workflowId: string, tab: string, ops: DocOp[]): boolean {
+  sendOps(workflowId: string, tab: string, ops: DocOp[] | Op[]): boolean {
     return this.send('doc_ops', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,

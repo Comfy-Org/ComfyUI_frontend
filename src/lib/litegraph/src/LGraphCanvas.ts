@@ -447,18 +447,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   set selectOnly(value: boolean) {
-    const enteringSelectOnly = value && !this.state.selectOnly
-    const activeGesture =
-      this.pointer.isDown ||
-      this.isDragging ||
-      this.resizingGroup !== null ||
-      this.linkConnector.isConnecting
-    if (enteringSelectOnly && activeGesture) {
-      this.pointer.reset()
-      this.linkConnector.reset(true)
-      this.resizingGroup = null
-      this.isDragging = false
-    }
     this.state.selectOnly = value
   }
 
@@ -2498,28 +2486,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
-    // Select-only picking: node clicks select; empty canvas keeps the user's
-    // configured left-drag behavior (pan or marquee-select, mirrored from the
-    // tail this return bypasses; the pan arm's onClick is inert by design -
-    // processSelect(null) preserves the selection while picking). Clone,
-    // reroute, link, and group interactions stay off - deliberately
-    // including the group double-click and the empty-canvas double-click
-    // search box, and leaving selected_group inert.
-    if (this.selectOnly) {
-      if (node && (this.allow_interaction || node.flags.allow_interaction)) {
-        this._processNodeClick(e, ctrlOrMeta, node)
-      } else if (this.allow_dragcanvas) {
-        if (LiteGraph.leftMouseClickBehavior === 'panning') {
-          pointer.onClick = () => this.processSelect(null, e, false, true)
-          pointer.finally = () => (this.dragging_canvas = false)
-          this.dragging_canvas = true
-        } else {
-          this._setupNodeSelectionDrag(e, pointer)
-        }
-      }
-      return
-    }
-
     // clone node ALT dragging
     if (
       !LiteGraph.vueNodesMode &&
@@ -2695,7 +2661,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           pointer.onDragStart = () => (this.resizingGroup = group)
           pointer.onDrag = (eMove) => {
-            if (this.read_only) return
+            if (this.read_only || this.selectOnly) return
 
             // Resize only by the exact pointer movement
             const pos: Point = [
@@ -2775,10 +2741,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     pointer: CanvasPointer,
     node?: LGraphNode | undefined
   ): void {
-    // Snapshot the mode at gesture start: a flip mid-drag must not change
-    // how THIS gesture's reconciler treats the selection (a picking-started
-    // marquee stays additive even if the mode ends before pointer-up).
-    const pickingMode = this.selectOnly
     const dragRect: Rect = [0, 0, 0, 0]
 
     dragRect[0] = e.canvasX
@@ -2790,7 +2752,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Click, not drag
       const clickedItem =
         node ?? this._getPositionableOnPos(eUp.canvasX, eUp.canvasY)
-      this.processSelect(clickedItem, eUp, false, pickingMode)
+      this.processSelect(clickedItem, eUp)
     }
     pointer.onDragStart = () => (this.dragging_rectangle = dragRect)
 
@@ -2798,13 +2760,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const initialSelection = new Set(this.selectedItems)
 
       pointer.onDrag = (eMove) =>
-        this.handleLiveSelect(eMove, dragRect, initialSelection, pickingMode)
+        this.handleLiveSelect(eMove, dragRect, initialSelection)
 
       pointer.onDragEnd = () => this.finalizeLiveSelect()
     } else {
       // Classic mode: select only when drag ends
       pointer.onDragEnd = (upEvent) =>
-        this._handleMultiSelect(upEvent, dragRect, pickingMode)
+        this._handleMultiSelect(upEvent, dragRect)
     }
 
     pointer.finally = () => (this.dragging_rectangle = null)
@@ -2833,15 +2795,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const x = e.canvasX
     const y = e.canvasY
 
-    const picking = this.selectOnly
-    pointer.onClick = () => this.processSelect(node, e, false, picking)
-
-    if (picking) return
+    pointer.onClick = () => this.processSelect(node, e)
 
     // Immediately bring to front
     if (!node.flags.pinned) {
       this.bringToFront(node)
     }
+
+    if (this.selectOnly) return
 
     // Collapse toggle
     const inCollapse = node.isPointInCollapse(x, y)
@@ -3686,13 +3647,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     pointer: CanvasPointer,
     sticky = false
   ): void {
-    // Picking selects without dragging or opening a graph change (defence in
-    // depth: unreachable from pointer input in-mode, guards direct callers).
-    if (this.selectOnly) {
-      this.processSelect(item, pointer.eDown, sticky)
-      return
-    }
-
     this.emitBeforeChange()
     this.graph?.beforeChange()
     // Ensure that dragging is properly cleaned up, on success or failure.
@@ -3705,6 +3659,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.processSelect(item, pointer.eDown, sticky)
+    if (this.selectOnly) return
 
     this.isDragging = true
 
@@ -4521,8 +4476,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private handleLiveSelect(
     e: CanvasPointerEvent,
     dragRect: Rect,
-    initialSelection: Set<Positionable>,
-    pickingMode: boolean
+    initialSelection: Set<Positionable>
   ): void {
     // Ensure rect is current even if pointer.onDrag fires before processMouseMove updates it
     dragRect[2] = e.canvasX - dragRect[0]
@@ -4546,10 +4500,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (e.altKey && !e.shiftKey) {
       for (const item of initialSelection)
         if (!itemsInRect.has(item)) desired.add(item)
-    } else if (pickingMode) {
-      // Picking is additive (see _handleMultiSelect): never replace.
-      for (const item of initialSelection) desired.add(item)
-      for (const item of itemsInRect) desired.add(item)
     } else {
       for (const item of itemsInRect) desired.add(item)
     }
@@ -4563,11 +4513,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
     for (const item of desired) {
       if (!this.selectedItems.has(item)) {
-        this.select(item, pickingMode)
-        // Count only a select that actually landed: select() refuses some
-        // items (groups while picking), and re-marking them every
-        // pointermove churned onSelectionChange + setDirty.
-        if (this.selectedItems.has(item)) changed = true
+        this.select(item)
+        changed = true
       }
     }
 
@@ -4591,11 +4538,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param e The pointer up event
    * @param dragRect The drag rectangle
    */
-  private _handleMultiSelect(
-    e: CanvasPointerEvent,
-    dragRect: Rect,
-    pickingMode: boolean
-  ): void {
+  private _handleMultiSelect(e: CanvasPointerEvent, dragRect: Rect): void {
     const normalizedRect: Rect = [
       dragRect[0],
       dragRect[1],
@@ -4609,21 +4552,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (e.shiftKey) {
       // Add to selection
-      for (const item of itemsInRect) this.select(item, pickingMode)
+      for (const item of itemsInRect) this.select(item)
     } else if (e.altKey) {
       // Remove from selection
       for (const item of itemsInRect) this.deselect(item)
-    } else if (pickingMode) {
-      // Picking is additive: a marquee that misses an already-picked node
-      // must not unpick it, so the replace branch is never taken for a
-      // gesture that started in the mode (snapshot, not the live flag).
-      for (const item of itemsInRect) this.select(item, pickingMode)
     } else {
       // Replace selection
       for (const item of selectedItems.values()) {
         if (!itemsInRect.has(item)) this.deselect(item)
       }
-      for (const item of itemsInRect) this.select(item, pickingMode)
+      for (const item of itemsInRect) this.select(item)
     }
 
     this.onSelectionChange?.(this.selected_nodes)
@@ -4640,24 +4578,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   processSelect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable | null | undefined,
     e: CanvasPointerEvent | undefined,
-    sticky: boolean = false,
-    // Gesture arms pass their mode SNAPSHOT: a flip between pointerdown and
-    // pointerup must not change how the armed click resolves (live default
-    // covers non-gesture callers).
-    picking: boolean = this.selectOnly
+    sticky: boolean = false
   ): void {
-    if (picking && !(item instanceof LGraphNode)) return
+    if (!item && this.selectOnly) return
 
     const addModifier = e?.shiftKey
     const subtractModifier = e != null && (e.metaKey || e.ctrlKey)
     const eitherModifier = addModifier || subtractModifier
-    const modifySelection = eitherModifier || this.multi_select || picking
+    const modifySelection =
+      eitherModifier || this.multi_select || this.selectOnly
 
     if (!item) {
       if (!eitherModifier || this.multi_select) this.deselectAll()
     } else if (!item.selected || !this.selectedItems.has(item)) {
       if (!modifySelection) this.deselectAll(item)
-      this.select(item, picking)
+      this.select(item)
     } else if (modifySelection && !sticky) {
       // Modifier-click toggles only the clicked item, not its children.
       // Cascade on select is a convenience; cascade on deselect would
@@ -4682,13 +4617,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /**
    * Selects a {@link Positionable} item.
    * @param item The canvas item to add to the selection.
-   * @param selectOnly Whether to restrict the selection to nodes.
    */
   select<TPositionable extends Positionable = LGraphNode>(
-    item: TPositionable,
-    selectOnly: boolean = this.selectOnly
+    item: TPositionable
   ): void {
-    if (selectOnly && !(item instanceof LGraphNode)) return
+    if (this.selectOnly && !(item instanceof LGraphNode)) return
     if (item.selected && this.selectedItems.has(item)) return
 
     item.selected = true
