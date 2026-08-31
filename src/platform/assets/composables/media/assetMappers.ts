@@ -85,6 +85,8 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
 
 const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+const byIsTemp = (a: AssetItem, b: AssetItem): number =>
+  Number(a.tags.includes('temp')) - Number(b.tags.includes('temp'))
 
 function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
@@ -126,9 +128,11 @@ export function unflattenOutputAssets(
   const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
     const ordered = [...assets].sort(byCreatedAtAsc)
     const representative =
-      ordered.findLast((asset) =>
-        isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
-      ) ?? ordered.at(-1)!
+      ordered
+        .toSorted(byIsTemp)
+        .findLast((asset) =>
+          isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+        ) ?? ordered.at(-1)!
     return {
       ...representative,
       id: job_id,
