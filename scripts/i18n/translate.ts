@@ -105,6 +105,39 @@ function parseBatchResponse(content: string): Record<string, string> {
   return record
 }
 
+export interface RequestBudget {
+  fetch: typeof fetch
+  signal: AbortSignal
+  requestCount: () => number
+}
+
+// The SDK retries a fetch that throws, so counting alone cannot hold a ceiling:
+// the request admitted at the boundary would still spend maxNetworkRetries more
+// attempts. Aborting the signal makes the rejection terminal, because the SDK
+// checks signal.aborted before both the send and the retry
+export function createRequestBudget(
+  maxRequests: number,
+  stopMessage: string,
+  fetchFn: typeof fetch = globalThis.fetch
+): RequestBudget {
+  const controller = new AbortController()
+  let requests = 0
+  const budgetedFetch: typeof fetch = async (input, init) => {
+    if (requests >= maxRequests) {
+      const stop = new Error(stopMessage)
+      controller.abort(stop)
+      throw stop
+    }
+    requests++
+    return fetchFn(input, init)
+  }
+  return {
+    fetch: budgetedFetch,
+    signal: controller.signal,
+    requestCount: () => requests
+  }
+}
+
 interface OpenAiTranslatorOptions {
   apiKey: string
   model: string
@@ -112,9 +145,7 @@ interface OpenAiTranslatorOptions {
   glossary: string
   maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
-  // Throwing here aborts before the request is sent; a fetchFn that throws is
-  // wrapped as a connection error and retried by the SDK
-  onRequest?: () => void
+  signal?: AbortSignal
   onCompletion?: (completion: OpenAI.ChatCompletion) => void
   requestTimeoutMs?: number
 }
@@ -137,19 +168,26 @@ export function createOpenAiTranslator(
     if (items.length === 0) return {}
     let lastError = new Error('translation request was not attempted')
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
-      options.onRequest?.()
-      const completion = await client.chat.completions.create({
-        model: options.model,
-        reasoning_effort: options.reasoningEffort,
-        response_format: { type: 'json_object' },
-        messages: [
+      const completion = await client.chat.completions
+        .create(
           {
-            role: 'system',
-            content: buildSystemPrompt(locale, options.glossary)
+            model: options.model,
+            reasoning_effort: options.reasoningEffort,
+            response_format: { type: 'json_object' },
+            messages: [
+              {
+                role: 'system',
+                content: buildSystemPrompt(locale, options.glossary)
+              },
+              { role: 'user', content: JSON.stringify({ items }) }
+            ]
           },
-          { role: 'user', content: JSON.stringify({ items }) }
-        ]
-      })
+          { signal: options.signal }
+        )
+        .catch((error: unknown) => {
+          if (options.signal?.aborted) throw options.signal.reason
+          throw error
+        })
       options.onCompletion?.(completion)
       const choice = completion.choices[0]
       if (choice?.finish_reason === 'length') {

@@ -40,6 +40,7 @@ import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
   createOpenAiTranslator,
+  createRequestBudget,
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
@@ -489,28 +490,22 @@ async function run(argv: readonly string[]): Promise<void> {
     completionTokens: 0,
     promptTokens: 0,
     reasoningTokens: 0,
-    requests: 0,
     totalTokens: 0
   }
-  const requestBudget = initialBatchCount * config.requestBudgetMultiplier
-  const countedFetch: typeof fetch = async (input, init) => {
-    usage.requests++
-    return fetch(input, init)
-  }
+  const maxRequests = initialBatchCount * config.requestBudgetMultiplier
+  const budget = createRequestBudget(
+    maxRequests,
+    `Stopped at the budget of ${maxRequests} HTTP requests for ${initialBatchCount} initial batches (requestBudgetMultiplier ${config.requestBudgetMultiplier}); raise it, or lower maxItemsPerRequest so batches translate without splitting.`
+  )
   const translateBatch: TranslateBatch = apiKey
     ? createOpenAiTranslator({
         apiKey,
-        fetchFn: countedFetch,
+        fetchFn: budget.fetch,
+        signal: budget.signal,
         model: config.model,
         reasoningEffort: config.reasoningEffort,
         glossary: config.glossary,
         maxTruncationSplitDepth: config.maxTruncationSplitDepth,
-        onRequest: () => {
-          if (usage.requests < requestBudget) return
-          throw new Error(
-            `Stopped after ${usage.requests} HTTP requests, the budget for ${initialBatchCount} initial batches (requestBudgetMultiplier ${config.requestBudgetMultiplier}). Raise it, or lower maxItemsPerRequest so batches translate without splitting.`
-          )
-        },
         onCompletion: (completion) => {
           usage.completions++
           if (!completion.usage) return
@@ -567,9 +562,9 @@ async function run(argv: readonly string[]): Promise<void> {
     }
   )
 
-  if (usage.requests > 0) {
+  if (budget.requestCount() > 0) {
     print(
-      `OpenAI usage: ${usage.requests} HTTP requests for ${usage.completions} completions; ${usage.promptTokens} input, ${usage.completionTokens} output (${usage.reasoningTokens} reasoning), ${usage.totalTokens} total tokens.`
+      `OpenAI usage: ${budget.requestCount()} HTTP requests for ${usage.completions} completions; ${usage.promptTokens} input, ${usage.completionTokens} output (${usage.reasoningTokens} reasoning), ${usage.totalTokens} total tokens.`
     )
   }
 

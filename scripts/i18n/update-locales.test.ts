@@ -20,6 +20,7 @@ import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
   createOpenAiTranslator,
+  createRequestBudget,
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
@@ -533,7 +534,7 @@ describe('createOpenAiTranslator', () => {
     overrides: Partial<
       Pick<
         Parameters<typeof createOpenAiTranslator>[0],
-        'maxTruncationSplitDepth' | 'onCompletion' | 'onRequest'
+        'maxTruncationSplitDepth' | 'onCompletion'
       >
     > = {}
   ) {
@@ -609,19 +610,32 @@ describe('createOpenAiTranslator', () => {
     expect(callCount()).toBe(0)
   })
 
-  it('does not send a request once onRequest rejects the spend', async () => {
-    const { translate, callCount } = translatorFor(
-      [completion('{"1": "Bonjour {name}"}')],
-      {
-        onRequest: () => {
-          throw new Error('request budget exhausted')
-        }
+  it('holds the request budget across the SDK network retries', async () => {
+    let networkCalls = 0
+    const budget = createRequestBudget(
+      1,
+      'over the request budget',
+      async () => {
+        networkCalls++
+        throw new Error('socket hang up')
       }
     )
+    const translate = createOpenAiTranslator({
+      apiKey: 'key',
+      model: 'test-model',
+      reasoningEffort: 'low',
+      glossary: '',
+      maxTruncationSplitDepth: 3,
+      fetchFn: budget.fetch,
+      signal: budget.signal
+    })
+    // Without the abort the SDK retries the attempt admitted at the boundary,
+    // spending maxNetworkRetries more requests past the ceiling
     await expect(translate(locale, items)).rejects.toThrow(
-      'request budget exhausted'
+      'over the request budget'
     )
-    expect(callCount()).toBe(0)
+    expect(budget.requestCount()).toBe(1)
+    expect(networkCalls).toBe(1)
   })
 
   it('drops non-string values instead of failing the whole batch', async () => {
