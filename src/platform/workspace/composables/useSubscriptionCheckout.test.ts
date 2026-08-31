@@ -163,6 +163,7 @@ const {
   mockStartOperation,
   mockRetryPaymentAuthentication,
   mockGetOperation,
+  mockCancelOperation,
   mockSubscriptionActionOperation,
   mockListSavedPaymentMethods,
   mockTrackBeginCheckout,
@@ -193,6 +194,7 @@ const {
   mockStartOperation: vi.fn(),
   mockRetryPaymentAuthentication: vi.fn(),
   mockGetOperation: vi.fn(),
+  mockCancelOperation: vi.fn(),
   mockSubscriptionActionOperation: {
     value: undefined as MockSubscriptionActionOperation | undefined
   },
@@ -351,6 +353,7 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
     startOperation: mockStartOperation,
     retryPaymentAuthentication: mockRetryPaymentAuthentication,
     getOperation: mockGetOperation,
+    cancelOperation: mockCancelOperation,
     get subscriptionActionOperation() {
       return mockSubscriptionActionOperation.value
     }
@@ -2590,6 +2593,48 @@ describe('useSubscriptionCheckout', () => {
         expect.objectContaining({ confirmReactivation: true })
       )
       expect(checkout.checkoutStep.value).toBe('success')
+    })
+  })
+
+  describe('handleCancelPendingPayment', () => {
+    async function verifyingCheckout() {
+      mockSubscriptionActionOperation.value = {
+        opId: 'op-3ds',
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        actionUrl: 'https://verify.example/token'
+      }
+      return setup()
+    }
+
+    it('clears the charge when the cancel is accepted', async () => {
+      mockCancelOperation.mockResolvedValue('canceled')
+      const checkout = await verifyingCheckout()
+
+      await checkout.handleCancelPendingPayment()
+
+      expect(checkout.cancelUnavailable.value).toBe(false)
+      expect(checkout.cancelUnreachable.value).toBe(false)
+    })
+
+    it('says the charge is past cancelling when the service refuses', async () => {
+      mockCancelOperation.mockResolvedValue('unavailable')
+      const checkout = await verifyingCheckout()
+
+      await checkout.handleCancelPendingPayment()
+
+      expect(checkout.cancelUnavailable.value).toBe(true)
+      expect(checkout.cancelUnreachable.value).toBe(false)
+    })
+
+    it('leaves the charge untouched when the cancel reaches no verdict', async () => {
+      mockCancelOperation.mockResolvedValue('unreachable')
+      const checkout = await verifyingCheckout()
+
+      await checkout.handleCancelPendingPayment()
+
+      expect(checkout.cancelUnreachable.value).toBe(true)
+      expect(checkout.cancelUnavailable.value).toBe(false)
     })
   })
 

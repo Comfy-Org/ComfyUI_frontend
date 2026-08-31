@@ -12,6 +12,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   BillingFailure,
   PaymentIntentSource,
@@ -19,7 +20,10 @@ import type {
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
   BillingDeclineReason
@@ -95,6 +99,19 @@ interface BillingOperation {
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
+
+/**
+ * A 4xx is the service answering: it considered the cancel and refused it.
+ * Anything else — no response, a timeout, a 5xx — never reached a verdict.
+ */
+function isCancelRefusal(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    error.status !== undefined &&
+    error.status >= 400 &&
+    error.status < 500
+  )
+}
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()
@@ -1107,18 +1124,23 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
    * Void a pending charge before it settles. Canceled is not failed: the
    * operation is removed outright — no toast, no failure state — so every
    * surface watching it (dialog steps, the verify banner) clears at once.
-   * 'unavailable' means the charge is already processing and the backend
-   * refused the cancel; callers surface that in place and keep polling.
+   * 'unavailable' means the service answered and refused: the charge is past
+   * the point of cancelling, so callers say so and keep polling.
+   * 'unreachable' means the request reached no verdict at all. The charge may
+   * still be cancellable, so callers must leave the cancel affordance live
+   * rather than tell the customer their payment is already processing.
    */
   async function cancelOperation(
     opId: string
-  ): Promise<'canceled' | 'unavailable'> {
+  ): Promise<'canceled' | 'unavailable' | 'unreachable'> {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return 'unavailable'
     try {
       await workspaceApi.cancelBillingOp(opId)
-    } catch {
-      return 'unavailable'
+    } catch (error) {
+      if (isCancelRefusal(error)) return 'unavailable'
+      reportError(error, { errorType: 'billing_op_cancel_request_failure' })
+      return 'unreachable'
     }
     clearOperation(opId)
     return 'canceled'

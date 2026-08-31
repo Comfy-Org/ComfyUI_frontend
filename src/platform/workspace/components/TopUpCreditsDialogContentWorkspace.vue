@@ -351,16 +351,24 @@
         >
           {{ $t('credits.topUp.cancelUnavailable') }}
         </p>
-        <Button
-          v-else-if="!topupReconciliationOperationId"
-          variant="muted-textonly"
-          size="lg"
-          class="h-10 w-full justify-center"
-          :loading="isCancelingPayment"
-          @click="handleCancelPendingPayment"
-        >
-          {{ $t('credits.topUp.cancelPayment') }}
-        </Button>
+        <template v-else>
+          <p
+            v-if="cancelUnreachable"
+            class="m-0 pt-2 text-center text-xs text-muted-foreground"
+          >
+            {{ $t('credits.topUp.cancelUnreachable') }}
+          </p>
+          <Button
+            v-if="!topupReconciliationOperationId"
+            variant="muted-textonly"
+            size="lg"
+            class="h-10 w-full justify-center"
+            :loading="isCancelingPayment"
+            @click="handleCancelPendingPayment"
+          >
+            {{ $t('credits.topUp.cancelPayment') }}
+          </Button>
+        </template>
       </div>
       <div v-else class="flex flex-col gap-2">
         <Button
@@ -486,6 +494,7 @@ const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
 
 const isCancelingPayment = ref(false)
 const cancelUnavailable = ref(false)
+const cancelUnreachable = ref(false)
 const canceledNoticeVisible = ref(false)
 let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -495,13 +504,20 @@ async function handleCancelPendingPayment() {
   isCancelingPayment.value = true
   try {
     const result = await billingOperationStore.cancelOperation(opId)
-    if (result !== 'canceled') {
+    if (result === 'unavailable') {
+      cancelUnreachable.value = false
       cancelUnavailable.value = true
+      return
+    }
+    // No verdict reached: the charge stands, and so does the cancel button.
+    if (result === 'unreachable') {
+      cancelUnreachable.value = true
       return
     }
     // Canceled is not failed: the typed amount survives so paying again does
     // not mean entering it again.
     cancelUnavailable.value = false
+    cancelUnreachable.value = false
     canceledNoticeVisible.value = true
     step.value = 'amount'
     clearTimeout(canceledNoticeTimer)

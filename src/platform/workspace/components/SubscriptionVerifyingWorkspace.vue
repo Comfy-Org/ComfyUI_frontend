@@ -40,16 +40,23 @@
       >
         {{ $t('subscription.preview.cancelUnavailable') }}
       </p>
-      <Button
-        v-else
-        variant="muted-textonly"
-        size="lg"
-        class="w-full"
-        :loading="isCanceling"
-        @click="$emit('cancelPayment')"
-      >
-        {{ $t('subscription.preview.cancelPayment') }}
-      </Button>
+      <template v-else>
+        <p
+          v-if="cancelUnreachable"
+          class="m-0 pt-2 text-center text-xs text-muted-foreground"
+        >
+          {{ $t('subscription.preview.cancelUnreachable') }}
+        </p>
+        <Button
+          variant="muted-textonly"
+          size="lg"
+          class="w-full"
+          :loading="isCanceling"
+          @click="$emit('cancelPayment')"
+        >
+          {{ $t('subscription.preview.cancelPayment') }}
+        </Button>
+      </template>
     </div>
   </div>
 </template>
@@ -62,10 +69,12 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   actionUrl = null,
   cancelUnavailable = false,
+  cancelUnreachable = false,
   isCanceling = false
 } = defineProps<{
   actionUrl?: string | null
   cancelUnavailable?: boolean
+  cancelUnreachable?: boolean
   isCanceling?: boolean
 }>()
 

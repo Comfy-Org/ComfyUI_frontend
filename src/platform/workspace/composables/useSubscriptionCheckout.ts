@@ -160,6 +160,7 @@ export function useSubscriptionCheckout(
   const checkoutDeclineReason = ref<string | null>(null)
   const isCancelingPayment = ref(false)
   const cancelUnavailable = ref(false)
+  const cancelUnreachable = ref(false)
   const canceledNoticeVisible = ref(false)
   let canceledNoticeTimer: ReturnType<typeof setTimeout> | undefined
   const isLoadingPreview = ref(false)
@@ -1372,6 +1373,8 @@ export function useSubscriptionCheckout(
   // notice, while a re-entry cancel returns to plan selection (there is no
   // preserved intent to land on). 'unavailable' is the cancel-raced-the-bank
   // case — the cancel slot becomes a notice and polling finishes the story.
+  // 'unreachable' reached no verdict, so the charge is left exactly as it was
+  // and the cancel affordance stays live for another try.
   async function handleCancelPendingPayment() {
     const operation = activeCheckoutOperation.value
     if (!operation || isCancelingPayment.value) return
@@ -1379,11 +1382,17 @@ export function useSubscriptionCheckout(
     const result = await billingOperationStore.cancelOperation(operation.opId)
     isCancelingPayment.value = false
     if (result === 'unavailable') {
+      cancelUnreachable.value = false
       cancelUnavailable.value = true
+      return
+    }
+    if (result === 'unreachable') {
+      cancelUnreachable.value = true
       return
     }
     activeCheckoutOperationId.value = null
     cancelUnavailable.value = false
+    cancelUnreachable.value = false
     if (checkoutStep.value === 'verifying') {
       checkoutStep.value = 'pricing'
       return
@@ -1639,6 +1648,7 @@ export function useSubscriptionCheckout(
     previewVariant,
     isCancelingPayment,
     cancelUnavailable,
+    cancelUnreachable,
     canceledNoticeVisible,
     handleCancelPendingPayment,
     handleSubscribeClick,
