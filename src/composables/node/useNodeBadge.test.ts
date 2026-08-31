@@ -8,7 +8,7 @@ import { app } from '@/scripts/app'
 import { useNodeBadge } from './useNodeBadge'
 
 const mocks = vi.hoisted(() => ({
-  disposeNodeBadges: vi.fn(),
+  extensionInstalled: false,
   installNodeBadges: vi.fn(),
   registerExtension: vi.fn()
 }))
@@ -18,8 +18,11 @@ vi.mock('@/systems/badgeSystem', () => ({
 }))
 vi.mock('@/stores/extensionStore', () => ({
   useExtensionStore: () => ({
-    isExtensionInstalled: () => false,
-    registerExtension: mocks.registerExtension
+    isExtensionInstalled: () => mocks.extensionInstalled,
+    registerExtension: (extension: ComfyExtension) => {
+      mocks.extensionInstalled = true
+      mocks.registerExtension(extension)
+    }
   })
 }))
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -39,11 +42,11 @@ vi.mock('@/scripts/app', () => ({
 
 describe('useNodeBadge', () => {
   beforeEach(() => {
-    mocks.installNodeBadges.mockReturnValue(mocks.disposeNodeBadges)
+    mocks.extensionInstalled = false
   })
 
-  it('disposes the legacy badge provider when its owner unmounts', async () => {
-    const { unmount } = render(
+  it('keeps the extension-owned provider installed across canvas remounts', async () => {
+    const firstMount = render(
       defineComponent({
         setup() {
           useNodeBadge()
@@ -54,8 +57,20 @@ describe('useNodeBadge', () => {
     const extension = mocks.registerExtension.mock.calls[0][0] as ComfyExtension
     await extension.init?.(app)
 
-    unmount()
+    firstMount.unmount()
 
-    expect(mocks.disposeNodeBadges).toHaveBeenCalledOnce()
+    const secondMount = render(
+      defineComponent({
+        setup() {
+          useNodeBadge()
+          return () => null
+        }
+      })
+    )
+
+    expect(mocks.registerExtension).toHaveBeenCalledOnce()
+    expect(mocks.installNodeBadges).toHaveBeenCalledOnce()
+
+    secondMount.unmount()
   })
 })

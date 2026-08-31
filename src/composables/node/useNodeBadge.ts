@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -13,9 +13,6 @@ import { installNodeBadges } from '@/systems/badgeSystem'
 export const useNodeBadge = () => {
   const settingStore = useSettingStore()
   const extensionStore = useExtensionStore()
-  let disposeNodeBadges: (() => void) | undefined
-
-  onUnmounted(() => disposeNodeBadges?.())
 
   const showApiPricingBadge = computed(() =>
     settingStore.get('Comfy.NodeBadge.ShowApiPricing')
@@ -49,7 +46,7 @@ export const useNodeBadge = () => {
     extensionStore.registerExtension({
       name: 'Comfy.NodeBadge',
       init() {
-        disposeNodeBadges = installNodeBadges()
+        installNodeBadges()
         app.canvas.canvas.addEventListener<'litegraph:set-graph'>(
           'litegraph:set-graph',
           () => {
