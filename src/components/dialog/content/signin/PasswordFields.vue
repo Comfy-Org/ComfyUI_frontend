@@ -1,11 +1,6 @@
 <template>
   <!-- Password Field -->
-  <FormField
-    ref="passwordField"
-    v-slot="$field"
-    name="password"
-    class="flex flex-col gap-2"
-  >
+  <div ref="passwordField" class="flex flex-col gap-2">
     <div class="mb-2 flex items-center justify-between">
       <label
         class="text-base font-medium opacity-80"
@@ -16,14 +11,18 @@
     </div>
     <div class="relative">
       <Input
-        v-bind="$field.props"
         id="comfy-org-sign-up-password"
+        v-model="password"
+        name="password"
         autocomplete="new-password"
         :type="passwordVisible ? 'text' : 'password'"
         :placeholder="t('auth.signup.passwordPlaceholder')"
         :class="cn('pr-10', fieldClass)"
-        :aria-invalid="$field.invalid"
-        @input="updatePasswordChecks"
+        :aria-invalid="Boolean(passwordError)"
+        :aria-describedby="
+          showPasswordRequirements ? passwordErrorId : undefined
+        "
+        @input="passwordDirty = true"
       />
       <button
         type="button"
@@ -42,7 +41,11 @@
         />
       </button>
     </div>
-    <div v-if="$field.dirty && isPasswordFocused" class="flex flex-col gap-1">
+    <div
+      v-if="showPasswordRequirements"
+      :id="passwordErrorId"
+      class="flex flex-col gap-1"
+    >
       <PasswordRules
         :password="password"
         :copy="passwordRulesCopy"
@@ -51,10 +54,10 @@
         unmet-class="text-red-500"
       />
     </div>
-  </FormField>
+  </div>
 
   <!-- Confirm Password Field -->
-  <FormField v-slot="$field" name="confirmPassword" class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2">
     <label
       class="mb-2 text-base font-medium opacity-80"
       for="comfy-org-sign-up-confirm-password"
@@ -63,13 +66,17 @@
     </label>
     <div class="relative">
       <Input
-        v-bind="$field.props"
         id="comfy-org-sign-up-confirm-password"
+        v-model="confirmPassword"
+        name="confirmPassword"
         autocomplete="new-password"
         :type="confirmPasswordVisible ? 'text' : 'password'"
         :placeholder="t('auth.login.confirmPasswordPlaceholder')"
         :class="cn('pr-10', fieldClass)"
-        :aria-invalid="$field.invalid"
+        :aria-invalid="Boolean(confirmPasswordError)"
+        :aria-describedby="
+          confirmPasswordError ? confirmPasswordErrorId : undefined
+        "
       />
       <button
         type="button"
@@ -90,17 +97,20 @@
         />
       </button>
     </div>
-    <small v-if="$field.error" class="text-red-500">{{
-      $field.error.message
-    }}</small>
-  </FormField>
+    <small
+      v-if="confirmPasswordError"
+      :id="confirmPasswordErrorId"
+      class="text-red-500"
+    >
+      {{ confirmPasswordError }}
+    </small>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { FormField } from '@primevue/forms'
 import { useFocusWithin } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
-import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
@@ -108,22 +118,33 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Input from '@/components/ui/input/Input.vue'
 
-const { fieldClass = 'h-10' } = defineProps<{
+const {
+  fieldClass = 'h-10',
+  passwordError,
+  confirmPasswordError
+} = defineProps<{
   fieldClass?: HTMLAttributes['class']
+  passwordError?: string
+  confirmPasswordError?: string
 }>()
 
+const password = defineModel<string>('password', { required: true })
+const confirmPassword = defineModel<string>('confirmPassword', {
+  required: true
+})
+
 const { t } = useI18n()
-const password = ref('')
+const passwordDirty = ref(false)
 const passwordVisible = ref(false)
 const confirmPasswordVisible = ref(false)
-const passwordField = useTemplateRef<ComponentPublicInstance>('passwordField')
+const passwordErrorId = 'comfy-org-sign-up-password-error'
+const confirmPasswordErrorId = 'comfy-org-sign-up-confirm-password-error'
+const passwordField = useTemplateRef<HTMLElement>('passwordField')
 const { focused: isPasswordFocused } = useFocusWithin(passwordField)
-
-const updatePasswordChecks = (event: Event) => {
-  if (event.target instanceof HTMLInputElement) {
-    password.value = event.target.value
-  }
-}
+const showPasswordRequirements = computed(
+  () =>
+    isPasswordFocused.value && (passwordDirty.value || Boolean(passwordError))
+)
 
 const passwordRulesCopy = computed(() => ({
   requirements: t('validation.password.requirements'),
