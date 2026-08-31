@@ -348,6 +348,51 @@ describe('AgentPanel', () => {
     expect(screen.getByRole('button', { name: 'Draft title' })).toHaveFocus()
   })
 
+  it('deletes only a current chat with a session id', async () => {
+    const user = userEvent.setup()
+    const { emitted, unmount } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: 'thread-1'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await user.click(
+      screen.getByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+
+    expect(emitted().deleteHistory[0]).toEqual(['thread-1'])
+
+    unmount()
+    render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        sessionId: null
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    ).not.toBeInTheDocument()
+  })
+
   it('forwards header, composer, and workflow chip actions', async () => {
     const user = userEvent.setup()
     const { emitted } = render(AgentPanel, {
