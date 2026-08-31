@@ -68,5 +68,5 @@ the failed operation leaves state consistent.
 
 ## References
 
-- [ADR-TRAC: Telemetry Service Selection](TRAC-telemetry-routing-across-consumers.md)
+- [ADR-TRAC: Telemetry Routing Across Consumers](TRAC-telemetry-routing-across-consumers.md)
 - [FE-1859](https://linear.app/comfyorg/issue/FE-1859/audit-and-replace-unsafe-throw-new-error-paths-with-fail-safe-handling)
