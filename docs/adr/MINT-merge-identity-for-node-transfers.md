@@ -179,7 +179,7 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
 
 ## References
 
-- ADR-LAYOUT — Centralized Layout Management with CRDT (merge-boundary
+- ADR-LAYOUT — CRDT Layout Intent and Local Measurement (merge-boundary
   reconciliation amendment, 2026-08-23). Cite ADR-LAYOUT externally; this ADR
   is the derivation record.
 - ADR-ECS — Entity Component System (identity and structural collision

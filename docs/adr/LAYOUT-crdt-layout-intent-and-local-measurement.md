@@ -35,7 +35,7 @@ The existing system allows each node to directly mutate its position within Lite
 - Accessibility requirements will necessitate DOM-based rendering options
 - Technical debt compounds with each new spatial feature
 
-This decision builds on [ADR-LITEGRAPH (Merge LiteGraph)](LITEGRAPH-integrate-litegraph-into-the-frontend.md), which enables the architectural restructuring proposed here.
+This decision builds on [ADR-LITEGRAPH: Integrate LiteGraph into the Frontend](LITEGRAPH-integrate-litegraph-into-the-frontend.md), which enables the architectural restructuring proposed here.
 
 ## Decision
 
