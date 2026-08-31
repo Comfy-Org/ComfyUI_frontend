@@ -26,8 +26,10 @@ describe('no-new-error-throw', () => {
   it('allows other throwing contracts and shadowed Error', () => {
     const code = `
 class DomainError extends Error {}
+const ErrorAlias = Error
 throw new TypeError('typed')
 throw new DomainError('domain')
+throw new ErrorAlias('alias')
 try {} catch (error) { throw error }
 { class Error {}; throw new Error('shadowed') }
 `
