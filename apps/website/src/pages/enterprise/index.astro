@@ -18,13 +18,19 @@ const faqs = [
     id: 'what-is-enterprise',
     question: 'What is included in Comfy Enterprise?',
     answer:
-      'Enterprise engagements can combine ComfyUI Managed Builds, team plans, commercial model licensing, and Forward Deployed Creatives. We scope the right combination around your production and procurement requirements.',
+      'Comfy Enterprise can combine ComfyUI Managed Builds, dedicated production capacity and support, commercial model licensing, and Forward Deployed Creatives. Teams that only need shared Cloud usage can start with the self-serve Team plan.',
   },
   {
     id: 'where-runs',
     question: 'Where can our Comfy Workflows run?',
     answer:
       'Comfy Workflows can run locally, on infrastructure you control, or through the Developer Platform. ComfyUI Managed Builds are designed for approved environments on your machines and infrastructure.',
+  },
+  {
+    id: 'builds-vs-managed-builds',
+    question: 'How are Builds different from ComfyUI Managed Builds?',
+    answer:
+      'Builds are the self-serve way to package ComfyUI, custom nodes, models, and dependencies into a reproducible environment. ComfyUI Managed Builds add team distribution, governance, controlled rollout, enterprise terms, and support across the environments your organization runs.',
   },
   {
     id: 'commercial-models',
@@ -45,9 +51,9 @@ const faqs = [
   },
   {
     id: 'team-plan',
-    question: 'What does the team plan include?',
+    question: 'Is there a self-serve Team plan?',
     answer:
-      'Team plans provide a shared credit pool for Cloud GPU time and partner-model usage, plus centralized billing, Single Sign-On, and App Mode for approved experiences.',
+      'Yes. Team is a self-serve Comfy Cloud plan with member invites, concurrent workflow runs, a shared credit pool with centralized billing, and role-based permissions. Shared workflows, assets, and projects are coming soon.',
   },
   {
     id: 'capacity-and-support',
@@ -60,11 +66,11 @@ const faqs = [
 const enterpriseOffers = [
   {
     id: 'team-plans',
-    label: 'FOR TEAMS',
+    label: 'SELF-SERVE FOR TEAMS',
     title: 'Team plans',
     description:
-      'Give teams a shared credit pool for Cloud GPU time and partner-model usage, plus centralized billing, Single Sign-On, and App Mode.',
-    cta: { label: 'SUBSCRIBE NOW', href: '/cloud/pricing/' },
+      'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
+    cta: { label: 'SUBSCRIBE NOW', href: '/pricing' },
   },
   {
     id: 'commercial-licensing',
@@ -107,7 +113,7 @@ const governanceBenefits = [
     id: 'people-access',
     title: 'People and access',
     description:
-      'Use company identity and SSO to assign approved environments to the teams that need them.',
+      'Use company identity and SSO to assign approved environments, with App Mode for simplified, approved experiences.',
   },
   {
     id: 'usage-records',
@@ -175,7 +181,7 @@ const faqPage = buildFaqPageNode(url, faqs)
 
 <BaseLayout
   title="Comfy Enterprise | Govern visual AI across every team"
-  description="Standardize ComfyUI across teams and runtimes with Managed Builds, team plans, commercial model licensing, enterprise security, and hands-on delivery."
+  description="Standardize ComfyUI across teams and runtimes with Managed Builds, self-serve Team plans, commercial model licensing, enterprise security, and hands-on delivery."
   pageType="WebPage"
   breadcrumbs={[
     { name: 'Home', url: absoluteUrl(Astro.site, '/') },
@@ -186,11 +192,11 @@ const faqPage = buildFaqPageNode(url, faqs)
   <HeroSplit01
     badgeText="ENTERPRISE"
     title={'Govern ComfyUI across\nevery team and runtime.'}
-    subtitle="Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, production capacity, team plans, commercial licensing, and hands-on implementation support."
+    subtitle="Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, production capacity, commercial licensing, and hands-on implementation support."
     features={[
       'Approved, reproducible ComfyUI Managed Builds',
       'Dedicated GPU capacity, priority queueing, and enterprise SLAs',
-      'Team plans, commercial licensing, and hands-on builders',
+      'Commercial licensing, security review, and hands-on delivery',
     ]}
     primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
     secondaryCta={{
@@ -203,14 +209,14 @@ const faqPage = buildFaqPageNode(url, faqs)
   </HeroSplit01>
 
   <OfferGrid01
-    eyebrow="ONE ENTERPRISE RELATIONSHIP"
+    eyebrow="WAYS TO SCALE WITH COMFY"
     heading="The open standard for visual AI, ready for your organization."
     description="Keep your team focused on the Comfy Workflows that differentiate your business. Comfy provides the governed environments, production runtimes, commercial terms, and hands-on builders you would otherwise assemble yourself."
     featuredOffer={{
       id: 'managed-builds',
       title: 'ComfyUI Managed Builds',
       description:
-        'Replace one-off installation scripts and machine-by-machine maintenance with approved, reproducible ComfyUI environments across the fleet.',
+        'Self-serve Builds package a reproducible environment. ComfyUI Managed Builds add team distribution, model and custom-node governance, controlled rollout, enterprise terms, and support across the fleet.',
       cta: {
         label: 'VIEW MANAGED BUILDS',
         href: '/enterprise/managed-builds/',
@@ -271,8 +277,8 @@ const faqPage = buildFaqPageNode(url, faqs)
       {
         id: 'team-plans',
         label: 'TEAM PLANS',
-        text: 'Give the team a shared credit pool for Cloud GPU time and partner-model usage, plus centralized billing, Single Sign-On, and App Mode.',
-        cta: { label: 'SUBSCRIBE NOW', href: '/cloud/pricing/' },
+        text: 'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
+        cta: { label: 'SUBSCRIBE NOW', href: '/pricing' },
       },
       {
         id: 'commercial-rights',

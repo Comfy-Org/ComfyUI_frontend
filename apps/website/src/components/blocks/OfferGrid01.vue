@@ -23,6 +23,10 @@ interface OfferGridItem {
   cta: Cta
 }
 
+type FeaturedOfferGridItem = Omit<OfferGridItem, 'label'> & {
+  label?: string
+}
+
 const {
   eyebrow,
   heading,
@@ -34,7 +38,7 @@ const {
   eyebrow?: string
   heading: string
   description?: string
-  featuredOffer: OfferGridItem
+  featuredOffer: FeaturedOfferGridItem
   offers: readonly OfferGridItem[]
   class?: HTMLAttributes['class']
 }>()

@@ -6,6 +6,11 @@ const meta: Meta<typeof OfferGrid01> = {
   title: 'Website/Blocks/OfferGrid01',
   component: OfferGrid01,
   tags: ['autodocs', 'stable'],
+  decorators: [
+    () => ({
+      template: '<div class="min-h-screen bg-primary-comfy-ink"><story /></div>'
+    })
+  ],
   parameters: {
     layout: 'fullscreen',
     viewport: {
@@ -32,7 +37,7 @@ const meta: Meta<typeof OfferGrid01> = {
       'Start with the problem you need to solve. Comfy brings the product, commercial terms, and implementation support together.',
     featuredOffer: {
       id: 'managed-builds',
-      label: 'LEAD OFFER',
+      label: 'MANAGED DISTRIBUTION',
       title: 'ComfyUI Managed Builds',
       description:
         'Create approved, reproducible ComfyUI environments and assign them across workstations, studio GPU servers, and customer infrastructure.',
@@ -44,11 +49,11 @@ const meta: Meta<typeof OfferGrid01> = {
     offers: [
       {
         id: 'team-plans',
-        label: 'FOR TEAMS',
+        label: 'SELF-SERVE FOR TEAMS',
         title: 'Team plans',
         description:
-          'Give teams a shared credit pool, centralized billing, and Single Sign-On for Cloud GPU time and partner-model usage.',
-        cta: { label: 'REQUEST DEMO', href: '/contact/' }
+          'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
+        cta: { label: 'VIEW TEAM PRICING', href: '/pricing' }
       },
       {
         id: 'commercial-licensing',
@@ -79,6 +84,52 @@ const meta: Meta<typeof OfferGrid01> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+const withoutFeaturedLabelArgs = {
+  eyebrow: 'FOR PRODUCTION TEAMS',
+  heading: 'Standardize how your team runs visual AI.',
+  description:
+    'Move from individual setups to versioned environments, shared access, and clear operating controls.',
+  featuredOffer: {
+    id: 'managed-environments',
+    title: 'Managed production environments',
+    description:
+      'Pin workflow dependencies once, then distribute approved environments across every workstation and runtime your team uses.',
+    cta: {
+      label: 'VIEW MANAGED BUILDS',
+      href: '/enterprise/managed-builds/'
+    }
+  },
+  offers: [
+    {
+      id: 'team-access',
+      label: 'TEAM ACCESS',
+      title: 'Shared plans',
+      description:
+        'Keep billing, usage, and access in one place as your team grows.',
+      cta: { label: 'VIEW PLANS', href: '/pricing' }
+    },
+    {
+      id: 'model-governance',
+      label: 'MODEL GOVERNANCE',
+      title: 'Approved model access',
+      description:
+        'Set the models and credentials each team can use across its workflows.',
+      cta: { label: 'VIEW GOVERNANCE', href: '/enterprise/' }
+    },
+    {
+      id: 'implementation-support',
+      label: 'IMPLEMENTATION SUPPORT',
+      title: 'Builders for your workflow',
+      description:
+        'Work with specialists who build alongside your creative and technical teams.',
+      cta: {
+        label: 'VIEW SERVICES',
+        href: '/forward-deployed-creatives/'
+      }
+    }
+  ]
+}
+
 export const Desktop: Story = {
   globals: {
     viewport: { value: 'desktop', isRotated: false }
@@ -92,6 +143,27 @@ export const Tablet: Story = {
 }
 
 export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile', isRotated: false }
+  }
+}
+
+export const WithoutFeaturedLabelDesktop: Story = {
+  args: withoutFeaturedLabelArgs,
+  globals: {
+    viewport: { value: 'desktop', isRotated: false }
+  }
+}
+
+export const WithoutFeaturedLabelTablet: Story = {
+  args: withoutFeaturedLabelArgs,
+  globals: {
+    viewport: { value: 'tablet', isRotated: false }
+  }
+}
+
+export const WithoutFeaturedLabelMobile: Story = {
+  args: withoutFeaturedLabelArgs,
   globals: {
     viewport: { value: 'mobile', isRotated: false }
   }

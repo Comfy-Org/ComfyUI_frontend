@@ -18,6 +18,16 @@ test.describe('Enterprise pages @smoke', () => {
     await expect(
       page.getByRole('link', { name: 'VIEW MANAGED BUILDS' }).first()
     ).toHaveAttribute('href', '/enterprise/managed-builds/')
+    await expect(page.getByText('LEAD OFFER')).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: 'VIEW TEAM PRICING' })
+    ).toHaveCount(2)
+    await expect(
+      page.getByRole('link', { name: 'VIEW TEAM PRICING' }).first()
+    ).toHaveAttribute('href', '/pricing')
+    await expect(
+      page.getByRole('link', { name: 'VIEW TEAM PRICING' }).last()
+    ).toHaveAttribute('href', '/pricing')
     await expect(
       page.getByRole('heading', {
         level: 2,
