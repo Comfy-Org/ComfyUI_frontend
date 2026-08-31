@@ -71,19 +71,15 @@ describe('plain-object copies of LLink (uncovered)', () => {
 
     const copy: Partial<LLink> = { ...stored }
 
-    expect(Object.keys(copy).sort()).toEqual(
-      [
-        'id',
-        'type',
-        'origin_id',
-        'origin_slot',
-        'target_id',
-        'target_slot',
-        'parentId'
-      ].sort()
-    )
-    expect(copy.type).toBe('FLOAT')
-    expect(copy.parentId).toBe(toRerouteId(8))
+    expect(copy).toMatchObject({
+      id: stored.id,
+      type: 'FLOAT',
+      origin_id: stored.origin_id,
+      origin_slot: stored.origin_slot,
+      target_id: stored.target_id,
+      target_slot: stored.target_slot,
+      parentId: toRerouteId(8)
+    })
   })
 
   it('rewires Custom-Scripts consumers from copied links (#15594)', () => {
