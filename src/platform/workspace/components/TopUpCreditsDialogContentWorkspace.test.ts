@@ -233,6 +233,28 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       ).toBeInTheDocument()
     })
 
+    it('keeps cancel available when the request never reached the server', async () => {
+      mockCancelOperation.mockResolvedValue('unreachable')
+      pendingCharge()
+      renderDialog()
+
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Cancel payment' }))
+
+      expect(
+        await screen.findByText(
+          "Couldn't reach the server. Your payment has not been canceled — try again."
+        )
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Cancel payment' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('Payment canceled. Nothing was charged.')
+      ).toBeNull()
+    })
+
     it('explains when the charge is already past the point of cancelling', async () => {
       mockCancelOperation.mockResolvedValue('unavailable')
       pendingCharge()
