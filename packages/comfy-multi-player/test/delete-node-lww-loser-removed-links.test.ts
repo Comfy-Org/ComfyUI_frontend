@@ -1,7 +1,7 @@
 import * as Y from "yjs";
 import { describe, expect, it } from "vitest";
 import { applyOps, mint, project, type Op, type WorkflowJSON, type WorkflowNode } from "../src/index.js";
-import { stampsMap } from "../src/doc.js";
+import { appliedMap, stampsMap } from "../src/doc.js";
 import { loadCatalog } from "./helpers.js";
 
 const catalog = loadCatalog();
@@ -99,13 +99,21 @@ describe("delete_node LWW loser removed_links cleanup", () => {
 
   it("returns lww-dropped when the losing delete names no installed link", () => {
     const doc = seededDoc();
+    const op = losingDelete([999]);
     const stampBefore = stampsMap(doc).toJSON();
+    const bytesBefore = Y.encodeStateAsUpdate(doc);
 
-    const result = applyOps(doc, [losingDelete([999])], catalog);
+    const result = applyOps(doc, [op], catalog);
 
-    expect(result.outcomes[0]?.outcome).toBe("lww-dropped");
+    expect(result.outcomes[0]).toEqual({ op_id: op.op_id, outcome: "lww-dropped" });
     expect(project(doc, catalog).nodes.some(({ id }) => id === 10)).toBe(true);
     expect(stampsMap(doc).toJSON()).toEqual(stampBefore);
     expect(project(doc, catalog).links).toEqual([[1, 10, 0, 20, 0, "IMAGE"]]);
+    expect(appliedMap(doc).has(op.op_id)).toBe(true);
+    const bytesAfter = Y.encodeStateAsUpdate(doc);
+    expect(bytesAfter).not.toEqual(bytesBefore);
+
+    expect(applyOps(doc, [op], catalog).outcomes).toEqual([{ op_id: op.op_id, outcome: "no-op" }]);
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(bytesAfter);
   });
 });
