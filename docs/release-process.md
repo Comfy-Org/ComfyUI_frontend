@@ -132,12 +132,13 @@ READ_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
 WRITE_AUTH=(-H "DD-API-KEY: $DATADOG_API_KEY"
             -H "DD-APPLICATION-KEY: $DATADOG_WRITE_APP_KEY")
 
-curl -sS "${READ_AUTH[@]}" \
+curl --fail-with-body -sS "${READ_AUTH[@]}" \
   "$BASE/$SCHEDULE_ID?include=layers,layers.members,layers.members.user" \
   --output "$WORK_DIR/schedule.original.json"
 cp "$WORK_DIR/schedule.original.json" "$WORK_DIR/schedule.json"
 
-curl -sS -X PUT "${WRITE_AUTH[@]}" -H 'Content-Type: application/json' \
+curl --fail-with-body -sS -X PUT "${WRITE_AUTH[@]}" \
+  -H 'Content-Type: application/json' \
   "$BASE/$SCHEDULE_ID" -d @"$WORK_DIR/schedule.json"
 ```
 
