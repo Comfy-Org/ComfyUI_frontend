@@ -28,6 +28,14 @@ const savedCard = {
   is_default: true
 } as const
 
+const secondCard = {
+  id: 'pm_2',
+  type: 'card',
+  brand: 'mastercard',
+  last4: '5454',
+  is_default: false
+} as const
+
 function renderPreview(props: Record<string, unknown> = {}) {
   return render(SubscriptionAddPaymentPreviewWorkspace, {
     props: {
@@ -42,6 +50,11 @@ function renderPreview(props: Record<string, unknown> = {}) {
       stubs: { UnifiedStripePaymentSelector: true }
     }
   })
+}
+
+/** Two methods swap the single-method Change button for the picker. */
+function renderPicker(props: Record<string, unknown> = {}) {
+  return renderPreview({ savedMethods: [savedCard, secondCard], ...props })
 }
 
 describe('SubscriptionAddPaymentPreviewWorkspace — challenge lock', () => {
@@ -62,5 +75,22 @@ describe('SubscriptionAddPaymentPreviewWorkspace — challenge lock', () => {
 
     expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Change' })).toBeEnabled()
+  })
+
+  it.for([
+    ['an open bank tab', { actionUrl: 'https://verify.example/token' }],
+    ['requires_action', { authenticationState: 'requires_action' }],
+    ['failed_retryable', { authenticationState: 'failed_retryable' }],
+    ['a reconciliation hold', { reconciliationOperationId: 'op_1' }]
+  ] as const)('locks the saved-method picker during %s', ([, props]) => {
+    renderPicker(props)
+
+    expect(screen.getByRole('combobox')).toBeDisabled()
+  })
+
+  it('leaves the picker usable before a charge is in flight', () => {
+    renderPicker()
+
+    expect(screen.getByRole('combobox')).toBeEnabled()
   })
 })
