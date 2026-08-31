@@ -52,8 +52,33 @@ for file in "${COVERAGE_FILES[@]}"; do
   SHARD_SF=$(grep -c '^SF:' "$file" || true)
   SHARD_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' "$file")
   append_summary "| $SHARD | $SHARD_SF | $SHARD_LH |"
-  if [[ "$MERGED_LH" -lt "$SHARD_LH" ]]; then
-    echo "::error::Merged LH ($MERGED_LH) < shard LH ($SHARD_LH) in $SHARD — possible data loss"
+  if ! awk '
+    FNR == NR {
+      if ($0 ~ /^SF:/) {
+        source = substr($0, 4)
+      } else if ($0 ~ /^DA:/) {
+        split(substr($0, 4), line_data, ",")
+        if (line_data[2] > 0) {
+          merged_hits[source SUBSEP line_data[1]] = 1
+        }
+      }
+      next
+    }
+    $0 ~ /^SF:/ {
+      source = substr($0, 4)
+    }
+    $0 ~ /^DA:/ {
+      split(substr($0, 4), line_data, ",")
+      if (line_data[2] > 0 && !(source SUBSEP line_data[1] in merged_hits)) {
+        printf "Missing merged hit: %s:%s\n", source, line_data[1] > "/dev/stderr"
+        missing = 1
+      }
+    }
+    END {
+      exit missing
+    }
+  ' "$COVERAGE_DIR/coverage.lcov" "$file"; then
+    echo "::error::Merged coverage omitted hit lines from $SHARD"
     exit 1
   fi
 done

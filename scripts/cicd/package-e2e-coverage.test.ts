@@ -57,8 +57,8 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-if [[ "\${STUB_LCOV_DROP:-false}" == "true" ]]; then
-  printf 'SF:src/dropped.ts\\nDA:1,0\\nLF:1\\nLH:0\\nend_of_record\\n' > "$output"
+if [[ "\${STUB_LCOV_KEEP_FIRST:-false}" == "true" ]]; then
+  cat "\${inputs[0]}" > "$output"
 else
   : > "$output"
   for input in "\${inputs[@]}"; do
@@ -149,14 +149,17 @@ describe('package-e2e-coverage.sh', () => {
     expect(existsSync(join(fixture.output, 'coverage.lcov'))).toBe(false)
   })
 
-  it('fails when merging loses shard coverage', () => {
+  it('fails when merging omits a shard with an equal hit count', () => {
     using fixture = coverageFixture()
-    fixture.writeShard('partial-shard', coverage('src'))
+    fixture.writeShard('shard-a', coverage('src/shard-a'))
+    fixture.writeShard('shard-b', coverage('packages/shard-b'))
 
-    const result = fixture.run({ STUB_LCOV_DROP: 'true' })
+    const result = fixture.run({ STUB_LCOV_KEEP_FIRST: 'true' })
 
     expect(result.status).toBe(1)
-    expect(result.output).toContain('possible data loss')
+    expect(result.output).toContain(
+      'Merged coverage omitted hit lines from shard-b'
+    )
     expect(existsSync(join(fixture.html, 'index.html'))).toBe(false)
   })
 
