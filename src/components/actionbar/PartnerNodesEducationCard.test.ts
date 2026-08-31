@@ -164,6 +164,31 @@ describe('PartnerNodesEducationCard', () => {
       screen.queryByTestId(CARD_TESTID),
       'a request for a workflow the user already left must never show'
     ).not.toBeInTheDocument()
+
+    setActiveWorkflow('paid-wf')
+    await nextTick()
+    expect(
+      screen.queryByTestId(CARD_TESTID),
+      'a request stranded by a mid-load switch must not surface on returning'
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not resurface the one-off card when the user returns to its workflow', async () => {
+    renderCard()
+    loadPaidTemplate('paid-wf')
+    await nextTick()
+    expect(screen.getByTestId(CARD_TESTID)).toBeInTheDocument()
+
+    setActiveWorkflow('other-wf')
+    await nextTick()
+    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
+
+    setActiveWorkflow('paid-wf')
+    await nextTick()
+    expect(
+      screen.queryByTestId(CARD_TESTID),
+      'a one-off card must not reappear on returning to its workflow'
+    ).not.toBeInTheDocument()
   })
 
   it('shows a sign-in CTA only when the run gate requires sign-in', async () => {
