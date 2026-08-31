@@ -366,22 +366,23 @@
       >
         {{ $t('subscription.preview.cancelUnavailable') }}
       </p>
-      <p
-        v-if="actionUrl && cancelUnreachable"
-        class="m-0 py-2 text-center text-xs text-muted-foreground"
-      >
-        {{ $t('subscription.preview.cancelUnreachable') }}
-      </p>
-      <Button
-        v-else-if="actionUrl"
-        variant="muted-textonly"
-        size="lg"
-        class="w-full"
-        :loading="isCanceling"
-        @click="$emit('cancelPayment')"
-      >
-        {{ $t('subscription.preview.cancelPayment') }}
-      </Button>
+      <template v-else-if="actionUrl">
+        <p
+          v-if="cancelUnreachable"
+          class="m-0 pt-2 text-center text-xs text-muted-foreground"
+        >
+          {{ $t('subscription.preview.cancelUnreachable') }}
+        </p>
+        <Button
+          variant="muted-textonly"
+          size="lg"
+          class="w-full"
+          :loading="isCanceling"
+          @click="$emit('cancelPayment')"
+        >
+          {{ $t('subscription.preview.cancelPayment') }}
+        </Button>
+      </template>
 
       <!-- Terms Agreement (below the pay action, like Stripe checkout) -->
       <SubscriptionTermsNote class="mt-2" />
