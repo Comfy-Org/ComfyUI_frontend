@@ -2,7 +2,10 @@
   <div
     ref="containerRef"
     class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
-    :class="{ 'workflow-tabs-container-desktop': isDesktop }"
+    :class="{
+      'workflow-tabs-container-desktop': isDesktop,
+      'workflow-tabs-container-mobile': isMobile
+    }"
   >
     <Button
       v-if="showOverflowArrows"
@@ -124,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { useScroll } from '@vueuse/core'
+import { breakpointsTailwind, useBreakpoints, useScroll } from '@vueuse/core'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import {
@@ -187,6 +190,8 @@ function onAgentEntryClick(): void {
 const { isLoggedIn } = useCurrentUser()
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
+
+const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
@@ -373,9 +378,21 @@ onUpdated(() => {
   min-width: 90px;
 }
 
+/* Enlarge touch targets on mobile and keep tabs from squishing below a
+   tappable size; overflow is handled by the scroll arrows instead. */
+.workflow-tabs-container-mobile :deep(.p-togglebutton) {
+  flex-shrink: 0;
+  min-width: 120px;
+  min-height: 44px;
+}
+
 .overflow-arrow {
   border-radius: 0;
   padding-inline: calc(var(--spacing) * 2);
+}
+
+.workflow-tabs-container-mobile .overflow-arrow {
+  min-width: 44px;
 }
 
 .overflow-arrow[disabled] {
