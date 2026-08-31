@@ -47,7 +47,7 @@ function cmsCommands(cmsPaths: string[]) {
   }
 
   return [
-    'pnpm --filter @comfyorg/cms exec prettier --check .',
+    'pnpm format:check:cms',
     ...(cmsPaths.some((fileName) => /\.(ts|tsx|mjs|js)$/.test(fileName))
       ? ['pnpm lint:cms', 'pnpm typecheck:cms']
       : [])
