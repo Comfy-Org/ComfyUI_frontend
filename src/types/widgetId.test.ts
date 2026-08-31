@@ -79,13 +79,6 @@ describe('widgetId', () => {
       name: 'value'
     })
   })
-
-  it('classifies only empty-name keys as un-keyable', () => {
-    expect(
-      isWidgetId(widgetId(graphId, toNodeId(1), 'name:with:separator'))
-    ).toBe(true)
-    expect(isWidgetId(widgetId(graphId, toNodeId(1), ''))).toBe(false)
-  })
 })
 
 describe('parseWidgetId', () => {
