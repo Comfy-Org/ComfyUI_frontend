@@ -23,6 +23,9 @@ export function registerAgentPanelExtension(): void {
     // the cloud-guard chunk boundary, so it loads dynamically like every other
     // agent module here; both hooks are awaited by invokeExtensionsAsync.
     async beforeLoadGraph() {
+      const { notifyMintPortsBeforeGraphLoad } =
+        await import('@/workbench/extensions/agent/crdt/mintPortWiring')
+      notifyMintPortsBeforeGraphLoad()
       const { useAgentPanelStore } =
         await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
       if (!useAgentPanelStore().isOpen) return
@@ -51,6 +54,11 @@ export function registerAgentPanelExtension(): void {
       )
       canvas?.selectItems(nodes)
       useCanvasStore().updateSelectedItems()
+    },
+    async afterConfigureGraph() {
+      const { notifyMintPortsAfterGraphConfigure } =
+        await import('@/workbench/extensions/agent/crdt/mintPortWiring')
+      notifyMintPortsAfterGraphConfigure()
     },
     async setup() {
       // The service's per-extension catch owns a rejection here, so a
