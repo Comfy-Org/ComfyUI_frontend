@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "حالت",
-        "tooltip": "حالت 'speed' سریع‌تر است؛ 'precision' هماهنگی لب با کیفیت بالاتر و هزینه دو برابر را ارائه می‌دهد."
+        "tooltip": "«speed» سریع‌تر است؛ «precision» همگام‌سازی لب با کیفیت بالاتری تولید می‌کند، اما هزینه بیشتری دارد."
       },
       "output_language": {
         "name": "زبان خروجی",
@@ -24755,6 +24755,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "برش ویدیو",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "ناحیه برش به پیکسل. عرض/ارتفاع صفر، کل فریم را حفظ می‌کند."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "تعداد ثابتی از فریم‌های یک ویدیو را با استفاده از استراتژی‌های مختلف نمونه‌گیری کنید.",
     "display_name": "نمونه‌گیری فریم ویدیو",
@@ -24856,6 +24873,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "کوتاه‌سازی ویدیو (پیشرفته)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "اگر True باشد، هنگامی که مدت‌زمان مشخص‌شده ممکن نباشد، خطا ایجاد می‌شود."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "بازه کوتاه‌سازی با استفاده از فریم‌های شروع/پایان."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
