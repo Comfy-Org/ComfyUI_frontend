@@ -98,11 +98,13 @@ mint a replacement. A same-node-id re-add is applied in the target session that 
 the frame; stale widget stamps from another incarnation must not cross target or lineage
 boundaries. Retries resend the original operation and `op_id`.
 
-Remote application is limited to target ECS/domain state and target-aware layout state. It
-must not focus a tab, alter selection/hover/presence, call active-canvas-only APIs, or depend
-on a renderer-attached graph object. Active-canvas rendering is a downstream projection of
-store state. Presence stays on awareness, and layout remains in the separate FE-owned Y.Doc
-as required by KEEP-ALIVE #8.
+Remote application commits the target document's `ChangeTracker` update with its ECS/domain
+and target-aware layout state. This target-aware dirty-tracking seam is required before
+target sessions can be enabled. Remote application must not focus a tab, alter
+selection/hover/presence, call active-canvas-only APIs, or depend on a renderer-attached
+graph object. Active-canvas rendering is a downstream projection of store state. Presence
+stays on awareness, and layout remains in the separate FE-owned Y.Doc as required by
+KEEP-ALIVE #8.
 
 ## Consequences
 
@@ -124,8 +126,8 @@ as required by KEEP-ALIVE #8.
   reset targets instead of one process-local follower.
 - Offscreen queues need bounded storage, retry/resync telemetry, and a clear registration
   handshake. This ADR does not choose durable browser persistence for that queue.
-- Active-canvas invalidation must be replaced by target-aware store notifications; existing
-  calls such as `app.canvas?.setDirty(...)` require a focused follow-up.
+- Target-session enablement requires target-aware store notifications and `ChangeTracker`
+  updates; active-canvas calls such as `app.canvas?.setDirty(...)` cannot serve this path.
 - A workflow ID to graph ID cast is not sufficient for nested graphs, reloads, or multiple
   representations. Resolution must be an explicit registry boundary.
 - This does not make semantic conflict resolution client-owned. The shared applier and its
