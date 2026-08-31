@@ -98,10 +98,10 @@ describe('NodeSearchBoxPopover', () => {
           NodeSearchBox: NodeSearchBoxStub,
           NodeSearchContent: NodeSearchContentStub,
           NodePreviewCard: true,
-          Dialog: {
-            template: '<div><slot name="container" /></div>',
-            props: ['visible', 'modal', 'dismissableMask', 'pt']
-          }
+          Dialog: { template: '<div><slot /></div>' },
+          DialogPortal: { template: '<div><slot /></div>' },
+          DialogOverlay: true,
+          DialogContent: { template: '<div><slot /></div>' }
         }
       }
     })
