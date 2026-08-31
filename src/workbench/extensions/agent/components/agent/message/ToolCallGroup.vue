@@ -119,7 +119,7 @@ watch(failed, (failedNow, failedBefore) => {
 <template>
   <CollapsibleRoot v-model:open="open">
     <CollapsibleTrigger
-      class="hover:text-foreground group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-xs leading-none font-normal text-muted-foreground transition-colors hover:bg-muted"
+      class="hover:text-foreground group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-xs/none font-normal text-muted-foreground transition-colors hover:bg-muted"
     >
       <span
         v-if="running"
