@@ -6,7 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
-import type { GraphMutations } from '@/core/graph/graphMutations'
+import type {
+  GraphMutations,
+  SemanticNodePayload
+} from '@/core/graph/graphMutations'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -415,6 +418,84 @@ describe('EcsFollowerAdapter integration', () => {
         .map(({ id }) => id)
     ).toEqual(['1'])
     expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('keeps pending observer changes when graph projection returns false', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const projectedNodes: SemanticNodePayload[] = []
+    let batchAttempts = 0
+    const mutations: GraphMutations = {
+      batch: (_context, define) => {
+        batchAttempts += 1
+        if (batchAttempts === 1) return false
+        define({
+          addNode: (payload) => projectedNodes.push(payload),
+          reconcileNode: (payload) => projectedNodes.push(payload),
+          setWidget: () => undefined,
+          connect: () => undefined,
+          removeLinks: () => undefined,
+          deleteNode: () => undefined,
+          clearSemanticGraph: () => undefined
+        })
+        return true
+      },
+      addNode: () => true,
+      setWidget: () => true,
+      connect: () => true,
+      deleteNode: () => true,
+      clearSemanticGraph: () => true
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    const result = applyOps(
+      host,
+      [
+        op('node-1', 1, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [10, 20],
+          node: {
+            id: 1,
+            type: 'Source',
+            pos: [10, 20],
+            inputs: [],
+            outputs: []
+          }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    expect(result.outcomes).toEqual([{ op_id: 'node-1', outcome: 'applied' }])
+
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: ['node-1']
+      })
+    ).toBe(false)
+    expect(projectedNodes).toEqual([])
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 2,
+        update: Y.encodeStateAsUpdate(new Y.Doc()),
+        actor: 'agent:test',
+        opIds: ['retry-drain']
+      })
+    ).toBe(true)
+    expect(projectedNodes.map(({ id }) => id)).toEqual(['1'])
 
     adapter.destroy()
     follower.destroy()

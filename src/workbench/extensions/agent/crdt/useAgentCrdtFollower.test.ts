@@ -156,13 +156,19 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  enqueueHumanOperations: ReturnType<
+    typeof useAgentCrdtFollower
+  >['enqueueHumanOperations']
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let exposedEnqueue!: ReturnType<
+    typeof useAgentCrdtFollower
+  >['enqueueHumanOperations']
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
@@ -170,11 +176,18 @@ function mountFollower(
         getGraph
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      exposedEnqueue = enqueueHumanOperations
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    enqueueHumanOperations: exposedEnqueue
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -189,6 +202,7 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
+    adapterState.applyFrame.mockReturnValue(true)
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
@@ -794,6 +808,36 @@ describe('useAgentCrdtFollower', () => {
       ])
       unmount()
     })
+  })
+
+  it('does not stamp human ops from an unprojected follower sequence', () => {
+    const { enqueueHumanOperations, unmount, status } = mountFollower('wf-1')
+    bridge().lastSequence = 41
+    dispatchFrame('doc_subscribed', { ok: true })
+    bridge().lastSequence = 42
+    bridge().follower.updatesApplied = 3
+    adapterState.applyFrame.mockReturnValueOnce(false)
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
+
+    expect(status().connected).toBe(false)
+    expect(status().updatesApplied).toBe(0)
+    expect(status().lastFrameType).toBe('projection_error')
+
+    enqueueHumanOperations([
+      {
+        op: 'delete_node',
+        node_id: '1',
+        removed_links: []
+      }
+    ])
+
+    expect(clientState.sendOps).toHaveBeenLastCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ base_version: 41 })]
+    )
+    unmount()
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {

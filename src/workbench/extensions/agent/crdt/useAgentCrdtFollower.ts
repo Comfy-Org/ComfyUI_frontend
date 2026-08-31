@@ -214,6 +214,7 @@ export function useAgentCrdtFollower(
     reset: 0,
     dropped: 0
   })
+  const projectedSequence = ref(0)
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
   // Wraps locally instead of modifying the exported apiTransport, whose
@@ -264,7 +265,7 @@ export function useAgentCrdtFollower(
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
-    baseVersion: () => bridge.lastSequence,
+    baseVersion: () => projectedSequence.value,
     onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
   })
 
@@ -372,6 +373,7 @@ export function useAgentCrdtFollower(
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
+      projectedSequence.value = bridge.lastSequence
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
@@ -404,13 +406,25 @@ export function useAgentCrdtFollower(
     }
     if (staleProbeTimer !== null) armStaleProbe()
     refreshPersistedDocId()
-    updatesApplied.value = bridge.follower.updatesApplied
-    lastFrameType.value = event.type
     const applied = adapter.applyFrame(update)
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) reconcileLiveGraph(update.workflowId)
+    if (!applied) {
+      connected.value = false
+      lastFrameType.value = 'projection_error'
+      clearStaleProbe()
+      recordDevEvent('projection_error', {
+        workflowId: update.workflowId,
+        seq: update.seq,
+        actor: update.actor
+      })
+      return
+    }
+    reconcileLiveGraph(update.workflowId)
+    projectedSequence.value = update.seq
+    updatesApplied.value = bridge.follower.updatesApplied
+    lastFrameType.value = event.type
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -469,6 +483,7 @@ export function useAgentCrdtFollower(
     }
     connected.value = false
     updatesApplied.value = 0
+    projectedSequence.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
@@ -619,6 +634,7 @@ export function useAgentCrdtFollower(
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
+      projectedSequence.value = 0
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false

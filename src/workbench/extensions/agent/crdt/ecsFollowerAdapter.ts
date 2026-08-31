@@ -162,6 +162,7 @@ export class EcsFollowerAdapter {
         if (!frame) continue
         const committed = this.applyQueuedFrame(session, frame)
         if (frame === update) updateCommitted = committed
+        if (!committed) return false
       }
     } finally {
       session.applying = false
@@ -246,68 +247,104 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
-    const committed = session.mutations.batch(frameContext(update), (batch) => {
-      if (reconcile) {
-        const nodes = [...session.nodes.keys()].flatMap((id) => {
-          const payload = readSemanticNode(session.follower.doc, id)
-          return payload ? [payload] : []
-        })
-        const links = [...session.links.keys()].flatMap((id) => {
-          const link = readSemanticLink(session.follower.doc, id)
-          return link ? [link] : []
-        })
-        batch.removeMissing(
-          nodes.map(({ id }) => toNodeId(id)),
-          links.map(({ id }) => id)
-        )
-        for (const payload of nodes) batch.reconcileNode(payload)
-        for (const link of links) batch.connect(link)
-        return
-      }
+    try {
+      const committed = session.mutations.batch(frameContext(update), (batch) => {
+        if (reconcile) {
+          const nodes = [...session.nodes.keys()].flatMap((id) => {
+            const payload = readSemanticNode(session.follower.doc, id)
+            return payload ? [payload] : []
+          })
+          const links = [...session.links.keys()].flatMap((id) => {
+            const link = readSemanticLink(session.follower.doc, id)
+            return link ? [link] : []
+          })
+          batch.removeMissing(
+            nodes.map(({ id }) => toNodeId(id)),
+            links.map(({ id }) => id)
+          )
+          for (const payload of nodes) batch.reconcileNode(payload)
+          for (const link of links) batch.connect(link)
+          return
+        }
 
-      batch.removeLinks(removedLinkIds)
-      for (const [id, action] of nodeActions) {
-        if (action === 'delete' || action === 'update')
-          batch.deleteNode(toNodeId(id))
-      }
-      for (const [id, action] of nodeActions) {
-        if (action === 'delete') continue
-        const payload = readSemanticNode(session.follower.doc, id)
-        if (!payload) continue
-        batch.addNode(payload)
-      }
-      for (const id of replacedWidgetMaps) {
-        if (nodeActions.has(id)) continue
-        const payload = readSemanticNode(session.follower.doc, id)
-        if (payload) batch.reconcileNode(payload)
-      }
-      for (const [id, names] of changedWidgets) {
-        if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
-        const node = session.nodes.get(id)
-        const widgets = node?.get('widgets')
-        if (!(widgets instanceof Y.Map)) continue
-        if ([...names].some((name) => !widgets.has(name))) {
+        batch.removeLinks(removedLinkIds)
+        for (const [id, action] of nodeActions) {
+          if (action === 'delete' || action === 'update')
+            batch.deleteNode(toNodeId(id))
+        }
+        for (const [id, action] of nodeActions) {
+          if (action === 'delete') continue
+          const payload = readSemanticNode(session.follower.doc, id)
+          if (payload) batch.addNode(payload)
+        }
+        for (const id of replacedWidgetMaps) {
+          if (nodeActions.has(id)) continue
           const payload = readSemanticNode(session.follower.doc, id)
           if (payload) batch.reconcileNode(payload)
-          continue
         }
-        for (const name of names) {
-          batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+        for (const [id, names] of changedWidgets) {
+          if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
+          const node = session.nodes.get(id)
+          const widgets = node?.get('widgets')
+          if (!(widgets instanceof Y.Map)) continue
+          if ([...names].some((name) => !widgets.has(name))) {
+            const payload = readSemanticNode(session.follower.doc, id)
+            if (payload) batch.reconcileNode(payload)
+            continue
+          }
+          for (const name of names) {
+            batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+          }
         }
+        for (const id of changedLinkIds) {
+          const link = readSemanticLink(session.follower.doc, id)
+          if (link) batch.connect(link)
+        }
+      })
+      if (!committed) {
+        this.restoreSessionPending(
+          session,
+          nodeActions,
+          changedWidgets,
+          replacedWidgetMaps,
+          changedLinkIds,
+          reconcile
+        )
+      } else {
+        session.reconcileNextFrame = false
       }
-      for (const id of changedLinkIds) {
-        const link = readSemanticLink(session.follower.doc, id)
-        if (link) batch.connect(link)
-      }
-    })
+      return committed
+    } catch {
+      this.restoreSessionPending(
+        session,
+        nodeActions,
+        changedWidgets,
+        replacedWidgetMaps,
+        changedLinkIds,
+        reconcile
+      )
+      return false
+    }
+  }
 
-    // Only clear the reconciliation flag once the batch actually commits.
-    // A rejected batch (no scope, or validation failure) must leave
-    // reconcileNextFrame set so the next frame retries authoritative
-    // cleanup instead of falling through to incremental handling with
-    // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
-    return committed
+  private restoreSessionPending(
+    session: TargetSession,
+    nodeActions: Map<string, NodeRootAction>,
+    changedWidgets: Map<string, Set<string>>,
+    replacedWidgetMaps: Set<string>,
+    changedLinks: Set<string>,
+    reconcileNextFrame: boolean
+  ): void {
+    session.nodeActions.clear()
+    for (const [id, action] of nodeActions) session.nodeActions.set(id, action)
+    session.changedWidgets.clear()
+    for (const [id, names] of changedWidgets)
+      session.changedWidgets.set(id, new Set(names))
+    session.replacedWidgetMaps.clear()
+    for (const id of replacedWidgetMaps) session.replacedWidgetMaps.add(id)
+    session.changedLinks.clear()
+    for (const id of changedLinks) session.changedLinks.add(id)
+    session.reconcileNextFrame = reconcileNextFrame
   }
 
   private discardSessionPending(session: TargetSession): void {
