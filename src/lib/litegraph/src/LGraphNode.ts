@@ -2236,7 +2236,9 @@ export class LGraphNode
       )
     }
     if (type == 'combo' && !w.options.values) {
-      throw "LiteGraph addWidget('combo',...) requires to pass values in options: { values:['red','blue'] }"
+      throw new Error(
+        "LiteGraph addWidget('combo',...) requires to pass values in options: { values:['red','blue'] }"
+      )
     }
 
     const widget = this.addCustomWidget(w)
@@ -3069,11 +3071,11 @@ export class LGraphNode
 
     if (target_node && typeof target_node === 'number') {
       const nodeById = graph.getNodeById(target_node)
-      if (!nodeById) throw 'target node is null'
+      if (!nodeById) throw new Error('target node is null')
 
       target_node = nodeById
     }
-    if (!target_node) throw 'target node is null'
+    if (!target_node) throw new Error('target node is null')
 
     // avoid loopback
     if (target_node == this) return null
@@ -3371,7 +3373,7 @@ export class LGraphNode
       typeof target_node === 'number'
         ? graph.getNodeById(target_node)
         : target_node
-    if (target_node && !onlyTarget) throw 'Target Node not found'
+    if (target_node && !onlyTarget) throw new Error('Target Node not found')
     if (output instanceof NodeOutputSlot) {
       output._setLegacyLinksPresent(Boolean(onlyTarget))
     }
