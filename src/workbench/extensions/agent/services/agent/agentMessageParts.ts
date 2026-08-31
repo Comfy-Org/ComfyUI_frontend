@@ -33,6 +33,7 @@ export interface NoticePart {
 export interface TabLinkPart {
   type: 'tabLink'
   workflowId: string
+  locatorId?: string
   name?: string
 }
 

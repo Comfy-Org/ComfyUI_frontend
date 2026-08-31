@@ -18,7 +18,12 @@ const mocks = vi.hoisted(() => ({
   api: new EventTarget(),
   activeWorkflow: undefined as FakeTab | undefined,
   openWorkflow: vi.fn(),
+  navigate: vi.fn(),
   openWorkflows: [] as unknown[]
+}))
+
+vi.mock('../../../composables/agent/useAgentTargetNavigation', () => ({
+  useAgentTargetNavigation: () => ({ navigate: mocks.navigate })
 }))
 
 vi.mock('@/scripts/api', () => ({ api: mocks.api }))
@@ -40,6 +45,8 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 
 const { useAgentWorkflowTabBindingStore } =
   await import('../../../stores/agent/agentWorkflowTabBindingStore')
+const { useAgentPanelStore } =
+  await import('../../../stores/agent/agentPanelStore')
 
 function mount(workflowId: string, name?: string) {
   return render(TabLinkCard, {
@@ -57,8 +64,10 @@ describe('TabLinkCard', () => {
     localStorage.clear()
     setActivePinia(createPinia())
     mocks.openWorkflow.mockClear()
+    mocks.navigate.mockClear()
     mocks.activeWorkflow = undefined
     openTabs()
+    useAgentPanelStore().enabled = true
   })
 
   it('uses the backend display name and focuses the bound tab on click', async () => {
@@ -181,5 +190,39 @@ describe('TabLinkCard', () => {
     mount('wf-unbound', 'Never opened')
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('renders no reference and performs no action while the flag is off', () => {
+    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    openTabs(tab)
+    useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
+    useAgentPanelStore().enabled = false
+
+    mount('wf-1', 'Portrait upscale')
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(mocks.openWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('navigates an explicit node reference through its target workflow', async () => {
+    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    openTabs(tab)
+    useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
+
+    render(TabLinkCard, {
+      props: {
+        workflowId: 'wf-1',
+        locatorId: 'root-a:42',
+        name: 'Portrait upscale'
+      },
+      global: { plugins: [i18n] }
+    })
+    await userEvent.click(screen.getByRole('button'))
+
+    expect(mocks.navigate).toHaveBeenCalledWith({
+      workflowId: 'wf-1',
+      locatorId: 'root-a:42'
+    })
+    expect(mocks.openWorkflow).not.toHaveBeenCalled()
   })
 })
