@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { debounce } from 'es-toolkit/compat'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -121,7 +120,7 @@ describe('PackEnableToggle', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, i18n]
+        plugins: [i18n]
       }
     })
   }
