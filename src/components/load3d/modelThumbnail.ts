@@ -1,3 +1,8 @@
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
+
 let queue: Promise<unknown> = Promise.resolve()
 const MODEL_LOAD_TIMEOUT_MS = 10_000
 
@@ -8,14 +13,18 @@ const MODEL_LOAD_TIMEOUT_MS = 10_000
  * Resolves null when the model cannot be rendered.
  */
 export function generateModelThumbnail(
-  modelUrl: string
+  modelUrl: string,
+  assetName: string
 ): Promise<string | null> {
-  const run = queue.then(() => renderThumbnail(modelUrl))
+  const run = queue.then(() => renderThumbnail(modelUrl, assetName))
   queue = run.catch(() => null)
   return run
 }
 
-async function renderThumbnail(modelUrl: string): Promise<string | null> {
+async function renderThumbnail(
+  modelUrl: string,
+  assetName: string
+): Promise<string | null> {
   try {
     const { createLoad3d } =
       await import('@/extensions/core/load3d/createLoad3d')
@@ -35,6 +44,12 @@ async function renderThumbnail(modelUrl: string): Promise<string | null> {
         )
       ])
       const dataUrl = await load3d.captureThumbnail(256, 256)
+      if (isAssetPreviewSupported()) {
+        void fetch(dataUrl)
+          .then((response) => response.blob())
+          .then((blob) => persistThumbnail(assetName, blob))
+          .catch(() => {})
+      }
       return dataUrl
     } finally {
       load3d.remove()
