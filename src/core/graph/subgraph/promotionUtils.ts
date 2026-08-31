@@ -387,6 +387,7 @@ export function promoteWidget(
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
+  if (useCanvasStore().canvas?.selectOnly) return
   const source = toPromotionSource(node, widget)
   if (!(node instanceof LGraphNode)) return
   for (const parent of parents) {
@@ -444,6 +445,7 @@ export function demoteWidget(
   widget: IBaseWidget,
   parents: SubgraphNode[]
 ) {
+  if (useCanvasStore().canvas?.selectOnly) return
   const source = toPromotionSource(node, widget)
   for (const parent of parents) {
     if (!parent.subgraph) continue

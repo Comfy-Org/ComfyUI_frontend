@@ -64,6 +64,16 @@ export interface MintPortWiring {
   detach(): void
 }
 
+const activeWirings = new Set<MintPortWiring>()
+
+export function notifyMintPortsBeforeGraphLoad(): void {
+  for (const wiring of activeWirings) wiring.onBeforeGraphLoad()
+}
+
+export function notifyMintPortsAfterGraphConfigure(): void {
+  for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
+}
+
 /**
  * Serialized save-format node, `widgets_values` NAME-KEYED via the node's own
  * `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
@@ -212,7 +222,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     })
   })
 
-  return {
+  const wiring: MintPortWiring = {
     session,
     runRemoteScope(apply) {
       session.runRemoteApply(() => {
@@ -229,6 +239,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       session.endGraphTeardown()
     },
     detach() {
+      activeWirings.delete(wiring)
       detachLinkActions()
       detachWidgetActions()
       widgetPort.detach()
@@ -236,4 +247,6 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       linkPort.detach()
     }
   }
+  activeWirings.add(wiring)
+  return wiring
 }

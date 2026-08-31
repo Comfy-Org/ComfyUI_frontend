@@ -38,7 +38,14 @@ vi.mock('posthog-js', () => ({
 }))
 
 const registered = vi.hoisted(() => ({
-  setup: null as (() => void) | null
+  setup: null as (() => void) | null,
+  beforeLoadGraph: null as (() => void) | null,
+  afterConfigureGraph: null as (() => void) | null
+}))
+
+const mintHooks = vi.hoisted(() => ({
+  beforeLoad: vi.fn(),
+  afterConfigure: vi.fn()
 }))
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
@@ -49,10 +56,21 @@ vi.mock('@/platform/telemetry/reportError', () => ({
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({
-    registerExtension: (extension: { setup?: () => void }) => {
+    registerExtension: (extension: {
+      setup?: () => void
+      beforeLoadGraph?: () => void
+      afterConfigureGraph?: () => void
+    }) => {
       registered.setup = extension.setup ?? null
+      registered.beforeLoadGraph = extension.beforeLoadGraph ?? null
+      registered.afterConfigureGraph = extension.afterConfigureGraph ?? null
     }
   })
+}))
+
+vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
+  notifyMintPortsBeforeGraphLoad: mintHooks.beforeLoad,
+  notifyMintPortsAfterGraphConfigure: mintHooks.afterConfigure
 }))
 
 async function bootGate(): Promise<void> {
@@ -94,7 +112,21 @@ describe('the agent panel flag gate', () => {
     posthogState.flag = undefined
     posthogState.listeners = []
     registered.setup = null
+    registered.beforeLoadGraph = null
+    registered.afterConfigureGraph = null
+    mintHooks.beforeLoad.mockClear()
+    mintHooks.afterConfigure.mockClear()
     reportErrorMock.mockClear()
+  })
+
+  it('forwards graph load hooks to the active mint wiring', async () => {
+    await bootGate()
+
+    registered.beforeLoadGraph?.()
+    registered.afterConfigureGraph?.()
+
+    expect(mintHooks.beforeLoad).toHaveBeenCalledOnce()
+    expect(mintHooks.afterConfigure).toHaveBeenCalledOnce()
   })
 
   it('registers its subscription pre-init and enables on the flags delivery', async () => {

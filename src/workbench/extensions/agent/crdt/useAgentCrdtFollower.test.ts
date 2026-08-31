@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import type { Op } from '@comfyorg/comfy-multi-player'
 import { render } from '@testing-library/vue'
 
 const bridgeState = vi.hoisted(() => {
@@ -32,7 +33,10 @@ const bridgeState = vi.hoisted(() => {
 })
 
 const clientState = vi.hoisted(() => ({
-  destroy: vi.fn()
+  destroy: vi.fn(),
+  sendOps: vi.fn<(workflowId: string, tab: string, ops: Op[]) => boolean>(
+    () => true
+  )
 }))
 
 const apiState = vi.hoisted(() => {
@@ -65,6 +69,7 @@ vi.mock('./layoutFollowerBridge', () => ({
 vi.mock('./docFrameClient', () => ({
   DocFrameClient: class {
     destroy = clientState.destroy
+    sendOps = clientState.sendOps
   }
 }))
 
@@ -119,7 +124,31 @@ import {
   summarizeOutboundDocFrame,
   useAgentCrdtFollower
 } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type {
+  AgentCrdtStatus,
+  AgentCrdtWriteCompositionDeps
+} from './useAgentCrdtFollower'
+import {
+  notifyMintPortsAfterGraphConfigure,
+  notifyMintPortsBeforeGraphLoad
+} from './mintPortWiring'
+import { useLinkStore } from '@/stores/linkStore'
+import type { LinkTopology } from '@/types/linkTopology'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+
+function testWriteDeps(): AgentCrdtWriteCompositionDeps {
+  return {
+    isEnabled: () => true,
+    userId: () => 'user-1',
+    layoutChanges: () => () => {},
+    withLayoutActor: (_actor, fn) => fn(),
+    localActorPrefix: 'user-',
+    getGraph: () => null,
+    onBatchSettled: () => {}
+  }
+}
 
 function mountFollower(initial: string | null = null): {
   unmount: () => void
@@ -130,7 +159,7 @@ function mountFollower(initial: string | null = null): {
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(workflowId)
+      const { status } = useAgentCrdtFollower(workflowId, testWriteDeps())
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
     }
@@ -164,6 +193,7 @@ describe('useAgentCrdtFollower', () => {
     projectorState.current = null
     idAllocationState.setCoordinationFreeIds.mockClear()
     clientState.destroy.mockClear()
+    clientState.sendOps.mockClear()
     apiState.api.removeEventListener.mockClear()
   })
 
@@ -564,22 +594,76 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('sends human ops through the bridge with the session tab', () => {
+  it('composes local mutations through minting, settlement, load suppression, and teardown', () => {
     const workflowId = ref<string | null>('wf-1')
-    let send!: (ops: never[]) => void
+    const settled = vi.fn()
     const host = defineComponent({
       setup() {
-        const { sendHumanOps } = useAgentCrdtFollower(workflowId)
-        send = sendHumanOps as (ops: never[]) => void
+        useAgentCrdtFollower(workflowId, {
+          isEnabled: () => true,
+          userId: () => 'user-1',
+          layoutChanges: () => () => {},
+          withLayoutActor: (_actor, fn) => fn(),
+          localActorPrefix: 'user-',
+          getGraph: () => null,
+          onBatchSettled: settled
+        })
         return () => null
       }
     })
     const { unmount } = render(host)
+    dispatchFrame('doc_update', { seq: 9 })
+    const graphId = '00000000-0000-4000-8000-000000000001'
+    const scope = {
+      rootGraphId: toRootGraphId(graphId),
+      owningGraphId: toOwningGraphId(graphId)
+    }
+    const topology: LinkTopology = {
+      id: toLinkId(11),
+      graphId: toOwningGraphId(graphId),
+      originNodeId: toNodeId(7),
+      originSlot: 0,
+      targetNodeId: toNodeId(8),
+      targetSlot: 0,
+      type: 'IMAGE'
+    }
+    const store = useLinkStore()
 
-    send([])
+    store.registerLink(scope, topology)
 
-    expect(bridge().sendHumanOps).toHaveBeenCalledWith(expect.any(String), [])
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    const call = clientState.sendOps.mock.calls[0]
+    if (!call) throw new Error('doc_ops batch was not sent')
+    const [target, tab, ops] = call
+    expect(target).toBe('wf-1')
+    expect(tab).toEqual(expect.any(String))
+    expect(ops).toEqual([
+      expect.objectContaining({
+        op: 'connect',
+        actor: `human:user-1:${tab}`,
+        base_version: 9,
+        stamp: [9, `human:user-1:${tab}`]
+      })
+    ])
+
+    dispatchFrame('doc_ops_result', {
+      ok: true,
+      applied: [ops[0].op_id],
+      skipped: []
+    })
+    expect(settled).toHaveBeenCalledWith(
+      expect.objectContaining({ state: 'acknowledged' })
+    )
+
+    clientState.sendOps.mockClear()
+    notifyMintPortsBeforeGraphLoad()
+    store.deleteLink(scope, topology)
+    notifyMintPortsAfterGraphConfigure()
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+
     unmount()
+    store.registerLink(scope, topology)
+    expect(clientState.sendOps).not.toHaveBeenCalled()
   })
 
   it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
@@ -647,7 +731,7 @@ describe('useAgentCrdtFollower', () => {
     const workflowId = ref<string | null>('wf-1')
     const host = defineComponent({
       setup() {
-        useAgentCrdtFollower(workflowId)
+        useAgentCrdtFollower(workflowId, testWriteDeps())
         return () => null
       }
     })

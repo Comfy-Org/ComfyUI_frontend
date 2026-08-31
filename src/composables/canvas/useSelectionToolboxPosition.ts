@@ -8,7 +8,11 @@ import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
+import {
+  isLGraphGroup,
+  isLGraphNode,
+  isSelectOnly
+} from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
 /**
@@ -82,6 +86,11 @@ export function useSelectionToolboxPosition(
    * Update position based on selection
    */
   const updateSelectionBounds = () => {
+    if (isSelectOnly(canvasStore.canvas)) {
+      visible.value = false
+      return
+    }
+
     const selectableItems = getSelectableItems()
 
     if (!selectableItems.size) {
@@ -149,6 +158,13 @@ export function useSelectionToolboxPosition(
       stopSync()
     }
   })
+
+  // Re-evaluate when select-only mode flips: entering hides the toolbox
+  // (fail-closed), leaving restores it for the still-current selection.
+  watch(
+    () => canvasStore.canvas?.selectOnly,
+    () => updateSelectionBounds()
+  )
 
   // Watch for selection changes
   watch(

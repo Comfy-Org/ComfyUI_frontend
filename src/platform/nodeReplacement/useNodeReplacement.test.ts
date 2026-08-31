@@ -266,6 +266,29 @@ function seedMissingNodeTypes(types: MissingNodeType[]): void {
 
 describe('useNodeReplacement', () => {
   describe('replaceNodesInPlace', () => {
+    it('does not replace while the canvas is picking-only', () => {
+      const placeholder = createPlaceholderNode(1, 'Load3DAnimation')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph, canvas: { selectOnly: true } })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      const result = replaceNodesInPlace([
+        makeMissingNodeType('Load3DAnimation', {
+          new_node_id: 'Load3D',
+          old_node_id: 'Load3DAnimation',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      Object.assign(app, { canvas: undefined })
+      expect(result).toEqual([])
+      expect(vi.mocked(LiteGraph.createNode)).not.toHaveBeenCalled()
+    })
+
     it('should return empty array when no placeholders exist', () => {
       const graph = createMockGraph([])
       Object.assign(app, { rootGraph: graph })

@@ -55,6 +55,7 @@ describe('useNodeDragToCanvas', () => {
 
   beforeEach(async () => {
     vi.resetModules()
+    Reflect.set(mockCanvas, 'selectOnly', false)
 
     const module = await import('./useNodeDragToCanvas')
     useNodeDragToCanvas = module.useNodeDragToCanvas
@@ -187,6 +188,32 @@ describe('useNodeDragToCanvas', () => {
       expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef, {
         pos: [150, 150]
       })
+    })
+
+    it('adds nothing and toasts nothing while the canvas is picking-only', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      Reflect.set(mockCanvas, 'selectOnly', true)
+
+      const { startDrag, isDragging } = useNodeDragToCanvas()
+      startDrag(mockNodeDef)
+      document.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: 250,
+          clientY: 250,
+          bubbles: true
+        })
+      )
+
+      // A picking refusal is silent-nothing: the drop is consumed with no
+      // node, no toast, and the drag state cleared.
+      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(isDragging.value).toBe(false)
     })
 
     it('should not add node when pointer is outside canvas', () => {

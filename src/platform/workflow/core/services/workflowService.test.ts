@@ -1639,6 +1639,80 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('insertWorkflow', () => {
+    it('does not insert while the canvas is picking-only', async () => {
+      const workflow = { load: vi.fn() } as unknown as ComfyWorkflow
+      Reflect.set(app.canvas, 'selectOnly', true)
+      try {
+        await useWorkflowService().insertWorkflow(workflow)
+
+        expect(workflow.load).not.toHaveBeenCalled()
+      } finally {
+        Reflect.set(app.canvas, 'selectOnly', false)
+      }
+    })
+
+    it('inserts when the canvas is editable', async () => {
+      const deserialize = vi.fn()
+      Reflect.set(app.canvas, '_deserializeItems', deserialize)
+      const workflow = {
+        load: vi.fn().mockResolvedValue({
+          initialState: { nodes: [], links: [] }
+        })
+      } as unknown as ComfyWorkflow
+
+      await useWorkflowService().insertWorkflow(workflow)
+
+      expect(workflow.load).toHaveBeenCalledOnce()
+      expect(deserialize).toHaveBeenCalledOnce()
+    })
+
+    it('does not insert when picking starts while the workflow loads', async () => {
+      const deserialize = vi.fn()
+      Reflect.set(app.canvas, '_deserializeItems', deserialize)
+      let finishLoad: (value: unknown) => void = () => {}
+      const workflow = {
+        load: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              finishLoad = resolve
+            })
+        )
+      } as unknown as ComfyWorkflow
+
+      const pending = useWorkflowService().insertWorkflow(workflow)
+      Reflect.set(app.canvas, 'selectOnly', true)
+      finishLoad({ initialState: { nodes: [], links: [] } })
+      await pending
+
+      expect(deserialize).not.toHaveBeenCalled()
+      Reflect.set(app.canvas, 'selectOnly', false)
+    })
+
+    it('does not insert into a canvas that replaced the load target', async () => {
+      const originalCanvas = app.canvas
+      const deserialize = vi.fn()
+      Reflect.set(originalCanvas, '_deserializeItems', deserialize)
+      let finishLoad: (value: unknown) => void = () => {}
+      const workflow = {
+        load: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              finishLoad = resolve
+            })
+        )
+      } as unknown as ComfyWorkflow
+
+      const pending = useWorkflowService().insertWorkflow(workflow)
+      Reflect.set(app, 'canvas', { selectOnly: false })
+      finishLoad({ initialState: { nodes: [], links: [] } })
+      await pending
+
+      expect(deserialize).not.toHaveBeenCalled()
+      Reflect.set(app, 'canvas', originalCanvas)
+    })
+  })
+
   describe('saveWorkflow', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
 
