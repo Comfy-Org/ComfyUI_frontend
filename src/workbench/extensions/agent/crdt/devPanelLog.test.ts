@@ -93,4 +93,30 @@ describe('devPanelLog', () => {
       view: 'DataView(2)'
     })
   })
+
+  it('keeps a value referenced twice from sibling positions', () => {
+    const shared = { id: 'node-7' }
+    recordDevEvent('doc_effects', { added: shared, removed: shared })
+
+    const serialized = stringifyDevEvents(devEvents.value)
+    expect(serialized).not.toContain('[Circular]')
+    expect(serialized.match(/node-7/g)).toHaveLength(2)
+  })
+
+  it('survives a genuine cycle instead of throwing', () => {
+    const cyclic: Record<string, unknown> = { kind: 'self' }
+    cyclic.self = cyclic
+    recordDevEvent('doc_effects', cyclic)
+
+    expect(() => stringifyDevEvents(devEvents.value)).not.toThrow()
+    expect(stringifyDevEvents(devEvents.value)).toContain('[Circular]')
+  })
+
+  it('carries the scope and level a consumer filters on', () => {
+    recordDevEvent('doc_gap', null, { scope: 'wire', level: 'warn' })
+
+    const [event] = devEvents.value
+    expect(event.scope).toBe('wire')
+    expect(event.level).toBe('warn')
+  })
 })
