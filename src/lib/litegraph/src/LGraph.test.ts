@@ -2024,7 +2024,9 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
             call[0].includes('Legacy proxyWidgets were not migrated')
         )
         expect(migrationCall).toBeDefined()
-        expect(migrationCall![1]).toEqual(
+        if (!migrationCall)
+          throw new Error('Expected proxy widget migration warning')
+        expect(migrationCall[1]).toEqual(
           expect.objectContaining({
             hostNodeId: expect.any(String),
             proxyWidgets: expect.anything()
