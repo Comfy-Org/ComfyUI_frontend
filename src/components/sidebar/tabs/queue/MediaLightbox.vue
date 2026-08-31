@@ -39,17 +39,23 @@
       <!-- Content -->
       <div class="flex max-h-full max-w-full items-center justify-center">
         <template v-if="activeItem">
-          <ComfyImage
-            v-if="activeItem.isImage"
-            :key="activeItem.url"
-            :src="activeItem.url"
-            :contain="false"
-            :alt="activeItem.filename"
-            class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
-          />
-          <ResultVideo v-else-if="activeItem.isVideo" :result="activeItem" />
-          <ResultAudio v-else-if="activeItem.isAudio" :result="activeItem" />
-          <ResultText v-else-if="activeItem.isText" :result="activeItem" />
+          <KeepAlive :max="RETAINED_VIDEO_COUNT" include="ResultVideo">
+            <ComfyImage
+              v-if="activeItem.isImage"
+              :key="activeItem.url"
+              :src="activeItem.url"
+              :contain="false"
+              :alt="activeItem.filename"
+              class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
+            />
+            <ResultVideo
+              v-else-if="activeItem.isVideo"
+              :key="activeItem.url"
+              :result="activeItem"
+            />
+            <ResultAudio v-else-if="activeItem.isAudio" :result="activeItem" />
+            <ResultText v-else-if="activeItem.isText" :result="activeItem" />
+          </KeepAlive>
         </template>
       </div>
 
@@ -87,6 +93,9 @@ const props = defineProps<{
   allGalleryItems: ResultItemImpl[]
   activeIndex: number
 }>()
+
+/* Keeps the active video plus its neighbors buffered across gallery moves. */
+const RETAINED_VIDEO_COUNT = 3
 
 const galleryVisible = ref(false)
 const dialogRef = ref<HTMLElement>()
