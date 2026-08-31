@@ -1,4 +1,3 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { MenuItem } from '@/components/ui/menu/types'
 import enMessages from '@/locales/en/main.json'
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import DropdownMenu from './DropdownMenu.vue'
 
@@ -26,7 +26,7 @@ let openModal: HTMLElement | undefined
 
 afterEach(() => {
   if (openModal) {
-    ZIndex.clear(openModal)
+    zIndexManager.clear(openModal)
     openModal = undefined
   }
 })
@@ -34,7 +34,7 @@ afterEach(() => {
 describe('DropdownMenu z-index', () => {
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
+    zIndexManager.set('modal', openModal, 1700)
     const dialogZ = Number(openModal.style.zIndex)
 
     const user = userEvent.setup()
@@ -57,7 +57,7 @@ describe('DropdownMenu z-index', () => {
 
   it('opens a nested menu above a registered dialog', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
+    zIndexManager.set('modal', openModal, 1700)
     const dialogZ = Number(openModal.style.zIndex)
     const command = vi.fn()
     const user = userEvent.setup()

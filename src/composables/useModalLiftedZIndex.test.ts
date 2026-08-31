@@ -1,6 +1,7 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ref } from 'vue'
+
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import { useModalLiftedZIndex } from './useModalLiftedZIndex'
 
@@ -8,7 +9,7 @@ const registered: HTMLElement[] = []
 
 function registerDialog() {
   const el = document.createElement('div')
-  ZIndex.set('modal', el, 1700)
+  zIndexManager.set('modal', el, 1700)
   registered.push(el)
   return Number(el.style.zIndex)
 }
@@ -16,7 +17,7 @@ function registerDialog() {
 afterEach(() => {
   let el = registered.pop()
   while (el) {
-    ZIndex.clear(el)
+    zIndexManager.clear(el)
     el = registered.pop()
   }
 })
@@ -30,12 +31,10 @@ describe('useModalLiftedZIndex', () => {
   })
 
   it('stays above a dialog stack that has escalated past the static z-3000 fallback', () => {
-    // PrimeVue's counter re-adds baseZIndex whenever the previous registration
-    // used a different key, so alternating dialogs with overlays/menus climbs by
-    // ~1800 a time. Reporters saw the dialog at 7306 while the dropdown sat at
-    // its static z-3000; a single fresh dialog only reaches ~1702 and hides this.
+    // The counter re-adds baseZIndex whenever the previous registration uses a
+    // different key, so alternating layers climbs by ~1800 at a time.
     const other = document.createElement('div')
-    ZIndex.set('overlay', other, 1800)
+    zIndexManager.set('overlay', other, 1800)
     registered.push(other)
     const dialogZIndex = registerDialog()
     expect(dialogZIndex).toBeGreaterThan(3000)

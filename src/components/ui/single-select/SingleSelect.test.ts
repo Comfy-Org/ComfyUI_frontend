@@ -1,9 +1,10 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import SingleSelect from './SingleSelect.vue'
 
@@ -88,7 +89,7 @@ let openModal: HTMLElement | undefined
 
 afterEach(() => {
   if (openModal) {
-    ZIndex.clear(openModal)
+    zIndexManager.clear(openModal)
     openModal = undefined
   }
 })
@@ -96,7 +97,7 @@ afterEach(() => {
 describe('SingleSelect', () => {
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
+    zIndexManager.set('modal', openModal, 3702)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderInParent()
 
@@ -111,7 +112,7 @@ describe('SingleSelect', () => {
 
   it('opens above a dialog even when the caller passes its own contentStyle z-index', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
+    zIndexManager.set('modal', openModal, 3702)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderInParent(undefined, {
       contentStyle: { zIndex: 3000 }
