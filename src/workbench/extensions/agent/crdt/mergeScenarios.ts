@@ -120,12 +120,12 @@ function asPlainJson(workflow: WorkflowJSON): WorkflowJSON {
 /**
  * Replay `batches` against a fresh document minted from `workflow`.
  *
- * Duplicate detection reads the doc BEFORE the batch (an op_id already spent
- * is what makes a resend idempotent), while node presence and register
- * ownership are read AFTER it. Reading those two afterwards is what lets a
- * delete and the write it defeats sit in the SAME batch and still be
- * explained: the question "was there anything left to write to?" is only
- * answerable once the batch has settled.
+ * Duplicate detection and node presence are both sampled BEFORE the batch and
+ * then advanced op by op as the batch is walked, so a resend and the op it
+ * repeats — and a delete and the write it defeats — can share one batch and
+ * still be explained at their own positions. Register ownership is the one
+ * fact read AFTER the batch, because the incumbent stamp is only decided once
+ * the batch has settled.
  */
 function simulateOpStream(
   workflow: WorkflowJSON,
