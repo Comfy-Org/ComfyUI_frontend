@@ -45,7 +45,6 @@ export type SerialisedLLinkArray = [
 ]
 
 const linkByTopology = new WeakMap<LinkTopology, LLink>()
-const pendingEndpointPatches = new WeakMap<LLink, EndpointPatch>()
 
 let topologyFacadeDescriptors: PropertyDescriptorMap | undefined
 
@@ -126,26 +125,6 @@ type BasicReadonlyNetwork = Pick<
   'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
 >
 
-/** Routes an endpoint patch through {@link useLinkStore} if the link is registered, otherwise writes {@link LLink._state} directly. */
-function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
-  if (link._graphScope) {
-    const combinedPatch = { ...pendingEndpointPatches.get(link), ...patch }
-    const result = useLinkStore().updateEndpoint(
-      link._graphScope,
-      link._state,
-      combinedPatch
-    )
-    if (!result.ok) {
-      pendingEndpointPatches.set(link, combinedPatch)
-      console.error('Failed to update link endpoints', result.error)
-    } else {
-      pendingEndpointPatches.delete(link)
-    }
-  } else {
-    Object.assign(link._state, patch)
-  }
-}
-
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   static _drawDebug = false
@@ -188,7 +167,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_id(value: NodeId) {
-    applyEndpointPatch(this, { originNodeId: value })
+    this.updateEndpoints({ originNodeId: value })
   }
 
   /** Output slot index */
@@ -197,7 +176,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set origin_slot(value: number) {
-    applyEndpointPatch(this, { originSlot: value })
+    this.updateEndpoints({ originSlot: value })
   }
 
   /** Input node ID */
@@ -206,7 +185,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_id(value: NodeId) {
-    applyEndpointPatch(this, { targetNodeId: value })
+    this.updateEndpoints({ targetNodeId: value })
   }
 
   /** Input slot index */
@@ -215,7 +194,22 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   set target_slot(value: number) {
-    applyEndpointPatch(this, { targetSlot: value })
+    this.updateEndpoints({ targetSlot: value })
+  }
+
+  updateEndpoints(patch: EndpointPatch): void {
+    if (!this._graphScope) {
+      Object.assign(this._state, patch)
+      return
+    }
+
+    const result = useLinkStore().updateEndpoint(
+      this._graphScope,
+      this._state,
+      patch
+    )
+    if (!result.ok)
+      console.error('Failed to update link endpoints', result.error)
   }
 
   get parentId() {
@@ -481,18 +475,22 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   configure(o: LLink | SerialisedLLinkArray) {
     if (Array.isArray(o)) {
       this.id = toLinkId(o[0])
-      this.origin_id = toNodeId(o[1])
-      this.origin_slot = o[2]
-      this.target_id = toNodeId(o[3])
-      this.target_slot = o[4]
+      this.updateEndpoints({
+        originNodeId: toNodeId(o[1]),
+        originSlot: o[2],
+        targetNodeId: toNodeId(o[3]),
+        targetSlot: o[4]
+      })
       this.type = o[5]
     } else {
       this.id = o.id
       this.type = o.type
-      this.origin_id = o.origin_id
-      this.origin_slot = o.origin_slot
-      this.target_id = o.target_id
-      this.target_slot = o.target_slot
+      this.updateEndpoints({
+        originNodeId: o.origin_id,
+        originSlot: o.origin_slot,
+        targetNodeId: o.target_id,
+        targetSlot: o.target_slot
+      })
       this.parentId = o.parentId
     }
   }
@@ -713,7 +711,6 @@ export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
   useLinkStore().deleteLink(link._graphScope, link._state)
   linkByTopology.delete(toRaw(link._state))
-  pendingEndpointPatches.delete(link)
   link._graphScope = undefined
 }
 

@@ -2191,8 +2191,10 @@ export class LGraph
       // Special handling: Subgraph input node
       i++
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
-        link.target_id = subgraphNode.id
-        link.target_slot = i - 1
+        link.updateEndpoints({
+          targetNodeId: subgraphNode.id,
+          targetSlot: i - 1
+        })
         if (subgraphInput instanceof SubgraphInput) {
           subgraphInput.connect(
             subgraphNode.findInputSlotByType(link.type, true, true),
