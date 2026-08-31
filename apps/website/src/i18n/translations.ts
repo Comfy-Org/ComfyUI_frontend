@@ -7486,6 +7486,10 @@ const translations = {
     'zh-CN':
       '动画图示：无服务器活动在 RTX 6000 PRO、H100 和 B200 GPU 工作节点之间移动。'
   },
+  'platform.serverlessVisual.worker': {
+    en: 'Worker',
+    'zh-CN': '工作节点'
+  },
   'platform.products.builder.title': {
     en: 'Builder',
     'zh-CN': 'Builder'
