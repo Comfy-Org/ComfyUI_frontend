@@ -1,12 +1,13 @@
 ---
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
-import BuildManifestSplit01 from '../../components/blocks/BuildManifestSplit01.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import FeatureGrid02 from '../../components/blocks/FeatureGrid02.vue'
+import HeroProduct01 from '../../components/blocks/HeroProduct01.vue'
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import StepsGrid01 from '../../components/blocks/StepsGrid01.vue'
+import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
 import { externalLinks } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
@@ -124,41 +125,15 @@ const faqPage = buildFaqPageNode(url, faqs)
   ]}
   extraJsonLd={[faqPage]}
 >
-  <BuildManifestSplit01
-    eyebrow="COMFYUI MANAGED BUILDS"
+  <HeroProduct01
     headingTag="h1"
-    heading={'One approved ComfyUI environment.\nAcross your team and deployment targets.'}
-    body="Replace one-off installation scripts and machine-by-machine maintenance with a versioned ComfyUI build. Define the release, custom nodes, models, and dependencies once, then ship it wherever the work happens."
-    features={[
-      'Private custom nodes and models',
-      'Use supported provider keys and existing contracts',
-      'Deploy across workstations, GPU servers, or customer infrastructure',
-    ]}
-    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
-    secondaryCta={{ label: 'SEE HOW IT WORKS', href: '#how-it-works' }}
-    manifestLabel="APPROVED BUILD"
-    manifestName="Production environment"
-    manifestVersion="CURRENT"
-    manifestItems={[
-      {
-        id: 'dependencies',
-        label: 'ComfyUI and dependencies',
-        value: 'Pinned',
-      },
-      { id: 'nodes', label: 'Custom nodes', value: 'Allowlisted' },
-      { id: 'models', label: 'Models', value: 'Approved and private' },
-      { id: 'providers', label: 'Provider access', value: 'BYOK' },
-    ]}
-    releaseLabels={[
-      { id: 'previous', label: 'Previous release' },
-      { id: 'current', label: 'Current release', current: true },
-    ]}
-    deploymentTargets={[
-      { id: 'workstations', label: 'Workstations' },
-      { id: 'servers', label: 'GPU servers' },
-      { id: 'infrastructure', label: 'Customer infrastructure' },
-    ]}
-  />
+    title="MANAGED BUILDS"
+    tag="BETA"
+    body="Govern the models, custom nodes, and dependencies your team runs. Create a managed distribution of ComfyUI and deploy the same build anywhere, local or serverless cloud."
+    primaryCta={{ label: 'CONTACT SALES', href: '/contact/' }}
+  >
+    <DistributionsScene slot="media" client:load />
+  </HeroProduct01>
 
   <FeatureGrid02
     heading="Stop rebuilding the operating layer around ComfyUI."
