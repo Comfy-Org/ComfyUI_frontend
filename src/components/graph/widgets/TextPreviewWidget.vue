@@ -5,7 +5,7 @@
     <div class="flex items-center gap-2">
       <div class="flex flex-1 items-center gap-2 break-all">
         <span v-html="formattedText"></span>
-        <Skeleton v-if="isParentNodeExecuting" class="h-4! flex-1!" />
+        <Skeleton v-if="isParentNodeExecuting" class="h-4 flex-1" />
       </div>
     </div>
   </div>
@@ -13,9 +13,9 @@
 
 <script setup lang="ts">
 import { default as DOMPurify } from 'dompurify'
-import Skeleton from 'primevue/skeleton'
 import { computed } from 'vue'
 
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeId } from '@/types/nodeId'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
