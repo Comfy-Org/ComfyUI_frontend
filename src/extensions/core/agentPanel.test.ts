@@ -113,7 +113,6 @@ describe('AgentPanel extension flag gate', () => {
     mocks.agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
-    mocks.registerViewportInset.mockClear()
     mocks.registerTracker.mockClear()
     mocks.canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
