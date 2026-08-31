@@ -23,7 +23,7 @@ Code facts this rule is grounded on (cmp `8636af3e4`; FE `poc/fe-crdt-follower` 
 - `pos` enters the shared semantic doc exactly once per node incarnation, verbatim, at
   `add_node` via `createNodeMap` (`src/applier.ts:498`, `src/doc.ts:752`), and is read back
   verbatim (`src/read.ts:308` `NODE_SNAPSHOT_KEYS`). It is creation-time placement intent,
-  not a live-position register. Concurrent move is therefore *unrepresentable* in the semantic
+  not a live-position register. Concurrent move is therefore _unrepresentable_ in the semantic
   doc today — by design.
 - The FE follower's `move_node` graph mutation
   (`src/workbench/extensions/agent/crdt/graphMutations.ts`, `diffSnapshots.ts:75-76`,
@@ -40,11 +40,11 @@ Code facts this rule is grounded on (cmp `8636af3e4`; FE `poc/fe-crdt-follower` 
 
 ### The split, stated explicitly (what KA-8's text demands)
 
-| Concern | Home | Merge semantics |
-| --- | --- | --- |
-| Creation-time placement (`pos` at `add_node`) | Shared semantic doc (cmp) | Written once per incarnation, verbatim; whole-node LWW under duplicate-create per DQ-15 |
-| Live position after creation, pan/zoom, groups, geometry, cosmetic flags | FE-owned layout Y.Doc (per DQ-18) | This ADR's rule below |
-| In-flight drag positions (the node moving under the cursor) | Awareness channel only | Ephemeral; never doc state (KA-7, KA-9, FORECLOSE 6) |
+| Concern                                                                  | Home                              | Merge semantics                                                                         |
+| ------------------------------------------------------------------------ | --------------------------------- | --------------------------------------------------------------------------------------- |
+| Creation-time placement (`pos` at `add_node`)                            | Shared semantic doc (cmp)         | Written once per incarnation, verbatim; whole-node LWW under duplicate-create per DQ-15 |
+| Live position after creation, pan/zoom, groups, geometry, cosmetic flags | FE-owned layout Y.Doc (per DQ-18) | This ADR's rule below                                                                   |
+| In-flight drag positions (the node moving under the cursor)              | Awareness channel only            | Ephemeral; never doc state (KA-7, KA-9, FORECLOSE 6)                                    |
 
 ### Reconciliation rule for concurrent drags of one node
 
@@ -54,7 +54,7 @@ Code facts this rule is grounded on (cmp `8636af3e4`; FE `poc/fe-crdt-follower` 
    that key; the later committed drop wins on every replica. No smoothing, no averaging,
    no locks, no custom tiebreak.
 2. **Drag-end commit is the only required write.** A drag writes its layout-doc register on
-   drop (pointerup). Throttled intermediate commits are *permitted* (they are ordinary LWW
+   drop (pointerup). Throttled intermediate commits are _permitted_ (they are ordinary LWW
    writes) but never required for correctness.
 3. **In-flight drag positions travel on awareness, never in either doc.** Live ghosting of a
    peer's drag is presentation-only presence state, exactly as KA-9 treats the optimistic

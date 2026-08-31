@@ -162,7 +162,7 @@ hand-rolled scoping scheme.
    it rather than to any render-attached lifecycle.
 3. **Isolation vs survival is a real axis.** Stores that can re-hydrate from workflow JSON
    (widgetValueStore, previewExposureStore) need isolation only; state that cannot
-   re-hydrate (node outputs, previews, compositor cache) needs isolation *and* survival.
+   re-hydrate (node outputs, previews, compositor cache) needs isolation _and_ survival.
    Target-session contents — follower doc, state vector, sequence baseline, pending
    queue, lineage — are all in the survival class: none of them can be re-derived from
    workflow JSON, so they must never be keyed to, or evicted by, tab activation.
