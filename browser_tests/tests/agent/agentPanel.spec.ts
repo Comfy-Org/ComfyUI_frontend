@@ -155,6 +155,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 1 tool call for 1.3 seconds'
     })
     await expect(firstSummary).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await firstSummary.click()
     await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
@@ -191,6 +193,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 2 tool calls for 0.7 seconds'
     })
     await expect(finalSummary).toBeVisible()
+    await expect(finalSummary).toHaveAttribute('aria-expanded', 'false')
+    await finalSummary.click()
     await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
     await expect(
       panel.getByRole('button', {
@@ -226,10 +230,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
     await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0)
-    await expect(
-      panel.getByRole('button', { name: /ran 2 tool calls/i })
-    ).toHaveAttribute('aria-expanded', 'false')
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
   })
 
   test.describe('composer sizing', () => {
