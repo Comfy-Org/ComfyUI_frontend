@@ -30,6 +30,7 @@
         <DialogContent
           class="min-w-96"
           @escape-key-down="$event.isComposing && $event.preventDefault()"
+          @close-auto-focus="onFilterDialogCloseAutoFocus"
         >
           <DialogHeader>
             <DialogTitle>{{ $t('g.addNodeFilterCondition') }}</DialogTitle>
@@ -190,7 +191,11 @@ const reFocusInput = async () => {
 
 function onFilterDialogOpenChange(open: boolean) {
   filterVisible.value = open
-  if (!open) void reFocusInput()
+}
+
+function onFilterDialogCloseAutoFocus(event: Event) {
+  event.preventDefault()
+  void reFocusInput()
 }
 
 onMounted(() => {
