@@ -10,6 +10,7 @@ import { createOpSender } from './opSender'
 const WORKFLOW_ID = 'property-workflow'
 const TAB = 'property-tab'
 const ACTOR = 'human:property-user:property-tab'
+const TARGET = { workflowId: WORKFLOW_ID, rootGraphId: 'property-root' }
 
 type AddNodeOperation = Extract<GraphOperation, { op: 'add_node' }>
 
@@ -30,13 +31,38 @@ const arbOperations = fc
   })
   .map((ids) => ids.map(addNode))
 
+function enqueue(
+  sender: ReturnType<typeof createOpSender>,
+  operations: GraphOperation[]
+): void {
+  sender.enqueue(Object.assign([...operations], { target: TARGET, operations }))
+}
+
+function mintContext(firstVersion: number) {
+  return {
+    actor: ACTOR,
+    baseVersion: firstVersion,
+    firstVersion
+  }
+}
+
+function opsResult(applied: string[]): OpsResultView {
+  const result = {
+    workflowId: WORKFLOW_ID,
+    ok: true,
+    applied,
+    skipped: []
+  }
+  return result
+}
+
 describe('CRDT human write-leg invariants (property)', () => {
   it('starts empty and ignores empty or detached writes', () => {
     const sendOps = vi.fn(() => true)
     const listeners = new Set<(result: OpsResultView) => void>()
-    const sender = createOpSender({
+    const deps = {
       sendOps,
-      onOpsResult: (listener) => {
+      onOpsResult: (listener: (result: OpsResultView) => void) => {
         listeners.add(listener)
         return () => listeners.delete(listener)
       },
@@ -44,19 +70,26 @@ describe('CRDT human write-leg invariants (property)', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 0,
+      observedVersion: () => 0,
+      reserveVersions: (
+        _workflowId: string,
+        _observed: number,
+        _count: number
+      ) => 1,
       onBatchSettled: () => {}
-    })
+    }
+    const sender = createOpSender(deps)
 
     expect(sender.pending()).toBe(0)
     expect(listeners).toHaveLength(1)
 
-    sender.enqueue([])
+    enqueue(sender, [])
     expect(sendOps).not.toHaveBeenCalled()
 
     sender.detach()
     expect(listeners).toHaveLength(0)
 
-    sender.enqueue([addNode(1)])
+    enqueue(sender, [addNode(1)])
     expect(sendOps).not.toHaveBeenCalled()
   })
 
@@ -64,21 +97,20 @@ describe('CRDT human write-leg invariants (property)', () => {
     fc.assert(
       fc.property(
         arbOperations,
-        fc.nat({ max: Number.MAX_SAFE_INTEGER }),
+        fc.nat({ max: Number.MAX_SAFE_INTEGER - 40 }),
         (operations, baseVersion) => {
-          const minted = mintWireOps(operations, {
-            actor: ACTOR,
-            baseVersion
-          })
+          const minted = operations.flatMap((operation, index) =>
+            mintWireOps([operation], mintContext(baseVersion + index))
+          )
 
           expect(new Set(minted.map((op) => op.op_id))).toHaveLength(
             operations.length
           )
-          for (const op of minted) {
+          for (const [index, op] of minted.entries()) {
             expect(op.op_id).toMatch(/^[0-9a-f]{32}$/)
             expect(op.actor).toBe(ACTOR)
-            expect(op.base_version).toBe(baseVersion)
-            expect(op.stamp).toEqual([baseVersion, ACTOR])
+            expect(op.base_version).toBe(baseVersion + index)
+            expect(op.stamp).toEqual([op.base_version, ACTOR])
           }
         }
       )
@@ -89,34 +121,42 @@ describe('CRDT human write-leg invariants (property)', () => {
     fc.assert(
       fc.property(arbOperations, (operations) => {
         const sent: Op[][] = []
+        let producerVersion = 41
         let resultListener = (_result: OpsResultView): void => {
           throw new Error('Expected an operation-result listener')
         }
-        const sender = createOpSender({
-          sendOps: (_workflowId, _tab, ops) => {
+        const deps = {
+          sendOps: (_workflowId: string, _tab: string, ops: Op[]) => {
             sent.push(ops)
             return true
           },
-          onOpsResult: (listener) => {
+          onOpsResult: (listener: (result: OpsResultView) => void) => {
             resultListener = listener
             return () => {}
           },
           workflowId: () => WORKFLOW_ID,
           tab: TAB,
           actor: () => ACTOR,
-          baseVersion: () => 41,
+          baseVersion: () => ++producerVersion,
+          observedVersion: () => 41,
+          reserveVersions: (
+            _workflowId: string,
+            observed: number,
+            count: number
+          ) => {
+            const firstVersion = Math.max(producerVersion, observed) + 1
+            producerVersion = firstVersion + count - 1
+            return firstVersion
+          },
           onBatchSettled: () => {}
-        })
+        }
+        const sender = createOpSender(deps)
 
         for (const operation of operations) {
-          sender.enqueue([operation])
+          enqueue(sender, [operation])
           const latest = sent.at(-1)
           if (!latest) throw new Error('Expected an in-flight operation')
-          resultListener({
-            ok: true,
-            applied: [latest[0].op_id],
-            skipped: []
-          })
+          resultListener(opsResult([latest[0].op_id]))
         }
 
         const delivered = sent.flat()
@@ -128,6 +168,9 @@ describe('CRDT human write-leg invariants (property)', () => {
         ).toEqual(operations.map((operation) => operation.node_id))
         expect(new Set(delivered.map((op) => op.op_id))).toHaveLength(
           operations.length
+        )
+        expect(delivered.map((op) => op.base_version)).toEqual(
+          operations.map((_, index) => 42 + index)
         )
         expect(sender.pending()).toBe(0)
         sender.detach()
@@ -144,8 +187,8 @@ describe('CRDT human write-leg invariants (property)', () => {
         (operations, failedAttempts) => {
           const attempts: Op[][] = []
           let callCount = 0
-          const sender = createOpSender({
-            sendOps: (_workflowId, _tab, ops) => {
+          const deps = {
+            sendOps: (_workflowId: string, _tab: string, ops: Op[]) => {
               attempts.push(ops)
               callCount += 1
               return callCount > failedAttempts
@@ -155,10 +198,17 @@ describe('CRDT human write-leg invariants (property)', () => {
             tab: TAB,
             actor: () => ACTOR,
             baseVersion: () => 73,
+            observedVersion: () => 72,
+            reserveVersions: (
+              _workflowId: string,
+              observed: number,
+              _count: number
+            ) => observed + 1,
             onBatchSettled: () => {}
-          })
+          }
+          const sender = createOpSender(deps)
 
-          sender.enqueue(operations)
+          enqueue(sender, operations)
           vi.advanceTimersByTime(failedAttempts * 500)
           expect(attempts).toHaveLength(failedAttempts + 1)
           const minted = attempts[0]
