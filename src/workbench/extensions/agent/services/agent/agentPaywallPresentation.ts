@@ -31,8 +31,8 @@ export function resolveAgentPaywallPresentation({
   canTopUp,
   canSubscribeSelfServe
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
-  if (role === 'member') return { kind: 'member' }
   if (distribution !== 'cloud') return { kind: 'local' }
+  if (role === 'member') return { kind: 'member' }
   if (!hasAuthoritativeCapabilities) return { kind: 'unknown' }
   if (!canTopUp) {
     return canSubscribeSelfServe
