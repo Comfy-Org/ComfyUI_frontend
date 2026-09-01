@@ -1193,6 +1193,13 @@ describe('ComfyApp', () => {
         modified: 0,
         size: 0
       })
+      const laterGraph = new LGraph()
+      laterGraph.add(new LGraphNode('Later node'))
+      const laterWorkflow = new ComfyWorkflow({
+        path: 'workflows/later.json',
+        modified: 0,
+        size: 0
+      })
       const registry = new TelemetryRegistry()
       registry.registerProvider({ trackExecutionOutcome: vi.fn() })
       setTelemetryRegistry(registry)
@@ -1210,13 +1217,16 @@ describe('ComfyApp', () => {
         workflow: createWorkflowGraphData()
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
-      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
-      })
+      vi.spyOn(api, 'queuePrompt')
+        .mockImplementationOnce(async () => {
+          Reflect.set(app, 'rootGraphInternal', laterGraph)
+          mockWorkspaceWorkflow.activeWorkflow = laterWorkflow
+          return { prompt_id: 'job-1', error: '' }
+        })
+        .mockResolvedValueOnce({ prompt_id: 'job-2', error: '' })
 
       try {
-        const queuePromise = app.queuePrompt(0)
+        const queuePromise = app.queuePrompt(0, 2)
         await vi.waitFor(() => {
           expect(resolveAuthToken).toBeTypeOf('function')
         })
@@ -1225,12 +1235,16 @@ describe('ComfyApp', () => {
         resolveAuthToken('workspace-token')
         await queuePromise
 
-        expect(graphToPrompt).toHaveBeenCalledWith(submissionGraph)
-        expect(useExecutionStore().queuedJobs['job-1']).toMatchObject(
-          expect.objectContaining({
-            workflowContext: expect.objectContaining({ total_node_count: 3 })
-          })
-        )
+        expect(graphToPrompt).toHaveBeenNthCalledWith(1, submissionGraph)
+        expect(graphToPrompt).toHaveBeenNthCalledWith(2, submissionGraph)
+        expect(useExecutionStore().queuedJobs['job-1']).toMatchObject({
+          workflow: submissionWorkflow,
+          workflowContext: expect.objectContaining({ total_node_count: 3 })
+        })
+        expect(useExecutionStore().queuedJobs['job-2']).toMatchObject({
+          workflow: submissionWorkflow,
+          workflowContext: expect.objectContaining({ total_node_count: 3 })
+        })
       } finally {
         setTelemetryRegistry(null)
       }

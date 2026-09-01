@@ -1741,11 +1741,11 @@ export class ComfyApp {
         )
 
         const isPartialExecution = !!queueNodeIds?.length
+        const submissionGraph = this.rootGraph
+        const submissionWorkflow = useWorkspaceStore().workflow
+          .activeWorkflow as ComfyWorkflow
+        const submissionMode = getWorkflowMode(submissionWorkflow)
         for (let i = 0; i < batchCount; i++) {
-          const submissionGraph = this.rootGraph
-          const submissionWorkflow = useWorkspaceStore().workflow
-            .activeWorkflow as ComfyWorkflow
-          const submissionMode = getWorkflowMode(submissionWorkflow)
           let executionContext: ExecutionContext | undefined
           if (telemetry) {
             try {
