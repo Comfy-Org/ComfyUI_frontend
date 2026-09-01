@@ -8,22 +8,25 @@ let queue: Promise<unknown> = Promise.resolve()
 const MODEL_THUMBNAIL_TIMEOUT_MS = 10_000
 
 /**
- * Outcome of an offscreen thumbnail render. `timed-out` is the only
- * failure worth retrying: the model may simply have been slower than the
- * deadline, whereas `failed` means it could not be rendered at all.
+ * Outcome of an offscreen thumbnail render. `cancelled` is separated from
+ * `failed` so a caller that walked away is not reported as a fault.
  */
 export type ModelThumbnailResult =
   | { status: 'rendered'; dataUrl: string }
-  | { status: 'timed-out' }
   | { status: 'cancelled' }
   | { status: 'failed' }
 
 /**
  * Render a model to a thumbnail data URL offscreen, without opening the
- * viewer. Runs one generation at a time to bound live WebGL contexts and
- * persists the result through the asset API so other surfaces pick it up.
- * Aborting `callerSignal` settles the request and releases the queue, both
- * while it waits its turn and once it is running.
+ * viewer. Starts one render at a time so only one WebGL context is ever
+ * live, and persists the result through the asset API so other surfaces
+ * pick it up.
+ *
+ * A render that outlives its deadline is given up on: its viewer is torn
+ * down and the queue moves on, but the underlying transfer and parse are
+ * not abortable and run to completion in the background. Aborting
+ * `callerSignal` gives up the same way, and skips the render entirely if
+ * it has not started yet.
  */
 export function generateModelThumbnail(
   modelUrl: string,
@@ -70,12 +73,6 @@ async function renderThumbnailWithTimeout(
     ])
     return { status: 'rendered', dataUrl }
   } catch (error) {
-    if (error === timeoutError) {
-      reportError(error, {
-        errorType: 'agent_model_thumbnail_generation_failure'
-      })
-      return { status: 'timed-out' }
-    }
     if (callerSignal?.aborted) return { status: 'cancelled' }
     reportError(error, {
       errorType: 'agent_model_thumbnail_generation_failure'

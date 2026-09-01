@@ -73,7 +73,6 @@ const galleryIndex = ref(-1)
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
 const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
-const retriedThumbnails = new Set<string>()
 const thumbnailAbort = new AbortController()
 let mounted = true
 onBeforeUnmount(() => {
@@ -85,8 +84,9 @@ onBeforeUnmount(() => {
 
 /**
  * Look up a server-rendered preview, falling back to an offscreen render.
- * A render that only ran out of time is re-queued once: it lands behind
- * every other pending model, so a slow model cannot starve the rest.
+ * A model that does not render keeps its placeholder: a retry would race
+ * the abandoned transfer, which is not abortable. Reopening the 3D dialog
+ * still refreshes the tile through `refreshModelThumbnail`.
  */
 function loadModelThumbnail(url: string, filename: string): void {
   modelThumbnails.value[url] = ''
@@ -103,12 +103,8 @@ function loadModelThumbnail(url: string, filename: string): void {
         thumbnailAbort.signal
       )
       if (!mounted) return
-      if (result.status === 'rendered') {
+      if (result.status === 'rendered')
         modelThumbnails.value[url] = result.dataUrl
-      } else if (result.status === 'timed-out' && !retriedThumbnails.has(url)) {
-        retriedThumbnails.add(url)
-        loadModelThumbnail(url, filename)
-      }
     })
     .catch((error) => {
       if (mounted) delete modelThumbnails.value[url]

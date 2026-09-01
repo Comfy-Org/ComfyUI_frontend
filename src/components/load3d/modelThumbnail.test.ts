@@ -110,7 +110,7 @@ describe('generateModelThumbnail', () => {
       controller.abort()
       await vi.advanceTimersByTimeAsync(10_000)
 
-      await expect(blockedRun).resolves.toEqual({ status: 'timed-out' })
+      await expect(blockedRun).resolves.toEqual({ status: 'failed' })
       await expect(skippedRun).resolves.toEqual({ status: 'cancelled' })
       expect(createLoad3d).toHaveBeenCalledTimes(1)
     } finally {
@@ -164,7 +164,7 @@ describe('generateModelThumbnail', () => {
       const secondRun = generateModelThumbnail('/next.glb', 'next.glb')
       await vi.advanceTimersByTimeAsync(10_000)
 
-      await expect(firstRun).resolves.toEqual({ status: 'timed-out' })
+      await expect(firstRun).resolves.toEqual({ status: 'failed' })
       await expect(secondRun).resolves.toEqual({
         status: 'rendered',
         dataUrl: 'data:image/png;base64,thumb'
@@ -195,7 +195,7 @@ describe('generateModelThumbnail', () => {
       const secondRun = generateModelThumbnail('/next.glb', 'next.glb')
       await vi.advanceTimersByTimeAsync(10_000)
 
-      await expect(firstRun).resolves.toEqual({ status: 'timed-out' })
+      await expect(firstRun).resolves.toEqual({ status: 'failed' })
       await expect(secondRun).resolves.toEqual({
         status: 'rendered',
         dataUrl: 'data:image/png;base64,thumb'

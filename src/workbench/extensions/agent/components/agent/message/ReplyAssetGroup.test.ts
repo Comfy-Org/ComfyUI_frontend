@@ -250,24 +250,14 @@ describe('ReplyAssetGroup', () => {
     expect(generateModelThumbnail).not.toHaveBeenCalled()
   })
 
-  it('re-queues a timed-out model once, without another render pass', async () => {
-    isAssetPreviewSupported.mockReturnValue(true)
-    generateModelThumbnail.mockResolvedValue({ status: 'timed-out' })
-    renderGroup([model])
-
-    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledTimes(2))
-
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
-  })
-
-  it('does not retry a model that cannot be rendered', async () => {
+  it('does not retry a model that failed to render', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     renderGroup([model])
     await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
 
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(generateModelThumbnail).toHaveBeenCalledOnce()
+    expect(screen.getByRole('button', { name: 'mesh.glb' })).toBeInTheDocument()
   })
 
   it('aborts queued generation when unmounted', async () => {
