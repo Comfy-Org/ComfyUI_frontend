@@ -3,6 +3,7 @@ import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
+import HeaderAccount from './HeaderAccount.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -59,7 +60,10 @@ const ctaButtons = [
 
     <!-- Desktop nav links -->
     <HeaderMainDesktop :locale class="hidden lg:block" />
-    <HeaderMainMobile :locale class="lg:hidden" />
+    <div class="flex shrink-0 items-center gap-2 lg:hidden">
+      <HeaderAccount :locale />
+      <HeaderMainMobile :locale />
+    </div>
 
     <!-- Desktop CTA buttons -->
     <div
@@ -68,6 +72,7 @@ const ctaButtons = [
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
+      <HeaderAccount :locale />
       <Button
         v-for="cta in ctaButtons"
         :key="cta.href"

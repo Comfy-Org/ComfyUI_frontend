@@ -44,6 +44,7 @@ export type NavItem =
 export function getMainNavigation(locale: Locale): NavItem[] {
   const routes = getRoutes(locale)
   return [
+    { label: t('nav.workshop', locale), href: routes.workshop, badge: 'new' },
     {
       label: t('nav.products', locale),
       badge: 'new',

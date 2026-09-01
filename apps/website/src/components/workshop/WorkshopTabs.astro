@@ -1,0 +1,48 @@
+---
+import { cn } from '@comfyorg/tailwind-utils'
+import { getRoutes } from '../../config/routes'
+import { t } from '../../i18n/translations'
+
+interface Props {
+  active: 'models' | 'workflows'
+}
+
+const { active } = Astro.props
+const routes = getRoutes()
+
+const tabs = [
+  { id: 'models', label: t('workshop.tabs.models'), href: routes.workshop },
+  {
+    id: 'workflows',
+    label: t('workshop.tabs.workflows'),
+    href: routes.workshopWorkflows
+  }
+] as const
+---
+
+<nav
+  aria-label={t('workshop.title')}
+  class="mb-10 border-b border-transparency-white-t8"
+  data-testid="workshop-tabs"
+>
+  <ul class="flex gap-8">
+    {
+      tabs.map((tab) => (
+        <li>
+          <a
+            href={tab.href}
+            aria-current={tab.id === active ? 'page' : undefined}
+            class={cn(
+              'inline-block border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
+              tab.id === active
+                ? 'border-primary-comfy-yellow text-primary-warm-white'
+                : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+            )}
+          >
+            {tab.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>

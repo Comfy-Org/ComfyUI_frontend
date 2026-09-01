@@ -8200,6 +8200,102 @@ Enterprise`
   'platform.closing.headingAfterBadge': {
     en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Comfy API.',
     'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
+  },
+
+  // Workshop – header account + nav
+  'nav.workshop': { en: 'Workshop', 'zh-CN': '工作坊' },
+  'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
+  'nav.signOut': { en: 'Sign out', 'zh-CN': '退出登录' },
+  'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
+  'nav.credits': { en: 'credits', 'zh-CN': '积分' },
+  'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
+  'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
+  'nav.workspace': { en: 'Workspace', 'zh-CN': '工作区' },
+  'nav.prototypeControls': { en: 'Prototype controls', 'zh-CN': '原型控制' },
+  'nav.simulateZeroBalance': {
+    en: 'Simulate zero balance',
+    'zh-CN': '模拟零余额'
+  },
+  'nav.restoreBalance': { en: 'Restore balance', 'zh-CN': '恢复余额' },
+
+  // Workshop – catalog pages
+  'workshop.title': { en: 'Workshop', 'zh-CN': '工作坊' },
+  'workshop.meta.title': {
+    en: 'Comfy Workshop - Models & Workflows',
+    'zh-CN': 'Comfy 工作坊 - 模型与工作流'
+  },
+  'workshop.meta.description': {
+    en: 'Browse and run partner models and curated workflows in the Comfy Workshop.',
+    'zh-CN': '在 Comfy 工作坊中浏览并运行合作伙伴模型和精选工作流。'
+  },
+  'workshop.hero.eyebrow': { en: 'Comfy Workshop', 'zh-CN': 'Comfy 工作坊' },
+  'workshop.hero.heading': {
+    en: 'Try models and workflows in your browser',
+    'zh-CN': '在浏览器中试用模型和工作流'
+  },
+  'workshop.hero.subtitle': {
+    en: 'Every partner model on Comfy Router, ready to run. Sign in, pick a model, hit Run.',
+    'zh-CN':
+      'Comfy Router 上的每个合作伙伴模型都可直接运行。登录、选择模型、点击运行。'
+  },
+  'workshop.hero.prototype': {
+    en: 'Prototype · mock data',
+    'zh-CN': '原型 · 模拟数据'
+  },
+  'workshop.tabs.models': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.tabs.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'workshop.search.label': { en: 'Search models', 'zh-CN': '搜索模型' },
+  'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
+  'workshop.filter.label': { en: 'Filter by modality', 'zh-CN': '按模态筛选' },
+  'workshop.filter.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.filter.text': { en: 'Text', 'zh-CN': '文本' },
+  'workshop.filter.other': { en: 'Other', 'zh-CN': '其他' },
+  'workshop.count.models': { en: 'models', 'zh-CN': '个模型' },
+  'workshop.card.partnerNode': { en: 'Partner node', 'zh-CN': '合作伙伴节点' },
+  'workshop.card.creditsPerRun': { en: 'credits / run', 'zh-CN': '积分 / 次' },
+  'workshop.card.priceOnPage': {
+    en: 'Pricing on model page',
+    'zh-CN': '价格见模型页'
+  },
+  'workshop.card.workflows': { en: 'workflows', 'zh-CN': '个工作流' },
+  'workshop.card.tryCta': {
+    en: 'Try in Playground',
+    'zh-CN': '在 Playground 试用'
+  },
+  'workshop.empty.heading': {
+    en: 'No models match',
+    'zh-CN': '没有匹配的模型'
+  },
+  'workshop.empty.body': {
+    en: 'Try a different search or clear the filters.',
+    'zh-CN': '换个关键词或清除筛选条件。'
+  },
+  'workshop.empty.clear': { en: 'Clear filters', 'zh-CN': '清除筛选' },
+  'workshop.workflows.eyebrow': { en: 'Milestone 2', 'zh-CN': '里程碑 2' },
+  'workshop.workflows.heading': {
+    en: 'Curated workflows are on the way',
+    'zh-CN': '精选工作流即将上线'
+  },
+  'workshop.workflows.body': {
+    en: 'Apps built from models and workflows, with presets, one-click Run, and Deploy to Developer Platform.',
+    'zh-CN':
+      '由模型和工作流构建的应用，支持预设、一键运行以及部署到开发者平台。'
+  },
+  'workshop.workflows.categories.create': {
+    en: 'Create images & videos',
+    'zh-CN': '创作图像与视频'
+  },
+  'workshop.workflows.categories.edit': {
+    en: 'Edit & enhance',
+    'zh-CN': '编辑与增强'
+  },
+  'workshop.workflows.categories.specialized': {
+    en: 'Specialized outcomes',
+    'zh-CN': '专项成果'
   }
 } as const satisfies Record<
   string,

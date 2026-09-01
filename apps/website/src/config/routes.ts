@@ -40,7 +40,9 @@ const baseRoutes = {
   geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
   wan3: '/wan-3.0',
-  brand: '/brand'
+  brand: '/brand',
+  workshop: '/workshop',
+  workshopWorkflows: '/workshop/workflows'
 } as const
 
 type Routes = typeof baseRoutes
@@ -66,6 +68,8 @@ type Routes = typeof baseRoutes
 // minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
+//
+// workshop, workshopWorkflows: prototype pages, English only for now.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
@@ -74,7 +78,9 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'enterprise',
   'managedBuilds',
   'models',
-  'minimaxLicenseProfessionalRequest'
+  'minimaxLicenseProfessionalRequest',
+  'workshop',
+  'workshopWorkflows'
 ])
 
 const LOCALE_INVARIANT_PATHS = new Set<string>(
