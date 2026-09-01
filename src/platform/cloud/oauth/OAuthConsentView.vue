@@ -267,9 +267,14 @@ async function loadChallenge() {
 
 function messageForError(error: unknown): string {
   if (error instanceof OAuthApiError) {
-    if (error.status === 400) return t('oauth.consent.errorExpired')
-    if (error.status === 403) return t('oauth.consent.errorScopeBroadening')
-    if (error.status === 404) return t('oauth.consent.errorUnavailable')
+    switch (error.status) {
+      case 400:
+        return t('oauth.consent.errorExpired')
+      case 403:
+        return t('oauth.consent.errorScopeBroadening')
+      case 404:
+        return t('oauth.consent.errorUnavailable')
+    }
   }
   return t('oauth.consent.genericError')
 }
