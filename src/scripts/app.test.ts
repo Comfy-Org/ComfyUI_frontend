@@ -421,6 +421,31 @@ describe('ComfyApp', () => {
   })
 
   describe('nodeOutputs', () => {
+    it('does O(1) work per write instead of rebuilding the whole output record (#16008)', () => {
+      // Regression for a per-write full-record rekey: each write used to
+      // call `replaceOutputsFromLegacy`, an O(N) `mapKeys` rebuild of every
+      // node's entry, making N sequential output writes O(N^2) overall. A
+      // reintroduction of that path would fail this by calling
+      // `replaceOutputsFromLegacy` and by triggering more than one
+      // `setOutputFromLegacy` commit per single-key write.
+      app.vueAppReady = true
+      const nodeCount = 50
+
+      for (let i = 0; i < nodeCount; i++) {
+        mockNodeOutputStore.setOutputFromLegacy.mockClear()
+        app.nodeOutputs[String(i)] = { images: [{ filename: `${i}.png` }] }
+        expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledOnce()
+        expect(mockNodeOutputStore.setOutputFromLegacy).toHaveBeenCalledWith(
+          String(i),
+          { images: [{ filename: `${i}.png` }] }
+        )
+      }
+
+      expect(
+        mockNodeOutputStore.replaceOutputsFromLegacy
+      ).not.toHaveBeenCalled()
+    })
+
     it('commits legacy property mutations to the output store', () => {
       app.vueAppReady = true
       const output = { images: [{ filename: 'legacy.png' }] }
