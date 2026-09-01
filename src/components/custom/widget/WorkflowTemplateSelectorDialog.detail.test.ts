@@ -427,7 +427,9 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
   it('starts eligible rows before Download models & open opens the workflow', async () => {
     const { user } = await clickTemplateCardAfterRender()
     await user.click(
-      await screen.findByRole('button', { name: 'Download models & open' })
+      await screen.findByRole('button', {
+        name: 'Download models & open (1 KB)'
+      })
     )
 
     await waitFor(() => {
