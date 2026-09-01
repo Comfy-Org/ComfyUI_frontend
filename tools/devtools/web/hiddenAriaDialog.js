@@ -20,9 +20,20 @@ app.registerExtension({
       dialog.tabIndex = -1
       document.body.appendChild(dialog)
 
+      const hiddenAncestor = document.createElement('div')
+      hiddenAncestor.setAttribute('aria-hidden', 'true')
+      hiddenAncestor.style.display = 'none'
+      const ancestorHiddenDialog = document.createElement('section')
+      ancestorHiddenDialog.setAttribute('role', 'dialog')
+      ancestorHiddenDialog.setAttribute('aria-modal', 'true')
+      ancestorHiddenDialog.dataset.devtoolsAncestorHiddenAriaDialog = ''
+      hiddenAncestor.appendChild(ancestorHiddenDialog)
+      document.body.appendChild(hiddenAncestor)
+
       const onRemoved = this.onRemoved
       this.onRemoved = function (...removeArgs) {
         dialog.remove()
+        hiddenAncestor.remove()
         onRemoved?.apply(this, removeArgs)
       }
     }
