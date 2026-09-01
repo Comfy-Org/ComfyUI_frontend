@@ -41,6 +41,9 @@ vi.mock('@/scripts/app', () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    deleteSelected: vi.fn(),
+    selectOnly: false,
+    canvas: { dispatchEvent: vi.fn() },
     read_only: false,
     ds: mockDs,
     setDirty: vi.fn()
@@ -55,6 +58,7 @@ vi.mock('@/scripts/app', () => {
         }
       }),
       openClipspace: vi.fn(),
+      queuePrompt: vi.fn().mockResolvedValue(true),
       refreshComboInNodes: vi.fn().mockResolvedValue(undefined),
       canvas: mockCanvas,
       rootGraph: {
@@ -130,7 +134,9 @@ vi.mock('@/services/litegraphService', () => ({
 const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackHelpResourceClicked: mockTrackHelpResourceClicked
+    trackHelpResourceClicked: mockTrackHelpResourceClicked,
+    trackRunButton: vi.fn(),
+    trackWorkflowExecution: vi.fn()
   }))
 }))
 
@@ -205,11 +211,31 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   }))
 }))
 
+const mockBillingState = vi.hoisted(() => ({
+  canAccessSubscriptionFeatures: true,
+  subscriptionTier: null as string | null,
+  showSubscriptionDialog: vi.fn()
+}))
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: { value: true },
-    showSubscriptionDialog: vi.fn()
+    canAccessSubscriptionFeatures: {
+      get value() {
+        return mockBillingState.canAccessSubscriptionFeatures
+      }
+    },
+    subscription: {
+      get value() {
+        return mockBillingState.subscriptionTier
+          ? { tier: mockBillingState.subscriptionTier }
+          : null
+      }
+    },
+    showSubscriptionDialog: mockBillingState.showSubscriptionDialog
   }))
+}))
+
+vi.mock('@/stores/queueSettingsStore', () => ({
+  useQueueSettingsStore: vi.fn(() => ({ batchCount: 1 }))
 }))
 
 describe('useCoreCommands', () => {
@@ -302,6 +328,8 @@ describe('useCoreCommands', () => {
 
   beforeEach(() => {
     mockDistributionState.isCloud = false
+    mockBillingState.canAccessSubscriptionFeatures = true
+    mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
@@ -385,6 +413,7 @@ describe('useCoreCommands', () => {
 
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
+      app.canvas.selectOnly = false
     })
 
     it('should copy selected items when selection exists', async () => {
@@ -414,6 +443,31 @@ describe('useCoreCommands', () => {
 
       // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
+    })
+
+    it('should delete selected items outside selection-only mode', async () => {
+      app.canvas.selectedItems = new Set([
+        {}
+      ]) as typeof app.canvas.selectedItems
+
+      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+      expect(app.canvas.deleteSelected).toHaveBeenCalledOnce()
+      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('should preserve selected items in selection-only mode', async () => {
+      const selectedItem = {}
+      app.canvas.selectedItems = new Set([
+        selectedItem
+      ]) as typeof app.canvas.selectedItems
+      app.canvas.selectOnly = true
+
+      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+      expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+      expect(app.canvas.setDirty).not.toHaveBeenCalled()
+      expect([...app.canvas.selectedItems]).toEqual([selectedItem])
     })
   })
 
@@ -659,6 +713,81 @@ describe('useCoreCommands', () => {
       expect(app.refreshComboInNodes).toHaveBeenCalled()
       expect(mockModelStoreRefresh).toHaveBeenCalled()
       expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Queue commands subscription gate', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    it.for([
+      ['Comfy.QueuePrompt', 0],
+      ['Comfy.QueuePromptFront', -1]
+    ] as const)(
+      '%s queues on Local without subscription features',
+      async ([id, num]) => {
+        mockBillingState.canAccessSubscriptionFeatures = false
+
+        await findCmd(id).function()
+
+        expect(app.queuePrompt).toHaveBeenCalledWith(num, 1, expect.anything())
+        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+      }
+    )
+
+    it('Comfy.QueueSelectedOutputNodes passes the gate on Local without subscription features', async () => {
+      mockBillingState.canAccessSubscriptionFeatures = false
+
+      await findCmd('Comfy.QueueSelectedOutputNodes').function()
+
+      expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it.for([
+      'Comfy.QueuePrompt',
+      'Comfy.QueuePromptFront',
+      'Comfy.QueueSelectedOutputNodes'
+    ] as const)(
+      '%s shows the subscription dialog on Cloud without an active subscription',
+      async (id) => {
+        mockDistributionState.isCloud = true
+        mockBillingState.canAccessSubscriptionFeatures = false
+
+        await findCmd(id).function()
+
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
+          reason: 'subscribe_to_run'
+        })
+      }
+    )
+
+    it.for(['ENTERPRISE', 'GALACTIC'] as const)(
+      'explains the block instead of a subscribe dialog on a sales-managed %s plan',
+      async (tier) => {
+        mockDistributionState.isCloud = true
+        mockBillingState.canAccessSubscriptionFeatures = false
+        mockBillingState.subscriptionTier = tier
+
+        await findCmd('Comfy.QueuePrompt').function()
+
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'warn' })
+        )
+      }
+    )
+
+    it('Comfy.QueuePrompt queues on Cloud with an active subscription', async () => {
+      mockDistributionState.isCloud = true
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, expect.anything())
     })
   })
 

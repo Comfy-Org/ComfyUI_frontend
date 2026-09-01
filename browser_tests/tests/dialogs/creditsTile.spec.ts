@@ -10,6 +10,7 @@ import type {
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
@@ -63,6 +64,7 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  team_credit_stop: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
@@ -71,12 +73,18 @@ const mockBillingStatus: BillingStatusResponse = {
 
 const freeBillingStatus: BillingStatusResponse = {
   is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
   subscription_tier: 'FREE',
   has_funds: true
 }
 
 const endedPersonalBillingStatus: BillingStatusResponse = {
   is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
   subscription_status: 'ended',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -171,6 +179,14 @@ async function mockCloudBoot(
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
+  await page.route('**/api/billing/capabilities', (r) => {
+    if (r.request().method() !== 'GET') return r.fallback()
+    return r.fulfill(
+      jsonRoute(
+        createWorkspaceBillingCapabilities(workspace('personal', 'owner'))
+      )
+    )
+  })
 }
 
 async function mockBalance(
@@ -302,7 +318,7 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(page.getByText('Cancel plan', { exact: true })).toBeVisible()
   })
 
-  test('keeps the legacy Workspace UX when billing controls are disabled', async ({
+  test('keeps V1 workspace navigation when billing controls are disabled', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -313,23 +329,21 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     await expect(
       nav.getByRole('button', { name: 'Workspace', exact: true })
-    ).toBeVisible()
+    ).toHaveCount(0)
     await expect(
       nav.getByRole('button', { name: 'Plan & Credits', exact: true })
-    ).toHaveCount(0)
+    ).toBeVisible()
     await expect(
       nav.getByRole('button', { name: 'Members', exact: true })
-    ).toHaveCount(0)
+    ).toBeVisible()
 
-    await nav.getByRole('button', { name: 'Workspace', exact: true }).click()
+    await nav
+      .getByRole('button', { name: 'Plan & Credits', exact: true })
+      .click()
     const content = dialog.getByRole('main')
     await expect(
-      content.getByRole('tab', { name: 'Plan & Credits' })
+      content.getByRole('button', { name: 'Activity', exact: true })
     ).toBeVisible()
-    await expect(content.getByRole('tab', { name: 'Members' })).toBeVisible()
-    await expect(content.getByRole('button', { name: 'Activity' })).toHaveCount(
-      0
-    )
   })
 
   test('renders the unified tile with breakdown and add-credits', async ({

@@ -1,31 +1,39 @@
 <script setup lang="ts">
 import { getRoutes } from '../../config/routes'
+import { modelReleaseSlides } from '../../data/modelRelease'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import CardSplitContent01 from '../blocks/CardSplitContent01.vue'
+import FeaturedCarousel02 from '../blocks/FeaturedCarousel02.vue'
+import type { FeaturedSplitSlide } from '../blocks/FeaturedCarousel02.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
+
+const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => ({
+  id: slide.id,
+  media: {
+    type: slide.media.type,
+    src: slide.media.src,
+    poster: slide.media.poster,
+    alt: t(slide.media.ariaLabelKey, locale)
+  },
+  eyebrow: t('modelRelease.eyebrow', locale),
+  title: t(slide.titleKey, locale),
+  body: t(slide.bodyKey, locale),
+  primaryCta: {
+    label: t(slide.exploreLabelKey, locale),
+    href: routes[slide.exploreRoute]
+  },
+  secondaryCta: {
+    label: t(slide.tryCta.labelKey, locale),
+    href: slide.tryCta.href,
+    newTab: true
+  },
+  tags: slide.tagKeys.map((key) => t(key, locale)),
+  autoplayMs: slide.autoplayMs
+}))
 </script>
 
 <template>
-  <CardSplitContent01
-    :locale
-    :eyebrow="t('modelRelease.eyebrow', locale)"
-    :title="t('modelRelease.title', locale)"
-    :body="t('modelRelease.body', locale)"
-    :primary-cta="{
-      label: t('modelRelease.viewFeatures', locale),
-      href: routes.minimax
-    }"
-    :secondary-cta="{
-      label: t('modelRelease.tryWorkflows', locale),
-      href: 'https://comfy.org/workflows/e8099b642c9f-e8099b642c9f/',
-      target: '_blank'
-    }"
-    :tags="[t('tags.openWeights', locale), t('tags.partnerNodes', locale)]"
-    video-src="https://media.comfy.org/website/minimax/hero.mp4"
-    video-poster="https://media.comfy.org/website/minimax/hero-fallback.jpg"
-    :video-aria-label="t('modelRelease.videoAriaLabel', locale)"
-  />
+  <FeaturedCarousel02 :locale :slides class="py-14 md:py-20" />
 </template>

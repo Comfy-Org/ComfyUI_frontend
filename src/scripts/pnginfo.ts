@@ -196,6 +196,7 @@ function normalizeA1111Parameters(parameters: string): string {
 
 export type A1111ImportOutcome =
   | 'imported'
+  | 'imported-without-embeddings'
   | 'not-a1111'
   | 'core-nodes-unavailable'
 
@@ -207,7 +208,6 @@ export async function importA1111(
   const normalizedParameters = normalizeA1111Parameters(parameters)
   const p = normalizedParameters.lastIndexOf('\nSteps:')
   if (p > -1) {
-    const embeddings = await api.getEmbeddings()
     const matchResult = normalizedParameters
       .substr(p)
       .split('\n')[1]
@@ -353,6 +353,14 @@ export async function importA1111(
         delete opts[name]
         return v
       }
+
+      const { embeddings, embeddingsLoaded } = await api
+        .getEmbeddings()
+        .then((embeddings) => ({ embeddings, embeddingsLoaded: true }))
+        .catch((error: unknown) => {
+          console.error('Failed to load embeddings for A1111 import:', error)
+          return { embeddings: [], embeddingsLoaded: false }
+        })
 
       beforeGraphClear?.()
       graph.clear()
@@ -577,7 +585,7 @@ export async function importA1111(
       if (Object.keys(opts).length) {
         console.warn('Unhandled parameters:', opts)
       }
-      return 'imported'
+      return embeddingsLoaded ? 'imported' : 'imported-without-embeddings'
     }
   }
   return 'not-a1111'

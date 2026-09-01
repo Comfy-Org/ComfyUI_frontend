@@ -64,6 +64,9 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
+    'errorCatalog.promptErrors.apply_failed.title': 'Agent edit failed',
+    'errorCatalog.promptErrors.apply_failed.desc':
+      'An agent edit could not be applied to the workflow document.',
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
     'errorCatalog.runtimeErrors.execution_failed.message':
       'Node threw an error during execution.',
@@ -423,6 +426,43 @@ describe('useErrorGroups', () => {
       expect(swapIdx).toBeLessThan(missingIdx)
     })
 
+    it('places every error-severity group before missing-severity groups', async () => {
+      const { store, groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      store.recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+      store.recordNodeErrors({
+        '1': nodeError([validationError('required_input_missing', 'model')])
+      })
+      store.surfaceMissingModels([
+        makeModel('model.safetensors', { nodeId: '2' })
+      ])
+      store.surfaceMissingMedia([makeMedia('portrait.png', { nodeId: '3' })])
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('MissingNode', {
+          nodeId: '4',
+          cnrId: 'missing-pack'
+        })
+      ])
+      await nextTick()
+
+      const errorIndices = groups.allErrorGroups.value.flatMap(
+        (group, index) => (group.severity === 'error' ? [index] : [])
+      )
+      const missingIndices = groups.allErrorGroups.value.flatMap(
+        (group, index) => (group.severity === 'missing' ? [index] : [])
+      )
+
+      expect(errorIndices.length).toBeGreaterThan(0)
+      expect(missingIndices.length).toBeGreaterThan(0)
+      expect(Math.max(...errorIndices)).toBeLessThan(
+        Math.min(...missingIndices)
+      )
+    })
+
     it('uses fallback catalog grouping for unknown node validation errors', async () => {
       const { store, groups } = createErrorGroups()
       store.recordNodeErrors({
@@ -669,6 +709,26 @@ describe('useErrorGroups', () => {
           g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
       expect(promptGroup).toBeDefined()
+    })
+
+    it('carries prompt error details onto the card item', async () => {
+      const { store, groups } = createErrorGroups()
+      store.recordPromptError({
+        type: 'apply_failed',
+        message: 'An agent edit could not be applied to the workflow document.',
+        details: 'op_rejected: unknown_widget at seed'
+      })
+      await nextTick()
+
+      const promptGroup = groups.allErrorGroups.value.find(
+        (g) => g.groupKey === 'execution:prompt:apply_failed'
+      )
+      expect(promptGroup).toBeDefined()
+      const details =
+        promptGroup && 'cards' in promptGroup
+          ? promptGroup.cards[0]?.errors[0]?.details
+          : undefined
+      expect(details).toBe('op_rejected: unknown_widget at seed')
     })
 
     it('includes prompt error when a node is selected', async () => {
@@ -1271,7 +1331,9 @@ describe('useErrorGroups', () => {
       // A container selection matches interior errors by execution-id prefix,
       // even when the interior node does not resolve at the current level.
       const containerNode = fromAny<SubgraphNode, unknown>(
-        Object.assign(Object.create(SubgraphNode.prototype), { id: '2' })
+        Object.assign(Object.create(SubgraphNode.prototype), {
+          _state: { id: '2' }
+        })
       )
       vi.mocked(getNodeByExecutionId).mockReturnValue(null)
       vi.mocked(getExecutionIdByNode).mockReturnValue(
