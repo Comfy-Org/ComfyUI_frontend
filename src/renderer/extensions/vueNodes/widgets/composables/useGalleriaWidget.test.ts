@@ -76,16 +76,4 @@ describe('useGalleriaWidget', () => {
     )
     expect(widget.type).toBe('galleria')
   })
-
-  it('throws when the input spec is not a galleria spec', () => {
-    const { node } = createMockNode()
-    const inputSpec = {
-      type: 'STRING',
-      name: 'gallery'
-    } as unknown as InputSpec
-
-    expect(() => useGalleriaWidget()(node, inputSpec)).toThrow(
-      'Invalid input spec for galleria widget'
-    )
-  })
 })

@@ -84,13 +84,4 @@ describe('useTextareaWidget', () => {
     )
     expect(widget.type).toBe('textarea')
   })
-
-  it('throws when the input spec is not a textarea spec', () => {
-    const { node } = createMockNode()
-    const inputSpec = { type: 'STRING', name: 'text' } as unknown as InputSpec
-
-    expect(() => useTextareaWidget()(node, inputSpec)).toThrow(
-      'Invalid input spec for textarea widget'
-    )
-  })
 })

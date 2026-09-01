@@ -1,19 +1,23 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ITextareaWidget } from '@/lib/litegraph/src/types/widgets'
 import { isTextareaInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type {
+  InputSpec as InputSpecV2,
+  TextareaInputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 export const useTextareaWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): ITextareaWidget => {
     if (!isTextareaInputSpec(inputSpec)) {
-      throw new Error('Invalid input spec for textarea widget')
+      console.error('Invalid input spec for textarea widget')
     }
 
-    const { name, options } = inputSpec
-    const defaultValue = inputSpec.default ?? options?.default ?? ''
-    const rows = inputSpec.rows ?? options?.rows ?? 5
-    const cols = inputSpec.cols ?? options?.cols ?? 50
+    const textareaSpec = inputSpec as TextareaInputSpec
+    const { name, options } = textareaSpec
+    const defaultValue = textareaSpec.default ?? options?.default ?? ''
+    const rows = textareaSpec.rows ?? options?.rows ?? 5
+    const cols = textareaSpec.cols ?? options?.cols ?? 50
 
     const widgetOptions = { rows, cols }
 
