@@ -1101,7 +1101,7 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
       requirements.map(({ model }) => model)
     )
     if (generation !== detailGeneration) return
-    if (availability.every(({ status }) => status === 'installed')) {
+    if (!availability.some(({ status }) => status === 'missing')) {
       await openPreparedTemplate(prepared, generation)
       return
     }
