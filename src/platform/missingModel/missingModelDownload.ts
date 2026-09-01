@@ -179,7 +179,10 @@ export function clearMetadataCache(): void {
   inflight.clear()
 }
 
-async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
+async function fetchCivitaiMetadata(
+  url: string,
+  signal?: AbortSignal
+): Promise<MetadataFetchResult> {
   try {
     const pathname = new URL(url).pathname
     const versionIdMatch =
@@ -196,7 +199,7 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
 
     const [, modelVersionId] = versionIdMatch
     const apiUrl = `https://civitai.com/api/v1/model-versions/${modelVersionId}`
-    const res = await fetch(apiUrl)
+    const res = signal ? await fetch(apiUrl, { signal }) : await fetch(apiUrl)
     if (!res.ok) {
       return {
         metadata: { fileSize: null, gatedRepoUrl: null },
@@ -232,10 +235,16 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
 const GATED_STATUS_CODES = new Set([401, 403, 451])
 const HUGGING_FACE_GATED_ERROR_CODE = 'GatedRepo'
 
-async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
+async function fetchHeadMetadata(
+  url: string,
+  signal?: AbortSignal
+): Promise<MetadataFetchResult> {
   try {
     // Deliberately uncredentialed HEADs prevent re-checks from clearing gating.
-    const response = await fetch(url, { method: 'HEAD' })
+    const response = await fetch(url, {
+      method: 'HEAD',
+      ...(signal && { signal })
+    })
     if (!response.ok) {
       if (
         isTrustedHuggingFaceUrl(url) &&
@@ -277,8 +286,24 @@ async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
   }
 }
 
+async function fetchMetadataResult(
+  url: string,
+  signal?: AbortSignal
+): Promise<ModelMetadataFetchOutcome> {
+  const result = isCivitaiModelUrl(url)
+    ? await fetchCivitaiMetadata(url, signal)
+    : await fetchHeadMetadata(url, signal)
+  const outcome: ModelMetadataFetchOutcome = {
+    metadata: result.metadata,
+    resolution: result.resolution
+  }
+  if (result.cacheable) metadataCache.set(url, outcome)
+  return outcome
+}
+
 export async function fetchModelMetadataWithStatus(
-  url: string
+  url: string,
+  { signal }: { signal?: AbortSignal } = {}
 ): Promise<ModelMetadataFetchOutcome> {
   if (!isModelUrlAllowlisted(url)) {
     return {
@@ -290,22 +315,14 @@ export async function fetchModelMetadataWithStatus(
   const cached = metadataCache.get(url)
   if (cached !== undefined) return cached
 
+  // A cancellable consumer owns its request lifecycle. Do not join a shared
+  // request that cannot be aborted with the caller's signal.
+  if (signal) return fetchMetadataResult(url, signal)
+
   const existing = inflight.get(url)
   if (existing) return existing
 
-  const promise = (async () => {
-    const result = isCivitaiModelUrl(url)
-      ? await fetchCivitaiMetadata(url)
-      : await fetchHeadMetadata(url)
-    const outcome: ModelMetadataFetchOutcome = {
-      metadata: result.metadata,
-      resolution: result.resolution
-    }
-    if (result.cacheable) {
-      metadataCache.set(url, outcome)
-    }
-    return outcome
-  })()
+  const promise = fetchMetadataResult(url)
 
   inflight.set(url, promise)
   try {
