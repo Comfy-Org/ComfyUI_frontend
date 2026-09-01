@@ -643,15 +643,16 @@ export function useMediaAssetActions() {
   async function deleteAssets(input: AssetItem[] | AssetItem) {
     const assets = Array.isArray(input) ? input : [input]
     interface BaseDeleteOperation {
-      dependents?: DeleteOperation[]
       kind: string
+      dependents?: DeleteOperation[]
+      markDeletionId?: AssetId
       name?: string
     }
     interface AssetDeletion extends BaseDeleteOperation {
       kind: 'asset'
       variants: string[]
-      tags?: string[]
       id: AssetId
+      tags?: string[]
     }
     interface JobDeletion extends BaseDeleteOperation {
       kind: 'job'
@@ -662,10 +663,12 @@ export function useMediaAssetActions() {
     function getDeletionPlan(): DeleteOperation[] {
       if (!flags.assetsEnabled) {
         const operations: JobDeletion[] = assets.flatMap((asset) => {
+          const markDeletionId = asset.id
           const { jobId } = getOutputAssetMetadata(asset.user_metadata) ?? {}
           if (!jobId) return []
-          const name = `[job] ${getAssetDisplayName(asset)}`
-          return [{ kind: 'job', id: jobId, name }]
+
+          const name = getAssetDisplayName(asset)
+          return [{ kind: 'job', id: jobId, name, markDeletionId }]
         })
         return uniqBy(operations, (op) => op.id)
       }
@@ -679,12 +682,13 @@ export function useMediaAssetActions() {
         return []
       }
       return assets.flatMap((asset) => {
+        const markDeletionId = asset.id
         const metadata = getOutputAssetMetadata(asset.user_metadata)
         const childAssets: AssetDeletion[] = (
           metadata?.allOutputs ?? []
         )?.flatMap((output) => {
           if (!output.assetId) return []
-          const name = `[asset] ${output.display_name || output.filename}`
+
           const variants = widgetValueVariants(
             output.filename,
             output.type,
@@ -692,10 +696,11 @@ export function useMediaAssetActions() {
           )
           return {
             kind: 'asset',
-            name,
+            markDeletionId,
+            name: output.display_name || output.filename,
             id: output.assetId,
-            variants,
-            tags: asset.tags
+            tags: asset.tags,
+            variants
           }
         })
         if (childAssets.length > 0) return childAssets
@@ -706,9 +711,15 @@ export function useMediaAssetActions() {
           metadata?.subfolder,
           asset.hash
         )
-        const name = `[asset] ${getAssetDisplayName(asset)}`
         return [
-          { kind: 'asset', name, id: asset.id, variants, tags: asset.tags }
+          {
+            kind: 'asset',
+            id: asset.id,
+            markDeletionId,
+            name: getAssetDisplayName(asset),
+            tags: asset.tags,
+            variants
+          }
         ]
       })
     }
@@ -752,18 +763,25 @@ export function useMediaAssetActions() {
     async function performDelete(
       operation: DeleteOperation
     ): Promise<unknown[]> {
-      if (operation.dependents) {
-        const failedDependents = (
-          await Promise.all(operation.dependents.map(performDelete))
-        ).flat()
-        if (failedDependents.length) return failedDependents
-      }
-
+      if (operation.markDeletionId)
+        assetsStore.setAssetDeleting(operation.markDeletionId, true)
       try {
-        if (operation.kind === 'asset') await deleteAsset(operation)
-        else await deleteJob(operation)
-      } catch (err) {
-        return [err]
+        if (operation.dependents) {
+          const failedDependents = (
+            await Promise.all(operation.dependents.map(performDelete))
+          ).flat()
+          if (failedDependents.length) return failedDependents
+        }
+
+        try {
+          if (operation.kind === 'asset') await deleteAsset(operation)
+          else await deleteJob(operation)
+        } catch (err) {
+          return [err]
+        }
+      } finally {
+        if (operation.markDeletionId)
+          assetsStore.setAssetDeleting(operation.markDeletionId, false)
       }
 
       return []

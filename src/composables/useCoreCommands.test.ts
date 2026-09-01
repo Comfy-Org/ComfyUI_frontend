@@ -70,7 +70,8 @@ vi.mock('@/scripts/api', () => ({
     dispatchCustomEvent: vi.fn(),
     apiURL: vi.fn(() => 'http://localhost:8188'),
     addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 

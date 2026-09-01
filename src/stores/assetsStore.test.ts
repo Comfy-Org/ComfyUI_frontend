@@ -18,6 +18,7 @@ vi.mock('@/scripts/api', () => ({
     apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false),
     user: 'test-user'
   }
 }))
@@ -25,10 +26,7 @@ vi.mock('@/scripts/api', () => ({
 // Mock the asset service
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    getAssetsByTag: vi.fn(),
     getAssetsPageByTag: vi.fn(),
-    getAllAssetsByTag: vi.fn(),
-    getAssetsForNodeType: vi.fn(),
     getAssetsPageForNodeType: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
@@ -178,7 +176,8 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
       preview_url: output.url,
       user_metadata: {}
     }
-  })
+  }),
+  unflattenOutputAssets: vi.fn((items: AssetItem[]) => items)
 }))
 
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
