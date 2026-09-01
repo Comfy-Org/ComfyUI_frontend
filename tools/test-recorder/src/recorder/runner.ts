@@ -9,6 +9,7 @@ import {
   generateRecordingTemplate,
   recordedCodePath,
   recordingTarget,
+  storageStateKey,
   storageStatePath
 } from './template'
 import { runCommand } from '../cli/run'
@@ -86,7 +87,7 @@ export async function runRecording(
 
   let storageStateFile: string | undefined
   if (target === 'cloud') {
-    storageStateFile = storageStatePath(options.distribution?.id ?? 'cloud')
+    storageStateFile = storageStatePath(storageStateKey(options.distribution))
     ensureStorageStateDir(storageStateFile)
   }
 

@@ -14,7 +14,8 @@ import {
   cleanupRecordingTemplate,
   generateRecordingTemplate,
   recordedCodePath,
-  recordingTarget
+  recordingTarget,
+  storageStateKey
 } from './template'
 
 describe('recording template', () => {
@@ -273,6 +274,70 @@ describe('recording template', () => {
 
     it('uses the bare-page template for cloud and custom backends', () => {
       expect(recordingTarget({ needsLocalBackend: false })).toBe('cloud')
+    })
+  })
+
+  describe('storageStateKey', () => {
+    it('defaults to cloud when no distribution is given', () => {
+      expect(storageStateKey(undefined)).toBe('cloud')
+    })
+
+    it('uses the fixed id for the three built-in cloud distributions', () => {
+      expect(
+        storageStateKey({
+          id: 'cloud',
+          label: 'Cloud',
+          hint: '',
+          script: 'dev:cloud',
+          needsLocalBackend: false,
+          backendUrl: 'https://testcloud.comfy.org/'
+        })
+      ).toBe('cloud')
+      expect(
+        storageStateKey({
+          id: 'cloud-staging',
+          label: 'Cloud staging',
+          hint: '',
+          script: 'dev:cloud:staging',
+          needsLocalBackend: false,
+          backendUrl: 'https://stagingcloud.comfy.org/'
+        })
+      ).toBe('cloud-staging')
+    })
+
+    it('keys a custom backend by its own hostname, not a shared "custom" bucket', () => {
+      const keyA = storageStateKey({
+        id: 'custom',
+        label: 'Custom backend (https://agent.comfy.org/)',
+        hint: 'https://agent.comfy.org/',
+        script: 'dev',
+        needsLocalBackend: false,
+        backendUrl: 'https://agent.comfy.org/'
+      })
+      const keyB = storageStateKey({
+        id: 'custom',
+        label: 'Custom backend (https://other-env.comfy.org/)',
+        hint: 'https://other-env.comfy.org/',
+        script: 'dev',
+        needsLocalBackend: false,
+        backendUrl: 'https://other-env.comfy.org/'
+      })
+      expect(keyA).toBe('custom-agent.comfy.org')
+      expect(keyB).toBe('custom-other-env.comfy.org')
+      expect(keyA).not.toBe(keyB)
+    })
+
+    it('falls back to a shared bucket if the custom backend URL cannot be parsed', () => {
+      expect(
+        storageStateKey({
+          id: 'custom',
+          label: 'Custom backend',
+          hint: '',
+          script: 'dev',
+          needsLocalBackend: false,
+          backendUrl: 'not a url'
+        })
+      ).toBe('custom')
     })
   })
 })
