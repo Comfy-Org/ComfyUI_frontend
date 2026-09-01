@@ -215,6 +215,21 @@ describe('selectWorkflowRoute', () => {
     }
   })
 
+  it('does not charge for a local route when an equivalent cloud route is free', () => {
+    const paidLocal = route('paid-local', { isPaid: true })
+    const freeCloud = route('free-cloud', { executionMode: 'cloud' })
+
+    for (const candidates of [
+      [paidLocal, freeCloud],
+      [freeCloud, paidLocal]
+    ]) {
+      expect(selectWorkflowRoute(plan(), candidates)).toMatchObject({
+        status: 'ready',
+        route: { id: 'free-cloud' }
+      })
+    }
+  })
+
   it('uses a locale-independent id tie-breaker', () => {
     const alpha = route('alpha')
     const zulu = route('zulu')
@@ -344,6 +359,7 @@ describe('selectWorkflowRoute', () => {
     const batch = plan({
       intent: 'text-to-video',
       outputMediaType: 'video',
+      targetDurationSeconds: 5,
       structure: {
         kind: 'batch',
         unitCount: 2,
