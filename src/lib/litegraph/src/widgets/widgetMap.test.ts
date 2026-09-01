@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { ComparerWidget } from '@/lib/litegraph/src/__fixtures__/legacyDoNotReplicate'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
@@ -123,5 +124,15 @@ describe('toConcreteWidget', () => {
 
     expect(widget.heightWrites).toBe(1)
     expect(result.height).not.toBeUndefined()
+  })
+
+  it('reads back the value normalised by a foreign setter', () => {
+    const node = new LGraphNode('test')
+    const widget = toConcreteWidget(new ComparerWidget(), node)
+    const images = [{ url: 'a.png', name: 'A', selected: true }]
+
+    widget.value = images
+
+    expect(widget.value).toEqual({ images })
   })
 })
