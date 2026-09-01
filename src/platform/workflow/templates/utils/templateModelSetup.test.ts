@@ -76,8 +76,8 @@ describe('deriveTemplateModelSetup', () => {
         resolvedMetadata(inventoryUnknown, 30, manualHref)
       ]
     }
-    const isDownloadable = vi.fn(
-      (candidate: ModelWithUrl) => candidate.name === downloadable.name
+    const isDownloadable = vi.fn((candidate: ModelWithUrl) =>
+      [metadataFailed.name, downloadable.name].includes(candidate.name)
     )
 
     const result = deriveTemplateModelSetup(
@@ -93,7 +93,7 @@ describe('deriveTemplateModelSetup', () => {
       [manual.name, 'manual'],
       [installed.name, 'installed'],
       [inventoryUnknown.name, 'unknown'],
-      [metadataFailed.name, 'unknown'],
+      [metadataFailed.name, 'downloadable'],
       [downloadable.name, 'downloadable'],
       [unavailable.name, 'unavailable']
     ])
@@ -106,9 +106,10 @@ describe('deriveTemplateModelSetup', () => {
       href: manualHref
     })
     expect(result.rows[2]).not.toHaveProperty('href')
-    expect(isDownloadable).toHaveBeenCalledTimes(2)
-    expect(isDownloadable).toHaveBeenNthCalledWith(1, downloadable)
-    expect(isDownloadable).toHaveBeenNthCalledWith(2, unavailable)
+    expect(isDownloadable).toHaveBeenCalledTimes(3)
+    expect(isDownloadable).toHaveBeenNthCalledWith(1, metadataFailed)
+    expect(isDownloadable).toHaveBeenNthCalledWith(2, downloadable)
+    expect(isDownloadable).toHaveBeenNthCalledWith(3, unavailable)
   })
 
   it.for<{
