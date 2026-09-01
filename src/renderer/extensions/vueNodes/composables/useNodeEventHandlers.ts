@@ -10,7 +10,6 @@
  */
 import { createSharedComposable } from '@vueuse/core'
 
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
@@ -19,12 +18,11 @@ import type { NodeId } from '@/types/nodeId'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
-  const { nodeManager } = useVueNodeLifecycle()
   const { bringNodeToFront } = useNodeZIndex()
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
   function getNode(nodeId: NodeId) {
-    return nodeManager.value?.getNode(nodeId)
+    return canvasStore.currentGraph?.getNodeById(nodeId) ?? undefined
   }
 
   /**

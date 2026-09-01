@@ -5,7 +5,8 @@ const baseRoutes = {
   download: '/download',
   cloud: '/cloud',
   cloudPricing: '/cloud/pricing',
-  cloudEnterprise: '/cloud/enterprise',
+  enterprise: '/enterprise',
+  managedBuilds: '/enterprise/managed-builds',
   api: '/api',
   gallery: '/gallery',
   launches: '/launches',
@@ -22,13 +23,17 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
+  modelsShowcase: '/models',
   mcp: '/mcp',
+  cli: '/cli',
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',
+  minimaxLicense: '/minimax/license',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
   fdct: '/forward-deployed-creatives',
   ltx: '/ltx-2.5',
+  geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
   wan3: '/wan-3.0',
   brand: '/brand'
@@ -58,6 +63,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
+  'enterprise',
+  'managedBuilds',
   'models'
 ])
 
@@ -96,7 +103,21 @@ export const externalLinks = {
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
-  docsMcp: 'https://docs.comfy.org/agent-tools/cloud',
+  comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
+  comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',
+  docsCli: 'https://docs.comfy.org/agent-tools/cli',
+  // Markdown variant handed to agents in the "ask your agent" cards, same
+  // rationale as docsMcpMd below.
+  docsCliMd: 'https://docs.comfy.org/agent-tools/cli.md',
+  docsCliReference: 'https://docs.comfy.org/comfy-cli/reference',
+  docsMcp: 'https://docs.comfy.org/agent-tools/mcp',
+  docsMcpLocal:
+    'https://docs.comfy.org/agent-tools/mcp#local-comfy-mcp-connection',
+  // Markdown variants handed to agents in the "ask your agent" cards: agents
+  // fetch the .md URL and get readable markdown instead of the HTML shell.
+  docsMcpMd: 'https://docs.comfy.org/agent-tools/mcp.md',
+  docsMcpLocalMd:
+    'https://docs.comfy.org/agent-tools/mcp.md#local-comfy-mcp-connection',
   docsSdk: 'https://docs.comfy.org/development/api-development/sdks',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   g2ComfyUi: 'https://www.g2.com/products/comfyui',
@@ -115,6 +136,7 @@ export const externalLinks = {
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
   wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',
   workflows: 'https://comfy.org/workflows',
+  workflowUseCases: 'https://comfy.org/workflows/use-cases/',
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const

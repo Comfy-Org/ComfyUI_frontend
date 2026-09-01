@@ -9,6 +9,7 @@ import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import BrandButton from '../../common/BrandButton.vue'
 import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
+import { stampCycleAt } from './stampCycle'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -109,18 +110,7 @@ onMounted(() => {
     const time = Date.now() / 1000
     const cycle = time % 1.0
 
-    let stampAmt = 0
-    let conveyorEject = 0
-
-    if (cycle < 0.35) {
-      const p = cycle / 0.35
-      stampAmt = Math.pow(Math.sin(p * Math.PI), 1.2)
-      conveyorEject = 0
-    } else {
-      const p = (cycle - 0.35) / 0.65
-      conveyorEject = (1 - Math.cos(p * Math.PI)) / 2
-      stampAmt = 0
-    }
+    const { stampAmt, conveyorEject } = stampCycleAt(cycle)
 
     const maxPushDistance = 210
     const travelMagnitude = stampAmt * maxPushDistance
@@ -224,13 +214,13 @@ onUnmounted(() => {
       <ProductHeroBadge text="API" />
 
       <h1
-        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight xl:whitespace-pre-line"
+        class="mt-6 text-3xl/tight font-light text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight xl:whitespace-pre-line"
       >
         {{ t('api.hero.heading', locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas mt-6 max-w-md text-sm lg:mt-6 lg:text-base"
+        class="mt-6 max-w-md text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
         {{ t('api.hero.subtitle', locale) }}
       </p>

@@ -50,14 +50,24 @@ const mockWorkspaceBalance: BillingBalanceResponse = {
 
 async function mockCloudBoot(
   page: Page,
-  subscriptionStatus: BillingStatusResponse,
+  subscriptionStatus: Partial<BillingStatusResponse>,
   remoteConfig: RemoteConfig = {},
   billingRail?: BillingStatusResponse['billing_rail']
 ) {
+  const resolvedSubscriptionStatus: BillingStatusResponse = {
+    is_active: false,
+    has_funds: false,
+    max_seats: 0,
+    occupied_seats: 0,
+    team_credit_stop: null,
+    ...subscriptionStatus,
+    ...(billingRail === undefined ? {} : { billing_rail: billingRail })
+  }
   const billingRequests = {
     legacyStatus: 0,
     legacyBalance: 0,
-    workspaceStatus: 0
+    workspaceStatus: 0,
+    workspaceBalance: 0
   }
 
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(remoteConfig)))
@@ -111,20 +121,16 @@ async function mockCloudBoot(
   })
   await page.route('**/customers/cloud-subscription-status', (r) => {
     billingRequests.legacyStatus++
-    return r.fulfill(jsonRoute(subscriptionStatus))
+    return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
   })
 
   // Cloud personal workspaces route through `/api/billing/*`.
   await page.route('**/api/billing/status', (r) => {
     billingRequests.workspaceStatus++
-    return r.fulfill(
-      jsonRoute({
-        ...subscriptionStatus,
-        billing_rail: billingRail
-      })
-    )
+    return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
   })
   await page.route('**/api/billing/balance', (r) => {
+    billingRequests.workspaceBalance++
     return r.fulfill(jsonRoute(mockWorkspaceBalance))
   })
   await page.route('**/api/billing/plans', (r) =>
@@ -198,6 +204,31 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(0)
     expect(billingRequests.legacyStatus).toBe(0)
     expect(billingRequests.legacyBalance).toBeGreaterThan(0)
+  })
+
+  test('rollout flag migrates a legacy Stripe workspace to workspace billing', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    const billingRequests = await mockCloudBoot(
+      page,
+      {
+        is_active: true,
+        subscription_tier: 'PRO',
+        subscription_duration: 'MONTHLY',
+        has_funds: true
+      },
+      { legacy_billing_migration_enabled: true },
+      'legacy_stripe'
+    )
+    await bootApp(page)
+
+    await expect
+      .poll(() => billingRequests.workspaceBalance, { timeout: 30_000 })
+      .toBeGreaterThan(0)
+    expect(billingRequests.legacyStatus).toBe(0)
+    expect(billingRequests.legacyBalance).toBe(0)
   })
 
   test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({

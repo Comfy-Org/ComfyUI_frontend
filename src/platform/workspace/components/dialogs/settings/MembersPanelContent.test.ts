@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import MembersPanelContent from './MembersPanelContent.vue'
 
 import type {
-  PendingInvite,
+  WorkspacePendingInvite,
   WorkspaceMember
 } from '../../../stores/teamWorkspaceStore'
 
@@ -46,7 +46,7 @@ const {
 
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
-    mockPendingInvites: ref<PendingInvite[]>([]),
+    mockPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
     mockHasMultipleMembers: ref(true),
     mockShowSearch: ref(true),
@@ -54,7 +54,7 @@ const {
     mockShowInviteButton: ref(true),
     mockIsInviteDisabled: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
-    mockFilteredPendingInvites: ref<PendingInvite[]>([]),
+    mockFilteredPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockMaxSeats: ref<number | null>(20),
     mockIsInPersonalWorkspace: ref(false),
     mockHasTeamPlan: ref(true),
@@ -71,8 +71,7 @@ const {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }),
     mockUiConfig: ref({
       showMembersList: true,
@@ -212,7 +211,9 @@ function createMember(
   }
 }
 
-function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
+function createInvite(
+  overrides: Partial<WorkspacePendingInvite> = {}
+): WorkspacePendingInvite {
   return {
     id: 'invite-1',
     email: 'invitee@example.com',
@@ -251,8 +252,7 @@ describe('MembersPanelContent', () => {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }
     mockUiConfig.value = {
       showMembersList: true,
@@ -441,8 +441,7 @@ describe('MembersPanelContent', () => {
         canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
-        canManageSubscription: false,
-        canTopUp: false
+        canManageSubscription: false
       }
       mockUiConfig.value.showPendingTab = false
     })
@@ -591,7 +590,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://comfy-org.portal.usepylon.com/forms/team-plan-requests',
+        'https://comfysupport.portal.usepylon.com/forms/team-plan-requests',
         '_blank',
         'noopener,noreferrer'
       )

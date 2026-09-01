@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 
@@ -11,22 +13,59 @@ import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorks
 
 const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
+const mockManageSubscription = vi.fn<() => Promise<void>>()
+const mockReportError = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
 const mockTopup =
   vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
+const mockRetryPaymentAuthentication = vi.fn()
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 const mockCloseDialog = vi.fn()
 const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
-const mockPermissions = vi.hoisted(() => ({
-  ref: undefined as { value: { canTopUp: boolean } } | undefined
+const mockCanTopUp = vi.hoisted(() => ({
+  ref: undefined as { value: boolean } | undefined
 }))
-const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
+const mockHasSavedPaymentMethod = vi.hoisted(() => ({
+  ref: undefined as { value: boolean | null } | undefined
+}))
+
+vi.mock(
+  '@/platform/workspace/composables/useHasSavedPaymentMethod',
+  async () => {
+    const { ref } = await import('vue')
+    mockHasSavedPaymentMethod.ref = ref<boolean | null>(null)
+    return {
+      useHasSavedPaymentMethod: () => ({
+        hasSavedPaymentMethod: mockHasSavedPaymentMethod.ref
+      })
+    }
+  }
+)
+
+interface MockTopupOperation {
+  opId: string
+  status: 'pending' | 'reconciliation_needed'
+  actionUrl: string | null
+  authenticationState?: string
+  errorMessage?: string | null
+  canRetryAuthentication?: boolean
+  isAuthenticating?: boolean
+}
+
 const mockBillingOperationState = vi.hoisted(() => ({
   isAddingCredits: undefined as { value: boolean } | undefined,
   topupActionOperation: undefined as
-    | { value: { actionUrl: string } | undefined }
+    | { value: MockTopupOperation | undefined }
     | undefined
 }))
 
@@ -34,6 +73,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     fetchBalance: mockFetchBalance,
     fetchStatus: mockFetchStatus,
+    manageSubscription: mockManageSubscription,
     topup: (amountCents: number) => mockTopup(amountCents)
   })
 }))
@@ -51,29 +91,19 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
       get topupActionOperation() {
         return mockBillingOperationState.topupActionOperation?.value
       },
-      startOperation: mockStartOperation
+      startOperation: mockStartOperation,
+      retryPaymentAuthentication: mockRetryPaymentAuthentication
     })
   }
 })
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', async () => {
   const { ref } = await import('vue')
-  mockPermissions.ref = ref({ canTopUp: true })
+  mockCanTopUp.ref = ref(true)
   return {
-    useWorkspaceUI: () => ({ permissions: mockPermissions.ref })
+    useBillingCapabilities: () => ({ canTopUp: mockCanTopUp.ref })
   }
 })
-
-vi.mock('@/composables/billing/useBillingRouting', () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: {
-      __v_isRef: true,
-      get value() {
-        return mockShouldUseWorkspaceBilling.value
-      }
-    }
-  })
-}))
 
 vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: () => ({ show: mockShowSettings })
@@ -90,8 +120,9 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/telemetry/topupTracker', () => ({
-  clearTopupTracking: vi.fn()
+const mockClearPendingTopup = vi.hoisted(() => vi.fn())
+vi.mock('@/composables/billing/usePendingTopup', () => ({
+  usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({
@@ -113,45 +144,7 @@ vi.mock('@/base/credits/comfyCredits', () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      g: { back: 'Back', close: 'Close' },
-      subscription: {
-        addCredits: 'Add credits',
-        preview: {
-          completeVerification: 'Complete verification',
-          totalDueToday: 'Total due today'
-        }
-      },
-      credits: {
-        topUp: {
-          addMoreCredits: 'Add more credits',
-          addMoreCreditsToRun: 'Add more credits to run',
-          selectAmount: 'Select amount',
-          youPay: 'You pay',
-          youGet: 'You get',
-          purchaseSuccess: 'Credits added successfully!',
-          purchaseError: 'Purchase Failed',
-          purchaseErrorDetail: 'Failed to purchase credits: {error}',
-          unknownError: 'An unknown error occurred',
-          minRequired: 'Minimum required',
-          maxAllowed: 'Maximum allowed',
-          needMore: 'Need more?',
-          contactUs: 'Contact us',
-          viewPricing: 'View pricing',
-          insufficientWorkflowMessage: 'Insufficient credits',
-          chargedImmediatelyNote: 'Your saved card is charged immediately.',
-          confirmSubtitle:
-            'Credits are added to this workspace as soon as payment completes.',
-          confirmTitle: 'Confirm',
-          payAmount: 'Pay {amount}',
-          verifyBody:
-            'Your bank requires additional verification to complete this payment.',
-          verifyTitle: 'Verify your payment'
-        }
-      }
-    }
-  }
+  messages: { en: enMessages }
 })
 
 function topupResponse(
@@ -181,8 +174,8 @@ function renderDialog() {
 }
 
 function setCanTopUp(canTopUp: boolean) {
-  if (!mockPermissions.ref) throw new Error('Permissions mock not initialized')
-  mockPermissions.ref.value = { canTopUp }
+  if (!mockCanTopUp.ref) throw new Error('Capability mock not initialized')
+  mockCanTopUp.ref.value = canTopUp
 }
 
 function setIsAddingCredits(isAddingCredits: boolean) {
@@ -192,11 +185,18 @@ function setIsAddingCredits(isAddingCredits: boolean) {
   mockBillingOperationState.isAddingCredits.value = isAddingCredits
 }
 
-function setTopupActionOperation(operation: { actionUrl: string } | undefined) {
+function setTopupActionOperation(operation: MockTopupOperation | undefined) {
   if (!mockBillingOperationState.topupActionOperation) {
     throw new Error('Billing operation mock not initialized')
   }
   mockBillingOperationState.topupActionOperation.value = operation
+}
+
+function setHasSavedPaymentMethod(value: boolean | null) {
+  if (!mockHasSavedPaymentMethod.ref) {
+    throw new Error('Payment method mock not initialized')
+  }
+  mockHasSavedPaymentMethod.ref.value = value
 }
 
 async function clickAddCredits() {
@@ -206,12 +206,13 @@ async function clickAddCredits() {
 
 describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
     setCanTopUp(true)
-    mockShouldUseWorkspaceBilling.value = true
     setIsAddingCredits(false)
     setTopupActionOperation(undefined)
     mockFetchBalance.mockResolvedValue(undefined)
     mockFetchStatus.mockResolvedValue(undefined)
+    setHasSavedPaymentMethod(true)
     mockStartOperation.mockImplementation(() => {
       setIsAddingCredits(true)
       return new Promise(() => {})
@@ -276,6 +277,93 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockTopup).not.toHaveBeenCalled()
   })
 
+  it('shows the saved-card note when a payment method is on file', async () => {
+    renderDialog()
+
+    await clickAddCredits()
+
+    expect(
+      await screen.findByText(
+        'Your saved payment method is charged immediately.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('asks for payment details when no payment method is saved', async () => {
+    setHasSavedPaymentMethod(false)
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(
+      await screen.findByText(
+        "You'll be asked to add a payment method to complete this purchase."
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('opens the billing portal from the no-payment-method note', async () => {
+    setHasSavedPaymentMethod(false)
+    mockManageSubscription.mockResolvedValue(undefined)
+
+    renderDialog()
+    await clickAddCredits()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Manage billing' })
+    )
+
+    expect(mockManageSubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports and surfaces a billing-portal opening failure', async () => {
+    setHasSavedPaymentMethod(false)
+    const failure = new Error('portal down')
+    mockManageSubscription.mockRejectedValue(failure)
+
+    renderDialog()
+    await clickAddCredits()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Manage billing' })
+    )
+
+    await waitFor(() =>
+      expect(mockReportError).toHaveBeenCalledWith(failure, {
+        errorType: 'billing_portal_open_failure'
+      })
+    )
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        summary: 'Failed to open the billing portal. Please try again.'
+      })
+    )
+  })
+
+  it('explains how to add a payment method when the purchase is refused', async () => {
+    setHasSavedPaymentMethod(false)
+    mockTopup.mockRejectedValue(
+      new WorkspaceApiError(
+        'No default payment method is selected.',
+        400,
+        'NO_PAYMENT_METHOD'
+      )
+    )
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail:
+            'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
+        })
+      )
+    )
+  })
+
   it('allows returning to amount selection before payment', async () => {
     renderDialog()
     await clickAddCredits()
@@ -288,7 +376,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   it('reopens in verification without exposing the action URL', async () => {
     const actionUrl = 'https://verify.example/sensitive-token'
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
-    setTopupActionOperation({ actionUrl })
+    setTopupActionOperation({
+      opId: 'op-action',
+      status: 'pending',
+      actionUrl
+    })
 
     const { container } = renderDialog()
 
@@ -308,6 +400,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('reopens in verification while the action URL is loading', () => {
     setIsAddingCredits(true)
+    setTopupActionOperation({
+      opId: 'op-loading',
+      status: 'pending',
+      actionUrl: null
+    })
 
     renderDialog()
 
@@ -320,11 +417,17 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
   it('returns to amount selection when a reopened operation ends', async () => {
     setIsAddingCredits(true)
+    setTopupActionOperation({
+      opId: 'op-loading',
+      status: 'pending',
+      actionUrl: null
+    })
 
     renderDialog()
     expect(screen.getByText('Verify your payment')).toBeInTheDocument()
 
     setIsAddingCredits(false)
+    setTopupActionOperation(undefined)
     await nextTick()
 
     expect(screen.getByText('Select amount')).toBeInTheDocument()
@@ -334,6 +437,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   it('hides topup verification after permission is revoked', () => {
     setCanTopUp(false)
     setTopupActionOperation({
+      opId: 'op-action',
+      status: 'pending',
       actionUrl: 'https://verify.example/sensitive-token'
     })
 
@@ -341,6 +446,47 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(
       screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('retries failed payment authentication', async () => {
+    renderDialog()
+
+    setIsAddingCredits(true)
+    setTopupActionOperation({
+      opId: 'op-retry',
+      status: 'pending',
+      actionUrl: null,
+      authenticationState: 'failed_retryable',
+      errorMessage: 'Your bank rejected the verification.',
+      canRetryAuthentication: true
+    })
+    await nextTick()
+
+    expect(
+      screen.getByText('Your bank rejected the verification.')
+    ).toBeInTheDocument()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Retry verification' })
+    )
+    expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith('op-retry')
+  })
+
+  it('keeps a top-up locked when reconciliation needs support', () => {
+    setTopupActionOperation({
+      opId: 'op-reconcile',
+      status: 'reconciliation_needed',
+      actionUrl: null
+    })
+
+    renderDialog()
+
+    expect(
+      screen.getByText(/Contact support and include this operation ID/)
+    ).toBeInTheDocument()
+    expect(screen.getByText('op-reconcile')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
     ).not.toBeInTheDocument()
   })
 
@@ -356,7 +502,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
     expect(payButton).toBeDisabled()
     expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup', {
-      attemptStartedAt: expect.any(Number)
+      attemptStartedAt: expect.any(Number),
+      autoHandleRequiresAction: true
     })
 
     payButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -418,6 +565,26 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
+    expect(mockClearPendingTopup).not.toHaveBeenCalled()
+  })
+
+  it('clears the pending top-up marker when the user closes the dialog', async () => {
+    renderDialog()
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(mockClearPendingTopup).toHaveBeenCalled()
+    expect(mockCloseDialog).toHaveBeenCalled()
+  })
+
+  it('opens Credits settings after a completed local top-up', async () => {
+    mockDistributionTypes.isCloud = false
+    mockTopup.mockResolvedValue(topupResponse('completed'))
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    expect(mockShowSettings).toHaveBeenCalledWith('credits')
   })
 
   it('keeps completed top-up telemetry successful when refresh fails', async () => {
@@ -448,7 +615,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     expect(mockStartOperation).toHaveBeenCalledWith('op-1', 'topup', {
-      attemptStartedAt: expect.any(Number)
+      attemptStartedAt: expect.any(Number),
+      autoHandleRequiresAction: true
     })
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
@@ -504,7 +672,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
-  it('does not top up after the workspace role loses permission', async () => {
+  it('does not top up after the server capability is revoked', async () => {
     renderDialog()
     await clickAddCredits()
     setCanTopUp(false)
@@ -516,19 +684,5 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockTrackTopUpPurchase).not.toHaveBeenCalled()
     expect(mockToastAdd).not.toHaveBeenCalled()
     expect(mockCloseDialog).not.toHaveBeenCalled()
-  })
-
-  it('keeps a mounted workspace dialog usable after routing switches to legacy billing', async () => {
-    setCanTopUp(false)
-    mockShouldUseWorkspaceBilling.value = false
-    mockTopup.mockResolvedValue(topupResponse('completed'))
-
-    renderDialog()
-    await clickAddCredits()
-    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
-
-    expect(mockTopup).toHaveBeenCalledWith(5000)
-    expect(mockFetchBalance).toHaveBeenCalledOnce()
-    expect(mockFetchStatus).toHaveBeenCalledOnce()
   })
 })

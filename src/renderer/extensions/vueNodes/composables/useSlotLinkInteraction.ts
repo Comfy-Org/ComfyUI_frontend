@@ -5,7 +5,7 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
@@ -19,6 +19,7 @@ import {
 } from '@/renderer/core/canvas/interaction/canvasPointerEvent'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
+import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
@@ -33,6 +34,9 @@ import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
@@ -136,7 +140,10 @@ export function useSlotLinkInteraction({
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
-      const rerouteLayout = layoutStore.getRerouteLayout(link.fromReroute.id)
+      const graphId = app.canvas?.graph?.rootGraph.id
+      const rerouteLayout = graphId
+        ? layoutStore.getRerouteLayout(graphId, link.fromReroute.id)
+        : null
       if (rerouteLayout) return rerouteLayout.position
       const [x, y] = link.fromReroute.pos
       return toPoint(x, y)
@@ -145,8 +152,10 @@ export function useSlotLinkInteraction({
     const nodeId = link.node.id
     if (nodeId != null) {
       const isInputFrom = link.toType === 'output'
-      const key = getSlotKey(nodeId, link.fromSlotIndex, isInputFrom)
-      const layout = layoutStore.getSlotLayout(key)
+      const graph = app.canvas?.graph
+      const layout = graph
+        ? getGraphSlotLayout(graph, nodeId, link.fromSlotIndex, isInputFrom)
+        : null
       if (layout) return layout.position
     }
 
@@ -223,8 +232,10 @@ export function useSlotLinkInteraction({
     if (!link) return null
     if (link.origin_id === UNASSIGNED_NODE_ID) return null
 
-    const slotKey = getSlotKey(link.origin_id, link.origin_slot, false)
-    const layout = layoutStore.getSlotLayout(slotKey)
+    const graph = app.canvas?.graph
+    const layout = graph
+      ? getGraphSlotLayout(graph, link.origin_id, link.origin_slot, false)
+      : null
     if (!layout) return null
 
     return { position: { ...layout.position }, direction: LinkDirection.NONE }
@@ -232,16 +243,21 @@ export function useSlotLinkInteraction({
 
   const resolveExistingInputLinkAnchor = (
     graph: LGraph,
+    nodeId: NodeId,
+    slotIndex: number,
     inputSlot: INodeInputSlot | undefined
   ): { position: Point; direction: LinkDirection } | null => {
     if (!inputSlot) return null
 
-    const directLink = graph.getLink(inputSlot.link)
+    const directLink = inputLink(graph, nodeId, slotIndex)
     if (directLink) {
       const reroutes = LLink.getReroutes(graph, directLink)
       const lastReroute = reroutes.at(-1)
       if (lastReroute) {
-        const rerouteLayout = layoutStore.getRerouteLayout(lastReroute.id)
+        const rerouteLayout = layoutStore.getRerouteLayout(
+          graph.rootGraph.id,
+          lastReroute.id
+        )
         if (rerouteLayout) {
           return {
             position: { ...rerouteLayout.position },
@@ -262,14 +278,14 @@ export function useSlotLinkInteraction({
       if (directAnchor) return directAnchor
     }
 
-    const floatingLinkIterator = inputSlot._floatingLinks?.values()
-    const floatingLink = floatingLinkIterator
-      ? floatingLinkIterator.next().value
-      : undefined
+    const [floatingLink] = slotFloatingLinks(graph, 'input', nodeId, slotIndex)
     if (!floatingLink) return null
 
     if (floatingLink.parentId != null) {
-      const rerouteLayout = layoutStore.getRerouteLayout(floatingLink.parentId)
+      const rerouteLayout = layoutStore.getRerouteLayout(
+        graph.rootGraph.id,
+        floatingLink.parentId
+      )
       if (rerouteLayout) {
         return {
           position: { ...rerouteLayout.position },
@@ -476,13 +492,15 @@ export function useSlotLinkInteraction({
 
   // Attempt to finalize by dropping on a reroute under the pointer
   const tryConnectViaRerouteAtPointer = (): boolean => {
-    const rerouteLayout = layoutStore.queryRerouteAtPoint({
+    const graph = app.canvas?.graph
+    const adapter = activeAdapter
+    if (!graph || !adapter) return false
+
+    const rerouteLayout = layoutStore.queryRerouteAtPoint(graph.rootGraph.id, {
       x: state.pointer.canvas.x,
       y: state.pointer.canvas.y
     })
-    const graph = app.canvas?.graph
-    const adapter = activeAdapter
-    if (!rerouteLayout || !graph || !adapter) return false
+    if (!rerouteLayout) return false
 
     const reroute = graph.getReroute(rerouteLayout.id)
     if (!reroute || !adapter.isRerouteValidDrop(reroute.id)) return false
@@ -611,9 +629,7 @@ export function useSlotLinkInteraction({
     raf.cancel()
     dragContext.reset()
 
-    const layout = layoutStore.getSlotLayout(
-      getSlotKey(nodeId, index, type === 'input')
-    )
+    const layout = getGraphSlotLayout(graph, nodeId, index, type === 'input')
     if (!layout) return
 
     const localNodeId: NodeId = nodeId
@@ -626,13 +642,23 @@ export function useSlotLinkInteraction({
 
     const ctrlOrMeta = event.ctrlKey || event.metaKey
 
-    const inputLinkId = inputSlot?.link ?? null
-    const inputFloatingCount = inputSlot?._floatingLinks?.size ?? 0
-    const hasExistingInputLink = inputLinkId != null || inputFloatingCount > 0
+    const existingInputLink = isInputSlot
+      ? inputLink(graph, localNodeId, index)
+      : undefined
+    const inputFloatingCount = isInputSlot
+      ? slotFloatingLinks(graph, 'input', localNodeId, index).length
+      : 0
+    const hasExistingInputLink =
+      existingInputLink !== undefined || inputFloatingCount > 0
 
-    const outputLinkCount = outputSlot?.links?.length ?? 0
-    const outputFloatingCount = outputSlot?._floatingLinks?.size ?? 0
-    const hasExistingOutputLink = outputLinkCount > 0 || outputFloatingCount > 0
+    const hasExistingOutputLink =
+      isOutputSlot &&
+      (useLinkStore().isOutputSlotConnected(
+        graphScopeOf(graph),
+        localNodeId,
+        index
+      ) ||
+        slotFloatingLinks(graph, 'output', localNodeId, index).length > 0)
 
     const shouldBreakExistingInputLink =
       isInputSlot &&
@@ -647,11 +673,6 @@ export function useSlotLinkInteraction({
       ctrlOrMeta &&
       event.altKey &&
       !event.shiftKey
-
-    const existingInputLink =
-      isInputSlot && inputLinkId != null
-        ? graph.getLink(inputLinkId)
-        : undefined
 
     if (shouldBreakExistingInputLink && resolvedNode) {
       resolvedNode.disconnectInput(index, true)
@@ -671,7 +692,7 @@ export function useSlotLinkInteraction({
 
     const existingAnchor =
       isInputSlot && !shouldBreakExistingInputLink
-        ? resolveExistingInputLinkAnchor(graph, inputSlot)
+        ? resolveExistingInputLinkAnchor(graph, localNodeId, index, inputSlot)
         : null
 
     const shouldMoveExistingOutput =
@@ -740,18 +761,22 @@ export function useSlotLinkInteraction({
       })
     )
     const targetType: 'input' | 'output' = type === 'input' ? 'output' : 'input'
-    const allKeys = layoutStore.getAllSlotKeys()
     clearCompatible()
-    for (const key of allKeys) {
-      const slotLayout = layoutStore.getSlotLayout(key)
-      if (!slotLayout) continue
-      if (slotLayout.type !== targetType) continue
-      const idx = slotLayout.index
-      const ok =
-        targetType === 'input'
-          ? activeAdapter.isInputValidDrop(slotLayout.nodeId, idx)
-          : activeAdapter.isOutputValidDrop(slotLayout.nodeId, idx)
-      setCompatibleForKey(key, ok)
+    for (const candidateNode of graph.nodes) {
+      const slots =
+        targetType === 'input' ? candidateNode.inputs : candidateNode.outputs
+      for (const [slotIndex] of slots.entries()) {
+        const key = getSlotKey(
+          candidateNode.id,
+          slotIndex,
+          targetType === 'input'
+        )
+        const compatible =
+          targetType === 'input'
+            ? activeAdapter.isInputValidDrop(candidateNode.id, slotIndex)
+            : activeAdapter.isOutputValidDrop(candidateNode.id, slotIndex)
+        setCompatibleForKey(key, compatible)
+      }
     }
     autoPan = new AutoPanController({
       canvas: canvas.canvas,

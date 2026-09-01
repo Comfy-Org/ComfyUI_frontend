@@ -5,6 +5,7 @@ export interface FdctPageData {
   ctas: {
     contact: string
     enterpriseBand: string
+    minimaxBand: string
   }
 }
 
@@ -24,20 +25,20 @@ export interface FdctTechnologist {
 const technologistIdentities = {
   'doug-hogan': {
     name: 'Doug Hogan',
-    avatarSrc: 'https://media.comfy.org/website/technologists/doug-hogan.png'
+    avatarSrc: 'https://media.comfy.org/website/technologists/doug-hogan_v2.png'
   },
   'chris-v': {
     name: 'Chris V.',
-    avatarSrc: 'https://media.comfy.org/website/technologists/chris-v.png'
+    avatarSrc: 'https://media.comfy.org/website/technologists/chris-v_v2.png'
   },
   'rob-losch': {
     name: 'Rob Losch',
-    avatarSrc: 'https://media.comfy.org/website/technologists/rob-losch_v2.png'
+    avatarSrc: 'https://media.comfy.org/website/technologists/rob-losch_v3.png'
   },
   'robert-paige': {
     name: 'Robert Paige',
     avatarSrc:
-      'https://media.comfy.org/website/technologists/robert-paige_v3.png'
+      'https://media.comfy.org/website/technologists/robert-paige_v4.png'
   }
 } as const
 
@@ -398,6 +399,7 @@ export function fdctFaqs(locale: Locale) {
 export const fdctPage: FdctPageData = {
   ctas: {
     contact: '/contact',
-    enterpriseBand: '/contact'
+    enterpriseBand: '/contact',
+    minimaxBand: '/minimax/license'
   }
 }

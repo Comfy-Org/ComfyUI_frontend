@@ -41,7 +41,7 @@ function toModelDirectory(value: string, slug: string): ModelDirectory {
   return value
 }
 
-interface Model {
+export interface Model {
   readonly slug: string
   readonly canonicalSlug?: string
   readonly name: string
