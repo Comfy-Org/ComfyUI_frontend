@@ -111,7 +111,6 @@ watch(
               modelThumbnails.value[url] = preview
               return
             }
-            if (!mounted) return
             const result = await generateModelThumbnail(
               url,
               filename,

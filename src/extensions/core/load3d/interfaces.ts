@@ -250,9 +250,10 @@ export interface LoadModelOptions {
    */
   silentOnNotFound?: boolean
   /**
-   * When true, suppress every user-facing toast for this load. Use for
-   * offscreen renders the viewer never asked for (e.g. thumbnail
-   * generation), where a failure has no surface the user can act on.
+   * When true, raise no toast and reject with the underlying error
+   * instead. Use for offscreen renders the viewer never asked for (e.g.
+   * thumbnail generation), which have no surface to show a toast on and
+   * need the real cause for their own reporting.
    */
   silent?: boolean
 }

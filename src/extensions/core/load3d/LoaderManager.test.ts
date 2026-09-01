@@ -590,16 +590,24 @@ describe('LoaderManager', () => {
       expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
     })
 
-    it('raises no alert at all when silent is set', async () => {
+    it('rejects with the load failure instead of alerting when silent is set', async () => {
       const { lm } = makeLoaderManager()
       meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
       vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      await lm.loadModel('api/view?filename=cube.glb', undefined, {
-        silent: true
-      })
-      await lm.loadModel('api/view?filename=cube', undefined, { silent: true })
+      await expect(
+        lm.loadModel('api/view?filename=cube.glb', undefined, { silent: true })
+      ).rejects.toThrow('parse failure: bad header')
+      expect(addAlert).not.toHaveBeenCalled()
+    })
 
+    it('rejects on an undeterminable file type instead of alerting when silent is set', async () => {
+      const { lm } = makeLoaderManager()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(
+        lm.loadModel('api/view?type=output', undefined, { silent: true })
+      ).rejects.toThrow(/Unknown model file type/)
       expect(addAlert).not.toHaveBeenCalled()
     })
 

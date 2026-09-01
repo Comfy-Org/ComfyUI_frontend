@@ -18,6 +18,10 @@ import {
 const COLLAPSED_COUNT = 12
 const MODEL_COUNT = 13
 const HIDDEN_MODEL = `mesh-${MODEL_COUNT - 1}.glb`
+const VISIBLE_MODELS = Array.from(
+  { length: COLLAPSED_COUNT },
+  (_, index) => `mesh-${index}.glb`
+)
 
 const MODEL_REPLY = Array.from(
   { length: MODEL_COUNT },
@@ -55,7 +59,7 @@ const test = mergeTests(agentTest, webSocketFixture).extend<{
         url.searchParams.get('hash') ?? url.searchParams.get('name_contains')
       if (!name) return route.fulfill(jsonRoute({ assets: [] }))
 
-      lookedUp.push(name)
+      if (/^mesh-\d+\.glb$/.test(name)) lookedUp.push(name)
       return route.fulfill(
         jsonRoute({
           assets: [
@@ -109,10 +113,9 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
     await expect(tiles).toHaveCount(COLLAPSED_COUNT)
     await expect(thumbnails).toHaveCount(COLLAPSED_COUNT)
     expect(
-      new Set(lookedUpModels).size,
-      'a collapsed reply must only look up the models it shows'
-    ).toBe(COLLAPSED_COUNT)
-    expect(lookedUpModels).not.toContain(HIDDEN_MODEL)
+      [...new Set(lookedUpModels)].sort(),
+      'a collapsed reply must look up the models it shows, and only those'
+    ).toEqual([...VISIBLE_MODELS].sort())
 
     await panel.getByRole('button', { name: enMessages.agent.showMore }).click()
 

@@ -120,9 +120,8 @@ export class LoaderManager implements LoaderManagerInterface {
       }
 
       if (!fileExtension) {
-        if (!options?.silent) {
-          useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
-        }
+        if (options?.silent) throw new Error(`Unknown model file type: ${url}`)
+        useToastStore().addAlert(t('toastMessages.couldNotDetermineFileType'))
         return
       }
 
@@ -147,15 +146,12 @@ export class LoaderManager implements LoaderManagerInterface {
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
     } catch (error) {
-      if (loadId === this.currentLoadId) {
-        this.eventManager.emitEvent('modelLoadingEnd', null)
-        console.error('Error loading model:', error)
-        const silenced =
-          options?.silent ||
-          (options?.silentOnNotFound && isNotFoundError(error))
-        if (!silenced) {
-          useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
-        }
+      if (loadId !== this.currentLoadId) return
+      this.eventManager.emitEvent('modelLoadingEnd', null)
+      console.error('Error loading model:', error)
+      if (options?.silent) throw error
+      if (!(options?.silentOnNotFound && isNotFoundError(error))) {
+        useToastStore().addAlert(t('toastMessages.errorLoadingModel'))
       }
     }
   }
