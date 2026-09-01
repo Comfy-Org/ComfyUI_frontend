@@ -64,6 +64,7 @@ const mocks = vi.hoisted(() => ({
   ),
   getTemplateThumbnailUrl: vi.fn(() => '/thumbnail.webp'),
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
+  isModelDownloadable: vi.fn(() => true),
   loadTemplates: vi.fn(async () => true),
   loadWorkflowTemplate: vi.fn(async () => true),
   onClose: vi.fn(),
@@ -98,6 +99,10 @@ vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return runtime.isDesktop
   }
+}))
+
+vi.mock<unknown>(import('@/platform/missingModel/missingModelDownload'), () => ({
+  isModelDownloadable: mocks.isModelDownloadable
 }))
 
 vi.mock<unknown>(

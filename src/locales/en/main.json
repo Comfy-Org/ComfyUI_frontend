@@ -1235,6 +1235,8 @@
         "lora": "LoRA"
       },
       "usedBy": "Used by {nodes}",
+      "downloadStarterPack": "Download models & open",
+      "openNow": "Open now",
       "openTemplate": "Open template",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
