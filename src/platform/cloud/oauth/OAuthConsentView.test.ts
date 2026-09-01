@@ -32,8 +32,8 @@ const i18n = createI18n({
       },
       oauth: {
         consent: {
-          allow: 'Continue',
-          deny: 'Cancel',
+          continueAction: 'Continue',
+          cancel: 'Cancel',
           genericError: 'OAuth request failed.',
           loading: 'Loading authorization request…',
           missingRequest: 'This authorization request is missing.',

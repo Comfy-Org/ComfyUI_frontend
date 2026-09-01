@@ -134,7 +134,7 @@
           :disabled="isSubmitting || !selectedWorkspaceIsValid"
           @click="submit('allow')"
         >
-          {{ t('oauth.consent.allow') }}
+          {{ t('oauth.consent.continueAction') }}
         </Button>
         <Button
           variant="secondary"
@@ -144,7 +144,7 @@
           :disabled="isSubmitting || challenge.workspaces.length === 0"
           @click="submit('deny')"
         >
-          {{ t('oauth.consent.deny') }}
+          {{ t('oauth.consent.cancel') }}
         </Button>
       </footer>
     </section>

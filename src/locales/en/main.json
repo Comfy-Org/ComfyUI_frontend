@@ -2138,8 +2138,8 @@
   },
   "oauth": {
     "consent": {
-      "allow": "Continue",
-      "deny": "Cancel",
+      "continueAction": "Continue",
+      "cancel": "Cancel",
       "genericError": "OAuth request failed. Please restart from the client app.",
       "loading": "Loading authorization request…",
       "missingRequest": "This authorization request is missing. Please restart from the client app.",
