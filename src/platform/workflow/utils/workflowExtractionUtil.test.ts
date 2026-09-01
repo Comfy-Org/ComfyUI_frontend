@@ -13,11 +13,7 @@ vi.mock('@/platform/assets/utils/assetUrlUtil', () => ({
 vi.mock('@/scripts/metadata/parser', () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: vi.fn()
-}))
 
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
@@ -49,12 +45,10 @@ function mockFetchOk(blob: Blob): void {
 
 describe('extractWorkflowFromAsset', () => {
   beforeEach(() => {
-    vi.mocked(getOutputAssetMetadata).mockReturnValue(null)
     vi.mocked(getAssetUrl).mockReturnValue('http://test/asset.png')
   })
 
   it('routes output assets through the jobs API', async () => {
-    vi.mocked(getOutputAssetMetadata).mockReturnValue(jobMetadata)
     vi.mocked(getJobWorkflow).mockResolvedValue(blankGraph)
 
     const result = await extractWorkflowFromAsset(
@@ -66,7 +60,6 @@ describe('extractWorkflowFromAsset', () => {
   })
 
   it('returns null workflow when the jobs API resolves nothing', async () => {
-    vi.mocked(getOutputAssetMetadata).mockReturnValue(jobMetadata)
     vi.mocked(getJobWorkflow).mockResolvedValue(undefined)
 
     const result = await extractWorkflowFromAsset(
@@ -160,23 +153,33 @@ describe('extractApiPromptFromAsset', () => {
   const apiPrompt = { '1': { class_type: 'KSampler', inputs: {} } }
 
   it('returns the stored API graph for an output asset', async () => {
-    vi.mocked(getOutputAssetMetadata).mockReturnValue(jobMetadata)
     vi.mocked(getJobApiPrompt).mockResolvedValue(apiPrompt)
 
-    await expect(extractApiPromptFromAsset(makeAsset())).resolves.toEqual(
-      apiPrompt
-    )
+    await expect(
+      extractApiPromptFromAsset(makeAsset({ user_metadata: jobMetadata }))
+    ).resolves.toEqual(apiPrompt)
     expect(getJobApiPrompt).toHaveBeenCalledWith('job-42')
   })
 
-  it('returns undefined for assets with no job', async () => {
-    vi.mocked(getOutputAssetMetadata).mockReturnValue(null)
+  // `null` is unreachable per the type but arrives from real asset payloads,
+  // so the schema guard is expected to reject it alongside malformed shapes.
+  const nonJobMetadata: [string, AssetItem['user_metadata']][] = [
+    ['absent', undefined],
+    ['null', null as unknown as AssetItem['user_metadata']],
+    ['missing jobId', { nodeId: 0, subfolder: '' }],
+    ['non-string jobId', { jobId: 42, nodeId: 0, subfolder: '' }],
+    ['missing nodeId', { jobId: 'job-42', subfolder: '' }]
+  ]
 
-    await expect(
-      extractApiPromptFromAsset(makeAsset())
-    ).resolves.toBeUndefined()
-    expect(getJobApiPrompt).not.toHaveBeenCalled()
-  })
+  it.for(nonJobMetadata)(
+    'returns undefined without calling the jobs API for %s metadata',
+    async ([, userMetadata]) => {
+      await expect(
+        extractApiPromptFromAsset(makeAsset({ user_metadata: userMetadata }))
+      ).resolves.toBeUndefined()
+      expect(getJobApiPrompt).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('supportsWorkflowMetadata', () => {

@@ -2139,7 +2139,8 @@ describe('ComfyApp', () => {
 
     it('should alert the user when loading an embedded API prompt fails', async () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
-        prompt: { '1': { class_type: 'KSampler', inputs: {} } }
+        prompt: { '1': { class_type: 'KSampler', inputs: {} } },
+        parameters: 'a photo of a cat\nSteps: 20'
       })
       const loadApiJson = vi
         .spyOn(app, 'loadApiJson')
@@ -2150,7 +2151,10 @@ describe('ComfyApp', () => {
       await expect(app.handleFile(imageFile)).resolves.toBeUndefined()
 
       expect(loadApiJson).toHaveBeenCalled()
-      expect(mockToastStore.addAlert).toHaveBeenCalled()
+      // Exactly one alert, and no A1111 import: the failed API load returns
+      // rather than falling through to the parameters fallback.
+      expect(mockToastStore.addAlert).toHaveBeenCalledTimes(1)
+      expect(mockImportA1111).not.toHaveBeenCalled()
       expect(createNode).not.toHaveBeenCalled()
     })
 

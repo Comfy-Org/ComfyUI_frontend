@@ -7,6 +7,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -414,6 +415,7 @@ export function useMediaAssetActions() {
       return { success: true }
     } catch (error) {
       console.error('Failed to open API graph as workflow:', error)
+      reportError(error, { errorType: 'asset_api_prompt_open_failure' })
       return {
         success: false,
         error: error instanceof Error ? error.message : undefined
