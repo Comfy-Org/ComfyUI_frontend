@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url'
 const TEST_FIXTURE_MARKERS = [
   'browser_tests/fixtures/',
   '/__fixtures__/',
+  'ui-mock-assets',
   'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
 ] as const
 
