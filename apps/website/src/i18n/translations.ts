@@ -7634,8 +7634,8 @@ Enterprise`
     'zh-CN': '为团队打造'
   },
   'platform.serverlessScale.subtitle': {
-    en: 'Deploy across thousands of GPUs with autoscaling, logs, and performance controls built in.',
-    'zh-CN': '跨数千块 GPU 部署，自动扩缩、日志和性能控制开箱即用。'
+    en: "Easily share workflows with your team. APIs automatically scale up and down based on your team's needs.",
+    'zh-CN': '轻松与团队共享工作流。API 会根据团队需求自动扩缩。'
   },
   'platform.serverlessScale.1.title': {
     en: 'Autoscaling',
