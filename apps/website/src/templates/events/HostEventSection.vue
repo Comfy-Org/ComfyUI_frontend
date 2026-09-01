@@ -39,7 +39,8 @@ const bodyClass = 'text-sm text-primary-comfy-canvas/70'
     :lead="t('events.host.lead', locale)"
     :cta="{
       label: t('events.host.applyToHost', locale),
-      href: externalLinks.eventHostApplicationForm
+      href: externalLinks.eventHostApplicationForm,
+      newTab: true
     }"
     :steps
   >

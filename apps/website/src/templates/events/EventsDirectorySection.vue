@@ -15,6 +15,7 @@ import EventsCardsView from './EventsCardsView.vue'
 import { externalLinks } from '../../config/routes'
 import { directoryEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
+import { resolveRel } from '../../utils/cta'
 import {
   DIRECTORY_FILTER_ALL,
   EVENT_CATEGORIES,
@@ -130,6 +131,8 @@ const caretClass =
         variant="underlineLink"
         class="mt-4 justify-center text-sm"
         :href="externalLinks.eventHostApplicationForm"
+        target="_blank"
+        :rel="resolveRel({ target: '_blank' })"
       >
         {{ t('events.hero.applyToHost', locale) }}
       </Button>

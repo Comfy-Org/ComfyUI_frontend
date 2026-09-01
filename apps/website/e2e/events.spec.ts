@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { localizeHref } from '../src/config/routes'
+import { externalLinks, localizeHref } from '../src/config/routes'
 import {
   directoryEvents,
   eventPath,
@@ -239,6 +239,28 @@ test.describe('Events page — desktop @smoke', () => {
           name: t('events.host.title', locale)
         })
       ).toBeVisible()
+    }
+  })
+
+  test('all three apply-to-host CTAs point at the real form', async ({
+    page
+  }) => {
+    // The form URL was a '#' placeholder through most of the rebuild, which
+    // left these three visibly inert. Assert they stay wired.
+    const href = externalLinks.eventHostApplicationForm
+    expect(href).not.toBe('#')
+
+    for (const [path, locale] of LOCALES) {
+      await page.goto(path)
+      const ctas = page.getByRole('link', {
+        name: t('events.host.applyToHost', locale)
+      })
+      await expect(ctas).toHaveCount(3)
+      for (let i = 0; i < 3; i++) {
+        await expect(ctas.nth(i)).toHaveAttribute('href', href)
+        await expect(ctas.nth(i)).toHaveAttribute('target', '_blank')
+        await expect(ctas.nth(i)).toHaveAttribute('rel', /noopener/)
+      }
     }
   })
 

@@ -10,6 +10,7 @@ import Button from '../../components/ui/button/Button.vue'
 import { externalLinks } from '../../config/routes'
 import { featuredEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
+import { resolveRel } from '../../utils/cta'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -47,6 +48,8 @@ const slides = computed<FeaturedSlide[]>(() =>
           as="a"
           variant="outline"
           :href="externalLinks.eventHostApplicationForm"
+          target="_blank"
+          :rel="resolveRel({ target: '_blank' })"
         >
           {{ t('events.hero.applyToHost', locale) }}
         </Button>
