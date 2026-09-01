@@ -144,7 +144,7 @@ describe('LGraphCanvas processMouseUp — pointer capture release', () => {
       pointerId: 1,
       isPrimary: true
     })
-    canvas.processMouseDown(downEvent as unknown as CanvasPointerEvent)
+    canvas.processMouseDown(fromAny<CanvasPointerEvent, unknown>(downEvent))
 
     // Sanity: pointer.pointerId should now be set
     expect(canvas.pointer.pointerId).toBe(1)
@@ -173,7 +173,7 @@ describe('LGraphCanvas processMouseUp — pointer capture release', () => {
       pointerId: 1,
       isPrimary: true
     })
-    canvas.processMouseDown(downEvent as unknown as CanvasPointerEvent)
+    canvas.processMouseDown(fromAny<CanvasPointerEvent, unknown>(downEvent))
 
     // Non-primary pointerup for a different pointer (e.g. pointerId 2)
     const upEvent = makePointerEvent('pointerup', {
@@ -198,7 +198,7 @@ describe('LGraphCanvas processMouseUp — pointer capture release', () => {
       pointerId: 1,
       isPrimary: true
     })
-    canvas.processMouseDown(downEvent as unknown as CanvasPointerEvent)
+    canvas.processMouseDown(fromAny<CanvasPointerEvent, unknown>(downEvent))
 
     const upEvent = makePointerEvent('pointerup', {
       pointerId: 1,
