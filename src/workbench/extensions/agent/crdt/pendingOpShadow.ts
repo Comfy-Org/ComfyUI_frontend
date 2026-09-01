@@ -106,6 +106,21 @@ function targetKey(target: ShadowTarget): string {
   }
 }
 
+function cloneTarget(target: ShadowTarget): ShadowTarget {
+  switch (target.kind) {
+    case 'node':
+      return Object.freeze({ kind: 'node', nodeId: target.nodeId })
+    case 'link':
+      return Object.freeze({ kind: 'link', linkId: target.linkId })
+    case 'widget':
+      return Object.freeze({
+        kind: 'widget',
+        nodeId: target.nodeId,
+        widgetName: target.widgetName
+      })
+  }
+}
+
 export function createPendingOpShadowSurface(): PendingOpShadowSurface {
   /** Insertion-ordered by show; op ids are never re-minted or reused. */
   const shadows = new Map<string, PendingShadow>()
@@ -159,9 +174,7 @@ export function createPendingOpShadowSurface(): PendingOpShadowSurface {
       if (seenOpIds.has(opId)) return false
       const shadow: PendingShadow = Object.freeze({
         opId,
-        targets: Object.freeze(
-          targets.map((target) => Object.freeze({ ...target }) as ShadowTarget)
-        )
+        targets: Object.freeze(targets.map(cloneTarget))
       })
       shadows.set(opId, shadow)
       seenOpIds.add(opId)
