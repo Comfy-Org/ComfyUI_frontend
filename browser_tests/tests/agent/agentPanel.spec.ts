@@ -382,6 +382,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(await getWebSocket(), MESSAGE_DONE_EVENT)
     const editButton = panel.getByRole('button', { name: enMessages.g.edit })
     await expect(editButton).toHaveCount(1)
+    await panel.getByText(originalPrompt, { exact: true }).last().hover()
     await editButton.click()
 
     await expect(composer).toHaveValue(originalPrompt)
