@@ -28,14 +28,7 @@
         height="2rem"
       />
       <div v-else class="flex items-baseline gap-2">
-        <i
-          :class="
-            cn(
-              'icon-[lucide--coins] size-4 self-center',
-              !inactivePlan && 'text-credit'
-            )
-          "
-        />
+        <i class="icon-[lucide--coins] size-4 self-center text-credit" />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
@@ -185,7 +178,7 @@
             height="1rem"
           />
           <span v-else class="flex items-center gap-1 font-bold">
-            <i class="icon-[lucide--coins] size-4" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
