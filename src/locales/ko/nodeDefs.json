@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "모드",
-        "tooltip": "'speed'는 더 빠르며, 'precision'은 두 배의 비용으로 더 높은 품질의 입 모양 동기화를 제공합니다."
+        "tooltip": "'speed'는 더 빠르며, 'precision'은 더 높은 비용으로 더 높은 품질의 립싱크를 생성합니다."
       },
       "output_language": {
         "name": "출력 언어",
@@ -24755,6 +24755,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "비디오 자르기",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "픽셀 단위로 영역을 자릅니다. 너비/높이가 0이면 전체 프레임을 유지합니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "다양한 전략을 사용하여 비디오에서 고정된 개수의 프레임을 샘플링합니다.",
     "display_name": "비디오 프레임 샘플링",
@@ -24856,6 +24873,27 @@
       },
       "model": {
         "name": "모델"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "비디오 트리밍 (고급)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "True인 경우, 지정한 길이가 불가능하면 오류가 발생합니다."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "시작/종료 프레임을 사용하여 구간을 트리밍합니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
