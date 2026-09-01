@@ -61,6 +61,7 @@ const SHARING_WARNING =
  */
 function redactSecrets(value: unknown, depth = 0): unknown {
   if (depth > MAX_REDACTION_DEPTH) return DEPTH_LIMIT_REDACTED
+  if (typeof value === 'string') return redactPrivateValue(value)
   if (value === null || typeof value !== 'object') return value
   if (Array.isArray(value)) {
     return value.map((item) => redactSecrets(item, depth + 1))
@@ -124,9 +125,9 @@ function fence(language: string, body: string): string {
   // Server logs and workflow JSON are untrusted text: a body containing its
   // own fence would otherwise terminate the block early and let the rest of
   // the payload render as markdown.
-  const longestRun = Math.max(
-    0,
-    ...[...body.matchAll(/`+/g)].map((match) => match[0].length)
+  const longestRun = [...body.matchAll(/`+/g)].reduce(
+    (max, match) => Math.max(max, match[0].length),
+    0
   )
   const delimiter = '`'.repeat(Math.max(3, longestRun + 1))
   return [delimiter + language, body, delimiter].join('\n')
@@ -157,18 +158,19 @@ type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
  * `--output-directory` and `--extra-model-paths-config` carry private paths
  * under a flag no credential pattern matches.
  */
-const PRIVATE_VALUE_PATTERN = /^(\/|~|[A-Za-z]:[\\/])|:\/\//
+const PRIVATE_VALUE_PATTERN =
+  /(^|=)(\/|~|[A-Za-z]:[\\/]|\\\\|\.{1,2}[\\/])|:\/\//
+
+function redactPrivateValue(value: string): string {
+  return PRIVATE_VALUE_PATTERN.test(value) ? REDACTED : value
+}
 
 function redactArgv(argv: readonly string[]): string {
   const parts: string[] = []
   let flagWantsSecretValue = false
 
   for (const arg of argv) {
-    // A single-dash token can be a credential value (`-secret`), while a
-    // conventional double-dash token starts the next long-form flag. This is
-    // the necessary disambiguation for argv's otherwise ambiguous token
-    // boundary; end-of-argv naturally leaves a missing value redacted.
-    if (flagWantsSecretValue && !/^--[A-Za-z0-9]/.test(arg)) {
+    if (flagWantsSecretValue) {
       parts.push(REDACTED)
       flagWantsSecretValue = false
       continue
@@ -176,11 +178,12 @@ function redactArgv(argv: readonly string[]): string {
     flagWantsSecretValue = false
 
     if (!arg.startsWith('-')) {
-      const secret = PRIVATE_VALUE_PATTERN.test(arg)
-      parts.push(secret ? REDACTED : arg)
+      parts.push(redactPrivateValue(arg))
       continue
     }
-    const [flag, inlineValue] = arg.split('=', 2)
+    const eq = arg.indexOf('=')
+    const flag = eq === -1 ? arg : arg.slice(0, eq)
+    const inlineValue = eq === -1 ? undefined : arg.slice(eq + 1)
     if (inlineValue !== undefined) {
       const secret =
         SECRET_KEY_PATTERN.test(flag) || PRIVATE_VALUE_PATTERN.test(inlineValue)
@@ -194,16 +197,22 @@ function redactArgv(argv: readonly string[]): string {
   return parts.join(' ')
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 function systemSection(stats: SystemStats): string {
-  const system: Partial<SystemStats['system']> = stats.system ?? {}
-  const devices = Array.isArray(stats.devices) ? stats.devices : []
+  const payload: Record<string, unknown> = isRecord(stats) ? stats : {}
+  const system = isRecord(payload.system) ? payload.system : {}
+  const argv = Array.isArray(system.argv) ? system.argv.map(String) : []
+  const devices = Array.isArray(payload.devices) ? payload.devices : []
   const lines = [
     `- **ComfyUI version:** ${system.comfyui_version ?? '?'}`,
     `- **OS:** ${system.os ?? '?'}`,
     `- **Python:** ${system.python_version ?? '?'}`,
     `- **Embedded Python:** ${system.embedded_python ?? '?'}`,
     `- **PyTorch:** ${system.pytorch_version ?? '?'}`,
-    `- **Arguments:** ${redactArgv(system.argv ?? [])}`,
+    `- **Arguments:** ${redactArgv(argv)}`,
     `- **RAM:** ${system.ram_free ?? '?'} free / ${system.ram_total ?? '?'} total`
   ]
   if (system.cloud_version)
@@ -213,6 +222,10 @@ function systemSection(stats: SystemStats): string {
       `- **Frontend (reported by backend):** ${system.comfyui_frontend_version}`
     )
   for (const device of devices) {
+    if (!isRecord(device)) {
+      lines.push('- **Device ?:** unavailable')
+      continue
+    }
     lines.push(
       `- **Device ${device.index ?? '?'}:** ${device.name} (${device.type}) — VRAM ${device.vram_free} free / ${device.vram_total} total, torch ${device.torch_vram_free} / ${device.torch_vram_total}`
     )

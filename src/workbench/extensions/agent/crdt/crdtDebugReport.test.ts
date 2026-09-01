@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const getSystemStats = vi.fn()
-const getLogs = vi.fn()
-const getSettings = vi.fn()
+const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
+  getSystemStats: vi.fn(),
+  getLogs: vi.fn(),
+  getSettings: vi.fn()
+}))
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -205,6 +207,37 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('--cpu')
   })
 
+  it('redacts a credential value that looks like another long flag', async () => {
+    getSystemStats.mockResolvedValue({
+      system: {
+        argv: ['main.py', '--api-token', '--argv-token-do-not-leak', '--cpu']
+      },
+      devices: []
+    })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).not.toContain('argv-token-do-not-leak')
+    expect(report).toContain('--cpu')
+  })
+
+  it('redacts inline argv values containing equals signs', async () => {
+    getSystemStats.mockResolvedValue({
+      system: {
+        argv: [
+          'main.py',
+          '--extra-model-paths-config=a=/home/alice/private.yaml'
+        ]
+      },
+      devices: []
+    })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).not.toContain('private.yaml')
+    expect(report).toContain('--extra-model-paths-config=[redacted')
+  })
+
   it('renders the report even when /system_stats answers with an unexpected shape', async () => {
     getSystemStats.mockResolvedValue({ system: {}, devices: undefined })
 
@@ -228,6 +261,18 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('## System')
   })
 
+  it('renders the report when device entries are malformed', async () => {
+    getSystemStats.mockResolvedValue({
+      system: {},
+      devices: [null, { index: 1, name: 'GPU', type: 'cuda' }]
+    })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).toContain('Device ?:')
+    expect(report).toContain('Device 1')
+  })
+
   it('does not return a deeply nested settings object past the redaction cutoff', async () => {
     let nested: Record<string, unknown> = {
       innocuous: { apiKey: 'deep-do-not-leak' }
@@ -245,6 +290,20 @@ describe('collectCrdtDebugReport', () => {
 
     expect(report).not.toContain('deep-do-not-leak')
     expect(report).toContain('redacted at depth limit')
+  })
+
+  it('redacts private path strings inside shared settings values', async () => {
+    getSettings.mockResolvedValue({
+      'Comfy.ModelDirectory': '/home/alice/private-models'
+    })
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES
+    })
+
+    expect(report).not.toContain('/home/alice/private-models')
   })
 
   it('redacts private paths without eating the argument after them', async () => {
@@ -269,6 +328,26 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('--cpu')
   })
 
+  it('redacts relative and UNC path argv values', async () => {
+    getSystemStats.mockResolvedValue({
+      system: {
+        argv: [
+          'main.py',
+          '--extra-model-paths-config',
+          '../private/paths.yaml',
+          '--output',
+          '\\\\NAS\\comfy\\out'
+        ]
+      },
+      devices: []
+    })
+
+    const report = await collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+
+    expect(report).not.toContain('../private/paths.yaml')
+    expect(report).not.toContain('NAS')
+  })
+
   it('does not let a log line close the code fence around it', async () => {
     getLogs.mockResolvedValue('traceback ``` still inside the fence')
 
@@ -281,6 +360,18 @@ describe('collectCrdtDebugReport', () => {
     const afterHeading = report.slice(report.indexOf('## Server logs'))
     const opener = afterHeading.slice(afterHeading.indexOf('`'))
     expect(opener.startsWith('````')).toBe(true)
+  })
+
+  it('does not spread every backtick run into Math.max', async () => {
+    getLogs.mockResolvedValue('`'.repeat(70_000))
+
+    await expect(
+      collectCrdtDebugReport({
+        crdt: SNAPSHOT,
+        events: [],
+        sources: ALL_SOURCES
+      })
+    ).resolves.toContain('## Server logs')
   })
 
   it('omits an oversized workflow rather than producing an unpasteable report', async () => {
