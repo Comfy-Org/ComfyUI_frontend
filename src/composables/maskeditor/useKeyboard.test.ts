@@ -101,55 +101,18 @@ describe('useKeyboard', () => {
       }
     })
 
-    it('should call undo on Ctrl+Z without shift', () => {
-      dispatchKeyDown({ key: 'z', ctrlKey: true })
+    it('should leave undo and redo combos to the keybinding dispatcher', () => {
+      const history = useMaskEditorStore().canvasHistory
+      const undo = vi.spyOn(history, 'undo')
+      const redo = vi.spyOn(history, 'redo')
 
-      expect(useMaskEditorStore().canvasHistory.undo).toHaveBeenCalledTimes(1)
-      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
-    })
-
-    it('should call undo on Meta+Z without shift', () => {
-      dispatchKeyDown({ key: 'z', metaKey: true })
-
-      expect(useMaskEditorStore().canvasHistory.undo).toHaveBeenCalledTimes(1)
-    })
-
-    it('should call redo on Ctrl+Shift+Z', () => {
+      const event = dispatchKeyDown({ key: 'z', ctrlKey: true })
+      dispatchKeyDown({ key: 'y', ctrlKey: true })
       dispatchKeyDown({ key: 'Z', ctrlKey: true, shiftKey: true })
 
-      expect(useMaskEditorStore().canvasHistory.redo).toHaveBeenCalledTimes(1)
-      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
-    })
-
-    it('should call redo on Ctrl+Y', () => {
-      dispatchKeyDown({ key: 'y', ctrlKey: true })
-
-      expect(useMaskEditorStore().canvasHistory.redo).toHaveBeenCalledTimes(1)
-      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
-    })
-
-    it('should not trigger undo or redo when alt is held', () => {
-      dispatchKeyDown({ key: 'z', ctrlKey: true, altKey: true })
-      dispatchKeyDown({ key: 'y', ctrlKey: true, altKey: true })
-
-      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
-      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
-    })
-
-    it('should not trigger undo or redo without ctrl or meta', () => {
-      dispatchKeyDown({ key: 'z' })
-      dispatchKeyDown({ key: 'y' })
-      dispatchKeyDown({ key: 'Z', shiftKey: true })
-
-      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
-      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
-    })
-
-    it('should ignore Ctrl+Shift+Y', () => {
-      dispatchKeyDown({ key: 'Y', ctrlKey: true, shiftKey: true })
-
-      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
-      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
+      expect(undo).not.toHaveBeenCalled()
+      expect(redo).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     })
   })
 
@@ -170,10 +133,8 @@ describe('useKeyboard', () => {
       keyboard.removeListeners()
 
       dispatchKeyDown({ key: 'a' })
-      dispatchKeyDown({ key: 'z', ctrlKey: true })
 
       expect(keyboard.isKeyDown('a')).toBe(false)
-      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
     })
 
     it('should stop clearing keys on window blur after removal', () => {

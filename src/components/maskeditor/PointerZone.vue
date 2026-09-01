@@ -2,7 +2,8 @@
   <div
     ref="pointerZoneRef"
     data-testid="pointer-zone"
-    class="h-full w-[calc(100%-4rem-220px)]"
+    tabindex="-1"
+    class="h-full w-[calc(100%-4rem-220px)] outline-none"
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
@@ -54,6 +55,7 @@ watch(
 )
 
 const handlePointerDown = async (event: PointerEvent) => {
+  pointerZoneRef.value?.focus()
   await toolManager.handlePointerDown(event)
 }
 
