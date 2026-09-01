@@ -11,6 +11,7 @@ import type {
 import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
@@ -20,9 +21,7 @@ import {
 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { zeroUuid } from '@/utils/uuid'
 import {
   ComfyWidgets,
   addValueControlWidgets,
@@ -40,6 +39,17 @@ export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
   static override category: string
+
+  /**
+   * `widgets_values` captured from `onConfigure`, read by `_createWidget` when
+   * it (re)builds the widget from `onAfterGraphConfigured`. The widget doesn't
+   * exist yet when `configure()` applies its own positional-restore loop, and
+   * `widgetValueStore`'s restoration record is already cleared by the time
+   * `onAfterGraphConfigured` runs, so this node keeps its own copy across that
+   * gap instead.
+   */
+  private _configuredWidgetsValues?: readonly WidgetValue[]
+
   constructor(title: string) {
     super(title)
     this.addOutput('connect to widget input', '*')
@@ -49,6 +59,10 @@ export class PrimitiveNode extends LGraphNode {
     if (!this.properties || !(replacePropertyName in this.properties)) {
       this.addProperty(replacePropertyName, false, 'boolean')
     }
+  }
+
+  override onConfigure(info: ISerialisedNode) {
+    this._configuredWidgetsValues = info.widgets_values
   }
 
   override applyToGraph(extraLinks: LLink[] = []) {
@@ -277,20 +291,20 @@ export class PrimitiveNode extends LGraphNode {
       }
     }
 
+    // The primitive's own serialized value takes precedence over the value
+    // just copied from the target widget above. `recreating` rebuilds the
+    // widget for a live reconfiguration (e.g. a new target type), where the
+    // caller (`recreateWidget`) restores the pre-rebuild value itself.
+    if (!recreating && this._configuredWidgetsValues?.[0] !== undefined) {
+      widget.value = this._configuredWidgetsValues[0]
+    }
+
     if (
       !inputData?.[1]?.control_after_generate &&
       (widget.type === 'number' || widget.type === 'combo')
     ) {
-      const graphId = this.graph?.rootGraph.id ?? zeroUuid
-      let control_value =
-        useWidgetValueStore().getPositionalRestoredWidgetValue(
-          graphId,
-          this.id,
-          1
-        )
-      if (!control_value) {
-        control_value = 'fixed'
-      }
+      const control_value =
+        (!recreating && this._configuredWidgetsValues?.[1]) || 'fixed'
       addValueControlWidgets(
         this,
         widget,
@@ -300,12 +314,10 @@ export class PrimitiveNode extends LGraphNode {
       )
       if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
 
-      const filter = useWidgetValueStore().getPositionalRestoredWidgetValue(
-        graphId,
-        this.id,
-        2
-      )
-      if (filter && this.widgets && this.widgets.length === 3) {
+      const filter = !recreating
+        ? this._configuredWidgetsValues?.[2]
+        : undefined
+      if (filter != null && this.widgets && this.widgets.length === 3) {
         this.widgets[2].value = filter
       }
     }

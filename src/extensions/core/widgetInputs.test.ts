@@ -85,6 +85,7 @@ function widgetSlot(
 describe('PrimitiveNode', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    widgetInputsExtension.registerCustomNodes?.(app)
   })
 
   it('resets itself when the store reports a link the graph cannot resolve', () => {
@@ -105,6 +106,58 @@ describe('PrimitiveNode', () => {
     node.onAfterGraphConfigured()
 
     expect(onLastDisconnect).toHaveBeenCalled()
+  })
+
+  it('restores its own serialized value on reload, not the target widget value (#16007)', async () => {
+    const TargetType = await applyNodeDefHooks((nodeType) => {
+      nodeType.prototype.onNodeCreated = function (this: LGraphNode) {
+        this.serialize_widgets = true
+        this.addWidget('number', 'value', 0, () => {}, { min: 0, max: 100 })
+        this.addInput('value', 'INT')
+        this.inputs[0].widget = { name: 'value' }
+        setWidgetConfig(this.inputs[0], ['INT', { min: 0, max: 100 }])
+      }
+    })
+    TargetType.nodeData = fromPartial({
+      input: { required: { value: ['INT', { min: 0, max: 100 }] } }
+    })
+    LiteGraph.registerNodeType('Target', TargetType)
+
+    const graph = new LGraph()
+    const target = LiteGraph.createNode('Target')
+    if (!target) throw new Error('Target was not registered')
+    graph.add(target)
+
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode))
+      throw new Error('PrimitiveNode was not registered')
+    graph.add(primitive)
+    primitive.connect(0, target, 0)
+    primitive.onAfterGraphConfigured()
+
+    // applyToGraph copies primitive -> target at queue time, then the
+    // primitive's own control_after_generate randomizes it, so by save time
+    // the two widgets diverge.
+    target.widgets![0].value = 5
+    primitive.widgets![0].value = 7
+
+    const serialized = graph.serialize()
+    expect(
+      serialized.nodes?.find((n) => n.type === 'PrimitiveNode')?.widgets_values
+    ).toEqual([7, 'fixed'])
+
+    graph.clear()
+    appState.configuringGraph = true
+    const reloaded = new LGraph()
+    reloaded.configure(serialized)
+    appState.configuringGraph = false
+    for (const node of reloaded.nodes) node.onGraphConfigured?.()
+    for (const node of reloaded.nodes) node.onAfterGraphConfigured?.()
+
+    const reloadedPrimitive = reloaded.nodes.find(
+      (n): n is PrimitiveNode => n instanceof PrimitiveNode
+    )!
+    expect(reloadedPrimitive.widgets?.[0]?.value).toBe(7)
   })
 })
 
