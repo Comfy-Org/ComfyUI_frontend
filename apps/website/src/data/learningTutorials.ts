@@ -834,7 +834,7 @@ export const tutorialMetaTitle = (
   tutorial: LearningTutorial,
   locale: Locale
 ): string => {
-  const title = tutorial.title[locale]
+  const title = tutorial.title[locale] || tutorial.title.en
   if (title.includes('ComfyUI')) return title
   return locale === 'zh-CN'
     ? `${title}：免费 ComfyUI 教程`
