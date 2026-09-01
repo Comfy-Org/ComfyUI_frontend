@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/common/Badge.vue'
@@ -26,11 +27,21 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const detailRoot = ref<HTMLElement | null>(null)
+const detailId = useId()
+const cloudTitleId = `${detailId}-cloud-title`
+const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
+
+defineExpose({
+  focus: () => detailRoot.value?.focus()
+})
 </script>
 
 <template>
   <article
+    ref="detailRoot"
     :aria-label="title"
+    tabindex="-1"
     class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
   >
     <div
@@ -45,14 +56,11 @@ const { t } = useI18n()
 
         <section
           v-if="cloudUrl"
-          aria-labelledby="workflow-template-detail-cloud-title"
+          :aria-labelledby="cloudTitleId"
           class="flex shrink-0 flex-col gap-4 rounded-lg bg-secondary-background/50 p-4"
         >
-          <span class="flex min-w-0 flex-col gap-2">
-            <h3
-              id="workflow-template-detail-cloud-title"
-              class="m-0 text-[13px]/[18px] font-medium"
-            >
+          <div class="flex min-w-0 flex-col gap-2">
+            <h3 :id="cloudTitleId" class="m-0 text-sm font-medium">
               {{
                 t(
                   isPartnerNode
@@ -61,7 +69,7 @@ const { t } = useI18n()
                 )
               }}
             </h3>
-            <span class="text-xs/4 font-normal text-muted-foreground">
+            <p class="m-0 text-xs/4 font-normal text-muted-foreground">
               {{
                 t(
                   isPartnerNode
@@ -69,8 +77,8 @@ const { t } = useI18n()
                     : 'templateWorkflows.detail.cloudUpsellDescription'
                 )
               }}
-            </span>
-          </span>
+            </p>
+          </div>
           <Button
             as="a"
             :href="cloudUrl"
@@ -102,19 +110,17 @@ const { t } = useI18n()
         v-if="groups.length > 0"
         role="region"
         :aria-label="t('templateWorkflows.detail.requirements')"
+        tabindex="0"
         class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2"
       >
         <section
           v-for="group in groups"
           :key="group.id"
-          :aria-labelledby="`workflow-template-detail-group-${group.id}`"
+          :aria-labelledby="groupTitleId(group.id)"
           class="border-t border-border-subtle/60 pb-2 first:border-t-0"
         >
           <div class="flex h-10 items-center gap-2 px-2">
-            <h3
-              :id="`workflow-template-detail-group-${group.id}`"
-              class="m-0 text-sm font-medium"
-            >
+            <h3 :id="groupTitleId(group.id)" class="m-0 text-sm font-medium">
               {{ group.label }}
             </h3>
             <Badge

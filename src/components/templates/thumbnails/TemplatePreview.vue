@@ -8,27 +8,30 @@ import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDisso
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
-const props = defineProps<{
+const {
+  template,
+  isHovered,
+  hoverZoom = 0
+} = defineProps<{
   template: TemplateInfo
   baseImageSrc: string
   overlayImageSrc: string
   alt: string
   getLogoUrl: (provider: string) => string
   isHovered?: boolean
+  hoverZoom?: number
 }>()
 
 const internalHovered = ref(false)
-const hovered = computed(() => props.isHovered ?? internalHovered.value)
+const hovered = computed(() => isHovered ?? internalHovered.value)
 const isVideo = computed(
-  () =>
-    props.template.mediaType === 'video' ||
-    props.template.mediaSubtype === 'webp'
+  () => template.mediaType === 'video' || template.mediaSubtype === 'webp'
 )
 </script>
 
 <template>
   <div
-    class="relative w-full overflow-hidden rounded-lg"
+    class="relative size-full overflow-hidden rounded-lg"
     @mouseenter="internalHovered = true"
     @mouseleave="internalHovered = false"
   >
@@ -55,7 +58,7 @@ const isVideo = computed(
       :alt="alt"
       :is-hovered="hovered"
       :is-video="isVideo"
-      :hover-zoom="template.thumbnailVariant === 'zoomHover' ? 16 : 5"
+      :hover-zoom="hoverZoom"
     />
     <LogoOverlay
       v-if="template.logos?.length"
