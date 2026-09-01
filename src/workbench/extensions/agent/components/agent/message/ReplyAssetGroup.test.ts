@@ -74,6 +74,18 @@ function renderGroup(assets: ReplyAsset[]) {
   })
 }
 
+type PreviewState = {
+  modelThumbnails: Record<string, string>
+  assetNames: Record<string, string>
+}
+
+// The unmount guard protects component-local maps whose effects are already
+// stopped, so a late write leaves no DOM trace to assert on. Read the maps off
+// the instance that rendered the tile instead.
+const previewState = (tile: Element): PreviewState =>
+  (tile as Element & { __vueParentComponent: { setupState: PreviewState } })
+    .__vueParentComponent.setupState
+
 const thumbs = () =>
   screen.getAllByRole('button').filter((b) => b.getAttribute('aria-label'))
 const toggle = () =>
@@ -278,5 +290,54 @@ describe('ReplyAssetGroup', () => {
         'https://x/mesh-12.glb'
       )
     )
+  })
+
+  it('drops every late preview write once the group has unmounted', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    let resolvePreview: ((preview: string | null) => void) | undefined
+    let resolveGenerated: ((generated: string | null) => void) | undefined
+    let resolveName: ((record: { name: string }) => void) | undefined
+    findServerPreviewUrl.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePreview = resolve
+      })
+    )
+    generateModelThumbnail.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveGenerated = resolve
+      })
+    )
+    findOutputAsset.mockReturnValue(
+      new Promise((resolve) => {
+        resolveName = resolve
+      })
+    )
+    const generated = {
+      ...model,
+      url: 'https://x/mesh-2.glb',
+      filename: 'mesh-2.glb'
+    }
+
+    const { unmount } = renderGroup([model, generated, audio])
+    await waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledWith(generated.url)
+    )
+    const state = previewState(screen.getByRole('button', { name: 'mesh.glb' }))
+
+    unmount()
+    resolvePreview?.('https://x/mesh_preview.png')
+    resolveGenerated?.('data:image/png;base64,gen')
+    resolveName?.({ name: 'late_name' })
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(state.modelThumbnails).toEqual({
+      [model.url]: '',
+      [generated.url]: ''
+    })
+    expect(state.assetNames).toEqual({
+      [model.url]: '',
+      [generated.url]: '',
+      [audio.url]: ''
+    })
   })
 })
