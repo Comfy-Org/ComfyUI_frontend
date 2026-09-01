@@ -577,6 +577,18 @@ describe('createOpenAiTranslator', () => {
     expect(requestBodies[2]).toContain('main.json: farewell')
   })
 
+  it('drops a sibling id leaked into a split response', async () => {
+    const { translate, callCount } = translatorFor([
+      completion('{"1": "Bonj', 'length'),
+      completion('{"1": "Bonjour {name}", "2": "stray"}'),
+      completion('{}')
+    ])
+    await expect(translate(locale, items)).resolves.toEqual({
+      '1': 'Bonjour {name}'
+    })
+    expect(callCount()).toBe(3)
+  })
+
   it('names the string that a truncated single-item batch could not fit', async () => {
     const { translate, callCount } = translatorFor([
       completion('{"1": "Bonj', 'length')

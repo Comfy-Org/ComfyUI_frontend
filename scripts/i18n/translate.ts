@@ -93,14 +93,17 @@ ${glossary}
 ${locale.guidance ? `\n${locale.name} guidelines:\n${locale.guidance}\n` : ''}`
 }
 
-function parseBatchResponse(content: string): Record<string, string> {
+function parseBatchResponse(
+  content: string,
+  requestedIds: ReadonlySet<string>
+): Record<string, string> {
   const parsed: unknown = JSON.parse(content)
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('translation response is not a JSON object')
   }
   const record: Record<string, string> = {}
   for (const [key, value] of Object.entries(parsed)) {
-    if (typeof value === 'string') record[key] = value
+    if (typeof value === 'string' && requestedIds.has(key)) record[key] = value
   }
   return record
 }
@@ -166,6 +169,7 @@ export function createOpenAiTranslator(
     splitDepth: number
   ): Promise<Record<string, string>> {
     if (items.length === 0) return {}
+    const requestedIds = new Set(items.map((item) => item.id))
     let lastError = new Error('translation request was not attempted')
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
       const completion = await client.chat.completions
@@ -221,7 +225,7 @@ export function createOpenAiTranslator(
         continue
       }
       try {
-        return parseBatchResponse(content)
+        return parseBatchResponse(content, requestedIds)
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error))
       }
