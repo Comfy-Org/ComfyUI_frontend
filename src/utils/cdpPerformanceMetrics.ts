@@ -28,6 +28,8 @@ export interface CdpTaskAccounting {
 
 export type CdpMetricSnapshot = ReadonlyMap<string, number>
 
+class MissingCdpMetricError extends Error {}
+
 export function parseCdpMetrics(
   metrics: CdpPerformanceMetric[]
 ): CdpMetricSnapshot {
@@ -45,7 +47,9 @@ export function requireCdpMetric(
 ): number {
   const value = snapshot.get(name)
   if (value === undefined) {
-    throw new Error(`Performance.getMetrics omitted required metric ${name}`)
+    throw new MissingCdpMetricError(
+      `Performance.getMetrics omitted required metric ${name}`
+    )
   }
   return value
 }
