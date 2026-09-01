@@ -611,6 +611,49 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('projects baseline nodes while ignoring dangling links', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            pos: [10, 20],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          }
+        ],
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+    )
+
+    expect(
+      adapter.bind('wf', follower, {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'reload-snapshot'
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1)])
+    expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('applies an implicit disconnect when delete-wins installs no replacement', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
