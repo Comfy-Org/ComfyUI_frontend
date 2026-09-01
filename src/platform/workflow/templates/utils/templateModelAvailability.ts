@@ -1,4 +1,5 @@
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 
 type TemplateModelAvailabilityStatus = 'installed' | 'missing' | 'unknown'
 
@@ -17,21 +18,27 @@ export type ResolvedTemplateModelAvailability = {
   status: TemplateModelAvailabilityStatus
 }
 
-function modelKey(directory: string, name: string): string {
-  return `${directory}\0${name.replaceAll('\\', '/')}`
-}
-
 export function resolveTemplateModelAvailability(
   models: readonly ModelFile[],
   inventory: TemplateModelInventorySnapshot
 ): ResolvedTemplateModelAvailability[] {
   const installedModelKeys = new Set(
-    inventory.models.map((model) => modelKey(model.directory, model.name))
+    inventory.models.map((model) =>
+      getModelFileKey({
+        directory: model.directory,
+        name: model.name.replaceAll('\\', '/')
+      })
+    )
   )
 
   return models.map((model) => ({
     model,
-    status: installedModelKeys.has(modelKey(model.directory, model.name))
+    status: installedModelKeys.has(
+      getModelFileKey({
+        directory: model.directory,
+        name: model.name.replaceAll('\\', '/')
+      })
+    )
       ? 'installed'
       : inventory.isComplete
         ? 'missing'

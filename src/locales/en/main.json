@@ -1200,6 +1200,14 @@
       "openInCloud": "Open in Cloud",
       "requirements": "Template requirements",
       "models": "Models",
+      "modelTypes": {
+        "model": "Model",
+        "checkpoint": "Checkpoint",
+        "diffusionModel": "Diffusion model",
+        "textEncoder": "Text encoder",
+        "vae": "VAE",
+        "lora": "LoRA"
+      },
       "usedBy": "Used by {nodes}",
       "openTemplate": "Open template",
       "backToTemplates": "Back to {category}",
@@ -1216,7 +1224,8 @@
       "default": "Default"
     },
     "error": {
-      "templateNotFound": "Template \"{templateName}\" not found"
+      "templateNotFound": "Template \"{templateName}\" not found",
+      "openFailed": "Could not open this template. Please try again."
     }
   },
   "templateWidgets": {
