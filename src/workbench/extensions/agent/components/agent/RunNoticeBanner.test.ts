@@ -20,7 +20,7 @@ describe('RunNoticeBanner', () => {
     localStorage.clear()
   })
 
-  it('T-02 / PM-651 / FE-1307 shows the edit-graph notice and AI disclaimer on first launch', () => {
+  it('shows the edit-graph run notice on first launch', () => {
     mount()
     expect(
       screen.getByText(
