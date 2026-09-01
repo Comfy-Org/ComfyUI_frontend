@@ -34,7 +34,9 @@ const items = computed<CardArticleGalleryItem[]>(() =>
         },
         cta: {
           label: t('events.past.watchNow', locale),
-          href: external ? (event.link?.href[locale] ?? pageHref) : pageHref,
+          href: external
+            ? event.link?.href[locale] || event.link?.href.en || pageHref
+            : pageHref,
           newTab: external ? event.link?.newTab : undefined
         }
       }

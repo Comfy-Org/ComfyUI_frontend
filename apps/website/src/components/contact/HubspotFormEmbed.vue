@@ -14,10 +14,11 @@ const HUBSPOT_CONTACT_REGION = 'na2'
 const HUBSPOT_CONTACT_SCRIPT_ID = 'hubspot-contact-form-embed'
 const HUBSPOT_CONTACT_SCRIPT_SRC = `https://js-${HUBSPOT_CONTACT_REGION}.hsforms.net/forms/embed/developer/${HUBSPOT_CONTACT_PORTAL_ID}.js`
 
-const hubspotContactFormIds: Record<Locale, string> = {
-  en: '94e05eab-1373-47f7-ab5e-d84f9e6aa262',
-  'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93'
-}
+const hubspotContactFormIds: Partial<Record<Locale, string>> & { en: string } =
+  {
+    en: '94e05eab-1373-47f7-ab5e-d84f9e6aa262',
+    'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93'
+  }
 
 const hasEmbedLoadError = ref(false)
 const hubspotContactFormId = computed(
@@ -103,7 +104,7 @@ onMounted(() => {
   <div class="min-h-[640px] w-full">
     <p
       v-if="hasEmbedLoadError"
-      class="text-primary-comfy-canvas text-sm/6"
+      class="text-sm/6 text-primary-comfy-canvas"
       role="status"
     >
       {{ t('contact.form.embedLoadErrorPrefix', locale) }}
