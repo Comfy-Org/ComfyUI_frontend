@@ -7,6 +7,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
@@ -83,6 +84,23 @@ describe('DockedAgentPanel', () => {
     renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
+  })
+
+  it('keeps the Agent runtime mounted but visually hidden for a compact canvas session', async () => {
+    const store = openPanel()
+    store.isOpen = false
+    const composer = useAgentComposerStore()
+    composer.draft = 'Teach me while building a graph'
+    composer.requestSubmission()
+    renderPanel()
+
+    const container = screen.getByTestId('docked-agent-panel')
+    expect(container).not.toBeVisible()
+    expect(
+      await screen.findByTestId('agent-panel-root-stub', undefined, {
+        timeout: 5000
+      })
+    ).toBeTruthy()
   })
 
   it('renders nothing while the feature is disabled', () => {

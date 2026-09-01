@@ -9,12 +9,16 @@ export interface AgentSubmissionRequest {
   attachments: ComposerAttachment[]
 }
 
+export type CompactAgentSessionPhase = 'idle' | 'queued' | 'sending' | 'running'
+
 export const useAgentComposerStore = defineStore('agentComposer', () => {
   const draft = ref('')
   const attachments = ref<ComposerAttachment[]>([])
   const pendingSubmission = shallowRef<AgentSubmissionRequest | null>(null)
+  const compactSessionPhase = ref<CompactAgentSessionPhase>('idle')
   const canSubmit = computed(
     () =>
+      compactSessionPhase.value === 'idle' &&
       pendingSubmission.value === null &&
       (draft.value.trim().length > 0 || attachments.value.length > 0) &&
       !attachments.value.some((attachment) => attachment.uploading)
@@ -28,6 +32,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       text: draft.value.trim(),
       attachments: [...attachments.value]
     }
+    compactSessionPhase.value = 'queued'
     return true
   }
 
@@ -37,15 +42,50 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     pendingSubmission.value = null
     draft.value = ''
     attachments.value = []
+    compactSessionPhase.value = 'sending'
     return request
+  }
+
+  function markCompactSessionRunning(): void {
+    if (compactSessionPhase.value === 'sending')
+      compactSessionPhase.value = 'running'
+  }
+
+  function releaseSubmission(id?: number): boolean {
+    const request = pendingSubmission.value
+    if (request === null || (id !== undefined && request.id !== id))
+      return false
+    pendingSubmission.value = null
+    compactSessionPhase.value = 'idle'
+    return true
+  }
+
+  function finishCompactSession(): void {
+    pendingSubmission.value = null
+    compactSessionPhase.value = 'idle'
+  }
+
+  function restoreCompactSubmission(
+    text: string,
+    restoredAttachments: ComposerAttachment[]
+  ): void {
+    pendingSubmission.value = null
+    draft.value = text
+    attachments.value = [...restoredAttachments]
+    compactSessionPhase.value = 'idle'
   }
 
   return {
     draft,
     attachments,
     pendingSubmission,
+    compactSessionPhase,
     canSubmit,
     requestSubmission,
-    takeSubmission
+    takeSubmission,
+    markCompactSessionRunning,
+    releaseSubmission,
+    finishCompactSession,
+    restoreCompactSubmission
   }
 })

@@ -122,7 +122,7 @@ describe('the graph-side agent panel mount', () => {
       'utf-8'
     )
     expect(graphCanvasSource).toMatch(
-      /<component\s+:is="DockedAgentPanel"\s+v-if="agentDocked && !linearMode"\s*\/>/
+      /<component\s+:is="DockedAgentPanel"\s+v-if="agentMounted && !linearMode"\s*\/>/
     )
   })
 })

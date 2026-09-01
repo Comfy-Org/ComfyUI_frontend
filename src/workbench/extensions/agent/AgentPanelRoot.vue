@@ -83,11 +83,15 @@ import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import {
+  agentGraphBuildPlaybackState,
   cancelAgentGraphNodeBuild,
   skipAgentGraphBuild,
   stageAgentGraphNodeBuild
 } from './services/agent/agentGraphBuildPlayback'
-import { createAgentGraphNodePresenter } from './services/agent/agentGraphNodePresenter'
+import {
+  createAgentGraphNodePresenter,
+  suspendAgentGraphConnections
+} from './services/agent/agentGraphNodePresenter'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -193,6 +197,13 @@ const graphMutations = (workflowId: string) => {
           timestamp: Date.now()
         })
         if (LiteGraph.vueNodesMode) {
+          const presenter = createAgentGraphNodePresenter(
+            nodeId,
+            position,
+            () =>
+              workflowStore.activeWorkflow?.activeState?.id ===
+              scope.rootGraphId
+          )
           stageAgentGraphNodeBuild({
             key: buildKey,
             label:
@@ -200,14 +211,11 @@ const graphMutations = (workflowId: string) => {
               t('agent.graphBuild.node'),
             source: graphBuildSource(position),
             target: position,
-            present: createAgentGraphNodePresenter(
-              nodeId,
-              position,
-              () =>
-                workflowStore.activeWorkflow?.activeState?.id ===
-                scope.rootGraphId
-            ),
-            toClient: graphBuildClientPosition
+            prepare: presenter.prepare,
+            present: presenter.present,
+            toClient: graphBuildClientPosition,
+            suspendConnections: () =>
+              suspendAgentGraphConnections(app.canvas?.overlayCanvas ?? null)
           })
         }
       },
@@ -697,15 +705,49 @@ const coachStep: CoachStep = {
   body: t('agent.coachBody')
 }
 
-function onSend(text: string, attachments: ComposerAttachment[]): void {
+function maybeFinishCompactSession(): void {
+  if (
+    agentComposerStore.compactSessionPhase !== 'running' ||
+    status.value !== 'idle'
+  )
+    return
+  const playbackPhase = agentGraphBuildPlaybackState.value.phase
+  if (
+    playbackPhase === 'queued' ||
+    playbackPhase === 'playing' ||
+    playbackPhase === 'paused'
+  )
+    return
+  agentComposerStore.finishCompactSession()
+}
+
+async function onSend(
+  text: string,
+  attachments: ComposerAttachment[],
+  source: 'panel' | 'compact' = 'panel'
+): Promise<void> {
   exitNodeSelectionMode()
   const nodeTags = consumeSelection()
   useTelemetry()?.trackAgentMessageSent({
     attachment_count: attachments.length,
     node_tag_count: nodeTags.length
   })
-  void sendMessage(text, attachments, nodeTags)
+  const accepted = await sendMessage(text, attachments, nodeTags)
+  if (source !== 'compact') return
+  if (!accepted) {
+    agentComposerStore.restoreCompactSubmission(text, attachments)
+    return
+  }
+  agentComposerStore.markCompactSessionRunning()
+  maybeFinishCompactSession()
 }
+
+// The server can finish before the teaching playback drains (or vice versa).
+// Keep the hidden runtime alive until both parts of the canvas turn settle.
+watch(
+  [status, () => agentGraphBuildPlaybackState.value.phase],
+  maybeFinishCompactSession
+)
 
 function onStop(): void {
   void stopTurn()
@@ -1019,7 +1061,7 @@ watch(
     if (pendingSubmission === null) return
     const submission = agentComposerStore.takeSubmission(pendingSubmission.id)
     if (submission === undefined) return
-    onSend(submission.text, submission.attachments)
+    void onSend(submission.text, submission.attachments, 'compact')
   },
   { immediate: true, flush: 'post' }
 )

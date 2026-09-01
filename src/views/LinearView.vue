@@ -33,7 +33,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 const settingStore = useSettingStore()
-const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
+const { mounted: agentMounted, DockedAgentPanel } = useAgentDockMount()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -209,7 +209,7 @@ function dragDrop(e: DragEvent) {
         </Splitter>
       </div>
     </div>
-    <component :is="DockedAgentPanel" v-if="agentDocked" />
+    <component :is="DockedAgentPanel" v-if="agentMounted" />
   </div>
 </template>
 

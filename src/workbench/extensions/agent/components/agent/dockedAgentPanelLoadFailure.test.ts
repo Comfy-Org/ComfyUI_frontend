@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { reportError } from '@/platform/telemetry/reportError'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
@@ -29,8 +30,11 @@ describe('DockedAgentPanel chunk-load failure', () => {
 
   it('reports the failure and shows the error state when the chunk cannot load', async () => {
     const store = useAgentPanelStore()
+    const composer = useAgentComposerStore()
     store.enabled = true
     store.isOpen = true
+    composer.draft = 'Keep this prompt after a failed panel load'
+    expect(composer.requestSubmission()).toBe(true)
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -47,5 +51,8 @@ describe('DockedAgentPanel chunk-load failure', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_panel_load_failure'
     })
+    expect(composer.pendingSubmission).toBeNull()
+    expect(composer.draft).toBe('Keep this prompt after a failed panel load')
+    expect(composer.compactSessionPhase).toBe('idle')
   })
 })

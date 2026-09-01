@@ -1,6 +1,9 @@
 <template>
+  <!-- Compact canvas requests still need AgentPanelRoot's transport and CRDT
+       effects. v-show keeps that runtime mounted without docking visible UI. -->
   <div
-    v-if="docked"
+    v-if="mounted"
+    v-show="isOpen"
     data-testid="docked-agent-panel"
     role="complementary"
     aria-labelledby="agent-panel-title"
@@ -34,6 +37,7 @@ import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const AgentPanelLoadError = defineComponent({
@@ -58,14 +62,20 @@ const AgentPanelRoot = defineAsyncComponent({
   loader: () => import('@/workbench/extensions/agent/AgentPanelRoot.vue'),
   errorComponent: AgentPanelLoadError,
   onError: (error, _retry, fail) => {
+    useAgentComposerStore().releaseSubmission()
     reportError(error, { errorType: 'agent_panel_load_failure' })
     fail()
   }
 })
 
 const agentPanelStore = useAgentPanelStore()
+const agentComposerStore = useAgentComposerStore()
 const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
-const docked = computed(() => enabled.value && isOpen.value)
+const mounted = computed(
+  () =>
+    enabled.value &&
+    (isOpen.value || agentComposerStore.compactSessionPhase !== 'idle')
+)
 
 const isResizing = ref(false)
 let resizeStartX = 0

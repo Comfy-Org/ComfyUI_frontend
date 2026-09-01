@@ -16,8 +16,10 @@ interface AgentGraphBuildRequest {
   label: string
   source: AgentGraphBuildPoint
   target: AgentGraphBuildPoint
+  prepare?: () => void
   present(position: AgentGraphBuildPoint | null): void
   toClient(position: AgentGraphBuildPoint): AgentGraphBuildPoint
+  suspendConnections?: () => () => void
   durationMs?: number
   gapMs?: number
   now?: () => number
@@ -40,6 +42,7 @@ let drainScheduled = false
 let skipRequested = false
 let resume: (() => void) | null = null
 let completionTimer: ReturnType<typeof setTimeout> | undefined
+let restoreConnections: (() => void) | undefined
 
 const defaultNextFrame = () =>
   new Promise<number>((resolve) => requestAnimationFrame(resolve))
@@ -137,6 +140,7 @@ async function drainQueue(): Promise<void> {
       const item = queue.shift()
       if (!item || item.cancelled) continue
       active = item
+      restoreConnections ??= item.suspendConnections?.()
       dispatch({ type: 'started', nodeLabel: item.label })
       try {
         await animate(item)
@@ -161,6 +165,8 @@ async function drainQueue(): Promise<void> {
       }
     }
     active = null
+    restoreConnections?.()
+    restoreConnections = undefined
     skipRequested = false
     draining = false
     finishPlayback()
@@ -188,6 +194,11 @@ export function stageAgentGraphNodeBuild(
     completionTimer = undefined
   }
   queue.push({ ...request, cancelled: false })
+  const item = queue.at(-1)
+  if (item?.prepare)
+    queueMicrotask(() => {
+      if (!item.cancelled) item.prepare?.()
+    })
   dispatch({ type: 'staged' })
   scheduleDrain()
 }
@@ -198,7 +209,10 @@ export function cancelAgentGraphNodeBuild(key: string): void {
     wake()
   }
   for (const item of queue) {
-    if (item.key === key) item.cancelled = true
+    if (item.key === key) {
+      item.cancelled = true
+      item.present(null)
+    }
   }
 }
 

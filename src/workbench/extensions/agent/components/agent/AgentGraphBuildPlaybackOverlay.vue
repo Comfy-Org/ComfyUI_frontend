@@ -45,7 +45,7 @@ const paused = computed(() => progress.value?.phase === 'paused')
   >
     <div
       v-if="progress"
-      class="pointer-events-none fixed inset-x-4 bottom-20 z-60 flex justify-center sm:inset-x-18 lg:bottom-4"
+      class="pointer-events-none fixed inset-x-4 bottom-20 z-60 flex justify-center sm:inset-x-18"
     >
       <div
         role="status"

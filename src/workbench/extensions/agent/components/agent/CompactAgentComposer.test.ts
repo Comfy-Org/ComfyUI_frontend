@@ -22,7 +22,7 @@ describe('CompactAgentComposer', () => {
     useAgentPanelStore().enabled = true
   })
 
-  it('queues Enter submissions for the official Agent panel', async () => {
+  it('queues Enter submissions on the canvas without opening the full panel', async () => {
     render(CompactAgentComposer, { global: { plugins: [i18n] } })
     const textbox = screen.getByRole('textbox', {
       name: i18n.global.t('agent.compactComposer.label')
@@ -33,7 +33,11 @@ describe('CompactAgentComposer', () => {
     expect(useAgentComposerStore().pendingSubmission?.text).toBe(
       'Build a portrait workflow'
     )
-    expect(useAgentPanelStore().isOpen).toBe(true)
+    expect(useAgentComposerStore().compactSessionPhase).toBe('queued')
+    expect(useAgentPanelStore().isOpen).toBe(false)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      i18n.global.t('agent.compactComposer.building')
+    )
   })
 
   it('does not submit an in-progress IME composition', async () => {
@@ -66,5 +70,20 @@ describe('CompactAgentComposer', () => {
     )
 
     expect(useAgentPanelStore().isOpen).toBe(true)
+  })
+
+  it('keeps an unconsumed canvas request when the optional panel toggles', async () => {
+    render(CompactAgentComposer, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+
+    await userEvent.type(textbox, 'Retry this workflow{Enter}')
+    useAgentPanelStore().open('compact_composer')
+    useAgentPanelStore().close('close_button')
+
+    expect(await screen.findByRole('textbox')).toBeDisabled()
+    expect(useAgentComposerStore().pendingSubmission?.text).toBe(
+      'Retry this workflow'
+    )
+    expect(useAgentComposerStore().compactSessionPhase).toBe('queued')
   })
 })

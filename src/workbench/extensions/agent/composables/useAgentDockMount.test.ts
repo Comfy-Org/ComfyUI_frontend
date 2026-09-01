@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
@@ -35,32 +36,37 @@ describe('useAgentDockMount', () => {
   it('returns an inert mount on non-cloud distributions', () => {
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
 
-    const { docked, DockedAgentPanel } = useAgentDockMount()
+    const { mounted, DockedAgentPanel } = useAgentDockMount()
 
-    expect(docked.value).toBe(false)
+    expect(mounted.value).toBe(false)
     expect(DockedAgentPanel).toBeNull()
   })
 
-  it('docks only once the gate enables and the panel opens on cloud', async () => {
+  it('mounts for either the visible panel or a compact canvas session', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const store = useAgentPanelStore()
 
-    const { docked, DockedAgentPanel } = useAgentDockMount()
+    const composer = useAgentComposerStore()
+    const { mounted, DockedAgentPanel } = useAgentDockMount()
 
     expect(DockedAgentPanel).not.toBeNull()
     expect(loadDockedAgentPanel).not.toHaveBeenCalled()
-    expect(docked.value).toBe(false)
+    expect(mounted.value).toBe(false)
     store.enabled = true
-    expect(loadDockedAgentPanel).not.toHaveBeenCalled()
-    expect(docked.value).toBe(false)
-    store.isOpen = true
-    expect(docked.value).toBe(true)
+    expect(mounted.value).toBe(false)
+    composer.draft = 'Build on the canvas'
+    composer.requestSubmission()
+    expect(mounted.value).toBe(true)
     const resolvedPanel = await getAsyncLoader(DockedAgentPanel)()
     const { default: expectedPanel } =
       await import('@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue')
     expect(resolvedPanel).toBe(expectedPanel)
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
+    composer.releaseSubmission()
+    expect(mounted.value).toBe(false)
+    store.isOpen = true
+    expect(mounted.value).toBe(true)
     store.close('close_button')
-    expect(docked.value).toBe(false)
+    expect(mounted.value).toBe(false)
   })
 })

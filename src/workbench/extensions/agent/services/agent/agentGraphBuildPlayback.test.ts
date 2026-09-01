@@ -18,6 +18,7 @@ describe('agent graph build playback', () => {
     vi.useFakeTimers()
     vi.stubGlobal('matchMedia', () => ({ matches: false }))
     const present = vi.fn()
+    const prepare = vi.fn()
     const source = { x: 40, y: 500 }
     const target = { x: 620, y: 120 }
 
@@ -26,12 +27,14 @@ describe('agent graph build playback', () => {
       label: 'Sampler',
       source,
       target,
+      prepare,
       present,
       toClient: (position) => position,
       durationMs: 0,
       gapMs: 0
     })
     await vi.waitFor(() => expect(present).toHaveBeenCalledWith(target))
+    expect(prepare).toHaveBeenCalledOnce()
     expect(present).toHaveBeenLastCalledWith(null)
 
     expect(agentGraphBuildPlaybackState.value).toMatchObject({
@@ -64,14 +67,19 @@ describe('agent graph build playback', () => {
     vi.stubGlobal('matchMedia', () => ({ matches: false }))
     const firstMove = vi.fn()
     const secondMove = vi.fn()
+    const calls: string[] = []
+    const restoreConnections = vi.fn()
+    const suspendConnections = vi.fn(() => restoreConnections)
 
     stageAgentGraphNodeBuild({
       key: 'workflow:1',
       label: 'Load image',
       source: { x: 0, y: 500 },
       target: { x: 100, y: 100 },
+      prepare: () => calls.push('prepare:first'),
       present: firstMove,
       toClient: (position) => position,
+      suspendConnections,
       durationMs: 0,
       gapMs: 0
     })
@@ -80,6 +88,7 @@ describe('agent graph build playback', () => {
       label: 'Save image',
       source: { x: 0, y: 500 },
       target: { x: 500, y: 100 },
+      prepare: () => calls.push('prepare:second'),
       present: secondMove,
       toClient: (position) => position,
       durationMs: 0,
@@ -98,6 +107,9 @@ describe('agent graph build playback', () => {
     expect(secondMove).toHaveBeenCalledWith({ x: 500, y: 100 })
     expect(firstMove).toHaveBeenLastCalledWith(null)
     expect(secondMove).toHaveBeenLastCalledWith(null)
+    expect(calls).toEqual(['prepare:first', 'prepare:second'])
+    expect(suspendConnections).toHaveBeenCalledOnce()
+    expect(restoreConnections).toHaveBeenCalledOnce()
     vi.runAllTimers()
   })
 
@@ -121,7 +133,8 @@ describe('agent graph build playback', () => {
     await vi.waitFor(() =>
       expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
     )
-    expect(deletedMove).not.toHaveBeenCalled()
+    expect(deletedMove).toHaveBeenCalledOnce()
+    expect(deletedMove).toHaveBeenCalledWith(null)
     vi.runAllTimers()
   })
 
@@ -130,6 +143,7 @@ describe('agent graph build playback', () => {
     vi.stubGlobal('matchMedia', () => ({ matches: false }))
     let resolveFrame: ((time: number) => void) | undefined
     const move = vi.fn()
+    const restoreConnections = vi.fn()
     const target = { x: 700, y: 140 }
 
     stageAgentGraphNodeBuild({
@@ -139,6 +153,7 @@ describe('agent graph build playback', () => {
       target,
       present: move,
       toClient: (position) => position,
+      suspendConnections: () => restoreConnections,
       durationMs: 1_000,
       gapMs: 0,
       now: () => 0,
@@ -157,6 +172,7 @@ describe('agent graph build playback', () => {
     )
     expect(move).toHaveBeenCalledWith(target)
     expect(move).toHaveBeenLastCalledWith(null)
+    expect(restoreConnections).toHaveBeenCalledOnce()
     vi.runAllTimers()
   })
 

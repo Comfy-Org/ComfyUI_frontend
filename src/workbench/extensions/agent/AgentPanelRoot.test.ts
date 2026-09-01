@@ -419,6 +419,30 @@ describe('AgentPanelRoot compact submission bridge', () => {
     })
     expect(composer.pendingSubmission).toBeNull()
     expect(composer.draft).toBe('')
+    expect(composer.compactSessionPhase).toBe('running')
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await vi.waitFor(() => expect(composer.compactSessionPhase).toBe('idle'))
+  })
+
+  it('returns the compact composer to idle when the Agent rejects the request', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        return new Response('Agent unavailable', { status: 503 })
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.draft = 'Build a workflow even if the request fails'
+    expect(composer.requestSubmission()).toBe(true)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(composer.compactSessionPhase).toBe('idle'))
+    expect(composer.pendingSubmission).toBeNull()
+    expect(composer.draft).toBe('Build a workflow even if the request fails')
   })
 })
 

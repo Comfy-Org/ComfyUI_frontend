@@ -1,15 +1,25 @@
 import type { AgentGraphBuildPoint } from './agentGraphBuildPlayback'
 
+export interface AgentGraphNodePresenter {
+  prepare(): void
+  present(position: AgentGraphBuildPoint | null): void
+}
+
+/**
+ * Presents the real DOM-rendered node as a drag without changing its
+ * authoritative CRDT layout. Queued nodes stay hidden until their turn;
+ * cleanup removes every temporary inline style and leaves the final node.
+ */
 export function createAgentGraphNodePresenter(
   nodeId: string | number,
   target: AgentGraphBuildPoint,
   isCurrentGraph: () => boolean = () => true
-): (position: AgentGraphBuildPoint | null) => void {
+): AgentGraphNodePresenter {
   let element: HTMLElement | null = null
+  let stagedElement: HTMLElement | null = null
+  let stagedVisibility = ''
 
-  return (position) => {
-    if (position !== null && !isCurrentGraph()) return
-
+  function resolveElement(): HTMLElement | null {
     if (!element?.isConnected) {
       const nodes = document.querySelectorAll<HTMLElement>(
         '#graph-canvas-container .lg-node[data-node-id]'
@@ -18,18 +28,59 @@ export function createAgentGraphNodePresenter(
         [...nodes].find(({ dataset }) => dataset.nodeId === String(nodeId)) ??
         null
     }
-    if (!element) return
+    return element
+  }
+
+  function restoreStagedVisibility(): void {
+    if (stagedElement?.style.visibility === 'hidden')
+      stagedElement.style.visibility = stagedVisibility
+    stagedElement = null
+    stagedVisibility = ''
+  }
+
+  function prepare(): void {
+    if (!isCurrentGraph()) return
+    const node = resolveElement()
+    if (!node) return
+    stagedElement = node
+    stagedVisibility = node.style.visibility
+    node.style.visibility = 'hidden'
+  }
+
+  function present(position: AgentGraphBuildPoint | null): void {
+    if (position !== null && !isCurrentGraph()) return
 
     if (position === null) {
-      element.style.removeProperty('translate')
-      element.style.removeProperty('will-change')
+      restoreStagedVisibility()
+      if (element?.isConnected) {
+        element.style.removeProperty('translate')
+        element.style.removeProperty('will-change')
+      }
       return
     }
 
-    element.style.setProperty(
+    const node = resolveElement()
+    if (!node) return
+    restoreStagedVisibility()
+
+    node.style.setProperty(
       'translate',
       `${position.x - target.x}px ${position.y - target.y}px`
     )
-    element.style.setProperty('will-change', 'translate')
+    node.style.setProperty('will-change', 'translate')
+  }
+
+  return { prepare, present }
+}
+
+export function suspendAgentGraphConnections(
+  overlay: HTMLElement | null
+): () => void {
+  if (!overlay) return () => {}
+  const previousVisibility = overlay.style.visibility
+  overlay.style.visibility = 'hidden'
+  return () => {
+    if (overlay.style.visibility === 'hidden')
+      overlay.style.visibility = previousVisibility
   }
 }

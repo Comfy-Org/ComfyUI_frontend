@@ -5112,6 +5112,8 @@
     "compactComposer": {
       "label": "Ask Comfy Agent",
       "placeholder": "Describe what to build or change…",
+      "working": "The Agent is building your workflow…",
+      "building": "Building on canvas",
       "open": "Open the full Agent panel"
     },
     "graphBuild": {

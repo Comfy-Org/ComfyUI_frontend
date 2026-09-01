@@ -11,8 +11,9 @@ import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 const { t } = useI18n()
 const composerStore = useAgentComposerStore()
 const panelStore = useAgentPanelStore()
-const { draft, canSubmit } = storeToRefs(composerStore)
+const { draft, canSubmit, compactSessionPhase } = storeToRefs(composerStore)
 const visible = computed(() => panelStore.enabled && !panelStore.isOpen)
+const working = computed(() => compactSessionPhase.value !== 'idle')
 
 function openAgent(): void {
   panelStore.open('compact_composer')
@@ -20,7 +21,6 @@ function openAgent(): void {
 
 function submit(): void {
   if (!composerStore.requestSubmission()) return
-  openAgent()
 }
 
 function onEnter(event: KeyboardEvent): void {
@@ -39,9 +39,10 @@ function onEnter(event: KeyboardEvent): void {
   >
     <div
       v-if="visible"
-      class="pointer-events-none fixed inset-x-4 bottom-20 z-50 flex justify-center sm:inset-x-18 lg:bottom-4"
+      class="pointer-events-none fixed inset-x-4 bottom-20 z-50 flex justify-center sm:inset-x-18"
     >
       <form
+        data-testid="agent-compact-composer"
         class="bg-agent-surface pointer-events-auto flex h-14 w-full max-w-2xl items-center gap-2 rounded-2xl border border-interface-stroke px-3 shadow-xl"
         @submit.prevent="submit"
       >
@@ -52,9 +53,16 @@ function onEnter(event: KeyboardEvent): void {
         <input
           v-model="draft"
           type="text"
+          :disabled="working"
           class="text-agent-fg placeholder:text-agent-fg-muted min-w-0 flex-1 border-0 bg-transparent text-sm outline-none"
           :aria-label="t('agent.compactComposer.label')"
-          :placeholder="t('agent.compactComposer.placeholder')"
+          :placeholder="
+            t(
+              working
+                ? 'agent.compactComposer.working'
+                : 'agent.compactComposer.placeholder'
+            )
+          "
           @keydown.enter="onEnter"
         />
 
@@ -67,7 +75,19 @@ function onEnter(event: KeyboardEvent): void {
         >
           <span class="icon-[lucide--panel-right-open] size-4" />
         </Button>
+        <span
+          v-if="working"
+          role="status"
+          class="text-agent-fg-muted flex items-center gap-2 text-xs"
+        >
+          <span
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] size-4 animate-spin"
+          />
+          {{ t('agent.compactComposer.building') }}
+        </span>
         <Button
+          v-else
           type="submit"
           size="sm"
           :disabled="!canSubmit"

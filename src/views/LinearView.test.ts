@@ -63,7 +63,7 @@ vi.mock(
     const { computed, defineComponent, h } = await import('vue')
     return {
       useAgentDockMount: () => ({
-        docked: computed(() => true),
+        mounted: computed(() => true),
         DockedAgentPanel: defineComponent({
           name: 'DockedAgentPanel',
           setup: () => () => h('div', { 'data-testid': 'docked-agent-panel' })

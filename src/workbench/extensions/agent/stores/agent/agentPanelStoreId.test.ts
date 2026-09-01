@@ -58,11 +58,11 @@ describe('the agentPanel store id', () => {
   })
 
   it('keeps the visible canvas viewport finite while the panel is docked', () => {
-    const { docked } = useAgentDockMount()
+    const { mounted } = useAgentDockMount()
     const store = useAgentPanelStore()
     store.enabled = true
     store.isOpen = true
-    expect(docked.value).toBe(true)
+    expect(mounted.value).toBe(true)
 
     const canvas = { canvas: { width: 1600, height: 900 } } as LGraphCanvas
     const viewport = visibleCanvasViewport(canvas)
