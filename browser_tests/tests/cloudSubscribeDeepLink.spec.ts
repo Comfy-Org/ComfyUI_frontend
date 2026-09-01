@@ -100,6 +100,7 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Confirm your payment' })
     ).toBeVisible({ timeout: 45_000 })
+    await expect(page.getByText('$20.00')).toBeVisible()
     await expect(page.locator('#splash-loader')).toHaveCount(0)
     expect(legacyCheckoutRequests).toEqual([])
   })
