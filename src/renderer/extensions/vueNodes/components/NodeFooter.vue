@@ -84,6 +84,10 @@
       :style="headerColorStyle"
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
+      @pointerenter="$emit('advancedHoverChange', true)"
+      @pointerleave="$emit('advancedHoverChange', false)"
+      @focusin="$emit('advancedHoverChange', true)"
+      @focusout="$emit('advancedHoverChange', false)"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{
@@ -182,6 +186,10 @@
       :style="headerColorStyle"
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
+      @pointerenter="$emit('advancedHoverChange', true)"
+      @pointerleave="$emit('advancedHoverChange', false)"
+      @focusin="$emit('advancedHoverChange', true)"
+      @focusout="$emit('advancedHoverChange', false)"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <template v-if="showAdvancedState">
@@ -235,6 +243,7 @@ const emit = defineEmits<{
   enterSubgraph: []
   openErrors: []
   toggleAdvanced: []
+  advancedHoverChange: [hovered: boolean]
 }>()
 
 let suppressNextClick = false

@@ -157,6 +157,7 @@
             v-if="hasRenderableWidgets"
             :node-data
             :widget-ids="renderedWidgetIds"
+            :is-advanced-hovered="isAdvancedButtonHovered"
           />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
@@ -193,6 +194,7 @@
       @enter-subgraph="handleEnterSubgraph"
       @open-errors="handleOpenErrors"
       @toggle-advanced="handleToggleAdvanced"
+      @advanced-hover-change="isAdvancedButtonHovered = $event"
     />
     <template
       v-if="
@@ -580,6 +582,8 @@ const handleToggleAdvanced = () => {
   }
   node.showAdvanced = !node.showAdvanced
 }
+
+const isAdvancedButtonHovered = ref(false)
 
 const handleEnterSubgraph = () => {
   useTelemetry()?.trackUiButtonClicked({

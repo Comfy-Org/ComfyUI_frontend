@@ -14,8 +14,11 @@
         :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
         :class="
           cn(
-            'group col-span-full grid grid-cols-subgrid items-stretch',
-            !isConvertedWidget(widget) && 'lg-node-widget'
+            'group col-span-full grid grid-cols-subgrid items-stretch transition-opacity duration-150',
+            !isConvertedWidget(widget) && 'lg-node-widget',
+            widget.simplified.options?.advanced &&
+              isAdvancedHovered &&
+              'opacity-30'
           )
         "
       >
@@ -104,13 +107,15 @@ const {
   nodeType,
   canSelectInputs = false,
   nodeId,
-  syncLayout = true
+  syncLayout = true,
+  isAdvancedHovered = false
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
   nodeId?: NodeId
   syncLayout?: boolean
+  isAdvancedHovered?: boolean
 }>()
 
 useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')

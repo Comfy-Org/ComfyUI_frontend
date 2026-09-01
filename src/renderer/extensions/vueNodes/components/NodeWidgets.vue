@@ -8,6 +8,7 @@
     :node-type
     :can-select-inputs
     :node-id="nodeData?.id"
+    :is-advanced-hovered
     :class="
       shouldHandleNodePointerEvents
         ? 'pointer-events-auto'
@@ -35,9 +36,14 @@ import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/
 interface NodeWidgetsProps {
   nodeData?: NodeState
   widgetIds?: readonly WidgetId[]
+  isAdvancedHovered?: boolean
 }
 
-const { nodeData, widgetIds } = defineProps<NodeWidgetsProps>()
+const {
+  nodeData,
+  widgetIds,
+  isAdvancedHovered = false
+} = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()

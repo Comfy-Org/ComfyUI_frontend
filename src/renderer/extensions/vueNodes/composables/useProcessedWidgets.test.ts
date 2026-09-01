@@ -401,15 +401,13 @@ describe('promoted subgraph widgets', () => {
 })
 
 describe('computeProcessedWidgets', () => {
-  it('applies advanced border styling to advanced widgets', () => {
+  it('does not apply border styling to advanced widgets', () => {
     const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
     registerWidgetState(id, { type: 'text', options: { advanced: true } })
 
     const result = processWidgets({ widgetIds: [id], showAdvanced: true })
 
-    expect(result[0].simplified.borderStyle).toBe(
-      'ring ring-component-node-widget-advanced'
-    )
+    expect(result[0].simplified.borderStyle).toBeUndefined()
   })
 
   it('reads widget identity, value, label, and options from widgetId state', () => {
@@ -554,10 +552,10 @@ describe('computeProcessedWidgets', () => {
     expect(result[0]).toMatchObject({
       hasLayoutSize: true,
       simplified: {
-        name: 'display_slot',
-        borderStyle: 'ring ring-component-node-widget-advanced'
+        name: 'display_slot'
       }
     })
+    expect(result[0].simplified.borderStyle).toBeUndefined()
     expect(result[0].vueComponent).toBe(WidgetDOM)
   })
 
