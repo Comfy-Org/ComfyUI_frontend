@@ -170,6 +170,9 @@ describe('agentRestClient route + method', () => {
 
     expect(fetchApi).toHaveBeenCalledTimes(5)
     expect(workflows).toHaveLength(5)
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      '[agent] cloud workflow index truncated at 5 entries'
+    )
     warn.mockRestore()
   })
 })
