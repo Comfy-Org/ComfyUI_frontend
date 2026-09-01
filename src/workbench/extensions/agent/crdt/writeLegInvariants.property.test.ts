@@ -31,6 +31,35 @@ const arbOperations = fc
   .map((ids) => ids.map(addNode))
 
 describe('CRDT human write-leg invariants (property)', () => {
+  it('starts empty and ignores empty or detached writes', () => {
+    const sendOps = vi.fn(() => true)
+    const listeners = new Set<(result: OpsResultView) => void>()
+    const sender = createOpSender({
+      sendOps,
+      onOpsResult: (listener) => {
+        listeners.add(listener)
+        return () => listeners.delete(listener)
+      },
+      workflowId: () => WORKFLOW_ID,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 0,
+      onBatchSettled: () => {}
+    })
+
+    expect(sender.pending()).toBe(0)
+    expect(listeners).toHaveLength(1)
+
+    sender.enqueue([])
+    expect(sendOps).not.toHaveBeenCalled()
+
+    sender.detach()
+    expect(listeners).toHaveLength(0)
+
+    sender.enqueue([addNode(1)])
+    expect(sendOps).not.toHaveBeenCalled()
+  })
+
   it('mints one unique complete causal identity per operation', () => {
     fc.assert(
       fc.property(
