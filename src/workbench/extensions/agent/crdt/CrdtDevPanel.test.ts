@@ -1,5 +1,6 @@
 import { cleanup, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -36,7 +37,9 @@ function openPanel() {
   localStorage.setItem(OPEN_KEY, 'true')
 }
 
-function createClipboardSpy(): ReturnType<typeof vi.spyOn> {
+function createClipboardSpy(): MockInstance<
+  typeof navigator.clipboard.writeText
+> {
   return vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
 }
 
