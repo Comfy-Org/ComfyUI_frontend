@@ -1,6 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -13,7 +12,7 @@ vi.mock('../config/agentDistribution', () => ({
     distributionMock.available
       ? {
           CompactAgentComposer: {},
-          AgentOnboardingGuide: {},
+          AgentGraphBuildPlaybackOverlay: {},
           DockedAgentPanel: {}
         }
       : null
@@ -31,8 +30,9 @@ describe('useAgentCanvasEntryMount', () => {
     const mount = useAgentCanvasEntryMount()
 
     expect(mount.enabled.value).toBe(false)
+    expect(mount.graphBuildActive.value).toBe(false)
     expect(mount.CompactAgentComposer).toBeNull()
-    expect(mount.AgentOnboardingGuide).toBeNull()
+    expect(mount.AgentGraphBuildPlaybackOverlay).toBeNull()
   })
 
   it('follows the Agent feature gate on cloud', () => {
@@ -42,23 +42,10 @@ describe('useAgentCanvasEntryMount', () => {
     const mount = useAgentCanvasEntryMount()
 
     expect(mount.CompactAgentComposer).not.toBeNull()
-    expect(mount.AgentOnboardingGuide).not.toBeNull()
+    expect(mount.AgentGraphBuildPlaybackOverlay).not.toBeNull()
     expect(mount.enabled.value).toBe(false)
+    expect(mount.graphBuildActive.value).toBe(false)
     store.enabled = true
     expect(mount.enabled.value).toBe(true)
-  })
-
-  it('opens onboarding after the async guide finishes mounting', async () => {
-    distributionMock.available = true
-    const mount = useAgentCanvasEntryMount()
-    const open = vi.fn()
-
-    mount.openOnboardingGuide()
-    mount.setOnboardingGuideRef({ open })
-    await nextTick()
-
-    expect(open).toHaveBeenCalledOnce()
-    mount.openOnboardingGuide()
-    expect(open).toHaveBeenCalledTimes(2)
   })
 })

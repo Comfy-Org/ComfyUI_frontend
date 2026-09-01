@@ -10,7 +10,10 @@
       ref="graphCanvasContainerRef"
       class="graph-canvas-container"
     >
-      <GraphCanvas @ready="onGraphReady" />
+      <GraphCanvas
+        :suppress-link-overlay="agentGraphBuildActive"
+        @ready="onGraphReady"
+      />
     </div>
     <LinearView v-if="linearMode" />
     <template v-if="isBuilderMode">
@@ -23,12 +26,10 @@
   <component
     :is="CompactAgentComposer"
     v-if="agentCanvasEntryEnabled && !isBuilderMode"
-    @learn="openOnboardingGuide"
   />
   <component
-    :is="AgentOnboardingGuide"
+    :is="AgentGraphBuildPlaybackOverlay"
     v-if="agentCanvasEntryEnabled && !isBuilderMode"
-    :ref="setOnboardingGuideRef"
   />
 
   <GlobalToast />
@@ -122,10 +123,9 @@ useBrowserTabTitle()
 
 const {
   enabled: agentCanvasEntryEnabled,
+  graphBuildActive: agentGraphBuildActive,
   CompactAgentComposer,
-  AgentOnboardingGuide,
-  setOnboardingGuideRef,
-  openOnboardingGuide
+  AgentGraphBuildPlaybackOverlay
 } = useAgentCanvasEntryMount()
 
 const settingStore = useSettingStore()

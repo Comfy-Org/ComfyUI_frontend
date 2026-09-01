@@ -8,7 +8,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 
-const emit = defineEmits<{ learn: [] }>()
 const { t } = useI18n()
 const composerStore = useAgentComposerStore()
 const panelStore = useAgentPanelStore()
@@ -46,19 +45,6 @@ function onEnter(event: KeyboardEvent): void {
         class="bg-agent-surface pointer-events-auto flex h-14 w-full max-w-2xl items-center gap-2 rounded-2xl border border-interface-stroke px-3 shadow-xl"
         @submit.prevent="submit"
       >
-        <Button
-          type="button"
-          variant="textonly"
-          size="sm"
-          :aria-label="t('agent.compactComposer.learn')"
-          @click="emit('learn')"
-        >
-          <span class="icon-[lucide--graduation-cap] size-4" />
-          <span class="hidden sm:inline">{{
-            t('agent.compactComposer.learn')
-          }}</span>
-        </Button>
-
         <span
           aria-hidden="true"
           class="icon-[comfy--comfy-c] size-5 shrink-0 text-brand-yellow"

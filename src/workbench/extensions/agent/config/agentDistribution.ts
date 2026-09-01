@@ -3,7 +3,7 @@ import { defineAsyncComponent } from 'vue'
 
 interface AgentUiComponents {
   CompactAgentComposer: Component
-  AgentOnboardingGuide: Component
+  AgentGraphBuildPlaybackOverlay: Component
   DockedAgentPanel: Component
 }
 
@@ -19,8 +19,8 @@ export function getAgentUiComponentsForDistribution(): AgentUiComponents | null 
     CompactAgentComposer: defineAsyncComponent(
       () => import('../components/agent/CompactAgentComposer.vue')
     ),
-    AgentOnboardingGuide: defineAsyncComponent(
-      () => import('../components/agent/AgentOnboardingGuide.vue')
+    AgentGraphBuildPlaybackOverlay: defineAsyncComponent(
+      () => import('../components/agent/AgentGraphBuildPlaybackOverlay.vue')
     ),
     DockedAgentPanel: defineAsyncComponent(
       () => import('../components/agent/DockedAgentPanel.vue')

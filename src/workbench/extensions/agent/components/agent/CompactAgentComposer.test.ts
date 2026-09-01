@@ -53,18 +53,17 @@ describe('CompactAgentComposer', () => {
     expect(useAgentPanelStore().isOpen).toBe(false)
   })
 
-  it('opens onboarding without opening the full panel', async () => {
-    const { emitted } = render(CompactAgentComposer, {
+  it('opens the full panel only from its explicit control', async () => {
+    render(CompactAgentComposer, {
       global: { plugins: [i18n] }
     })
 
     await userEvent.click(
       screen.getByRole('button', {
-        name: i18n.global.t('agent.compactComposer.learn')
+        name: i18n.global.t('agent.compactComposer.open')
       })
     )
 
-    expect(emitted().learn).toHaveLength(1)
-    expect(useAgentPanelStore().isOpen).toBe(false)
+    expect(useAgentPanelStore().isOpen).toBe(true)
   })
 })

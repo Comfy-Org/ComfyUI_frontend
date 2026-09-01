@@ -1,71 +1,38 @@
 import type { Component, ComputedRef } from 'vue'
-import { computed, shallowRef, watch } from 'vue'
+import { computed } from 'vue'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { getAgentUiComponentsForDistribution } from '../config/agentDistribution'
-
-interface AgentOnboardingGuideHandle {
-  open(): void
-}
+import { agentGraphBuildPlaybackState } from '../services/agent/agentGraphBuildPlayback'
 
 interface AgentCanvasEntryMount {
   enabled: ComputedRef<boolean>
+  graphBuildActive: ComputedRef<boolean>
   CompactAgentComposer: Component | null
-  AgentOnboardingGuide: Component | null
-  setOnboardingGuideRef: (guide: unknown) => void
-  openOnboardingGuide: () => void
+  AgentGraphBuildPlaybackOverlay: Component | null
 }
 
 export function useAgentCanvasEntryMount(): AgentCanvasEntryMount {
-  const onboardingGuideRef = shallowRef<AgentOnboardingGuideHandle>()
-  let onboardingRequested = false
-  const setOnboardingGuideRef = (guide: unknown): void => {
-    onboardingGuideRef.value = isAgentOnboardingGuideHandle(guide)
-      ? guide
-      : undefined
-  }
-  const openOnboardingGuide = (): void => {
-    if (onboardingGuideRef.value !== undefined) {
-      onboardingGuideRef.value.open()
-      return
-    }
-    onboardingRequested = true
-  }
-  watch(onboardingGuideRef, (guide) => {
-    if (guide === undefined || !onboardingRequested) return
-    onboardingRequested = false
-    guide.open()
-  })
-
   const components = getAgentUiComponentsForDistribution()
   if (components === null) {
     return {
       enabled: computed(() => false),
+      graphBuildActive: computed(() => false),
       CompactAgentComposer: null,
-      AgentOnboardingGuide: null,
-      setOnboardingGuideRef,
-      openOnboardingGuide
+      AgentGraphBuildPlaybackOverlay: null
     }
   }
 
   const agentPanelStore = useAgentPanelStore()
   return {
     enabled: computed(() => agentPanelStore.enabled),
+    graphBuildActive: computed(
+      () =>
+        agentGraphBuildPlaybackState.value.phase === 'playing' ||
+        agentGraphBuildPlaybackState.value.phase === 'paused'
+    ),
     CompactAgentComposer: components.CompactAgentComposer,
-    AgentOnboardingGuide: components.AgentOnboardingGuide,
-    setOnboardingGuideRef,
-    openOnboardingGuide
+    AgentGraphBuildPlaybackOverlay: components.AgentGraphBuildPlaybackOverlay
   }
-}
-
-function isAgentOnboardingGuideHandle(
-  value: unknown
-): value is AgentOnboardingGuideHandle {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'open' in value &&
-    typeof value.open === 'function'
-  )
 }

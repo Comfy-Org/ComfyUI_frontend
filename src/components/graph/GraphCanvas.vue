@@ -93,6 +93,7 @@
 
   <LinkOverlayCanvas
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    v-show="!suppressLinkOverlay"
     :canvas="comfyApp.canvas"
     @ready="onLinkOverlayReady"
     @dispose="onLinkOverlayDispose"
@@ -219,6 +220,9 @@ import SelectionRectangle from './SelectionRectangle.vue'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
 const { t } = useI18n()
+const { suppressLinkOverlay = false } = defineProps<{
+  suppressLinkOverlay?: boolean
+}>()
 const emit = defineEmits<{
   ready: []
 }>()

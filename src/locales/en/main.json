@@ -5112,27 +5112,15 @@
     "compactComposer": {
       "label": "Ask Comfy Agent",
       "placeholder": "Describe what to build or change…",
-      "learn": "Learn",
       "open": "Open the full Agent panel"
     },
-    "onboarding": {
-      "title": "Build your first workflow",
-      "description": "Practice the core ComfyUI loop in a safe sandbox. Drag three components into order, then let Agent build a real editable workflow.",
-      "start": "Start the practice",
-      "skip": "Skip and ask Agent",
-      "practiceDescription": "Drag the highlighted component into the practice canvas. This does not change your current workflow or spend credits.",
-      "paletteLabel": "Practice node palette",
-      "dropHint": "Drag the Prompt component here to begin",
-      "finish": "Finish the practice",
-      "completeDescription": "You built the same input-to-process-to-output shape used by real ComfyUI workflows.",
-      "restart": "Practice again",
-      "build": "Build it with Agent",
-      "samplePrompt": "Build a beginner-friendly text-to-image workflow with a prompt input, image generation, and saved image output.",
-      "nodes": {
-        "prompt": "Prompt",
-        "generate": "Generate image",
-        "output": "Save image"
-      }
+    "graphBuild": {
+      "progress": "Building {current} of {total}: {node}",
+      "dragging": "Adding {node}",
+      "node": "workflow node",
+      "pause": "Pause",
+      "resume": "Resume",
+      "skip": "Skip animation"
     },
     "crdtStatus": "CRDT {connection} · {workflowId} · {updates} updates · {frame}",
     "crdtConnected": "connected",

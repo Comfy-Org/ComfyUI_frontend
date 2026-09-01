@@ -12,7 +12,7 @@ vi.mock('../config/agentDistribution', () => ({
     distributionMock.available
       ? {
           CompactAgentComposer: {},
-          AgentOnboardingGuide: {},
+          AgentGraphBuildPlaybackOverlay: {},
           DockedAgentPanel: {}
         }
       : null

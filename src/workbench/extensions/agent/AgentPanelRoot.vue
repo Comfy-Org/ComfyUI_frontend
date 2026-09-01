@@ -22,6 +22,7 @@ import { createGraphMutations } from '@/core/graph/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -32,6 +33,7 @@ import {
   hasVideoType
 } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -80,6 +82,12 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import {
+  cancelAgentGraphNodeBuild,
+  skipAgentGraphBuild,
+  stageAgentGraphNodeBuild
+} from './services/agent/agentGraphBuildPlayback'
+import { createAgentGraphNodePresenter } from './services/agent/agentGraphNodePresenter'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
@@ -111,6 +119,41 @@ const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
+const nodeDataStore = useNodeDataStore()
+
+function agentGraphBuildKey(graphId: string, nodeId: string | number): string {
+  return `${graphId}:${nodeId}`
+}
+
+function graphBuildSource(position: { x: number; y: number }): {
+  x: number
+  y: number
+} {
+  const canvas = app.canvas
+  const element = canvas?.canvas
+  if (!canvas || !element) return { x: position.x - 360, y: position.y }
+
+  const rect = element.getBoundingClientRect()
+  const source = canvas.convertCanvasToOffset([
+    Math.max(48, rect.width / 2),
+    Math.max(80, rect.height - 120)
+  ])
+  return { x: source[0], y: source[1] }
+}
+
+function graphBuildClientPosition(position: { x: number; y: number }): {
+  x: number
+  y: number
+} {
+  const canvas = app.canvas
+  const element = canvas?.canvas
+  if (!canvas || !element) return position
+
+  const rect = element.getBoundingClientRect()
+  const offset = canvas.convertOffsetToCanvas([position.x, position.y])
+  return { x: rect.left + offset[0], y: rect.top + offset[1] }
+}
+
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -131,6 +174,7 @@ const graphMutations = (workflowId: string) => {
     layout: {
       createNode(scope, nodeId, layout, context) {
         const { position, size } = layout
+        const buildKey = agentGraphBuildKey(scope.rootGraphId, nodeId)
         layoutStore.applyOperation({
           type: 'createNode',
           graphId: scope.rootGraphId,
@@ -148,9 +192,32 @@ const graphMutations = (workflowId: string) => {
           opId: context.opId,
           timestamp: Date.now()
         })
+        if (LiteGraph.vueNodesMode) {
+          stageAgentGraphNodeBuild({
+            key: buildKey,
+            label:
+              nodeDataStore.getNode(scope.rootGraphId, nodeId)?.title ||
+              t('agent.graphBuild.node'),
+            source: graphBuildSource(position),
+            target: position,
+            present: createAgentGraphNodePresenter(
+              nodeId,
+              position,
+              () =>
+                workflowStore.activeWorkflow?.activeState?.id ===
+                scope.rootGraphId
+            ),
+            toClient: graphBuildClientPosition
+          })
+        }
       },
       deleteNodes(scope, nodeIds, context) {
         const timestamp = Date.now()
+        for (const nodeId of nodeIds) {
+          cancelAgentGraphNodeBuild(
+            agentGraphBuildKey(scope.rootGraphId, nodeId)
+          )
+        }
         layoutStore.applyOperations(
           nodeIds.map((nodeId) => ({
             type: 'deleteNode',
@@ -549,7 +616,12 @@ async function onAgentActiveTab(
 start()
 const agentComposerStore = useAgentComposerStore()
 void refreshCloudWorkflowIds()
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  () => skipAgentGraphBuild()
+)
 onBeforeUnmount(() => {
+  skipAgentGraphBuild()
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()
