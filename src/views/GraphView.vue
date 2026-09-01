@@ -10,10 +10,7 @@
       ref="graphCanvasContainerRef"
       class="graph-canvas-container"
     >
-      <GraphCanvas
-        :suppress-link-overlay="agentGraphBuildActive"
-        @ready="onGraphReady"
-      />
+      <GraphCanvas @ready="onGraphReady" />
     </div>
     <LinearView v-if="linearMode" />
     <template v-if="isBuilderMode">
@@ -123,7 +120,6 @@ useBrowserTabTitle()
 
 const {
   enabled: agentCanvasEntryEnabled,
-  graphBuildActive: agentGraphBuildActive,
   CompactAgentComposer,
   AgentGraphBuildPlaybackOverlay
 } = useAgentCanvasEntryMount()

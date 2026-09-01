@@ -5,38 +5,26 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { useAgentCanvasEntryMount } from './useAgentCanvasEntryMount'
 
-const distributionMock = vi.hoisted(() => ({ available: false }))
-
-vi.mock('../config/agentDistribution', () => ({
-  getAgentUiComponentsForDistribution: () =>
-    distributionMock.available
-      ? {
-          CompactAgentComposer: {},
-          AgentGraphBuildPlaybackOverlay: {},
-          DockedAgentPanel: {}
-        }
-      : null
-}))
 vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
 
 describe('useAgentCanvasEntryMount', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
-    distributionMock.available = false
   })
 
-  it('returns an inert mount on non-cloud production distributions', () => {
+  it('returns an inert mount on non-cloud distributions', () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
+
     const mount = useAgentCanvasEntryMount()
 
     expect(mount.enabled.value).toBe(false)
-    expect(mount.graphBuildActive.value).toBe(false)
     expect(mount.CompactAgentComposer).toBeNull()
     expect(mount.AgentGraphBuildPlaybackOverlay).toBeNull()
   })
 
   it('follows the Agent feature gate on cloud', () => {
-    distributionMock.available = true
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     const store = useAgentPanelStore()
 
     const mount = useAgentCanvasEntryMount()
@@ -44,7 +32,6 @@ describe('useAgentCanvasEntryMount', () => {
     expect(mount.CompactAgentComposer).not.toBeNull()
     expect(mount.AgentGraphBuildPlaybackOverlay).not.toBeNull()
     expect(mount.enabled.value).toBe(false)
-    expect(mount.graphBuildActive.value).toBe(false)
     store.enabled = true
     expect(mount.enabled.value).toBe(true)
   })

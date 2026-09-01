@@ -1,9 +1,7 @@
 import type { Component, ComputedRef } from 'vue'
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-
-import { getAgentUiComponentsForDistribution } from '../config/agentDistribution'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
@@ -11,18 +9,20 @@ interface AgentDockMount {
 }
 
 /**
- * The production distribution seam for the dock mounts. The literal
- * comparison dead-code-eliminates both panel component chunks from OSS builds.
- * Development keeps the mount available for local Agent UI testing.
+ * The one distribution seam for the dock mounts. The literal comparison is
+ * what dead-code-eliminates the store and both panel component chunks from
+ * OSS builds; on cloud the async component is only requested once the gate
+ * enables and opens the panel, so a flag-off session fetches no agent chunk.
  */
 export function useAgentDockMount(): AgentDockMount {
-  const components = getAgentUiComponentsForDistribution()
-  if (components === null) {
+  if (__DISTRIBUTION__ !== 'cloud') {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
   const agentPanelStore = useAgentPanelStore()
   return {
     docked: computed(() => agentPanelStore.enabled && agentPanelStore.isOpen),
-    DockedAgentPanel: components.DockedAgentPanel
+    DockedAgentPanel: defineAsyncComponent(
+      () => import('../components/agent/DockedAgentPanel.vue')
+    )
   }
 }
