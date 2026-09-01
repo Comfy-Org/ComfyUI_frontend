@@ -39,7 +39,7 @@ describe('seedance 2.5 workflow links', () => {
     // The family page lists the shipped 2.5 workflows, which is what the launch
     // playbook asks the page to link, and matches what /ltx-2.5 already does.
     expect(seedancePage.hero.secondaryCta?.href).toBe(
-      'https://comfy.org/workflows/model/seedance'
+      'https://comfy.org/workflows/model/seedance/'
     )
   })
 
