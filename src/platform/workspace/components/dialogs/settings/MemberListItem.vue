@@ -35,7 +35,9 @@
           : $t('workspaceSwitcher.roleMember')
       "
       severity="contrast"
-      :class="cn('py-0.5 text-2xs font-bold', !showCreditsColumn && 'text-right')"
+      :class="
+        cn('py-0.5 text-2xs font-bold', !showCreditsColumn && 'text-right')
+      "
     />
     <div v-if="showCreditsColumn" class="text-sm tabular-nums">
       <div v-if="hasCreditLimit" class="flex flex-col gap-1">
