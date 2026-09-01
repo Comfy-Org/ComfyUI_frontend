@@ -81,6 +81,12 @@ const mocks = vi.hoisted(() => ({
       }
     ]
   })),
+  rowDownloadDispose: vi.fn(),
+  rowDownloadRequest: vi.fn(),
+  rowDownloadStateFor: vi.fn(() => ({
+    status: 'idle' as const,
+    attempt: 0 as const
+  })),
   trackTemplateLibraryClosed: vi.fn()
 }))
 
@@ -114,6 +120,17 @@ vi.mock(
   () => ({
     useTemplateModelAvailability: () => ({
       resolveAvailability: mocks.resolveAvailability
+    })
+  })
+)
+
+vi.mock(
+  '@/platform/workflow/templates/composables/useTemplateModelRowDownloads',
+  () => ({
+    useTemplateModelRowDownloads: () => ({
+      dispose: mocks.rowDownloadDispose,
+      request: mocks.rowDownloadRequest,
+      stateFor: mocks.rowDownloadStateFor
     })
   })
 )
@@ -243,6 +260,11 @@ async function clickTemplateCard() {
   return { card, user }
 }
 
+async function clickTemplateCardAfterRender() {
+  renderDialog()
+  return clickTemplateCard()
+}
+
 describe('WorkflowTemplateSelectorDialog detail routing', () => {
   beforeEach(() => {
     runtime.isCloud = false
@@ -277,6 +299,47 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(
       within(requirements).queryByText(fixtures.bypassedModel.name)
     ).not.toBeInTheDocument()
+  })
+
+  it('keeps an individual model download inside the mounted Detail', async () => {
+    const { user } = await clickTemplateCardAfterRender()
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: `Download ${fixtures.activeModel.name}`
+      })
+    )
+
+    expect(mocks.rowDownloadRequest).toHaveBeenCalledWith(fixtures.activeModel)
+    expect(
+      screen.getByRole('article', { name: fixtures.template.title })
+    ).toBeInTheDocument()
+    expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
+  })
+
+  it('keeps Open now passive for idle models', async () => {
+    const { user } = await clickTemplateCardAfterRender()
+    await user.click(await screen.findByRole('button', { name: 'Open now' }))
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.rowDownloadRequest).not.toHaveBeenCalled()
+  })
+
+  it('starts eligible rows before Download models & open opens the workflow', async () => {
+    const { user } = await clickTemplateCardAfterRender()
+    await user.click(
+      await screen.findByRole('button', { name: 'Download models & open' })
+    )
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.rowDownloadRequest).toHaveBeenCalledWith(fixtures.activeModel)
+    expect(mocks.rowDownloadRequest.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.openPreparedWorkflowTemplate.mock.invocationCallOrder[0]
+    )
   })
 
   it('opens directly outside Desktop without resolving model inventory', async () => {
