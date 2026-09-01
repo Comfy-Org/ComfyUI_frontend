@@ -24,6 +24,11 @@ describe('localizeHref', () => {
       '/enterprise/managed-builds'
     )
   })
+
+  it('only localizes the Japanese homepage', () => {
+    expect(localizeHref('/', 'ja')).toBe('/ja/')
+    expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
+  })
 })
 
 describe('getRoutes models', () => {
@@ -59,6 +64,20 @@ describe('getRoutes ltx', () => {
 
   it('serves a localized ltx path for zh-CN', () => {
     expect(getRoutes('zh-CN').ltx).toBe('/zh-CN/ltx-2.5')
+  })
+})
+
+describe('getRoutes minimaxLicenseProfessionalRequest', () => {
+  it('serves the license request page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
+  })
+
+  it('never prefixes the English-only license request page for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
+      '/minimax/license/professional-request'
+    )
   })
 })
 
