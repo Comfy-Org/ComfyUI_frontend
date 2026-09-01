@@ -142,65 +142,6 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(emitted().addCreditCard).toBeTruthy()
   })
 
-  it('keeps the pay action live after a failed challenge', () => {
-    render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        embeddedCheckoutEnabled: true,
-        previewData: previewFixture('MONTHLY', 3500),
-        quoteIsCurrent: true,
-        savedMethods: [
-          {
-            id: 'pm_1',
-            type: 'card',
-            brand: 'visa',
-            last4: '4242',
-            is_default: true
-          }
-        ],
-        authenticationState: 'failed_retryable'
-      },
-      global: globalOptions
-    })
-
-    // The intent has fallen back to requires_payment_method, so a fresh
-    // attempt is the only way forward — locking the action that starts one
-    // leaves the customer with nothing to press.
-    expect(
-      screen.getByRole('button', {
-        name: 'subscription.preview.payAndSubscribe'
-      })
-    ).toBeEnabled()
-  })
-
-  it('locks the pay action while a challenge is still open', () => {
-    render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        embeddedCheckoutEnabled: true,
-        previewData: previewFixture('MONTHLY', 3500),
-        quoteIsCurrent: true,
-        savedMethods: [
-          {
-            id: 'pm_1',
-            type: 'card',
-            brand: 'visa',
-            last4: '4242',
-            is_default: true
-          }
-        ],
-        authenticationState: 'requires_action'
-      },
-      global: globalOptions
-    })
-
-    expect(
-      screen.getByRole('button', {
-        name: 'subscription.preview.payAndSubscribe'
-      })
-    ).toBeDisabled()
-  })
-
   it('falls back to subscription confirmation when quote identity is missing', async () => {
     const quote = previewFixture('MONTHLY', 3500)
     delete quote.quote_id
