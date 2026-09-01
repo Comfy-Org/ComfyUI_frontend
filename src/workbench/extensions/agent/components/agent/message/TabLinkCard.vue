@@ -11,6 +11,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentWorkflowTabBindingStore } from '../../../stores/agent/agentWorkflowTabBindingStore'
 import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
 
@@ -66,7 +67,8 @@ async function open(): Promise<void> {
     try {
       await targetNavigation.navigate({ workflowId, locatorId })
     } catch (error) {
-      if (!(error instanceof AgentTargetNavigationError)) throw error
+      if (!(error instanceof AgentTargetNavigationError))
+        reportError(error, { errorType: 'agent_target_navigation_failure' })
       toast.add({
         severity: 'warn',
         detail: t('agent.targetNavigationUnavailable'),

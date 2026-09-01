@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   activeWorkflow: undefined as FakeTab | undefined,
   openWorkflow: vi.fn(),
   navigate: vi.fn(),
+  reportError: vi.fn(),
   openWorkflows: [] as unknown[]
 }))
 
@@ -29,6 +30,10 @@ vi.mock('../../../composables/agent/useAgentTargetNavigation', () => ({
 }))
 
 vi.mock('@/scripts/api', () => ({ api: mocks.api }))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mocks.reportError
+}))
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({ openWorkflow: mocks.openWorkflow })
@@ -67,6 +72,7 @@ describe('TabLinkCard', () => {
     setActivePinia(createPinia())
     mocks.openWorkflow.mockClear()
     mocks.navigate.mockClear()
+    mocks.reportError.mockClear()
     mocks.activeWorkflow = undefined
     openTabs()
     useAgentPanelStore().enabled = true
@@ -246,6 +252,25 @@ describe('TabLinkCard', () => {
       severity: 'warn',
       detail: 'This workflow target is no longer available.',
       life: 5000
+    })
+    expect(mocks.reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports unexpected navigation failures', async () => {
+    const tab = { path: 'flows/portrait.json', filename: 'portrait' }
+    const error = new Error('focus failed')
+    openTabs(tab)
+    useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
+    mocks.navigate.mockRejectedValueOnce(error)
+
+    render(TabLinkCard, {
+      props: { workflowId: 'wf-1', locatorId: '42' },
+      global: { plugins: [i18n] }
+    })
+    await userEvent.click(screen.getByRole('button'))
+
+    expect(mocks.reportError).toHaveBeenCalledWith(error, {
+      errorType: 'agent_target_navigation_failure'
     })
   })
 })
