@@ -1,5 +1,5 @@
 import { createSharedComposable } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
@@ -8,10 +8,29 @@ import {
 } from '@/composables/node/usePartnerNodesInGraph'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 
 type PartnerRunGate = 'sign-in' | 'none'
+
+/**
+ * A gate block has no server backstop, so every one is reported: a spike with
+ * isLoggedIn true means the detection is wrong in production (see the Sentry
+ * alert issue #16504).
+ */
+function reportGateBlocked(
+  trigger: 'run-button' | 'auto-queue',
+  partnerNodes: PartnerNodeInfo[],
+  isLoggedIn: boolean
+) {
+  reportError(new Error(`Partner run gate blocked ${trigger}`), {
+    errorType: 'partner_run_gate_blocked',
+    level: 'warning',
+    tags: { trigger, isLoggedIn, partnerNodeCount: partnerNodes.length },
+    context: { partnerNodeTypes: partnerNodes.map((n) => n.nodeName) }
+  })
+}
 
 /**
  * Synchronous, unthrottled gate for the queue boundary: true when a local
@@ -26,7 +45,11 @@ export function partnerRunGateBlocksAutoQueue(): boolean {
   // A signed-in user reads as logged-out until Firebase resolves; never gate
   // on that transient state.
   if (!isAuthResolved.value) return false
-  return !isLoggedIn.value && scanPartnerNodesInGraph().length > 0
+  if (isLoggedIn.value) return false
+  const partnerNodes = scanPartnerNodesInGraph()
+  if (partnerNodes.length === 0) return false
+  reportGateBlocked('auto-queue', partnerNodes, isLoggedIn.value)
+  return true
 }
 
 /**
@@ -53,6 +76,15 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
     !isLoggedIn.value
       ? 'sign-in'
       : 'none'
+  )
+
+  watch(
+    gate,
+    (value) => {
+      if (value !== 'sign-in') return
+      reportGateBlocked('run-button', partnerNodes.value, isLoggedIn.value)
+    },
+    { immediate: true }
   )
 
   return { gate, partnerNodes }

@@ -58,6 +58,11 @@ vi.mock('@/composables/useFeatureFlags', async () => {
   }
 })
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 const { __setLoggedIn, __setAuthResolved } =
   currentUserModule as typeof currentUserModule & {
     __setLoggedIn: (value: boolean) => void
@@ -131,6 +136,36 @@ describe('usePartnerNodesRunGate', () => {
     expect(gate.value).toBe('sign-in')
   })
 
+  it('reports each block with the trigger site and detection details', async () => {
+    state.hasPartnerNodes.value = true
+    state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
+    setup()
+    await nextTick()
+
+    expect(mockReportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'partner_run_gate_blocked',
+        level: 'warning',
+        tags: expect.objectContaining({
+          trigger: 'run-button',
+          isLoggedIn: false,
+          partnerNodeCount: 1
+        }),
+        context: { partnerNodeTypes: ['Kling'] }
+      })
+    )
+  })
+
+  it('reports nothing while the gate stays open', async () => {
+    __setLoggedIn(true)
+    state.hasPartnerNodes.value = true
+    setup()
+    await nextTick()
+
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
   it('does not gate while auth is still resolving, then follows the outcome', async () => {
     state.hasPartnerNodes.value = true
     __setAuthResolved(false)
@@ -174,6 +209,13 @@ describe('partnerRunGateBlocksAutoQueue', () => {
   it('blocks a signed-out local graph that contains partner nodes', () => {
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
     expect(partnerRunGateBlocksAutoQueue()).toBe(true)
+    expect(mockReportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'partner_run_gate_blocked',
+        tags: expect.objectContaining({ trigger: 'auto-queue' })
+      })
+    )
   })
 
   it('never blocks while auth is still resolving', () => {
