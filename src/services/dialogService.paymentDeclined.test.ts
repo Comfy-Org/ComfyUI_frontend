@@ -34,7 +34,6 @@ import { useDialogService } from '@/services/dialogService'
 
 describe('showPaymentDeclinedDialog', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     state.billingControlEnabled = true
   })
 

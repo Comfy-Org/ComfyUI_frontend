@@ -54,7 +54,6 @@ function renderDialog(origin: 'subscription' | 'topup', onClose = vi.fn()) {
 
 describe('PaymentDeclinedDialogContent', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     state.manageSubscription.mockResolvedValue(undefined)
   })
 
