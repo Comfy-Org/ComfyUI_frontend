@@ -115,6 +115,18 @@ describe('createOpSender', () => {
     expect(sent[2].ops[0].stamp).toEqual([50, ACTOR])
   })
 
+  it('resets the local stamp when the bound workflow changes', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].stamp).toEqual([41, ACTOR])
+    ackInFlight()
+
+    boundWorkflow = 'wf-2'
+    baseVersion = 0
+    sender.enqueue([addNode(2)])
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(sent[1].ops[0].stamp).toEqual([0, ACTOR])
+  })
+
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
