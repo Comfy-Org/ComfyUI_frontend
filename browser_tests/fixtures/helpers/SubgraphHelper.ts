@@ -25,6 +25,15 @@ export class SubgraphHelper {
     return this.comfyPage.page
   }
 
+  async toggleCollapse(nodeId: string): Promise<void> {
+    await this.page.evaluate((id) => {
+      const node = window.app!.graph!.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+      node.collapse()
+    }, nodeId)
+    await this.comfyPage.nextFrame()
+  }
+
   /**
    * Core helper method for interacting with subgraph I/O slots.
    * Handles both input/output slots and both right-click/double-click actions.
