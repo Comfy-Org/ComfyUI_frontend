@@ -88,6 +88,17 @@ function createProducerClock() {
   const versions = new Map<string, number>()
 
   return {
+    /**
+     * Ratchet the in-memory floor on every observed remote sequence. The
+     * bridge zeroes `lastSequence` for the length of a resubscribe, so a
+     * reservation taken in that window would otherwise fall back to this
+     * tab's own last write.
+     */
+    observe(workflowId: string, observed: number): void {
+      if (!Number.isSafeInteger(observed) || observed <= 0) return
+      const previous = versions.get(workflowId) ?? 0
+      if (observed > previous) versions.set(workflowId, observed)
+    },
     reserve(
       workflowId: string,
       observed: number,
@@ -324,6 +335,8 @@ export function useAgentCrdtFollower(
       clearSubscribeRetry()
       armStaleProbe()
       armCoordinationFreeIds()
+      if (subscribedWorkflowId.value !== null)
+        producerClock.observe(subscribedWorkflowId.value, bridge.lastSequence)
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
@@ -343,6 +356,7 @@ export function useAgentCrdtFollower(
       return
     if (staleProbeTimer !== null) armStaleProbe()
     armCoordinationFreeIds()
+    producerClock.observe(update.workflowId, update.seq)
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     adapter.applyFrame(update)
