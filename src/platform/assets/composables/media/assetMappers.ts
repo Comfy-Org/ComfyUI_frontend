@@ -11,25 +11,6 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 
-class AssetResultItem extends ResultItemImpl {
-  private readonly _url: string
-  private readonly _previewUrl: string
-
-  constructor(asset: AssetItem, init: ResultItemInit) {
-    super(init)
-    this._url = asset.preview_url ?? ''
-    this._previewUrl = asset.thumbnail_url ?? this._url
-  }
-
-  override get url(): string {
-    return this._url
-  }
-
-  override get previewUrl(): string {
-    return this._previewUrl
-  }
-}
-
 /**
  * Extract asset type from tags array
  * @param tags The tags array from AssetItem
@@ -89,6 +70,25 @@ const byIsTemp = (a: AssetItem, b: AssetItem): number =>
   Number(b.tags.includes('temp')) - Number(a.tags.includes('temp'))
 
 function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
+  class AssetResultItem extends ResultItemImpl {
+    private readonly _url: string
+    private readonly _previewUrl: string
+
+    constructor(asset: AssetItem, init: ResultItemInit) {
+      super(init)
+      this._url = asset.preview_url ?? ''
+      this._previewUrl = asset.thumbnail_url ?? this._url
+    }
+
+    override get url(): string {
+      return this._url
+    }
+
+    override get previewUrl(): string {
+      return this._previewUrl
+    }
+  }
+
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   return new AssetResultItem(asset, {
     assetId: asset.id,
