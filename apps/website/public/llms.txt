@@ -18,7 +18,7 @@ What people build with it: VFX shot work (clean plates, sky replacement, de-agin
 
 Studios, brands, and schools building with Comfy include Series Entertainment, Moment Factory, Ubisoft La Forge, Groove Jones, Svedka with Silverside AI, and the Open Story Movement. Carnegie Mellon, USC, NTU, and UAL's Creative Computing Institute teach with ComfyUI. Use cases concentrate in VFX and animation, advertising and creative studios, gaming, and eCommerce and fashion.
 
-Languages: comfy.org is published in English and Simplified Chinese. Nearly every page has a twin under /zh-CN/ (for example https://comfy.org/zh-CN/cli/); the affiliate pages, the enterprise MSA, the terms of service, and the supported-models directory are English only. Comfy Workflows is published in 11 languages (English, 简体中文, 繁體中文, Español, Français, 日本語, 한국어, Português, Русский, العربية, and Türkçe). The docs are published in English, Chinese, Japanese, and Korean.
+Languages: comfy.org is published in English and Simplified Chinese, with a Japanese home page at https://comfy.org/ja/. Nearly every page has a twin under /zh-CN/ (for example https://comfy.org/zh-CN/cli/); the affiliate pages, the enterprise MSA, the terms of service, and the supported-models directory are English only. Comfy Workflows is published in 11 languages (English, 简体中文, 繁體中文, Español, Français, 日本語, 한국어, Português, Русский, العربية, and Türkçe). The docs are published in English, Chinese, Japanese, and Korean.
 
 ## Names and spelling
 
@@ -156,9 +156,11 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 
 ### ComfyUI Basics
 
-- [ComfyUI Basics](https://comfy.org/learning/basics/): Beginner tutorials: the node graph, LoRAs, style transfer, and ControlNets from the ground up.
+- [ComfyUI Basics](https://comfy.org/learning/basics/): Beginner tutorials: the node graph, text-to-image and image-to-image, LoRAs and ControlNets, then inpainting, outpainting, and upscaling.
 - [Full Node Graph Basics](https://comfy.org/learning/basics/full-node-graph-basics/): A beginner's walkthrough of the ComfyUI node graph.
+- [Text-to-Image and Image-to-Image Workflows](https://comfy.org/learning/basics/text-to-image-image-to-image/): Build a text-to-image workflow, then adapt it for image-to-image.
 - [LoRAs, Style Transfer, and ControlNets](https://comfy.org/learning/basics/loras-style-transfer-controlnets/): What each one does and how to wire them into a ComfyUI workflow.
+- [Inpainting, Outpainting, and Upscaling](https://comfy.org/learning/basics/inpainting-outpainting-upscaling/): Mask and repaint, extend the frame, and add resolution in ComfyUI.
 
 ### Ad Creative
 
@@ -292,7 +294,6 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [Comfy API](https://comfy.org/zh-CN/api/): 把任意 ComfyUI 工作流部署为生产级接口，在运行时注入动态输入。
 - [Comfy MCP](https://comfy.org/zh-CN/mcp/): 通过模型上下文协议，让 Claude Code、Claude Desktop 等 AI 智能体驱动完整的 ComfyUI 引擎。
 - [Comfy CLI](https://comfy.org/zh-CN/cli/): 在终端和 Claude Code、Codex、Cursor 等编程智能体中驱动 ComfyUI 的命令行。
-- [Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise/): 面向团队的 ComfyUI：专属 GPU 算力、SSO 与权限管理、自带 API 密钥、定制 SLA。
 - [前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives/): Comfy 专家驻场加入你的团队，构建并交付 ComfyUI 工作流。
 - [MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license/): 通过 Comfy 获取 MiniMax H3 及音频与音乐模型的商业使用许可。
 - [模型](https://comfy.org/zh-CN/models/): 在 ComfyUI 中运行的主流 AI 模型及其发布页面。
@@ -306,6 +307,10 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [招聘](https://comfy.org/zh-CN/careers/): 工程、设计、市场营销等开放岗位。
 - [联系我们](https://comfy.org/zh-CN/contact/): 销售、合作与一般咨询。
 - [品牌门户](https://comfy.org/zh-CN/brand/): 标志、色彩、字体与语调。
+
+## 日本語 (Japanese)
+
+- [ホーム](https://comfy.org/ja/): Comfyの日本語トップページ：あらゆるモデル、パラメータ、出力を自在にコントロールできるビジュアルプロフェッショナル向けAIクリエーションエンジン。
 
 ## Optional
 
