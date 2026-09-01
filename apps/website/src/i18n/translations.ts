@@ -742,6 +742,18 @@ Enterprise`
     en: 'Track progress in real time over WebSocket. Download the finished output when the job completes.',
     'zh-CN': '通过 WebSocket 实时跟踪进度。作业完成后下载最终输出。'
   },
+  'api.steps.beta.badge': {
+    en: 'BETA',
+    'zh-CN': '测试版'
+  },
+  'api.steps.beta.description': {
+    en: 'Serverless API \u2014 dedicated endpoints with your models and custom nodes.',
+    'zh-CN': 'Serverless API——专用端点，你的模型、你的自定义节点。'
+  },
+  'api.steps.beta.cta': {
+    en: 'JOIN BETA',
+    'zh-CN': '加入测试版'
+  },
 
   // API – AutomationSection
   'api.automation.heading': {

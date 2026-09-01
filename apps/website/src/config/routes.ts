@@ -144,6 +144,8 @@ export const externalLinks = {
   platform: 'https://platform.comfy.org',
   platformUsage: 'https://platform.comfy.org/profile/usage',
   reddit: 'https://www.reddit.com/r/comfyui/',
+  serverlessBeta:
+    'https://us.posthog.com/external_surveys/019f1fe2-dc63-0000-d27c-79da96518176',
   support: 'https://support.comfy.org/hc/en-us',
   trustCenter: 'https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz',
   wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',

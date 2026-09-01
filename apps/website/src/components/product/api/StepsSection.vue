@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
+
 import type { Locale } from '../../../i18n/translations'
 
 import { externalLinks } from '../../../config/routes'
@@ -78,6 +80,23 @@ const steps = [
         >
           {{ t('api.hero.viewDocs', locale) }}
         </BrandButton>
+      </div>
+
+      <div
+        class="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-sm text-smoke-700"
+      >
+        <Badge variant="accent" size="xs">
+          {{ t('api.steps.beta.badge', locale) }}
+        </Badge>
+        <span>{{ t('api.steps.beta.description', locale) }}</span>
+        <a
+          :href="externalLinks.serverlessBeta"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-primary-comfy-yellow font-bold tracking-widest whitespace-nowrap uppercase hover:underline"
+        >
+          {{ t('api.steps.beta.cta', locale) }}
+        </a>
       </div>
     </template>
   </CardGridSection>
