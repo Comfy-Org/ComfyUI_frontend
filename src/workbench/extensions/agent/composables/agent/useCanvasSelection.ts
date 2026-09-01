@@ -1,4 +1,4 @@
-import { ref, toValue, watch } from 'vue'
+import { getCurrentScope, onScopeDispose, ref, toValue, watch } from 'vue'
 
 import type { MaybeRefOrGetter, Ref, WatchStopHandle } from 'vue'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -90,6 +90,8 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
     },
     { immediate: true, flush: 'sync' }
   )
+
+  if (getCurrentScope()) onScopeDispose(() => stopSelectionWatch?.())
 
   function currentSignature(): string {
     return signature(toValue(options.scope ?? null), toValue(options.selection))

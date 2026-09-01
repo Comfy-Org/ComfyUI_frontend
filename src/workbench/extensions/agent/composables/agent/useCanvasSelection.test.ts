@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { effectScope, ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -50,6 +50,28 @@ describe('useCanvasSelection', () => {
     remove('1')
     enabled.value = false
     enabled.value = true
+
+    expect(staged.value).toEqual([nodeA])
+  })
+
+  it('stops a selection watcher created after enabling when its scope stops', () => {
+    const scope = effectScope()
+    const selection = ref<SelectedNode[]>([nodeA])
+    const enabled = ref(false)
+    const staged = scope.run(
+      () =>
+        useCanvasSelection({
+          selection,
+          isLive: ref(true),
+          enabled
+        }).staged
+    )
+    if (!staged) throw new Error('selection scope did not run')
+
+    enabled.value = true
+    expect(staged.value).toEqual([nodeA])
+    scope.stop()
+    selection.value = [nodeB]
 
     expect(staged.value).toEqual([nodeA])
   })
