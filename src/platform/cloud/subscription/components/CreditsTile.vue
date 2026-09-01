@@ -181,7 +181,13 @@
           </span>
         </div>
         <span class="text-sm">
-          {{ $t('subscription.reactivateToUseCredits') }}
+          {{
+            $t(
+              prepaidCreditsValue > 0
+                ? 'subscription.reactivateToUseCredits'
+                : 'subscription.planCreditsEnded'
+            )
+          }}
         </span>
       </div>
     </template>
@@ -351,14 +357,10 @@ const creditPoolTotalCompact = computed(() => {
 })
 
 const displayTotal = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
-    : totalCredits.value
+  zeroState ? formatCreditCount(0) : totalCredits.value
 )
 const displayPrepaid = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
-    : prepaidCredits.value
+  zeroState ? formatCreditCount(0) : prepaidCredits.value
 )
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
@@ -382,6 +384,7 @@ const showBar = computed(
   () =>
     isCloud &&
     showBreakdown.value &&
+    !showsInactivePlanState.value &&
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )

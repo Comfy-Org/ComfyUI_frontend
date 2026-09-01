@@ -822,9 +822,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsWorkspaceSubscribed.value = false
     renderComponent({ stubFooter: false })
 
-    expect(
-      screen.getByRole('heading', { name: 'Inactive team subscription' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(screen.getByText('Inactive')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
     await user.click(screen.getByRole('button', { name: 'Invoice history' }))
@@ -839,12 +838,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: 'Inactive team subscription' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(screen.getByText('Inactive')).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Reactivate your team plan to add more members and run workflows'
+        "You can't run workflows or add new members until this plan is active again."
       )
     ).toBeInTheDocument()
     expect(

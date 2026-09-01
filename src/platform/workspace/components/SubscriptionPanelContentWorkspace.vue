@@ -80,21 +80,21 @@
             <!-- OWNER Unsubscribed TEAM workspace -->
             <template v-if="showTeamSubscribePrompt">
               <div class="flex flex-col gap-2">
-                <h3
-                  :class="
-                    cn(
-                      'm-0 font-bold text-text-primary',
-                      showInactiveTeamSubscription ? 'text-base' : 'text-sm'
-                    )
-                  "
+                <div
+                  v-if="showInactiveTeamSubscription"
+                  class="flex items-center gap-2"
                 >
-                  {{
-                    $t(
-                      showInactiveTeamSubscription
-                        ? 'subscription.inactiveTeamTitle'
-                        : 'subscription.workspaceNotSubscribed'
-                    )
-                  }}
+                  <h3 class="m-0 text-base font-bold text-text-primary">
+                    {{ planDisplayName }}
+                  </h3>
+                  <span
+                    class="flex h-3.5 items-center rounded-full bg-secondary-background px-1.5 text-2xs/none font-semibold text-muted-foreground uppercase"
+                  >
+                    {{ $t('subscription.inactiveBadge') }}
+                  </span>
+                </div>
+                <h3 v-else class="m-0 text-sm font-bold text-text-primary">
+                  {{ $t('subscription.workspaceNotSubscribed') }}
                 </h3>
                 <div class="text-sm text-text-secondary">
                   {{

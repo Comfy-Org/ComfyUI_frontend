@@ -288,7 +288,7 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(
-      content.getByText('Reactivate your plan to use these credits')
+      content.getByText('Spendable once the plan is active again.')
     ).toBeVisible()
     await expect(
       content.getByRole('button', { name: 'Add credits' })
