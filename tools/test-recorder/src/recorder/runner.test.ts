@@ -39,6 +39,7 @@ vi.mock('../featureFlags', () => ({
 }))
 vi.mock('../ui/logger', () => ({ box: vi.fn(), info: vi.fn() }))
 
+import { storageStateKey } from './template'
 import { runRecording } from './runner'
 
 beforeEach(() => {
@@ -47,22 +48,24 @@ beforeEach(() => {
 
 describe('runRecording', () => {
   it('removes the shared legacy state before recording a custom backend', async () => {
+    const distribution = {
+      id: 'custom',
+      label: 'Custom backend',
+      hint: '',
+      script: 'dev',
+      needsLocalBackend: false,
+      backendUrl: 'http://localhost:8100/'
+    } as const
+
     await runRecording({
       testName: 'custom backend',
       projectRoot: '/project',
-      distribution: {
-        id: 'custom',
-        label: 'Custom backend',
-        hint: '',
-        script: 'dev',
-        needsLocalBackend: false,
-        backendUrl: 'http://localhost:8100/'
-      }
+      distribution
     })
 
     expect(removeLegacyCustomStorageState).toHaveBeenCalledOnce()
     expect(removeLegacyCustomStorageState).toHaveBeenCalledWith(
-      '/state/storage-state.custom-http%3A%2F%2Flocalhost%3A8100.json'
+      `/state/storage-state.${storageStateKey(distribution)}.json`
     )
   })
 })
