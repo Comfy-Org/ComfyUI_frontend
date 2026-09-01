@@ -6,20 +6,6 @@
   },
   "portedTests": [
     {
-      "path": "src/components/ui/dialog/dialog.variants.test.ts",
-      "sourceHead": "c7b14022c19d4b8b20456b50f7e661d3ecfad6e6",
-      "sourcePr": 16187,
-      "status": "expected-failure",
-      "reason": "main omits the non-maximized width inset and shared viewer/hug dialog exports asserted by the slice test"
-    },
-    {
-      "path": "src/platform/assets/composables/useModelUpload.test.ts",
-      "sourceHead": "c7b14022c19d4b8b20456b50f7e661d3ecfad6e6",
-      "sourcePr": 16187,
-      "status": "expected-failure",
-      "reason": "main still uses an inline upload dialog width cap instead of the shared hug token asserted by the slice test"
-    },
-    {
       "path": "src/platform/assets/schemas/mediaAssetSchema.test.ts",
       "sourceHead": "c7b14022c19d4b8b20456b50f7e661d3ecfad6e6",
       "sourcePr": 16187,
