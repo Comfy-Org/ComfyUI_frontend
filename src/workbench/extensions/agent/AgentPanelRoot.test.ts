@@ -2227,6 +2227,53 @@ describe('AgentPanelRoot lifecycle', () => {
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
+  it('completes the unmount teardown when ending node selection raises', async () => {
+    let resolveDraft: ((response: Response) => void) | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/threads'))
+          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/draft'))
+          return new Promise<Response>((resolve) => {
+            resolveDraft = resolve
+          })
+        return json(200, {})
+      })
+    )
+
+    const selection = await startVueNodeSelection()
+    const tabActivity = useWorkflowTabActivityStore()
+    tabActivity.setEditing('workflows/current.json')
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-slow', name: 'Slow tab' })
+    await vi.waitFor(() => expect(resolveDraft).toBeDefined())
+    expect(tabActivity.creatingTab).toBe(true)
+
+    vi.spyOn(useAgentNodeSelectionStore(), 'exit').mockImplementationOnce(
+      () => {
+        throw new Error('exit raised')
+      }
+    )
+    expect(() => selection.unmount()).toThrow('exit raised')
+
+    expect(tabActivity.editingTabPath).toBe(null)
+    expect(tabActivity.creatingTab).toBe(false)
+
+    resolveDraft?.(
+      json(200, { content: { version: 0.4, nodes: [] }, version: 1 })
+    )
+    ws.emit('agent_active_tab', { workflow_id: 'wf-late', name: 'Late tab' })
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(hostStores.workflow.tabs.get('workflows/Slow tab.json')).toBe(
+      undefined
+    )
+    expect(hostStores.workflow.tabs.get('workflows/Late tab.json')).toBe(
+      undefined
+    )
+  })
+
   it('does not cancel the in-flight turn when the panel unmounts', async () => {
     const urls: string[] = []
     const fetchMock = vi.fn(async (url: string) => {

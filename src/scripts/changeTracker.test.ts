@@ -265,9 +265,6 @@ describe('ChangeTracker', () => {
     })
 
     it('leaves updateState unguarded for direct callers', async () => {
-      // Deliberate: LinearPreview.vue calls updateState() directly and must
-      // keep working during select-only picking; only the user-facing
-      // undo()/redo() entry points carry the guard.
       const initial = createState(1)
       const tracker = createTracker(initial)
       mockCanvasState(createState(2))

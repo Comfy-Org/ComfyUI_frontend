@@ -25,6 +25,7 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
       args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
     onDrop: async (event) => {
+      // Sidebar drops insert nodes; the canvas is a picking surface while agent node-selection mode is on.
       if (isSelectOnly(comfyApp.canvas)) return
       const loc = event.location.current.input
       const dndData = event.source.data

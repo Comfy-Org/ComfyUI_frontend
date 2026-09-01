@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import type { ComponentProps } from 'vue-component-type-helpers'
+import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
@@ -18,6 +19,7 @@ import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 
 import NodeHeader from './NodeHeader.vue'
 
@@ -291,6 +293,31 @@ describe('NodeHeader.vue', () => {
       await user.click(screen.getByTestId('node-selection-checkbox'))
 
       expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(
+        toNodeId('1'),
+        true
+      )
+    })
+
+    it('toggles once when the node itself also listens for the pointer up', async () => {
+      const { global } = createGlobalConfig()
+      const nodeData = makeNodeData()
+      useAgentNodeSelectionStore().isActive = true
+      const NodeWithPointerHandlers = defineComponent({
+        setup() {
+          const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
+          return () =>
+            h('div', pointerHandlers, [
+              h(NodeHeader, { nodeData, collapsed: false })
+            ])
+        }
+      })
+      render(NodeWithPointerHandlers, { global })
+
+      await userEvent
+        .setup()
+        .click(screen.getByTestId('node-selection-checkbox'))
+
+      expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledExactlyOnceWith(
         toNodeId('1'),
         true
       )
