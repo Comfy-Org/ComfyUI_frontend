@@ -12,7 +12,6 @@ import type {
 } from '@/stores/maskEditorDataStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
@@ -278,6 +277,8 @@ export function useMaskEditorSaver() {
     node: LGraphNode,
     outputData: EditorOutputData
   ): void {
+    if (!node.graph) return
+
     const mainRef = outputData.paintedMaskedImage.ref
 
     writeImageWidgetValue(
@@ -286,11 +287,13 @@ export function useMaskEditorSaver() {
     )
 
     node.imgs = undefined
-    const annotatedPath = createAnnotatedPath(mainRef.filename, {
-      subfolder: mainRef.subfolder,
-      rootFolder: isResultItemType(mainRef.type) ? mainRef.type : undefined
-    })
-    nodeOutputStore.setNodeOutputs(node, annotatedPath, { folder: 'input' })
+    nodeOutputStore.replaceNodeOutputImages(node, [
+      {
+        filename: mainRef.filename,
+        subfolder: mainRef.subfolder,
+        type: isResultItemType(mainRef.type) ? mainRef.type : 'input'
+      }
+    ])
     node.graph?.setDirtyCanvas(true)
   }
 
