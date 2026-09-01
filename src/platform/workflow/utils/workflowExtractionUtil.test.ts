@@ -159,10 +159,6 @@ describe('extractWorkflowFromAsset', () => {
 describe('extractApiPromptFromAsset', () => {
   const apiPrompt = { '1': { class_type: 'KSampler', inputs: {} } }
 
-  afterEach(() => {
-    vi.resetAllMocks()
-  })
-
   it('returns the stored API graph for an output asset', async () => {
     vi.mocked(getOutputAssetMetadata).mockReturnValue(jobMetadata)
     vi.mocked(getJobApiPrompt).mockResolvedValue(apiPrompt)
