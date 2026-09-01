@@ -416,6 +416,20 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain(
       'Spendable once the plan is active again.'
     )
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+  })
+
+  it('drops top-up on an inactive sales-managed plan once the server clears it', () => {
+    activeProSubscription()
+    state.canTopUp = false
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    renderTile({ inactivePlan: true })
+
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
