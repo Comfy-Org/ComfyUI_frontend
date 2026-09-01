@@ -111,6 +111,7 @@ onMounted(() => {
     <div
       v-else
       :key="formId"
+      data-testid="hubspot-form-embed"
       class="hs-form-html"
       :style="hubspotFormStyles"
       :data-region="HUBSPOT_REGION"
