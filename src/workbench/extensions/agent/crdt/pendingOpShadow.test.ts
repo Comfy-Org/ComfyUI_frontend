@@ -36,6 +36,14 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     expect(surface.isPending(node('n2'))).toBe(false)
   })
 
+  it('rejects malformed target kinds instead of sharing an undefined key', () => {
+    const surface = createPendingOpShadowSurface()
+    const malformed = { kind: 'group', nodeId: 'n1' } as unknown as ShadowTarget
+    expect(() => surface.isPending(malformed)).toThrow(
+      'Unsupported shadow target'
+    )
+  })
+
   it('revert removes the shadow and returns it; unknown id is a no-op', () => {
     const surface = createPendingOpShadowSurface()
     surface.show('op-1', [node('n1')])
