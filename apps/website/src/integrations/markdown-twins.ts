@@ -83,9 +83,7 @@ export async function writeMarkdownTwins(
     const route = `/${pathname}`
     const twinPath = markdownTwinPath(route)
     const target = join(root, twinPath)
-    const html = await readBuiltPage(root, pathname)
-
-    if (!html || isExcludedFromSitemap(new URL(route, site).href)) {
+    if (isExcludedFromSitemap(new URL(route, site).href)) {
       report.skipped.push(twinPath)
       continue
     }
@@ -94,6 +92,11 @@ export async function writeMarkdownTwins(
       // this twin. It is a real, current twin — section indexes and
       // llms-full.txt must still include it, just not regenerate it here.
       report.existing.push(twinPath)
+      continue
+    }
+    const html = await readBuiltPage(root, pathname)
+    if (!html) {
+      report.skipped.push(twinPath)
       continue
     }
 

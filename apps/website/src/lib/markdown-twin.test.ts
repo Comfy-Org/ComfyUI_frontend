@@ -159,6 +159,7 @@ describe('writeMarkdownTwins', () => {
     await mkdir(join(root, 'api'), { recursive: true })
     await writeFile(join(root, 'api', 'index.html'), page('API'))
     await writeFile(join(root, 'api.md'), '# hand-written\n')
+    await writeFile(join(root, 'endpoint-only.md'), '# endpoint-only\n')
 
     const report = await writeMarkdownTwins(root, [
       'cli/',
@@ -166,6 +167,7 @@ describe('writeMarkdownTwins', () => {
       '404',
       'payment/success/',
       'api/',
+      'endpoint-only/',
       'missing/'
     ])
 
@@ -173,13 +175,16 @@ describe('writeMarkdownTwins', () => {
     // A twin a page endpoint already wrote (api.md) is a real, current twin,
     // not a gap — it belongs in `existing`, not lumped in with the pages
     // that genuinely have no twin (noindex, or no built HTML).
-    expect(report.existing).toEqual(['/api.md'])
+    expect(report.existing).toEqual(['/api.md', '/endpoint-only.md'])
     expect(report.skipped).toEqual(['/payment/success.md', '/missing.md'])
     expect(await readFile(join(root, 'cli.md'), 'utf8')).toContain(
       'canonical: https://comfy.org/cli/\nlang: en\nindex: https://comfy.org/llms.txt\n---\n\n# CLI\n'
     )
     expect(await readFile(join(root, 'api.md'), 'utf8')).toBe(
       '# hand-written\n'
+    )
+    expect(await readFile(join(root, 'endpoint-only.md'), 'utf8')).toBe(
+      '# endpoint-only\n'
     )
   })
 
