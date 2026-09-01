@@ -5,8 +5,9 @@ inputs:
     description: >-
       Frontend commit the built artifact must declare. Callers that check out
       the workflow SHA should pass it. Callers that check out some other ref
-      have no value to assert against and may omit it: the gate and fixture
-      checks still run, only the provenance assertion is skipped.
+      may omit it, in which case the provenance assertion falls back to this
+      checkout's own HEAD — the same value the build embeds, so it degrades to
+      a tautology. The distribution, gate, and fixture assertions are unaffected.
     required: false
     default: ''
 runs:
@@ -20,7 +21,8 @@ runs:
 
     - name: Verify cloud frontend
       shell: bash
-      # Never skip: HEAD still proves dist/ is this build, not a leftover one.
+      # Never skip. Without expected_commit the provenance leg proves nothing;
+      # the distribution assertion is what rejects a leftover localhost dist/.
       run: |
         set -euo pipefail
         EXPECTED_FRONTEND_COMMIT="${EXPECTED_FRONTEND_COMMIT:-$(git rev-parse HEAD)}" \

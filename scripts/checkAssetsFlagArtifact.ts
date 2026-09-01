@@ -60,8 +60,9 @@ function assetApiGates(chunks: ReadonlyArray<string>): string {
   if (gates.length !== 1) {
     throw new Error(
       `Expected one Asset API gate in the build, found ${gates.length}. ` +
-        'The gate is located by its declared name: check that it was not ' +
-        'renamed, inlined, or duplicated across chunks.'
+        'The gate is located by its declared name, which survives minification ' +
+        'only while rolldown output.keepNames is set: check that flag, and ' +
+        'that the gate was not renamed, inlined, or duplicated across chunks.'
     )
   }
 
@@ -131,6 +132,13 @@ export function checkAssetsFlagArtifact(directory = 'dist'): void {
   const textAssets = artifactFiles(directory)
     .filter((path) => TEXT_ASSET_EXTENSIONS.has(extname(path)))
     .map((path) => ({ path, source: readFileSync(path, 'utf8') }))
+  if (!textAssets.some(({ path }) => extname(path) === '.map')) {
+    throw new Error(
+      'No sourcemap in the artifact. Every fixture marker except the ' +
+        'sentinel is a module path, which survives only in a .map, so this ' +
+        'scan would silently cover almost nothing. Build with sourcemaps.'
+    )
+  }
   const chunks = textAssets.map(({ source }) => source)
   const executableChunks = textAssets
     .filter(({ path }) => EXECUTABLE_ASSET_EXTENSIONS.has(extname(path)))

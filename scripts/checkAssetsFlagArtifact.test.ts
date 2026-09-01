@@ -173,15 +173,22 @@ describe('assertBuildProvenance', () => {
   )
 
   it('rejects malformed JSON manifests', () => {
-    expect(() => assertBuildProvenance('{', commit, 'desktop')).toThrow()
+    expect(() => assertBuildProvenance('{', commit, 'desktop')).toThrow(
+      SyntaxError
+    )
   })
 
   it.for([
-    JSON.stringify({ distribution: 'desktop' }),
-    JSON.stringify({ commit })
-  ])('rejects manifests missing a required field: %s', (manifest) => {
-    expect(() => assertBuildProvenance(manifest, commit, 'desktop')).toThrow()
-  })
+    [JSON.stringify({ distribution: 'desktop' }), 'expected frontend commit'],
+    [JSON.stringify({ commit }), 'Build distribution is undefined']
+  ])(
+    'rejects manifests missing a required field: %s',
+    ([manifest, message]) => {
+      expect(() => assertBuildProvenance(manifest, commit, 'desktop')).toThrow(
+        message
+      )
+    }
+  )
 })
 
 describe('assertNoTestFixtures', () => {
@@ -219,6 +226,10 @@ describe('checkAssetsFlagArtifact', () => {
     writeFileSync(
       join(directory, 'assets', 'chunk.js'),
       'function isAssetAPIEnabled() {\n  return false;\n}'
+    )
+    writeFileSync(
+      join(directory, 'assets', 'chunk.js.map'),
+      JSON.stringify({ version: 3, sources: ['../../src/main.ts'] })
     )
     vi.stubEnv('EXPECTED_FRONTEND_COMMIT', commit)
     vi.stubEnv('EXPECTED_DISTRIBUTION', 'localhost')
@@ -259,6 +270,14 @@ describe('checkAssetsFlagArtifact', () => {
 
     expect(() => checkAssetsFlagArtifact(directory)).toThrow(
       'Build contains test fixture marker: browser_tests/fixtures/'
+    )
+  })
+
+  it('refuses an artifact built without sourcemaps', () => {
+    rmSync(join(directory, 'assets', 'chunk.js.map'))
+
+    expect(() => checkAssetsFlagArtifact(directory)).toThrow(
+      'No sourcemap in the artifact'
     )
   })
 
