@@ -1,6 +1,7 @@
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LGraphIcon } from './LGraphIcon'
 import type { LGraphIconOptions } from './LGraphIcon'
+import { cachedMeasureText } from './utils/textMeasureCache'
 
 export enum BadgePosition {
   TopLeft = 'top-left',
@@ -80,11 +81,11 @@ export class LGraphBadge {
         iconWidth = this.icon.size + this.padding
       } else if (this.icon.unicode) {
         ctx.font = `${this.icon.fontSize}px '${this.icon.fontFamily}'`
-        iconWidth = ctx.measureText(this.icon.unicode).width + this.padding
+        iconWidth = cachedMeasureText(ctx, this.icon.unicode) + this.padding
       }
     }
     ctx.font = `${this.fontSize}px sans-serif`
-    const textWidth = this.text ? ctx.measureText(this.text).width : 0
+    const textWidth = this.text ? cachedMeasureText(ctx, this.text) : 0
     ctx.font = font
     return iconWidth + textWidth + this.padding * 2
   }

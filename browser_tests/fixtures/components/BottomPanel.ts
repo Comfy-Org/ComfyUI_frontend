@@ -1,5 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
+import { TestIds } from '@e2e/fixtures/selectors'
+
 class ShortcutsTab {
   readonly essentialsTab: Locator
   readonly viewControlsTab: Locator
@@ -16,11 +18,34 @@ class ShortcutsTab {
   }
 }
 
+export class LogsTab {
+  readonly tab: Locator
+  readonly terminalRoot: Locator
+  readonly terminalHost: Locator
+  readonly copyButton: Locator
+  readonly errorMessage: Locator
+  readonly loadingSpinner: Locator
+  readonly xtermScreen: Locator
+
+  constructor(readonly page: Page) {
+    this.tab = page.getByRole('tab', { name: /Logs/i })
+    this.terminalRoot = page.getByTestId(TestIds.terminal.root)
+    this.terminalHost = page.getByTestId(TestIds.terminal.host)
+    this.copyButton = page.getByTestId(TestIds.terminal.copyButton)
+    this.errorMessage = page.getByTestId(TestIds.terminal.errorMessage)
+    this.loadingSpinner = page.getByTestId(TestIds.terminal.loadingSpinner)
+    this.xtermScreen = this.terminalHost.locator('.xterm-screen')
+  }
+}
+
 export class BottomPanel {
   readonly root: Locator
   readonly keyboardShortcutsButton: Locator
   readonly toggleButton: Locator
+  readonly closeButton: Locator
+  readonly resizeGutter: Locator
   readonly shortcuts: ShortcutsTab
+  readonly logs: LogsTab
 
   constructor(readonly page: Page) {
     this.root = page.locator('.bottom-panel')
@@ -30,6 +55,37 @@ export class BottomPanel {
     this.toggleButton = page.getByRole('button', {
       name: /Toggle Bottom Panel/i
     })
+    this.closeButton = this.root.getByRole('button', { name: /^Close$/i })
+    // PrimeVue renders the splitter gutter outside the panel body.
+    this.resizeGutter = page.locator(
+      '.splitter-overlay-bottom > .p-splitter-gutter'
+    )
     this.shortcuts = new ShortcutsTab(page)
+    this.logs = new LogsTab(page)
+  }
+
+  async toggleLogs() {
+    await this.toggleButton.click()
+    await this.logs.tab.waitFor({ state: 'visible' })
+    if ((await this.logs.tab.getAttribute('aria-selected')) !== 'true') {
+      await this.logs.tab.click()
+    }
+  }
+
+  async resizeByDragging(deltaY: number): Promise<void> {
+    const gutterBox = await this.resizeGutter.boundingBox()
+    if (!gutterBox) {
+      throw new Error('Bottom panel resize gutter should have layout')
+    }
+
+    const gutterCenterX = gutterBox.x + gutterBox.width / 2
+    const gutterCenterY = gutterBox.y + gutterBox.height / 2
+
+    await this.page.mouse.move(gutterCenterX, gutterCenterY)
+    await this.page.mouse.down()
+    await this.page.mouse.move(gutterCenterX, gutterCenterY + deltaY, {
+      steps: 5
+    })
+    await this.page.mouse.up()
   }
 }

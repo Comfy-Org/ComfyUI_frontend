@@ -1,5 +1,6 @@
-// TODO: Fix these tests after migration
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -17,11 +18,17 @@ import type {
 
 import {
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-describe.skip('Subgraph slot connections', () => {
-  describe.skip('SubgraphInput connections', () => {
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
+
+describe('Subgraph slot connections', () => {
+  describe('SubgraphInput connections', () => {
     it('should connect to compatible regular input slots', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'test_input', type: 'number' }]
@@ -84,7 +91,7 @@ describe.skip('Subgraph slot connections', () => {
     })
   })
 
-  describe.skip('SubgraphOutput connections', () => {
+  describe('SubgraphOutput connections', () => {
     it('should connect from compatible regular output slots', () => {
       const subgraph = createTestSubgraph()
       const node = new LGraphNode('TestNode')
@@ -116,7 +123,7 @@ describe.skip('Subgraph slot connections', () => {
     })
   })
 
-  describe.skip('LinkConnector dragging behavior', () => {
+  describe('LinkConnector dragging behavior', () => {
     it('should drag existing link when dragging from input slot connected to subgraph input node', () => {
       // Create a subgraph with one input
       const subgraph = createTestSubgraph({
@@ -168,7 +175,7 @@ describe.skip('Subgraph slot connections', () => {
     })
   })
 
-  describe.skip('Type compatibility', () => {
+  describe('Type compatibility', () => {
     it('should respect type compatibility for SubgraphInput connections', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'number_input', type: 'number' }]
@@ -223,7 +230,7 @@ describe.skip('Subgraph slot connections', () => {
     })
   })
 
-  describe.skip('Type guards', () => {
+  describe('Type guards', () => {
     it('should correctly identify SubgraphInput', () => {
       const subgraph = createTestSubgraph()
       const subgraphInput = subgraph.addInput('value', 'number')
@@ -251,7 +258,7 @@ describe.skip('Subgraph slot connections', () => {
     })
   })
 
-  describe.skip('Nested subgraphs', () => {
+  describe('Nested subgraphs', () => {
     it('should handle dragging from SubgraphInput in nested subgraphs', () => {
       const parentSubgraph = createTestSubgraph({
         inputs: [{ name: 'parent_input', type: 'number' }],

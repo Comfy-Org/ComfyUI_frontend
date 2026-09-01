@@ -1,5 +1,7 @@
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
+import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -40,84 +42,112 @@ function addMultilineWidget(
   })
 
   widget.element = inputEl
-  widget.inputEl = inputEl
+
+  /** @deprecated Use {@link widget.element} instead (renamed in PR #8594). */
+  defineDeprecatedProperty(
+    widget,
+    'inputEl',
+    'element',
+    'widget.inputEl is deprecated. Use widget.element instead.'
+  )
   widget.options.minNodeSize = [400, 200]
 
-  inputEl.addEventListener('input', (event) => {
-    if (event.target instanceof HTMLTextAreaElement) {
-      widget.value = event.target.value
-    }
-    widget.callback?.(widget.value)
-  })
+  const controller = new AbortController()
+  const { signal } = controller
+
+  inputEl.addEventListener(
+    'input',
+    (event) => {
+      if (event.target instanceof HTMLTextAreaElement) {
+        widget.value = event.target.value
+      }
+      widget.callback?.(widget.value)
+    },
+    { signal }
+  )
 
   // Allow middle mouse button panning
-  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseDown(event)
-    }
-  })
+  inputEl.addEventListener(
+    'pointerdown',
+    (event: PointerEvent) => {
+      if (event.button === 1) app.canvas.processMouseDown(event)
+    },
+    { signal }
+  )
 
-  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if ((event.buttons & 4) === 4) {
-      app.canvas.processMouseMove(event)
-    }
-  })
+  inputEl.addEventListener(
+    'pointermove',
+    (event: PointerEvent) => {
+      if ((event.buttons & 4) === 4) app.canvas.processMouseMove(event)
+    },
+    { signal }
+  )
 
-  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
-    if (event.button === 1) {
-      app.canvas.processMouseUp(event)
-    }
-  })
+  inputEl.addEventListener(
+    'pointerup',
+    (event: PointerEvent) => {
+      if (event.button === 1) app.canvas.processMouseUp(event)
+    },
+    { signal }
+  )
 
-  inputEl.addEventListener('wheel', (event: WheelEvent) => {
-    const gesturesEnabled = useSettingStore().get(
-      'LiteGraph.Pointer.TrackpadGestures'
-    )
-    const deltaX = event.deltaX
-    const deltaY = event.deltaY
+  inputEl.addEventListener(
+    'wheel',
+    (event: WheelEvent) => {
+      const gesturesEnabled = useSettingStore().get(
+        'LiteGraph.Pointer.TrackpadGestures'
+      )
+      const deltaX = event.deltaX
+      const deltaY = event.deltaY
 
-    const canScrollY = inputEl.scrollHeight > inputEl.clientHeight
-    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
+      const canScrollY = inputEl.scrollHeight > inputEl.clientHeight
+      const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
 
-    // Prevent pinch zoom from zooming the page
-    if (event.ctrlKey) {
+      // Prevent pinch zoom from zooming the page
+      if (event.ctrlKey) {
+        event.preventDefault()
+        event.stopPropagation()
+        app.canvas.processMouseWheel(event)
+        return
+      }
+
+      // Detect if this is likely a trackpad gesture vs mouse wheel
+      // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
+      // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
+      const isLikelyTrackpad =
+        Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
+
+      // Trackpad gestures: when enabled, trackpad panning goes to canvas
+      if (gesturesEnabled && isLikelyTrackpad) {
+        event.preventDefault()
+        event.stopPropagation()
+        app.canvas.processMouseWheel(event)
+        return
+      }
+
+      // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
+      if (isHorizontal) {
+        event.preventDefault()
+        event.stopPropagation()
+        app.canvas.processMouseWheel(event)
+        return
+      }
+
+      // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
+      if (canScrollY) {
+        event.stopPropagation()
+        return
+      }
+
+      // If textarea can't scroll vertically, pass to canvas
       event.preventDefault()
-      event.stopPropagation()
       app.canvas.processMouseWheel(event)
-      return
-    }
+    },
+    { signal }
+  )
 
-    // Detect if this is likely a trackpad gesture vs mouse wheel
-    // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
-    // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
-    const isLikelyTrackpad =
-      Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
-
-    // Trackpad gestures: when enabled, trackpad panning goes to canvas
-    if (gesturesEnabled && isLikelyTrackpad) {
-      event.preventDefault()
-      event.stopPropagation()
-      app.canvas.processMouseWheel(event)
-      return
-    }
-
-    // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
-    if (isHorizontal) {
-      event.preventDefault()
-      event.stopPropagation()
-      app.canvas.processMouseWheel(event)
-      return
-    }
-
-    // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
-    if (canScrollY) {
-      event.stopPropagation()
-      return
-    }
-
-    // If textarea can't scroll vertically, pass to canvas
-    event.preventDefault()
-    app.canvas.processMouseWheel(event)
+  widget.onRemove = useChainCallback(widget.onRemove, () => {
+    controller.abort()
   })
 
   return widget

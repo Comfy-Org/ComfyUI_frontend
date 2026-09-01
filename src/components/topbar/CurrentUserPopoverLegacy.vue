@@ -41,12 +41,18 @@
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
       }}</span>
-      <i
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        class="mr-auto icon-[lucide--circle-help] cursor-help text-base text-muted-foreground"
-      />
       <Button
-        v-if="isFreeTier"
+        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
+        variant="muted-textonly"
+        size="icon-sm"
+        class="mr-auto"
+        :aria-label="$t('credits.unified.tooltip')"
+        data-testid="credits-info-button"
+      >
+        <i class="icon-[lucide--circle-help]" />
+      </Button>
+      <Button
+        v-if="isCloud && isFreeTier"
         variant="gradient"
         size="sm"
         data-testid="upgrade-to-add-credits-button"
@@ -66,7 +72,7 @@
       </Button>
     </div>
 
-    <div v-else class="flex justify-center px-4">
+    <div v-else-if="isCloud" class="flex justify-center px-4">
       <SubscribeButton
         :fluid="false"
         :label="$t('subscription.subscribeToComfyCloud')"
@@ -91,6 +97,7 @@
     </div>
 
     <div
+      v-if="isCloud"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -155,7 +162,7 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -164,7 +171,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogService } from '@/services/dialogService'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const emit = defineEmits<{
   close: []
@@ -174,8 +181,8 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
-const authActions = useFirebaseAuthActions()
-const authStore = useFirebaseAuthStore()
+const authActions = useAuthActions()
+const authStore = useAuthStore()
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {

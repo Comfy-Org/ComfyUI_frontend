@@ -1,11 +1,13 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import AssetsListItem from './AssetsListItem.vue'
 
 describe('AssetsListItem', () => {
   it('renders video element with play overlay for video previews', () => {
-    const wrapper = mount(AssetsListItem, {
+    const { container } = render(AssetsListItem, {
       props: {
         previewUrl: 'https://example.com/preview.mp4',
         previewAlt: 'clip.mp4',
@@ -13,17 +15,22 @@ describe('AssetsListItem', () => {
       }
     })
 
-    const video = wrapper.find('video')
-    expect(video.exists()).toBe(true)
-    expect(video.attributes('src')).toBe('https://example.com/preview.mp4')
-    expect(video.attributes('preload')).toBe('metadata')
-    expect(wrapper.find('img').exists()).toBe(false)
-    expect(wrapper.find('.bg-black\\/15').exists()).toBe(true)
-    expect(wrapper.find('.icon-\\[lucide--play\\]').exists()).toBe(true)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
+    const video = container.querySelector('video')
+    expect(video).toBeInTheDocument()
+    expect(video).toHaveAttribute('src', 'https://example.com/preview.mp4')
+    expect(video).toHaveAttribute('preload', 'metadata')
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play overlay styling
+    expect(container.querySelector('.bg-black\\/15')).toBeInTheDocument()
+    expect(
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play icon styling
+      container.querySelector('.icon-\\[lucide--play\\]')
+    ).toBeInTheDocument()
   })
 
   it('does not show play overlay for non-video previews', () => {
-    const wrapper = mount(AssetsListItem, {
+    const { container } = render(AssetsListItem, {
       props: {
         previewUrl: 'https://example.com/preview.jpg',
         previewAlt: 'image.png',
@@ -31,33 +38,41 @@ describe('AssetsListItem', () => {
       }
     })
 
-    expect(wrapper.find('img').exists()).toBe(true)
-    expect(wrapper.find('video').exists()).toBe(false)
-    expect(wrapper.find('.icon-\\[lucide--play\\]').exists()).toBe(false)
+    expect(screen.getByRole('img')).toBeInTheDocument()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- no ARIA role for <video> in happy-dom
+    expect(container.querySelector('video')).not.toBeInTheDocument()
+    expect(
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- CSS class query for play icon styling
+      container.querySelector('.icon-\\[lucide--play\\]')
+    ).not.toBeInTheDocument()
   })
 
   it('emits preview-click when preview is clicked', async () => {
-    const wrapper = mount(AssetsListItem, {
+    const user = userEvent.setup()
+    const { emitted } = render(AssetsListItem, {
       props: {
         previewUrl: 'https://example.com/preview.jpg',
         previewAlt: 'image.png'
       }
     })
 
-    await wrapper.find('img').trigger('click')
+    await user.click(screen.getByRole('img'))
 
-    expect(wrapper.emitted('preview-click')).toHaveLength(1)
+    expect(emitted()['preview-click']).toHaveLength(1)
   })
 
   it('emits preview-click when fallback icon is clicked', async () => {
-    const wrapper = mount(AssetsListItem, {
+    const user = userEvent.setup()
+    const { container, emitted } = render(AssetsListItem, {
       props: {
         iconName: 'icon-[lucide--box]'
       }
     })
 
-    await wrapper.find('i').trigger('click')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- aria-hidden icon, no semantic query available
+    const icon = container.querySelector('i')!
+    await user.click(icon)
 
-    expect(wrapper.emitted('preview-click')).toHaveLength(1)
+    expect(emitted()['preview-click']).toHaveLength(1)
   })
 })

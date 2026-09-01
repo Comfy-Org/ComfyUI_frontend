@@ -250,61 +250,125 @@ function readSessionPointer<T extends { workspaceId: string }>(
 
 /**
  * Reads the active path pointer from sessionStorage.
- * Falls back to workspace-based search when clientId changes after reload.
+ * Falls back to workspace-based search when clientId changes after reload,
+ * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readActivePath(
   clientId: string,
   targetWorkspaceId?: string
 ): ActivePathPointer | null {
-  return readSessionPointer<ActivePathPointer>(
-    StorageKeys.activePath(clientId),
-    StorageKeys.prefixes.activePath,
-    targetWorkspaceId
+  return (
+    readSessionPointer<ActivePathPointer>(
+      StorageKeys.activePath(clientId),
+      StorageKeys.prefixes.activePath,
+      targetWorkspaceId
+    ) ??
+    (targetWorkspaceId
+      ? readLocalPointer<ActivePathPointer>(
+          StorageKeys.lastActivePath(targetWorkspaceId),
+          isValidActivePathPointer
+        )
+      : null)
   )
 }
 
 /**
- * Writes the active path pointer to sessionStorage.
+ * Writes the active path pointer to both sessionStorage (tab-scoped)
+ * and localStorage (survives browser restart).
  */
 export function writeActivePath(
   clientId: string,
   pointer: ActivePathPointer
 ): void {
-  try {
-    const key = StorageKeys.activePath(clientId)
-    sessionStorage.setItem(key, JSON.stringify(pointer))
-  } catch {
-    // Best effort - ignore errors
-  }
+  const json = JSON.stringify(pointer)
+  writeStorage(sessionStorage, StorageKeys.activePath(clientId), json)
+  writeStorage(
+    localStorage,
+    StorageKeys.lastActivePath(pointer.workspaceId),
+    json
+  )
 }
 
 /**
  * Reads the open paths pointer from sessionStorage.
- * Falls back to workspace-based search when clientId changes after reload.
+ * Falls back to workspace-based search when clientId changes after reload,
+ * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readOpenPaths(
   clientId: string,
   targetWorkspaceId?: string
 ): OpenPathsPointer | null {
-  return readSessionPointer<OpenPathsPointer>(
-    StorageKeys.openPaths(clientId),
-    StorageKeys.prefixes.openPaths,
-    targetWorkspaceId
+  return (
+    readSessionPointer<OpenPathsPointer>(
+      StorageKeys.openPaths(clientId),
+      StorageKeys.prefixes.openPaths,
+      targetWorkspaceId
+    ) ??
+    (targetWorkspaceId
+      ? readLocalPointer<OpenPathsPointer>(
+          StorageKeys.lastOpenPaths(targetWorkspaceId),
+          isValidOpenPathsPointer
+        )
+      : null)
   )
 }
 
 /**
- * Writes the open paths pointer to sessionStorage.
+ * Writes the open paths pointer to both sessionStorage (tab-scoped)
+ * and localStorage (survives browser restart).
  */
 export function writeOpenPaths(
   clientId: string,
   pointer: OpenPathsPointer
 ): void {
+  const json = JSON.stringify(pointer)
+  writeStorage(sessionStorage, StorageKeys.openPaths(clientId), json)
+  writeStorage(
+    localStorage,
+    StorageKeys.lastOpenPaths(pointer.workspaceId),
+    json
+  )
+}
+
+function hasWorkspaceId(obj: Record<string, unknown>): boolean {
+  return typeof obj.workspaceId === 'string'
+}
+
+function isValidActivePathPointer(value: unknown): value is ActivePathPointer {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return hasWorkspaceId(obj) && typeof obj.path === 'string'
+}
+
+function isValidOpenPathsPointer(value: unknown): value is OpenPathsPointer {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return (
+    hasWorkspaceId(obj) &&
+    Array.isArray(obj.paths) &&
+    typeof obj.activeIndex === 'number'
+  )
+}
+
+function readLocalPointer<T>(
+  key: string,
+  validate: (value: unknown) => value is T
+): T | null {
   try {
-    const key = StorageKeys.openPaths(clientId)
-    sessionStorage.setItem(key, JSON.stringify(pointer))
+    const json = localStorage.getItem(key)
+    if (!json) return null
+    const parsed = JSON.parse(json)
+    return validate(parsed) ? parsed : null
   } catch {
-    // Best effort - ignore errors
+    return null
+  }
+}
+
+function writeStorage(storage: Storage, key: string, value: string): void {
+  try {
+    storage.setItem(key, value)
+  } catch {
+    // Best effort — silently degrade when storage is full or unavailable
   }
 }
 
@@ -317,7 +381,9 @@ export function clearAllV2Storage(): void {
 
   const prefixes = [
     StorageKeys.prefixes.draftIndex,
-    StorageKeys.prefixes.draftPayload
+    StorageKeys.prefixes.draftPayload,
+    StorageKeys.prefixes.lastActivePath,
+    StorageKeys.prefixes.lastOpenPaths
   ]
 
   try {

@@ -8,8 +8,8 @@ import { usePromotionStore } from '@/stores/promotionStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
-  interiorNodeId: string
-  widgetName: string
+  sourceNodeId: string
+  sourceWidgetName: string
   type: 'image' | 'video' | 'audio'
   urls: string[]
 }
@@ -30,25 +30,29 @@ export function usePromotedPreviews(
     if (!(node instanceof SubgraphNode)) return []
 
     const entries = promotionStore.getPromotions(node.rootGraph.id, node.id)
-    const pseudoEntries = entries.filter((e) => e.widgetName.startsWith('$$'))
+    const pseudoEntries = entries.filter((e) =>
+      e.sourceWidgetName.startsWith('$$')
+    )
     if (!pseudoEntries.length) return []
 
     const previews: PromotedPreview[] = []
 
     for (const entry of pseudoEntries) {
-      const interiorNode = node.subgraph.getNodeById(entry.interiorNodeId)
+      const interiorNode = node.subgraph.getNodeById(entry.sourceNodeId)
       if (!interiorNode) continue
 
-      // Read from the reactive nodeOutputs ref to establish Vue
-      // dependency tracking. getNodeImageUrls reads from the
-      // non-reactive app.nodeOutputs, so without this access the
-      // computed would never re-evaluate when outputs change.
+      // Read from both reactive refs to establish Vue dependency
+      // tracking. getNodeImageUrls reads from non-reactive
+      // app.nodeOutputs / app.nodePreviewImages, so without this
+      // access the computed would never re-evaluate.
       const locatorId = createNodeLocatorId(
         node.subgraph.id,
-        entry.interiorNodeId
+        entry.sourceNodeId
       )
-      const _reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
-      if (!_reactiveOutputs?.images?.length) continue
+      const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
+      const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
+      if (!reactiveOutputs?.images?.length && !reactivePreviews?.length)
+        continue
 
       const urls = nodeOutputStore.getNodeImageUrls(interiorNode)
       if (!urls?.length) continue
@@ -61,8 +65,8 @@ export function usePromotedPreviews(
             : 'image'
 
       previews.push({
-        interiorNodeId: entry.interiorNodeId,
-        widgetName: entry.widgetName,
+        sourceNodeId: entry.sourceNodeId,
+        sourceWidgetName: entry.sourceWidgetName,
         type,
         urls
       })

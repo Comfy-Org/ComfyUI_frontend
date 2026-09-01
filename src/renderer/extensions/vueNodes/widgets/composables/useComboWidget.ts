@@ -6,6 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { isCloud } from '@/platform/distribution/types'
 import type {
@@ -104,6 +105,25 @@ const addMultiSelectWidget = (
   return widget
 }
 
+/**
+ * Resolve the default value for a cloud asset widget.
+ * Priority: inputSpec.default (if present in cloud assets) → first cloud
+ * asset → undefined (shows placeholder).
+ */
+function resolveCloudDefault(
+  nodeType: string,
+  specDefault: string | undefined
+): string | undefined {
+  const assets = useAssetsStore().getAssets(nodeType)
+  if (specDefault != null) {
+    const inAssets = assets.some((a) => getAssetFilename(a) === specDefault)
+    if (inAssets) return specDefault
+  }
+  // empty filename → undefined (shows placeholder)
+  const filename = assets.length ? getAssetFilename(assets[0]) : undefined
+  return filename || undefined
+}
+
 function createAssetBrowserWidget(
   node: LGraphNode,
   inputSpec: ComboInputSpec,
@@ -195,7 +215,14 @@ const addComboWidget = (
 
   if (isCloud) {
     if (assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)) {
-      return createAssetBrowserWidget(node, inputSpec, defaultValue)
+      // Default from cloud assets, not from server combo options.
+      // Server options list local files that may not exist in the user's
+      // cloud asset library, leading to missing-model errors on undo/reload.
+      const cloudDefault = resolveCloudDefault(
+        node.comfyClass ?? '',
+        inputSpec.default
+      )
+      return createAssetBrowserWidget(node, inputSpec, cloudDefault)
     }
 
     if (NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']) {

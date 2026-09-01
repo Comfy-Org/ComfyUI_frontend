@@ -6,10 +6,24 @@ import type { Ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
 import { api } from '@/scripts/api'
+
+/**
+ * Checks whether a template is visible for the given set of distributions.
+ * Templates without `includeOnDistributions` are visible everywhere.
+ */
+function isTemplateVisibleForDistributions(
+  template: TemplateInfo,
+  distributions: TemplateIncludeOnDistributionEnum[]
+): boolean {
+  if (!template.includeOnDistributions?.length) return true
+  return distributions.some((d) => template.includeOnDistributions!.includes(d))
+}
 
 // Fuse.js configuration for fuzzy search
 const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
@@ -26,10 +40,10 @@ const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
 }
 
 export function useTemplateFiltering(
-  templates: Ref<TemplateInfo[]> | TemplateInfo[],
-  currentScope?: Ref<string | null>
+  templates: Ref<TemplateInfo[]> | TemplateInfo[]
 ) {
   const settingStore = useSettingStore()
+  const systemStatsStore = useSystemStatsStore()
   const rankingStore = useTemplateRankingStore()
 
   const searchQuery = ref('')
@@ -59,11 +73,40 @@ export function useTemplateFiltering(
     return Array.isArray(templateData) ? templateData : []
   })
 
-  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions.value))
+  const distributions = computed<TemplateIncludeOnDistributionEnum[]>(() => {
+    switch (__DISTRIBUTION__) {
+      case 'cloud':
+        return [TemplateIncludeOnDistributionEnum.Cloud]
+      case 'localhost':
+        return [TemplateIncludeOnDistributionEnum.Local]
+      case 'desktop':
+      default:
+        if (systemStatsStore.systemStats?.system.os === 'darwin') {
+          return [
+            TemplateIncludeOnDistributionEnum.Desktop,
+            TemplateIncludeOnDistributionEnum.Mac
+          ]
+        }
+        return [
+          TemplateIncludeOnDistributionEnum.Desktop,
+          TemplateIncludeOnDistributionEnum.Windows
+        ]
+    }
+  })
+
+  const visibleTemplates = computed(() => {
+    return templatesArray.value.filter((t) =>
+      isTemplateVisibleForDistributions(t, distributions.value)
+    )
+  })
+
+  const fuse = computed(
+    () => new Fuse(visibleTemplates.value, fuseOptions.value)
+  )
 
   const availableModels = computed(() => {
     const modelSet = new Set<string>()
-    templatesArray.value.forEach((template) => {
+    visibleTemplates.value.forEach((template) => {
       if (Array.isArray(template.models)) {
         template.models.forEach((model) => modelSet.add(model))
       }
@@ -73,7 +116,7 @@ export function useTemplateFiltering(
 
   const availableUseCases = computed(() => {
     const tagSet = new Set<string>()
-    templatesArray.value.forEach((template) => {
+    visibleTemplates.value.forEach((template) => {
       if (template.tags && Array.isArray(template.tags)) {
         template.tags.forEach((tag) => tagSet.add(tag))
       }
@@ -86,44 +129,35 @@ export function useTemplateFiltering(
   })
 
   // Compute which selected filters are actually applicable to the current scope
-  const activeModels = computed(() => {
-    if (!currentScope) {
-      return selectedModels.value
-    }
-    return selectedModels.value.filter((model) =>
+  const activeModels = computed(() =>
+    selectedModels.value.filter((model) =>
       availableModels.value.includes(model)
     )
-  })
+  )
 
-  const activeUseCases = computed(() => {
-    if (!currentScope) {
-      return selectedUseCases.value
-    }
-    return selectedUseCases.value.filter((useCase) =>
+  const activeUseCases = computed(() =>
+    selectedUseCases.value.filter((useCase) =>
       availableUseCases.value.includes(useCase)
     )
-  })
+  )
 
-  // Track which filters are inactive (selected but not applicable)
-  const inactiveModels = computed(() => {
-    if (!currentScope) return []
-    return selectedModels.value.filter(
+  const inactiveModels = computed(() =>
+    selectedModels.value.filter(
       (model) => !availableModels.value.includes(model)
     )
-  })
+  )
 
-  const inactiveUseCases = computed(() => {
-    if (!currentScope) return []
-    return selectedUseCases.value.filter(
+  const inactiveUseCases = computed(() =>
+    selectedUseCases.value.filter(
       (useCase) => !availableUseCases.value.includes(useCase)
     )
-  })
+  )
 
   const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
   const filteredBySearch = computed(() => {
     if (!debouncedSearchQuery.value.trim()) {
-      return templatesArray.value
+      return visibleTemplates.value
     }
 
     const results = fuse.value.search(debouncedSearchQuery.value)
@@ -299,7 +333,7 @@ export function useTemplateFiltering(
   }
 
   const filteredCount = computed(() => filteredTemplates.value.length)
-  const totalCount = computed(() => templatesArray.value.length)
+  const totalCount = computed(() => visibleTemplates.value.length)
 
   // Template filter tracking (debounced to avoid excessive events)
   const debouncedTrackFilterChange = debounce(() => {

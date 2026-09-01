@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import HeroSection from '../components/product/local/HeroSection.vue'
+import CloudBannerSection from '../components/product/shared/CloudBannerSection.vue'
+import AIModelsSection from '../components/product/shared/AIModelsSection.vue'
+import ReasonSection from '../components/product/local/ReasonSection.vue'
+import EcoSystemSection from '../components/product/local/EcoSystemSection.vue'
+import ProductCardsSection from '../components/product/local/ProductCardsSection.vue'
+import FAQSection from '../components/product/local/FAQSection.vue'
+import { t } from '../i18n/translations'
+---
+
+<BaseLayout
+  title="Download Comfy — Run AI Locally"
+  description={t('download.hero.subtitle', 'en')}
+  keywords={['comfyui app', 'comfyui desktop app', 'comfy ui application', 'comfyui download', 'download comfyui', 'comfyui windows', 'comfyui mac', 'comfyui linux', 'comfyui local']}
+>
+  <CloudBannerSection />
+  <HeroSection client:load />
+  <ReasonSection />
+  <EcoSystemSection client:visible />
+  <AIModelsSection />
+  <ProductCardsSection />
+  <FAQSection client:visible />
+</BaseLayout>

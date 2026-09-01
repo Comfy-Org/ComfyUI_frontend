@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import type { Point, Size } from '@/renderer/core/layout/types'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -58,10 +59,17 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
-    const savedNodeHeight = nodeElement.style.getPropertyValue('--node-height')
-    nodeElement.style.setProperty('--node-height', '0px')
-    const minContentHeight = nodeElement.getBoundingClientRect().height / scale
-    nodeElement.style.setProperty('--node-height', savedNodeHeight || '')
+    const measureMinContentHeight = (candidateWidth: number) => {
+      const savedWidth = nodeElement.style.getPropertyValue('--node-width')
+      const savedHeight = nodeElement.style.getPropertyValue('--node-height')
+      nodeElement.style.setProperty('--node-width', `${candidateWidth}px`)
+      nodeElement.style.setProperty('--node-height', '0px')
+      const measured = nodeElement.getBoundingClientRect().height
+      nodeElement.style.setProperty('--node-height', savedHeight || '')
+      nodeElement.style.setProperty('--node-width', savedWidth || '')
+      const currentScale = transformState.camera.z || 1
+      return measured / currentScale
+    }
 
     const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
     const startPosition: Point = nodeLayout
@@ -156,7 +164,7 @@ export function useNodeResize(
       // Enforce minimum size with position compensation (matching litegraph)
       const minWidth =
         parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
-        225
+        MIN_NODE_WIDTH
       if (newWidth < minWidth) {
         if (activeCorner.includes('W')) {
           newX =
@@ -164,6 +172,12 @@ export function useNodeResize(
         }
         newWidth = minWidth
       }
+      // Re-measure on each move with the candidate width applied: widget
+      // content (e.g. painter controls) can re-flow taller as width shrinks,
+      // raising the true minimum. Probing with newWidth — not the DOM's
+      // current width — keeps the clamp accurate on the frame that crosses
+      // a responsive breakpoint.
+      const minContentHeight = measureMinContentHeight(newWidth)
       if (newHeight < minContentHeight) {
         if (activeCorner.includes('N')) {
           newY =

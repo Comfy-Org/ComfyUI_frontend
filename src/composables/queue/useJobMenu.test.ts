@@ -246,6 +246,24 @@ describe('useJobMenu', () => {
     expect(workflowServiceMock.openWorkflow).not.toHaveBeenCalled()
   })
 
+  it('surfaces an error dialog when workflow open fails', async () => {
+    const { openJobWorkflow } = mountJobMenu()
+    const workflow = { nodes: [{ type: 'rgthree.DisplayAny' }] }
+    getJobWorkflowMock.mockResolvedValue(workflow)
+    const loadError = new Error('configure() failed: malformed widget')
+    workflowServiceMock.openWorkflow.mockRejectedValueOnce(loadError)
+    setCurrentItem(createJobItem({ id: '77' }))
+
+    await expect(openJobWorkflow()).resolves.toBeUndefined()
+
+    expect(dialogServiceMock.showErrorDialog).toHaveBeenCalledWith(
+      loadError,
+      expect.objectContaining({
+        reportType: 'queueOpenWorkflowError'
+      })
+    )
+  })
+
   it('copies job id to clipboard', async () => {
     const { copyJobId } = mountJobMenu()
     setCurrentItem(createJobItem({ id: 'job-99' }))
@@ -263,10 +281,10 @@ describe('useJobMenu', () => {
     expect(copyToClipboardMock).not.toHaveBeenCalled()
   })
 
-  it.each([
+  it.for([
     ['running', interruptMock, deleteItemMock],
     ['initialization', interruptMock, deleteItemMock]
-  ])('cancels %s job via interrupt', async (state) => {
+  ])('cancels %s job via interrupt', async ([state]) => {
     const { cancelJob } = mountJobMenu()
     setCurrentItem(createJobItem({ state: state as JobListItem['state'] }))
 
@@ -417,7 +435,7 @@ describe('useJobMenu', () => {
     }
   ] as const
 
-  it.each(previewCases)(
+  it.for(previewCases)(
     'adds loader node for %s preview output',
     async ({ flags, expectedNode, widget }) => {
       const widgetCallback = vi.fn()

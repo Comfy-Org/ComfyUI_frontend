@@ -302,6 +302,21 @@ class NodeWithV2ComboInput:
     def node_with_v2_combo_input(self, combo_input: str):
         return (combo_input,)
 
+class NodeWithLegacyWidget:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": { "legacy_widget": ("INT", { "widgetType":  "DEVTOOLSLEGACYWIDGET" }) }
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "node_with_legacy_widget"
+    CATEGORY = "DevTools"
+    DESCRIPTION = ("A node with a legacy widget")
+
+    def node_with_legacy_widget(self):
+        return ()
+
 
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
@@ -318,6 +333,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithSeedInput": NodeWithSeedInput,
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
+    "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -335,6 +351,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithSeedInput": "Node With Seed Input",
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
+    "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
 }
 
 __all__ = [

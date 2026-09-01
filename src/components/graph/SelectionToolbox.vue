@@ -7,6 +7,7 @@
     <Transition name="slide-up">
       <Panel
         v-if="visible"
+        data-testid="selection-toolbox"
         class="selection-toolbox pointer-events-auto rounded-lg border border-interface-stroke bg-interface-panel-surface"
         :pt="{
           header: 'hidden',
@@ -15,8 +16,8 @@
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <DeleteButton v-if="showDelete" />
-        <VerticalDivider v-if="showInfoButton && showAnyPrimaryActions" />
-        <InfoButton v-if="showInfoButton" />
+        <VerticalDivider v-if="canOpenNodeInfo && showAnyPrimaryActions" />
+        <InfoButton v-if="canOpenNodeInfo" />
 
         <ColorPickerButton v-if="showColorPicker" />
         <FrameNodes v-if="showFrameNodes" />
@@ -104,9 +105,8 @@ const {
   isSingleImageNode,
   hasAny3DNodeSelected,
   hasOutputNodesSelected,
-  nodeDef
+  canOpenNodeInfo
 } = useSelectionState()
-const showInfoButton = computed(() => !!nodeDef.value)
 
 const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)

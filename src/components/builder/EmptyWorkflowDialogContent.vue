@@ -1,5 +1,8 @@
 <template>
-  <BuilderDialog :show-close="false">
+  <BuilderDialog
+    data-testid="builder-empty-workflow-dialog"
+    :show-close="false"
+  >
     <template #title>
       {{ $t('builderToolbar.emptyWorkflowTitle') }}
     </template>
@@ -17,11 +20,17 @@
       <Button
         variant="muted-textonly"
         size="lg"
+        data-testid="builder-empty-workflow-back"
         @click="$emit('backToWorkflow')"
       >
         {{ $t('linearMode.backToWorkflow') }}
       </Button>
-      <Button variant="secondary" size="lg" @click="$emit('loadTemplate')">
+      <Button
+        variant="secondary"
+        size="lg"
+        data-testid="builder-empty-workflow-load-template"
+        @click="$emit('loadTemplate')"
+      >
         {{ $t('linearMode.loadTemplate') }}
       </Button>
     </template>

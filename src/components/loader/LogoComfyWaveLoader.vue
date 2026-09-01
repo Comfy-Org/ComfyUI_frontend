@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 

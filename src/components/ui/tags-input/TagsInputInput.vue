@@ -4,7 +4,7 @@ import { TagsInputInput, useForwardExpose, useForwardProps } from 'reka-ui'
 import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { tagsInputFocusKey, tagsInputIsEditingKey } from './tagsInputContext'
 

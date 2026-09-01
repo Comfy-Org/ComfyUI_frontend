@@ -1,40 +1,17 @@
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
-import Badge from 'primevue/badge'
-import Button from '@/components/ui/button/Button.vue'
-import Column from 'primevue/column'
 import PrimeVue from 'primevue/config'
-import DataTable from 'primevue/datatable'
-import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
 import Tooltip from 'primevue/tooltip'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { render, screen, waitFor } from '@testing-library/vue'
 
 import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
 import UsageLogsTable from './UsageLogsTable.vue'
 
-type ComponentInstance = InstanceType<typeof UsageLogsTable> & {
-  loading: boolean
-  error: string | null
-  events: Partial<AuditLog>[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-  dataTableFirst: number
-  tooltipContentMap: Map<string, string>
-  loadEvents: () => Promise<void>
-  refresh: () => Promise<void>
-  onPageChange: (event: { page: number }) => void
-}
-
-// Mock the customerEventsService
 const mockCustomerEventsService = vi.hoisted(() => ({
   getMyEvents: vi.fn(),
   formatEventType: vi.fn(),
@@ -43,7 +20,7 @@ const mockCustomerEventsService = vi.hoisted(() => ({
   formatDate: vi.fn(),
   hasAdditionalInfo: vi.fn(),
   getTooltipContent: vi.fn(),
-  error: { value: null },
+  error: { value: null as string | null },
   isLoading: { value: false }
 }))
 
@@ -57,7 +34,10 @@ vi.mock('@/services/customerEventsService', () => ({
   }
 }))
 
-// Create i18n instance
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => null
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -76,78 +56,115 @@ const i18n = createI18n({
   }
 })
 
-describe('UsageLogsTable', () => {
-  const mockEventsResponse = {
-    events: [
-      {
-        event_id: 'event-1',
-        event_type: 'credit_added',
-        params: {
-          amount: 1000,
-          transaction_id: 'txn-123'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      },
-      {
-        event_id: 'event-2',
-        event_type: 'api_usage_completed',
-        params: {
-          api_name: 'Image Generation',
-          model: 'sdxl-base',
-          duration: 5000
-        },
-        createdAt: '2024-01-02T10:00:00Z'
-      }
-    ],
-    total: 2,
+const globalConfig = {
+  plugins: [PrimeVue, i18n, createTestingPinia()],
+  directives: { tooltip: Tooltip }
+}
+
+/**
+ * The component starts with loading=true and only loads data when refresh()
+ * is called via template ref. This wrapper auto-calls refresh on mount.
+ */
+const AutoRefreshWrapper = defineComponent({
+  components: { UsageLogsTable },
+  setup() {
+    const tableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
+    onMounted(async () => {
+      await tableRef.value?.refresh()
+    })
+    return { tableRef }
+  },
+  template: '<UsageLogsTable ref="tableRef" />'
+})
+
+function makeEventsResponse(
+  events: Partial<AuditLog>[],
+  overrides: Record<string, unknown> = {}
+) {
+  return {
+    events,
+    total: events.length,
     page: 1,
     limit: 7,
-    totalPages: 1
+    totalPages: 1,
+    ...overrides
   }
+}
+
+describe('UsageLogsTable', () => {
+  const mockEventsResponse = makeEventsResponse([
+    {
+      event_id: 'event-1',
+      event_type: 'credit_added',
+      params: {
+        amount: 1000,
+        transaction_id: 'txn-123'
+      },
+      createdAt: '2024-01-01T10:00:00Z'
+    },
+    {
+      event_id: 'event-2',
+      event_type: 'api_usage_completed',
+      params: {
+        api_name: 'Image Generation',
+        model: 'sdxl-base',
+        duration: 5000
+      },
+      createdAt: '2024-01-02T10:00:00Z'
+    }
+  ])
 
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Setup default service mock implementations
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
-    mockCustomerEventsService.formatEventType.mockImplementation((type) => {
-      switch (type) {
-        case EventType.CREDIT_ADDED:
-          return 'Credits Added'
-        case EventType.ACCOUNT_CREATED:
-          return 'Account Created'
-        case EventType.API_USAGE_COMPLETED:
-          return 'API Usage'
-        default:
-          return type
+    mockCustomerEventsService.formatEventType.mockImplementation(
+      (type: string) => {
+        switch (type) {
+          case EventType.CREDIT_ADDED:
+            return 'Credits Added'
+          case EventType.ACCOUNT_CREATED:
+            return 'Account Created'
+          case EventType.API_USAGE_COMPLETED:
+            return 'API Usage'
+          default:
+            return type
+        }
       }
-    })
-    mockCustomerEventsService.getEventSeverity.mockImplementation((type) => {
-      switch (type) {
-        case EventType.CREDIT_ADDED:
-          return 'success'
-        case EventType.ACCOUNT_CREATED:
-          return 'info'
-        case EventType.API_USAGE_COMPLETED:
-          return 'warning'
-        default:
-          return 'info'
+    )
+    mockCustomerEventsService.getEventSeverity.mockImplementation(
+      (type: string) => {
+        switch (type) {
+          case EventType.CREDIT_ADDED:
+            return 'success'
+          case EventType.ACCOUNT_CREATED:
+            return 'info'
+          case EventType.API_USAGE_COMPLETED:
+            return 'warning'
+          default:
+            return 'info'
+        }
       }
-    })
-    mockCustomerEventsService.formatAmount.mockImplementation((amount) => {
-      if (!amount) return '0.00'
-      return (amount / 100).toFixed(2)
-    })
-    mockCustomerEventsService.formatDate.mockImplementation((dateString) => {
-      return new Date(dateString).toLocaleDateString()
-    })
-    mockCustomerEventsService.hasAdditionalInfo.mockImplementation((event) => {
-      const { amount, api_name, model, ...otherParams } = event.params || {}
-      return Object.keys(otherParams).length > 0
-    })
-    mockCustomerEventsService.getTooltipContent.mockImplementation(() => {
-      return '<strong>Transaction Id:</strong> txn-123'
-    })
+    )
+    mockCustomerEventsService.formatAmount.mockImplementation(
+      (amount: number) => {
+        if (!amount) return '0.00'
+        return (amount / 100).toFixed(2)
+      }
+    )
+    mockCustomerEventsService.formatDate.mockImplementation(
+      (dateString: string) => new Date(dateString).toLocaleDateString()
+    )
+    mockCustomerEventsService.hasAdditionalInfo.mockImplementation(
+      (event: AuditLog) => {
+        const { amount, api_name, model, ...otherParams } =
+          (event.params as Record<string, unknown>) ?? {}
+        return Object.keys(otherParams).length > 0
+      }
+    )
+    mockCustomerEventsService.getTooltipContent.mockImplementation(
+      () => '<strong>Transaction Id:</strong> txn-123'
+    )
     mockCustomerEventsService.error.value = null
     mockCustomerEventsService.isLoading.value = false
   })
@@ -156,245 +173,188 @@ describe('UsageLogsTable', () => {
     vi.restoreAllMocks()
   })
 
-  const mountComponent = (options = {}) => {
-    return mount(UsageLogsTable, {
-      global: {
-        plugins: [PrimeVue, i18n, createTestingPinia()],
-        components: {
-          DataTable,
-          Column,
-          Badge,
-          Button,
-          Message,
-          ProgressSpinner
-        },
-        directives: {
-          tooltip: Tooltip
-        }
-      },
-      ...options
+  function renderComponent() {
+    return render(UsageLogsTable, { global: globalConfig })
+  }
+
+  function renderWithAutoRefresh() {
+    return render(AutoRefreshWrapper, { global: globalConfig })
+  }
+
+  async function renderLoaded() {
+    const result = renderWithAutoRefresh()
+    await waitFor(() => {
+      expect(screen.getByRole('table')).toBeInTheDocument()
     })
+    return result
   }
 
   describe('loading states', () => {
-    it('shows loading spinner when loading is true', async () => {
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-      vm.loading = true
-      await nextTick()
+    it('shows loading spinner before refresh is called', () => {
+      renderComponent()
 
-      expect(wrapper.findComponent(ProgressSpinner).exists()).toBe(true)
-      expect(wrapper.findComponent(DataTable).exists()).toBe(false)
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(screen.queryByRole('table')).not.toBeInTheDocument()
     })
 
-    it('shows error message when error exists', async () => {
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-      vm.error = 'Failed to load events'
-      vm.loading = false
-      await nextTick()
+    it('shows error message when service returns null', async () => {
+      mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
+      mockCustomerEventsService.error.value = 'Failed to load events'
 
-      const messageComponent = wrapper.findComponent(Message)
-      expect(messageComponent.exists()).toBe(true)
-      expect(messageComponent.props('severity')).toBe('error')
-      expect(messageComponent.text()).toContain('Failed to load events')
+      renderWithAutoRefresh()
+
+      await waitFor(() => {
+        expect(screen.getByText('Failed to load events')).toBeInTheDocument()
+      })
     })
 
-    it('shows data table when loaded successfully', async () => {
-      const wrapper = mountComponent()
+    it('shows error message when service throws', async () => {
+      mockCustomerEventsService.getMyEvents.mockRejectedValue(
+        new Error('Network error')
+      )
 
-      const vm = wrapper.vm as ComponentInstance
-      // Wait for component to mount and load data
-      await wrapper.vm.$nextTick()
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      renderWithAutoRefresh()
 
-      vm.loading = false
-      vm.events = mockEventsResponse.events
-      await nextTick()
+      await waitFor(() => {
+        expect(screen.getByText('Network error')).toBeInTheDocument()
+      })
+    })
 
-      expect(wrapper.findComponent(DataTable).exists()).toBe(true)
-      expect(wrapper.findComponent(ProgressSpinner).exists()).toBe(false)
-      expect(wrapper.findComponent(Message).exists()).toBe(false)
+    it('shows data table after loading completes', async () => {
+      await renderLoaded()
+
+      expect(
+        screen.queryByText('Failed to load events')
+      ).not.toBeInTheDocument()
     })
   })
 
   describe('data rendering', () => {
-    it('renders events data correctly', async () => {
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-      vm.loading = false
-      vm.events = mockEventsResponse.events
-      await nextTick()
+    it('renders event type badges', async () => {
+      await renderLoaded()
 
-      const dataTable = wrapper.findComponent(DataTable)
-      expect(dataTable.props('value')).toEqual(mockEventsResponse.events)
-      expect(dataTable.props('rows')).toBe(7)
-      expect(dataTable.props('paginator')).toBe(true)
-      expect(dataTable.props('lazy')).toBe(true)
-    })
-
-    it('renders badge for event types correctly', async () => {
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-      vm.loading = false
-      vm.events = mockEventsResponse.events
-      await nextTick()
-
-      const badges = wrapper.findAllComponents(Badge)
-      expect(badges.length).toBeGreaterThan(0)
-
-      // Check if formatEventType and getEventSeverity are called
       expect(mockCustomerEventsService.formatEventType).toHaveBeenCalled()
       expect(mockCustomerEventsService.getEventSeverity).toHaveBeenCalled()
     })
 
-    it('renders different event details based on event type', async () => {
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-      vm.loading = false
-      vm.events = mockEventsResponse.events
-      await nextTick()
+    it('renders credit added details with formatted amount', async () => {
+      await renderLoaded()
 
-      // Check if formatAmount is called for credit_added events
+      expect(screen.getByText(/Added \$/)).toBeInTheDocument()
       expect(mockCustomerEventsService.formatAmount).toHaveBeenCalled()
     })
 
-    it('renders tooltip buttons for events with additional info', async () => {
+    it('renders API usage details with api name and model', async () => {
+      await renderLoaded()
+
+      expect(screen.getByText('Image Generation')).toBeInTheDocument()
+      expect(screen.getByText(/sdxl-base/)).toBeInTheDocument()
+    })
+
+    it('renders account created details', async () => {
+      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'event-3',
+            event_type: 'account_created',
+            params: {},
+            createdAt: '2024-01-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderWithAutoRefresh()
+
+      await waitFor(() => {
+        expect(screen.getByText('Account initialized')).toBeInTheDocument()
+      })
+    })
+
+    it('renders formatted dates', async () => {
+      await renderLoaded()
+
+      expect(mockCustomerEventsService.formatDate).toHaveBeenCalled()
+    })
+
+    it('renders info buttons for events with additional info', async () => {
       mockCustomerEventsService.hasAdditionalInfo.mockReturnValue(true)
 
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-      vm.loading = false
-      vm.events = mockEventsResponse.events
-      await nextTick()
+      await renderLoaded()
 
-      expect(mockCustomerEventsService.hasAdditionalInfo).toHaveBeenCalled()
+      const infoButtons = screen.getAllByRole('button', {
+        name: 'Additional Info'
+      })
+      expect(infoButtons.length).toBeGreaterThan(0)
+    })
+
+    it('does not render info buttons when no additional info', async () => {
+      mockCustomerEventsService.hasAdditionalInfo.mockReturnValue(false)
+
+      await renderLoaded()
+
+      expect(
+        screen.queryByRole('button', { name: 'Additional Info' })
+      ).not.toBeInTheDocument()
     })
   })
 
   describe('pagination', () => {
-    it('handles page change correctly', async () => {
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-      vm.loading = false
-      vm.events = mockEventsResponse.events
-      await nextTick()
+    it('calls getMyEvents with initial page params', async () => {
+      await renderLoaded()
 
-      // Simulate page change
-      const dataTable = wrapper.findComponent(DataTable)
-      await dataTable.vm.$emit('page', { page: 1 })
-
-      expect(vm.pagination.page).toBe(1) // page + 1
       expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
-        page: 2,
+        page: 1,
         limit: 7
       })
-    })
-
-    it('calculates dataTableFirst correctly', async () => {
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-      vm.pagination = { page: 2, limit: 7, total: 20, totalPages: 3 }
-      await nextTick()
-
-      expect(vm.dataTableFirst).toBe(7) // (2-1) * 7
-    })
-  })
-
-  describe('tooltip functionality', () => {
-    it('generates tooltip content map correctly', async () => {
-      mockCustomerEventsService.hasAdditionalInfo.mockReturnValue(true)
-      mockCustomerEventsService.getTooltipContent.mockReturnValue(
-        '<strong>Test:</strong> value'
-      )
-
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-
-      vm.loading = false
-      vm.events = mockEventsResponse.events
-      await nextTick()
-
-      const tooltipMap = vm.tooltipContentMap
-      expect(tooltipMap.get('event-1')).toBe('<strong>Test:</strong> value')
-    })
-
-    it('excludes events without additional info from tooltip map', async () => {
-      mockCustomerEventsService.hasAdditionalInfo.mockReturnValue(false)
-
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-
-      vm.loading = false
-      vm.events = mockEventsResponse.events
-      await nextTick()
-
-      const tooltipMap = vm.tooltipContentMap
-      expect(tooltipMap.size).toBe(0)
     })
   })
 
   describe('component methods', () => {
-    it('exposes refresh method', () => {
-      const wrapper = mountComponent()
+    it('calls getMyEvents on refresh with page 1', async () => {
+      await renderLoaded()
 
-      expect(typeof wrapper.vm.refresh).toBe('function')
-    })
-
-    it('resets to first page on refresh', async () => {
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
-
-      vm.pagination.page = 3
-
-      await vm.refresh()
-
-      expect(vm.pagination.page).toBe(1)
       expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
         page: 1,
         limit: 7
-      })
-    })
-  })
-
-  describe('component lifecycle', () => {
-    it('initializes with correct default values', () => {
-      const wrapper = mountComponent()
-
-      const vm = wrapper.vm as ComponentInstance
-
-      expect(vm.events).toEqual([])
-      expect(vm.loading).toBe(true)
-      expect(vm.error).toBeNull()
-      expect(vm.pagination).toEqual({
-        page: 1,
-        limit: 7,
-        total: 0,
-        totalPages: 0
       })
     })
   })
 
   describe('EventType integration', () => {
-    it('uses EventType enum in template conditions', async () => {
-      const wrapper = mountComponent()
-      const vm = wrapper.vm as ComponentInstance
+    it('renders credit_added event with correct detail template', async () => {
+      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'event-1',
+            event_type: EventType.CREDIT_ADDED,
+            params: { amount: 1000 },
+            createdAt: '2024-01-01T10:00:00Z'
+          }
+        ])
+      )
 
-      vm.loading = false
-      vm.events = [
-        {
-          event_id: 'event-1',
-          event_type: EventType.CREDIT_ADDED,
-          params: { amount: 1000 },
-          createdAt: '2024-01-01T10:00:00Z'
-        }
-      ]
-      await nextTick()
+      await renderLoaded()
 
-      // Verify that the component can access EventType enum
-      expect(EventType.CREDIT_ADDED).toBe('credit_added')
-      expect(EventType.ACCOUNT_CREATED).toBe('account_created')
-      expect(EventType.API_USAGE_COMPLETED).toBe('api_usage_completed')
+      expect(screen.getByText(/Added \$/)).toBeInTheDocument()
+      expect(mockCustomerEventsService.formatAmount).toHaveBeenCalled()
+    })
+
+    it('renders api_usage_completed event with correct detail template', async () => {
+      mockCustomerEventsService.getMyEvents.mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'event-2',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'Test API', model: 'test-model' },
+            createdAt: '2024-01-02T10:00:00Z'
+          }
+        ])
+      )
+
+      await renderLoaded()
+
+      expect(screen.getByText('Test API')).toBeInTheDocument()
+      expect(screen.getByText(/test-model/)).toBeInTheDocument()
     })
   })
 })

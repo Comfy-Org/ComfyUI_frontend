@@ -1,0 +1,63 @@
+---
+import type { GetStaticPaths } from 'astro'
+
+import type { Pack } from '../../../data/cloudNodes'
+
+import PackDetail from '../../../components/cloud-nodes/PackDetail.vue'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import { t } from '../../../i18n/translations'
+import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
+import { escapeJsonLd } from '../../../utils/escapeJsonLd'
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const packs = await loadPacksForBuild()
+  return packs.map((pack) => ({
+    params: { pack: pack.id },
+    props: { pack }
+  }))
+}
+
+const { pack } = Astro.props as { pack: Pack }
+const fallbackDescription = t('cloudNodes.card.unavailableDescription', 'en')
+const description = pack.description || fallbackDescription
+const title = t('cloudNodes.detail.metaTitle', 'en').replace(
+  '{pack}',
+  pack.displayName
+)
+const metaDescription = t('cloudNodes.detail.metaDescription', 'en')
+  .replace('{pack}', pack.displayName)
+  .replace('{nodeCount}', String(pack.nodes.length))
+  .replace('{description}', description)
+
+const siteBase = Astro.site ?? new URL('https://comfy.org')
+const pageUrl = new URL(`/cloud/supported-nodes/${pack.id}`, siteBase).href
+
+const softwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: pack.displayName,
+  applicationCategory: 'DeveloperApplication',
+  applicationSubCategory: 'ComfyUI custom-node pack',
+  operatingSystem: 'Comfy Cloud (managed)',
+  url: pageUrl,
+  description,
+  image: pack.bannerUrl || pack.iconUrl,
+  softwareVersion: pack.latestVersion,
+  license: pack.license,
+  codeRepository: pack.repoUrl,
+  author: pack.publisher?.name
+    ? { '@type': 'Person', name: pack.publisher.name }
+    : undefined,
+  offers: { '@type': 'Offer', price: 0, priceCurrency: 'USD' }
+}
+---
+
+<BaseLayout title={title} description={metaDescription} ogImage={pack.bannerUrl}>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={escapeJsonLd(softwareJsonLd)}
+  />
+  <PackDetail pack={pack} />
+</BaseLayout>

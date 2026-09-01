@@ -1,10 +1,14 @@
-// TODO: Fix these tests after migration
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DefaultConnectionColors } from '@/lib/litegraph/src/interfaces'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { createTestSubgraph } from './__fixtures__/subgraphHelpers'
+import {
+  createTestSubgraph,
+  resetSubgraphFixtureState
+} from './__fixtures__/subgraphHelpers'
 
 interface MockColorContext {
   defaultInputColor: string
@@ -13,12 +17,15 @@ interface MockColorContext {
   getDisconnectedColor: ReturnType<typeof vi.fn>
 }
 
-describe.skip('SubgraphSlot visual feedback', () => {
+describe('SubgraphSlot visual feedback', () => {
   let mockCtx: CanvasRenderingContext2D
   let mockColorContext: MockColorContext
   let globalAlphaValues: number[]
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    resetSubgraphFixtureState()
+
     // Clear the array before each test
     globalAlphaValues = []
 

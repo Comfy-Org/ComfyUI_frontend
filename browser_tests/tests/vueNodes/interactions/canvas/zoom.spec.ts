@@ -1,13 +1,11 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
-test.describe('Vue Nodes Zoom', () => {
+test.describe('Vue Nodes Zoom', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.settings.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 8)
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test(

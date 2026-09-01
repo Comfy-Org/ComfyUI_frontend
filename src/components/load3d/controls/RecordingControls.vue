@@ -63,6 +63,7 @@
       <div
         v-if="recordingDuration && recordingDuration > 0 && !isRecording"
         class="mt-1 text-center text-xs text-base-foreground"
+        data-testid="load3d-recording-duration"
       >
         {{ formatDuration(recordingDuration) }}
       </div>
@@ -72,7 +73,7 @@
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const hasRecording = defineModel<boolean>('hasRecording')
 const isRecording = defineModel<boolean>('isRecording')

@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
@@ -6,7 +7,8 @@ import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphI
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -61,6 +63,7 @@ function addLinkedInteriorInput(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
   vi.clearAllMocks()
 })
 
@@ -99,14 +102,14 @@ describe('resolveSubgraphInputLink', () => {
     vi.spyOn(subgraph, 'getLink').mockImplementation((linkId) => {
       if (typeof linkId !== 'number') return originalGetLink(linkId)
       if (linkId === stale.linkId) {
-        return {
+        return fromPartial<ReturnType<typeof subgraph.getLink>>({
           resolve: () => ({
             inputNode: {
               inputs: undefined,
               getWidgetFromSlot: () => ({ name: 'ignored' })
             }
           })
-        } as unknown as ReturnType<typeof subgraph.getLink>
+        })
       }
 
       return originalGetLink(linkId)
@@ -119,6 +122,21 @@ describe('resolveSubgraphInputLink', () => {
     )
 
     expect(result).toBe('seed_input')
+  })
+
+  test('resolves the first connected link when multiple links exist', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'first_input', 'firstWidget')
+    addLinkedInteriorInput(subgraph, 'prompt', 'second_input', 'secondWidget')
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      ({ targetInput }) => targetInput.name
+    )
+
+    // First connected wins — consistent with SubgraphNode._resolveLinkedPromotionBySubgraphInput
+    expect(result).toBe('first_input')
   })
 
   test('caches getTargetWidget result within the same callback evaluation', () => {
@@ -143,5 +161,34 @@ describe('resolveSubgraphInputLink', () => {
 
     expect(result).toBe('ok')
     expect(getWidgetFromSlot).toHaveBeenCalledTimes(1)
+  })
+
+  test('returns first link result with 3+ links connected', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'first_input', 'firstWidget')
+    addLinkedInteriorInput(subgraph, 'prompt', 'second_input', 'secondWidget')
+    addLinkedInteriorInput(subgraph, 'prompt', 'third_input', 'thirdWidget')
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      ({ targetInput }) => targetInput.name
+    )
+
+    expect(result).toBe('first_input')
+  })
+
+  test('returns undefined when all links fail to resolve', () => {
+    const { subgraph, subgraphNode } = createSubgraphSetup('prompt')
+    addLinkedInteriorInput(subgraph, 'prompt', 'first_input', 'firstWidget')
+    addLinkedInteriorInput(subgraph, 'prompt', 'second_input', 'secondWidget')
+
+    const result = resolveSubgraphInputLink(
+      subgraphNode,
+      'prompt',
+      () => undefined
+    )
+
+    expect(result).toBeUndefined()
   })
 })

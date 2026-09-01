@@ -294,7 +294,7 @@
     "label": "說明中心"
   },
   "Comfy_ToggleLinear": {
-    "label": "切換線性模式"
+    "label": "切換應用模式"
   },
   "Comfy_ToggleQPOV2": {
     "label": "切換佇列面板 V2"
@@ -312,7 +312,7 @@
     "label": "登出"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "實驗性：啟用 Vue 節點"
+    "label": "啟用 Nodes 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "關閉當前工作流程"

@@ -37,8 +37,6 @@ export function useAppMode() {
   )
 
   function setMode(newMode: AppMode) {
-    if (newMode === mode.value) return
-
     const workflow = workflowStore.activeWorkflow
     if (workflow) workflow.activeMode = newMode
   }

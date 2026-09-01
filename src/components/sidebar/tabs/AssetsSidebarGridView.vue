@@ -1,20 +1,5 @@
 <template>
   <div class="flex h-full flex-col">
-    <!-- Assets Header -->
-    <div v-if="assets.length" class="px-2 2xl:px-4">
-      <div
-        class="flex items-center py-2 font-inter text-sm/normal font-normal text-muted-foreground"
-      >
-        {{
-          t(
-            assetType === 'input'
-              ? 'sideToolbar.importedAssetsHeader'
-              : 'sideToolbar.generatedAssetsHeader'
-          )
-        }}
-      </div>
-    </div>
-
     <!-- Assets Grid -->
     <VirtualGrid
       class="flex-1"
@@ -40,22 +25,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-const {
-  assets,
-  isSelected,
-  assetType = 'output',
-  showOutputCount,
-  getOutputCount
-} = defineProps<{
+const { assets, isSelected, showOutputCount, getOutputCount } = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
-  assetType?: 'input' | 'output'
   showOutputCount: (asset: AssetItem) => boolean
   getOutputCount: (asset: AssetItem) => number
 }>()
@@ -67,8 +44,6 @@ const emit = defineEmits<{
   (e: 'zoom', asset: AssetItem): void
   (e: 'output-count-click', asset: AssetItem): void
 }>()
-
-const { t } = useI18n()
 
 type AssetGridItem = { key: string; asset: AssetItem }
 

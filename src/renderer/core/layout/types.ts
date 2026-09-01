@@ -318,6 +318,10 @@ export interface LayoutStore {
 
   // Change subscription
   onChange(callback: (change: LayoutChange) => void): () => void
+  onNodeChange(
+    nodeId: NodeId,
+    callback: (change: LayoutChange) => void
+  ): () => void
 
   // Initialization
   initializeFromLiteGraph(

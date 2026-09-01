@@ -5,6 +5,7 @@
     <div
       v-if="!error"
       ref="contentRef"
+      data-testid="thumbnail-content"
       class="size-full transform-gpu transition-transform duration-1000 ease-out"
       :style="
         isHovered ? { transform: `scale(${1 + hoverZoom / 100})` } : undefined

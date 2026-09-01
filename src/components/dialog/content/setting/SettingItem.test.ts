@@ -1,12 +1,15 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tag from 'primevue/tag'
 import Tooltip from 'primevue/tooltip'
+import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
+import type { SettingParams } from '@/platform/settings/types'
 
 const i18n = createI18n({
   legacy: false,
@@ -17,60 +20,72 @@ vi.mock('@/utils/formatUtil', () => ({
   normalizeI18nKey: vi.fn()
 }))
 
+const FormItemStub = defineComponent({
+  name: 'FormItem',
+  props: {
+    item: { type: Object, default: () => ({}) },
+    id: { type: String, default: undefined },
+    formValue: { type: null, default: undefined }
+  },
+  setup(props) {
+    return () =>
+      h('div', { 'data-testid': 'form-item-data' }, JSON.stringify(props.item))
+  }
+})
+
 describe('SettingItem', () => {
-  const mountComponent = (props: Record<string, unknown>, options = {}) => {
-    return mount(SettingItem, {
+  function renderComponent(setting: SettingParams) {
+    return render(SettingItem, {
       global: {
         plugins: [PrimeVue, i18n, createPinia()],
-        components: {
-          Tag
-        },
-        directives: {
-          tooltip: Tooltip
-        },
+        components: { Tag },
         stubs: {
+          FormItem: FormItemStub,
           'i-material-symbols:experiment-outline': true
-        }
+        },
+        directives: { tooltip: Tooltip }
       },
-      // @ts-expect-error - Test utility accepts flexible props for testing edge cases
-      props,
-      ...options
+      props: { setting }
     })
   }
 
+  function getFormItemData(container: Element) {
+    // eslint-disable-next-line testing-library/no-node-access
+    const el = container.querySelector('[data-testid="form-item-data"]')
+    return JSON.parse(el!.textContent!)
+  }
+
   it('translates options that use legacy type', () => {
-    const wrapper = mountComponent({
-      setting: {
+    const { container } = renderComponent(
+      fromAny({
         id: 'Comfy.NodeInputConversionSubmenus',
         name: 'Node Input Conversion Submenus',
         type: 'combo',
-        value: 'Top',
+        defaultValue: 'Top',
         options: () => ['Correctly Translated']
-      }
-    })
+      })
+    )
 
-    // Check the FormItem component's item prop for the options
-    const formItem = wrapper.findComponent({ name: 'FormItem' })
-    const options = formItem.props('item').options
-    expect(options).toEqual([
+    const data = getFormItemData(container)
+    expect(data.options).toEqual([
       { text: 'Correctly Translated', value: 'Correctly Translated' }
     ])
   })
 
   it('handles tooltips with @ symbols without errors', () => {
-    const wrapper = mountComponent({
-      setting: {
-        id: 'TestSetting',
+    const { container } = renderComponent(
+      fromAny({
+        id: 'Comfy.NodeInputConversionSubmenus',
         name: 'Test Setting',
         type: 'boolean',
+        defaultValue: false,
         tooltip:
           'This will load a larger version of @mtb/markdown-parser that bundles shiki'
-      }
-    })
+      })
+    )
 
-    // Should not throw an error and tooltip should be preserved as-is
-    const formItem = wrapper.findComponent({ name: 'FormItem' })
-    expect(formItem.props('item').tooltip).toBe(
+    const data = getFormItemData(container)
+    expect(data.tooltip).toBe(
       'This will load a larger version of @mtb/markdown-parser that bundles shiki'
     )
   })

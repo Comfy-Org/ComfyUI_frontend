@@ -23,7 +23,7 @@ See `docs/testing/*.md` for detailed patterns.
 
 ## Component Testing
 
-- Use Vue Test Utils for component tests
+- Use `@testing-library/vue` with `@testing-library/user-event` for component tests (an ESLint rule bans `@vue/test-utils` in new tests)
 - Follow advice about making components easy to test
 - Wait for reactivity with `await nextTick()` after state changes
 

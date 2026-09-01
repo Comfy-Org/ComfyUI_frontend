@@ -1,5 +1,5 @@
 <template>
-  <TabsContent value="all" class="h-full flex-1 overflow-y-auto">
+  <div class="h-full flex-1 overflow-y-auto">
     <!-- Favorites section -->
     <h3
       class="mb-0 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
@@ -12,7 +12,6 @@
       :root="favoritesRoot"
       show-context-menu
       @node-click="(node) => emit('nodeClick', node)"
-      @add-to-favorites="handleAddToFavorites"
     />
     <div v-else class="px-6 py-2 text-xs text-muted-background">
       {{ $t('sideToolbar.nodeLibraryTab.noBookmarkedNodes') }}
@@ -31,14 +30,12 @@
         :root="section.root"
         show-context-menu
         @node-click="(node) => emit('nodeClick', node)"
-        @add-to-favorites="handleAddToFavorites"
       />
     </div>
-  </TabsContent>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { TabsContent } from 'reka-ui'
 import { computed } from 'vue'
 
 import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
@@ -72,12 +69,4 @@ const hasFavorites = computed(
 const favoritesRoot = computed(() =>
   fillNodeInfo(nodeBookmarkStore.bookmarkedRoot)
 )
-
-function handleAddToFavorites(
-  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
-) {
-  if (node.data) {
-    nodeBookmarkStore.toggleBookmark(node.data)
-  }
-}
 </script>

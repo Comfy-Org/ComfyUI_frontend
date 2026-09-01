@@ -40,7 +40,7 @@
     T extends string | number | { label: string; value: string | number }
   "
 >
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from '../layout'
 

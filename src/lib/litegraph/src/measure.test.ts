@@ -130,6 +130,34 @@ test('snapPoint correctly snaps points to grid', ({ expect }) => {
   expect(point3).toEqual([20, 20])
 })
 
+test('snapPoint correctly snaps points to grid using ceil', ({ expect }) => {
+  const point: Point = [12.3, 18.7]
+  expect(snapPoint(point, 5, 'ceil')).toBe(true)
+  expect(point).toEqual([15, 20])
+
+  const point2: Point = [15, 20]
+  expect(snapPoint(point2, 5, 'ceil')).toBe(true)
+  expect(point2).toEqual([15, 20])
+
+  const point3: Point = [15.1, -18.7]
+  expect(snapPoint(point3, 10, 'ceil')).toBe(true)
+  expect(point3).toEqual([20, -10])
+})
+
+test('snapPoint correctly snaps points to grid using floor', ({ expect }) => {
+  const point: Point = [12.3, 18.7]
+  expect(snapPoint(point, 5, 'floor')).toBe(true)
+  expect(point).toEqual([10, 15])
+
+  const point2: Point = [15, 20]
+  expect(snapPoint(point2, 5, 'floor')).toBe(true)
+  expect(point2).toEqual([15, 20])
+
+  const point3: Point = [15.1, -18.7]
+  expect(snapPoint(point3, 10, 'floor')).toBe(true)
+  expect(point3).toEqual([10, -20])
+})
+
 test('createBounds correctly creates bounding box', ({ expect }) => {
   const objects = [
     { boundingRect: [0, 0, 10, 10] as Rect },

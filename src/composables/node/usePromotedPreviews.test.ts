@@ -16,7 +16,7 @@ import { usePromotedPreviews } from './usePromotedPreviews'
 
 type MockNodeOutputStore = Pick<
   ReturnType<typeof useNodeOutputStore>,
-  'nodeOutputs' | 'getNodeImageUrls'
+  'nodeOutputs' | 'nodePreviewImages' | 'getNodeImageUrls'
 >
 
 const getNodeImageUrls = vi.hoisted(() =>
@@ -35,6 +35,7 @@ vi.mock('@/stores/nodeOutputStore', () => {
 function createMockNodeOutputStore(): MockNodeOutputStore {
   return {
     nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
+    nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
     getNodeImageUrls
   }
 }
@@ -71,12 +72,24 @@ function seedOutputs(subgraphId: string, nodeIds: Array<number | string>) {
   }
 }
 
+function seedPreviewImages(
+  subgraphId: string,
+  entries: Array<{ nodeId: number | string; urls: string[] }>
+) {
+  const store = useNodeOutputStore()
+  for (const { nodeId, urls } of entries) {
+    const locatorId = createNodeLocatorId(subgraphId, nodeId)
+    store.nodePreviewImages[locatorId] = urls
+  }
+}
+
 describe(usePromotedPreviews, () => {
   let nodeOutputStore: MockNodeOutputStore
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    getNodeImageUrls.mockReset()
 
     nodeOutputStore = createMockNodeOutputStore()
     useNodeOutputStoreMock.mockReturnValue(nodeOutputStore)
@@ -99,8 +112,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      'seed'
+      { sourceNodeId: '10', sourceWidgetName: 'seed' }
     )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
@@ -113,19 +125,18 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const mockUrls = ['/view?filename=output.png']
     seedOutputs(setup.subgraph.id, [10])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(mockUrls)
+    getNodeImageUrls.mockReturnValue(mockUrls)
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
-        interiorNodeId: '10',
-        widgetName: '$$canvas-image-preview',
+        sourceNodeId: '10',
+        sourceWidgetName: '$$canvas-image-preview',
         type: 'image',
         urls: mockUrls
       }
@@ -138,14 +149,11 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     seedOutputs(setup.subgraph.id, [10])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/view?filename=output.webm'
-    ])
+    getNodeImageUrls.mockReturnValue(['/view?filename=output.webm'])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value[0].type).toBe('video')
@@ -157,14 +165,11 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     seedOutputs(setup.subgraph.id, [10])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/view?filename=output.mp3'
-    ])
+    getNodeImageUrls.mockReturnValue(['/view?filename=output.mp3'])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value[0].type).toBe('audio')
@@ -183,29 +188,75 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '20',
-      '$$canvas-image-preview'
+      { sourceNodeId: '20', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     seedOutputs(setup.subgraph.id, [10, 20])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
-      (node: LGraphNode) => {
-        if (node === node10) return ['/view?a=1']
-        if (node === node20) return ['/view?b=2']
-        return undefined
-      }
-    )
+    getNodeImageUrls.mockImplementation((node: LGraphNode) => {
+      if (node === node10) return ['/view?a=1']
+      if (node === node20) return ['/view?b=2']
+      return undefined
+    })
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toHaveLength(2)
     expect(promotedPreviews.value[0].urls).toEqual(['/view?a=1'])
     expect(promotedPreviews.value[1].urls).toEqual(['/view?b=2'])
+  })
+
+  it('returns preview when only nodePreviewImages exist (e.g. GLSL live preview)', () => {
+    const setup = createSetup()
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
+      setup.subgraphNode.id,
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
+    )
+
+    const blobUrl = 'blob:http://localhost/glsl-preview'
+    seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
+    getNodeImageUrls.mockReturnValue([blobUrl])
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([
+      {
+        sourceNodeId: '10',
+        sourceWidgetName: '$$canvas-image-preview',
+        type: 'image',
+        urls: [blobUrl]
+      }
+    ])
+  })
+
+  it('recomputes when preview images are populated after first evaluation', () => {
+    const setup = createSetup()
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    usePromotionStore().promote(
+      setup.subgraphNode.rootGraph.id,
+      setup.subgraphNode.id,
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
+    )
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([])
+
+    const blobUrl = 'blob:http://localhost/glsl-preview'
+    seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
+    getNodeImageUrls.mockReturnValue([blobUrl])
+
+    expect(promotedPreviews.value).toEqual([
+      {
+        sourceNodeId: '10',
+        sourceWidgetName: '$$canvas-image-preview',
+        type: 'image',
+        urls: [blobUrl]
+      }
+    ])
   })
 
   it('skips interior nodes with no image output', () => {
@@ -214,8 +265,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
@@ -227,8 +277,7 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '99',
-      '$$canvas-image-preview'
+      { sourceNodeId: '99', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
@@ -241,19 +290,17 @@ describe(usePromotedPreviews, () => {
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      'seed'
+      { sourceNodeId: '10', sourceWidgetName: 'seed' }
     )
     usePromotionStore().promote(
       setup.subgraphNode.rootGraph.id,
       setup.subgraphNode.id,
-      '10',
-      '$$canvas-image-preview'
+      { sourceNodeId: '10', sourceWidgetName: '$$canvas-image-preview' }
     )
 
     const mockUrls = ['/view?filename=img.png']
     seedOutputs(setup.subgraph.id, [10])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(mockUrls)
+    getNodeImageUrls.mockReturnValue(mockUrls)
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toHaveLength(1)

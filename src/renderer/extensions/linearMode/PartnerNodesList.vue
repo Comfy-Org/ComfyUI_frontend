@@ -40,7 +40,7 @@ const creditsBadges = computed(() =>
       </Button>
     </template>
     <section
-      class="max-h-(--reka-popover-content-available-height) overflow-y-auto"
+      class="max-h-(--reka-popover-content-available-height) scroll-shadows-comfy-menu-bg overflow-y-auto"
     >
       <PartnerNodeItem
         v-for="[title, price, key] in creditsBadges"
@@ -73,7 +73,7 @@ const creditsBadges = computed(() =>
         <i v-else class="ml-auto icon-[lucide--chevron-down]" />
       </Button>
     </CollapsibleTrigger>
-    <CollapsibleContent class="overflow-y-auto">
+    <CollapsibleContent class="scroll-shadows-comfy-menu-bg overflow-y-auto">
       <PartnerNodeItem
         v-for="[title, price, key] in creditsBadges"
         :key

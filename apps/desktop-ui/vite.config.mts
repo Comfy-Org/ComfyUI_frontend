@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import dotenv from 'dotenv'
+import { config as dotenvConfig } from 'dotenv'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
@@ -11,7 +11,7 @@ import { defineConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-dotenv.config()
+dotenvConfig()
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 

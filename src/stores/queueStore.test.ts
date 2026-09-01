@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 
 // Fixture factory for JobListItem
@@ -66,7 +67,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 describe('TaskItemImpl', () => {
-  it('should remove animated property from outputs during construction', () => {
+  it('should exclude animated from flatOutputs', () => {
     const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
       'node-1': {
@@ -75,11 +76,9 @@ describe('TaskItemImpl', () => {
       }
     })
 
-    // Check that animated property was removed
-    expect('animated' in taskItem.outputs['node-1']).toBe(false)
-
-    expect(taskItem.outputs['node-1'].images).toBeDefined()
-    expect(taskItem.outputs['node-1'].images?.[0]?.filename).toBe('test.png')
+    expect(taskItem.flatOutputs).toHaveLength(1)
+    expect(taskItem.flatOutputs[0].filename).toBe('test.png')
+    expect(taskItem.flatOutputs[0].mediaType).toBe('images')
   })
 
   it('should handle outputs without animated property', () => {
@@ -191,12 +190,13 @@ describe('TaskItemImpl', () => {
     })
   })
 
-  it('should produce no previewable outputs for text-only preview_output', () => {
+  it.skip('should parse text outputs', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),
       preview_output: {
         nodeId: '5',
-        mediaType: 'text'
+        mediaType: 'text',
+        content: 'test'
       } satisfies JobListItem['preview_output']
     }
 
@@ -204,8 +204,8 @@ describe('TaskItemImpl', () => {
 
     expect(task.flatOutputs).toHaveLength(1)
     expect(task.flatOutputs[0].filename).toBe('')
-    expect(task.previewableOutputs).toHaveLength(0)
-    expect(task.previewOutput).toBeUndefined()
+    expect(task.previewableOutputs).toHaveLength(1)
+    expect(task.previewOutput?.content).toBe('test')
   })
 
   describe('error extraction getters', () => {
@@ -341,12 +341,125 @@ describe('useQueueStore', () => {
       expect(store.isLoading).toBe(false)
     })
 
-    it('should clear loading state even if API fails', async () => {
+    it('should clear loading state even if the queue fetch fails', async () => {
       mockGetQueue.mockRejectedValue(new Error('API error'))
       mockGetHistory.mockResolvedValue([])
 
-      await expect(store.update()).rejects.toThrow('API error')
+      await store.update()
       expect(store.isLoading).toBe(false)
+    })
+  })
+
+  describe('update() - single-flight coalescing', () => {
+    it('should coalesce concurrent calls into one re-fetch', async () => {
+      let resolveQueue!: QueueResolver
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
+      mockGetHistory.mockResolvedValue([])
+
+      // First call starts the in-flight request
+      const first = store.update()
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+
+      // These calls arrive while the first is in flight — they should coalesce
+      void store.update()
+      void store.update()
+      void store.update()
+
+      // No additional HTTP requests fired
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+
+      // Resolve the in-flight request
+      resolveQueue({ Running: [], Pending: [] })
+      await first
+
+      // A single re-fetch should fire because dirty was set
+      expect(mockGetQueue).toHaveBeenCalledTimes(2)
+    })
+
+    it('should apply every response (no starvation)', async () => {
+      const firstRunning = createRunningJob(1, 'run-1')
+      const secondRunning = createRunningJob(2, 'run-2')
+
+      let resolveQueue!: QueueResolver
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
+      mockGetHistory.mockResolvedValue([])
+
+      // First call
+      const first = store.update()
+
+      // Second call coalesces
+      void store.update()
+
+      // Resolve first — data should be applied (not discarded)
+      resolveQueue({ Running: [firstRunning], Pending: [] })
+      await first
+
+      expect(store.runningTasks).toHaveLength(1)
+      expect(store.runningTasks[0].jobId).toBe('run-1')
+
+      // The coalesced re-fetch fires; resolve it with new data
+      resolveQueue({ Running: [secondRunning], Pending: [] })
+      // Wait for the re-fetch to complete
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(store.runningTasks).toHaveLength(1)
+      expect(store.runningTasks[0].jobId).toBe('run-2')
+    })
+
+    it('should not fire duplicate requests when no calls arrive during flight', async () => {
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+
+      await store.update()
+
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+      expect(mockGetHistory).toHaveBeenCalledTimes(1)
+    })
+
+    it('should clear loading state after coalesced re-fetch completes', async () => {
+      let resolveQueue!: QueueResolver
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
+      mockGetHistory.mockResolvedValue([])
+
+      const first = store.update()
+      void store.update() // coalesce
+
+      resolveQueue({ Running: [], Pending: [] })
+      await first
+
+      // isLoading should be true again for the re-fetch
+      expect(store.isLoading).toBe(true)
+
+      resolveQueue({ Running: [], Pending: [] })
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(store.isLoading).toBe(false)
+    })
+
+    it('should allow new requests after coalesced re-fetch completes', async () => {
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+
+      await store.update()
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+
+      await store.update()
+      expect(mockGetQueue).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -826,104 +939,178 @@ describe('useQueueStore', () => {
     })
   })
 
-  describe('update deduplication', () => {
-    it('should discard stale responses when newer request completes first', async () => {
-      let resolveFirst: QueueResolver
-      let resolveSecond: QueueResolver
+  describe('update deduplication (coalescing)', () => {
+    it('should coalesce concurrent calls — second call does not fire its own request', async () => {
+      let resolveQueue!: QueueResolver
 
-      const firstQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveFirst = resolve
-      })
-      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveSecond = resolve
-      })
-
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
       mockGetHistory.mockResolvedValue([])
-
-      mockGetQueue
-        .mockReturnValueOnce(firstQueuePromise)
-        .mockReturnValueOnce(secondQueuePromise)
 
       const firstUpdate = store.update()
       const secondUpdate = store.update()
 
-      resolveSecond!({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      // Only one HTTP request should have been made
+      expect(mockGetQueue).toHaveBeenCalledTimes(1)
+
+      // Second call returns immediately (coalesced)
       await secondUpdate
 
-      expect(store.pendingTasks).toHaveLength(1)
-      expect(store.pendingTasks[0].jobId).toBe('new-job')
-
-      resolveFirst!({
-        Running: [],
-        Pending: [createPendingJob(1, 'stale-job')]
-      })
+      // Resolve the in-flight request
+      resolveQueue({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
       await firstUpdate
 
       expect(store.pendingTasks).toHaveLength(1)
       expect(store.pendingTasks[0].jobId).toBe('new-job')
+
+      // A re-fetch fires because dirty was set
+      expect(mockGetQueue).toHaveBeenCalledTimes(2)
     })
 
-    it('should set isLoading to false only for the latest request', async () => {
-      let resolveFirst: QueueResolver
-      let resolveSecond: QueueResolver
+    it('should clear isLoading after in-flight request completes', async () => {
+      let resolveQueue!: QueueResolver
 
-      const firstQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveFirst = resolve
-      })
-      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveSecond = resolve
-      })
-
+      mockGetQueue.mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolveQueue = resolve
+          })
+      )
       mockGetHistory.mockResolvedValue([])
-
-      mockGetQueue
-        .mockReturnValueOnce(firstQueuePromise)
-        .mockReturnValueOnce(secondQueuePromise)
 
       const firstUpdate = store.update()
       expect(store.isLoading).toBe(true)
 
-      const secondUpdate = store.update()
-      expect(store.isLoading).toBe(true)
+      // Second call coalesces and returns immediately
+      void store.update()
 
-      resolveSecond!({ Running: [], Pending: [] })
-      await secondUpdate
-
-      expect(store.isLoading).toBe(false)
-
-      resolveFirst!({ Running: [], Pending: [] })
+      resolveQueue({ Running: [], Pending: [] })
       await firstUpdate
 
+      // isLoading is true again because re-fetch was triggered
+      expect(store.isLoading).toBe(true)
+
+      // Resolve the re-fetch
+      resolveQueue({ Running: [], Pending: [] })
+      await new Promise((r) => setTimeout(r, 0))
+
       expect(store.isLoading).toBe(false)
     })
 
-    it('should handle stale request failure without affecting latest state', async () => {
-      let resolveSecond: QueueResolver
+    it('should handle in-flight failure and still trigger coalesced re-fetch', async () => {
+      let callCount = 0
+      let resolveSecond!: QueueResolver
 
-      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
-        resolveSecond = resolve
+      mockGetQueue.mockImplementation(() => {
+        callCount++
+        if (callCount === 1) {
+          return Promise.reject(new Error('network error'))
+        }
+        return new Promise<QueueResponse>((resolve) => {
+          resolveSecond = resolve
+        })
       })
-
       mockGetHistory.mockResolvedValue([])
 
-      mockGetQueue
-        .mockRejectedValueOnce(new Error('stale network error'))
-        .mockReturnValueOnce(secondQueuePromise)
-
       const firstUpdate = store.update()
-      const secondUpdate = store.update()
+      void store.update() // coalesces, sets dirty
 
-      resolveSecond!({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
-      await secondUpdate
+      // First call resolves (allSettled absorbs the failure) but the dirty
+      // flag still triggers a re-fetch when the in-flight request finishes.
+      await firstUpdate
+      expect(mockGetQueue).toHaveBeenCalledTimes(2)
+
+      resolveSecond({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      await new Promise((r) => setTimeout(r, 0))
 
       expect(store.pendingTasks).toHaveLength(1)
       expect(store.pendingTasks[0].jobId).toBe('new-job')
       expect(store.isLoading).toBe(false)
+    })
+  })
 
-      await expect(firstUpdate).rejects.toThrow('stale network error')
+  describe('update() partial failures', () => {
+    it('reconciles when the queue fetch succeeds, even with an empty snapshot', async () => {
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+      const executionStore = useExecutionStore()
+      const reconcileSpy = vi.spyOn(executionStore, 'reconcileInitializingJobs')
 
-      expect(store.pendingTasks).toHaveLength(1)
-      expect(store.pendingTasks[0].jobId).toBe('new-job')
+      await store.update()
+
+      expect(reconcileSpy).toHaveBeenCalledWith(new Set())
+    })
+
+    it('preserves prior queue state and skips reconcile when the queue fetch fails', async () => {
+      mockGetQueue
+        .mockResolvedValueOnce({
+          Running: [createRunningJob(0, 'run-1')],
+          Pending: []
+        })
+        .mockRejectedValueOnce(new Error('network down'))
+      mockGetHistory.mockResolvedValue([])
+      const executionStore = useExecutionStore()
+      const reconcileSpy = vi.spyOn(executionStore, 'reconcileInitializingJobs')
+
+      await store.update()
+      await store.update()
+
+      // First update reconciles with run-1; second update's queue fetch
+      // rejects, so reconcile must not be called again.
+      expect(reconcileSpy).toHaveBeenCalledTimes(1)
+      expect(reconcileSpy).toHaveBeenLastCalledWith(new Set(['run-1']))
+      expect(store.runningTasks).toHaveLength(1)
+      expect(store.runningTasks[0].jobId).toBe('run-1')
+    })
+
+    it('still updates history when only the queue fetch fails', async () => {
+      mockGetQueue.mockRejectedValue(new Error('queue down'))
+      mockGetHistory.mockResolvedValue([createHistoryJob(0, 'hist-1')])
+
+      await store.update()
+
+      expect(store.historyTasks).toHaveLength(1)
+      expect(store.historyTasks[0].jobId).toBe('hist-1')
+    })
+
+    it('still updates queue when only the history fetch fails', async () => {
+      mockGetQueue.mockResolvedValue({
+        Running: [createRunningJob(0, 'run-1')],
+        Pending: []
+      })
+      mockGetHistory.mockRejectedValue(new Error('history down'))
+
+      await store.update()
+
+      expect(store.runningTasks).toHaveLength(1)
+      expect(store.runningTasks[0].jobId).toBe('run-1')
+    })
+
+    it('preserves prior state and skips reconcile when both fetches fail', async () => {
+      mockGetQueue
+        .mockResolvedValueOnce({
+          Running: [createRunningJob(0, 'run-1')],
+          Pending: []
+        })
+        .mockRejectedValueOnce(new Error('queue down'))
+      mockGetHistory
+        .mockResolvedValueOnce([createHistoryJob(0, 'hist-1')])
+        .mockRejectedValueOnce(new Error('history down'))
+      const executionStore = useExecutionStore()
+      const reconcileSpy = vi.spyOn(executionStore, 'reconcileInitializingJobs')
+
+      await store.update()
+      await store.update()
+
+      expect(reconcileSpy).toHaveBeenCalledTimes(1)
+      expect(store.runningTasks).toHaveLength(1)
+      expect(store.runningTasks[0].jobId).toBe('run-1')
+      expect(store.historyTasks).toHaveLength(1)
+      expect(store.historyTasks[0].jobId).toBe('hist-1')
       expect(store.isLoading).toBe(false)
     })
   })

@@ -4,7 +4,7 @@ import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import { storeToRefs } from 'pinia'
 
-import { d, t } from '@/i18n'
+import { t } from '@/i18n'
 import type {
   AssetFilterState,
   OwnershipOption
@@ -21,6 +21,7 @@ import {
   getAssetBaseModels,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -37,10 +38,49 @@ export interface AssetDisplayItem extends AssetItem {
   secondaryText: string
   badges: AssetBadge[]
   stats: {
-    formattedDate?: string
     downloadCount?: string
     stars?: string
   }
+}
+
+const displayItemCache = new WeakMap<AssetItem, AssetDisplayItem>()
+
+function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
+  const badges: AssetBadge[] = []
+
+  const typeTag = asset.tags.find((tag) => tag !== 'models')
+  if (typeTag) {
+    const badgeLabel = typeTag.includes('/')
+      ? typeTag.substring(typeTag.indexOf('/') + 1)
+      : typeTag
+
+    badges.push({ label: badgeLabel, type: 'type' })
+  }
+
+  for (const model of getAssetBaseModels(asset)) {
+    badges.push({ label: model, type: 'base' })
+  }
+
+  // Intentionally no formatted date here — the WeakMap caches by AssetItem
+  // reference, so a pre-formatted string would pin the locale active at first
+  // transform. AssetCard formats `created_at` at render via `d()` instead.
+  return {
+    ...asset,
+    secondaryText: getAssetFilename(asset),
+    badges,
+    stats: {
+      downloadCount: undefined,
+      stars: undefined
+    }
+  }
+}
+
+function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
+  const cached = displayItemCache.get(asset)
+  if (cached) return cached
+  const built = buildDisplayItem(asset)
+  displayItemCache.set(asset, built)
+  return built
 }
 
 /**
@@ -81,51 +121,12 @@ export function useAssetBrowser(
     return selectedNavItem.value
   })
 
-  // Transform API asset to display asset
-  function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
-    const secondaryText = getAssetFilename(asset)
-
-    const badges: AssetBadge[] = []
-
-    const typeTag = asset.tags.find((tag) => tag !== 'models')
-    // Type badge from non-root tag
-    if (typeTag) {
-      // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
-      const badgeLabel = typeTag.includes('/')
-        ? typeTag.substring(typeTag.indexOf('/') + 1)
-        : typeTag
-
-      badges.push({ label: badgeLabel, type: 'type' })
-    }
-
-    // Base model badges from metadata
-    const baseModels = getAssetBaseModels(asset)
-    for (const model of baseModels) {
-      badges.push({ label: model, type: 'base' })
-    }
-
-    // Create display stats from API data
-    const stats = {
-      formattedDate: asset.created_at
-        ? d(new Date(asset.created_at), { dateStyle: 'short' })
-        : undefined,
-      downloadCount: undefined, // Not available in API
-      stars: undefined // Not available in API
-    }
-
-    return {
-      ...asset,
-      secondaryText,
-      badges,
-      stats
-    }
-  }
-
   const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
-      .filter((asset) => asset.tags[0] === 'models')
-      .map((asset) => asset.tags[1])
-      .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
+      .filter((asset) => asset.tags.includes(MODELS_TAG))
+      .flatMap((asset) =>
+        asset.tags.filter((tag) => tag !== MODELS_TAG && tag.length > 0)
+      )
       .map((tag) => tag.split('/')[0])
 
     return Array.from(new Set(categories))

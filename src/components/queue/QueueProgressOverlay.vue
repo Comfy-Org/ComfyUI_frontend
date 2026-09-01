@@ -45,7 +45,7 @@
     </div>
   </div>
 
-  <ResultGallery
+  <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
@@ -57,7 +57,7 @@ import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
-import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
@@ -66,6 +66,7 @@ import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import { isCloud } from '@/platform/distribution/types'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -93,6 +94,7 @@ const assetsStore = useAssetsStore()
 const assetSelectionStore = useAssetSelectionStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
 const {
   totalPercentFormatted,
@@ -188,6 +190,7 @@ const {
 const displayedJobGroups = computed(() => groupedJobItems.value)
 
 const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  trackFeatureUsed()
   const jobId = item.taskRef?.jobId
   if (!jobId) return
 
@@ -209,6 +212,7 @@ const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
 })
 
 const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
+  trackFeatureUsed()
   if (!item.taskRef) return
   await queueStore.delete(item.taskRef)
 })
@@ -224,10 +228,12 @@ const setExpanded = (expanded: boolean) => {
 }
 
 const viewAllJobs = () => {
+  trackFeatureUsed()
   setExpanded(true)
 }
 
 const toggleAssetsSidebar = () => {
+  trackFeatureUsed()
   sidebarTabStore.toggleSidebarTab('assets')
 }
 
@@ -257,12 +263,14 @@ const focusAssetInSidebar = async (item: JobListItem) => {
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
+    trackFeatureUsed()
     await openResultGallery(item)
     await focusAssetInSidebar(item)
   }
 )
 
 const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
+  trackFeatureUsed()
   // Capture pending jobIds before clearing
   const pendingJobIds = queueStore.pendingTasks
     .map((task) => task.jobId)
@@ -275,6 +283,7 @@ const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
 })
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {
+  trackFeatureUsed()
   const tasks = queueStore.runningTasks
   const jobIds = tasks
     .map((task) => task.jobId)
@@ -298,6 +307,7 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
 })
 
 const onClearHistoryFromMenu = () => {
+  trackFeatureUsed()
   showQueueClearHistoryDialog()
 }
 </script>

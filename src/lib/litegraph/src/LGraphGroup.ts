@@ -25,6 +25,8 @@ import {
 } from './measure'
 import type { ISerialisedGroup } from './types/serialisation'
 
+export type GroupId = number
+
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
 }
@@ -36,11 +38,11 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static padding = 4
   static defaultColour = '#335'
 
-  id: number
+  id: GroupId
   color?: string
   title: string
   font?: string
-  font_size: number = LiteGraph.DEFAULT_GROUP_FONT || 24
+  font_size: number = LiteGraph.GROUP_TEXT_SIZE
   _bounding = new Rectangle(10, 10, LGraphGroup.minWidth, LGraphGroup.minHeight)
 
   _pos: Point = this._bounding.pos
@@ -52,7 +54,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   flags: IGraphGroupFlags = {}
   selected?: boolean
 
-  constructor(title?: string, id?: number) {
+  constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = id ?? -1
     this.title = title || 'Group'
@@ -116,7 +118,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   }
 
   get titleHeight() {
-    return this.font_size * 1.4
+    return LiteGraph.NODE_TITLE_HEIGHT
   }
 
   get children(): ReadonlySet<Positionable> {
@@ -148,7 +150,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this._bounding.set(o.bounding)
     this.color = o.color
     this.flags = o.flags || this.flags
-    if (o.font_size) this.font_size = o.font_size
   }
 
   serialize(): ISerialisedGroup {
@@ -158,7 +159,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       title: this.title,
       bounding: [...b],
       color: this.color,
-      font_size: this.font_size,
       flags: this.flags
     }
   }
@@ -170,7 +170,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    */
   draw(graphCanvas: LGraphCanvas, ctx: CanvasRenderingContext2D): void {
     const { padding, resizeLength, defaultColour } = LGraphGroup
-    const font_size = this.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
+    const font_size = LiteGraph.GROUP_TEXT_SIZE
 
     const [x, y] = this._pos
     const [width, height] = this._size
@@ -181,7 +181,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     ctx.fillStyle = color
     ctx.strokeStyle = color
     ctx.beginPath()
-    ctx.rect(x + 0.5, y + 0.5, width, font_size * 1.4)
+    ctx.rect(x + 0.5, y + 0.5, width, LiteGraph.NODE_TITLE_HEIGHT)
     ctx.fill()
 
     // Group background, border
@@ -203,11 +203,13 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     // Title
     ctx.font = `${font_size}px ${LiteGraph.GROUP_FONT}`
     ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
     ctx.fillText(
       this.title + (this.pinned ? '📌' : ''),
-      x + padding,
-      y + font_size
+      x + font_size / 2,
+      y + LiteGraph.NODE_TITLE_HEIGHT / 2 + 1
     )
+    ctx.textBaseline = 'alphabetic'
 
     if (LiteGraph.highlight_selected_group && this.selected) {
       strokeShape(ctx, this._bounding, {
@@ -250,7 +252,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
    */
   recomputeInsideNodes(
     maxDepth: number = 100,
-    visited: Set<number> = new Set()
+    visited: Set<GroupId> = new Set()
   ): void {
     if (!this.graph) throw new NullGraphError()
     if (maxDepth <= 0 || visited.has(this.id)) return

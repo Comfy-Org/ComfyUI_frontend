@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="shouldShow"
+    data-testid="queue-inline-progress"
     aria-hidden="true"
     :class="
       cn('pointer-events-none absolute inset-0 overflow-hidden', radiusClass)
@@ -21,7 +22,7 @@
 import { computed } from 'vue'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { hidden = false, radiusClass = 'rounded-[7px]' } = defineProps<{
   hidden?: boolean

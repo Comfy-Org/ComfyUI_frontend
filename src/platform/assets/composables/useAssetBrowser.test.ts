@@ -692,6 +692,25 @@ describe('useAssetBrowser', () => {
       ])
     })
 
+    it('extracts categories regardless of tag order', () => {
+      const assets = [
+        createApiAsset({ tags: ['checkpoints', 'models'] }),
+        createApiAsset({ tags: ['loras', 'models'] }),
+        createApiAsset({ tags: ['models', 'vae'] })
+      ]
+
+      const { navItems } = useAssetBrowser(ref(assets))
+
+      const typeGroup = navItems.value[2] as {
+        items: { id: string }[]
+      }
+      expect(typeGroup.items.map((i) => i.id)).toEqual([
+        'checkpoints',
+        'loras',
+        'vae'
+      ])
+    })
+
     it('ignores non-models root tags', () => {
       const assets = [
         createApiAsset({ tags: ['input', 'images'] }),

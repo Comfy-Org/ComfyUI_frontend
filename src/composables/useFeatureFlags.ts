@@ -26,7 +26,8 @@ export enum ServerFeatureFlag {
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
-  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled'
+  COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
+  SHOW_SIGNIN_BUTTON = 'show_signin_button'
 }
 
 /**
@@ -155,6 +156,12 @@ export function useFeatureFlags() {
         ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
         remoteConfig.value.comfyhub_profile_gate_enabled,
         false
+      )
+    },
+    get showSignInButton(): boolean | undefined {
+      return api.getServerFeature<boolean | undefined>(
+        ServerFeatureFlag.SHOW_SIGNIN_BUTTON,
+        undefined
       )
     }
   })

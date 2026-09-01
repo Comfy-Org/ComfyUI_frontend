@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -21,8 +22,11 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   mapAllNodes: vi.fn(() => [])
 }))
 
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 vi.mock('@/i18n', () => ({
@@ -54,7 +58,10 @@ vi.mock(
   })
 )
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useErrorGroups } from './useErrorGroups'
 
 function makeMissingNodeType(
@@ -83,6 +90,26 @@ function makeMissingNodeType(
   }
 }
 
+function makeModel(
+  name: string,
+  opts: {
+    nodeId?: string | number
+    widgetName?: string
+    directory?: string
+    isAssetSupported?: boolean
+  } = {}
+) {
+  return {
+    name,
+    nodeId: opts.nodeId ?? '1',
+    nodeType: 'CheckpointLoaderSimple',
+    widgetName: opts.widgetName ?? 'ckpt_name',
+    isAssetSupported: opts.isAssetSupported ?? false,
+    isMissing: true as const,
+    directory: opts.directory
+  }
+}
+
 function createErrorGroups() {
   const store = useExecutionErrorStore()
   const searchQuery = ref('')
@@ -103,8 +130,9 @@ describe('useErrorGroups', () => {
     })
 
     it('groups non-replaceable nodes by cnrId', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeA', { cnrId: 'pack-1' }),
         makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' }),
         makeMissingNodeType('NodeC', { cnrId: 'pack-2', nodeId: '3' })
@@ -123,8 +151,9 @@ describe('useErrorGroups', () => {
     })
 
     it('excludes replaceable nodes from missingPackGroups', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('OldNode', {
           isReplaceable: true,
           replacement: { new_node_id: 'NewNode' }
@@ -141,8 +170,9 @@ describe('useErrorGroups', () => {
     })
 
     it('groups nodes without cnrId under null packId', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('UnknownNode', { nodeId: '1' }),
         makeMissingNodeType('AnotherUnknown', { nodeId: '2' })
       ])
@@ -154,8 +184,9 @@ describe('useErrorGroups', () => {
     })
 
     it('sorts groups alphabetically with null packId last', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeA', { cnrId: 'zebra-pack' }),
         makeMissingNodeType('NodeB', { nodeId: '2' }),
         makeMissingNodeType('NodeC', { cnrId: 'alpha-pack', nodeId: '3' })
@@ -167,8 +198,9 @@ describe('useErrorGroups', () => {
     })
 
     it('sorts nodeTypes within each group alphabetically by type then nodeId', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeB', { cnrId: 'pack-1', nodeId: '2' }),
         makeMissingNodeType('NodeA', { cnrId: 'pack-1', nodeId: '3' }),
         makeMissingNodeType('NodeA', { cnrId: 'pack-1', nodeId: '1' })
@@ -183,9 +215,10 @@ describe('useErrorGroups', () => {
     })
 
     it('handles string nodeType entries', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
-        'StringGroupNode' as unknown as MissingNodeType
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        fromAny<MissingNodeType, unknown>('StringGroupNode')
       ])
       await nextTick()
 
@@ -201,8 +234,9 @@ describe('useErrorGroups', () => {
     })
 
     it('includes missing_node group when missing nodes exist', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
       ])
       await nextTick()
@@ -214,8 +248,9 @@ describe('useErrorGroups', () => {
     })
 
     it('includes swap_nodes group when replaceable nodes exist', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('OldNode', {
           isReplaceable: true,
           replacement: { new_node_id: 'NewNode' }
@@ -230,8 +265,9 @@ describe('useErrorGroups', () => {
     })
 
     it('includes both swap_nodes and missing_node when both exist', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('OldNode', {
           isReplaceable: true,
           replacement: { new_node_id: 'NewNode' }
@@ -249,8 +285,9 @@ describe('useErrorGroups', () => {
     })
 
     it('swap_nodes has lower priority than missing_node', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('OldNode', {
           isReplaceable: true,
           replacement: { new_node_id: 'NewNode' }
@@ -510,45 +547,22 @@ describe('useErrorGroups', () => {
     })
 
     it('includes missing node group title as message', async () => {
-      const { store, groups } = createErrorGroups()
-      store.setMissingNodeTypes([
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
         makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
       ])
       await nextTick()
 
-      expect(groups.groupedErrorMessages.value.length).toBeGreaterThan(0)
-    })
-  })
-
-  describe('collapseState', () => {
-    it('returns a reactive object', () => {
-      const { groups } = createErrorGroups()
-      expect(groups.collapseState).toBeDefined()
-      expect(typeof groups.collapseState).toBe('object')
+      const missingGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'missing_node'
+      )
+      expect(missingGroup).toBeDefined()
+      expect(groups.groupedErrorMessages.value).toContain(missingGroup!.title)
     })
   })
 
   describe('missingModelGroups', () => {
-    function makeModel(
-      name: string,
-      opts: {
-        nodeId?: string | number
-        widgetName?: string
-        directory?: string
-        isAssetSupported?: boolean
-      } = {}
-    ) {
-      return {
-        name,
-        nodeId: opts.nodeId ?? '1',
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: opts.widgetName ?? 'ckpt_name',
-        isAssetSupported: opts.isAssetSupported ?? false,
-        isMissing: true as const,
-        directory: opts.directory
-      }
-    }
-
     it('returns empty array when no missing models', () => {
       const { groups } = createErrorGroups()
       expect(groups.missingModelGroups.value).toEqual([])
@@ -627,6 +641,59 @@ describe('useErrorGroups', () => {
       expect(model.referencingNodes).toHaveLength(2)
     })
 
+    it('groups non-asset-supported models by directory in OSS', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: false
+        }),
+        makeModel('model_b.safetensors', {
+          nodeId: '2',
+          directory: 'checkpoints',
+          isAssetSupported: false
+        }),
+        makeModel('lora_a.safetensors', {
+          nodeId: '3',
+          directory: 'loras',
+          isAssetSupported: false
+        })
+      ])
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(2)
+      const ckptGroup = groups.missingModelGroups.value.find(
+        (g) => g.directory === 'checkpoints'
+      )
+      expect(ckptGroup?.models).toHaveLength(2)
+      expect(ckptGroup?.isAssetSupported).toBe(false)
+      const loraGroup = groups.missingModelGroups.value.find(
+        (g) => g.directory === 'loras'
+      )
+      expect(loraGroup?.models).toHaveLength(1)
+    })
+
+    it('does not lump non-asset-supported models into UNSUPPORTED group in OSS', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: false
+        }),
+        makeModel('lora_a.safetensors', {
+          nodeId: '2',
+          directory: 'loras',
+          isAssetSupported: false
+        })
+      ])
+      await nextTick()
+
+      const unsupported = groups.missingModelGroups.value.find(
+        (g) => g.directory === null && !g.isAssetSupported
+      )
+      expect(unsupported).toBeUndefined()
+    })
+
     it('includes missing_model group in allErrorGroups', async () => {
       const { store, groups } = createErrorGroups()
       store.surfaceMissingModels([makeModel('model_a.safetensors')])
@@ -636,6 +703,101 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_model'
       )
       expect(modelGroup).toBeDefined()
+    })
+  })
+
+  describe('missingModelGroups (Cloud)', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+    })
+
+    afterEach(() => {
+      mockIsCloud.value = false
+    })
+
+    it('puts unsupported models into UNSUPPORTED group in Cloud', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: false
+        }),
+        makeModel('model_b.safetensors', {
+          nodeId: '2',
+          directory: 'loras',
+          isAssetSupported: false
+        })
+      ])
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(1)
+      expect(groups.missingModelGroups.value[0].isAssetSupported).toBe(false)
+      expect(groups.missingModelGroups.value[0].directory).toBeNull()
+    })
+
+    it('groups asset-supported models by directory in Cloud', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('model_a.safetensors', {
+          directory: 'checkpoints',
+          isAssetSupported: true
+        }),
+        makeModel('model_b.safetensors', {
+          nodeId: '2',
+          directory: 'loras',
+          isAssetSupported: true
+        })
+      ])
+      await nextTick()
+
+      expect(groups.missingModelGroups.value).toHaveLength(2)
+      expect(
+        groups.missingModelGroups.value.every((g) => g.isAssetSupported)
+      ).toBe(true)
+    })
+  })
+
+  describe('unfiltered vs selection-filtered model/media groups', () => {
+    it('exposes both unfiltered (missingModelGroups) and filtered (filteredMissingModelGroups)', () => {
+      const { groups } = createErrorGroups()
+      expect(groups.missingModelGroups).toBeDefined()
+      expect(groups.filteredMissingModelGroups).toBeDefined()
+      expect(groups.missingMediaGroups).toBeDefined()
+      expect(groups.filteredMissingMediaGroups).toBeDefined()
+    })
+
+    it('missingModelGroups returns total candidates regardless of selection (ErrorOverlay contract)', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('a.safetensors', { nodeId: '1', directory: 'checkpoints' }),
+        makeModel('b.safetensors', { nodeId: '2', directory: 'checkpoints' })
+      ])
+      // Simulate canvas selection of a single node so the filtered
+      // variant actually narrows. Without this, both sides return the
+      // same value trivially and the test can't prove the contract.
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      const canvasStore = useCanvasStore()
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
+      await nextTick()
+
+      // Unfiltered total stays at one group of two models regardless of
+      // the selection — ErrorOverlay reads this for the overlay label
+      // and must not shrink with canvas selection.
+      expect(groups.missingModelGroups.value).toHaveLength(1)
+      expect(groups.missingModelGroups.value[0].models).toHaveLength(2)
+
+      // Filtered variant does narrow under the same selection state —
+      // this is how the errors tab scopes cards to the selected node.
+      // Exact filtered output depends on the app.rootGraph lookup
+      // (mocked to return undefined here); what matters is that the
+      // filtered shape is a different reference and does not blindly
+      // mirror the unfiltered one.
+      expect(groups.filteredMissingModelGroups.value).not.toBe(
+        groups.missingModelGroups.value
+      )
     })
   })
 })

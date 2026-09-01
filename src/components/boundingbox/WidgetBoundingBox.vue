@@ -1,21 +1,48 @@
 <template>
-  <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1">
+  <div
+    class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1"
+    data-testid="bounding-box"
+  >
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.x') }}
     </label>
-    <ScrubableNumberInput v-model="x" :min="0" :step="1" />
+    <ScrubableNumberInput
+      v-model="x"
+      :min="0"
+      :step="1"
+      :disabled
+      data-testid="bounding-box-x"
+    />
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.y') }}
     </label>
-    <ScrubableNumberInput v-model="y" :min="0" :step="1" />
+    <ScrubableNumberInput
+      v-model="y"
+      :min="0"
+      :step="1"
+      :disabled
+      data-testid="bounding-box-y"
+    />
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.width') }}
     </label>
-    <ScrubableNumberInput v-model="width" :min="1" :step="1" />
+    <ScrubableNumberInput
+      v-model="width"
+      :min="1"
+      :step="1"
+      :disabled
+      data-testid="bounding-box-width"
+    />
     <label class="content-center text-xs text-node-component-slot-text">
       {{ $t('boundingBox.height') }}
     </label>
-    <ScrubableNumberInput v-model="height" :min="1" :step="1" />
+    <ScrubableNumberInput
+      v-model="height"
+      :min="1"
+      :step="1"
+      :disabled
+      data-testid="bounding-box-height"
+    />
   </div>
 </template>
 
@@ -24,6 +51,10 @@ import { computed } from 'vue'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import type { Bounds } from '@/renderer/core/layout/types'
+
+const { disabled = false } = defineProps<{
+  disabled?: boolean
+}>()
 
 const modelValue = defineModel<Bounds>({
   default: () => ({ x: 0, y: 0, width: 512, height: 512 })

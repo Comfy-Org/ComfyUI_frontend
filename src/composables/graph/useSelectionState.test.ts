@@ -3,20 +3,17 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   createMockLGraphNode,
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
-
-// Mock composables
-vi.mock('@/composables/sidebarTabs/useNodeLibrarySidebarTab', () => ({
-  useNodeLibrarySidebarTab: vi.fn()
-}))
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(),
@@ -39,6 +36,45 @@ const mockConnection = {
   isNode: false
 }
 
+function createMockNodeDef() {
+  return new ComfyNodeDefImpl({
+    name: 'TestNode',
+    display_name: 'Test Node',
+    category: 'test',
+    input: {},
+    output: [],
+    output_name: [],
+    output_is_list: [],
+    output_node: false,
+    python_module: 'nodes',
+    description: ''
+  })
+}
+
+function selectSingleNodeWithNodeDef(id: number) {
+  const canvasStore = useCanvasStore()
+  const nodeDefStore = useNodeDefStore()
+
+  canvasStore.$state.selectedItems = [
+    createMockLGraphNode({ id, type: 'TestNode' })
+  ]
+  vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(createMockNodeDef())
+}
+
+function mockSettingValues(overrides: Record<string, unknown> = {}) {
+  const settingStore = useSettingStore()
+  const settingValues: Record<string, unknown> = {
+    'Comfy.UseNewMenu': 'Top',
+    'Comfy.NodeLibrary.NewDesign': true,
+    'Comfy.Load3D.3DViewerEnable': false,
+    ...overrides
+  }
+
+  vi.mocked(settingStore.get).mockImplementation(
+    (key: string): unknown => settingValues[key]
+  )
+}
+
 describe('useSelectionState', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -49,14 +85,7 @@ describe('useSelectionState', () => {
         createSpy: vi.fn
       })
     )
-
-    // Setup mock composables
-    vi.mocked(useNodeLibrarySidebarTab).mockReturnValue({
-      id: 'node-library-tab',
-      title: 'Node Library',
-      type: 'custom',
-      render: () => null
-    } as ReturnType<typeof useNodeLibrarySidebarTab>)
+    mockSettingValues()
 
     // Setup mock utility functions
     vi.mocked(isLGraphNode).mockImplementation((item: unknown) => {
@@ -185,6 +214,85 @@ describe('useSelectionState', () => {
       const { selectedNodes: newSelectedNodes } = useSelectionState()
       const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
       expect(newIsPinned).toBe(false)
+    })
+  })
+
+  describe('Node Info', () => {
+    test('should open the right side info panel for a selected node', () => {
+      const rightSidePanelStore = useRightSidePanelStore()
+      selectSingleNodeWithNodeDef(8)
+
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(true)
+      openNodeInfo()
+
+      expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
+    })
+
+    test('should not open the right side panel for multiple selected nodes', () => {
+      const canvasStore = useCanvasStore()
+      const rightSidePanelStore = useRightSidePanelStore()
+      canvasStore.$state.selectedItems = [
+        createMockLGraphNode({ id: 9, type: 'TestNode' }),
+        createMockLGraphNode({ id: 10, type: 'TestNode' })
+      ]
+
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(false)
+      openNodeInfo()
+
+      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+    })
+
+    test('should open the right side info panel when new menu uses the legacy node library', () => {
+      const rightSidePanelStore = useRightSidePanelStore()
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.NodeLibrary.NewDesign': false
+      })
+      selectSingleNodeWithNodeDef(11)
+
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(true)
+
+      const didOpen = openNodeInfo()
+
+      expect(didOpen).toBe(true)
+      expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
+    })
+
+    test('should not open node info when legacy menu uses the new node library', () => {
+      const rightSidePanelStore = useRightSidePanelStore()
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeLibrary.NewDesign': true
+      })
+      selectSingleNodeWithNodeDef(12)
+
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(false)
+
+      const didOpen = openNodeInfo()
+
+      expect(didOpen).toBe(false)
+      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+    })
+
+    test('should not open node info when legacy menu uses the legacy node library', () => {
+      const rightSidePanelStore = useRightSidePanelStore()
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeLibrary.NewDesign': false
+      })
+      selectSingleNodeWithNodeDef(13)
+
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(false)
+
+      const didOpen = openNodeInfo()
+
+      expect(didOpen).toBe(false)
+      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
     })
   })
 })

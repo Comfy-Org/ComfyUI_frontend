@@ -25,7 +25,7 @@
           :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
-          <i class="icon-[lucide--trash-2] size-3.5" />
+          <i class="icon-[lucide--trash-2] size-4" />
         </Button>
         <Button
           variant="muted-textonly"
@@ -33,7 +33,7 @@
           :aria-label="$t('g.edit')"
           @click.stop="editBlueprint"
         >
-          <i class="icon-[lucide--square-pen] size-3.5" />
+          <i class="icon-[lucide--square-pen] size-4" />
         </Button>
       </template>
       <template v-else #actions>
@@ -92,7 +92,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

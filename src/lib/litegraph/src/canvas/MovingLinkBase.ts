@@ -7,7 +7,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
-  Point
+  Point,
+  SlotIndex
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -33,7 +34,7 @@ export abstract class MovingLinkBase implements RenderLink {
   abstract readonly fromSlot: INodeOutputSlot | INodeInputSlot
   abstract readonly fromPos: Point
   abstract readonly fromDirection: LinkDirection
-  abstract readonly fromSlotIndex: number
+  abstract readonly fromSlotIndex: SlotIndex
 
   readonly outputNodeId: NodeId
   readonly outputNode: LGraphNode

@@ -63,7 +63,14 @@ export function useJobMenu(
     if (!data) return
     const filename = `Job ${target.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
-    await workflowService.openWorkflow(temp)
+    try {
+      await workflowService.openWorkflow(temp)
+    } catch (error) {
+      useDialogService().showErrorDialog(error, {
+        title: t('errorDialog.queueOpenWorkflowFailedTitle'),
+        reportType: 'queueOpenWorkflowError'
+      })
+    }
   }
 
   const copyJobId = async (item?: JobListItem | null) => {

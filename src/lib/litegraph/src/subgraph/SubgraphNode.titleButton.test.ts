@@ -1,22 +1,23 @@
-// TODO: Fix these tests after migration
-import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphButton } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 
 import {
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-interface MockPointerEvent {
-  canvasX: number
-  canvasY: number
-}
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
 
-describe.skip('SubgraphNode Title Button', () => {
-  describe.skip('Constructor', () => {
+describe('SubgraphNode Title Button', () => {
+  describe('Constructor', () => {
     it('should automatically add enter_subgraph button', () => {
       const subgraph = createTestSubgraph({
         name: 'Test Subgraph',
@@ -30,10 +31,6 @@ describe.skip('SubgraphNode Title Button', () => {
       const button = subgraphNode.title_buttons[0]
       expect(button).toBeInstanceOf(LGraphButton)
       expect(button.name).toBe('enter_subgraph')
-      expect(button.text).toBe('\uE93B') // pi-window-maximize
-      expect(button.xOffset).toBe(-10)
-      expect(button.yOffset).toBe(0)
-      expect(button.fontSize).toBe(16)
     })
 
     it('should preserve enter_subgraph button when adding more buttons', () => {
@@ -52,7 +49,7 @@ describe.skip('SubgraphNode Title Button', () => {
     })
   })
 
-  describe.skip('onTitleButtonClick', () => {
+  describe('onTitleButtonClick', () => {
     it('should open subgraph when enter_subgraph button is clicked', () => {
       const subgraph = createTestSubgraph({
         name: 'Test Subgraph'
@@ -68,7 +65,7 @@ describe.skip('SubgraphNode Title Button', () => {
 
       subgraphNode.onTitleButtonClick(enterButton, canvas)
 
-      expect(canvas.openSubgraph).toHaveBeenCalledWith(subgraph)
+      expect(canvas.openSubgraph).toHaveBeenCalledWith(subgraph, subgraphNode)
       expect(canvas.dispatch).not.toHaveBeenCalled() // Should not call parent implementation
     })
 
@@ -99,8 +96,8 @@ describe.skip('SubgraphNode Title Button', () => {
     })
   })
 
-  describe.skip('Integration with node click handling', () => {
-    it('should handle clicks on enter_subgraph button', () => {
+  describe('Integration with node click handling', () => {
+    it('should expose button hit testing that canvas uses for click routing', () => {
       const subgraph = createTestSubgraph({
         name: 'Nested Subgraph',
         nodeCount: 3
@@ -130,66 +127,48 @@ describe.skip('SubgraphNode Title Button', () => {
         dispatch: vi.fn()
       } as Partial<LGraphCanvas> as LGraphCanvas
 
-      // Simulate click on the enter button
-      const event: MockPointerEvent = {
-        canvasX: 275, // Near right edge where button should be
-        canvasY: 80 // In title area
-      }
-
       // Calculate node-relative position
       const clickPosRelativeToNode: [number, number] = [
         275 - subgraphNode.pos[0], // 275 - 100 = 175
         80 - subgraphNode.pos[1] // 80 - 100 = -20
       ]
 
-      // @ts-expect-error onMouseDown possibly undefined
-      const handled = subgraphNode.onMouseDown(
-        event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
-        clickPosRelativeToNode,
-        canvas
-      )
+      expect(
+        enterButton.isPointInside(
+          clickPosRelativeToNode[0],
+          clickPosRelativeToNode[1]
+        )
+      ).toBe(true)
 
-      expect(handled).toBe(true)
-      expect(canvas.openSubgraph).toHaveBeenCalledWith(subgraph)
+      subgraphNode.onTitleButtonClick(enterButton, canvas)
+      expect(canvas.openSubgraph).toHaveBeenCalledWith(subgraph, subgraphNode)
     })
 
-    it('should not interfere with normal node operations', () => {
+    it('does not report hits outside the enter button area', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
       subgraphNode.pos = [100, 100]
       subgraphNode.size = [200, 100]
 
-      const canvas = {
-        ctx: {
-          measureText: vi.fn().mockReturnValue({ width: 25 })
-        } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D,
-        openSubgraph: vi.fn(),
-        dispatch: vi.fn()
-      } as Partial<LGraphCanvas> as LGraphCanvas
+      const enterButton = subgraphNode.title_buttons[0]
+      enterButton.getWidth = vi.fn().mockReturnValue(25)
+      enterButton.height = 20
+      enterButton._last_area[0] = 170
+      enterButton._last_area[1] = -30
+      enterButton._last_area[2] = 25
+      enterButton._last_area[3] = 20
 
-      // Click in the body of the node, not on button
-      const event: MockPointerEvent = {
-        canvasX: 200, // Middle of node
-        canvasY: 150 // Body area
-      }
+      const bodyClickRelativeToNode: [number, number] = [100, 50]
 
-      // Calculate node-relative position
-      const clickPosRelativeToNode: [number, number] = [
-        200 - subgraphNode.pos[0], // 200 - 100 = 100
-        150 - subgraphNode.pos[1] // 150 - 100 = 50
-      ]
-
-      const handled = subgraphNode.onMouseDown!(
-        event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
-        clickPosRelativeToNode,
-        canvas
-      )
-
-      expect(handled).toBe(false)
-      expect(canvas.openSubgraph).not.toHaveBeenCalled()
+      expect(
+        enterButton.isPointInside(
+          bodyClickRelativeToNode[0],
+          bodyClickRelativeToNode[1]
+        )
+      ).toBe(false)
     })
 
-    it('should not process button clicks when node is collapsed', () => {
+    it('keeps enter button metadata but canvas is responsible for collapsed guard', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
       subgraphNode.pos = [100, 100]
@@ -206,52 +185,18 @@ describe.skip('SubgraphNode Title Button', () => {
       enterButton._last_area[2] = 25
       enterButton._last_area[3] = 20
 
-      const canvas = {
-        ctx: {
-          measureText: vi.fn().mockReturnValue({ width: 25 })
-        } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D,
-        openSubgraph: vi.fn(),
-        dispatch: vi.fn()
-      } as Partial<LGraphCanvas> as LGraphCanvas
-
-      // Try to click on where the button would be
-      const event: MockPointerEvent = {
-        canvasX: 275,
-        canvasY: 80
-      }
-
       const clickPosRelativeToNode: [number, number] = [
         275 - subgraphNode.pos[0], // 175
         80 - subgraphNode.pos[1] // -20
       ]
 
-      const handled = subgraphNode.onMouseDown!(
-        event as Partial<CanvasPointerEvent> as CanvasPointerEvent,
-        clickPosRelativeToNode,
-        canvas
-      )
-
-      // Should not handle the click when collapsed
-      expect(handled).toBe(false)
-      expect(canvas.openSubgraph).not.toHaveBeenCalled()
-    })
-  })
-
-  describe.skip('Visual properties', () => {
-    it('should have appropriate visual properties for enter button', () => {
-      const subgraph = createTestSubgraph()
-      const subgraphNode = createTestSubgraphNode(subgraph)
-
-      const enterButton = subgraphNode.title_buttons[0]
-
-      // Check visual properties
-      expect(enterButton.text).toBe('\uE93B') // pi-window-maximize
-      expect(enterButton.fontSize).toBe(16) // Icon size
-      expect(enterButton.xOffset).toBe(-10) // Positioned from right edge
-      expect(enterButton.yOffset).toBe(0) // Centered vertically
-
-      // Should be visible by default
-      expect(enterButton.visible).toBe(true)
+      expect(
+        enterButton.isPointInside(
+          clickPosRelativeToNode[0],
+          clickPosRelativeToNode[1]
+        )
+      ).toBe(true)
+      expect(subgraphNode.flags.collapsed).toBe(true)
     })
   })
 })

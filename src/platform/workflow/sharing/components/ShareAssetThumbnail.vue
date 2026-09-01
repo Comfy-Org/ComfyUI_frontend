@@ -32,7 +32,7 @@ import { useImage } from '@vueuse/core'
 import { computed } from 'vue'
 
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { name, previewUrl } = defineProps<{
   name: string

@@ -1,19 +1,27 @@
-// TODO: Fix these tests after migration
-import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
   LGraphNode,
+  LGraphEventMode,
   ExecutableNodeDTO
 } from '@/lib/litegraph/src/litegraph'
 
 import {
   createNestedSubgraphs,
   createTestSubgraph,
-  createTestSubgraphNode
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-describe.skip('ExecutableNodeDTO Creation', () => {
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  resetSubgraphFixtureState()
+})
+
+describe('ExecutableNodeDTO Creation', () => {
   it('should create DTO from regular node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
@@ -103,7 +111,7 @@ describe.skip('ExecutableNodeDTO Creation', () => {
   })
 })
 
-describe.skip('ExecutableNodeDTO Path-Based IDs', () => {
+describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should generate simple ID for root node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Root Node')
@@ -157,7 +165,7 @@ describe.skip('ExecutableNodeDTO Path-Based IDs', () => {
   })
 })
 
-describe.skip('ExecutableNodeDTO Input Resolution', () => {
+describe('ExecutableNodeDTO Input Resolution', () => {
   it('should return undefined for unconnected inputs', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
@@ -199,7 +207,7 @@ describe.skip('ExecutableNodeDTO Input Resolution', () => {
   })
 })
 
-describe.skip('ExecutableNodeDTO Output Resolution', () => {
+describe('ExecutableNodeDTO Output Resolution', () => {
   it('should resolve outputs for simple nodes', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
@@ -249,7 +257,233 @@ describe.skip('ExecutableNodeDTO Output Resolution', () => {
   })
 })
 
-describe.skip('ExecutableNodeDTO Properties', () => {
+describe('Muted node output resolution', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('should return undefined for NEVER mode nodes', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Muted Node')
+    node.addOutput('out', 'string')
+    node.mode = LGraphEventMode.NEVER
+    graph.add(node)
+
+    const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
+    const resolved = dto.resolveOutput(0, 'string', new Set())
+
+    expect(resolved).toBeUndefined()
+  })
+
+  it('should return undefined for muted subgraph nodes without throwing', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'out', type: 'IMAGE' }],
+      nodeCount: 1
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    subgraphNode.mode = LGraphEventMode.NEVER
+
+    // Empty map simulates executionUtil skipping getInnerNodes() for muted nodes
+    const nodesByExecutionId = new Map()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    const resolved = dto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeUndefined()
+  })
+
+  it('should resolve undefined when input is connected to a muted node', () => {
+    const graph = new LGraph()
+
+    const mutedNode = new LGraphNode('Muted Node')
+    mutedNode.addOutput('result', 'IMAGE')
+    mutedNode.mode = LGraphEventMode.NEVER
+    graph.add(mutedNode)
+
+    const downstreamNode = new LGraphNode('Downstream')
+    downstreamNode.addInput('input', 'IMAGE')
+    graph.add(downstreamNode)
+
+    mutedNode.connect(0, downstreamNode, 0)
+
+    const nodeDtoMap = new Map()
+    const mutedDto = new ExecutableNodeDTO(mutedNode, [], nodeDtoMap, undefined)
+    nodeDtoMap.set(mutedDto.id, mutedDto)
+
+    const downstreamDto = new ExecutableNodeDTO(
+      downstreamNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(downstreamDto.id, downstreamDto)
+
+    const resolved = downstreamDto.resolveInput(0)
+    expect(resolved).toBeUndefined()
+  })
+})
+
+describe('Bypass node output resolution', () => {
+  it('should still resolve bypass for BYPASS mode nodes', () => {
+    const graph = new LGraph()
+
+    const upstreamNode = new LGraphNode('Upstream')
+    upstreamNode.addOutput('out', 'IMAGE')
+    graph.add(upstreamNode)
+
+    const bypassedNode = new LGraphNode('Bypassed')
+    bypassedNode.addInput('in', 'IMAGE')
+    bypassedNode.addOutput('out', 'IMAGE')
+    bypassedNode.mode = LGraphEventMode.BYPASS
+    graph.add(bypassedNode)
+
+    upstreamNode.connect(0, bypassedNode, 0)
+
+    const nodeDtoMap = new Map()
+    const upstreamDto = new ExecutableNodeDTO(
+      upstreamNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(upstreamDto.id, upstreamDto)
+
+    const bypassedDto = new ExecutableNodeDTO(
+      bypassedNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(bypassedDto.id, bypassedDto)
+
+    const resolved = bypassedDto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.node).toBe(upstreamDto)
+  })
+})
+
+describe('ALWAYS mode node output resolution', () => {
+  it('should attempt normal resolution for ALWAYS mode nodes', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Normal Node')
+    node.addOutput('out', 'IMAGE')
+    node.mode = LGraphEventMode.ALWAYS
+    graph.add(node)
+
+    const nodeDtoMap = new Map()
+    const dto = new ExecutableNodeDTO(node, [], nodeDtoMap, undefined)
+    nodeDtoMap.set(dto.id, dto)
+
+    const resolved = dto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.node).toBe(dto)
+    expect(resolved?.origin_slot).toBe(0)
+  })
+})
+
+describe('Virtual node resolveVirtualOutput', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('should resolve through resolveVirtualOutput when implemented', () => {
+    const graph = new LGraph()
+
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.addOutput('out', 'IMAGE')
+    graph.add(sourceNode)
+
+    const virtualNode = new LGraphNode('Virtual Get')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    virtualNode.resolveVirtualOutput = () => ({ node: sourceNode, slot: 0 })
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map()
+    const sourceDto = new ExecutableNodeDTO(
+      sourceNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(sourceDto.id, sourceDto)
+
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeDefined()
+    expect(resolved?.node).toBe(sourceDto)
+    expect(resolved?.origin_slot).toBe(0)
+  })
+
+  it('should throw when resolveVirtualOutput returns a node with no matching DTO', () => {
+    const graph = new LGraph()
+
+    const unmappedNode = new LGraphNode('Unmapped Source')
+    unmappedNode.addOutput('out', 'IMAGE')
+    graph.add(unmappedNode)
+
+    const virtualNode = new LGraphNode('Virtual Get')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    virtualNode.resolveVirtualOutput = () => ({
+      node: unmappedNode,
+      slot: 0
+    })
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    expect(() => virtualDto.resolveOutput(0, 'IMAGE', new Set())).toThrow(
+      'No DTO found for virtual source node'
+    )
+  })
+
+  it('should fall through to getInputLink when resolveVirtualOutput returns undefined', () => {
+    const graph = new LGraph()
+
+    const virtualNode = new LGraphNode('Virtual Passthrough')
+    virtualNode.addOutput('out', 'IMAGE')
+    virtualNode.isVirtualNode = true
+    virtualNode.resolveVirtualOutput = () => undefined
+    graph.add(virtualNode)
+
+    const nodeDtoMap = new Map()
+    const virtualDto = new ExecutableNodeDTO(
+      virtualNode,
+      [],
+      nodeDtoMap,
+      undefined
+    )
+    nodeDtoMap.set(virtualDto.id, virtualDto)
+
+    const spy = vi.spyOn(virtualNode, 'getInputLink')
+    const resolved = virtualDto.resolveOutput(0, 'IMAGE', new Set())
+    expect(resolved).toBeUndefined()
+    expect(spy).toHaveBeenCalledWith(0)
+  })
+})
+
+describe('ExecutableNodeDTO Properties', () => {
   it('should provide access to basic properties', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
@@ -284,7 +518,7 @@ describe.skip('ExecutableNodeDTO Properties', () => {
   })
 })
 
-describe.skip('ExecutableNodeDTO Memory Efficiency', () => {
+describe('ExecutableNodeDTO Memory Efficiency', () => {
   it('should create lightweight objects', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
@@ -308,7 +542,7 @@ describe.skip('ExecutableNodeDTO Memory Efficiency', () => {
     expect(dto.hasOwnProperty('widgets')).toBe(false) // Widgets not copied
   })
 
-  it('should handle disposal without memory leaks', () => {
+  it('should drop local references without explicit disposal', () => {
     const graph = new LGraph()
     const nodes: ExecutableNodeDTO[] = []
 
@@ -351,19 +585,20 @@ describe.skip('ExecutableNodeDTO Memory Efficiency', () => {
   })
 })
 
-describe.skip('ExecutableNodeDTO Integration', () => {
+describe('ExecutableNodeDTO Integration', () => {
   it('should work with SubgraphNode flattening', () => {
     const subgraph = createTestSubgraph({ nodeCount: 3 })
     const subgraphNode = createTestSubgraphNode(subgraph)
 
     const flattened = subgraphNode.getInnerNodes(new Map())
 
+    const idPattern = new RegExp(`^${subgraphNode.id}:\\d+$`)
     expect(flattened).toHaveLength(3)
     expect(flattened[0]).toBeInstanceOf(ExecutableNodeDTO)
-    expect(flattened[0].id).toMatch(/^1:\d+$/)
+    expect(flattened[0].id).toMatch(idPattern)
   })
 
-  it.skip('should handle nested subgraph flattening', () => {
+  it('should handle nested subgraph flattening', () => {
     // FIXME: Complex nested structure requires proper parent graph setup
     // This test needs investigation of how resolveSubgraphIdPath works
     // Skip for now - will implement in edge cases test file
@@ -425,7 +660,7 @@ describe.skip('ExecutableNodeDTO Integration', () => {
   })
 })
 
-describe.skip('ExecutableNodeDTO Scale Testing', () => {
+describe('ExecutableNodeDTO Scale Testing', () => {
   it('should create DTOs at scale', () => {
     const graph = new LGraph()
     const startTime = performance.now()

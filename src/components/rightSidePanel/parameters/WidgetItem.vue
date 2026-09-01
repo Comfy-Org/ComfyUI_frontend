@@ -23,7 +23,7 @@ import {
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 

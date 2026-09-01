@@ -54,6 +54,25 @@ export function backupPath(
   }
 }
 
+function removeWithRetry(targetPath: string, retries = 3, delayMs = 500) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      fs.removeSync(targetPath)
+      return
+    } catch (error: unknown) {
+      const code = (error as NodeJS.ErrnoException).code
+      if ((code === 'EPERM' || code === 'EBUSY') && attempt < retries) {
+        console.warn(
+          `Retry ${attempt}/${retries}: ${code} removing ${targetPath}`
+        )
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs)
+        continue
+      }
+      throw error
+    }
+  }
+}
+
 export function restorePath(pathParts: PathParts) {
   const originalPath = resolvePathIfExists(pathParts)
   if (!originalPath) return
@@ -62,8 +81,12 @@ export function restorePath(pathParts: PathParts) {
   if (!fs.pathExistsSync(backupPath)) return
 
   try {
-    fs.moveSync(backupPath, originalPath, { overwrite: true })
+    removeWithRetry(originalPath)
+    fs.moveSync(backupPath, originalPath)
   } catch (error) {
-    console.error(`Failed to restore ${originalPath} from ${backupPath}`, error)
+    console.warn(
+      `Could not fully restore ${originalPath} from ${backupPath}:`,
+      (error as NodeJS.ErrnoException).message
+    )
   }
 }

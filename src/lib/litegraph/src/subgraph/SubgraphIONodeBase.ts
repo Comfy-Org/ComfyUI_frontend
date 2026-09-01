@@ -36,7 +36,7 @@ export abstract class SubgraphIONodeBase<
 {
   static margin = 10
   static minWidth = 100
-  static roundedRadius = 10
+  static roundedRadius = 14 // Matches NODE_SLOT_HEIGHT * 0.7 for slot alignment
 
   private readonly _boundingRect: Rectangle = new Rectangle()
 

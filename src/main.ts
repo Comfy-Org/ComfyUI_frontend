@@ -11,9 +11,16 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
+import { setAssertReporter } from '@/base/assert'
 import { getFirebaseConfig } from '@/config/firebase'
+import {
+  configValueOrDefault,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
+import { isDesktop, isNightly } from '@/platform/distribution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -48,9 +55,13 @@ const firebaseApp = initializeApp(getFirebaseConfig())
 const app = createApp(App)
 const pinia = createPinia()
 
+const sentryDsn = isCloud
+  ? configValueOrDefault(remoteConfig.value, 'sentry_dsn', __SENTRY_DSN__)
+  : __SENTRY_DSN__
+
 Sentry.init({
   app,
-  dsn: __SENTRY_DSN__,
+  dsn: sentryDsn,
   enabled: __SENTRY_ENABLED__,
   release: __COMFYUI_FRONTEND_VERSION__,
   normalizeDepth: 8,
@@ -59,13 +70,36 @@ Sentry.init({
   replaysOnErrorSampleRate: 0,
   // Only set these for non-cloud builds
   ...(isCloud
-    ? {}
+    ? {
+        integrations: [
+          // Disable event target wrapping to reduce overhead on high-frequency
+          // DOM events (pointermove, mousemove, wheel). Sentry still captures
+          // errors via window.onerror and unhandledrejection.
+          Sentry.browserApiErrorsIntegration({ eventTarget: false })
+        ]
+      }
     : {
         integrations: [],
         autoSessionTracking: false,
         defaultIntegrations: false
       })
 })
+// Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
+// Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
+// not user-facing in stable releases.
+setAssertReporter((message) => {
+  if (isDesktop) {
+    Sentry.captureMessage(message, { level: 'warning' })
+  }
+  if (isNightly) {
+    useToastStore(pinia).add({
+      severity: 'warn',
+      summary: 'Assertion failed',
+      detail: message
+    })
+  }
+})
+
 app.directive('tooltip', Tooltip)
 app
   .use(router)

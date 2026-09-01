@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   extractWorkflow,
   fetchHistory,
+  fetchHistoryPage,
   fetchJobDetail,
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -29,15 +30,16 @@ function createMockJob(
 
 function createMockResponse(
   jobs: RawJobListItem[],
-  total: number = jobs.length
+  total: number = jobs.length,
+  pagination: Partial<JobsListResponse['pagination']> = {}
 ): JobsListResponse {
   return {
     jobs,
     pagination: {
-      offset: 0,
-      limit: 200,
+      offset: pagination.offset ?? 0,
+      limit: pagination.limit ?? 200,
       total,
-      has_more: false
+      has_more: pagination.has_more ?? false
     }
   }
 }
@@ -100,7 +102,8 @@ describe('fetchJobs', () => {
                 createMockJob('job4', 'completed'),
                 createMockJob('job5', 'completed')
               ],
-              10 // total of 10 jobs
+              10, // total of 10 jobs
+              { offset: 5 }
             )
           )
       })
@@ -184,6 +187,36 @@ describe('fetchJobs', () => {
       expect(result[0].id).toBe('image-job')
       expect(result[1].id).toBe('text-job')
       expect(result[2].id).toBe('no-preview-job')
+    })
+
+    it('returns server pagination metadata for history pages', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse(
+              [
+                createMockJob('job4', 'completed'),
+                createMockJob('job5', 'completed')
+              ],
+              10,
+              { offset: 5, limit: 2, has_more: true }
+            )
+          )
+      })
+
+      const result = await fetchHistoryPage(mockFetch, 2, 5)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs?status=completed,failed,cancelled&limit=2&offset=5'
+      )
+      expect(result.jobs).toHaveLength(2)
+      expect(result.offset).toBe(5)
+      expect(result.limit).toBe(2)
+      expect(result.total).toBe(10)
+      expect(result.hasMore).toBe(true)
+      expect(result.jobs[0].priority).toBe(5)
+      expect(result.jobs[1].priority).toBe(4)
     })
   })
 

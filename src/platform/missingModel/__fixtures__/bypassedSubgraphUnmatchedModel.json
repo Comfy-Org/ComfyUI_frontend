@@ -1,0 +1,83 @@
+{
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "KSampler",
+      "pos": [0, 0],
+      "size": [100, 100],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "properties": {},
+      "widgets_values": [0, "randomize", 20]
+    },
+    {
+      "id": 2,
+      "type": "subgraph-x",
+      "pos": [300, 0],
+      "size": [100, 100],
+      "flags": {},
+      "order": 0,
+      "mode": 4,
+      "properties": {},
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4,
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "subgraph-x",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 1,
+          "lastLinkId": 0,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "x",
+        "nodes": [
+          {
+            "id": 1,
+            "type": "CheckpointLoaderSimple",
+            "pos": [0, 0],
+            "size": [100, 100],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "properties": {
+              "models": [
+                {
+                  "name": "rare_model.safetensors",
+                  "directory": "checkpoints"
+                }
+              ]
+            },
+            "widgets_values": ["some_other_model.safetensors"]
+          }
+        ],
+        "links": [],
+        "inputNode": { "id": -10, "bounding": [0, 0, 0, 0] },
+        "outputNode": { "id": -20, "bounding": [0, 0, 0, 0] },
+        "inputs": [],
+        "outputs": [],
+        "widgets": []
+      }
+    ]
+  },
+  "models": [
+    {
+      "name": "rare_model.safetensors",
+      "url": "https://example.com/rare",
+      "directory": "checkpoints"
+    }
+  ]
+}

@@ -24,6 +24,7 @@ export interface AuthMetadata {
   method?: 'email' | 'google' | 'github'
   is_new_user?: boolean
   user_id?: string
+  email?: string
   referrer_url?: string
   utm_source?: string
   utm_medium?: string
@@ -39,6 +40,11 @@ export interface SurveyResponses {
   industry?: string
   useCase?: string
   making?: string[]
+  role?: string
+  teamSize?: string
+  source?: string
+  usage?: string
+  intent?: string[]
 }
 
 export interface SurveyResponsesNormalized extends SurveyResponses {
@@ -63,6 +69,8 @@ export interface RunButtonProperties {
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
+  view_mode?: string
+  is_app_mode?: boolean
 }
 
 /**
@@ -341,6 +349,32 @@ export interface BeginCheckoutMetadata
   previous_tier?: TierKey
 }
 
+interface EcommerceItemMetadata {
+  item_name: string
+  item_category: string
+  item_variant?: string
+  price: number
+  quantity: number
+}
+
+interface EcommerceMetadata {
+  currency: string
+  value: number
+  items: EcommerceItemMetadata[]
+}
+
+export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
+  user_id?: string
+  checkout_attempt_id: string
+  tier: TierKey
+  cycle: BillingCycle
+  checkout_type: 'new' | 'change'
+  previous_tier?: TierKey
+  value: number
+  currency: string
+  ecommerce: EcommerceMetadata
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
@@ -357,7 +391,9 @@ export interface TelemetryProvider {
     metadata?: SubscriptionMetadata
   ): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
-  trackMonthlySubscriptionSucceeded?(): void
+  trackMonthlySubscriptionSucceeded?(
+    metadata?: SubscriptionSuccessMetadata
+  ): void
   trackMonthlySubscriptionCancelled?(): void
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
@@ -556,3 +592,4 @@ export type TelemetryEventProperties =
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata
+  | SubscriptionSuccessMetadata

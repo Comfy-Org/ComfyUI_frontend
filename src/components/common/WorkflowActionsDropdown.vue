@@ -12,6 +12,7 @@ import WorkflowActionsList from '@/components/common/WorkflowActionsList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -23,6 +24,7 @@ const { source, align = 'start' } = defineProps<{
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
+const keybindingStore = useKeybindingStore()
 const dropdownOpen = ref(false)
 
 const { menuItems } = useWorkflowActionsMenu(
@@ -43,6 +45,16 @@ function handleOpen(open: boolean) {
   }
 }
 
+function toggleModeTooltip() {
+  const label = canvasStore.linearMode
+    ? t('breadcrumbsMenu.enterNodeGraph')
+    : t('breadcrumbsMenu.enterAppMode')
+  const shortcut = keybindingStore
+    .getKeybindingByCommandId('Comfy.ToggleLinear')
+    ?.combo.toString()
+  return label + (shortcut ? t('g.shortcutSuffix', { shortcut }) : '')
+}
+
 function toggleLinearMode() {
   dropdownOpen.value = false
   void useCommandStore().execute('Comfy.ToggleLinear', {
@@ -52,7 +64,14 @@ function toggleLinearMode() {
 
 const tooltipPt = {
   root: {
-    style: { transform: 'translateX(calc(50% - 16px))' }
+    style: {
+      transform: 'translateX(calc(50% - 16px))',
+      whiteSpace: 'nowrap',
+      maxWidth: 'none'
+    }
+  },
+  text: {
+    style: { whiteSpace: 'nowrap' }
   },
   arrow: {
     class: '!left-[16px]'
@@ -61,16 +80,18 @@ const tooltipPt = {
 </script>
 
 <template>
-  <DropdownMenuRoot v-model:open="dropdownOpen" @update:open="handleOpen">
+  <DropdownMenuRoot
+    v-model:open="dropdownOpen"
+    :modal="false"
+    @update:open="handleOpen"
+  >
     <slot name="button" :has-unseen-items="hasUnseenItems">
       <div
         class="pointer-events-auto inline-flex items-center rounded-lg bg-secondary-background"
       >
         <Button
           v-tooltip.bottom="{
-            value: canvasStore.linearMode
-              ? t('breadcrumbsMenu.enterNodeGraph')
-              : t('breadcrumbsMenu.enterAppMode'),
+            value: toggleModeTooltip(),
             showDelay: 300,
             hideDelay: 300,
             pt: tooltipPt

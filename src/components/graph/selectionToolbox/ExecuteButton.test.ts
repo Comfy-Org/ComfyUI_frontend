@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
@@ -12,7 +13,6 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
-// Mock the utils
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn((node) => !!node?.type)
 }))
@@ -21,7 +21,6 @@ vi.mock('@/utils/nodeFilterUtil', () => ({
   isOutputNode: vi.fn((node) => !!node?.constructor?.nodeData?.output_node)
 }))
 
-// Mock the composables
 vi.mock('@/composables/graph/useSelectionState', () => ({
   useSelectionState: vi.fn(() => ({
     selectedNodes: {
@@ -49,14 +48,12 @@ describe('ExecuteButton', () => {
   })
 
   beforeEach(() => {
-    // Set up Pinia with testing utilities
     setActivePinia(
       createTestingPinia({
         createSpy: vi.fn
       })
     )
 
-    // Reset mocks
     const partialCanvas: Partial<LGraphCanvas> = {
       setDirty: vi.fn()
     }
@@ -64,14 +61,12 @@ describe('ExecuteButton', () => {
 
     mockSelectedNodes = []
 
-    // Get store instances and mock methods
     const canvasStore = useCanvasStore()
     const commandStore = useCommandStore()
 
     vi.spyOn(canvasStore, 'getCanvas').mockReturnValue(mockCanvas)
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
 
-    // Update the useSelectionState mock
     vi.mocked(useSelectionState).mockReturnValue({
       selectedNodes: {
         value: mockSelectedNodes
@@ -81,33 +76,33 @@ describe('ExecuteButton', () => {
     vi.clearAllMocks()
   })
 
-  const mountComponent = () => {
-    return mount(ExecuteButton, {
+  const renderComponent = () => {
+    return render(ExecuteButton, {
       global: {
         plugins: [i18n, PrimeVue],
-        directives: { tooltip: Tooltip },
-        stubs: {
-          'i-lucide:play': { template: '<div class="play-icon" />' }
-        }
+        directives: { tooltip: Tooltip }
       }
     })
   }
 
   describe('Rendering', () => {
     it('should be able to render', () => {
-      const wrapper = mountComponent()
-      const button = wrapper.find('button')
-      expect(button.exists()).toBe(true)
+      renderComponent()
+      expect(
+        screen.getByRole('button', { name: 'Execute selected nodes' })
+      ).toBeTruthy()
     })
   })
 
   describe('Click Handler', () => {
     it('should execute Comfy.QueueSelectedOutputNodes command on click', async () => {
       const commandStore = useCommandStore()
-      const wrapper = mountComponent()
-      const button = wrapper.find('button')
+      const user = userEvent.setup()
+      renderComponent()
 
-      await button.trigger('click')
+      await user.click(
+        screen.getByRole('button', { name: 'Execute selected nodes' })
+      )
 
       expect(commandStore.execute).toHaveBeenCalledWith(
         'Comfy.QueueSelectedOutputNodes'

@@ -1,6 +1,22 @@
 import { ref, watch } from 'vue'
+
 import type { Offset, Point } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
+import {
+  calculateDragPan,
+  calculateFitView,
+  calculatePanZoomStyles,
+  calculateSingleTouchPan,
+  calculateZoomAroundPoint,
+  easeOutCubic,
+  getCursorPoint,
+  getDistanceBetweenPoints,
+  getMidpoint,
+  getWheelZoomFactor,
+  interpolateView,
+  isDoubleTap
+} from './panZoomUtils'
 
 export function usePanAndZoom() {
   const store = useMaskEditorStore()
@@ -35,24 +51,10 @@ export function usePanAndZoom() {
   const cursorPoint = ref<Point>({ x: 0, y: 0 })
   const penPointerIdList = ref<number[]>([])
 
-  const getTouchDistance = (touches: TouchList): number => {
-    const dx = touches[0].clientX - touches[1].clientX
-    const dy = touches[0].clientY - touches[1].clientY
-    return Math.sqrt(dx * dx + dy * dy)
-  }
-
-  const getTouchMidpoint = (touches: TouchList): Point => {
-    return {
-      x: (touches[0].clientX + touches[1].clientX) / 2,
-      y: (touches[0].clientY + touches[1].clientY) / 2
-    }
-  }
-
   const updateCursorPosition = (clientPoint: Point): void => {
-    const cursorX = clientPoint.x - pan_offset.value.x
-    const cursorY = clientPoint.y - pan_offset.value.y
-    cursorPoint.value = { x: cursorX, y: cursorY }
-    store.setCursorPoint({ x: cursorX, y: cursorY })
+    const point = getCursorPoint(clientPoint, pan_offset.value)
+    cursorPoint.value = point
+    store.setCursorPoint(point)
   }
 
   const handleDoubleTap = (): void => {
@@ -60,7 +62,6 @@ export function usePanAndZoom() {
   }
 
   const invalidatePanZoom = async (): Promise<void> => {
-    // Single validation check upfront
     if (
       !image.value?.width ||
       !image.value?.height ||
@@ -71,8 +72,12 @@ export function usePanAndZoom() {
       return
     }
 
-    const raw_width = image.value.width * zoom_ratio.value
-    const raw_height = image.value.height * zoom_ratio.value
+    const styles = calculatePanZoomStyles(
+      image.value.width,
+      image.value.height,
+      zoom_ratio.value,
+      pan_offset.value
+    )
 
     if (!canvasContainer.value) {
       canvasContainer.value = store.canvasContainer
@@ -80,10 +85,10 @@ export function usePanAndZoom() {
     if (!canvasContainer.value) return
 
     Object.assign(canvasContainer.value.style, {
-      width: `${raw_width}px`,
-      height: `${raw_height}px`,
-      left: `${pan_offset.value.x}px`,
-      top: `${pan_offset.value.y}px`
+      width: styles.containerWidth,
+      height: styles.containerHeight,
+      left: styles.containerLeft,
+      top: styles.containerTop
     })
 
     if (!rgbCanvas.value) {
@@ -98,8 +103,8 @@ export function usePanAndZoom() {
         rgbCanvas.value.height = image.value.height
       }
 
-      rgbCanvas.value.style.width = `${raw_width}px`
-      rgbCanvas.value.style.height = `${raw_height}px`
+      rgbCanvas.value.style.width = styles.containerWidth
+      rgbCanvas.value.style.height = styles.containerHeight
     }
 
     store.setPanOffset(pan_offset.value)
@@ -118,13 +123,11 @@ export function usePanAndZoom() {
       throw new Error('mouseDownPoint is null')
     }
 
-    const deltaX = mouseDownPoint.value.x - event.clientX
-    const deltaY = mouseDownPoint.value.y - event.clientY
-
-    const pan_x = initialPan.value.x - deltaX
-    const pan_y = initialPan.value.y - deltaY
-
-    pan_offset.value = { x: pan_x, y: pan_y }
+    pan_offset.value = calculateDragPan(
+      mouseDownPoint.value,
+      { x: event.clientX, y: event.clientY },
+      initialPan.value
+    )
 
     await invalidatePanZoom()
   }
@@ -135,16 +138,21 @@ export function usePanAndZoom() {
       return
     }
 
-    const deltaX = touch.clientX - lastTouchPoint.value.x
-    const deltaY = touch.clientY - lastTouchPoint.value.y
-
-    pan_offset.value.x += deltaX
-    pan_offset.value.y += deltaY
+    pan_offset.value = calculateSingleTouchPan(
+      lastTouchPoint.value,
+      { x: touch.clientX, y: touch.clientY },
+      pan_offset.value
+    )
 
     await invalidatePanZoom()
 
     lastTouchPoint.value = { x: touch.clientX, y: touch.clientY }
   }
+
+  const touchToPoint = (touch: Touch): Point => ({
+    x: touch.clientX,
+    y: touch.clientY
+  })
 
   const handleTouchStart = (event: TouchEvent): void => {
     event.preventDefault()
@@ -155,23 +163,22 @@ export function usePanAndZoom() {
 
     if (event.touches.length === 2) {
       const currentTime = new Date().getTime()
-      const tapTimeDiff = currentTime - lastTwoFingerTap.value
 
-      if (tapTimeDiff < DOUBLE_TAP_DELAY) {
+      if (isDoubleTap(currentTime, lastTwoFingerTap.value, DOUBLE_TAP_DELAY)) {
         handleDoubleTap()
         lastTwoFingerTap.value = 0
       } else {
         lastTwoFingerTap.value = currentTime
 
+        const p0 = touchToPoint(event.touches[0])
+        const p1 = touchToPoint(event.touches[1])
+
         isTouchZooming.value = true
-        lastTouchZoomDistance.value = getTouchDistance(event.touches)
-        lastTouchMidPoint.value = getTouchMidpoint(event.touches)
+        lastTouchZoomDistance.value = getDistanceBetweenPoints(p0, p1)
+        lastTouchMidPoint.value = getMidpoint(p0, p1)
       }
     } else if (event.touches.length === 1) {
-      lastTouchPoint.value = {
-        x: event.touches[0].clientX,
-        y: event.touches[0].clientY
-      }
+      lastTouchPoint.value = touchToPoint(event.touches[0])
     }
   }
 
@@ -183,37 +190,38 @@ export function usePanAndZoom() {
     lastTwoFingerTap.value = 0
 
     if (isTouchZooming.value && event.touches.length === 2) {
-      const newDistance = getTouchDistance(event.touches)
-      const zoomFactor = newDistance / lastTouchZoomDistance.value
-      const oldZoom = zoom_ratio.value
-      zoom_ratio.value = Math.max(
-        0.2,
-        Math.min(10.0, zoom_ratio.value * zoomFactor)
-      )
-      const newZoom = zoom_ratio.value
+      const p0 = touchToPoint(event.touches[0])
+      const p1 = touchToPoint(event.touches[1])
 
-      const midpoint = getTouchMidpoint(event.touches)
+      const newDistance = getDistanceBetweenPoints(p0, p1)
+      const pinchFactor = newDistance / lastTouchZoomDistance.value
+      const midpoint = getMidpoint(p0, p1)
 
-      if (lastTouchMidPoint.value) {
-        const deltaX = midpoint.x - lastTouchMidPoint.value.x
-        const deltaY = midpoint.y - lastTouchMidPoint.value.y
-
-        pan_offset.value.x += deltaX
-        pan_offset.value.y += deltaY
+      // Apply midpoint drag
+      const draggedPan: Offset = {
+        x: pan_offset.value.x + midpoint.x - lastTouchMidPoint.value.x,
+        y: pan_offset.value.y + midpoint.y - lastTouchMidPoint.value.y
       }
 
-      if (maskCanvas.value === null) {
+      if (!maskCanvas.value) {
         maskCanvas.value = store.maskCanvas
       }
       if (!maskCanvas.value) return
 
       const rect = maskCanvas.value.getBoundingClientRect()
-      const touchX = midpoint.x - rect.left
-      const touchY = midpoint.y - rect.top
+      const focalX = midpoint.x - rect.left
+      const focalY = midpoint.y - rect.top
 
-      const scaleFactor = newZoom / oldZoom
-      pan_offset.value.x += touchX - touchX * scaleFactor
-      pan_offset.value.y += touchY - touchY * scaleFactor
+      const result = calculateZoomAroundPoint(
+        zoom_ratio.value,
+        pinchFactor,
+        draggedPan,
+        focalX,
+        focalY
+      )
+
+      zoom_ratio.value = result.zoomRatio
+      pan_offset.value = result.panOffset
 
       await invalidatePanZoom()
       lastTouchZoomDistance.value = newDistance
@@ -229,10 +237,7 @@ export function usePanAndZoom() {
     const lastTouch = event.touches[0]
 
     if (lastTouch) {
-      lastTouchPoint.value = {
-        x: lastTouch.clientX,
-        y: lastTouch.clientY
-      }
+      lastTouchPoint.value = touchToPoint(lastTouch)
     } else {
       isTouchZooming.value = false
       lastTouchMidPoint.value = { x: 0, y: 0 }
@@ -242,31 +247,29 @@ export function usePanAndZoom() {
   const zoom = async (event: WheelEvent): Promise<void> => {
     const cursorPosition = { x: event.clientX, y: event.clientY }
 
-    const oldZoom = zoom_ratio.value
-    const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9
-    zoom_ratio.value = Math.max(
-      0.2,
-      Math.min(10.0, zoom_ratio.value * zoomFactor)
-    )
-    const newZoom = zoom_ratio.value
-
     if (!maskCanvas.value) {
       maskCanvas.value = store.maskCanvas
     }
     if (!maskCanvas.value) return
 
     const rect = maskCanvas.value.getBoundingClientRect()
-    const mouseX = cursorPosition.x - rect.left
-    const mouseY = cursorPosition.y - rect.top
+    const focalX = cursorPosition.x - rect.left
+    const focalY = cursorPosition.y - rect.top
 
-    const scaleFactor = newZoom / oldZoom
-    pan_offset.value.x += mouseX - mouseX * scaleFactor
-    pan_offset.value.y += mouseY - mouseY * scaleFactor
+    const result = calculateZoomAroundPoint(
+      zoom_ratio.value,
+      getWheelZoomFactor(event.deltaY),
+      pan_offset.value,
+      focalX,
+      focalY
+    )
+
+    zoom_ratio.value = result.zoomRatio
+    pan_offset.value = result.panOffset
 
     await invalidatePanZoom()
 
     const newImageWidth = maskCanvas.value.clientWidth
-
     const zoomRatio = newImageWidth / imageRootWidth.value
 
     interpolatedZoomRatio.value = zoomRatio
@@ -295,40 +298,31 @@ export function usePanAndZoom() {
 
     const { sidePanelWidth, toolPanelWidth } = getPanelDimensions()
 
-    const availableWidth =
-      rootElement.value.clientWidth - sidePanelWidth - toolPanelWidth
-    const availableHeight = rootElement.value.clientHeight
-
-    // Calculate target zoom
-    const zoomRatioWidth = availableWidth / image.value.width
-    const zoomRatioHeight = availableHeight / image.value.height
-    const targetZoom = Math.min(zoomRatioWidth, zoomRatioHeight)
-
-    const aspectRatio = image.value.width / image.value.height
-    let finalWidth: number
-    let finalHeight: number
-
-    const targetPan = { x: toolPanelWidth, y: 0 }
-
-    if (zoomRatioHeight > zoomRatioWidth) {
-      finalWidth = availableWidth
-      finalHeight = finalWidth / aspectRatio
-      targetPan.y = (availableHeight - finalHeight) / 2
-    } else {
-      finalHeight = availableHeight
-      finalWidth = finalHeight * aspectRatio
-      targetPan.x = (availableWidth - finalWidth) / 2 + toolPanelWidth
-    }
+    const fitResult = calculateFitView({
+      rootWidth: rootElement.value.clientWidth,
+      rootHeight: rootElement.value.clientHeight,
+      imageWidth: image.value.width,
+      imageHeight: image.value.height,
+      toolPanelWidth,
+      sidePanelWidth
+    })
 
     const startTime = performance.now()
     const animate = async (currentTime: number) => {
       const elapsed = currentTime - startTime
       const progress = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
+      const eased = easeOutCubic(progress)
 
-      zoom_ratio.value = startZoom + (targetZoom - startZoom) * eased
-      pan_offset.value.x = startPan.x + (targetPan.x - startPan.x) * eased
-      pan_offset.value.y = startPan.y + (targetPan.y - startPan.y) * eased
+      const frame = interpolateView(
+        startZoom,
+        fitResult.zoomRatio,
+        startPan,
+        fitResult.panOffset,
+        eased
+      )
+
+      zoom_ratio.value = frame.zoomRatio
+      pan_offset.value = frame.panOffset
 
       await invalidatePanZoom()
 
@@ -356,38 +350,24 @@ export function usePanAndZoom() {
 
     const { sidePanelWidth, toolPanelWidth } = getPanelDimensions()
 
-    const availableWidth = root.clientWidth - sidePanelWidth - toolPanelWidth
-    const availableHeight = root.clientHeight
-
-    const zoomRatioWidth = availableWidth / img.width
-    const zoomRatioHeight = availableHeight / img.height
-
-    const aspectRatio = img.width / img.height
-
-    let finalWidth: number
-    let finalHeight: number
-
-    const panOffset: Offset = { x: toolPanelWidth, y: 0 }
-
-    if (zoomRatioHeight > zoomRatioWidth) {
-      finalWidth = availableWidth
-      finalHeight = finalWidth / aspectRatio
-      panOffset.y = (availableHeight - finalHeight) / 2
-    } else {
-      finalHeight = availableHeight
-      finalWidth = finalHeight * aspectRatio
-      panOffset.x = (availableWidth - finalWidth) / 2 + toolPanelWidth
-    }
+    const fitResult = calculateFitView({
+      rootWidth: root.clientWidth,
+      rootHeight: root.clientHeight,
+      imageWidth: img.width,
+      imageHeight: img.height,
+      toolPanelWidth,
+      sidePanelWidth
+    })
 
     if (image.value === null) {
       image.value = img
     }
 
-    imageRootWidth.value = finalWidth
-    imageRootHeight.value = finalHeight
+    imageRootWidth.value = fitResult.fittedWidth
+    imageRootHeight.value = fitResult.fittedHeight
 
-    zoom_ratio.value = Math.min(zoomRatioWidth, zoomRatioHeight)
-    pan_offset.value = panOffset
+    zoom_ratio.value = fitResult.zoomRatio
+    pan_offset.value = fitResult.panOffset
 
     penPointerIdList.value = []
 

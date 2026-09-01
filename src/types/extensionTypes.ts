@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 
+import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutionErrorWsMessage, NodeError } from '@/schemas/apiSchema'
 import type { useDialogService } from '@/services/dialogService'
@@ -113,10 +114,19 @@ export interface ExtensionManager {
     get: <T = unknown>(id: string) => T | undefined
     set: <T = unknown>(id: string, value: T) => void
   }
+  workflow: ReturnType<typeof useWorkflowStore>
 
   // Execution error state (read-only)
   lastNodeErrors: Record<NodeId, NodeError> | null
   lastExecutionError: ExecutionErrorWsMessage | null
+
+  /**
+   * Renders a markdown string to sanitized HTML.
+   * Uses marked (GFM) + DOMPurify. Safe for direct use with innerHTML.
+   * @param markdown - The markdown string to render.
+   * @param baseUrl - Optional base URL for resolving relative image/media paths.
+   */
+  renderMarkdownToHtml(markdown: string, baseUrl?: string): string
 }
 
 export interface CommandManager {

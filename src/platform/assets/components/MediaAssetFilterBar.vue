@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-3">
+  <SidebarTopArea :bottom-divider>
     <SearchInput
       :model-value="searchQuery"
       :placeholder="
@@ -7,7 +7,7 @@
       "
       @update:model-value="handleSearchChange"
     />
-    <div class="flex items-center gap-1.5">
+    <template #actions>
       <MediaAssetFilterButton
         v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
@@ -32,11 +32,12 @@
           />
         </template>
       </MediaAssetSettingsButton>
-    </div>
-  </div>
+    </template>
+  </SidebarTopArea>
 </template>
 
 <script setup lang="ts">
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { isCloud } from '@/platform/distribution/types'
 
@@ -46,10 +47,11 @@ import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
 
-const { showGenerationTimeSort = false } = defineProps<{
+const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
   searchQuery: string
   showGenerationTimeSort?: boolean
   mediaTypeFilters: string[]
+  bottomDivider?: boolean
 }>()
 
 const emit = defineEmits<{

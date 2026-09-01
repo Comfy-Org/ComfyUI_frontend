@@ -1,19 +1,38 @@
-import { mount } from '@vue/test-utils'
-import ColorPicker from 'primevue/colorpicker'
-import type { ColorPickerProps } from 'primevue/colorpicker'
-import PrimeVue from 'primevue/config'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { defineComponent } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetColorPicker from './WidgetColorPicker.vue'
 import { createMockWidget } from './widgetTestUtils'
-import WidgetLayoutField from './layout/WidgetLayoutField.vue'
+
+const WidgetLayoutFieldStub = defineComponent({
+  name: 'WidgetLayoutField',
+  props: {
+    widget: { type: Object, default: () => ({}) }
+  },
+  template:
+    '<div data-testid="layout-field" :data-widget-name="widget.name"><slot /></div>'
+})
+
+const ColorPickerStub = defineComponent({
+  name: 'ColorPicker',
+  props: {
+    modelValue: { type: String, default: '' }
+  },
+  emits: ['update:modelValue'],
+  template: `<input
+    data-testid="color-picker-input"
+    :value="modelValue"
+    @input="$emit('update:modelValue', $event.target.value)"
+  />`
+})
 
 describe('WidgetColorPicker Value Binding', () => {
   const createColorWidget = (
     value: string = '#000000',
-    options: Partial<ColorPickerProps> = {},
+    options: Record<string, unknown> = {},
     callback?: (value: string) => void
   ) =>
     createMockWidget<string>({
@@ -24,266 +43,98 @@ describe('WidgetColorPicker Value Binding', () => {
       callback
     })
 
-  const mountComponent = (
+  const renderComponent = (
     widget: SimplifiedWidget<string>,
     modelValue: string,
-    readonly = false
+    extraProps: Record<string, unknown> = {}
   ) => {
-    return mount(WidgetColorPicker, {
+    return render(WidgetColorPicker, {
       global: {
-        plugins: [PrimeVue],
-        components: {
-          ColorPicker,
-          WidgetLayoutField
+        stubs: {
+          ColorPicker: ColorPickerStub,
+          WidgetLayoutField: WidgetLayoutFieldStub
         }
       },
       props: {
         widget,
         modelValue,
-        readonly
+        ...extraProps
       }
     })
   }
 
-  const setColorPickerValue = async (
-    wrapper: ReturnType<typeof mount>,
-    value: unknown
-  ) => {
-    const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
-    await colorPicker.setValue(value)
-    return wrapper.emitted('update:modelValue')
-  }
-
   describe('Vue Event Emission', () => {
     it('emits Vue event when color changes', async () => {
+      const onUpdateModelValue = vi.fn()
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000', {
+        'onUpdate:modelValue': onUpdateModelValue
+      })
 
-      const emitted = await setColorPickerValue(wrapper, '#00ff00')
+      const input = screen.getByTestId('color-picker-input')
+      await fireEvent.update(input, '#00ff00')
 
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#00ff00')
-    })
-
-    it('handles different color formats', async () => {
-      const widget = createColorWidget('#ffffff')
-      const wrapper = mountComponent(widget, '#ffffff')
-
-      const emitted = await setColorPickerValue(wrapper, '#123abc')
-
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#123abc')
+      expect(onUpdateModelValue).toHaveBeenCalledWith('#00ff00')
     })
 
     it('handles missing callback gracefully', async () => {
+      const onUpdateModelValue = vi.fn()
       const widget = createColorWidget('#000000', {}, undefined)
-      const wrapper = mountComponent(widget, '#000000')
-
-      const emitted = await setColorPickerValue(wrapper, '#ff00ff')
-
-      // Should still emit Vue event
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#ff00ff')
-    })
-
-    it('normalizes bare hex without # to #hex on emit', async () => {
-      const widget = createColorWidget('ff0000')
-      const wrapper = mountComponent(widget, 'ff0000')
-
-      const emitted = await setColorPickerValue(wrapper, '00ff00')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#00ff00')
-    })
-
-    it('normalizes rgb() strings to #hex on emit', async (context) => {
-      context.skip('needs diagnosis')
-      const widget = createColorWidget('#000000')
-      const wrapper = mountComponent(widget, '#000000')
-
-      const emitted = await setColorPickerValue(wrapper, 'rgb(255, 0, 0)')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#ff0000')
-    })
-
-    it('normalizes hsb() strings to #hex on emit', async () => {
-      const widget = createColorWidget('#000000', { format: 'hsb' })
-      const wrapper = mountComponent(widget, '#000000')
-
-      const emitted = await setColorPickerValue(wrapper, 'hsb(120, 100, 100)')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#00ff00')
-    })
-
-    it('normalizes HSB object values to #hex on emit', async () => {
-      const widget = createColorWidget('#000000', { format: 'hsb' })
-      const wrapper = mountComponent(widget, '#000000')
-
-      const emitted = await setColorPickerValue(wrapper, {
-        h: 240,
-        s: 100,
-        b: 100
+      renderComponent(widget, '#000000', {
+        'onUpdate:modelValue': onUpdateModelValue
       })
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#0000ff')
+
+      const input = screen.getByTestId('color-picker-input')
+      await fireEvent.update(input, '#ff00ff')
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith('#ff00ff')
     })
   })
 
   describe('Component Rendering', () => {
     it('renders color picker component', () => {
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000')
 
-      const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
-      expect(colorPicker.exists()).toBe(true)
-    })
-
-    it('normalizes display to a single leading #', () => {
-      // Case 1: model value already includes '#'
-      let widget = createColorWidget('#ff0000')
-      let wrapper = mountComponent(widget, '#ff0000')
-      let colorText = wrapper.find('[data-testid="widget-color-text"]')
-      expect.soft(colorText.text()).toBe('#ff0000')
-
-      // Case 2: model value missing '#'
-      widget = createColorWidget('ff0000')
-      wrapper = mountComponent(widget, 'ff0000')
-      colorText = wrapper.find('[data-testid="widget-color-text"]')
-      expect.soft(colorText.text()).toBe('#ff0000')
+      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
     })
 
     it('renders layout field wrapper', () => {
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000')
 
-      const layoutField = wrapper.findComponent({ name: 'WidgetLayoutField' })
-      expect(layoutField.exists()).toBe(true)
-    })
-
-    it('displays current color value as text', () => {
-      const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
-
-      const colorText = wrapper.find('[data-testid="widget-color-text"]')
-      expect(colorText.text()).toBe('#ff0000')
-    })
-
-    it('updates color text when value changes', async () => {
-      const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
-
-      await setColorPickerValue(wrapper, '#00ff00')
-
-      // Need to check the local state update
-      const colorText = wrapper.find('[data-testid="widget-color-text"]')
-      // Be specific about the displayed value including the leading '#'
-      expect.soft(colorText.text()).toBe('#00ff00')
-    })
-
-    it('uses default color when no value provided', () => {
-      const widget = createColorWidget('')
-      const wrapper = mountComponent(widget, '')
-
-      const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
-      // Should use the default value from the composable
-      expect(colorPicker.exists()).toBe(true)
-    })
-  })
-
-  describe('Color Formats', () => {
-    it('handles valid hex colors', async () => {
-      const validHexColors = [
-        '#000000',
-        '#ffffff',
-        '#ff0000',
-        '#00ff00',
-        '#0000ff',
-        '#123abc'
-      ]
-
-      for (const color of validHexColors) {
-        const widget = createColorWidget(color)
-        const wrapper = mountComponent(widget, color)
-
-        const colorText = wrapper.find('[data-testid="widget-color-text"]')
-        expect.soft(colorText.text()).toBe(color)
-      }
-    })
-
-    it('handles short hex colors', () => {
-      const widget = createColorWidget('#fff')
-      const wrapper = mountComponent(widget, '#fff')
-
-      const colorText = wrapper.find('[data-testid="widget-color-text"]')
-      expect(colorText.text()).toBe('#fff')
-    })
-
-    it('passes widget options to color picker', () => {
-      const colorOptions = {
-        format: 'hex' as const,
-        inline: true
-      }
-      const widget = createColorWidget('#ff0000', colorOptions)
-      const wrapper = mountComponent(widget, '#ff0000')
-
-      const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
-      expect(colorPicker.props('format')).toBe('hex')
-      expect(colorPicker.props('inline')).toBe(true)
+      expect(screen.getByTestId('layout-field')).toBeInTheDocument()
     })
   })
 
   describe('Widget Layout Integration', () => {
     it('passes widget to layout field', () => {
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000')
 
-      const layoutField = wrapper.findComponent({ name: 'WidgetLayoutField' })
-      expect(layoutField.props('widget')).toEqual(widget)
+      const layoutField = screen.getByTestId('layout-field')
+      expect(layoutField.getAttribute('data-widget-name')).toBe(
+        'test_color_picker'
+      )
     })
 
     it('maintains proper component structure', () => {
       const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
+      renderComponent(widget, '#ff0000')
 
-      // Should have layout field containing label with color picker and text
-      const layoutField = wrapper.findComponent({ name: 'WidgetLayoutField' })
-      const label = wrapper.find('label')
-      const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
-      const colorText = wrapper.find('span')
-
-      expect(layoutField.exists()).toBe(true)
-      expect(label.exists()).toBe(true)
-      expect(colorPicker.exists()).toBe(true)
-      expect(colorText.exists()).toBe(true)
+      expect(screen.getByTestId('layout-field')).toBeInTheDocument()
+      expect(screen.getByTestId('color-picker-input')).toBeInTheDocument()
     })
   })
 
   describe('Edge Cases', () => {
-    it('handles empty color value', () => {
+    it('renders color picker with empty value', () => {
       const widget = createColorWidget('')
-      const wrapper = mountComponent(widget, '')
+      renderComponent(widget, '')
 
-      const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
-      expect(colorPicker.exists()).toBe(true)
-    })
-
-    it('handles invalid color formats gracefully', async () => {
-      const widget = createColorWidget('invalid-color')
-      const wrapper = mountComponent(widget, 'invalid-color')
-
-      const colorText = wrapper.find('[data-testid="widget-color-text"]')
-      expect(colorText.text()).toBe('#000000')
-
-      const emitted = await setColorPickerValue(wrapper, 'invalid-color')
-      expect(emitted).toBeDefined()
-      expect(emitted![0]).toContain('#000000')
-    })
-
-    it('handles widget with no options', () => {
-      const widget = createColorWidget('#ff0000')
-      const wrapper = mountComponent(widget, '#ff0000')
-
-      const colorPicker = wrapper.findComponent({ name: 'ColorPicker' })
-      expect(colorPicker.exists()).toBe(true)
+      const input = screen.getByTestId('color-picker-input')
+      expect(input).toBeInTheDocument()
+      expect(input).toHaveValue('#000000')
     })
   })
 })

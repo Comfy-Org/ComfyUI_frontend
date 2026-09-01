@@ -37,7 +37,7 @@ Prefer Vue native options when available:
 ## Styling
 
 - Use inline Tailwind CSS only (no `<style>` blocks)
-- Use `cn()` from `@/utils/tailwindUtil` for conditional classes
+- Use `cn()` from `@comfyorg/tailwind-utils` for conditional classes
 - Refer to packages/design-system/src/css/style.css for design tokens and tailwind configuration
 - Exception: when third-party libraries render runtime DOM outside Vue templates
   (for example xterm internals inside PrimeVue terminal wrappers), scoped

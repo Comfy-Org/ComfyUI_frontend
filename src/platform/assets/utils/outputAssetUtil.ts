@@ -38,6 +38,19 @@ function shouldLoadFullOutputs(
   )
 }
 
+export function getAssetOutputCount(
+  asset: Pick<AssetItem, 'user_metadata'>
+): number {
+  const count = asset.user_metadata?.outputCount
+  return typeof count === 'number' && count > 0 ? count : 1
+}
+
+export function getTotalAssetOutputCount(
+  assets: Pick<AssetItem, 'user_metadata'>[]
+): number {
+  return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
+}
+
 export function getOutputKey({
   nodeId,
   subfolder,
@@ -101,9 +114,10 @@ export async function resolveOutputAssetItems(
     }
   }
 
+  // Reverse so the most recent outputs appear first
   return mapOutputsToAssetItems({
     jobId: metadata.jobId,
-    outputs: outputsToDisplay,
+    outputs: outputsToDisplay.toReversed(),
     createdAt,
     executionTimeInSeconds: metadata.executionTimeInSeconds,
     workflow: metadata.workflow,

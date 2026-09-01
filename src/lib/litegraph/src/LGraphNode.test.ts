@@ -7,6 +7,7 @@ import type {
   Point,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphNode,
   LiteGraph,
@@ -651,6 +652,49 @@ describe('LGraphNode', () => {
       expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
         false
       )
+    })
+  })
+
+  describe('measure() collapsed branching', () => {
+    let out: Rect
+
+    beforeEach(() => {
+      out = [0, 0, 0, 0] as unknown as Rect
+      node.flags.collapsed = true
+      node.size[0] = 150
+      node.size[1] = 10
+    })
+
+    afterEach(() => {
+      LiteGraph.vueNodesMode = false
+    })
+
+    test('legacy mode uses NODE_TITLE_HEIGHT-based fallback when no ctx', () => {
+      LiteGraph.vueNodesMode = false
+      node.measure(out)
+
+      // No ctx → legacy collapsed branch falls back to NODE_COLLAPSED_WIDTH
+      expect(out[3]).toBe(LiteGraph.NODE_TITLE_HEIGHT)
+    })
+
+    test('Vue mode uses this.size directly for collapsed nodes', () => {
+      LiteGraph.vueNodesMode = true
+      node.measure(out)
+
+      // Vue mode collapsed takes the expanded-style branch
+      expect(out[2]).toBe(150)
+      expect(out[3]).toBe(10 + LiteGraph.NODE_TITLE_HEIGHT)
+    })
+
+    test('Vue mode expanded behaves identically to legacy expanded', () => {
+      LiteGraph.vueNodesMode = true
+      node.flags.collapsed = false
+      node.size[0] = 200
+      node.size[1] = 120
+      node.measure(out)
+
+      expect(out[2]).toBe(200)
+      expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
   })
 })

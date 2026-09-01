@@ -1,8 +1,7 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import MarqueeLine from './MarqueeLine.vue'
 import TextTickerMultiLine from './TextTickerMultiLine.vue'
 
 type Callback = () => void
@@ -41,23 +40,38 @@ function mockElementSize(
 }
 
 describe(TextTickerMultiLine, () => {
-  let wrapper: ReturnType<typeof mount>
+  let unmountFn: () => void
 
   afterEach(() => {
-    wrapper?.unmount()
+    unmountFn?.()
     resizeCallbacks.length = 0
     mutationCallbacks.length = 0
   })
 
-  function mountComponent(text: string) {
-    wrapper = mount(TextTickerMultiLine, {
+  function renderComponent(text: string) {
+    const result = render(TextTickerMultiLine, {
       slots: { default: text }
     })
-    return wrapper
+    unmountFn = result.unmount
+    return {
+      ...result,
+      container: result.container as HTMLElement
+    }
   }
 
-  function getMeasureEl(): HTMLElement {
-    return wrapper.find('[aria-hidden="true"]').element as HTMLElement
+  function getMeasureEl(container: HTMLElement): HTMLElement {
+    // eslint-disable-next-line testing-library/no-node-access
+    return container.querySelector('[aria-hidden="true"]') as HTMLElement
+  }
+
+  function getVisibleLines(container: HTMLElement): HTMLElement[] {
+    /* eslint-disable testing-library/no-node-access */
+    return Array.from(
+      container.querySelectorAll<HTMLElement>(
+        'div.overflow-hidden:not([aria-hidden])'
+      )
+    )
+    /* eslint-enable testing-library/no-node-access */
   }
 
   async function triggerSplitLines() {
@@ -66,40 +80,42 @@ describe(TextTickerMultiLine, () => {
   }
 
   it('renders slot content', () => {
-    mountComponent('Load Checkpoint')
-    expect(wrapper.text()).toContain('Load Checkpoint')
+    renderComponent('Load Checkpoint')
+    expect(
+      screen.getAllByText('Load Checkpoint').length
+    ).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders a single MarqueeLine when text fits', async () => {
-    mountComponent('Short')
-    mockElementSize(getMeasureEl(), 200, 100)
+  it('renders a single line when text fits', async () => {
+    const { container } = renderComponent('Short')
+    mockElementSize(getMeasureEl(container), 200, 100)
     await triggerSplitLines()
 
-    expect(wrapper.findAllComponents(MarqueeLine)).toHaveLength(1)
+    expect(getVisibleLines(container)).toHaveLength(1)
   })
 
-  it('renders two MarqueeLines when text overflows', async () => {
-    mountComponent('Load Checkpoint Loader Simple')
-    mockElementSize(getMeasureEl(), 100, 300)
+  it('renders two lines when text overflows', async () => {
+    const { container } = renderComponent('Load Checkpoint Loader Simple')
+    mockElementSize(getMeasureEl(container), 100, 300)
     await triggerSplitLines()
 
-    expect(wrapper.findAllComponents(MarqueeLine)).toHaveLength(2)
+    expect(getVisibleLines(container)).toHaveLength(2)
   })
 
   it('splits text at word boundary when overflowing', async () => {
-    mountComponent('Load Checkpoint Loader')
-    mockElementSize(getMeasureEl(), 100, 200)
+    const { container } = renderComponent('Load Checkpoint Loader')
+    mockElementSize(getMeasureEl(container), 100, 200)
     await triggerSplitLines()
 
-    const lines = wrapper.findAllComponents(MarqueeLine)
-    expect(lines[0].text()).toBe('Load')
-    expect(lines[1].text()).toBe('Checkpoint Loader')
+    const lines = getVisibleLines(container)
+    expect(lines[0].textContent).toBe('Load')
+    expect(lines[1].textContent).toBe('Checkpoint Loader')
   })
 
   it('has hidden measurement element with aria-hidden', () => {
-    mountComponent('Test')
-    const measureEl = wrapper.find('[aria-hidden="true"]')
-    expect(measureEl.exists()).toBe(true)
-    expect(measureEl.classes()).toContain('invisible')
+    const { container } = renderComponent('Test')
+    const measureEl = getMeasureEl(container)
+    expect(measureEl).toBeInTheDocument()
+    expect(measureEl).toHaveClass('invisible')
   })
 })

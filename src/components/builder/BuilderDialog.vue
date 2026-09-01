@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex min-h-80 w-full min-w-116 flex-col rounded-2xl bg-base-background"
-  >
+  <div class="flex w-full min-w-116 flex-col rounded-2xl bg-base-background">
     <!-- Header -->
     <div
       class="flex h-12 items-center justify-between border-b border-border-default px-4"

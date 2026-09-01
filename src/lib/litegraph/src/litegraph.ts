@@ -87,7 +87,7 @@ export { ContextMenu } from './ContextMenu'
 export { DragAndScale } from './DragAndScale'
 
 export { Rectangle } from './infrastructure/Rectangle'
-export { RecursionError } from './infrastructure/RecursionError'
+export type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 export type {
   CanvasColour,
   ColorOption,
@@ -101,7 +101,8 @@ export type {
   LinkNetwork,
   Point,
   Positionable,
-  Size
+  Size,
+  SlotIndex
 } from './interfaces'
 export {
   LGraph,
@@ -109,12 +110,13 @@ export {
   type GroupNodeWorkflowData,
   type LGraphTriggerAction,
   type LGraphTriggerParam,
-  type GraphAddOptions
+  type GraphAddOptions,
+  type SubgraphId
 } from './LGraph'
 export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { BadgePosition, LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
-export { LGraphGroup } from './LGraphGroup'
+export { LGraphGroup, type GroupId } from './LGraphGroup'
 export { LGraphNode, type NodeId } from './LGraphNode'
 export { LLink } from './LLink'
 export { createBounds } from './measure'

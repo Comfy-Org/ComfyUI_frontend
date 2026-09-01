@@ -1,16 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useImagePreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget'
 
-export const CANVAS_IMAGE_PREVIEW_WIDGET = '$$canvas-image-preview'
-const CANVAS_IMAGE_PREVIEW_NODE_TYPES = new Set([
-  'PreviewImage',
-  'SaveImage',
-  'GLSLShader'
-])
-
-export function supportsVirtualCanvasImagePreview(node: LGraphNode): boolean {
-  return CANVAS_IMAGE_PREVIEW_NODE_TYPES.has(node.type)
-}
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/composables/node/canvasImagePreviewTypes'
 
 /**
  * Composable for handling canvas image previews in nodes

@@ -74,7 +74,7 @@ export function outputAsSerialisable(
     ...outputWidget,
     pos,
     slot_index,
-    links
+    links: links ? [...links] : links
   }
 }
 

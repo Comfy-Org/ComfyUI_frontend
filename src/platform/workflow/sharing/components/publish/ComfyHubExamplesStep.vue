@@ -1,21 +1,25 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-6">
-    <p class="text-sm">
+  <div class="flex min-h-0 flex-1 flex-col">
+    <p class="text-sm select-none">
       {{
         $t('comfyHubPublish.examplesDescription', {
-          selected: selectedExampleIds.length,
           total: MAX_EXAMPLES
         })
       }}
     </p>
 
-    <div class="grid grid-cols-4 gap-2.5 overflow-y-auto">
-      <!-- Upload tile -->
+    <div
+      role="list"
+      class="group/grid grid gap-2"
+      style="grid-template-columns: repeat(auto-fill, 8rem)"
+    >
+      <!-- Upload tile (hidden when max images reached) -->
       <label
+        v-if="showUploadTile"
         tabindex="0"
         role="button"
         :aria-label="$t('comfyHubPublish.uploadExampleImage')"
-        class="focus-visible:outline-ring flex aspect-square h-25 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
+        class="focus-visible:outline-ring flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
         @dragenter.stop
         @dragleave.stop
         @dragover.prevent.stop
@@ -40,83 +44,100 @@
         }}</span>
       </label>
 
-      <!-- Example images -->
-      <Button
+      <!-- Example images (drag to reorder) -->
+      <ReorderableExampleImage
         v-for="(image, index) in exampleImages"
         :key="image.id"
-        variant="textonly"
-        size="unset"
-        :class="
-          cn(
-            'relative h-25 cursor-pointer overflow-hidden rounded-sm p-0',
-            isSelected(image.id) ? 'ring-ring ring-2' : 'ring-0'
-          )
-        "
-        @click="toggleSelection(image.id)"
-      >
-        <img
-          :src="image.url"
-          :alt="$t('comfyHubPublish.exampleImage', { index: index + 1 })"
-          class="size-full object-cover"
-        />
-        <div
-          v-if="isSelected(image.id)"
-          class="absolute bottom-1.5 left-1.5 flex size-7 items-center justify-center rounded-full bg-primary-background text-sm font-bold text-base-foreground"
-        >
-          {{ selectionIndex(image.id) }}
-        </div>
-      </Button>
+        :image="image"
+        :index="index"
+        :total="exampleImages.length"
+        :instance-id="instanceId"
+        @remove="removeImage"
+        @move="moveImage"
+        @insert-files="insertImagesAt"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { v4 as uuidv4 } from 'uuid'
-import { ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import {
   isFileTooLarge,
   MAX_IMAGE_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
-import { cn } from '@/utils/tailwindUtil'
+import ReorderableExampleImage from './ReorderableExampleImage.vue'
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const MAX_EXAMPLES = 8
 
-const { exampleImages, selectedExampleIds } = defineProps<{
-  exampleImages: ExampleImage[]
-  selectedExampleIds: string[]
-}>()
+const exampleImages = defineModel<ExampleImage[]>('exampleImages', {
+  required: true
+})
 
-const emit = defineEmits<{
-  'update:exampleImages': [value: ExampleImage[]]
-  'update:selectedExampleIds': [value: string[]]
-}>()
+const showUploadTile = computed(() => exampleImages.value.length < MAX_EXAMPLES)
 
-function isSelected(id: string): boolean {
-  return selectedExampleIds.includes(id)
+const instanceId = Symbol('example-images')
+
+let cleanupMonitor = () => {}
+
+onMounted(() => {
+  cleanupMonitor = monitorForElements({
+    canMonitor: ({ source }) => source.data.instanceId === instanceId,
+    onDrop: ({ source, location }) => {
+      const destination = location.current.dropTargets[0]
+      if (!destination) return
+
+      const fromId = source.data.imageId
+      const toId = destination.data.imageId
+      if (typeof fromId !== 'string' || typeof toId !== 'string') return
+
+      reorderImages(fromId, toId)
+    }
+  })
+})
+
+onBeforeUnmount(() => {
+  cleanupMonitor()
+})
+
+function moveByIndex(fromIndex: number, toIndex: number) {
+  if (fromIndex < 0 || toIndex < 0) return
+  if (toIndex >= exampleImages.value.length || fromIndex === toIndex) return
+
+  const updated = [...exampleImages.value]
+  const [moved] = updated.splice(fromIndex, 1)
+  updated.splice(toIndex, 0, moved)
+  exampleImages.value = updated
 }
 
-function selectionIndex(id: string): number {
-  return selectedExampleIds.indexOf(id) + 1
+function reorderImages(fromId: string, toId: string) {
+  moveByIndex(
+    exampleImages.value.findIndex((img) => img.id === fromId),
+    exampleImages.value.findIndex((img) => img.id === toId)
+  )
 }
 
-function toggleSelection(id: string) {
-  if (isSelected(id)) {
-    emit(
-      'update:selectedExampleIds',
-      selectedExampleIds.filter((sid) => sid !== id)
-    )
-  } else if (selectedExampleIds.length < MAX_EXAMPLES) {
-    emit('update:selectedExampleIds', [...selectedExampleIds, id])
+function moveImage(id: string, direction: number) {
+  const currentIndex = exampleImages.value.findIndex((img) => img.id === id)
+  moveByIndex(currentIndex, currentIndex + direction)
+}
+
+function removeImage(id: string) {
+  const image = exampleImages.value.find((img) => img.id === id)
+  if (image?.file) {
+    URL.revokeObjectURL(image.url)
   }
+  exampleImages.value = exampleImages.value.filter((img) => img.id !== id)
 }
 
-function addImages(files: FileList) {
-  const newImages: ExampleImage[] = Array.from(files)
+function createExampleImages(files: FileList): ExampleImage[] {
+  return Array.from(files)
     .filter((f) => f.type.startsWith('image/'))
     .filter((f) => !isFileTooLarge(f, MAX_IMAGE_SIZE_MB))
     .map((file) => ({
@@ -124,10 +145,51 @@ function addImages(files: FileList) {
       url: URL.createObjectURL(file),
       file
     }))
+}
 
-  if (newImages.length > 0) {
-    emit('update:exampleImages', [...exampleImages, ...newImages])
+function addImages(files: FileList) {
+  const remaining = MAX_EXAMPLES - exampleImages.value.length
+  if (remaining <= 0) return
+
+  const created = createExampleImages(files)
+  const newImages = created.slice(0, remaining)
+  for (const img of created.slice(remaining)) {
+    URL.revokeObjectURL(img.url)
   }
+  if (newImages.length > 0) {
+    exampleImages.value = [...newImages, ...exampleImages.value]
+  }
+}
+
+function insertImagesAt(index: number, files: FileList) {
+  const created = createExampleImages(files)
+  if (created.length === 0) return
+
+  const updated = [...exampleImages.value]
+  const safeIndex = Math.min(Math.max(index, 0), updated.length)
+  const remaining = MAX_EXAMPLES - exampleImages.value.length
+  const maxInsert =
+    remaining <= 0 ? Math.max(updated.length - safeIndex, 0) : remaining
+  const newImages = created.slice(0, maxInsert)
+  for (const img of created.slice(maxInsert)) {
+    URL.revokeObjectURL(img.url)
+  }
+
+  if (newImages.length === 0) return
+  if (remaining <= 0) {
+    const replacedImages = updated.splice(
+      safeIndex,
+      newImages.length,
+      ...newImages
+    )
+    for (const img of replacedImages) {
+      if (img.file) URL.revokeObjectURL(img.url)
+    }
+  } else {
+    updated.splice(safeIndex, 0, ...newImages)
+  }
+
+  exampleImages.value = updated
 }
 
 function handleFileSelect(event: Event) {

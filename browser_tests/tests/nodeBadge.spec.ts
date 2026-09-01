@@ -1,12 +1,15 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyApp } from '../../src/scripts/app'
-import { NodeBadgeMode } from '../../src/types/nodeSource'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyApp } from '@/scripts/app'
+import { NodeBadgeMode } from '@/types/nodeSource'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
+
+const DEPRECATED_NODE_TYPE = 'ImageBatch'
+const API_NODE_TYPE = 'FluxProUltraImageNode'
 
 test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
   test('Can add badge', async ({ comfyPage }) => {
@@ -82,7 +85,13 @@ test.describe(
           'Comfy.NodeBadge.NodeIdBadgeMode',
           mode
         )
-        await comfyPage.nextFrame()
+        await expect
+          .poll(
+            () =>
+              comfyPage.settings.getSetting('Comfy.NodeBadge.NodeIdBadgeMode'),
+            { message: 'NodeIdBadgeMode setting should be applied' }
+          )
+          .toBe(mode)
         await comfyPage.canvasOps.resetView()
         await expect(comfyPage.canvas).toHaveScreenshot(
           `node-badge-${mode}.png`
@@ -104,8 +113,11 @@ test.describe(
         NodeBadgeMode.ShowAll
       )
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'unknown')
-      await comfyPage.nextFrame()
-      // Click empty space to trigger canvas re-render.
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.ColorPalette'), {
+          message: 'ColorPalette setting should be applied'
+        })
+        .toBe('unknown')
       await comfyPage.canvasOps.clickEmptySpace()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-badge-unknown-color-palette.png'
@@ -120,8 +132,11 @@ test.describe(
         NodeBadgeMode.ShowAll
       )
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
-      await comfyPage.nextFrame()
-      // Click empty space to trigger canvas re-render.
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.ColorPalette'), {
+          message: 'ColorPalette setting should be applied'
+        })
+        .toBe('light')
       await comfyPage.canvasOps.clickEmptySpace()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-badge-light-color-palette.png'
@@ -129,3 +144,73 @@ test.describe(
     })
   }
 )
+
+for (const vueEnabled of [false, true] as const) {
+  const renderer = vueEnabled ? 'vue' : 'classic'
+  const tag = vueEnabled
+    ? ['@vue-nodes', '@screenshot', '@node']
+    : ['@screenshot', '@node']
+
+  test.describe(`Node lifecycle badge (${renderer})`, { tag }, () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
+    })
+
+    for (const mode of [NodeBadgeMode.ShowAll, NodeBadgeMode.None] as const) {
+      test(`renders deprecated node with mode=${mode}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.NodeLifeCycleBadgeMode',
+          mode
+        )
+        await comfyPage.nodeOps.clearGraph()
+        await comfyPage.nodeOps.addNode(DEPRECATED_NODE_TYPE, undefined, {
+          x: 100,
+          y: 100
+        })
+        await comfyPage.canvasOps.resetView()
+        await expect(comfyPage.canvas).toHaveScreenshot(
+          `node-lifecycle-${mode}-${renderer}.png`
+        )
+      })
+    }
+  })
+
+  test.describe(`API pricing badge (${renderer})`, { tag }, () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
+      await comfyPage.page.evaluate((type) => {
+        const registered = window.LiteGraph!.registered_node_types[type] as {
+          nodeData?: { price_badge?: unknown }
+        }
+        if (!registered?.nodeData) throw new Error(`No nodeData for ${type}`)
+        registered.nodeData.price_badge = {
+          engine: 'jsonata',
+          expr: "{'type': 'text', 'text': '99.9 credits/Run'}",
+          depends_on: { widgets: [], inputs: [], input_groups: [] }
+        }
+      }, API_NODE_TYPE)
+    })
+
+    for (const enabled of [true, false] as const) {
+      test(`renders api node with showApiPricing=${enabled}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          enabled
+        )
+        await comfyPage.nodeOps.clearGraph()
+        await comfyPage.nodeOps.addNode(API_NODE_TYPE, undefined, {
+          x: 100,
+          y: 100
+        })
+        await comfyPage.canvasOps.resetView()
+        await expect(comfyPage.canvas).toHaveScreenshot(
+          `api-pricing-${enabled ? 'on' : 'off'}-${renderer}.png`
+        )
+      })
+    }
+  })
+}

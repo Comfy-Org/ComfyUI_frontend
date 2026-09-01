@@ -1,9 +1,12 @@
-import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
 
 function createMockNode(
   overrides: Partial<ComfyNodeDefImpl>

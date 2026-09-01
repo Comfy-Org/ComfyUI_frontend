@@ -260,8 +260,26 @@ function handleColorSelect(subOption: SubMenuOption) {
   hide()
 }
 
+function constrainMenuHeight() {
+  const menuInstance = contextMenu.value as unknown as {
+    container?: HTMLElement
+  }
+  const rootList = menuInstance?.container?.querySelector(
+    ':scope > ul'
+  ) as HTMLElement | null
+  if (!rootList) return
+
+  const rect = rootList.getBoundingClientRect()
+  const maxHeight = window.innerHeight - rect.top - 8
+  if (maxHeight > 0) {
+    rootList.style.maxHeight = `${maxHeight}px`
+    rootList.style.overflowY = 'auto'
+  }
+}
+
 function onMenuShow() {
   isOpen.value = true
+  requestAnimationFrame(constrainMenuHeight)
 }
 
 function onMenuHide() {

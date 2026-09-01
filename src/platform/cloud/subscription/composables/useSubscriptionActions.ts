@@ -1,7 +1,7 @@
 import { onMounted, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -12,7 +12,7 @@ import { useCommandStore } from '@/stores/commandStore'
  */
 export function useSubscriptionActions() {
   const dialogService = useDialogService()
-  const authActions = useFirebaseAuthActions()
+  const authActions = useAuthActions()
   const commandStore = useCommandStore()
   const telemetry = useTelemetry()
   const { fetchStatus } = useBillingContext()

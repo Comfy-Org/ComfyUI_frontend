@@ -24,6 +24,7 @@ import type {
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 
@@ -57,7 +58,10 @@ export async function createNode(
     newNode.pos = [posX, posY]
     const addedNode = graph.add(newNode) ?? null
 
-    if (addedNode) graph.change()
+    if (addedNode) {
+      useNodeZIndex().bringNodeToFront(addedNode.id)
+      graph.change()
+    }
     return addedNode
   } else {
     useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
@@ -106,6 +110,14 @@ export function isVideoOutput(
 
 export function isAudioNode(node: LGraphNode | undefined): boolean {
   return !!node && node.previewMediaType === 'audio'
+}
+
+export function resolveComboValues(widget: IComboWidget): string[] {
+  const values = widget.options?.values
+  if (!values) return []
+  if (typeof values === 'function') return values(widget)
+  if (Array.isArray(values)) return values
+  return Object.keys(values)
 }
 
 export function addToComboValues(widget: IComboWidget, value: string) {

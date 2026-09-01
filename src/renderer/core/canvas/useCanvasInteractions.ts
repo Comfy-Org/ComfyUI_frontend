@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -41,30 +42,34 @@ export function useCanvasInteractions() {
     return !!(captureElement && active && captureElement.contains(active))
   }
 
+  /**
+   * Forward to canvas when the event is not consumed by a focused widget,
+   * or when it is a canvas gesture (which must override widget consumption
+   * to prevent destructive browser defaults).
+   */
   const shouldForwardWheelEvent = (event: WheelEvent): boolean =>
-    !wheelCapturedByFocusedElement(event) ||
-    (isStandardNavMode.value && (event.ctrlKey || event.metaKey))
+    !wheelCapturedByFocusedElement(event) || isCanvasGestureWheel(event)
 
   /**
    * Handles wheel events from UI components that should be forwarded to canvas
-   * when appropriate (e.g., Ctrl+wheel for zoom in standard mode)
+   * when appropriate (e.g., Ctrl+wheel for zoom, two-finger pan in standard
+   * mode; all wheel events in legacy mode).
    */
   const handleWheel = (event: WheelEvent) => {
     if (!shouldForwardWheelEvent(event)) return
 
-    // In standard mode, Ctrl+wheel should go to canvas for zoom
-    if (isStandardNavMode.value && (event.ctrlKey || event.metaKey)) {
-      forwardEventToCanvas(event)
+    // In standard mode, only canvas gestures (zoom/pan) are forwarded;
+    // vertical wheel falls through so the document/widget scrolls normally.
+    // The re-check is intentional and NOT redundant with shouldForwardWheelEvent:
+    // that function also returns true for unfocused vertical wheel (its
+    // `!wheelCapturedByFocusedElement` branch), which here must stay native.
+    if (isStandardNavMode.value) {
+      if (isCanvasGestureWheel(event)) forwardEventToCanvas(event)
       return
     }
 
-    // In legacy mode, all wheel events go to canvas for zoom
-    if (!isStandardNavMode.value) {
-      forwardEventToCanvas(event)
-      return
-    }
-
-    // Otherwise, let the component handle it normally
+    // In legacy mode, all forwardable wheel events go to canvas for zoom/pan.
+    forwardEventToCanvas(event)
   }
 
   /**

@@ -3,6 +3,7 @@
   "LoadImage": 3474,
   "CLIPTextEncode": 2435,
   "SaveImage": 1762,
+  "SaveImageAdvanced": 1762,
   "VAEDecode": 1754,
   "KSampler": 1511,
   "CheckpointLoaderSimple": 1293,

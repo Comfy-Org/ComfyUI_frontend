@@ -41,10 +41,15 @@ export const useNodeSlotRegistryStore = defineStore('nodeSlotRegistry', () => {
     registry.clear()
   }
 
+  function getNodeIds(): string[] {
+    return Array.from(registry.keys())
+  }
+
   return {
     getNode,
     ensureNode,
     deleteNode,
-    clear
+    clear,
+    getNodeIds
   }
 })

@@ -5,12 +5,14 @@
   "scripts": {
     "lint": "nx run @comfyorg/desktop-ui:lint",
     "typecheck": "nx run @comfyorg/desktop-ui:typecheck",
+    "test:unit": "vitest run --config vitest.config.mts",
     "storybook": "storybook dev -p 6007",
     "build-storybook": "storybook build -o dist/storybook"
   },
   "dependencies": {
     "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
     "@primevue/core": "catalog:",
     "@primevue/themes": "catalog:",
     "@vueuse/core": "catalog:",

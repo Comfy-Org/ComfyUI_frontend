@@ -1,6 +1,16 @@
 <template>
   <span role="status" class="inline-flex">
     <i
+      v-if="variant === 'loader'"
+      aria-hidden="true"
+      :class="cn('icon-[lucide--loader]', sizeClass)"
+    >
+      <div
+        class="size-full animate-spin bg-conic from-base-foreground from-10% to-muted-foreground to-10%"
+      />
+    </i>
+    <i
+      v-else
       aria-hidden="true"
       :class="cn('icon-[lucide--loader-circle] animate-spin', sizeClass)"
     />
@@ -11,10 +21,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { size } = defineProps<{
   size?: 'sm' | 'md' | 'lg'
+  variant?: 'loader-circle' | 'loader'
 }>()
 
 const { t } = useI18n()

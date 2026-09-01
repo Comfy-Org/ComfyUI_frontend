@@ -1,7 +1,8 @@
-import { onScopeDispose, ref, toValue } from 'vue'
+import { onScopeDispose, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -28,9 +29,7 @@ export function useNodePointerInteractions(
 
   let hasDraggingStarted = false
 
-  const startPosition = ref({ x: 0, y: 0 })
-
-  const DRAG_THRESHOLD = 3 // pixels
+  const dragGuard = useClickDragGuard(3)
 
   function onPointerdown(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
@@ -57,7 +56,7 @@ export function useNodePointerInteractions(
       return
     }
 
-    startPosition.value = { x: event.clientX, y: event.clientY }
+    dragGuard.recordStart(event)
 
     safeDragStart(event, nodeId)
   }
@@ -85,11 +84,7 @@ export function useNodePointerInteractions(
     }
     // Check if we should start dragging (pointer moved beyond threshold)
     if (lmbDown && !layoutStore.isDraggingVueNodes.value) {
-      const dx = event.clientX - startPosition.value.x
-      const dy = event.clientY - startPosition.value.y
-      const distance = Math.sqrt(dx * dx + dy * dy)
-
-      if (distance > DRAG_THRESHOLD) {
+      if (dragGuard.wasDragged(event)) {
         layoutStore.isDraggingVueNodes.value = true
         handleNodeSelect(event, nodeId)
       }
