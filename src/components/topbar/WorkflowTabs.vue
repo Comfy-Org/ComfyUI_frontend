@@ -222,7 +222,11 @@ const onWorkflowClick = async (event: MouseEvent) => {
   if (!option) return
 
   try {
-    await workflowService.openWorkflow(option.workflow)
+    const opened = await workflowService.openWorkflow(option.workflow)
+    if (opened === false) {
+      selectionRevision.value++
+      await nextTick()
+    }
   } catch (error) {
     selectionRevision.value++
     await nextTick()
