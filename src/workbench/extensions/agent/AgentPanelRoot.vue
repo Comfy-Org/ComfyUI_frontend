@@ -116,6 +116,14 @@ const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
 >()
+/**
+ * Resolve the live document for a workflow id, creating the registry entry
+ * when none exists. Never captured: a workflow id can be remapped to a new
+ * document after the previous one closes, so callers re-resolve per use.
+ */
+const resolveDocumentId = (workflowId: string) =>
+  graphDocumentStore.resolveWorkflowTarget(workflowId)?.documentId ??
+  graphDocumentStore.createDocument({ workflowId })
 const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
@@ -123,9 +131,7 @@ const graphMutations = (workflowId: string) => {
   // created when the target is first addressed, not at commit time. Commit
   // scope resolution then records/refreshes the entry's scope, so a target
   // whose tab is momentarily unresolved still commits into its own document.
-  const documentId =
-    graphDocumentStore.resolveWorkflowTarget(workflowId)?.documentId ??
-    graphDocumentStore.createDocument({ workflowId })
+  resolveDocumentId(workflowId)
   const mutations = createGraphMutations({
     getScope() {
       // No bound tab means no live scope: refuse the write instead of
@@ -133,6 +139,7 @@ const graphMutations = (workflowId: string) => {
       // been closed, and its ids may be reused when the workflow reopens).
       const rootGraphId = boundTabFor(workflowId)?.activeState?.id
       if (!rootGraphId) return null
+      const documentId = resolveDocumentId(workflowId)
       const registered = documentId
         ? (graphDocumentStore.getDocument(documentId)?.scope ?? null)
         : null
