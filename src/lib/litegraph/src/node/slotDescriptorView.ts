@@ -29,7 +29,6 @@ export function createInputSlotView(
   return view
 }
 
-/** Resolve a legacy assignment reference to its canonical store-backed view. */
 export function resolveInputSlotView(
   inputs: INodeInputSlot[],
   input: INodeInputSlot
