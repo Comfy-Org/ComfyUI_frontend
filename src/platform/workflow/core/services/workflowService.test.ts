@@ -404,7 +404,8 @@ describe('useWorkflowService', () => {
         JSON.stringify(activeWorkflow.activeState),
         {
           name: activeWorkflow.key,
-          isTemporary: activeWorkflow.isTemporary
+          isTemporary: activeWorkflow.isTemporary,
+          baseLastModified: activeWorkflow.lastModified
         }
       )
     })

@@ -39,6 +39,8 @@ import { app as comfyApp } from '@/scripts/app'
 interface DraftMeta {
   name: string
   isTemporary: boolean
+  /** Server lastModified of the file revision the draft is based on. */
+  baseLastModified?: number
 }
 
 interface LoadPersistedWorkflowOptions {
@@ -107,6 +109,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
     const now = Date.now()
+    const { baseLastModified, ...entryMeta } = meta
 
     // Prime the index cache before writing payload.
     // loadIndex() runs orphan cleanup on cache miss, which would
@@ -116,7 +119,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     // Write payload before persisting the updated index
     const payloadWritten = writePayload(workspaceId, draftKey, {
       data,
-      updatedAt: now
+      updatedAt: now,
+      baseLastModified
     })
 
     if (!payloadWritten) {
@@ -126,7 +130,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const { index: newIndex, evicted } = upsertEntry(
       index,
       path,
-      { ...meta, updatedAt: now },
+      { ...entryMeta, updatedAt: now },
       MAX_DRAFTS
     )
 
@@ -154,6 +158,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const draftKey = hashPath(path)
+    const { baseLastModified, ...entryMeta } = meta
 
     // Try evicting oldest entries until we can write
     let currentIndex = index
@@ -176,7 +181,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       // Try writing again
       const success = writePayload(workspaceId, draftKey, {
         data,
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        baseLastModified
       })
 
       if (success) {
@@ -184,7 +190,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
-          { ...meta, updatedAt: Date.now() },
+          { ...entryMeta, updatedAt: Date.now() },
           MAX_DRAFTS
         )
         if (!persistIndex(finalIndex)) {
@@ -216,8 +222,15 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   /**
    * Moves a draft from one path to another (rename).
+   * A rename bumps the file's server lastModified without changing content,
+   * so callers should pass the post-rename value as the draft's new base.
    */
-  function moveDraft(oldPath: string, newPath: string, name: string): void {
+  function moveDraft(
+    oldPath: string,
+    newPath: string,
+    name: string,
+    baseLastModified?: number
+  ): void {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const result = moveEntry(index, oldPath, newPath, name)
@@ -227,7 +240,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       if (oldPayload) {
         const written = writePayload(workspaceId, result.newKey, {
           data: oldPayload.data,
-          updatedAt: oldPayload.updatedAt
+          updatedAt: oldPayload.updatedAt,
+          baseLastModified: baseLastModified ?? oldPayload.baseLastModified
         })
         if (!written) return
 
@@ -248,6 +262,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     name: string
     isTemporary: boolean
     updatedAt: number
+    baseLastModified: number | undefined
   } | null {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
@@ -266,7 +281,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       data: payload.data,
       name: entry.name,
       isTemporary: entry.isTemporary,
-      updatedAt: payload.updatedAt
+      updatedAt: payload.updatedAt,
+      baseLastModified: payload.baseLastModified
     }
   }
 
