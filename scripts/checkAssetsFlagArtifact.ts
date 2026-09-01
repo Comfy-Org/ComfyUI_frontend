@@ -46,12 +46,14 @@ export function assertAssetApiGate(
   distribution: string
 ): void {
   const gate = assetApiGates(chunks)
-  const expected =
+  const hasDisabledReturn = /return(?: false|!1)/.test(gate)
+  const hasSettingLookup = /Comfy\.Assets\.UseAssetAPI/.test(gate)
+  const valid =
     distribution === 'cloud'
-      ? /return !!useSettingStore\(\)\.get\(["']Comfy\.Assets\.UseAssetAPI["']\)/
-      : /return(?: false|!1)/
+      ? hasSettingLookup
+      : hasDisabledReturn && !hasSettingLookup
 
-  if (!expected.test(gate)) {
+  if (!valid) {
     throw new Error(
       `Built Asset API gate is invalid for ${distribution}:\n${gate.trim()}`
     )
