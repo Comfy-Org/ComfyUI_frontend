@@ -118,7 +118,10 @@ describe('mint ports against the real layout store delivery', () => {
       isEnabled: () => true,
       isDocBound: () => true,
       target: () => target,
-      enqueue: (batch) => minted.push(...batch.operations),
+      enqueue: (batch) => {
+        minted.push(...batch.operations)
+        return true
+      },
       layoutChanges: (listener) => layoutStore.onChange(listener),
       withLayoutActor: (actor, fn) => {
         layoutStore.withActor(actor, fn)

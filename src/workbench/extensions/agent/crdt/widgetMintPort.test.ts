@@ -22,6 +22,7 @@ function widgetSet(overrides: Partial<WidgetSetView> = {}): WidgetSetView {
 
 describe('attachWidgetMintPort', () => {
   let minted: GraphOperation[]
+  let enqueueAccepts: boolean
   let port: WidgetMintPort
   let enabled: boolean
   let bound: boolean
@@ -34,6 +35,7 @@ describe('attachWidgetMintPort', () => {
   }
 
   beforeEach(() => {
+    enqueueAccepts = true
     minted = []
     enabled = true
     bound = true
@@ -52,7 +54,10 @@ describe('attachWidgetMintPort', () => {
       isDocBound: () => bound,
       resolveInteriorPath: (_target, owningGraphId) =>
         interiorPaths.get(owningGraphId) ?? null,
-      enqueue: (batch) => minted.push(...batch.operations)
+      enqueue: (batch) => {
+        minted.push(...batch.operations)
+        return enqueueAccepts
+      }
     })
   })
 

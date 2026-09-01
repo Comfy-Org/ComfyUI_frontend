@@ -43,6 +43,7 @@ function deleteChange(
 
 describe('attachLayoutMintPort', () => {
   let minted: GraphOperation[]
+  let enqueueAccepts: boolean
   let port: LayoutMintPort
   let enabled: boolean
   let bound: boolean
@@ -58,6 +59,7 @@ describe('attachLayoutMintPort', () => {
   }
 
   beforeEach(() => {
+    enqueueAccepts = true
     minted = []
     enabled = true
     bound = true
@@ -86,7 +88,10 @@ describe('attachLayoutMintPort', () => {
         serializeNode: (_target, id) => graphNodes.get(id) ?? null,
         nodeIds: () => [...graphNodes.keys()]
       },
-      enqueue: (batch) => minted.push(...batch.operations)
+      enqueue: (batch) => {
+        minted.push(...batch.operations)
+        return enqueueAccepts
+      }
     })
   })
 
@@ -102,6 +107,16 @@ describe('attachLayoutMintPort', () => {
         node: { id: 1, type: 'TestNode', pos: [128, 96], widgets_values: [7] }
       }
     ])
+  })
+
+  it('surfaces a mint the sender rejected', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    enqueueAccepts = false
+
+    deliver(createNodeChange('1'))
+
+    expect(error).toHaveBeenCalledOnce()
+    error.mockRestore()
   })
 
   it('never mints an agent-remote echo (KA-6 sender half)', () => {

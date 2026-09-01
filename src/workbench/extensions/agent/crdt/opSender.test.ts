@@ -313,7 +313,18 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(0)
   })
 
-  it('never lets stale or current anonymous results settle a different workflow batch', () => {
+  it('ignores a foreign-workflow result that names this batch op', () => {
+    enqueue(addNode(1))
+    const opId = sent[0].ops[0].op_id
+
+    deliverResult({ ok: true, applied: [opId], skipped: [] }, 'wf-other')
+    expect(settled).toEqual([])
+
+    deliverResult({ ok: true, applied: [opId], skipped: [] })
+    expect(settled).toHaveLength(1)
+  })
+
+  it('settles each workflow batch only on its own identified result', () => {
     enqueue(addNode(1))
     const workflowAOpId = sent[0].ops[0].op_id
     ackInFlight()

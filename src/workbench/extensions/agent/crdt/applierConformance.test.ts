@@ -304,7 +304,10 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
     const result = applyOps(doc, mintWireOps(legOps, context), CATALOG)
     const clearResult = applyOps(
       doc,
-      mintWireOps(clearOps, { ...context, firstVersion: 5 }),
+      mintWireOps(clearOps, {
+        ...context,
+        firstVersion: context.firstVersion + legOps.length
+      }),
       CATALOG
     )
 

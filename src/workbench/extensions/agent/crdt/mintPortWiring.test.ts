@@ -94,6 +94,7 @@ describe('attachMintPortWiring', () => {
       enqueue: (batch) => {
         mintedTargets.push(batch.target)
         minted.push(...batch.operations)
+        return true
       },
       layoutChanges: (listener) => {
         layoutListeners.add(listener)

@@ -20,6 +20,7 @@ import {
   MINT_ID_MIN,
   mintNodeId
 } from '@/lib/litegraph/src/idAllocation'
+import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
 import type { TargetedGraphOperations } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
@@ -116,10 +117,15 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 
+function defaultIdAllocationState(): () => LGraphState {
+  const state = createLGraphState()
+  return () => state
+}
+
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  idAllocationState = createLGraphState()
+  idAllocationState: () => LGraphState | null = defaultIdAllocationState()
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -138,7 +144,7 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        () => idAllocationState
+        idAllocationState
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
@@ -376,7 +382,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('arms collision-free ids only while a shared document is bound', async () => {
     const state = createLGraphState()
-    const { unmount, workflowId } = mountFollower('wf-a', true, state)
+    const { unmount, workflowId } = mountFollower('wf-a', true, () => state)
 
     expect(Number(mintNodeId(state))).toBeGreaterThanOrEqual(MINT_ID_MIN)
 
@@ -390,6 +396,25 @@ describe('useAgentCrdtFollower', () => {
 
     unmount()
     expect(mintNodeId(state)).toBe('2')
+  })
+
+  it('disarms the previous graph state when the state object is swapped', async () => {
+    const stateA = createLGraphState()
+    const stateB = createLGraphState()
+    let current = stateA
+    const { unmount, workflowId } = mountFollower('wf-a', true, () => current)
+
+    expect(Number(mintNodeId(stateA))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+
+    current = stateB
+    workflowId.value = 'wf-b'
+    await nextTick()
+
+    expect(Number(mintNodeId(stateB))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+    expect(mintNodeId(stateA)).toBe('1')
+
+    unmount()
+    expect(mintNodeId(stateB)).toBe('1')
   })
 
   it('sends minted human operations through the doc client', () => {

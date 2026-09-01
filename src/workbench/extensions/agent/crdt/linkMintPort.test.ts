@@ -42,6 +42,7 @@ async function afterSweep(): Promise<void> {
 
 describe('attachLinkMintPort', () => {
   let minted: GraphOperation[]
+  let enqueueAccepts: boolean
   let port: LinkMintPort
   let enabled: boolean
   let bound: boolean
@@ -78,6 +79,7 @@ describe('attachLinkMintPort', () => {
   }
 
   beforeEach(() => {
+    enqueueAccepts = true
     minted = []
     enabled = true
     bound = true
@@ -98,7 +100,10 @@ describe('attachLinkMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      enqueue: (batch) => minted.push(...batch.operations)
+      enqueue: (batch) => {
+        minted.push(...batch.operations)
+        return enqueueAccepts
+      }
     })
   })
 
