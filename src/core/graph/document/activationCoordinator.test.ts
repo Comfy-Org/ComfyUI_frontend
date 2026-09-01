@@ -135,7 +135,7 @@ describe('createActivationCoordinator', () => {
     expect(coordinator.activeDocumentId()).toBe(docB)
   })
 
-  it('deactivate detaches the active document and cancels in-flight activation', async () => {
+  it('deactivate detaches the active document without cancelling an unrelated in-flight activation', async () => {
     const slowHydration = deferred()
     const docA = toDocumentId('doc-a')
     const docB = toDocumentId('doc-b')
@@ -148,11 +148,16 @@ describe('createActivationCoordinator', () => {
 
     const inFlight = coordinator.activate(docB, recordingBinding(log, 'b'))
     expect(coordinator.deactivate(docA)).toBe(true)
+    expect(coordinator.activeDocumentId()).toBeNull()
     slowHydration.resolve()
 
-    expect(await inFlight).toEqual({ status: 'superseded', documentId: docB })
-    expect(coordinator.activeDocumentId()).toBeNull()
-    expect(log).toEqual([`attach:a:${docA}`, `detach:a:${docA}`])
+    expect(await inFlight).toEqual({ status: 'activated', documentId: docB })
+    expect(coordinator.activeDocumentId()).toBe(docB)
+    expect(log).toEqual([
+      `attach:a:${docA}`,
+      `detach:a:${docA}`,
+      `attach:b:${docB}`
+    ])
   })
 
   it('deactivate cancels an in-flight activate for the same document', async () => {
@@ -254,25 +259,24 @@ describe('createActivationCoordinator', () => {
 
   it('deactivate of a superseded in-flight document is a no-op', async () => {
     const slowHydration = deferred()
-    const docA = toDocumentId('doc-a')
     const docB = toDocumentId('doc-b')
+    const docC = toDocumentId('doc-c')
     const coordinator = createActivationCoordinator({
       isLoaded: () => true,
       hydrate: (id) => (id === docB ? slowHydration.promise : Promise.resolve())
     })
     const log: string[] = []
-    await coordinator.activate(docA, recordingBinding(log, 'a'))
 
     const inFlight = coordinator.activate(docB, recordingBinding(log, 'b'))
-    expect(coordinator.deactivate(docA)).toBe(true)
+    await coordinator.activate(docC, recordingBinding(log, 'c'))
     slowHydration.resolve()
     expect(await inFlight).toEqual({ status: 'superseded', documentId: docB })
 
     // The superseded request cleared its own pending record, so deactivating
     // the never-activated document reports that nothing was cancelled.
     expect(coordinator.deactivate(docB)).toBe(false)
-    expect(coordinator.activeDocumentId()).toBeNull()
-    expect(log).toEqual([`attach:a:${docA}`, `detach:a:${docA}`])
+    expect(coordinator.activeDocumentId()).toBe(docC)
+    expect(log).toEqual([`attach:c:${docC}`])
   })
 
   it('does not detach the previous document twice after a throwing detach', async () => {

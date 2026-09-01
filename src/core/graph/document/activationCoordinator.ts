@@ -138,7 +138,10 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
       pending = null
     }
     if (active?.documentId !== documentId) return cancelledInFlight
-    generation++
+    // Deactivation is targeted: no generation bump here. Every in-flight
+    // activate holds a `pending` record (handled above), so bumping the
+    // generation for the active branch would only supersede an unrelated
+    // in-flight activate of a different document, which must proceed.
     const previous = active
     active = null
     previous.binding.detach(documentId)
