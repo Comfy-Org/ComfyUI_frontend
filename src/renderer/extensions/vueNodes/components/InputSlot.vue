@@ -21,7 +21,6 @@
     <!-- Connection Dot -->
     <SlotConnectionDot
       :slot-key
-      :accessible-name="dotAccessibleName"
       :class="
         cn(
           'w-3 -translate-x-1/2',
@@ -102,12 +101,6 @@ const accessibleName = computed(
     props.slotData.name ||
     undefined
 )
-const dotAccessibleName = computed(() =>
-  accessibleName.value
-    ? t('g.connectSlot', { name: accessibleName.value })
-    : undefined
-)
-
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 

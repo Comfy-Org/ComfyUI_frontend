@@ -17,10 +17,11 @@ const WidgetStub = markRaw(
 const InputSlotStub = defineComponent({
   props: {
     index: { type: Number, required: true },
-    slotData: { type: Object, required: true }
+    slotData: { type: Object, required: true },
+    standalone: { type: Boolean, default: false }
   },
   template:
-    '<div data-testid="input-slot" :data-index="index" :data-name="slotData.name" />'
+    '<div data-testid="input-slot" :data-index="index" :data-name="slotData.name" :data-standalone="standalone" />'
 })
 
 const AppInputStub = defineComponent({
@@ -75,6 +76,11 @@ describe('WidgetGrid', () => {
     expect(
       screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
     ).toEqual(['seed', 'replacement', 'converted-widget-picker'])
+    expect(
+      screen
+        .getAllByTestId('input-slot')
+        .map((element) => element.dataset.standalone)
+    ).toEqual(['false', 'false', 'false'])
     expect(screen.getAllByTestId('node-widget')).toHaveLength(2)
     expect(
       screen
@@ -172,6 +178,11 @@ describe('WidgetGrid', () => {
     expect(
       screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
     ).toEqual(['prompt', 'steps'])
+    expect(
+      screen
+        .getAllByTestId('input-slot')
+        .map((element) => element.dataset.standalone)
+    ).toEqual(['true', 'false'])
     expect(screen.getAllByTestId('node-widget')).toHaveLength(1)
     expect(
       screen

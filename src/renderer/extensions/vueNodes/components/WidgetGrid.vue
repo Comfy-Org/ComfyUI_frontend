@@ -38,7 +38,7 @@
             :has-error="row.widget.hasError"
             :index="row.widget.slotMetadata.index"
             :socketless="row.widget.simplified.spec?.socketless"
-            :standalone="!row.showsControl"
+            :standalone="row.standalone"
             dot-only
           />
         </div>
@@ -123,6 +123,7 @@ const renderedRows = computed(() =>
       {
         widget,
         showsControl,
+        standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
         rowSize:
           showsControl &&

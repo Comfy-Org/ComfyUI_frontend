@@ -10,7 +10,6 @@ import type { ClassValue } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<{
   slotData?: INodeSlot
-  accessibleName?: string
   class?: ClassValue
   hasError?: boolean
   multi?: boolean
@@ -41,10 +40,6 @@ const types = computed(() => {
 
 const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
 
-function activateWithKeyboard(event: KeyboardEvent) {
-  if (event.target instanceof HTMLElement) event.target.click()
-}
-
 const slotClass = computed(() =>
   cn(
     'slot-dot bg-ink-100',
@@ -61,17 +56,12 @@ const slotClass = computed(() =>
 <template>
   <div
     data-testid="slot-connection-dot"
-    role="button"
-    tabindex="0"
-    :aria-label="accessibleName"
     :class="
       cn(
         'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
         props.class
       )
     "
-    @keydown.enter.prevent="activateWithKeyboard"
-    @keydown.space.prevent="activateWithKeyboard"
   >
     <div
       v-if="types.length === 1 && (slotData?.shape == undefined || isListShape)"

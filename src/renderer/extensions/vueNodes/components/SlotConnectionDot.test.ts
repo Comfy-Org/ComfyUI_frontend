@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
@@ -53,20 +52,5 @@ describe('SlotConnectionDot', () => {
       'data-slot-key',
       slotKey
     )
-  })
-
-  it('exposes an accessible keyboard-activated connection control', async () => {
-    const user = userEvent.setup()
-    const onClick = vi.fn()
-    render(SlotConnectionDot, {
-      props: { slotData: defaultSlot, accessibleName: 'output' },
-      attrs: { onClick }
-    })
-
-    const control = screen.getByRole('button', { name: 'output' })
-    control.focus()
-    await user.keyboard('{Enter}')
-
-    expect(onClick).toHaveBeenCalledOnce()
   })
 })
