@@ -681,7 +681,8 @@ export default defineConfig([
     }
   },
   {
-    files: ['src/components/searchbox/**/*.vue'],
+    name: 'comfy/enforce-sanitized-html-boundary',
+    files: ['src/**/*.vue'],
     rules: {
       'vue/no-v-html': 'error'
     }
