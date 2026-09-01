@@ -7,8 +7,6 @@ import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/N
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { nodeBadges } from '@/systems/badgeSystem'
-import { CORE_JOIN_ORDER } from '@/types/badgeData'
-import type { CoreBadgePart } from '@/types/badgeData'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { resolveNode } from '@/utils/litegraphUtil'
 
@@ -42,7 +40,7 @@ export function usePartitionedBadges(nodeData: NodeState) {
     const isComfyCloudNode =
       nodeDef?.python_module === COMFY_CLOUD_PYTHON_MODULE
 
-    const coreByPart = new Map<CoreBadgePart, NodeBadgeProps>()
+    const core: NodeBadgeProps[] = []
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
 
@@ -55,7 +53,7 @@ export function usePartitionedBadges(nodeData: NodeState) {
         continue
       }
       if (nodeDef?.isCoreNode && row.part === 'source') continue
-      coreByPart.set(row.part, {
+      core.push({
         text: row.part === 'lifecycle' ? trim(row.text, ['[', ']']) : row.text
       })
     }
@@ -73,10 +71,7 @@ export function usePartitionedBadges(nodeData: NodeState) {
       hasComfyBadge:
         (showComfyLogo && pricing.length === 0) || isComfyCloudNode,
       hasComfyCloudBadge: isComfyCloudNode,
-      core: CORE_JOIN_ORDER.flatMap((part) => {
-        const badge = coreByPart.get(part)
-        return badge ? [badge] : []
-      }),
+      core,
       extension,
       pricing
     }

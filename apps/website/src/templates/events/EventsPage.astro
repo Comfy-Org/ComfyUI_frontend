@@ -29,7 +29,7 @@ const eventList = itemListNode(
   url,
   t('events.past.title', locale),
   watchablePastEvents.map((event) => ({
-    name: event.title[locale],
+    name: event.title[locale] || event.title.en,
     url: absoluteUrl(Astro.site, localizeHref(eventPath(event), locale))
   }))
 )

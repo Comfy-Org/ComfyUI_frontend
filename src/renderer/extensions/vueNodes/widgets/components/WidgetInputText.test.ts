@@ -168,6 +168,16 @@ describe('WidgetInputText Value Binding', () => {
       const textarea = container.querySelector('textarea')
       expect(textarea).not.toBeInTheDocument()
     })
+
+    it('marks the text input as invalid', () => {
+      const widget = createInputTextWidget('invalid value')
+      renderComponent(widget, 'invalid value', { invalid: true })
+
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'aria-invalid',
+        'true'
+      )
+    })
   })
 
   describe('Locked Field Hover Styling', () => {
