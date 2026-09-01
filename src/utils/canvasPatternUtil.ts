@@ -14,9 +14,9 @@ const DARK_MARK_COLOR = 'rgba(0, 0, 0, 0.13)'
 
 let sharedContext: CanvasRenderingContext2D | null = null
 
-function getSharedContext(): CanvasRenderingContext2D {
+function getSharedContext(): CanvasRenderingContext2D | null {
   sharedContext ??= document.createElement('canvas').getContext('2d')
-  if (!sharedContext) throw new Error('2D canvas context unavailable')
+  if (!sharedContext) console.error('2D canvas context unavailable')
   return sharedContext
 }
 
@@ -30,6 +30,7 @@ function normalizeToHexColor(color: string): string {
     return rgbToHex(parseToRgb(trimmed)).toLowerCase()
   }
   const ctx = getSharedContext()
+  if (!ctx) return rgbToHex(parseToRgb(trimmed)).toLowerCase()
   ctx.fillStyle = '#000000'
   ctx.fillStyle = trimmed
   const parsed = ctx.fillStyle
@@ -90,7 +91,10 @@ function renderPatternImage(
   canvas.width = TILE_SIZE
   canvas.height = TILE_SIZE
   const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('2D canvas context unavailable')
+  if (!ctx) {
+    console.error('2D canvas context unavailable')
+    return ''
+  }
 
   const ground = normalizeToHexColor(backgroundColor)
   ctx.fillStyle = ground
