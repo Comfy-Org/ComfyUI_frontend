@@ -140,8 +140,12 @@ describe('generateModelThumbnail', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(blob))
 
     await generateModelThumbnail('/model.glb', 'model.glb')
-    await vi.waitFor(() =>
-      expect(persistThumbnail).toHaveBeenCalledWith('model.glb', blob)
-    )
+    await vi.waitFor(() => expect(persistThumbnail).toHaveBeenCalledOnce())
+
+    const [assetName, persistedBlob] = persistThumbnail.mock.calls[0]
+    expect(assetName).toBe('model.glb')
+    expect(persistedBlob).toBeInstanceOf(Blob)
+    expect(persistedBlob.type).toBe('image/png')
+    await expect(persistedBlob.text()).resolves.toBe('thumbnail')
   })
 })
