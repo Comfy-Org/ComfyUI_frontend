@@ -386,9 +386,11 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     ordered.length !== owner._nodes.length
   ) {
     const missingState = ordered.find((state) => !adapters.has(state.id))
-    const missingAdapter = owner._nodes.find(
-      (adapter) => !ordered.some((state) => state.id === adapter.id)
-    )
+    let missingAdapter: LGraphNode | undefined
+    if (missingState === undefined) {
+      const stateIds = new Set(ordered.map((state) => state.id))
+      missingAdapter = owner._nodes.find((adapter) => !stateIds.has(adapter.id))
+    }
     const mismatch = missingState
       ? `stored node ${missingState.id} has no live adapter`
       : missingAdapter
