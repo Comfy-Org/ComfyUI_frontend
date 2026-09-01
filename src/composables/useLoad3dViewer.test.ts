@@ -1,9 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -20,7 +21,21 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   default: {
-    uploadFile: vi.fn()
+    uploadFile: vi.fn(),
+    splitFilePath: vi.fn((path: string) => {
+      const parts = path.split('/')
+      return [parts.slice(0, -1).join('/'), parts[parts.length - 1] ?? '']
+    }),
+    getResourceURL: vi.fn(
+      (subfolder: string, filename: string, type: string) =>
+        `api/view?type=${type}&subfolder=${encodeURIComponent(subfolder)}&filename=${filename}`
+    )
+  }
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    apiURL: vi.fn((url: string) => `/${url}`)
   }
 }))
 
@@ -28,8 +43,19 @@ vi.mock('@/i18n', () => ({
   t: vi.fn((key) => key)
 }))
 
+const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
+const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
+vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+  isAssetPreviewSupported,
+  persistThumbnail
+}))
+
 vi.mock('@/extensions/core/load3d/Load3d', () => ({
   default: vi.fn()
+}))
+
+vi.mock('@/extensions/core/load3d/createLoad3d', () => ({
+  createLoad3d: vi.fn()
 }))
 
 function createMockSceneManager(): Load3d['sceneManager'] {
@@ -55,8 +81,6 @@ describe('useLoad3dViewer', () => {
   let mockNode: LGraphNode
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockNode = createMockLGraphNode({
       properties: {
         'Scene Config': {
@@ -106,11 +130,22 @@ describe('useLoad3dViewer', () => {
       remove: vi.fn(),
       setTargetSize: vi.fn(),
       loadModel: vi.fn().mockResolvedValue(undefined),
+      captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,x'),
       setCameraState: vi.fn(),
       addEventListener: vi.fn(),
       hasAnimations: vi.fn().mockReturnValue(false),
       isSplatModel: vi.fn().mockReturnValue(false),
       isPlyModel: vi.fn().mockReturnValue(false),
+      getSourceFormat: vi.fn().mockReturnValue(null),
+      getCurrentModelCapabilities: vi.fn().mockReturnValue({
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: true,
+        exportable: true,
+        materialModes: ['original', 'normal', 'wireframe'],
+        fitTargetSize: 5
+      }),
       setGizmoEnabled: vi.fn(),
       setGizmoMode: vi.fn(),
       setBackgroundRenderMode: vi.fn(),
@@ -148,6 +183,7 @@ describe('useLoad3dViewer', () => {
     vi.mocked(Load3d).mockImplementation(function () {
       Object.assign(this, mockLoad3d)
     })
+    vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
     mockLoad3dService = {
       copyLoad3dState: vi.fn().mockResolvedValue(undefined),
@@ -166,10 +202,6 @@ describe('useLoad3dViewer', () => {
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('initialization', () => {
     it('should initialize viewer with source Load3d state', async () => {
       const viewer = useLoad3dViewer(mockNode)
@@ -177,7 +209,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
-      expect(Load3d).toHaveBeenCalledWith(containerRef, {
+      expect(createLoad3d).toHaveBeenCalledWith(containerRef, {
         width: undefined,
         height: undefined,
         getDimensions: undefined,
@@ -219,7 +251,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle initialization errors', async () => {
-      vi.mocked(Load3d).mockImplementationOnce(function () {
+      vi.mocked(createLoad3d).mockImplementationOnce(() => {
         throw new Error('Load3d creation failed')
       })
 
@@ -375,6 +407,23 @@ describe('useLoad3dViewer', () => {
           .intensity
       ).toBe(1)
     })
+
+    it('should preserve unknown fields on Model Config when restoring', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      ;(
+        mockNode.properties!['Model Config'] as Record<string, unknown>
+      ).futureField = 'preserve-me'
+
+      viewer.restoreInitialState()
+
+      expect(
+        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+          .futureField
+      ).toBe('preserve-me')
+    })
   })
 
   describe('applyChanges', () => {
@@ -427,6 +476,23 @@ describe('useLoad3dViewer', () => {
       const result = await viewer.applyChanges()
 
       expect(result).toBe(false)
+    })
+
+    it('should preserve unknown fields on Model Config when applying', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      ;(
+        mockNode.properties!['Model Config'] as Record<string, unknown>
+      ).futureField = 'preserve-me'
+
+      await viewer.applyChanges()
+
+      expect(
+        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+          .futureField
+      ).toBe('preserve-me')
     })
   })
 
@@ -496,6 +562,44 @@ describe('useLoad3dViewer', () => {
       expect(viewer.hasBackgroundImage.value).toBe(false)
     })
 
+    it('should reset render mode to tiled when uploading a new image', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        'uploaded-image.jpg'
+      )
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.backgroundRenderMode.value = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await viewer.handleBackgroundImageUpdate(file)
+
+      expect(viewer.backgroundRenderMode.value).toBe('tiled')
+    })
+
+    it('should not clear the background or touch render mode when the upload fails', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(undefined)
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.backgroundImage.value = 'existing.jpg'
+      viewer.backgroundRenderMode.value = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await viewer.handleBackgroundImageUpdate(file)
+
+      expect(viewer.backgroundImage.value).toBe('existing.jpg')
+      expect(viewer.backgroundRenderMode.value).toBe('panorama')
+    })
+
     it('should handle upload errors', async () => {
       vi.mocked(Load3dUtils.uploadFile).mockRejectedValueOnce(
         new Error('Upload failed')
@@ -527,6 +631,78 @@ describe('useLoad3dViewer', () => {
 
       expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(file, '3d')
       expect(viewer.backgroundImage.value).toBe('uploaded-image.jpg')
+    })
+  })
+
+  describe('handleModelDrop', () => {
+    it('refreshes the capability refs after the dropped model loads, so the sidebar reflects the new model', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        '3d/dropped.splat'
+      )
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      expect(viewer.canUseLighting.value).toBe(true)
+      expect(viewer.canUseGizmo.value).toBe(true)
+      expect(viewer.canExport.value).toBe(true)
+      expect([...viewer.materialModes.value]).toEqual([
+        'original',
+        'normal',
+        'wireframe'
+      ])
+
+      vi.mocked(mockLoad3d.isSplatModel!).mockReturnValueOnce(true)
+      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockReturnValueOnce({
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: false,
+        exportable: true,
+        materialModes: [],
+        fitTargetSize: 20
+      })
+
+      const file = new File([''], 'dropped.splat')
+      await viewer.handleModelDrop(file)
+
+      expect(mockLoad3d.loadModel).toHaveBeenCalledWith(
+        expect.stringContaining('dropped.splat')
+      )
+      expect(viewer.canUseLighting.value).toBe(false)
+      expect(viewer.canExport.value).toBe(true)
+      expect(viewer.isSplatModel.value).toBe(true)
+      expect([...viewer.materialModes.value]).toEqual([])
+    })
+
+    it('alerts and does not call loadModel when there is no active load3d instance', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+
+      const file = new File([''], 'whatever.glb')
+      await viewer.handleModelDrop(file)
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.no3dScene'
+      )
+      expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
+    })
+
+    it('alerts and skips loadModel when the file upload fails', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce('')
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      vi.mocked(mockLoad3d.loadModel!).mockClear()
+
+      const file = new File([''], 'whatever.glb')
+      await viewer.handleModelDrop(file)
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.fileUploadFailed'
+      )
+      expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
     })
   })
 
@@ -585,6 +761,46 @@ describe('useLoad3dViewer', () => {
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       expect(viewer.lightIntensity.value).toBe(1) // Default value
+    })
+  })
+
+  describe('standalone thumbnail persistence', () => {
+    beforeEach(() => {
+      isAssetPreviewSupported.mockReset().mockReturnValue(false)
+      persistThumbnail.mockReset()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
+      )
+    })
+
+    it('captures and persists a thumbnail after a standalone model loads', async () => {
+      isAssetPreviewSupported.mockReturnValue(true)
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeStandaloneViewer(
+        containerRef,
+        '/api/view?filename=mesh.glb&type=output'
+      )
+
+      await vi.waitFor(() =>
+        expect(persistThumbnail).toHaveBeenCalledWith(
+          'mesh.glb',
+          expect.any(Blob)
+        )
+      )
+      expect(mockLoad3d.captureThumbnail).toHaveBeenCalledWith(256, 256)
+    })
+
+    it('skips thumbnail persistence when the asset API is unavailable', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeStandaloneViewer(containerRef, 'model.glb')
+      await nextTick()
+
+      expect(persistThumbnail).not.toHaveBeenCalled()
     })
   })
 

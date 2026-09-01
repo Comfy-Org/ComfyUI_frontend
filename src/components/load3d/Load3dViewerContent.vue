@@ -1,8 +1,7 @@
 <template>
   <div
     ref="viewerContentRef"
-    class="flex w-full"
-    :class="[maximized ? 'h-full' : 'h-[70vh]']"
+    class="flex size-full"
     @mouseenter="viewer.handleMouseEnter"
     @mouseleave="viewer.handleMouseLeave"
   >
@@ -56,8 +55,7 @@
             <ModelControls
               v-model:up-direction="viewer.upDirection.value"
               v-model:material-mode="viewer.materialMode.value"
-              :hide-material-mode="viewer.isSplatModel.value"
-              :is-ply-model="viewer.isPlyModel.value"
+              :material-modes="viewer.materialModes.value"
             />
           </div>
 
@@ -68,13 +66,13 @@
             />
           </div>
 
-          <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
+          <div v-if="viewer.canUseLighting.value" class="space-y-4 p-2">
             <LightControls
               v-model:light-intensity="viewer.lightIntensity.value"
             />
           </div>
 
-          <div class="space-y-4 p-2">
+          <div v-if="viewer.canUseGizmo.value" class="space-y-4 p-2">
             <GizmoControls
               v-model:gizmo-enabled="viewer.gizmoEnabled.value"
               v-model:gizmo-mode="viewer.gizmoMode.value"
@@ -82,8 +80,11 @@
             />
           </div>
 
-          <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
-            <ExportControls @export-model="viewer.exportModel" />
+          <div v-if="viewer.canExport.value" class="space-y-4 p-2">
+            <ExportControls
+              :source-format="viewer.sourceFormat.value"
+              @export-model="viewer.exportModel"
+            />
           </div>
         </div>
       </div>
@@ -126,7 +127,6 @@ const props = defineProps<{
 
 const viewerContentRef = ref<HTMLDivElement>()
 const containerRef = ref<HTMLDivElement>()
-const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
 
 const isStandaloneMode = !props.node && props.modelUrl
@@ -163,10 +163,6 @@ onMounted(async () => {
           mutation.type === 'attributes' &&
           mutation.attributeName === 'maximized'
         ) {
-          maximized.value =
-            (mutation.target as HTMLElement).getAttribute('maximized') ===
-            'true'
-
           setTimeout(() => {
             viewer.refreshViewport()
           }, 0)

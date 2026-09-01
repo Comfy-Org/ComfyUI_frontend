@@ -35,7 +35,7 @@
         <div
           v-for="(bar, index) in waveformBars"
           :key="index"
-          class="max-h-8 min-h-1 w-0.75 rounded-[1.5px] bg-slate-100 transition-all duration-100"
+          class="max-h-8 min-h-1 w-0.75 rounded-[1.5px] bg-text-secondary transition-all duration-100"
           :style="{ height: bar.height + 'px' }"
           :title="`Bar ${index + 1}: ${bar.height}px`"
         />
@@ -91,6 +91,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
+import type { NodeId } from '@/types/nodeId'
 
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
@@ -101,7 +102,7 @@ const { t } = useI18n()
 
 const props = defineProps<{
   readonly?: boolean
-  nodeId: string
+  nodeId: NodeId
 }>()
 
 // Audio element ref

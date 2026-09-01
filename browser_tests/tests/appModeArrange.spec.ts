@@ -2,7 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { setupBuilder } from '@e2e/helpers/builderTestUtils'
+import { setupBuilder } from '@e2e/fixtures/utils/builderTestUtils'
 
 test.describe('App mode arrange step', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

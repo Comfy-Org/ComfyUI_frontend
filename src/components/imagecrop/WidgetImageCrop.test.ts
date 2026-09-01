@@ -1,4 +1,3 @@
-/* eslint-disable vue/no-reserved-component-names */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +5,7 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { Ref } from 'vue'
 
@@ -100,7 +100,7 @@ const WidgetBoundingBoxStub = defineComponent({
     modelValue: { type: Object, default: () => ({}) },
     disabled: { type: Boolean, default: false }
   },
-  // eslint-disable-next-line vue/no-unused-emit-declarations
+
   emits: ['update:modelValue'],
   template: `<div data-testid="bbox-child"
     :data-disabled="String(disabled)"
@@ -133,11 +133,12 @@ function renderWidget(
   initialModel: Bounds = { x: 0, y: 0, width: 512, height: 512 }
 ) {
   const value = ref<Bounds>(initialModel)
+  const nodeId = toNodeId(1)
   const Harness = defineComponent({
     components: { WidgetImageCrop },
-    setup: () => ({ value, widget }),
+    setup: () => ({ value, widget, nodeId }),
     template:
-      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="1" />'
+      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="nodeId" />'
   })
   const utils = render(Harness, {
     global: {
@@ -234,7 +235,7 @@ describe('WidgetImageCrop', () => {
       renderWidget(
         makeWidget({
           options: { disabled: true },
-          linkedUpstream: { nodeId: 'n1' }
+          linkedUpstream: { nodeId: toNodeId('n1') }
         }),
         { x: 0, y: 0, width: 512, height: 512 }
       )

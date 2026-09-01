@@ -52,6 +52,7 @@
         v-model:background-image="sceneConfig!.backgroundImage"
         v-model:background-render-mode="sceneConfig!.backgroundRenderMode"
         v-model:fov="cameraConfig!.fov"
+        :show-background-image="canUseBackgroundImage"
         :hdri-active="
           !!lightConfig?.hdri?.hdriPath && !!lightConfig?.hdri?.enabled
         "
@@ -63,8 +64,7 @@
         v-model:material-mode="modelConfig!.materialMode"
         v-model:up-direction="modelConfig!.upDirection"
         v-model:show-skeleton="modelConfig!.showSkeleton"
-        :hide-material-mode="isSplatModel"
-        :is-ply-model="isPlyModel"
+        :material-modes="materialModes"
         :has-skeleton="hasSkeleton"
       />
 
@@ -72,6 +72,8 @@
         v-if="showCameraControls"
         v-model:camera-type="cameraConfig!.cameraType"
         v-model:fov="cameraConfig!.fov"
+        v-model:use-custom-up="useCustomUp"
+        :has-custom-up="cameraConfig!.hasCustomUp"
       />
 
       <div v-if="showLightControls" class="flex flex-col">
@@ -82,6 +84,7 @@
         />
 
         <HDRIControls
+          v-if="canUseHdri"
           v-model:hdri-config="lightConfig!.hdri"
           :has-background-image="!!sceneConfig?.backgroundImage"
           @update-hdri-file="handleHDRIFileUpdate"
@@ -90,6 +93,7 @@
 
       <ExportControls
         v-if="showExportControls"
+        :source-format="sourceFormat"
         @export-model="handleExportModel"
       />
 
@@ -105,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
@@ -120,25 +124,47 @@ import type {
   CameraConfig,
   GizmoMode,
   LightConfig,
+  MaterialMode,
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
-  isSplatModel = false,
-  isPlyModel = false,
-  hasSkeleton = false
+  canUseGizmo = true,
+  canUseLighting = true,
+  canExport = true,
+  canUseHdri = true,
+  canUseBackgroundImage = true,
+  materialModes = ['original', 'normal', 'wireframe'],
+  hasSkeleton = false,
+  sourceFormat = null
 } = defineProps<{
-  isSplatModel?: boolean
-  isPlyModel?: boolean
+  canUseGizmo?: boolean
+  canUseLighting?: boolean
+  canExport?: boolean
+  canUseHdri?: boolean
+  canUseBackgroundImage?: boolean
+  materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
+  sourceFormat?: string | null
 }>()
 
 const sceneConfig = defineModel<SceneConfig>('sceneConfig')
 const modelConfig = defineModel<ModelConfig>('modelConfig')
 const cameraConfig = defineModel<CameraConfig>('cameraConfig')
 const lightConfig = defineModel<LightConfig>('lightConfig')
+
+const useCustomUp = computed({
+  get: () =>
+    cameraConfig.value?.hasCustomUp === true && cameraConfig.value.useCustomUp,
+  set: (value: boolean) => {
+    const config = cameraConfig.value
+    if (config?.hasCustomUp) {
+      cameraConfig.value = { ...config, useCustomUp: value }
+    }
+  }
+})
 
 const isMenuOpen = ref(false)
 const menuPanelRef = ref<HTMLElement | null>(null)
@@ -163,12 +189,22 @@ const categoryLabels: Record<string, string> = {
 }
 
 const availableCategories = computed(() => {
-  if (isSplatModel) {
-    return ['scene', 'model', 'camera']
-  }
-
-  return ['scene', 'model', 'camera', 'light', 'gizmo', 'export']
+  const categories = ['scene', 'model', 'camera']
+  if (canUseLighting) categories.push('light')
+  if (canUseGizmo) categories.push('gizmo')
+  if (canExport) categories.push('export')
+  return categories
 })
+
+watch(
+  availableCategories,
+  (categories) => {
+    if (!categories.includes(activeCategory.value)) {
+      activeCategory.value = 'scene'
+    }
+  },
+  { immediate: true }
+)
 
 const showSceneControls = computed(
   () => activeCategory.value === 'scene' && !!sceneConfig.value
@@ -181,13 +217,16 @@ const showCameraControls = computed(
 )
 const showLightControls = computed(
   () =>
+    canUseLighting &&
     activeCategory.value === 'light' &&
     !!lightConfig.value &&
     !!modelConfig.value
 )
-const showExportControls = computed(() => activeCategory.value === 'export')
+const showExportControls = computed(
+  () => canExport && activeCategory.value === 'export'
+)
 const showGizmoControls = computed(
-  () => activeCategory.value === 'gizmo' && !!modelConfig.value
+  () => canUseGizmo && activeCategory.value === 'gizmo' && !!modelConfig.value
 )
 
 const toggleMenu = () => {

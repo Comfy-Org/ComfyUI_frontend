@@ -1,4 +1,7 @@
 import { detectPassCount } from '@/renderer/glsl/glslUtils'
+import { acquireSharedGL } from '@/renderer/glsl/sharedGLContext'
+
+import type { SharedGLHandle } from '@/renderer/glsl/sharedGLContext'
 
 const VERTEX_SHADER_SOURCE = `#version 300 es
 out vec2 v_texCoord;
@@ -70,6 +73,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     ...Array.from({ length: maxCurves }, (_, i) => `u_curve${i}`)
   ]
 
+  let sharedGL: SharedGLHandle | null = null
   let canvas: OffscreenCanvas | null = null
   let gl: WebGL2RenderingContext | null = null
   let vertexShader: WebGLShader | null = null
@@ -88,6 +92,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   let passCount = 1
   let disposed = false
   let lastCompiledSource: string | null = null
+  let fboWidth = 0
+  let fboHeight = 0
 
   function initPingPongFBOs(
     ctx: WebGL2RenderingContext,
@@ -195,21 +201,20 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     if (disposed) return false
 
     try {
-      canvas = new OffscreenCanvas(width, height)
-      const ctx = canvas.getContext('webgl2', {
-        alpha: true,
-        premultipliedAlpha: false,
-        preserveDrawingBuffer: true
-      })
-      if (!ctx) return false
+      sharedGL = acquireSharedGL()
+      if (!sharedGL) return false
 
-      gl = ctx
+      canvas = sharedGL.canvas
+      gl = sharedGL.gl
 
-      if (!gl.getExtension('EXT_color_buffer_float')) return false
+      canvas.width = width
+      canvas.height = height
+      gl.viewport(0, 0, width, height)
 
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
       vertexShader = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE)
       initPingPongFBOs(gl, width, height)
+      fboWidth = width
+      fboHeight = height
       return true
     } catch {
       dispose()
@@ -267,9 +272,13 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width
       canvas.height = height
-      gl.viewport(0, 0, width, height)
+    }
+    gl.viewport(0, 0, width, height)
+    if (fboWidth !== width || fboHeight !== height) {
       destroyPingPongFBOs()
       initPingPongFBOs(gl, width, height)
+      fboWidth = width
+      fboHeight = height
     }
   }
 
@@ -366,8 +375,28 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     inputTextures[index] = texture
   }
 
+  function clearInputImage(index: number): void {
+    if (disposed || !gl) return
+    if (index < 0 || index >= maxInputs) return
+    const texture = inputTextures[index]
+    if (texture) {
+      gl.deleteTexture(texture)
+      inputTextures[index] = null
+    }
+  }
+
+  function isContextLost(): boolean {
+    return gl?.isContextLost() ?? false
+  }
+
   function render(): void {
     if (disposed || !program || !pingPongFBOs || !gl || !canvas) return
+
+    if (canvas.width !== fboWidth || canvas.height !== fboHeight) {
+      canvas.width = fboWidth
+      canvas.height = fboHeight
+    }
+    gl.viewport(0, 0, fboWidth, fboHeight)
 
     gl.useProgram(program)
     gl.disable(gl.BLEND)
@@ -481,8 +510,10 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     uniformLocations.clear()
 
-    const ext = gl.getExtension('WEBGL_lose_context')
-    ext?.loseContext()
+    sharedGL?.release()
+    sharedGL = null
+    gl = null
+    canvas = null
   }
 
   return {
@@ -494,6 +525,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     setBoolUniform,
     bindCurveTexture,
     bindInputImage,
+    clearInputImage,
+    isContextLost,
     render,
     readPixels,
     toBlob,

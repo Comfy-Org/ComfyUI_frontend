@@ -26,8 +26,8 @@ async function assertNoOverflow(page: Page) {
 }
 
 async function navigateAndSettle(page: Page, url: string) {
-  await page.goto(url)
-  await page.waitForLoadState('networkidle')
+  await page.goto(url, { waitUntil: 'domcontentloaded' })
+  await page.waitForLoadState('load')
 }
 
 test.describe('Home', { tag: '@visual' }, () => {
@@ -67,7 +67,7 @@ test.describe('Pricing', { tag: '@visual' }, () => {
       await assertNoOverflow(page)
 
       const section = page.locator('section', {
-        has: page.getByRole('heading', { name: /Pricing/i })
+        has: page.getByRole('heading', { name: /Choose a plan/i })
       })
       await expect(section).toBeVisible()
       await section.scrollIntoViewIfNeeded()
@@ -75,6 +75,30 @@ test.describe('Pricing', { tag: '@visual' }, () => {
     })
   }
 })
+
+const FAQ_PAGES = [
+  { name: 'pricing', url: '/cloud/pricing' },
+  { name: 'enterprise', url: '/cloud/enterprise' }
+]
+
+for (const { name, url } of FAQ_PAGES) {
+  test.describe(`${name} FAQ`, { tag: '@visual' }, () => {
+    for (const vp of VIEWPORTS) {
+      test(`${name}-faq-${vp.name}`, async ({ page }) => {
+        await page.setViewportSize({ width: vp.width, height: vp.height })
+        await navigateAndSettle(page, url)
+
+        const faq = page.locator('#faq')
+        await faq.scrollIntoViewIfNeeded()
+        const summaries = faq.locator('details > summary')
+        await summaries.nth(0).click()
+        await summaries.nth(1).click()
+
+        await expect(faq).toHaveScreenshot(`${name}-faq-${vp.name}.png`)
+      })
+    }
+  })
+}
 
 test.describe('Contact', { tag: '@visual' }, () => {
   for (const vp of SMALL_VIEWPORTS) {
@@ -126,6 +150,7 @@ test.describe('Overflow guards', { tag: '@visual' }, () => {
   const pages = [
     '/',
     '/cloud',
+    '/cloud/enterprise',
     '/cloud/pricing',
     '/contact',
     '/download',

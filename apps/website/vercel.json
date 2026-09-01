@@ -7,11 +7,77 @@
   "github": {
     "enabled": false
   },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "has": [
+        { "type": "host", "value": "website-frontend-comfyui.vercel.app" }
+      ],
+      "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
+    },
+    {
+      "source": "/((?!.*\\.(?:txt|xml|json|ico|png|jpg|jpeg|webp|avif|gif|svg|css|js|mjs|map|woff|woff2|ttf|otf|eot|mp4|webm|vtt|pdf|zip|webmanifest)$).*)",
+      "headers": [
+        {
+          "key": "Link",
+          "value": "<https://comfy.org/llms.txt>; rel=\"describedby\""
+        }
+      ]
+    },
+    {
+      "source": "/payment/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/:locale/payment/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    }
+  ],
   "redirects": [
     {
       "source": "/pricing",
       "destination": "/cloud/pricing",
       "permanent": true
+    },
+    {
+      "source": "/career",
+      "destination": "/careers",
+      "permanent": true
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy-policy",
+      "permanent": true
+    },
+    {
+      "source": "/minimax",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/minimax/",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax/",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
     },
     {
       "source": "/enterprise",
@@ -24,9 +90,24 @@
       "permanent": true
     },
     {
+      "source": "/discord",
+      "destination": "https://discord.com/invite/comfyorg",
+      "permanent": true
+    },
+    {
       "source": "/press",
       "destination": "/about",
       "permanent": true
+    },
+    {
+      "source": "/trust",
+      "destination": "https://trust.comfy.org",
+      "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "https://cloud.comfy.org/cloud/login",
+      "permanent": false
     }
   ]
 }

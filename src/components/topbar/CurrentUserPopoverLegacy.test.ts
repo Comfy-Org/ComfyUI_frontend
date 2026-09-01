@@ -1,3 +1,4 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -5,33 +6,14 @@ import { h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
-// Mock all firebase modules
-vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn()
-}))
-
-// Mock pinia
-vi.mock('pinia')
-
-// Mock showSettingsDialog and showTopUpCreditsDialog
 const mockShowSettingsDialog = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 
-// Mock the settings dialog composable
 vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: vi.fn(() => ({
     show: mockShowSettingsDialog,
@@ -40,7 +22,6 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   }))
 }))
 
-// Mock window.open
 const originalWindowOpen = window.open
 beforeEach(() => {
   window.open = vi.fn()
@@ -50,7 +31,6 @@ afterAll(() => {
   window.open = originalWindowOpen
 })
 
-// Mock the useCurrentUser composable
 const mockHandleSignOut = vi.fn()
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: vi.fn(() => ({
@@ -61,73 +41,57 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }))
 }))
 
-// Mock the useAuthActions composable
-const mockLogout = vi.fn()
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: vi.fn(() => ({
-    fetchBalance: vi.fn().mockResolvedValue(undefined),
-    logout: mockLogout
-  }))
-}))
-
-// Mock the dialog service
 vi.mock('@/services/dialogService', () => ({
   useDialogService: vi.fn(() => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
   }))
 }))
 
-// Mock the authStore with hoisted state for per-test manipulation
-const mockAuthStoreState = vi.hoisted(() => ({
-  balance: {
-    amount_micros: 100_000,
-    effective_balance_micros: 100_000,
-    currency: 'usd'
-  } as {
-    amount_micros?: number
-    effective_balance_micros?: number
-    currency: string
-  },
-  isFetchingBalance: false
-}))
+function makeSubscription(
+  overrides: Partial<SubscriptionInfo> = {}
+): SubscriptionInfo {
+  return {
+    isActive: true,
+    tier: 'CREATOR',
+    duration: 'MONTHLY',
+    planSlug: null,
+    renewalDate: null,
+    endDate: null,
+    isCancelled: false,
+    hasFunds: true,
+    ...overrides
+  }
+}
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    getAuthHeader: vi
-      .fn()
-      .mockResolvedValue({ Authorization: 'Bearer mock-token' }),
-    balance: mockAuthStoreState.balance,
-    isFetchingBalance: mockAuthStoreState.isFetchingBalance
+const mockFetchBalance = vi.fn().mockResolvedValue(undefined)
+const mockCanAccessSubscriptionFeatures = ref(true)
+const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
+const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
+const mockBalance = ref<BalanceInfo | null>(null)
+const mockIsLoading = ref(false)
+const mockIsTeamPlan = ref(false)
+const mockCanTopUp = ref(true)
+const mockCanSubscribeSelfServe = ref(false)
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: vi.fn(() => ({
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
+    tier: mockTier,
+    subscription: mockSubscription,
+    balance: mockBalance,
+    isLoading: mockIsLoading,
+    isTeamPlan: mockIsTeamPlan,
+    fetchBalance: mockFetchBalance
   }))
 }))
 
-// Mock the useSubscription composable
-const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
-const mockIsFreeTier = ref(false)
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: vi.fn(() => ({
-    isActiveSubscription: ref(true),
-    isFreeTier: mockIsFreeTier,
-    subscriptionTierName: ref('Creator'),
-    subscriptionTier: ref('CREATOR'),
-    fetchStatus: mockFetchStatus
-  }))
-}))
-
-// Mock the useSubscriptionDialog composable
-const mockShowPricingTable = vi.fn()
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
-  () => ({
-    useSubscriptionDialog: vi.fn(() => ({
-      show: vi.fn(),
-      showPricingTable: mockShowPricingTable,
-      hide: vi.fn()
-    }))
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: mockCanTopUp,
+    canSubscribeSelfServe: mockCanSubscribeSelfServe
   })
-)
+}))
 
-// Mock UserAvatar component
 vi.mock('@/components/common/UserAvatar.vue', () => ({
   default: {
     name: 'UserAvatarMock',
@@ -137,22 +101,10 @@ vi.mock('@/components/common/UserAvatar.vue', () => ({
   }
 }))
 
-// Mock UserCredit component
-vi.mock('@/components/common/UserCredit.vue', () => ({
-  default: {
-    name: 'UserCreditMock',
-    render() {
-      return h('div', 'Credit: 100')
-    }
-  }
-}))
-
-// Mock formatCreditsFromCents
 vi.mock('@/base/credits/comfyCredits', () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
-// Mock useExternalLink
 vi.mock('@/composables/useExternalLink', () => ({
   useExternalLink: vi.fn(() => ({
     buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`),
@@ -162,44 +114,28 @@ vi.mock('@/composables/useExternalLink', () => ({
   }))
 }))
 
-// Mock useTelemetry
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
     trackAddApiCreditButtonClicked: vi.fn()
   }))
 }))
 
-// Mock isCloud with hoisted state for per-test toggling
-const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
-
-vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
-  default: {
-    name: 'SubscribeButtonMock',
-    render() {
-      return h('div', 'Subscribe Button')
-    }
-  }
-}))
-
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockIsCloud.value = true
-    mockIsFreeTier.value = false
-    mockAuthStoreState.balance = {
-      amount_micros: 100_000,
-      effective_balance_micros: 100_000,
+    mockCanAccessSubscriptionFeatures.value = true
+    mockTier.value = 'CREATOR'
+    mockSubscription.value = makeSubscription()
+    mockBalance.value = {
+      amountMicros: 100_000,
+      effectiveBalanceMicros: 100_000,
       currency: 'usd'
     }
-    mockAuthStoreState.isFetchingBalance = false
+    mockIsLoading.value = false
+    mockCanTopUp.value = true
+    mockCanSubscribeSelfServe.value = false
   })
 
-  function renderComponent() {
+  function renderComponent(teamWorkspaceState?: Record<string, unknown>) {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -210,7 +146,15 @@ describe('CurrentUserPopoverLegacy', () => {
 
     render(CurrentUserPopoverLegacy, {
       global: {
-        plugins: [i18n],
+        plugins: [
+          i18n,
+          createTestingPinia({
+            createSpy: vi.fn,
+            initialState: teamWorkspaceState
+              ? { teamWorkspace: teamWorkspaceState }
+              : {}
+          })
+        ],
         stubs: {
           Divider: true
         }
@@ -230,7 +174,38 @@ describe('CurrentUserPopoverLegacy', () => {
     expect(screen.getByText('test@example.com')).toBeInTheDocument()
   })
 
-  it('calls formatCreditsFromCents with correct parameters and displays formatted credits', () => {
+  it('fetches the balance through the billing facade on mount', () => {
+    renderComponent()
+
+    expect(mockFetchBalance).toHaveBeenCalled()
+  })
+
+  describe('subscription tier badge', () => {
+    it('renders the tier name derived from the facade tier', () => {
+      renderComponent()
+
+      expect(screen.getByText('Creator')).toBeInTheDocument()
+    })
+
+    it('renders the yearly tier name when the facade subscription is annual', () => {
+      mockSubscription.value = makeSubscription({ duration: 'ANNUAL' })
+
+      renderComponent()
+
+      expect(screen.getByText('Creator Yearly')).toBeInTheDocument()
+    })
+
+    it('hides the badge when the facade reports no tier', () => {
+      mockTier.value = null
+      mockSubscription.value = null
+
+      renderComponent()
+
+      expect(screen.queryByText('Creator')).not.toBeInTheDocument()
+    })
+  })
+
+  it('formats and displays the facade balance', () => {
     renderComponent()
 
     expect(formatCreditsFromCents).toHaveBeenCalledWith({
@@ -245,11 +220,33 @@ describe('CurrentUserPopoverLegacy', () => {
     expect(screen.getByText('1000')).toBeInTheDocument()
   })
 
+  it('shows a skeleton instead of the balance while billing is loading', () => {
+    mockIsLoading.value = true
+
+    renderComponent()
+
+    expect(screen.queryByText('1000')).not.toBeInTheDocument()
+  })
+
   it('renders logout menu item with correct text', () => {
     renderComponent()
 
     expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
     expect(screen.getByText('Log Out')).toBeInTheDocument()
+  })
+
+  describe('credits help icon (FE-617)', () => {
+    it('renders the credits help icon as an interactive button with the unified-credits tooltip as its accessible name', () => {
+      renderComponent()
+
+      const helpButton = screen.getByTestId('credits-info-button')
+      expect(helpButton).toBeInTheDocument()
+      expect(helpButton.tagName).toBe('BUTTON')
+      expect(helpButton).toHaveAttribute(
+        'aria-label',
+        enMessages.credits.unified.tooltip
+      )
+    })
   })
 
   it('opens user settings and emits close event when settings item is clicked', async () => {
@@ -299,22 +296,23 @@ describe('CurrentUserPopoverLegacy', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('opens subscription dialog and emits close event when plans & pricing item is clicked', async () => {
+  it('opens Plan & Credits from the legacy account menu', async () => {
     const { user, onClose } = renderComponent()
 
-    expect(screen.getByTestId('plans-pricing-menu-item')).toBeInTheDocument()
+    const menuItem = screen.getByTestId('manage-plan-menu-item')
+    expect(menuItem).toHaveTextContent(enMessages.credits.credits)
 
-    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+    await user.click(menuItem)
 
-    expect(mockShowPricingTable).toHaveBeenCalled()
+    expect(mockShowSettingsDialog).toHaveBeenCalledWith('workspace')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  describe('effective_balance_micros handling', () => {
-    it('uses effective_balance_micros when present (positive balance)', () => {
-      mockAuthStoreState.balance = {
-        amount_micros: 200_000,
-        effective_balance_micros: 150_000,
+  describe('facade balance handling', () => {
+    it('uses effectiveBalanceMicros when present (positive balance)', () => {
+      mockBalance.value = {
+        amountMicros: 200_000,
+        effectiveBalanceMicros: 150_000,
         currency: 'usd'
       }
 
@@ -331,10 +329,10 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('1500')).toBeInTheDocument()
     })
 
-    it('uses effective_balance_micros when zero', () => {
-      mockAuthStoreState.balance = {
-        amount_micros: 100_000,
-        effective_balance_micros: 0,
+    it('uses effectiveBalanceMicros when zero', () => {
+      mockBalance.value = {
+        amountMicros: 100_000,
+        effectiveBalanceMicros: 0,
         currency: 'usd'
       }
 
@@ -351,10 +349,10 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('0')).toBeInTheDocument()
     })
 
-    it('uses effective_balance_micros when negative', () => {
-      mockAuthStoreState.balance = {
-        amount_micros: 0,
-        effective_balance_micros: -50_000,
+    it('uses effectiveBalanceMicros when negative', () => {
+      mockBalance.value = {
+        amountMicros: 0,
+        effectiveBalanceMicros: -50_000,
         currency: 'usd'
       }
 
@@ -371,9 +369,9 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('-500')).toBeInTheDocument()
     })
 
-    it('falls back to amount_micros when effective_balance_micros is missing', () => {
-      mockAuthStoreState.balance = {
-        amount_micros: 100_000,
+    it('falls back to amountMicros when effectiveBalanceMicros is missing', () => {
+      mockBalance.value = {
+        amountMicros: 100_000,
         currency: 'usd'
       }
 
@@ -390,10 +388,8 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('1000')).toBeInTheDocument()
     })
 
-    it('falls back to 0 when both effective_balance_micros and amount_micros are missing', () => {
-      mockAuthStoreState.balance = {
-        currency: 'usd'
-      }
+    it('falls back to 0 when the facade reports no balance', () => {
+      mockBalance.value = null
 
       renderComponent()
 
@@ -408,79 +404,102 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('0')).toBeInTheDocument()
     })
   })
-
-  describe('cloud free tier', () => {
-    beforeEach(() => {
-      mockIsCloud.value = true
-      mockIsFreeTier.value = true
+  describe('workspace selector (non-cloud)', () => {
+    const workspace = (overrides: Record<string, unknown>) => ({
+      isSubscribed: false,
+      subscriptionPlan: null,
+      subscriptionTier: null,
+      members: [],
+      pendingInvites: [],
+      ...overrides
     })
 
-    it('shows upgrade-to-add-credits button and hides add-credits button', () => {
+    const readyWorkspaceState = {
+      initState: 'ready',
+      activeWorkspaceId: 'ws-personal',
+      isFetchingWorkspaces: false,
+      workspaces: [
+        workspace({
+          id: 'ws-personal',
+          name: 'Personal Workspace',
+          type: 'personal',
+          role: 'owner'
+        }),
+        workspace({
+          id: 'ws-team',
+          name: 'Team Comfy',
+          type: 'team',
+          role: 'member'
+        })
+      ]
+    }
+
+    it('stays hidden while the workspace store is not hydrated', () => {
       renderComponent()
-      expect(
-        screen.getByTestId('upgrade-to-add-credits-button')
-      ).toBeInTheDocument()
-      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
-    })
-  })
 
-  describe('non-cloud distribution', () => {
-    beforeEach(() => {
-      mockIsCloud.value = false
+      expect(screen.queryByTestId('workspace-switcher-trigger')).toBeNull()
     })
 
-    it('still shows credits balance', () => {
-      renderComponent()
-      expect(screen.getByText('1000')).toBeInTheDocument()
+    it.for(['ready', 'error'])(
+      'stays hidden when workspace initialization is %s without workspaces',
+      (initState) => {
+        renderComponent({
+          initState,
+          activeWorkspaceId: null,
+          isFetchingWorkspaces: false,
+          workspaces: []
+        })
+
+        expect(screen.queryByTestId('workspace-switcher-trigger')).toBeNull()
+      }
+    )
+
+    it('shows the trigger and opens the switcher once the store is ready', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+
+      const trigger = screen.getByTestId('workspace-switcher-trigger')
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+      expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+      expect(trigger).toHaveAttribute(
+        'aria-controls',
+        'workspace-switcher-panel'
+      )
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+
+      await user.click(trigger)
+
+      const panel = screen.getByTestId('workspace-switcher-panel')
+      expect(panel).toBeInTheDocument()
+      expect(panel).toHaveAttribute('id', 'workspace-switcher-panel')
+      expect(panel).toHaveAttribute('role', 'menu')
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
     })
 
-    it('shows add-credits button and hides upgrade-to-add-credits button', () => {
-      renderComponent()
-      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-      expect(
-        screen.queryByTestId('upgrade-to-add-credits-button')
-      ).not.toBeInTheDocument()
+    it('closes the switcher on Escape or a click elsewhere', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+      const trigger = screen.getByTestId('workspace-switcher-trigger')
+
+      await user.click(trigger)
+      await user.keyboard('{Escape}')
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+
+      await user.click(trigger)
+      await user.click(screen.getByText('Test User'))
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
     })
 
-    it('hides upgrade-to-add-credits button even when on free tier', () => {
-      mockIsFreeTier.value = true
-      renderComponent()
-      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-      expect(
-        screen.queryByTestId('upgrade-to-add-credits-button')
-      ).not.toBeInTheDocument()
-    })
+    it('keeps credits visible but hides top-up for workspace members', () => {
+      mockCanAccessSubscriptionFeatures.value = false
+      mockCanTopUp.value = false
+      renderComponent({
+        ...readyWorkspaceState,
+        activeWorkspaceId: 'ws-team'
+      })
 
-    it('hides subscribe button', () => {
-      renderComponent()
-      expect(screen.queryByText('Subscribe Button')).not.toBeInTheDocument()
-    })
-
-    it('still shows partner nodes menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('partner-nodes-menu-item')).toBeInTheDocument()
-    })
-
-    it('hides plans & pricing menu item', () => {
-      renderComponent()
-      expect(
-        screen.queryByTestId('plans-pricing-menu-item')
-      ).not.toBeInTheDocument()
-    })
-
-    it('still shows manage plan menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
-    })
-
-    it('still shows user settings menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
-    })
-
-    it('still shows logout menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
+      expect(screen.getByTestId('manage-plan-menu-item')).toHaveTextContent(
+        enMessages.credits.credits
+      )
+      expect(screen.queryByTestId('add-credits-button')).toBeNull()
     })
   })
 })

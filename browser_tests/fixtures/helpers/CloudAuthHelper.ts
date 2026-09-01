@@ -1,6 +1,13 @@
 import type { Page } from '@playwright/test'
 
 /**
+ * The identity `mockAuth()` signs the cloud app in as. Specs arranging
+ * workspace members must use this email for the self-row so owner/member
+ * gates resolve against the signed-in user.
+ */
+export const CLOUD_SELF_EMAIL = 'e2e@test.comfy.org'
+
+/**
  * Mocks Firebase authentication for cloud E2E tests.
  *
  * The cloud build's router guard waits for Firebase `onAuthStateChanged`
@@ -13,7 +20,11 @@ import type { Page } from '@playwright/test'
  * so the SDK believes a user is signed in. Must be called before navigation.
  */
 export class CloudAuthHelper {
-  constructor(private readonly page: Page) {}
+  private readonly appUrl: string
+
+  constructor(private readonly page: Page) {
+    this.appUrl = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+  }
 
   /**
    * Set up all auth mocks. Must be called before `comfyPage.setup()`.
@@ -34,12 +45,12 @@ export class CloudAuthHelper {
    */
   private async seedFirebaseIndexedDB(): Promise<void> {
     // Navigate to a lightweight endpoint to get a same-origin context
-    await this.page.goto('http://localhost:8188/api/users')
+    await this.page.goto(`${this.appUrl}/api/users`)
 
-    await this.page.evaluate(() => {
+    await this.page.evaluate((selfEmail) => {
       const MOCK_USER_DATA = {
         uid: 'test-user-e2e',
-        email: 'e2e@test.comfy.org',
+        email: selfEmail,
         displayName: 'E2E Test User',
         emailVerified: true,
         isAnonymous: false,
@@ -48,7 +59,7 @@ export class CloudAuthHelper {
             providerId: 'google.com',
             uid: 'test-user-e2e',
             displayName: 'E2E Test User',
-            email: 'e2e@test.comfy.org',
+            email: selfEmail,
             phoneNumber: null,
             photoURL: null
           }
@@ -114,7 +125,7 @@ export class CloudAuthHelper {
           tx.onerror = () => reject(tx.error)
         }
       })
-    })
+    }, CLOUD_SELF_EMAIL)
   }
 
   /**
@@ -147,7 +158,7 @@ export class CloudAuthHelper {
           users: [
             {
               localId: 'test-user-e2e',
-              email: 'e2e@test.comfy.org',
+              email: CLOUD_SELF_EMAIL,
               displayName: 'E2E Test User',
               emailVerified: true,
               validSince: '0',

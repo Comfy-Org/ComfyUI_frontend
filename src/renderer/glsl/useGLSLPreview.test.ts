@@ -1,6 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -8,6 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 type WidgetValueStoreStub = {
   _widgetMap: Map<string, { value: unknown }>
@@ -22,6 +22,8 @@ const mockRendererFactory = vi.hoisted(() => {
   const setBoolUniform = vi.fn()
   const bindCurveTexture = vi.fn()
   const bindInputImage = vi.fn()
+  const clearInputImage = vi.fn()
+  const isContextLost = vi.fn(() => false)
   const render = vi.fn()
   const toBlob = vi.fn(() => Promise.resolve(new Blob(['test'])))
   const dispose = vi.fn()
@@ -39,6 +41,8 @@ const mockRendererFactory = vi.hoisted(() => {
         setBoolUniform,
         bindCurveTexture,
         bindInputImage,
+        clearInputImage,
+        isContextLost,
         render,
         toBlob,
         dispose
@@ -53,6 +57,8 @@ const mockRendererFactory = vi.hoisted(() => {
     setBoolUniform,
     bindCurveTexture,
     bindInputImage,
+    clearInputImage,
+    isContextLost,
     render,
     toBlob,
     dispose
@@ -65,22 +71,22 @@ vi.mock('@/renderer/glsl/useGLSLRenderer', () => ({
 }))
 
 const mockSetNodePreviewsByNodeId = vi.fn()
+const mockRevokePreviewsByLocatorId = vi.fn()
 const mockNodeOutputs = reactive<Record<string, unknown>>({})
 
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({
     setNodePreviewsByNodeId: mockSetNodePreviewsByNodeId,
     setNodePreviewsByLocatorId: vi.fn(),
-    revokePreviewsByLocatorId: vi.fn(),
+    revokePreviewsByLocatorId: mockRevokePreviewsByLocatorId,
+    getNodeImageUrls: vi.fn(() => undefined),
     nodeOutputs: mockNodeOutputs
   })
 }))
 
 vi.mock('@/stores/widgetValueStore', () => {
   const widgetMap = new Map<string, { value: unknown }>()
-  const getWidget = vi.fn((_graphId: string, _nodeId: string, name: string) =>
-    widgetMap.get(name)
-  )
+  const getWidget = vi.fn((id: string) => widgetMap.get(id))
   return {
     useWidgetValueStore: () => ({
       getWidget,
@@ -122,11 +128,11 @@ function wrapNode(
 
 describe('useGLSLPreview', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockRendererFactory.lastConfig.value = undefined
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:test')
     globalThis.URL.revokeObjectURL = vi.fn()
+    globalThis.ImageBitmap ??=
+      class ImageBitmap {} as unknown as typeof globalThis.ImageBitmap
   })
 
   it('does not activate for non-GLSLShader nodes', () => {
@@ -169,14 +175,6 @@ describe('useGLSLPreview', () => {
   })
 
   describe('autogrow config extraction', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     async function triggerRender(node: LGraphNode) {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
@@ -184,9 +182,12 @@ describe('useGLSLPreview', () => {
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.set('fragment_shader', {
-        value: 'void main() {}'
-      })
+      store._widgetMap.set(
+        widgetId('test-graph-id', node.id, 'fragment_shader'),
+        {
+          value: 'void main() {}'
+        }
+      )
 
       const nodeRef = shallowRef<LGraphNode | null>(null)
       useGLSLPreview(nodeRef)
@@ -233,14 +234,6 @@ describe('useGLSLPreview', () => {
   })
 
   describe('render pipeline', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     async function setupAndRender(node: LGraphNode) {
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
@@ -248,9 +241,12 @@ describe('useGLSLPreview', () => {
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.set('fragment_shader', {
-        value: 'void main() {}'
-      })
+      store._widgetMap.set(
+        widgetId('test-graph-id', node.id, 'fragment_shader'),
+        {
+          value: 'void main() {}'
+        }
+      )
 
       const nodeRef = shallowRef<LGraphNode | null>(null)
       const result = useGLSLPreview(nodeRef)
@@ -283,6 +279,125 @@ describe('useGLSLPreview', () => {
       expect(renderOrder).toBeLessThan(toBlobOrder)
     })
 
+    it('recreates the renderer when its context was lost', async () => {
+      const node = createMockNode()
+      await setupAndRender(node)
+      expect(mockRendererFactory.init).toHaveBeenCalledTimes(1)
+
+      mockRendererFactory.isContextLost.mockReturnValueOnce(true)
+      delete mockNodeOutputs['1']
+      await nextTick()
+      mockNodeOutputs['1'] = {
+        images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
+      }
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      for (let i = 0; i < 5; i++) await nextTick()
+
+      expect(mockRendererFactory.dispose).toHaveBeenCalledTimes(1)
+      expect(mockRendererFactory.init).toHaveBeenCalledTimes(2)
+    })
+
+    it('binds a resolved image to its original slot when an earlier slot is unresolved', async () => {
+      const image1 = fromAny<HTMLImageElement, unknown>({
+        naturalWidth: 64,
+        naturalHeight: 64
+      })
+      const node = createMockNode({
+        inputs: [
+          { name: 'images.image0', link: 10 },
+          { name: 'images.image1', link: 11 }
+        ],
+        getInputNode: vi.fn((slot: number) =>
+          slot === 1 ? fromAny({ imgs: [image1] }) : null
+        )
+      })
+      await setupAndRender(node)
+      for (let i = 0; i < 5; i++) await nextTick()
+
+      expect(mockRendererFactory.bindInputImage).toHaveBeenCalledTimes(1)
+      expect(mockRendererFactory.bindInputImage).toHaveBeenCalledWith(1, image1)
+    })
+
+    it('clears a previously bound texture when its slot becomes unavailable while another still resolves', async () => {
+      const img0 = fromAny<HTMLImageElement, unknown>({
+        naturalWidth: 32,
+        naturalHeight: 32
+      })
+      const img1 = fromAny<HTMLImageElement, unknown>({
+        naturalWidth: 32,
+        naturalHeight: 32
+      })
+      const up0 = { imgs: [img0] as unknown[] }
+      const up1 = { imgs: [img1] as unknown[] }
+      const node = createMockNode({
+        inputs: [
+          { name: 'images.image0', link: 10 },
+          { name: 'images.image1', link: 11 }
+        ],
+        getInputNode: vi.fn((slot: number) => fromAny(slot === 0 ? up0 : up1))
+      })
+      const store = fromAny<WidgetValueStoreStub, unknown>(
+        useWidgetValueStore()
+      )
+      store._widgetMap.set(
+        widgetId('test-graph-id', node.id, 'fragment_shader'),
+        { value: 'void main() {}' }
+      )
+      mockNodeOutputs['1'] = {
+        images: [{ filename: 'a.png', subfolder: '', type: 'temp' }]
+      }
+
+      const nodeRef = shallowRef<LGraphNode | null>(null)
+      useGLSLPreview(nodeRef)
+      nodeRef.value = node
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      for (let i = 0; i < 6; i++) await nextTick()
+
+      expect(mockRendererFactory.bindInputImage).toHaveBeenCalledWith(0, img0)
+      expect(mockRendererFactory.bindInputImage).toHaveBeenCalledWith(1, img1)
+
+      up0.imgs = []
+      vi.clearAllMocks()
+      delete mockNodeOutputs['1']
+      await nextTick()
+      mockNodeOutputs['1'] = {
+        images: [{ filename: 'a.png', subfolder: '', type: 'temp' }]
+      }
+      await nextTick()
+      vi.advanceTimersByTime(100)
+      for (let i = 0; i < 6; i++) await nextTick()
+
+      expect(mockRendererFactory.clearInputImage).toHaveBeenCalledWith(0)
+      expect(mockRendererFactory.bindInputImage).toHaveBeenCalledWith(1, img1)
+      expect(mockRendererFactory.bindInputImage).not.toHaveBeenCalledWith(
+        0,
+        expect.anything()
+      )
+    })
+
+    it('hides the executed output after publishing a live preview', async () => {
+      const node = createMockNode()
+      const { hideExecutedOutput } = await setupAndRender(node)
+      for (let i = 0; i < 5; i++) await nextTick()
+
+      expect(hideExecutedOutput.value).toBe(true)
+    })
+
+    it('revokes the live preview and reveals the executed output when the input is unavailable', async () => {
+      const node = createMockNode({
+        inputs: [{ name: 'images.image0', link: 10 }],
+        getInputNode: vi.fn(() => null)
+      })
+      const { hideExecutedOutput } = await setupAndRender(node)
+      for (let i = 0; i < 5; i++) await nextTick()
+
+      expect(hideExecutedOutput.value).toBe(false)
+      expect(mockRevokePreviewsByLocatorId).toHaveBeenCalledWith('1')
+      expect(mockRendererFactory.compileFragment).not.toHaveBeenCalled()
+    })
+
     it('sets lastError on compilation failure', async () => {
       mockRendererFactory.compileFragment.mockReturnValueOnce({
         success: false,
@@ -303,12 +418,13 @@ describe('useGLSLPreview', () => {
     })
 
     it('skips render when shader source is unavailable', async () => {
+      const node = createMockNode()
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.delete('fragment_shader')
-
-      const node = createMockNode()
+      store._widgetMap.delete(
+        widgetId('test-graph-id', node.id, 'fragment_shader')
+      )
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
@@ -327,32 +443,50 @@ describe('useGLSLPreview', () => {
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.set('size_mode', { value: 'custom' })
-      store._widgetMap.set('size_mode.width', { value: 800 })
-      store._widgetMap.set('size_mode.height', { value: 600 })
 
       const node = createMockNode()
+      store._widgetMap.set(widgetId('test-graph-id', node.id, 'size_mode'), {
+        value: 'custom'
+      })
+      store._widgetMap.set(
+        widgetId('test-graph-id', node.id, 'size_mode.width'),
+        {
+          value: 800
+        }
+      )
+      store._widgetMap.set(
+        widgetId('test-graph-id', node.id, 'size_mode.height'),
+        {
+          value: 600
+        }
+      )
       await setupAndRender(node)
 
       expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(800, 600)
 
-      store._widgetMap.delete('size_mode')
-      store._widgetMap.delete('size_mode.width')
-      store._widgetMap.delete('size_mode.height')
+      store._widgetMap.delete(widgetId('test-graph-id', node.id, 'size_mode'))
+      store._widgetMap.delete(
+        widgetId('test-graph-id', node.id, 'size_mode.width')
+      )
+      store._widgetMap.delete(
+        widgetId('test-graph-id', node.id, 'size_mode.height')
+      )
     })
 
     it('uses default resolution when size_mode is not custom', async () => {
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.set('size_mode', { value: 'from_input' })
 
       const node = createMockNode()
+      store._widgetMap.set(widgetId('test-graph-id', node.id, 'size_mode'), {
+        value: 'from_input'
+      })
       await setupAndRender(node)
 
       expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(512, 512)
 
-      store._widgetMap.delete('size_mode')
+      store._widgetMap.delete(widgetId('test-graph-id', node.id, 'size_mode'))
     })
 
     it('disposes renderer and cancels debounce on cleanup', async () => {

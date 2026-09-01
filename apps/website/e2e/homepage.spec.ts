@@ -17,7 +17,7 @@ test.describe('Homepage @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Comfy — Professional Control of Visual AI')
+    await expect(page).toHaveTitle('Comfy - Professional Control of Visual AI')
   })
 
   test('HeroSection heading is visible', async ({ page }) => {
@@ -32,6 +32,26 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
+  test('ModelReleaseSection carousel shows the active slide', async ({
+    page
+  }) => {
+    const activeSlide = page.locator('article[aria-hidden="false"]', {
+      hasText: 'New Model Release'
+    })
+    await expect(activeSlide.getByText('New Model Release')).toBeVisible()
+    const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
+    await expect(cta).toBeVisible()
+    await expect(cta).toHaveAttribute('href', '/seedance-2.5')
+  })
+
+  test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {
+    const carousel = page.locator('[aria-roledescription="carousel"]')
+    await expect(carousel).toBeVisible()
+    await expect(
+      carousel.getByRole('link', { name: 'FLUX 3 Video: Text to Video' })
+    ).toBeVisible()
+  })
+
   test('ProductShowcase section is visible', async ({ page }) => {
     await expect(page.getByText('HOW', { exact: true }).first()).toBeVisible()
     await expect(
@@ -39,10 +59,11 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
-  test('UseCaseSection is visible', async ({ page }) => {
+  test('IndustriesSection is visible', async ({ page }) => {
     await expect(
-      page.getByText('Industries that create with ComfyUI')
+      page.getByRole('button', { name: 'VFX & Animation' })
     ).toBeVisible()
+    await expect(page.getByText(/Powered by 60,000\+ nodes/)).toBeVisible()
   })
 
   test('GetStartedSection with heading is visible', async ({ page }) => {
@@ -69,9 +90,48 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
-  test('BuildWhatSection is visible', async ({ page }) => {
-    // "DOESN'T EXIST" is the actual badge text rendered in the Build What section
-    await expect(page.getByText("DOESN'T EXIST")).toBeVisible()
+  test('CaseStudySpotlight CTA sizes to its content, not the column', async ({
+    page
+  }) => {
+    const contentColumn = page.getByTestId('case-study-content')
+    const cta = contentColumn.getByRole('link', {
+      name: /see all case studies/i
+    })
+
+    await cta.scrollIntoViewIfNeeded()
+    await expect(cta).toBeVisible()
+
+    const [columnBox, ctaBox] = await Promise.all([
+      contentColumn.boundingBox(),
+      cta.boundingBox()
+    ])
+
+    expect(columnBox).not.toBeNull()
+    expect(ctaBox).not.toBeNull()
+    expect(ctaBox!.width).toBeLessThan(columnBox!.width * 0.7)
+  })
+
+  test('CaseStudySpotlight CTA has breathing room above it on mobile @mobile', async ({
+    page
+  }) => {
+    const contentColumn = page.getByTestId('case-study-content')
+    const subheading = contentColumn.getByText(
+      /Videos & case studies from teams/i
+    )
+    const cta = contentColumn.getByRole('link', {
+      name: /see all case studies/i
+    })
+
+    await cta.scrollIntoViewIfNeeded()
+
+    const [subBox, ctaBox] = await Promise.all([
+      subheading.boundingBox(),
+      cta.boundingBox()
+    ])
+
+    expect(subBox).not.toBeNull()
+    expect(ctaBox).not.toBeNull()
+    expect(ctaBox!.y - (subBox!.y + subBox!.height)).toBeGreaterThanOrEqual(24)
   })
 })
 
@@ -106,6 +166,22 @@ test.describe('Product showcase accordion @interaction', () => {
 
     await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
     await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
+  })
+
+  test('third feature shows the mask scene on mobile @mobile', async ({
+    page
+  }) => {
+    const thirdFeature = page
+      .getByRole('button', { name: /Community Workflows/i })
+      .first()
+
+    await thirdFeature.scrollIntoViewIfNeeded()
+    await thirdFeature.click()
+
+    // The CSS-hidden desktop copy is also in the DOM; target the mobile one.
+    const maskScene = page.locator('.vms-stage:visible')
+    await expect(maskScene).toBeVisible()
+    await expect(maskScene.locator('video').first()).toBeAttached()
   })
 })
 
@@ -169,12 +245,15 @@ test.describe('Get started section links @smoke', () => {
       has: page.getByRole('heading', { name: 'Get started in minutes' })
     })
 
-    const downloadLink = section.getByRole('link', { name: 'Download Local' })
+    const downloadLink = section.getByRole('link', { name: 'Download Desktop' })
     await expect(downloadLink).toBeVisible()
     await expect(downloadLink).toHaveAttribute('href', '/download')
 
-    const cloudLink = section.getByRole('link', { name: 'Launch Cloud' })
+    const cloudLink = section.getByRole('link', { name: 'Try Cloud for free' })
     await expect(cloudLink).toBeVisible()
-    await expect(cloudLink).toHaveAttribute('href', 'https://cloud.comfy.org')
+    await expect(cloudLink).toHaveAttribute(
+      'href',
+      /^https:\/\/cloud\.comfy\.org\//
+    )
   })
 })

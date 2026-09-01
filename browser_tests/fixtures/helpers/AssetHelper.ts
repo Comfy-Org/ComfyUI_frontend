@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test'
 import type {
   Asset,
   ListAssetsResponse,
+  SeedAssetsResponse,
   UpdateAssetData
 } from '@comfyorg/ingest-types'
 import {
@@ -11,7 +12,7 @@ import {
   generateOutputAssets
 } from '@e2e/fixtures/data/assetFixtures'
 
-export interface MutationRecord {
+interface MutationRecord {
   endpoint: string
   method: string
   url: string
@@ -23,7 +24,7 @@ interface PaginationOptions {
   total: number
   hasMore: boolean
 }
-export interface AssetConfig {
+interface AssetConfig {
   readonly assets: ReadonlyMap<string, Asset>
   readonly pagination: PaginationOptions | null
   readonly uploadResponse: Record<string, unknown> | null
@@ -34,6 +35,13 @@ function emptyConfig(): AssetConfig {
 }
 
 export type AssetOperator = (config: AssetConfig) => AssetConfig
+
+/**
+ * Scoped to the API path so the built frontend's own `/assets/*.js` chunks
+ * are never intercepted (a page navigated after `mock()` would otherwise
+ * fail to load).
+ */
+const ASSET_API_ROUTE_PATTERN = '**/api/assets**'
 
 function addAssets(config: AssetConfig, newAssets: Asset[]): AssetConfig {
   const merged = new Map(config.assets)
@@ -141,6 +149,8 @@ export class AssetHelper {
         return this.handleUpdateAsset(route, path, body)
       if (method === 'DELETE' && /\/assets\/[^/]+$/.test(path))
         return this.handleDeleteAsset(route, path)
+      if (method === 'POST' && path.endsWith('/assets/seed'))
+        return this.handleSeedScan(route)
       if (method === 'POST' && /\/assets\/?$/.test(path))
         return this.handleUploadAsset(route)
       if (method === 'POST' && path.endsWith('/assets/download'))
@@ -149,7 +159,7 @@ export class AssetHelper {
       return route.fallback()
     }
 
-    const pattern = '**/assets**'
+    const pattern = ASSET_API_ROUTE_PATTERN
     this.routeHandlers.push({ pattern, handler })
     await this.page.route(pattern, handler)
   }
@@ -165,7 +175,7 @@ export class AssetHelper {
       })
     }
 
-    const pattern = '**/assets**'
+    const pattern = ASSET_API_ROUTE_PATTERN
     this.routeHandlers.push({ pattern, handler })
     await this.page.route(pattern, handler)
   }
@@ -215,11 +225,12 @@ export class AssetHelper {
     return this.store.size
   }
   private handleListAssets(route: Route, url: URL) {
-    const includeTags = url.searchParams.get('include_tags')?.split(',') ?? []
+    const includeTags = parseAssetTagParam(url.searchParams.get('include_tags'))
+    const excludeTags = parseAssetTagParam(url.searchParams.get('exclude_tags'))
     const limit = parseInt(url.searchParams.get('limit') ?? '0', 10)
     const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
 
-    let filtered = this.getFilteredAssets(includeTags)
+    let filtered = this.getFilteredAssets(includeTags, excludeTags)
     if (limit > 0) {
       filtered = filtered.slice(offset, offset + limit)
     }
@@ -275,6 +286,11 @@ export class AssetHelper {
     return route.fulfill({ status: 201, json: response })
   }
 
+  private handleSeedScan(route: Route) {
+    const response: SeedAssetsResponse = { status: 'started' }
+    return route.fulfill({ status: 200, json: response })
+  }
+
   private handleDownloadAsset(route: Route) {
     return route.fulfill({
       status: 202,
@@ -296,15 +312,29 @@ export class AssetHelper {
     this.paginationOptions = null
     this.uploadResponse = null
   }
-  private getFilteredAssets(tags: string[]): Asset[] {
+  private getFilteredAssets(
+    includeTags: string[],
+    excludeTags: string[]
+  ): Asset[] {
     const assets = [...this.store.values()]
-    if (tags.length === 0) return assets
 
-    return assets.filter((asset) =>
-      tags.every((tag) => (asset.tags ?? []).includes(tag))
+    return assets.filter(
+      (asset) =>
+        includeTags.every((tag) => (asset.tags ?? []).includes(tag)) &&
+        excludeTags.every((tag) => !(asset.tags ?? []).includes(tag))
     )
   }
 }
+
+function parseAssetTagParam(value: string | null): string[] {
+  return (
+    value
+      ?.split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean) ?? []
+  )
+}
+
 export function createAssetHelper(
   page: Page,
   ...operators: AssetOperator[]

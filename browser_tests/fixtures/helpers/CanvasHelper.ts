@@ -1,8 +1,19 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { Point } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
+import type { RerouteId } from '@/types/rerouteId'
+
+type NodeGeometry = {
+  inputs: Point[]
+  outputs: Point[]
+  pos: Point
+  size: Point
+}
 
 export class CanvasHelper {
   constructor(
@@ -36,17 +47,31 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
-  async panWithTouch(offset: Position, safeSpot?: Position): Promise<void> {
+  async panWithTouch(
+    offset: Position,
+    safeSpot?: Position,
+    steps: number = 1
+  ): Promise<void> {
+    if (!Number.isInteger(steps) || steps <= 0) {
+      throw new RangeError('steps must be a finite positive integer')
+    }
     safeSpot = safeSpot || { x: 10, y: 10 }
     const client = await this.page.context().newCDPSession(this.page)
     await client.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
       touchPoints: [safeSpot]
     })
-    await client.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [{ x: offset.x + safeSpot.x, y: offset.y + safeSpot.y }]
-    })
+    for (let step = 1; step <= steps; step++) {
+      await client.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [
+          {
+            x: safeSpot.x + (offset.x * step) / steps,
+            y: safeSpot.y + (offset.y * step) / steps
+          }
+        ]
+      })
+    }
     await client.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: []
@@ -74,7 +99,7 @@ export class CanvasHelper {
    * Use with `page.mouse` APIs when Vue DOM overlays above the canvas would
    * cause Playwright's actionability check to fail on the canvas locator.
    */
-  private async toAbsolute(position: Position): Promise<Position> {
+  async toAbsolute(position: Position): Promise<Position> {
     const box = await this.canvas.boundingBox()
     if (!box) throw new Error('Canvas bounding box not available')
     return { x: box.x + position.x, y: box.y + position.y }
@@ -110,7 +135,7 @@ export class CanvasHelper {
    */
   async mouseDblclickAt(position: Position): Promise<void> {
     const abs = await this.toAbsolute(position)
-    await this.page.mouse.dblclick(abs.x, abs.y)
+    await this.page.mouse.dblclick(abs.x, abs.y, { delay: 5 })
     await nextFrame(this.page)
   }
 
@@ -122,7 +147,7 @@ export class CanvasHelper {
   async dragAndDrop(source: Position, target: Position): Promise<void> {
     await this.page.mouse.move(source.x, source.y)
     await this.page.mouse.down()
-    await this.page.mouse.move(target.x, target.y, { steps: 100 })
+    await this.page.mouse.move(target.x, target.y, { steps: 20 })
     await this.page.mouse.up()
     await nextFrame(this.page)
   }
@@ -150,6 +175,28 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
+  async getOffset(): Promise<[number, number]> {
+    return this.page.evaluate(
+      () => [...window.app!.canvas.ds.offset] as [number, number]
+    )
+  }
+
+  async getNodeTitleHeight(): Promise<number> {
+    return this.page.evaluate(() => window.LiteGraph!.NODE_TITLE_HEIGHT)
+  }
+
+  /**
+   * Hold `Control+Shift` and drag from `from` to `to` using page-absolute
+   * coordinates.
+   */
+  async ctrlShiftDrag(from: Position, to: Position): Promise<void> {
+    await this.page.keyboard.down('Control')
+    await this.page.keyboard.down('Shift')
+    await this.dragAndDrop(from, to)
+    await this.page.keyboard.up('Shift')
+    await this.page.keyboard.up('Control')
+  }
+
   async convertOffsetToCanvas(
     pos: [number, number]
   ): Promise<[number, number]> {
@@ -171,6 +218,107 @@ export class CanvasHelper {
       const [clientX, clientY] = app.canvasPosToClientPos([centerX, centerY])
       return { x: clientX, y: clientY }
     }, title)
+  }
+
+  async getNodeGeometry(nodeId: NodeId): Promise<NodeGeometry> {
+    return this.page.evaluate((id): NodeGeometry => {
+      const node = window.app?.canvas.graph?.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+
+      return {
+        pos: [node.pos[0], node.pos[1]],
+        size: [node.size[0], node.size[1]],
+        inputs: node.inputs.map((_, i) => node.getInputPos(i)),
+        outputs: node.outputs.map((_, i) => node.getOutputPos(i))
+      }
+    }, nodeId)
+  }
+
+  expectSlotsTrackedNode(after: NodeGeometry, before: NodeGeometry): void {
+    const dx = after.pos[0] - before.pos[0]
+    const dy = after.pos[1] - before.pos[1]
+    expect(Math.abs(dx) + Math.abs(dy), 'drag moved the node').toBeGreaterThan(
+      1
+    )
+
+    const beforeSlots = [...before.inputs, ...before.outputs]
+    const afterSlots = [...after.inputs, ...after.outputs]
+    expect(afterSlots, 'slot count after drag').toHaveLength(beforeSlots.length)
+    afterSlots.forEach(([x, y], i) => {
+      expect(x, `slot ${i} x tracked the node`).toBeCloseTo(
+        beforeSlots[i][0] + dx,
+        0
+      )
+      expect(y, `slot ${i} y tracked the node`).toBeCloseTo(
+        beforeSlots[i][1] + dy,
+        0
+      )
+    })
+  }
+
+  expectNodeGeometryPreserved(
+    actual: NodeGeometry,
+    reference: NodeGeometry,
+    label: string
+  ): void {
+    expect(actual.pos[0], `${label}: x`).toBeCloseTo(reference.pos[0], 0)
+    expect(actual.pos[1], `${label}: y`).toBeCloseTo(reference.pos[1], 0)
+    expect(actual.size, `${label}: size`).toEqual(reference.size)
+
+    const referenceSlots = [...reference.inputs, ...reference.outputs]
+    const actualSlots = [...actual.inputs, ...actual.outputs]
+    expect(actualSlots, `${label}: slot count`).toHaveLength(
+      referenceSlots.length
+    )
+    actualSlots.forEach(([x, y], i) => {
+      expect(x, `${label}: slot ${i} x`).toBeCloseTo(referenceSlots[i][0], 0)
+      expect(y, `${label}: slot ${i} y`).toBeCloseTo(referenceSlots[i][1], 0)
+    })
+  }
+
+  expectSlotsOnNode(geometry: NodeGeometry, label: string): void {
+    const [x, y] = geometry.pos
+    const [width, height] = geometry.size
+    const slots = [...geometry.inputs, ...geometry.outputs]
+
+    slots.forEach(([slotX, slotY], i) => {
+      expect(slotX, `${label}: slot ${i} x within node`).toBeGreaterThanOrEqual(
+        x - 20
+      )
+      expect(slotX, `${label}: slot ${i} x within node`).toBeLessThanOrEqual(
+        x + width + 20
+      )
+      expect(slotY, `${label}: slot ${i} y within node`).toBeGreaterThanOrEqual(
+        y - 50
+      )
+      expect(slotY, `${label}: slot ${i} y within node`).toBeLessThanOrEqual(
+        y + height + 20
+      )
+    })
+  }
+
+  async expectRootReroutePositions(
+    expectedReroutes: Record<RerouteId, Position>
+  ): Promise<void> {
+    await expect(async () => {
+      const reroutes = await this.page.evaluate(() => {
+        const graph = window.app!.canvas.graph?.rootGraph
+        if (!graph) throw new Error('Graph not available')
+        return [...graph.reroutes.values()].map((reroute) => ({
+          id: reroute.id,
+          x: reroute.pos[0],
+          y: reroute.pos[1]
+        }))
+      })
+
+      expect(reroutes).toHaveLength(Object.keys(expectedReroutes).length)
+      for (const reroute of reroutes) {
+        const expected = expectedReroutes[reroute.id]
+        if (!expected) throw new Error(`Unexpected reroute ${reroute.id}`)
+        expect(reroute.x).toBeCloseTo(expected.x, 1)
+        expect(reroute.y).toBeCloseTo(expected.y, 1)
+      }
+    }).toPass({ timeout: 5000 })
   }
 
   async getGroupPosition(title: string): Promise<Position> {
@@ -242,11 +390,39 @@ export class CanvasHelper {
     await this.page.mouse.up({ button: 'middle' })
   }
 
-  async disconnectEdge(): Promise<void> {
-    await this.dragAndDrop(
-      DefaultGraphPositions.clipTextEncodeNode1InputSlot,
-      DefaultGraphPositions.emptySpace
-    )
+  async disconnectEdge(
+    options: { modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[] } = {}
+  ): Promise<void> {
+    const { modifiers = [] } = options
+    for (const mod of modifiers) await this.page.keyboard.down(mod)
+    try {
+      await this.dragAndDrop(
+        DefaultGraphPositions.clipTextEncodeNode1InputSlot,
+        DefaultGraphPositions.emptySpace
+      )
+    } finally {
+      for (const mod of modifiers) await this.page.keyboard.up(mod)
+    }
+  }
+
+  async middleClick(position: Position): Promise<void> {
+    await this.mouseClickAt(position, { button: 'middle' })
+  }
+
+  async dblclickGroupTitle(title: string): Promise<void> {
+    const clientPos = await this.page.evaluate((targetTitle) => {
+      const groups = window.app!.canvas.graph?.groups ?? []
+      const group = groups.find(
+        (g: { title: string }) => g.title === targetTitle
+      )
+      if (!group) return null
+      const cx = group.pos[0] + group.size[0] / 2
+      const cy = group.pos[1] + group.titleHeight / 2
+      return window.app!.canvasPosToClientPos([cx, cy])
+    }, title)
+    if (!clientPos) throw new Error(`Group "${title}" not found`)
+    await this.page.mouse.dblclick(clientPos[0], clientPos[1], { delay: 5 })
+    await nextFrame(this.page)
   }
 
   async connectEdge(options: { reverse?: boolean } = {}): Promise<void> {

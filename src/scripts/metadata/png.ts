@@ -126,6 +126,7 @@ export async function getFromPngFile(
       resolve(result)
     }
     reader.onerror = () => reject(reader.error)
+    reader.onabort = () => reject(new Error('FileReader aborted'))
     reader.readAsArrayBuffer(file)
   })
 }

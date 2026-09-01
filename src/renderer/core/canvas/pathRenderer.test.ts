@@ -26,8 +26,6 @@ class StubPath2D {
   }
 }
 
-vi.stubGlobal('Path2D', StubPath2D)
-
 function createMockCtx(): CanvasRenderingContext2D {
   return {
     save: vi.fn(),
@@ -82,6 +80,7 @@ describe('CanvasPathRenderer', () => {
   let renderer: CanvasPathRenderer
 
   beforeEach(() => {
+    vi.stubGlobal('Path2D', StubPath2D)
     renderer = new CanvasPathRenderer()
   })
 
@@ -940,7 +939,7 @@ describe('CanvasPathRenderer', () => {
   })
 
   describe('direction offsets', () => {
-    it.each([
+    it.for([
       { dir: 'left', expectedInnerA: [-15, 0] },
       { dir: 'right', expectedInnerA: [15, 0] },
       { dir: 'up', expectedInnerA: [0, -15] },

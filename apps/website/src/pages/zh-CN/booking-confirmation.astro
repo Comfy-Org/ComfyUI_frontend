@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ResourceList from '../../components/booking-confirmation/ResourceList.vue'
+import HeroSection from '../../components/legal/HeroSection.vue'
+import { externalLinks, getRoutes } from '../../config/routes'
+
+const routes = getRoutes('zh-CN')
+
+const resources = [
+  {
+    label: '学习中心',
+    href: routes.learning,
+    display: 'comfy.org/learning'
+  },
+  {
+    label: '工作流模板',
+    href: externalLinks.workflows,
+    display: 'comfy.org/workflows'
+  },
+  {
+    label: '客户案例',
+    href: routes.customers,
+    display: 'comfy.org/customers'
+  },
+  {
+    label: '文档',
+    href: externalLinks.docs,
+    display: 'docs.comfy.org'
+  }
+]
+---
+
+<BaseLayout
+  title="预约成功 - Comfy"
+  description="您的会议已预约成功。请查收邮件中的日历邀请和会议链接。"
+  noindex
+>
+  <HeroSection title="预约成功。" class="text-center" />
+
+  <section class="-mt-8 px-6 pb-24 lg:-mt-12 lg:pb-40">
+    <div
+      class="text-primary-comfy-canvas mx-auto flex max-w-2xl flex-col gap-10 text-center text-base font-light lg:text-lg"
+    >
+      <p>请查收邮件中的日历邀请和会议链接！</p>
+
+      <div class="flex flex-col gap-4">
+        <h2 class="text-primary-comfy-yellow text-xl font-semibold italic lg:text-2xl">
+          等待期间的资源
+        </h2>
+        <ResourceList resources={resources} />
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -10,7 +10,9 @@ import {
   useNodePricing
 } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // -----------------------------------------------------------------------------
@@ -85,6 +87,7 @@ function createMockNodeWithPriceBadge(
   return Object.assign(baseNode, {
     widgets: mockWidgets,
     inputs: mockInputs,
+    isInputConnected: (slot: number) => mockInputs[slot]?.link != null,
     constructor: {
       nodeData: {
         name: nodeTypeName,
@@ -117,6 +120,7 @@ function createMockNode(
   return Object.assign(baseNode, {
     widgets,
     inputs,
+    isInputConnected: (slot: number) => inputs[slot]?.link != null,
     constructor: { nodeData }
   })
 }
@@ -169,6 +173,26 @@ describe('useNodePricing', () => {
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
       expect(price).toBe(creditsLabel(0.05))
+    })
+
+    it('caches per signature so base and override reads both settle', async () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestSignatureNode',
+        priceBadge('{"type":"text","text": widgets.prompt}', [
+          { name: 'prompt', type: 'STRING' }
+        ]),
+        [{ name: 'prompt', value: 'inner' }]
+      )
+      const overrides = new Map([['prompt', 'outer']])
+
+      getNodeDisplayPrice(node)
+      getNodeDisplayPrice(node, overrides)
+      await vi.waitFor(() => {
+        expect(getNodeDisplayPrice(node)).toBe('inner')
+        expect(getNodeDisplayPrice(node, overrides)).toBe('outer')
+      })
+      expect(getNodeDisplayPrice(node)).toBe('inner')
     })
 
     it('should handle FLOAT widget as number', async () => {
@@ -541,48 +565,130 @@ describe('useNodePricing', () => {
     })
   })
 
-  describe('getNodePricingConfig', () => {
-    it('should return pricing config for nodes with price_badge', () => {
-      const { getNodePricingConfig } = useNodePricing()
+  describe('reactive revision', () => {
+    it('bumps pricingRevision after an async evaluation resolves (Nodes 1.0 mode)', async () => {
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
-        'TestConfigNode',
+        'TestRevisionNode',
         priceBadge('{"type":"usd","usd":0.05}')
       )
 
-      const config = getNodePricingConfig(node)
-      expect(config).toBeDefined()
-      expect(config?.engine).toBe('jsonata')
-      expect(config?.expr).toBe('{"type":"usd","usd":0.05}')
-      expect(config?.depends_on).toBeDefined()
+      const before = pricingRevision.value
+      getNodeDisplayPrice(node)
+      await new Promise((r) => setTimeout(r, 50))
+
+      expect(pricingRevision.value).toBeGreaterThan(before)
     })
 
-    it('should return undefined for nodes without price_badge', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNode({
-        name: 'NoPricingNode',
-        api_node: true
-      })
+    it('bumps the per-node revision ref after async evaluation resolves in VueNodes mode', async () => {
+      const { getNodeDisplayPrice, getNodeRevisionRef, pricingRevision } =
+        useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestVueNodeRevision',
+        priceBadge('{"type":"usd","usd":0.05}')
+      )
 
-      const config = getNodePricingConfig(node)
-      expect(config).toBeUndefined()
+      LiteGraph.vueNodesMode = true
+      try {
+        const nodeId = node.id
+        const revBefore = getNodeRevisionRef(nodeId).value
+        const tickBefore = pricingRevision.value
+
+        getNodeDisplayPrice(node)
+        await new Promise((r) => setTimeout(r, 50))
+
+        // VueNodes path bumps per-node ref and the global tick.
+        expect(getNodeRevisionRef(nodeId).value).toBeGreaterThan(revBefore)
+        expect(pricingRevision.value).toBeGreaterThan(tickBefore)
+      } finally {
+        LiteGraph.vueNodesMode = false
+      }
     })
 
-    it('should return undefined for non-API nodes', () => {
-      const { getNodePricingConfig } = useNodePricing()
-      const node = createMockNode({
-        name: 'RegularNode',
-        api_node: false
-      })
+    it('returns the cached label on a second call with the same signature', async () => {
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestCachedSignatureNode',
+        priceBadge('{"type":"usd","usd":0.05}')
+      )
 
-      const config = getNodePricingConfig(node)
-      expect(config).toBeUndefined()
+      // First call schedules eval; second call (after resolution) is a cache hit.
+      getNodeDisplayPrice(node)
+      await new Promise((r) => setTimeout(r, 50))
+      const first = getNodeDisplayPrice(node)
+
+      const tickAfterFirst = pricingRevision.value
+      const second = getNodeDisplayPrice(node)
+      // Cache-hit path must not schedule a new evaluation, so no further tick.
+      await new Promise((r) => setTimeout(r, 20))
+
+      expect(second).toBe(first)
+      expect(pricingRevision.value).toBe(tickAfterFirst)
+    })
+  })
+
+  describe('failed evaluation caching', () => {
+    it('recovers the price badge when a failed string value is corrected to its numeric equivalent', async () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const rule = priceBadge('{"type":"usd","usd": widgets.steps * 0.01}', [
+        { name: 'steps', type: 'COMBO' }
+      ])
+      const numericNode = createMockNodeWithPriceBadge(
+        'TestNumericPriceBadgeNode',
+        rule,
+        [{ name: 'steps', value: 10 }]
+      )
+      const correctedNode = createMockNodeWithPriceBadge(
+        'TestCorrectedPriceBadgeNode',
+        rule,
+        [{ name: 'steps', value: '10' }]
+      )
+
+      getNodeDisplayPrice(numericNode)
+      await new Promise((r) => setTimeout(r, 50))
+      expect(getNodeDisplayPrice(numericNode)).toBe(creditsLabel(0.1))
+
+      expect(getNodeDisplayPrice(correctedNode)).toBe('')
+      await new Promise((r) => setTimeout(r, 50))
+      expect(getNodeDisplayPrice(correctedNode)).toBe('')
+
+      const stepsWidget = correctedNode.widgets?.find(
+        (widget) => widget.name === 'steps'
+      )
+      if (!stepsWidget) throw new Error('Expected a steps widget')
+      stepsWidget.value = 10
+
+      expect(getNodeDisplayPrice(correctedNode)).toBe('')
+      await new Promise((r) => setTimeout(r, 50))
+      expect(getNodeDisplayPrice(correctedNode)).toBe(creditsLabel(0.1))
+    })
+
+    it('does not retry a failed price badge evaluation for an unchanged value', async () => {
+      const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestFailedPriceBadgeCacheNode',
+        priceBadge('{"type":"usd","usd": widgets.steps * 0.01}', [
+          { name: 'steps', type: 'COMBO' }
+        ]),
+        [{ name: 'steps', value: '10' }]
+      )
+
+      const revisionBeforeFailure = pricingRevision.value
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await new Promise((r) => setTimeout(r, 50))
+      const revisionAfterFailure = pricingRevision.value
+      expect(revisionAfterFailure).toBeGreaterThan(revisionBeforeFailure)
+
+      expect(getNodeDisplayPrice(node)).toBe('')
+      await new Promise((r) => setTimeout(r, 20))
+      expect(pricingRevision.value).toBe(revisionAfterFailure)
     })
   })
 
   describe('getNodeRevisionRef', () => {
     it('should return a ref for a node ID', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref = getNodeRevisionRef('node-1')
+      const ref = getNodeRevisionRef(toNodeId('node-1'))
 
       expect(ref).toBeDefined()
       expect(ref.value).toBe(0)
@@ -590,49 +696,26 @@ describe('useNodePricing', () => {
 
     it('should return the same ref for the same node ID', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref1 = getNodeRevisionRef('node-same')
-      const ref2 = getNodeRevisionRef('node-same')
+      const ref1 = getNodeRevisionRef(toNodeId('node-same'))
+      const ref2 = getNodeRevisionRef(toNodeId('node-same'))
 
       expect(ref1).toBe(ref2)
     })
 
     it('should return different refs for different node IDs', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      const ref1 = getNodeRevisionRef('node-a')
-      const ref2 = getNodeRevisionRef('node-b')
+      const ref1 = getNodeRevisionRef(toNodeId('node-a'))
+      const ref2 = getNodeRevisionRef(toNodeId('node-b'))
 
       expect(ref1).not.toBe(ref2)
     })
 
     it('should handle both string and number node IDs', () => {
       const { getNodeRevisionRef } = useNodePricing()
-      // Number ID gets stringified, so '123' and 123 should return the same ref
-      const refFromNumber = getNodeRevisionRef(123)
-      const refFromString = getNodeRevisionRef('123')
+      const refFromNumber = getNodeRevisionRef(toNodeId(123))
+      const refFromString = getNodeRevisionRef(toNodeId('123'))
 
       expect(refFromNumber).toBe(refFromString)
-    })
-  })
-
-  describe('triggerPriceRecalculation', () => {
-    it('should not throw for API nodes with price_badge', () => {
-      const { triggerPriceRecalculation } = useNodePricing()
-      const node = createMockNodeWithPriceBadge(
-        'TestTriggerNode',
-        priceBadge('{"type":"usd","usd":0.05}')
-      )
-
-      expect(() => triggerPriceRecalculation(node)).not.toThrow()
-    })
-
-    it('should not throw for non-API nodes', () => {
-      const { triggerPriceRecalculation } = useNodePricing()
-      const node = createMockNode({
-        name: 'RegularNode',
-        api_node: false
-      })
-
-      expect(() => triggerPriceRecalculation(node)).not.toThrow()
     })
   })
 
@@ -975,6 +1058,47 @@ describe('formatPricingResult', () => {
     it('should return empty for undefined', () => {
       const result = formatPricingResult(undefined)
       expect(result).toBe('')
+    })
+  })
+
+  describe('non-finite numbers', () => {
+    it('returns empty for type:usd when usd is a non-numeric string', () => {
+      const result = formatPricingResult({ type: 'usd', usd: 'not-a-number' })
+      expect(result).toBe('')
+    })
+
+    it('returns empty for type:usd when usd is Infinity', () => {
+      const result = formatPricingResult({ type: 'usd', usd: Infinity })
+      expect(result).toBe('')
+    })
+
+    it('returns empty for type:range_usd when min_usd or max_usd is NaN', () => {
+      expect(
+        formatPricingResult({ type: 'range_usd', min_usd: NaN, max_usd: 0.1 })
+      ).toBe('')
+      expect(
+        formatPricingResult({ type: 'range_usd', min_usd: 0.05, max_usd: NaN })
+      ).toBe('')
+    })
+
+    it('returns empty for type:list_usd when usd is empty or all values are non-finite', () => {
+      expect(formatPricingResult({ type: 'list_usd', usd: [] })).toBe('')
+      expect(
+        formatPricingResult({ type: 'list_usd', usd: [NaN, 'x', null] })
+      ).toBe('')
+    })
+
+    it('drops non-finite entries from type:list_usd while keeping finite ones', () => {
+      const result = formatPricingResult(
+        { type: 'list_usd', usd: [0.05, NaN, 0.1] },
+        { valueOnly: true }
+      )
+      expect(result).toBe('10.6/21.1')
+    })
+
+    it('returns empty for legacy {usd} format when usd is non-finite', () => {
+      expect(formatPricingResult({ usd: NaN })).toBe('')
+      expect(formatPricingResult({ usd: 'abc' })).toBe('')
     })
   })
 })

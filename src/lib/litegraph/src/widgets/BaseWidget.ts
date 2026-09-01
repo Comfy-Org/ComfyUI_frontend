@@ -3,31 +3,30 @@ import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import type {
   CanvasPointer,
   LGraphCanvas,
   LGraphNode,
   Size
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
-  NodeBindable,
-  TWidgetType
+  NodeBindable
 } from '@/lib/litegraph/src/types/widgets'
-import { usePromotionStore } from '@/stores/promotionStore'
-import type { WidgetState } from '@/stores/widgetValueStore'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetId } from '@/types/widgetId'
+import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
   width: number
   /** Synonym for "low quality". */
   showText?: boolean
-  /** When true, suppresses the promoted outline color (e.g. for projected copies on SubgraphNode). */
-  suppressPromotedOutline?: boolean
   /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
   previewImages?: HTMLImageElement[]
 }
@@ -40,6 +39,12 @@ interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   /** The amount of padding to add to the right of the text. */
   rightPadding?: number
 }
+
+type BaseWidgetState<TWidget extends IBaseWidget> = WidgetState<
+  TWidget['value'],
+  TWidget['type'],
+  TWidget['options']
+>
 
 export interface WidgetEventOptions {
   e: CanvasPointerEvent
@@ -77,8 +82,44 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   linkedWidgets?: IBaseWidget[]
-  name: string
-  options: TWidget['options']
+  private _name!: string
+  get name(): string {
+    return this._name
+  }
+
+  set name(value: string) {
+    const previous = this._name
+    if (previous === undefined || previous === value) {
+      this._name = value
+      return
+    }
+
+    const graphId = this.node.graph?.rootGraph.id
+    const nodeId = this._state.nodeId
+    if (!graphId || nodeId === undefined) {
+      this._name = value
+      return
+    }
+
+    const moved = useWidgetValueStore().renameWidget(
+      widgetId(graphId, nodeId, previous),
+      widgetId(graphId, nodeId, value)
+    )
+    if (!moved) return
+
+    this._name = value
+    this._state = moved
+  }
+
+  get options(): TWidget['options'] {
+    return this._state.options
+  }
+  set options(value: TWidget['options']) {
+    const hidden = this._state.options.hidden
+    this._state.options = value ?? {}
+    if (hidden !== undefined) this._state.options.hidden = hidden
+  }
+
   type: TWidget['type']
   y: number = 0
   last_y?: number
@@ -86,8 +127,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   computedDisabled?: boolean
   tooltip?: string
 
-  private _state: Omit<WidgetState, 'nodeId'> &
-    Partial<Pick<WidgetState, 'nodeId'>>
+  private _state: Omit<BaseWidgetState<TWidget>, 'nodeId'> &
+    Partial<Pick<BaseWidgetState<TWidget>, 'nodeId'>>
 
   get label(): string | undefined {
     return this._state.label
@@ -96,7 +137,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.label = value
   }
 
-  hidden?: boolean
+  get hidden(): boolean | undefined {
+    return this._state.options.hidden
+  }
+  set hidden(value: boolean | undefined) {
+    this._state.options.hidden = value
+  }
+
   advanced?: boolean
 
   get disabled(): boolean | undefined {
@@ -127,10 +174,18 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   ): boolean
 
   get value(): TWidget['value'] {
-    return this._state.value as TWidget['value']
+    return this._state.value
   }
   set value(value: TWidget['value']) {
     this._state.value = value
+  }
+
+  get widgetId(): WidgetId | undefined {
+    const graphId = this.node.graph?.rootGraph.id
+    const nodeId = this._state.nodeId
+    if (!graphId || nodeId === undefined) return undefined
+    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return undefined
+    return widgetId(graphId, nodeId, this.name)
   }
 
   /**
@@ -140,15 +195,23 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   setNodeId(nodeId: NodeId): void {
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
+    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
 
-    this._state = useWidgetValueStore().registerWidget(graphId, {
-      ...this._state,
-      // BaseWidget: this.value getter returns this._state.value. So value: this.value === value: this._state.value.
-      // BaseDOMWidgetImpl: this.value getter returns options.getValue?.() ?? ''. Resolves the correct initial value instead of undefined.
-      // I.e., calls overriden getter -> options.getValue() -> correct value (https://github.com/Comfy-Org/ComfyUI_frontend/issues/9194).
-      value: this.value,
-      nodeId
-    })
+    const registered = useWidgetValueStore().registerWidget(
+      widgetId(graphId, nodeId, this.name),
+      {
+        disabled: this.disabled,
+        label: this.label,
+        name: this.name,
+        options: this._state.options,
+        serialize: this.serialize,
+        type: this.type,
+        value: this.value,
+        y: this.y
+      },
+      deriveWidgetRenderState(this)
+    )
+    if (registered) this._state = registered
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
@@ -157,11 +220,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // Private fields
     this._node = node ?? widget.node
 
-    // The set and get functions for DOM widget values are hacked on to the options object;
-    // attempting to set value before options will throw.
-    // https://github.com/Comfy-Org/ComfyUI_frontend/blob/df86da3d672628a452baed3df3347a52c0c8d378/src/scripts/domWidget.ts#L125
     this.name = widget.name
-    this.options = widget.options
     this.type = widget.type
 
     // `node` has no setter - Object.assign will throw.
@@ -186,7 +245,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       displayValue,
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
+      options,
       label,
+      hidden,
       disabled,
       value,
       linkedWidgets,
@@ -197,29 +258,21 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     this._state = {
       name: this.name,
-      type: this.type as TWidgetType,
+      type: this.type,
       value,
       label,
       disabled: disabled ?? false,
       serialize: this.serialize,
-      options: this.options
+      options: options ?? {},
+      y: this.y
     }
+    if (hidden !== undefined) this.hidden = hidden
   }
 
-  getOutlineColor(suppressPromotedOutline = false) {
-    const graphId = this.node.graph?.rootGraph.id
-    if (
-      graphId &&
-      !suppressPromotedOutline &&
-      usePromotionStore().isPromotedByAny(graphId, {
-        sourceNodeId: String(this.node.id),
-        sourceWidgetName: this.name
-      })
-    )
-      return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+  getOutlineColor() {
     return this.advanced
-      ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
-      : LiteGraph.WIDGET_OUTLINE_COLOR
+      ? litegraph().WIDGET_ADVANCED_OUTLINE_COLOR
+      : litegraph().WIDGET_OUTLINE_COLOR
   }
 
   get outline_color() {
@@ -227,23 +280,23 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   get background_color() {
-    return LiteGraph.WIDGET_BGCOLOR
+    return litegraph().WIDGET_BGCOLOR
   }
 
   get height() {
-    return LiteGraph.NODE_WIDGET_HEIGHT
+    return litegraph().NODE_WIDGET_HEIGHT
   }
 
   get text_color() {
-    return LiteGraph.WIDGET_TEXT_COLOR
+    return litegraph().WIDGET_TEXT_COLOR
   }
 
   get secondary_text_color() {
-    return LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
+    return litegraph().WIDGET_SECONDARY_TEXT_COLOR
   }
 
   get disabledTextColor() {
-    return LiteGraph.WIDGET_DISABLED_TEXT_COLOR
+    return litegraph().WIDGET_DISABLED_TEXT_COLOR
   }
 
   get displayName() {
@@ -280,13 +333,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   protected drawWidgetShape(
     ctx: CanvasRenderingContext2D,
-    { width, showText, suppressPromotedOutline }: DrawWidgetOptions
+    { width, showText }: DrawWidgetOptions
   ): void {
     const { height, y } = this
     const { margin } = BaseWidget
 
     ctx.textAlign = 'left'
-    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+    ctx.strokeStyle = this.getOutlineColor()
     ctx.fillStyle = this.background_color
     ctx.beginPath()
 
@@ -307,7 +360,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   protected drawVueOnlyWarning(
     ctx: CanvasRenderingContext2D,
-    { width, suppressPromotedOutline }: DrawWidgetOptions,
+    { width }: DrawWidgetOptions,
     label: string
   ): void {
     const { y, height } = this
@@ -317,7 +370,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     ctx.fillStyle = this.background_color
     ctx.fillRect(15, y, width - 30, height)
 
-    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+    ctx.strokeStyle = this.getOutlineColor()
     ctx.strokeRect(15, y, width - 30, height)
 
     ctx.fillStyle = this.text_color
@@ -365,7 +418,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (requiredWidth <= totalWidth) {
       // Draw label & value normally
       drawTextInArea({ ctx, text: displayName, area, align: 'left' })
-    } else if (LiteGraph.truncateWidgetTextEvenly) {
+    } else if (litegraph().truncateWidgetTextEvenly) {
       // Label + value will not fit - scale evenly to fit
       const scale = (totalWidth - gap) / (requiredWidth - gap)
       area.width = labelWidth * scale
@@ -375,7 +428,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // Move the area to the right to render the value
       area.right = x + totalWidth
       area.setWidthRightAnchored(valueWidth * scale)
-    } else if (LiteGraph.truncateWidgetValuesFirst) {
+    } else if (litegraph().truncateWidgetValuesFirst) {
       // Label + value will not fit - use legacy scaling of value first
       const cappedLabelWidth = Math.min(labelWidth, totalWidth)
 
@@ -436,7 +489,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.callback?.(this.value, canvas, node, pos, e)
 
     node.onWidgetChanged?.(this.name ?? '', v, oldValue, this)
-    if (node.graph) node.graph._version++
+    if (node.graph) node.graph.incrementVersion()
   }
 
   /**

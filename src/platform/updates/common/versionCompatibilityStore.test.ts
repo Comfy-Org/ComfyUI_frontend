@@ -1,7 +1,5 @@
 import { until } from '@vueuse/core'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -41,8 +39,6 @@ describe('useVersionCompatibilityStore', () => {
   let mockSettingStore: { get: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     // Clear the mock dismissal storage
     mockDismissalStorage.value = {}
 
@@ -60,10 +56,6 @@ describe('useVersionCompatibilityStore', () => {
     mockUseSettingStore.mockReturnValue(mockSettingStore)
 
     store = useVersionCompatibilityStore()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
   })
 
   describe('version compatibility detection', () => {
@@ -278,8 +270,7 @@ describe('useVersionCompatibilityStore', () => {
 
   describe('dismissal persistence', () => {
     it('should save dismissal to reactive storage with expiration', async () => {
-      const mockNow = 1000000
-      vi.spyOn(Date, 'now').mockReturnValue(mockNow)
+      const now = Date.now()
 
       mockSystemStatsStore.systemStats = {
         system: {
@@ -294,7 +285,7 @@ describe('useVersionCompatibilityStore', () => {
 
       // Check that the dismissal was added to reactive storage
       expect(mockDismissalStorage.value).toEqual({
-        '1.24.0-1.25.0-1.25.0': mockNow + 7 * 24 * 60 * 60 * 1000
+        '1.24.0-1.25.0-1.25.0': now + 7 * 24 * 60 * 60 * 1000
       })
     })
 
@@ -379,6 +370,221 @@ describe('useVersionCompatibilityStore', () => {
       await store.initialize()
 
       expect(vi.mocked(until)).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('comfy package version warnings', () => {
+    it('should detect outdated comfy packages and skip comfyui-frontend-package', async () => {
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [
+            {
+              name: 'comfyui-frontend-package',
+              installed: '1.0.0',
+              required: '2.0.0'
+            },
+            {
+              name: 'comfyui-workflow-templates',
+              installed: '0.9.0',
+              required: '0.9.5'
+            },
+            {
+              name: 'comfyui-embedded-docs',
+              installed: '0.5.0',
+              required: '0.5.0'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+
+      expect(store.outdatedComfyPackages).toEqual([
+        {
+          name: 'comfyui-workflow-templates',
+          installed: '0.9.0',
+          required: '0.9.5'
+        }
+      ])
+      expect(store.hasVersionMismatch).toBe(true)
+      expect(store.shouldShowWarning).toBe(true)
+      expect(store.packageWarningMessages).toEqual([
+        {
+          name: 'comfyui-workflow-templates',
+          installedVersion: '0.9.0',
+          requiredVersion: '0.9.5'
+        }
+      ])
+    })
+
+    it('should ignore packages with missing or invalid versions', async () => {
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [
+            {
+              name: 'comfy-kitchen',
+              installed: null,
+              required: '1.0.0'
+            },
+            {
+              name: 'comfy-aimdo',
+              installed: 'not-a-version',
+              required: '1.0.0'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+
+      expect(store.outdatedComfyPackages).toEqual([])
+      expect(store.hasVersionMismatch).toBe(false)
+    })
+
+    it('should detect outdated PEP 440 versions via coerce', async () => {
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [
+            {
+              name: 'comfy-kitchen',
+              installed: '0.3.0.post1',
+              required: '0.4.0rc1'
+            },
+            {
+              name: 'comfy-aimdo',
+              installed: '0.4.0',
+              required: '0.4.0.post1'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+
+      expect(store.outdatedComfyPackages.map((p) => p.name)).toEqual([
+        'comfy-kitchen'
+      ])
+    })
+
+    it('should include outdated packages in dismissal key', async () => {
+      const now = Date.now()
+
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [
+            {
+              name: 'comfyui-workflow-templates',
+              installed: '0.9.0',
+              required: '0.9.5'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+      store.dismissWarning()
+
+      expect(mockDismissalStorage.value).toEqual({
+        '1.24.0-1.24.0-1.24.0-comfyui-workflow-templates@0.9.0->0.9.5':
+          now + 7 * 24 * 60 * 60 * 1000
+      })
+    })
+
+    it('should produce the same dismissal key regardless of package order', async () => {
+      const packageA = {
+        name: 'comfy-aimdo',
+        installed: '0.1.0',
+        required: '0.2.0'
+      }
+      const packageB = {
+        name: 'comfyui-workflow-templates',
+        installed: '0.9.0',
+        required: '0.9.5'
+      }
+
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [packageA, packageB]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+      await store.checkVersionCompatibility()
+      store.dismissWarning()
+      const firstKey = Object.keys(mockDismissalStorage.value)[0]
+
+      mockDismissalStorage.value = {}
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [packageB, packageA]
+        }
+      }
+      await store.checkVersionCompatibility()
+      store.dismissWarning()
+      const secondKey = Object.keys(mockDismissalStorage.value)[0]
+
+      expect(firstKey).toBe(secondKey)
+    })
+
+    it('should prune expired dismissals when writing a new one', async () => {
+      const now = Date.now()
+
+      mockDismissalStorage.value = {
+        'expired-key': now - 1,
+        'still-valid-key': now + 5000
+      }
+
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.25.0',
+          required_frontend_version: '1.25.0'
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+      await store.checkVersionCompatibility()
+      store.dismissWarning()
+
+      expect(mockDismissalStorage.value).not.toHaveProperty('expired-key')
+      expect(mockDismissalStorage.value).toHaveProperty('still-valid-key')
+      expect(mockDismissalStorage.value).toHaveProperty('1.24.0-1.25.0-1.25.0')
+    })
+
+    it('should allow dismissal when only package warnings are present', async () => {
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '',
+          required_frontend_version: '',
+          comfy_package_versions: [
+            {
+              name: 'comfyui-workflow-templates',
+              installed: '0.9.0',
+              required: '0.9.5'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+      expect(store.shouldShowWarning).toBe(true)
+      store.dismissWarning()
+      expect(Object.keys(mockDismissalStorage.value)).toHaveLength(1)
+      expect(store.shouldShowWarning).toBe(false)
     })
   })
 })

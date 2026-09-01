@@ -21,7 +21,7 @@ import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowS
  */
 export function getSelectedModelsMetadata(node: {
   type: string
-  widgets_values?: unknown[] | Record<string, unknown>
+  widgets_values?: readonly unknown[] | Record<string, unknown>
   properties?: { models?: ModelFile[] }
 }): ModelFile[] | undefined {
   try {

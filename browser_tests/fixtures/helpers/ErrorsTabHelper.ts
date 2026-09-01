@@ -1,0 +1,102 @@
+import type { Response } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+
+export async function enableErrorsOverlay(comfyPage: ComfyPage) {
+  await comfyPage.settings.setSetting(
+    'Comfy.RightSidePanel.ShowErrorsTab',
+    true
+  )
+}
+
+/** Dismiss the error overlay (the floating dialog with the dismiss button). */
+export async function dismissErrorOverlay(comfyPage: ComfyPage): Promise<void> {
+  const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  await expect(overlay).toBeVisible()
+  await overlay.getByTestId(TestIds.dialogs.errorOverlayDismiss).click()
+  await expect(overlay).toBeHidden()
+}
+
+export async function loadWorkflowAndOpenErrorsTab(
+  comfyPage: ComfyPage,
+  workflow: string
+) {
+  await comfyPage.workflow.loadWorkflow(workflow)
+
+  const errorOverlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  await expect(errorOverlay).toBeVisible()
+
+  await errorOverlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
+  await expect(errorOverlay).toBeHidden()
+}
+
+export async function openErrorsTab(comfyPage: ComfyPage) {
+  const panel = new PropertiesPanelHelper(comfyPage.page)
+  await panel.open(comfyPage.actionbar.propertiesButton)
+
+  const errorsTab = comfyPage.page.getByTestId(
+    TestIds.propertiesPanel.errorsTab
+  )
+  await expect(errorsTab).toBeVisible()
+  await errorsTab.click()
+}
+
+export async function expectNoErrorUiAfterVerification(
+  comfyPage: ComfyPage,
+  panel: PropertiesPanelHelper,
+  verificationResponse: Promise<Response>,
+  observationMs = 2_000
+): Promise<void> {
+  const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  const readiness = await Promise.race([
+    verificationResponse.then(() => 'verification' as const),
+    overlay.waitFor({ state: 'visible' }).then(() => 'error-ui' as const),
+    panel.errorsTab
+      .waitFor({ state: 'visible' })
+      .then(() => 'error-ui' as const)
+  ])
+  let sawErrorUi = readiness === 'error-ui'
+  const startedAt = Date.now()
+
+  await expect
+    .poll(
+      async () => {
+        sawErrorUi =
+          sawErrorUi ||
+          (await overlay.isVisible()) ||
+          (await panel.errorsTab.isVisible())
+
+        return {
+          observed: Date.now() - startedAt >= observationMs,
+          sawErrorUi
+        }
+      },
+      {
+        timeout: observationMs + 1_000,
+        intervals: [100]
+      }
+    )
+    .toEqual({
+      observed: true,
+      sawErrorUi: false
+    })
+}
+
+/**
+ * Remove the fake model file from the backend so it is detected as missing.
+ * Fixture URLs (e.g. http://localhost:8188/...) are not actually downloaded
+ * during tests — they only serve as metadata for the missing model UI.
+ */
+export async function cleanupFakeModel(comfyPage: ComfyPage) {
+  await expect
+    .poll(() =>
+      comfyPage.page.evaluate(async (url: string) => {
+        const response = await fetch(`${url}/api/devtools/cleanup_fake_model`)
+        return response.ok
+      }, comfyPage.url)
+    )
+    .toBeTruthy()
+}

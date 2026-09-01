@@ -39,7 +39,6 @@ describe('useSubscriptionCredits', () => {
   beforeEach(() => {
     mockBillingBalance = null
     mockBillingIsLoading = false
-    vi.clearAllMocks()
   })
 
   describe('totalCredits', () => {
@@ -99,6 +98,28 @@ describe('useSubscriptionCredits', () => {
       }
       const { prepaidCredits } = useSubscriptionCredits()
       expect(prepaidCredits.value).toBe('633')
+    })
+  })
+
+  describe('numeric credit values (micros-as-cents)', () => {
+    it('converts the monthly and prepaid balance fields from cents to credits (×2.11)', () => {
+      mockBillingBalance = {
+        amountMicros: 500,
+        cloudCreditBalanceMicros: 200,
+        prepaidBalanceMicros: 300
+      }
+      const { monthlyBonusCreditsValue, prepaidCreditsValue } =
+        useSubscriptionCredits()
+      expect(monthlyBonusCreditsValue.value).toBe(422)
+      expect(prepaidCreditsValue.value).toBe(633)
+    })
+
+    it('defaults missing fields to zero', () => {
+      mockBillingBalance = { amountMicros: 100 }
+      const { monthlyBonusCreditsValue, prepaidCreditsValue } =
+        useSubscriptionCredits()
+      expect(monthlyBonusCreditsValue.value).toBe(0)
+      expect(prepaidCreditsValue.value).toBe(0)
     })
   })
 
