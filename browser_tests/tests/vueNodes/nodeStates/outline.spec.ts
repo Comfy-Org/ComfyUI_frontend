@@ -21,6 +21,7 @@ test.describe(
       const note = comfyPage.vueNodes.getNodeByTitle('Note').first()
       await note.locator('.lg-node-header').click()
       await expect(note).toHaveClass(/outline-node-component-outline/)
+      await expect(note).toBeFocused()
 
       const box = await note.boundingBox()
       if (!box) throw new Error('Node bounding box not available')
