@@ -67,11 +67,7 @@ export async function downloadFileAsync(
   const inferredFilename = inferDownloadFilename(url, filename)
 
   if (isCloud) {
-    try {
-      await downloadViaBlobFetch(url, inferredFilename)
-    } catch {
-      throw new Error('Failed to download file')
-    }
+    await downloadViaBlobFetch(url, inferredFilename)
     return
   }
 

@@ -345,7 +345,7 @@ describe('downloadUtil', () => {
       )
 
       await expect(downloadFileAsync(testUrl)).rejects.toThrow(
-        'Failed to download file'
+        'Failed to fetch'
       )
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
