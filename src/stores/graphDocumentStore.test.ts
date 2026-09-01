@@ -69,6 +69,21 @@ describe('useGraphDocumentStore', () => {
     expect(store.resolveWorkflowTarget('wf-1')?.documentId).toBe(second)
   })
 
+  it('closes and removes a document whose hydration never ran', () => {
+    const store = useGraphDocumentStore()
+    const documentId = store.createDocument({ workflowId: 'wf-1' })
+    if (documentId === null) throw new Error('createDocument failed')
+    expect(
+      store.closeDocument(documentId, { atRevision: 0, discardChanges: false })
+    ).toBe(false)
+    expect(
+      store.closeDocument(documentId, { atRevision: 0, discardChanges: true })
+    ).toBe(true)
+    expect(store.resolveWorkflowTarget('wf-1')).toBeNull()
+    expect(store.removeDocument(documentId)).toBe(true)
+    expect(store.getDocument(documentId)).toBeNull()
+  })
+
   it('hydration early-binds the scope without requiring a renderer', () => {
     const store = useGraphDocumentStore()
     const documentId = store.createDocument({ workflowId: 'wf-1' })
