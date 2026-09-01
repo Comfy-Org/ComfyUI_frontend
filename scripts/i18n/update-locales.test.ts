@@ -341,15 +341,18 @@ describe('translateLocaleItems', () => {
 describe('mapWithConcurrency', () => {
   it('stops dispatching new tasks after a failure', async () => {
     const started: number[] = []
+    let inFlightTaskSettled = false
     await expect(
       mapWithConcurrency([1, 2, 3, 4], 2, async (item) => {
         started.push(item)
         if (item === 1) throw new Error('boom')
-        await new Promise((resolve) => setTimeout(resolve, 5))
+        await Promise.resolve()
+        inFlightTaskSettled = true
         return item
       })
     ).rejects.toThrow('boom')
     expect(started).toEqual([1, 2])
+    expect(inFlightTaskSettled).toBe(true)
   })
 })
 
@@ -557,7 +560,9 @@ describe('createOpenAiTranslator', () => {
   })
 
   function translatorFor(
-    respond: Response[] | ((body: string, call: number) => Response),
+    respond:
+      | Response[]
+      | ((body: string, call: number) => Response | Promise<Response>),
     overrides: Partial<
       Pick<
         Parameters<typeof createOpenAiTranslator>[0],
@@ -622,6 +627,27 @@ describe('createOpenAiTranslator', () => {
           !body.includes('main.json: greeting')
       )
     ).toBe(true)
+  })
+
+  it('does not fan out requests while splitting a truncated batch', async () => {
+    let activeRequests = 0
+    let peakRequests = 0
+    const { translate } = translatorFor(async (body, call) => {
+      if (call === 1) return completion('{"1": "Bonj', 'length')
+      activeRequests++
+      peakRequests = Math.max(peakRequests, activeRequests)
+      await Promise.resolve()
+      activeRequests--
+      return body.includes('main.json: greeting')
+        ? completion('{"1": "Bonjour {name}"}')
+        : completion('{"2": "Au revoir {name}"}')
+    })
+
+    await expect(translate(locale, items)).resolves.toEqual({
+      '1': 'Bonjour {name}',
+      '2': 'Au revoir {name}'
+    })
+    expect(peakRequests).toBe(1)
   })
 
   it('defers a single string whose translation keeps truncating', async () => {
