@@ -37,9 +37,14 @@ const scope = {
 }
 
 function byId<T extends { id: string | number }>(entries: T[]): T[] {
-  return entries.sort((left, right) =>
-    String(left.id).localeCompare(String(right.id))
-  )
+  return entries.sort((left, right) => Number(left.id) - Number(right.id))
+}
+
+function projectedNodeIds() {
+  return useNodeDataStore()
+    .getGraphNodesFor('root', 'root')
+    .map(({ id }) => Number(id))
+    .sort((left, right) => left - right)
 }
 
 function graphSnapshot() {
@@ -402,11 +407,7 @@ describe('EcsFollowerAdapter integration', () => {
       })
     ).toBe(true)
 
-    expect(
-      useNodeDataStore()
-        .getGraphNodesFor('root', 'root')
-        .map(({ id }) => id)
-    ).toEqual([toNodeId(1), toNodeId(2), toNodeId(3)])
+    expect(projectedNodeIds()).toEqual([1, 2, 3])
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toBeDefined()
@@ -513,11 +514,7 @@ describe('EcsFollowerAdapter integration', () => {
     // Node 2 leaves the doc after bind, so the observer stages its deletion.
     nodesMap(follower.doc).delete('2')
     expect(adapter.projectBaseline('wf', context)).toBe(true)
-    expect(
-      useNodeDataStore()
-        .getGraphNodesFor('root', 'root')
-        .map(({ id }) => id)
-    ).toEqual([toNodeId(1), toNodeId(2)])
+    expect(projectedNodeIds()).toEqual([1, 2])
 
     expect(
       adapter.applyFrame({
@@ -528,11 +525,7 @@ describe('EcsFollowerAdapter integration', () => {
         opIds: ['later']
       })
     ).toBe(true)
-    expect(
-      useNodeDataStore()
-        .getGraphNodesFor('root', 'root')
-        .map(({ id }) => id)
-    ).toEqual([toNodeId(1)])
+    expect(projectedNodeIds()).toEqual([1])
     expect(deleteLayouts).toHaveBeenCalledWith(
       scope,
       [toNodeId(2)],
@@ -591,15 +584,75 @@ describe('EcsFollowerAdapter integration', () => {
         opIds: ['later']
       })
     ).toBe(true)
-    expect(
-      useNodeDataStore()
-        .getGraphNodesFor('root', 'root')
-        .map(({ id }) => id)
-    ).toEqual([toNodeId(1), toNodeId(2)])
+    expect(projectedNodeIds()).toEqual([1, 2])
 
     adapter.destroy()
     follower.destroy()
     host.destroy()
+  })
+
+  it('lets a later frame re-add a node the baseline already projected', () => {
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', title: 'Saved', pos: [0, 0], inputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const reminted = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', title: 'Reminted', pos: [9, 9], inputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+    )
+
+    adapter.bind('wf', follower)
+    expect(
+      adapter.projectBaseline('wf', {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'baseline'
+      })
+    ).toBe(true)
+
+    // A new incarnation of the same id stages as 'add', which prepare rejects
+    // outright once the baseline has already registered that node.
+    nodesMap(follower.doc).delete('1')
+    nodesMap(follower.doc).set('1', nodesMap(reminted).get('1')!.clone())
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: new Uint8Array(),
+        actor: 'agent:test',
+        opIds: ['remint']
+      })
+    ).toBe(true)
+
+    expect(projectedNodeIds()).toEqual([1])
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .find(({ id }) => id === toNodeId(1))?.title
+    ).toBe('Reminted')
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+    reminted.destroy()
   })
 
   it('returns false when no session is bound to the target', () => {

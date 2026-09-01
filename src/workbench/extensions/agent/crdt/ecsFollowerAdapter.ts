@@ -205,7 +205,9 @@ export class EcsFollowerAdapter {
    * ordinary unbind/rebind of an unchanged doc.
    *
    * An unprojectable link is skipped rather than batched, since `prepare`
-   * rejects a whole batch on its first invalid entry.
+   * rejects a whole batch on its first invalid entry. A self-inconsistent doc
+   * can therefore land a node whose slot mirror still names a skipped link,
+   * leaving that slot pointing at a topology the link store does not hold.
    *
    * Additive for nodes: ECS nodes the doc does not mention are left alone, so
    * this converges the graph on the doc rather than replacing it. A caller
@@ -239,17 +241,16 @@ export class EcsFollowerAdapter {
       return payload ? [payload] : []
     })
     const projectedIds = new Set(nodes.map(({ id }) => String(id)))
-    const links = [...session.links.keys()].flatMap((id) => {
+    const links: SemanticLinkPayload[] = []
+    const skippedLinks: string[] = []
+    for (const id of session.links.keys()) {
       const link = readSemanticLink(session.follower.doc, id)
-      return link && isConnectable(link, projectedIds) ? [link] : []
-    })
+      if (link && isConnectable(link, projectedIds)) links.push(link)
+      else skippedLinks.push(id)
+    }
 
     const skippedNodes = [...session.nodes.keys()].filter(
       (id) => !projectedIds.has(id)
-    )
-    const connectedIds = new Set(links.map(({ id }) => String(id)))
-    const skippedLinks = [...session.links.keys()].filter(
-      (id) => !connectedIds.has(id)
     )
     if (skippedNodes.length > 0 || skippedLinks.length > 0) {
       console.warn(
@@ -272,6 +273,10 @@ export class EcsFollowerAdapter {
       session.changedWidgets.delete(id)
     }
     for (const id of session.links.keys()) session.changedLinks.delete(id)
+
+    // Re-arm, not redundant: the store now holds every doc node, so a later
+    // frame re-adding one is rejected as registered and loses its whole batch.
+    session.reconcileNextFrame = true
     return true
   }
 
