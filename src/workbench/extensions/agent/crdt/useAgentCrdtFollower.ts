@@ -225,7 +225,9 @@ export function useAgentCrdtFollower(
       retryable: true,
       reconnect_duration_ms: Math.max(
         0,
-        Math.round(performance.now() - (subscribeRetryStartedAt ?? performance.now()))
+        Math.round(
+          performance.now() - (subscribeRetryStartedAt ?? performance.now())
+        )
       )
     })
   }
