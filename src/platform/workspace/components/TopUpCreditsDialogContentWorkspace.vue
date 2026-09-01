@@ -477,6 +477,7 @@ function resumeTopupAuthentication() {
 function startOverTopup() {
   const operation = topupOperation.value
   if (operation) billingOperationStore.clearOperation(operation.opId)
+  paymentSubmitted.value = false
   step.value = 'amount'
 }
 

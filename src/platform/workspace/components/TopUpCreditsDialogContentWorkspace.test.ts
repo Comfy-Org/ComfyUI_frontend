@@ -23,7 +23,14 @@ const mockTopup =
   vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
 const mockRetryPaymentAuthentication = vi.fn()
-const mockClearOperation = vi.fn()
+const mockClearOperation = vi.fn((opId: string) => {
+  if (mockBillingOperationState.topupActionOperation?.value?.opId === opId) {
+    mockBillingOperationState.topupActionOperation.value = undefined
+  }
+  if (mockBillingOperationState.isAddingCredits) {
+    mockBillingOperationState.isAddingCredits.value = false
+  }
+})
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 const mockCloseDialog = vi.fn()
@@ -492,10 +499,15 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('lets the customer start over after a failed challenge', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
     renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    await nextTick()
 
     setTopupActionOperation({
-      opId: 'op-failed',
+      opId: 'op-1',
       status: 'pending',
       actionUrl: null,
       authenticationState: 'failed_retryable',
@@ -504,11 +516,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await nextTick()
 
     await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
+    await nextTick()
 
-    expect(mockClearOperation).toHaveBeenCalledWith('op-failed')
+    expect(mockClearOperation).toHaveBeenCalledWith('op-1')
     expect(
-      screen.getByRole('button', { name: 'Add credits' })
-    ).toBeInTheDocument()
+      screen.queryByText('Your bank rejected the verification.')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
   it('keeps a top-up locked when reconciliation needs support', () => {
