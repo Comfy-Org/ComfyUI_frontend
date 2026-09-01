@@ -955,6 +955,8 @@ export class ComfyApi extends EventTarget {
    */
   async resetSocket(): Promise<void> {
     const previous = this.socket
+    this.serverFeatureFlags.value = {}
+    this.serverFeatureFlagsReceived.value = false
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null

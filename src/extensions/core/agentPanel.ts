@@ -5,7 +5,6 @@ import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { api } from '@/scripts/api'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
