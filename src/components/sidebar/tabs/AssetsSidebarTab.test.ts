@@ -18,9 +18,21 @@ const folderAsset = vi.hoisted(() => ({
   }
 }))
 
+type MockAsset = {
+  id: string
+  name: string
+  tags: string[]
+  user_metadata?: {
+    jobId: string
+    nodeId: string
+    subfolder: string
+    outputCount: number
+  }
+}
+
 const storeControls = vi.hoisted(() => ({
-  outputItems: [folderAsset] as (typeof folderAsset)[],
-  setOutputItems(items: (typeof folderAsset)[]) {
+  outputItems: [folderAsset] as MockAsset[],
+  setOutputItems(items: MockAsset[]) {
     this.outputItems.splice(0, this.outputItems.length, ...items)
   }
 }))
