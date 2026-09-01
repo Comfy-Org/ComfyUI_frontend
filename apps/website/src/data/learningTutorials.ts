@@ -178,6 +178,11 @@ const fundamentalsTag: TranslationKey = 'tags.fundamentals'
 const nodeGraphTag: TranslationKey = 'tags.nodeGraph'
 const loraTag: TranslationKey = 'tags.lora'
 const controlNetTag: TranslationKey = 'tags.controlNet'
+const textToImageTag: TranslationKey = 'tags.textToImage'
+const imageToImageTag: TranslationKey = 'tags.imageToImage'
+const inpaintingTag: TranslationKey = 'tags.inpainting'
+const outpaintingTag: TranslationKey = 'tags.outpainting'
+const upscalingTag: TranslationKey = 'tags.upscaling'
 
 const dougHogan: TutorialAuthor = {
   name: { en: 'Doug Hogan', 'zh-CN': 'Doug Hogan' },
@@ -207,18 +212,43 @@ export const learningTutorials: readonly LearningTutorial[] = [
       'zh-CN':
         '面向初学者的 ComfyUI 节点图入门：了解节点、连线与运行队列如何协同，搭建你的第一条可用流程。'
     },
-    poster: 'https://img.youtube.com/vi/TQhIYT1ZYGQ/maxresdefault.jpg',
+    poster:
+      'https://media.comfy.org/website/learning/full-node-graph-basics-thumb.jpg',
     href: externalLinks.cloudCta('learning_basics_node_graph'),
     newTab: true,
     ctaLabelKey: 'cta.tryForFree',
     tags: [fundamentalsTag, nodeGraphTag]
   },
   {
+    id: 'basics_text_to_image',
+    publishedDate: '2026-08-13',
+    slug: 'text-to-image-image-to-image',
+    category: 'basics',
+    episode: 2,
+    author: dougHogan,
+    youtubeId: 'uafAN8zLKD8',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: Text-to-Image & Image-to-Image Workflows (2026)',
+      'zh-CN': 'ComfyUI 新手教程：文生图与图生图工作流 (2026)'
+    },
+    description: {
+      en: 'Build your first text-to-image workflow, then adapt it for image-to-image: prompts, samplers, denoise strength, and when to reach for each.',
+      'zh-CN':
+        '搭建你的第一条文生图工作流，再将它改造为图生图：提示词、采样器、去噪强度，以及各自的适用场景。'
+    },
+    poster:
+      'https://media.comfy.org/website/learning/text-to-image-image-to-image-thumb.jpg',
+    href: externalLinks.cloudCta('learning_basics_text_to_image'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, textToImageTag, imageToImageTag]
+  },
+  {
     id: 'basics_loras_style_controlnets',
     publishedDate: '2026-08-17',
     slug: 'loras-style-transfer-controlnets',
     category: 'basics',
-    episode: 2,
+    episode: 3,
     author: dougHogan,
     youtubeId: '-igiHGaxKek',
     title: {
@@ -230,11 +260,36 @@ export const learningTutorials: readonly LearningTutorial[] = [
       'zh-CN':
         '进阶了解 LoRA、风格迁移与 ControlNet：各自的作用，以及如何将它们接入 ComfyUI 工作流。'
     },
-    poster: 'https://img.youtube.com/vi/-igiHGaxKek/maxresdefault.jpg',
+    poster:
+      'https://media.comfy.org/website/learning/loras-style-transfer-controlnets-thumb.jpg',
     href: externalLinks.cloudCta('learning_basics_loras'),
     newTab: true,
     ctaLabelKey: 'cta.tryForFree',
     tags: [fundamentalsTag, loraTag, controlNetTag, styleTransferTag]
+  },
+  {
+    id: 'basics_inpainting',
+    publishedDate: '2026-08-31',
+    slug: 'inpainting-outpainting-upscaling',
+    category: 'basics',
+    episode: 4,
+    author: dougHogan,
+    youtubeId: 'hFCuhcm37uY',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: Inpainting, Outpainting & Upscaling (2026)',
+      'zh-CN': 'ComfyUI 新手教程：局部重绘、扩图与放大 (2026)'
+    },
+    description: {
+      en: 'Edit and enlarge images in ComfyUI: mask and repaint with inpainting, extend the frame with outpainting, and add resolution with upscaling.',
+      'zh-CN':
+        '在 ComfyUI 中编辑与放大图像：用局部重绘遮罩改图，用扩图扩展画面，再通过放大提升分辨率。'
+    },
+    poster:
+      'https://media.comfy.org/website/learning/inpainting-outpainting-upscaling-thumb.jpg',
+    href: externalLinks.cloudCta('learning_basics_inpainting'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, inpaintingTag, outpaintingTag, upscalingTag]
   },
   {
     id: 'cleanplate_walkthrough_v03',
@@ -819,8 +874,9 @@ export const tutorialDescription = (
   tutorial: LearningTutorial,
   locale: Locale
 ): string => {
-  if (tutorial.description) return tutorial.description[locale]
-  const title = tutorial.title[locale]
+  if (tutorial.description)
+    return tutorial.description[locale] || tutorial.description.en
+  const title = tutorial.title[locale] || tutorial.title.en
   const label = t(categoryLabelKeys[tutorial.category], locale)
   return locale === 'zh-CN'
     ? `观看《${title}》教程：一个可亲自体验的 ComfyUI ${label} 实战工作流。`
@@ -833,7 +889,7 @@ export const tutorialMetaTitle = (
   tutorial: LearningTutorial,
   locale: Locale
 ): string => {
-  const title = tutorial.title[locale]
+  const title = tutorial.title[locale] || tutorial.title.en
   if (title.includes('ComfyUI')) return title
   return locale === 'zh-CN'
     ? `${title}：免费 ComfyUI 教程`

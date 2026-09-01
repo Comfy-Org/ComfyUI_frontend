@@ -36,9 +36,9 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: t('nav.comfyLocal', locale), href: routes.download },
       { label: t('nav.comfyCloud', locale), href: routes.cloud },
-      { label: t('nav.comfyApi', locale), href: routes.api },
-      { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise },
-      { label: t('nav.pricing', locale), href: routes.cloudPricing },
+      { label: t('nav.developerPlatform', locale), href: routes.platform },
+      { label: t('nav.comfyEnterprise', locale), href: routes.enterprise },
+      { label: t('nav.pricing', locale), href: routes.pricing },
       { label: t('nav.mcpServer', locale), href: routes.mcp },
       { label: t('nav.comfyCli', locale), href: routes.cli },
       { label: t('nav.supportedModels', locale), href: routes.models },
@@ -63,6 +63,11 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     title: t('footer.resources', locale),
     links: [
       { label: t('nav.learning', locale), href: routes.learning },
+      { label: t('footer.workflows', locale), href: externalLinks.workflows },
+      {
+        label: t('footer.useCases', locale),
+        href: externalLinks.workflowUseCases
+      },
       { label: t('nav.launches', locale), href: routes.launches },
       { label: t('nav.fdct', locale), href: routes.fdct },
       {

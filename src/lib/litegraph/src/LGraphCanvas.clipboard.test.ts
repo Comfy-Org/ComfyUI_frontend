@@ -221,7 +221,6 @@ function registerClipboardNodeType(type: string): void {
     }
   }
   LiteGraph.registerNodeType(type, ClipboardNode)
-  onTestFinished(() => LiteGraph.unregisterNodeType(type))
 }
 
 describe('_deserializeItems paste-time migration & auto-expose', () => {

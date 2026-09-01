@@ -323,8 +323,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (
-        flags.embeddedCheckoutEnabled &&
-        (response.status === 'reconciliation_needed' ||
+        response.status === 'reconciliation_needed' ||
+        (flags.embeddedCheckoutEnabled &&
           response.authentication_state === 'reconciliation_needed')
       ) {
         handleReconciliationNeeded(opId)
