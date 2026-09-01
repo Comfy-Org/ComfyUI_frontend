@@ -134,10 +134,8 @@ export function useTemplateWorkflows() {
         : sourceModule
     if (!resolvedSourceModule) return null
 
-    const workflow: ComfyWorkflowJSON = await fetchTemplateJson(
-      id,
-      resolvedSourceModule
-    )
+    const workflow = await fetchTemplateJson(id, resolvedSourceModule)
+    if (!workflow) return null
 
     return {
       id,
@@ -197,14 +195,20 @@ export function useTemplateWorkflows() {
   /**
    * Fetches template JSON from the appropriate endpoint
    */
-  const fetchTemplateJson = async (id: string, sourceModule: string) => {
+  const fetchTemplateJson = async (
+    id: string,
+    sourceModule: string
+  ): Promise<ComfyWorkflowJSON | null> => {
     const url =
       sourceModule === 'default'
         ? api.fileURL(`/templates/${id}.json`)
         : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
     const response = await fetch(url)
     if (!response.ok) {
-      throw new Error(`Failed to fetch workflow template (${response.status})`)
+      reportError(`Failed to fetch workflow template (${response.status})`, {
+        errorType: 'workflow_template_fetch_failed'
+      })
+      return null
     }
 
     const workflow: unknown = await response.json()
@@ -212,7 +216,12 @@ export function useTemplateWorkflows() {
     if (validatedWorkflow) return validatedWorkflow
 
     const legacyWorkflow = zLegacyWorkflowEnvelope.safeParse(workflow)
-    if (!legacyWorkflow.success) throw new Error('Invalid workflow template')
+    if (!legacyWorkflow.success) {
+      reportError('Invalid workflow template', {
+        errorType: 'workflow_template_invalid'
+      })
+      return null
+    }
     return legacyWorkflow.data as ComfyWorkflowJSON
   }
 

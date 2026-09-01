@@ -405,16 +405,23 @@ describe('useTemplateWorkflows', () => {
       expect(app.loadGraphData).toHaveBeenCalledOnce()
     })
 
-    it('rejects a non-OK response without opening', async () => {
+    it('returns null for a non-OK response without opening', async () => {
       mockWorkflowTemplatesStore.isLoaded = true
       const { prepareWorkflowTemplate } = useTemplateWorkflows()
       vi.mocked(fetch).mockResolvedValueOnce(
         new Response(null, { status: 404, statusText: 'Not Found' })
       )
 
-      await expect(
-        prepareWorkflowTemplate('missing-template', 'default')
-      ).rejects.toThrow()
+      const result = await prepareWorkflowTemplate(
+        'missing-template',
+        'default'
+      )
+
+      expect(result).toBe(null)
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        'Failed to fetch workflow template (404)',
+        { errorType: 'workflow_template_fetch_failed' }
+      )
       expectNoOpeningSideEffects()
     })
 
