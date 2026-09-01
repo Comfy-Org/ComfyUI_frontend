@@ -155,6 +155,9 @@ describe('LGraph Serialisation', () => {
     const ids = serialized.nodes.map(({ id }) => id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids).toHaveLength(2)
+    expect(new Set(ids)).toEqual(
+      new Set([registered.id, adapterOnly.id].map(Number))
+    )
     expect(error).toHaveBeenCalledOnce()
   })
 
