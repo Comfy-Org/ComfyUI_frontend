@@ -6960,6 +6960,31 @@ const translations = {
     en: 'MEET THE TEAM',
     'zh-CN': '认识团队'
   },
+
+  // ── MiniMax professional license request ───────────────────────────
+  // English-only, by design: the page embeds the English-only HubSpot
+  // "MiniMax Commercial License - Professional" form, so the zh values
+  // intentionally duplicate the English. See the matching header comment
+  // in src/pages/minimax/license/professional-request.astro and the
+  // LOCALE_INVARIANT_ROUTE_KEYS entry in src/config/routes.ts.
+  'minimaxLicense.professionalRequest.title': {
+    en: 'Request MiniMax Professional License',
+    'zh-CN': 'Request MiniMax Professional License'
+  },
+  'minimaxLicense.professionalRequest.meta.description': {
+    en: 'Request a MiniMax Professional commercial license through Comfy, the official reseller of MiniMax commercial-use licenses. Fixed monthly price, up to 10 licensed users.',
+    'zh-CN':
+      'Request a MiniMax Professional commercial license through Comfy, the official reseller of MiniMax commercial-use licenses. Fixed monthly price, up to 10 licensed users.'
+  },
+  'minimaxLicense.professionalRequest.intro': {
+    en: "Tell us about your team and we'll get your license set up. Professional is a fixed-price monthly license covering up to 10 users —",
+    'zh-CN':
+      "Tell us about your team and we'll get your license set up. Professional is a fixed-price monthly license covering up to 10 users —"
+  },
+  'minimaxLicense.professionalRequest.introCta': {
+    en: 'see what it includes',
+    'zh-CN': 'see what it includes'
+  },
   // FDCT page (/forward-deployed-creatives) — Forward Deployed Creatives
   'fdct.meta.title': {
     en: 'Forward Deployed Creatives | Comfy',

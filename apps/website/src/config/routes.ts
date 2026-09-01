@@ -28,6 +28,7 @@ const baseRoutes = {
   minimax: '/minimax-h3',
   minimaxMusic3: '/minimax-music-3',
   minimaxLicense: '/minimax/license',
+  minimaxLicenseProfessionalRequest: '/minimax/license/professional-request',
   flux3: '/flux-3',
   seedance: '/seedance-2.5',
   fdct: '/forward-deployed-creatives',
@@ -57,12 +58,17 @@ type Routes = typeof baseRoutes
 //
 // models: the supported-models catalog only exists at /p/supported-models;
 // there is no /<locale>/p/supported-models page, so a prefixed link 404s.
+//
+// minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
+// form, so no localized variant exists. See the comment header in
+// src/pages/minimax/license/professional-request.astro.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
-  'models'
+  'models',
+  'minimaxLicenseProfessionalRequest'
 ])
 
 const LOCALE_INVARIANT_PATHS = new Set<string>(
