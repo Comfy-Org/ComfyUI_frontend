@@ -1,0 +1,184 @@
+// @vitest-environment happy-dom
+import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import AgentBetaWaitlistForm from './AgentBetaWaitlistForm.vue'
+
+const hoisted = vi.hoisted(() => ({
+  isEnabled: true,
+  preload: vi.fn(),
+  submit: vi.fn().mockResolvedValue(undefined)
+}))
+
+vi.mock('../../scripts/customerio', () => ({
+  get isDownloadLinkRequestEnabled() {
+    return hoisted.isEnabled
+  },
+  joinAgentBetaWaitlist: hoisted.submit,
+  preloadDownloadLinkAnalytics: hoisted.preload
+}))
+
+const APPLICATION_URL = 'https://form.typeform.com/to/UqL3PpAM'
+
+describe('AgentBetaWaitlistForm', () => {
+  let openSpy: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    hoisted.isEnabled = true
+    hoisted.submit.mockReset().mockResolvedValue(undefined)
+    hoisted.preload.mockClear()
+    openSpy = vi.fn()
+    vi.stubGlobal('open', openSpy)
+  })
+
+  it('renders nothing when the write key is not configured', () => {
+    hoisted.isEnabled = false
+    render(AgentBetaWaitlistForm)
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(hoisted.preload).not.toHaveBeenCalled()
+  })
+
+  it('preloads the SDK when the form mounts', () => {
+    render(AgentBetaWaitlistForm)
+    expect(hoisted.preload).toHaveBeenCalledOnce()
+  })
+
+  it('shows an inline validation message for an invalid email and sends nothing', async () => {
+    const user = userEvent.setup()
+    render(AgentBetaWaitlistForm)
+
+    await user.type(screen.getByRole('textbox'), 'not-an-email')
+    await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toMatch(/enter a valid email address/i)
+    const input = screen.getByRole('textbox')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(input.getAttribute('aria-describedby')).toBe(alert.id)
+    expect(hoisted.submit).not.toHaveBeenCalled()
+    expect(openSpy).not.toHaveBeenCalled()
+  })
+
+  it('fakes success without sending anything when the honeypot is filled', async () => {
+    const user = userEvent.setup()
+    render(AgentBetaWaitlistForm)
+
+    const visibleInput = screen.getByRole('textbox')
+    await user.type(visibleInput, 'someone@example.com')
+    const decoy = screen
+      .getAllByRole('textbox', { hidden: true })
+      .find((input) => input !== visibleInput)!
+    await fireEvent.update(decoy, 'spam corp')
+    await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
+
+    const confirmation = await screen.findByRole('status')
+    expect(confirmation.textContent).toMatch(/you're on the waitlist/i)
+    expect(hoisted.submit).not.toHaveBeenCalled()
+    // A bot must not be handed the real application form either.
+    expect(openSpy).not.toHaveBeenCalled()
+  })
+
+  it('shows pending feedback, then replaces the form with confirmation', async () => {
+    let resolveSubmit!: () => void
+    hoisted.submit.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSubmit = resolve
+        })
+    )
+    const user = userEvent.setup()
+    render(AgentBetaWaitlistForm)
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
+
+    const pendingButton = screen.getByRole('button', { name: /joining/i })
+    expect(pendingButton.getAttribute('aria-busy')).toBe('true')
+    expect((pendingButton as HTMLButtonElement).disabled).toBe(true)
+    expect(hoisted.submit).toHaveBeenCalledWith('someone@example.com')
+
+    resolveSubmit()
+
+    const confirmation = await screen.findByRole('status')
+    expect(confirmation.textContent).toMatch(/you're on the waitlist/i)
+    expect(confirmation.textContent).toContain('someone@example.com')
+    expect(screen.queryByRole('textbox')).toBeNull()
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(confirmation)
+  })
+
+  it('shows a retryable failure and succeeds on retry', async () => {
+    hoisted.submit.mockRejectedValueOnce(new Error('network down'))
+    const user = userEvent.setup()
+    render(AgentBetaWaitlistForm)
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      /something went wrong/i
+    )
+    expect(screen.getByRole('textbox')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
+
+    expect((await screen.findByRole('status')).textContent).toMatch(
+      /you're on the waitlist/i
+    )
+    expect(hoisted.submit).toHaveBeenCalledTimes(2)
+    // Retrying the capture must not spawn a second application tab.
+    expect(openSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the application form in a new tab on submit', async () => {
+    const user = userEvent.setup()
+    render(AgentBetaWaitlistForm)
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
+
+    expect(openSpy).toHaveBeenCalledWith(
+      APPLICATION_URL,
+      '_blank',
+      'noopener,noreferrer'
+    )
+  })
+
+  it('opens the application before awaiting the capture, so the click still counts', async () => {
+    // A popup blocker only honours window.open while the click's user
+    // activation is live, which an awaited network call would spend.
+    let resolveSubmit!: () => void
+    hoisted.submit.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSubmit = resolve
+        })
+    )
+    const user = userEvent.setup()
+    render(AgentBetaWaitlistForm)
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
+
+    expect(screen.getByRole('button', { name: /joining/i })).toBeTruthy()
+    expect(openSpy).toHaveBeenCalledOnce()
+
+    resolveSubmit()
+    await screen.findByRole('status')
+  })
+
+  it('offers a fallback link when the browser blocks the new tab', async () => {
+    const user = userEvent.setup()
+    render(AgentBetaWaitlistForm)
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
+
+    await screen.findByRole('status')
+    const fallback = screen.getByRole('link', { name: /open them here/i })
+    expect(fallback.getAttribute('href')).toBe(APPLICATION_URL)
+    expect(fallback.getAttribute('target')).toBe('_blank')
+    expect(fallback.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+})

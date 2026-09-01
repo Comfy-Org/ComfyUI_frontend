@@ -41,3 +41,11 @@ export async function requestDownloadLink(email: string, locale: Locale) {
     page: window.location.pathname
   })
 }
+
+export async function joinAgentBetaWaitlist(email: string) {
+  const analytics = await loadAnalytics()
+  await analytics.identify(email, { email })
+  await analytics.track('agent_beta_waitlist_joined', {
+    page: window.location.pathname
+  })
+}
