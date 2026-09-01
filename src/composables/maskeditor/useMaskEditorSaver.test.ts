@@ -220,6 +220,26 @@ describe('useMaskEditorSaver', () => {
     )
   })
 
+  it('replaces a stale clipspace image with the saved image', async () => {
+    mockNode.images = [
+      {
+        filename: 'pasted-before-edit.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
+    ]
+
+    await useMaskEditorSaver().save()
+
+    expect(mockNode.images).toEqual([
+      {
+        filename: 'clipspace-painted-masked-123.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
+    ])
+  })
+
   it('omits subfolder from the upload FormData under the unified contract', async () => {
     const fetchApiMock = vi.mocked(api.fetchApi)
 
