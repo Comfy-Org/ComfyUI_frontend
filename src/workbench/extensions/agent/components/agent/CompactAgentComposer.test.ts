@@ -53,7 +53,7 @@ describe('CompactAgentComposer', () => {
     })
     textbox.dispatchEvent(enter)
 
-    expect(enter.defaultPrevented).toBe(true)
+    expect(enter.defaultPrevented).toBe(false)
     expect(useAgentComposerStore().pendingSubmission).toBeNull()
     expect(useAgentPanelStore().isOpen).toBe(false)
   })
