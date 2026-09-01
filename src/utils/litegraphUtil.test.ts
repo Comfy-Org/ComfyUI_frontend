@@ -258,6 +258,41 @@ describe('getWidgetIdForNode', () => {
     expect(warn).toHaveBeenCalledOnce()
   })
 
+  it('maps repeated widget object references only once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = fakeNode(42)
+    const first = {
+      name: 'shared',
+      type: 'number',
+      value: 1,
+      options: {},
+      y: 0
+    }
+    const frozen = Object.freeze({
+      name: 'shared',
+      type: 'number',
+      value: 2,
+      options: {},
+      y: 0
+    })
+    node.widgets = [first, first, frozen]
+
+    const mapped = mapLiveWidgetsById(node)
+
+    expect([...mapped.keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
+    expect([...mapped.values()]).toEqual([first, frozen])
+    expect(node.widgets).toEqual([first, first, frozen])
+    expect(node.widgets.map(({ name }) => name)).toEqual([
+      'shared',
+      'shared',
+      'shared'
+    ])
+    expect(warn).toHaveBeenCalledOnce()
+  })
+
   it('returns undefined when the node has no graph', () => {
     const node = fakeNode(1, { detached: true })
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
