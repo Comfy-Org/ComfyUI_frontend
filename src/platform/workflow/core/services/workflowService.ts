@@ -743,6 +743,7 @@ export const useWorkflowService = () => {
     options: { position?: Point } = {}
   ) => {
     const canvas = app.canvas
+    // Inserting a workflow edits the graph; the canvas is a picking surface while agent node-selection mode is on.
     if (isSelectOnly(canvas)) return
     const loadedWorkflow = await workflow.load()
     if (app.canvas !== canvas || isSelectOnly(canvas)) return

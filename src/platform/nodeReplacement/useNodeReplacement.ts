@@ -425,6 +425,7 @@ export function useNodeReplacement() {
   const toastStore = useToastStore()
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
+    // In-place replacement edits the graph; the canvas is a picking surface while agent node-selection mode is on.
     if (isSelectOnly(app.canvas)) return []
     const replacedTypes: string[] = []
     let replacementFailed = false

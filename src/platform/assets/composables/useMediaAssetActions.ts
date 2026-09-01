@@ -332,6 +332,7 @@ export function useMediaAssetActions() {
    * Uses shared utility to detect appropriate node type based on file extension
    */
   const addWorkflow = async (asset?: AssetItem) => {
+    // Asset actions insert nodes; the canvas is a picking surface while agent node-selection mode is on.
     if (isSelectOnly(app.canvas)) return
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
@@ -467,6 +468,7 @@ export function useMediaAssetActions() {
    */
   const addMultipleToWorkflow = async (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
+    // Asset actions insert nodes; the canvas is a picking surface while agent node-selection mode is on.
     if (isSelectOnly(app.canvas)) return
 
     const NODE_OFFSET = 50

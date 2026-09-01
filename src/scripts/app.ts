@@ -710,6 +710,7 @@ export class ComfyApp {
         event.stopPropagation()
 
         const dropCanvas: LGraphCanvas = this.canvas
+        // File drops insert nodes; the canvas is a picking surface while agent node-selection mode is on.
         if (isSelectOnly(dropCanvas)) {
           this.dragOverNode = null
           return
@@ -2157,6 +2158,7 @@ export class ComfyApp {
   private async handleMeshFile(file: File): Promise<LGraphNode | null> {
     // Refuse before uploading: the refusal otherwise lands after the file
     // is already on the server.
+    // Missing-node dialogs create nodes; the canvas is a picking surface while agent node-selection mode is on.
     if (isSelectOnly(this.canvas)) return null
     const uploadedPath = await Load3dUtils.uploadFile(file, '3d')
     if (!uploadedPath) return null
