@@ -236,8 +236,7 @@ type AgentFixtures = {
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
-  // oxlint-disable-next-line no-empty-pattern -- Playwright requires the
-  // fixtures param to be an object pattern, even when unused.
+  // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
   postedMessages: async ({}, use) => {
     await use([])
   },
