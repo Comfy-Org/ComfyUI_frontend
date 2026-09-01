@@ -25,6 +25,7 @@ const mockGetNodeById = vi.fn()
 
 vi.mock('@/scripts/app', () => ({
   app: {
+    getRandParam: vi.fn(() => '&rand=0.5'),
     getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
     rootGraph: {
       getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
@@ -533,6 +534,30 @@ describe('nodeOutputStore getPreviewParam', () => {
     ])
     expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
     expect(vi.mocked(app).getPreviewFormatParam).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('nodeOutputStore cache compatibility', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
+    vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
+  })
+
+  it('keeps cache busting on node output URLs for legacy backends', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(5)]),
+      createMockOutputs([
+        { filename: 'output.png', subfolder: '', type: 'output' }
+      ])
+    )
+
+    expect(store.getNodeImageUrls(node)).toEqual([
+      '/api/view?filename=output.png&subfolder=&type=output&format=test_webp&rand=0.5'
+    ])
   })
 })
 

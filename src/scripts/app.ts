@@ -367,6 +367,12 @@ export class ComfyApp {
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
+
+  getRandParam() {
+    if (isCloud) return ''
+    return '&rand=' + Math.random()
+  }
+
   ctx!: CanvasRenderingContext2D
   bodyTop: HTMLElement
   bodyLeft: HTMLElement
