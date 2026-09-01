@@ -7,9 +7,21 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { graphToPrompt } from './executionUtil'
 
-function addNode(graph: LGraph, comfyClass: string) {
-  const node = new LGraphNode(comfyClass)
+function makeNode(title: string, comfyClass: string, virtual = false) {
+  const node = new LGraphNode(title)
   node.comfyClass = comfyClass
+  if (virtual) node.isVirtualNode = true
+  return node
+}
+
+function buildGraph(...nodes: LGraphNode[]) {
+  const graph = new LGraph()
+  for (const node of nodes) graph.add(node)
+  return graph
+}
+
+function addNode(graph: LGraph, comfyClass: string) {
+  const node = makeNode(comfyClass, comfyClass)
   graph.add(node)
   return node
 }
@@ -117,15 +129,9 @@ describe('graphToPrompt', () => {
   })
 
   it('excludes nodes with isVirtualNode from API output', async () => {
-    const graph = new LGraph()
-    const realNode = new LGraphNode('RealNode')
-    realNode.comfyClass = 'KSampler'
-    graph.add(realNode)
-
-    const virtualNode = new LGraphNode('VirtualNode')
-    virtualNode.isVirtualNode = true
-    virtualNode.comfyClass = 'Note'
-    graph.add(virtualNode)
+    const realNode = makeNode('RealNode', 'KSampler')
+    const virtualNode = makeNode('VirtualNode', 'Note', true)
+    const graph = buildGraph(realNode, virtualNode)
 
     const { output } = await graphToPrompt(graph)
 
@@ -135,17 +141,10 @@ describe('graphToPrompt', () => {
   })
 
   it('produces empty output when all nodes are virtual', async () => {
-    const graph = new LGraph()
-
-    const note = new LGraphNode('Note')
-    note.isVirtualNode = true
-    note.comfyClass = 'Note'
-    graph.add(note)
-
-    const mdNote = new LGraphNode('MarkdownNote')
-    mdNote.isVirtualNode = true
-    mdNote.comfyClass = 'MarkdownNote'
-    graph.add(mdNote)
+    const graph = buildGraph(
+      makeNode('Note', 'Note', true),
+      makeNode('MarkdownNote', 'MarkdownNote', true)
+    )
 
     const { output } = await graphToPrompt(graph)
 
@@ -153,16 +152,9 @@ describe('graphToPrompt', () => {
   })
 
   it('includes virtual nodes in workflow JSON for save fidelity', async () => {
-    const graph = new LGraph()
-
-    const note = new LGraphNode('Note')
-    note.isVirtualNode = true
-    note.comfyClass = 'Note'
-    graph.add(note)
-
-    const realNode = new LGraphNode('RealNode')
-    realNode.comfyClass = 'KSampler'
-    graph.add(realNode)
+    const note = makeNode('Note', 'Note', true)
+    const realNode = makeNode('RealNode', 'KSampler')
+    const graph = buildGraph(note, realNode)
 
     const { workflow, output } = await graphToPrompt(graph)
 
@@ -174,15 +166,9 @@ describe('graphToPrompt', () => {
   })
 
   it('preserves multiple non-virtual nodes', async () => {
-    const graph = new LGraph()
-
-    const node1 = new LGraphNode('Node1')
-    node1.comfyClass = 'KSampler'
-    graph.add(node1)
-
-    const node2 = new LGraphNode('Node2')
-    node2.comfyClass = 'SaveImage'
-    graph.add(node2)
+    const node1 = makeNode('Node1', 'KSampler')
+    const node2 = makeNode('Node2', 'SaveImage')
+    const graph = buildGraph(node1, node2)
 
     const { output } = await graphToPrompt(graph)
 
