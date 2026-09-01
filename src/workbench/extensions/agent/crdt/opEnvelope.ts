@@ -16,8 +16,8 @@ export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
 
 export interface MintContext {
   actor: Actor
-  /** Doc version the ops are minted against (`base_version` on every op). */
-  baseVersion: number
+  /** First producer-clock reservation (`base_version`) in this operation run. */
+  firstVersion: number
 }
 
 /** uuid4 hex: 32 lowercase `[0-9a-f]` chars (vocabulary §8.2). */
@@ -27,14 +27,15 @@ export function mintOpId(): string {
 
 function withEnvelope<T extends GraphOperation>(
   operation: T,
-  { actor, baseVersion }: MintContext
+  actor: Actor,
+  version: number
 ): T & { op_id: string; actor: Actor; base_version: number; stamp: Stamp } {
   return {
     ...operation,
     op_id: mintOpId(),
     actor,
-    base_version: baseVersion,
-    stamp: [baseVersion, actor]
+    base_version: version,
+    stamp: [version, actor]
   }
 }
 
@@ -45,9 +46,11 @@ function withEnvelope<T extends GraphOperation>(
  */
 export function mintWireOps(
   operations: GraphOperation[],
-  context: MintContext
+  { actor, firstVersion }: MintContext
 ): Op[] {
-  return operations.map((operation) => withEnvelope(operation, context))
+  return operations.map((operation, index) =>
+    withEnvelope(operation, actor, firstVersion + index)
+  )
 }
 
 function isBatchable(op: Op): boolean {

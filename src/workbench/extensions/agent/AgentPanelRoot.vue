@@ -83,6 +83,7 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
+import type { GraphMutationTarget } from './crdt/graphOperations'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
@@ -118,7 +119,7 @@ const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
   const mutations = createGraphMutations({
-    getScope() {
+    getScope: () => {
       const rootGraphId = boundTabFor(workflowId)?.activeState?.id
       return rootGraphId
         ? {
@@ -389,16 +390,31 @@ const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive
+  isBoundWorkflowActive,
+  () => app.rootGraph?.state ?? null
 )
+
+function currentMintTarget(): GraphMutationTarget | null {
+  const workflowId = boundWorkflowId.value
+  if (workflowId === null || !isBoundWorkflowActive.value) return null
+  const rootGraphId = boundTabFor(workflowId)?.activeState?.id
+  return rootGraphId === undefined ? null : { workflowId, rootGraphId }
+}
+
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: () => isBoundWorkflowActive.value,
+  isDocBound: () => currentMintTarget() !== null,
+  target: currentMintTarget,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null)
+  getGraph: (target) => {
+    if (!app.isGraphReady) return null
+    const graph = app.rootGraph
+    const rootGraphId = String(graph.rootGraph?.id ?? graph.id)
+    return rootGraphId === target.rootGraphId ? graph : null
+  }
 })
 // Dev instrument only (slice-02 classification): never ships to users.
 const isCrdtDevPanelEnabled = import.meta.env.DEV

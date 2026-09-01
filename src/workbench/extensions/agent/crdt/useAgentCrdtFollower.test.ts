@@ -7,6 +7,7 @@
  * the frame-handler status surface, and total teardown.
  */
 import { createPinia, setActivePinia } from 'pinia'
+import type { Op } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -14,6 +15,13 @@ import type { Ref } from 'vue'
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
+import {
+  createLGraphState,
+  MINT_ID_MIN,
+  mintNodeId
+} from '@/lib/litegraph/src/idAllocation'
+import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
+import type { TargetedGraphOperations } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -37,7 +45,7 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn((_workflowId: string, _tab: string, _ops: Op[]) => true)
 }))
 
 const adapterState = vi.hoisted(() => ({
@@ -109,32 +117,48 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 
+function defaultIdAllocationState(): () => LGraphState {
+  const state = createLGraphState()
+  return () => state
+}
+
 function mountFollower(
   initial: string | null = null,
-  initiallyActive = true
+  initiallyActive = true,
+  idAllocationState: () => LGraphState | null = defaultIdAllocationState()
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  enqueue: (batch: TargetedGraphOperations) => boolean
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let enqueue!: (batch: TargetedGraphOperations) => boolean
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
-        isTargetActive
+        isTargetActive,
+        idAllocationState
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      enqueue = enqueueHumanOperations
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    enqueue
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -342,6 +366,43 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('arms collision-free ids only while a shared document is bound', async () => {
+    const state = createLGraphState()
+    const { unmount, workflowId } = mountFollower('wf-a', true, () => state)
+
+    expect(Number(mintNodeId(state))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+
+    workflowId.value = null
+    await nextTick()
+    expect(mintNodeId(state)).toBe('1')
+
+    workflowId.value = 'wf-b'
+    await nextTick()
+    expect(Number(mintNodeId(state))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+
+    unmount()
+    expect(mintNodeId(state)).toBe('2')
+  })
+
+  it('disarms the previous graph state when the state object is swapped', async () => {
+    const stateA = createLGraphState()
+    const stateB = createLGraphState()
+    let current = stateA
+    const { unmount, workflowId } = mountFollower('wf-a', true, () => current)
+
+    expect(Number(mintNodeId(stateA))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+
+    current = stateB
+    workflowId.value = 'wf-b'
+    await nextTick()
+
+    expect(Number(mintNodeId(stateB))).toBeGreaterThanOrEqual(MINT_ID_MIN)
+    expect(mintNodeId(stateA)).toBe('1')
+
+    unmount()
+    expect(mintNodeId(stateB)).toBe('1')
+  })
+
   it('sends minted human operations through the doc client', () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
@@ -359,19 +420,125 @@ describe('useAgentCrdtFollower', () => {
     })
     const { unmount } = render(host)
 
-    enqueue([
-      {
-        op: 'delete_node',
-        node_id: '1',
-        removed_links: []
-      }
-    ])
+    enqueue({
+      target: { workflowId: 'wf-1', rootGraphId: 'root-1' },
+      operations: [
+        {
+          op: 'delete_node',
+          node_id: '1',
+          removed_links: []
+        }
+      ]
+    })
 
     expect(clientState.sendOps).toHaveBeenCalledWith(
       'wf-1',
       expect.any(String),
       [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
     )
+    unmount()
+  })
+
+  it('reserves and persists monotonic producer versions across rapid writes and remount', () => {
+    const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
+    const first = mountFollower('wf-1')
+
+    first.enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 1 }]
+    })
+    first.enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 2 }]
+    })
+
+    expect(sessionStorage.getItem('Comfy.Agent.CrdtProducerClock:wf-1')).toBe(
+      '43'
+    )
+    expect(clientState.sendOps.mock.calls[0][2][0].stamp).toEqual([
+      42,
+      expect.any(String)
+    ])
+    first.unmount()
+
+    const remounted = mountFollower('wf-1')
+    remounted.enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 3 }]
+    })
+
+    expect(clientState.sendOps.mock.calls[1][2][0].stamp).toEqual([
+      44,
+      expect.any(String)
+    ])
+    remounted.unmount()
+  })
+
+  it('continues minting when sessionStorage cannot persist the producer clock', () => {
+    const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
+    const setItem = vi
+      .spyOn(window.sessionStorage.__proto__, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('quota')
+      })
+    const { enqueue, unmount } = mountFollower('wf-1')
+
+    expect(
+      enqueue({
+        target,
+        operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 1 }]
+      })
+    ).toBe(true)
+
+    expect(clientState.sendOps.mock.calls[0][2][0].stamp).toEqual([
+      42,
+      expect.any(String)
+    ])
+    setItem.mockRestore()
+    unmount()
+  })
+
+  it('rejects a corrupt persisted producer clock instead of minting stale versions', () => {
+    sessionStorage.setItem('Comfy.Agent.CrdtProducerClock:wf-1', 'not-a-clock')
+    const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
+    const { enqueue, unmount } = mountFollower('wf-1')
+
+    expect(
+      enqueue({
+        target,
+        operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 1 }]
+      })
+    ).toBe(false)
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('does not regress the producer clock after reconnect observes a lower sequence', () => {
+    const target = { workflowId: 'wf-1', rootGraphId: 'root-1' }
+    const { enqueue, unmount } = mountFollower('wf-1')
+    enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 1 }]
+    })
+    const firstOp = clientState.sendOps.mock.calls[0][2][0]
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [firstOp.op_id],
+      skipped: []
+    })
+    bridge().lastSequence = 2
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    enqueue({
+      target,
+      operations: [{ op: 'set_widget', node_id: 1, widget: 'seed', value: 2 }]
+    })
+
+    expect(clientState.sendOps.mock.calls[1][2][0].stamp).toEqual([
+      43,
+      expect.any(String)
+    ])
     unmount()
   })
 

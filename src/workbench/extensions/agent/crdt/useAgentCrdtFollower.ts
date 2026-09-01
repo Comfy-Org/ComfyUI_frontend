@@ -1,16 +1,22 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
+import { setCoordinationFreeIds } from '@/lib/litegraph/src/idAllocation'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
-import type { DocFrameTransport, DocUpdate } from './docFrameClient'
+import type {
+  DocFrameTransport,
+  DocOpsResult,
+  DocUpdate
+} from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
-import type { GraphOperation } from './graphOperations'
+import type { TargetedGraphOperations } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
@@ -19,6 +25,7 @@ import { createOpSender } from './opSender'
 // panel remount / page reload loses the binding until the NEXT turn ack.
 // Persist it per-tab in sessionStorage so a remount can rebind immediately.
 const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
+const PRODUCER_CLOCK_SESSION_KEY = 'Comfy.Agent.CrdtProducerClock'
 
 function safeSessionStorage(): Storage | null {
   try {
@@ -50,6 +57,83 @@ function clearPersistedDocId(): void {
   } catch {
     // Best-effort.
   }
+}
+
+function producerClockKey(workflowId: string): string {
+  return `${PRODUCER_CLOCK_SESSION_KEY}:${workflowId}`
+}
+
+function readProducerVersion(workflowId: string): number | null {
+  try {
+    const stored = safeSessionStorage()?.getItem(producerClockKey(workflowId))
+    if (stored === null || stored === undefined) return 0
+    // Number('') is 0, which would silently reset the floor rather than
+    // reporting the stored value as unreadable.
+    if (stored.trim() === '') return null
+    const parsed = Number(stored)
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null
+  } catch {
+    return 0
+  }
+}
+
+function persistProducerVersion(workflowId: string, version: number): void {
+  try {
+    const storage = safeSessionStorage()
+    if (storage === null) return
+    storage.setItem(producerClockKey(workflowId), String(version))
+  } catch {
+    // Quota / privacy mode: the in-memory clock keeps this tab monotonic.
+  }
+}
+
+function createProducerClock() {
+  const versions = new Map<string, number>()
+
+  return {
+    /**
+     * Ratchet the in-memory floor on every observed remote sequence. The
+     * bridge zeroes `lastSequence` for the length of a resubscribe, so a
+     * reservation taken in that window would otherwise fall back to this
+     * tab's own last write.
+     */
+    observe(workflowId: string, observed: number): void {
+      if (!Number.isSafeInteger(observed) || observed <= 0) return
+      const previous = versions.get(workflowId) ?? 0
+      if (observed > previous) versions.set(workflowId, observed)
+    },
+    reserve(
+      workflowId: string,
+      observed: number,
+      count: number
+    ): number | null {
+      const persisted = readProducerVersion(workflowId)
+      if (persisted === null) return null
+      const previous = Math.max(
+        versions.get(workflowId) ?? 0,
+        persisted,
+        observed
+      )
+      const first = previous + 1
+      const last = previous + count
+      if (!Number.isSafeInteger(first) || !Number.isSafeInteger(last))
+        return null
+      persistProducerVersion(workflowId, last)
+      versions.set(workflowId, last)
+      return first
+    }
+  }
+}
+
+function failureView(failed: unknown): OpsResultView['failure'] | undefined {
+  if (
+    typeof failed !== 'object' ||
+    failed === null ||
+    !('op_id' in failed) ||
+    typeof failed.op_id !== 'string'
+  )
+    return undefined
+  return { op_id: failed.op_id }
 }
 
 /**
@@ -90,7 +174,8 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true)
+  isTargetActive: Ref<boolean> = ref(true),
+  idAllocationState: () => LGraphState | null = () => null
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -123,19 +208,20 @@ export function useAgentCrdtFollower(
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = createUuidv4()
+  const producerClock = createProducerClock()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
+        const detail = event.detail as DocOpsResult
+        const failure = failureView(detail.failed)
         listener({
+          workflowId: detail.workflowId,
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed as OpsResultView['failure'] }
-            : {})
+          ...(failure && { failure })
         })
       }
       bridge.addEventListener('doc_ops_result', handler)
@@ -144,9 +230,24 @@ export function useAgentCrdtFollower(
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
-    baseVersion: () => bridge.lastSequence,
+    observedVersion: () => bridge.lastSequence,
+    reserveVersions: (target, observed, count) =>
+      producerClock.reserve(target, observed, count),
     onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
   })
+
+  let armedIdState: LGraphState | null = null
+  const armCoordinationFreeIds = (): void => {
+    const state = idAllocationState()
+    if (armedIdState !== null && armedIdState !== state)
+      setCoordinationFreeIds(armedIdState, false)
+    armedIdState = state
+    if (state !== null) setCoordinationFreeIds(state, true)
+  }
+  const disarmCoordinationFreeIds = (): void => {
+    if (armedIdState !== null) setCoordinationFreeIds(armedIdState, false)
+    armedIdState = null
+  }
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -236,6 +337,9 @@ export function useAgentCrdtFollower(
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
+      armCoordinationFreeIds()
+      if (subscribedWorkflowId.value !== null)
+        producerClock.observe(subscribedWorkflowId.value, bridge.lastSequence)
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
@@ -254,6 +358,8 @@ export function useAgentCrdtFollower(
     )
       return
     if (staleProbeTimer !== null) armStaleProbe()
+    armCoordinationFreeIds()
+    producerClock.observe(update.workflowId, update.seq)
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     adapter.applyFrame(update)
@@ -387,6 +493,7 @@ export function useAgentCrdtFollower(
         }
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
+        disarmCoordinationFreeIds()
         return
       }
       if (next === null) {
@@ -410,6 +517,7 @@ export function useAgentCrdtFollower(
         }
         subscribedWorkflowId.value = null
         bridge.unsubscribe()
+        disarmCoordinationFreeIds()
         return
       }
       initialBind = false
@@ -420,6 +528,7 @@ export function useAgentCrdtFollower(
       }
       subscribedWorkflowId.value = next
       bridge.subscribe(next)
+      armCoordinationFreeIds()
     },
     { immediate: true }
   )
@@ -430,6 +539,7 @@ export function useAgentCrdtFollower(
     try {
       clearSubscribeRetry()
       clearStaleProbe()
+      disarmCoordinationFreeIds()
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)
@@ -456,7 +566,9 @@ export function useAgentCrdtFollower(
 
   return {
     status: readonly(status),
-    enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+    enqueueHumanOperations: (batch: TargetedGraphOperations) => {
+      armCoordinationFreeIds()
+      return sender.enqueue(batch)
+    }
   }
 }

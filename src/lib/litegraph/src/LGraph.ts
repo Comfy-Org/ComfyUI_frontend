@@ -29,6 +29,7 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
@@ -42,7 +43,8 @@ import {
   observeGroupId,
   observeLinkId,
   observeNodeId,
-  observeRerouteId
+  observeRerouteId,
+  toSequentialCounter
 } from './idAllocation'
 import type { LGraphState } from './idAllocation'
 import {
@@ -621,7 +623,14 @@ export class LGraph
   }
 
   set last_node_id(value) {
-    this.state.lastNodeId = value
+    const numeric = toSequentialCounter(value)
+    if (numeric !== undefined) {
+      this.state.lastNodeId = numeric
+    } else if (import.meta.env.DEV) {
+      console.warn(
+        `last_node_id write ${value} is not a counter-range integer; ignored`
+      )
+    }
   }
 
   /** @deprecated See {@link state}.{@link LGraphState.lastLinkId lastLinkId} */
@@ -630,7 +639,14 @@ export class LGraph
   }
 
   set last_link_id(value) {
-    this.state.lastLinkId = toLinkId(value)
+    const numeric = toSequentialCounter(value)
+    if (numeric !== undefined) {
+      this.state.lastLinkId = toLinkId(numeric)
+    } else if (import.meta.env.DEV) {
+      console.warn(
+        `last_link_id write ${value} is not a counter-range integer; ignored`
+      )
+    }
   }
 
   onNodeAdded?(node: LGraphNode): void
@@ -739,7 +755,7 @@ export class LGraph
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
-    this.state = createLGraphState()
+    this.state = createLGraphState(this.isRootGraph ? this.state : undefined)
 
     // used to detect changes
     this._version = -1
@@ -2813,16 +2829,11 @@ export class LGraph
           const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
             data.state
           const { state } = this
-          if (lastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
-          if (lastLinkId != null)
-            state.lastLinkId = toLinkId(Math.max(state.lastLinkId, lastLinkId))
-          if (lastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
+          if (lastGroupId != null) observeGroupId(state, toGroupId(lastGroupId))
+          if (lastLinkId != null) observeLinkId(state, toLinkId(lastLinkId))
+          if (lastNodeId != null) observeNodeId(state, toNodeId(lastNodeId))
           if (lastRerouteId != null)
-            state.lastRerouteId = toRerouteId(
-              Math.max(state.lastRerouteId, lastRerouteId)
-            )
+            observeRerouteId(state, toRerouteId(lastRerouteId))
         }
 
         // Links
