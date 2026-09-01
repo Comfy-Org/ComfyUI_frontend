@@ -462,7 +462,7 @@ test.describe('Events page — desktop @smoke', () => {
     await saveTheDate.click()
     await expect(
       page.getByRole('menuitem', {
-        name: t('events.upcoming.calendarGoogle', 'en')
+        name: t('events.calendar.google', 'en')
       })
     ).toBeVisible()
 
@@ -666,10 +666,10 @@ test.describe('Events page — desktop @smoke', () => {
       // menu renders inside the top-layer dialog. Retry until the island
       // hydrates and the click lands.
       const addToCalendar = dialog.getByRole('button', {
-        name: t('events.upcoming.addToCalendar', locale)
+        name: t('events.calendar.addToCalendar', locale)
       })
       const googleItem = dialog.getByRole('menuitem', {
-        name: t('events.upcoming.calendarGoogle', locale)
+        name: t('events.calendar.google', locale)
       })
       await expect(async () => {
         await addToCalendar.click()

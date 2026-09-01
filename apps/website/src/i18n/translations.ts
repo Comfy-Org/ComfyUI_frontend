@@ -6388,19 +6388,19 @@ Enterprise`
     'zh-CN':
       '把活动办起来。结束后与我们分享现场情况，我们会帮你把它传播给更广泛的 Comfy 社区。'
   },
-  'events.upcoming.addToCalendar': {
+  'events.calendar.addToCalendar': {
     en: 'Add to calendar',
     'zh-CN': '添加到日历'
   },
-  'events.upcoming.calendarGoogle': {
+  'events.calendar.google': {
     en: 'Google Calendar',
     'zh-CN': 'Google 日历'
   },
-  'events.upcoming.calendarApple': {
+  'events.calendar.apple': {
     en: 'Apple Calendar',
     'zh-CN': 'Apple 日历'
   },
-  'events.upcoming.calendarOutlook': {
+  'events.calendar.outlook': {
     en: 'Outlook',
     'zh-CN': 'Outlook'
   },
