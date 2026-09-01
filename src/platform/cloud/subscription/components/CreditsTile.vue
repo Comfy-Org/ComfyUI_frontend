@@ -22,7 +22,7 @@
       <div class="text-sm text-muted">
         {{ $t('subscription.totalCredits') }}
       </div>
-      <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
+      <Skeleton v-if="!totalIsKnown" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
         <i
           :class="
@@ -303,6 +303,8 @@ const showsInactivePlanState = computed(() => inactivePlan === true)
 const balanceIsKnown = computed(
   () => !isLoadingBalance.value && balance.value != null
 )
+
+const totalIsKnown = computed(() => zeroState || balanceIsKnown.value)
 
 const usage = computed(() =>
   computeMonthlyUsage(

@@ -444,6 +444,7 @@ describe('CreditsTile', () => {
     expect(container.textContent).not.toContain(
       'Spendable once the plan is active again.'
     )
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 
   it('gives an inactive sales-managed plan the same retained-credit treatment', () => {
