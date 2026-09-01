@@ -14,16 +14,17 @@ regenerated.
 - Coverage is already instrumented end to end for the `chromium` project and
   published to Codecov (`e2e` flag), GitHub Pages, and Slack. Nothing gates on it and
   there is no per-area view, so gaps go unnoticed.
-- The headline E2E figure (68.1% of lines) is inflated. V8 coverage only sees
-  chunks the browser actually loaded, so 457 source files (~65k raw lines,
-  almost as many as the 70.5k lines that are measured) never enter the
-  denominator. The `cloud`, `mobile-*`, and `2x` projects do not collect
-  coverage at all, so everything cloud-only looks worse than it is, or is
-  invisible.
-- The three cheapest wins are measurement fixes rather than new tests: collect coverage in
-  every project, count never-loaded files, and report coverage per feature area
-  (Codecov components). Each is a one-PR change and turns the existing pipeline
-  into a gap finder.
+- The headline E2E figure (68.1% of executable lines in loaded chunks) is
+  incomplete. V8 coverage only sees chunks the browser actually loaded, so 457
+  source files (~65k raw lines) never enter the denominator. Raw source lines
+  cannot be compared with lcov's executable-line count, so the corrected
+  percentage is not yet known. The `cloud`, `mobile-chrome`, `chromium-2x`, and
+  `chromium-0.5x` projects do not collect coverage, so everything cloud-only
+  looks worse than it is, or is invisible.
+- The three cheapest wins are measurement fixes rather than new tests: collect
+  coverage in supported CI projects, count never-loaded files, and report
+  coverage per feature area (Codecov components). Each is a one-PR change and
+  turns the existing pipeline into a gap finder.
 - The largest genuine behavior gaps, ranked by user risk times uncovered code:
   workspace/billing/subscription flows, the layer editor, custom-node manager
   install/update/conflict flows, model upload, and the video edit panel. The
@@ -81,8 +82,9 @@ regenerated.
    | `composables/boundingBoxes`                  | 1,037     | 2     |
    | `renderer/extensions/compositor`             | 788       | 8     |
 
-   Some of these are type-only or cloud-only (see point 2), but a true E2E
-   line figure over all of `src/` is closer to 45 to 50% than 68%.
+   Some of these are type-only or cloud-only (see point 2). Their raw line
+   count does not establish a corrected E2E percentage because lcov counts
+   executable lines, not raw source lines.
 
 2. Only the `chromium` project collects coverage. The `cloud` project runs
    154 tests against the cloud build, including the agent panel, workspace
@@ -153,16 +155,16 @@ coverage strategy:
 - Use web-first assertions and `expect.poll`; never fixed waits.
 - Use tags and projects to route tests, and shard by test file. Both are in
   place. A tag-selected smoke project is the missing piece.
-- Prefer functional assertions to screenshots; screenshots when appearance
-  is the behavior.
+- Prefer user-visible assertions to screenshots; use screenshots when
+  appearance is the behavior.
 
 ### Code coverage versus behavior coverage
 
-Line coverage is an execution metric. Research on behavioral test adequacy
-(mutation testing studies and the 2026 "behavioural gaps" paper) is
-consistent: code with 100% line coverage still has untested behaviors in
-roughly a third of methods, because coverage cannot see missing assertions.
-Mutation testing detects assertion gaps but is far too slow for E2E suites.
+Line coverage is an execution metric. The 2026 "behavioural gaps" paper finds
+that about 17.5% of expected behaviours are entirely untested, with most of
+those gaps in methods that already have high line coverage. Coverage cannot
+see missing assertions. Mutation testing detects assertion gaps but is far too
+slow for E2E suites.
 For this suite the practical translation is:
 
 - Use E2E coverage to find **execution gaps**: areas the suite never loads
@@ -195,7 +197,7 @@ directory from the vitest report.
 | `composables/maskeditor`                    | 52.1% (1,869)                                                                  | ~94%                           | Mask editor tools                   | Three specs exist; tool coverage thin         |
 | `workbench/extensions/manager`              | 54.5% (1,858) + 2k absent                                                      | ~44% (components)              | Custom-node install/update          | Install, update, conflict dialogs untested    |
 | `platform/assets` (browser)                 | 48.7% (2,234)                                                                  | mid                            | Media/model browsing                | Browse well covered by 37 specs               |
-| `platform/assets/components/UploadModel*`   | 14.1% (64) + dialogs absent                                                    | none                           | Model upload                        | Gap                                           |
+| `platform/assets/components/UploadModel*`   | 14.1% (64) + dialogs absent                                                    | wizard and components tested   | Model upload                        | Browser integration gap                       |
 | `components/videoEdit`, `composables/video` | absent (2,296 raw)                                                             | ~78%                           | Video trim widget                   | Gap                                           |
 | `renderer/extensions/layerEditor`           | absent (8,904 raw)                                                             | ~99% (GPU compositor excluded) | Image layer editing                 | No browser-level proof at all; unit is strong |
 | `renderer/extensions/compositor`            | 7.0% (43) + 788 absent                                                         | ?                              | Image compositor overlay            | Gap                                           |
@@ -218,14 +220,14 @@ Measured hits confirm the spec-name scan: `contextMenuFilter.ts` (8.9%),
 
 ### Redundancy to reclaim
 
-| Family                                                                                                                          | Observation                                                                                                      | Action                                                                                         |
-| ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `nodeSearchBox.spec.ts` (24), `nodeSearchBoxV2.spec.ts` (12), `nodeSearchBoxV2Extended.spec.ts` (20)                            | V2 and V2Extended repeat the same describe titles (`Category navigation`, `Filter workflow`, `Category sidebar`) | Merge V2 files into `tests/nodeSearch/`; diff the duplicated describes and keep one            |
-| `sidebar/assets.spec.ts` (48), `sidebar/assetsSidebarTab.spec.ts` (16), `assetHelper.spec.ts` (21), `browseModelAssets.spec.ts` | Four entry points to one browser                                                                                 | Fold into `tests/assets/` by behavior (browse, filter, sort, select, context menu)             |
-| `interaction.spec.ts`                                                                                                           | 64 tests, 62 `toHaveScreenshot`; its snapshot folder is the most churned path in `browser_tests` since June      | Convert link/drag/select assertions to `nodeOps` state checks; keep screenshots for appearance |
-| `appMode*.spec.ts` (11 files) + `linearMode.spec.ts`                                                                            | Fragmented but no duplication                                                                                    | Move under `tests/appMode/`; test bodies unchanged                                             |
-| `keybindings.spec.ts`, `defaultKeybindings.spec.ts`, `keyboardShortcutActions.spec.ts`, `keybindingPanel.spec.ts`               | Overlapping fixtures, distinct behaviors                                                                         | Leave; document the split in a folder README                                                   |
-| `@screenshot` (104 tests, 185 assertions)                                                                                       | Screenshot maintenance dominates flake and regen PR volume                                                       | Audit against README rule "screenshots only when appearance is the behavior"                   |
+| Family                                                                                                                          | Observation                                                                                                      | Action                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `nodeSearchBox.spec.ts` (24), `nodeSearchBoxV2.spec.ts` (12), `nodeSearchBoxV2Extended.spec.ts` (20)                            | V2 and V2Extended repeat the same describe titles (`Category navigation`, `Filter workflow`, `Category sidebar`) | Merge V2 files into `tests/nodeSearch/`; diff the duplicated describes and keep one                     |
+| `sidebar/assets.spec.ts` (48), `sidebar/assetsSidebarTab.spec.ts` (16), `assetHelper.spec.ts` (21), `browseModelAssets.spec.ts` | Four entry points to one browser                                                                                 | Fold into `tests/assets/` by behavior (browse, filter, sort, select, context menu)                      |
+| `interaction.spec.ts`                                                                                                           | 64 tests, 62 `toHaveScreenshot`; its snapshot folder is the most churned path in `browser_tests` since June      | Keep screenshots where the visual result is the behavior; otherwise assert another user-visible outcome |
+| `appMode*.spec.ts` (11 files) + `linearMode.spec.ts`                                                                            | Fragmented but no duplication                                                                                    | Move under `tests/appMode/`; test bodies unchanged                                                      |
+| `keybindings.spec.ts`, `defaultKeybindings.spec.ts`, `keyboardShortcutActions.spec.ts`, `keybindingPanel.spec.ts`               | Overlapping fixtures, distinct behaviors                                                                         | Leave; document the split in a folder README                                                            |
+| `@screenshot` (104 tests, 185 assertions)                                                                                       | Screenshot maintenance dominates flake and regen PR volume                                                       | Audit against README rule "screenshots only when appearance is the behavior"                            |
 
 ## 5. Plan
 
@@ -233,32 +235,36 @@ Ordered by safety gained per hour. Each phase is independently shippable.
 
 ### Phase 0: make the existing measurement honest (three small PRs)
 
-1. Collect coverage in every Playwright project by setting
-   `COLLECT_COVERAGE: 'true'` on the `playwright-tests` matrix job and passing
-   it
-   to `build-cloud-frontend` so the cloud bundle keeps its
-   `sourceMappingURL` comments. Upload each project's `coverage/playwright/`
-   as `e2e-coverage-shard-<project>`; the package script already merges any
-   `e2e-coverage-shard-*` artifact. Expected effect: workspace, subscription,
-   onboarding, auth, and agent code starts being credited, and the real gap
-   there becomes visible.
-2. Count never-loaded files by giving monocart the `all` option in
-   `globalTeardown.ts` (`all: { dir: ['src'], filter: coverageSourceFilter }`)
-   so source files with no V8 entry are reported at 0% instead of omitted, and
-   the Slack target and the Pages report then describe the whole app. The
-   headline number will drop, and that drop is the intended effect.
-3. Report per area by adding Codecov `component_management` entries keyed
-   to the areas in section 4 (vueNodes, litegraph canvas, litegraph widgets,
+1. Collect coverage in the Chromium-based projects run by
+   `ci-tests-e2e.yaml`: `chromium`, `cloud`, `mobile-chrome`, `chromium-2x`,
+   and `chromium-0.5x`. Set `COLLECT_COVERAGE: 'true'` on the
+   `playwright-tests` matrix job and pass it to `build-cloud-frontend` so the
+   cloud bundle keeps its `sourceMappingURL` comments. Upload each project's
+   `coverage/playwright/` under a unique artifact name that includes the
+   project and, for sharded jobs, the shard index. Add `playwright-tests` to
+   the package job's dependencies and reject an incomplete expected artifact
+   set instead of silently producing a partial merge. `mobile-safari` remains
+   excluded because Playwright coverage is Chromium-only. Keep `performance`
+   uninstrumented under ADR 0022; no regular CI job runs `audit`.
+2. Count never-loaded production files through monocart's `all` option so
+   source files with no V8 entry are reported at 0% instead of omitted. The
+   implementation must transform TypeScript and Vue files before monocart
+   parses them and use the same production-source exclusions as Vitest rather
+   than reusing `coverageSourceFilter`. The Slack target and Pages report then
+   describe the same denominator. The headline number will drop, and that drop
+   is the intended effect.
+3. Report per area by adding Codecov `component_management` entries keyed to
+   the areas in section 4 (vueNodes, litegraph canvas, litegraph widgets,
    extensions/core, workflow, assets, manager, workspace, cloud, layerEditor,
-   maskeditor, agent). Each PR comment then shows a per-component table for
-   `unit`, `e2e`, and combined. Keep statuses informational. The goal is that people see the table, and a
-   blocking status would only get disabled again. Optionally extend
+   maskeditor, agent). Each PR comment then shows combined coverage by
+   component, while the existing flags show overall `unit` and `e2e` coverage.
+   Keep statuses informational. Optionally extend
    `scripts/coverage-slack-notify.ts` to print the three lowest components.
 
-Also worth folding into this phase: a `scripts/coverage-gaps.ts` that joins
-the two lcov files and lists files where both layers are below 30%, grouped by
-directory, written to the step summary of the package job. That is the script
-from the appendix, made permanent.
+Also worth folding into this phase: a `scripts/coverage-gaps.ts` that joins the
+union of file paths in the two lcov files, treats a missing layer as zero, and
+lists files where both layers are below 30%. Group the result by directory and
+write it to the package job's step summary.
 
 ### Phase 1: write the journey inventory and run it as smoke
 
@@ -267,14 +273,14 @@ from the appendix, made permanent.
    First draft, from the product surface: open app and load default graph;
    load a template and queue it to completion; save, reload, and reopen a
    workflow tab; add a node via search and connect it; edit a widget and see
-   the value serialize; enter and exit a subgraph; undo and redo; copy and
+   its displayed value change; enter and exit a subgraph; undo and redo; copy and
    paste across tabs; open the mask editor and save; install a custom node
    pack; sign in and switch workspace (cloud); top up credits (cloud).
 2. Tag exactly one spec per journey `@smoke`, and remove `@smoke` from tests
    that are not journeys. Add a `smoke` Playwright project that greps
-   `@smoke`, and run it first in `ci-tests-e2e.yaml` so a broken journey fails
-   in about two minutes instead of fifteen. The existing 16 shards keep
-   running; the smoke project fails fast ahead of them and replaces nothing.
+   `@smoke`. Make the existing 16 shards depend on it so a broken journey
+   stops the full run after about two minutes. This adds the smoke runtime to
+   the critical path when it passes.
 3. Journeys with no spec become the first new tests. From the current draft
    that is: install a custom node pack (manager), and top up credits and
    change plan (workspace/billing), both testable with typed route mocks in
@@ -287,11 +293,11 @@ loads.
 
 | Order | Area                               | First test to write                                                                                                         | Why first                                                                                                            |
 | ----- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| 1     | Layer editor                       | Open from an image node, add a layer, transform it, apply, and assert the node's image input changed                        | 8.9k lines never executed in a browser; the WebGL compositor has no unit test either; a single flow loads most of it |
+| 1     | Layer editor                       | Open from an image node, add a layer, transform it, apply, and see the edited image on the node                             | 8.9k lines never executed in a browser; the WebGL compositor has no unit test either; a single flow loads most of it |
 | 2     | Manager install/update/conflict    | Mock registry and manager routes; install a pack, see the restart prompt; open a version popover; trigger a conflict dialog | User-facing failure mode is "extension broke ComfyUI"                                                                |
-| 3     | Model upload                       | Open Upload Model dialog, pick file, see progress dialog, asset appears in browser                                          | 10 components at 14%; small, self-contained                                                                          |
-| 4     | Video edit panel                   | Open the trim panel on a video widget, set in/out points, assert widget value                                               | 2.3k lines absent; widget-level behavior                                                                             |
-| 5     | Litegraph canvas widgets           | One spec per legacy widget kind (knob, color, gradient, curve) on the litegraph renderer: interact, assert value            | Sole coverage layer; each spec is small                                                                              |
+| 3     | Model upload                       | Open Upload Model dialog, pick a file, see upload progress, and find the asset in the browser                               | Component behavior has unit coverage; the gap is dialog-to-browser integration                                       |
+| 4     | Video edit panel                   | Open the trim panel on a video widget, set in/out points, and see the selected range in the panel                           | 2.3k lines absent; widget-level behavior                                                                             |
+| 5     | Litegraph canvas widgets           | One spec per legacy widget kind (knob, color, gradient, curve): interact and see the displayed value change                 | Sole coverage layer; each spec is small                                                                              |
 | 6     | Mask editor tools                  | Brush size and opacity, eraser, layer toggle, undo inside editor                                                            | Heavily used; composables at 52%                                                                                     |
 | 7     | Workspace and subscription (cloud) | Decide after Phase 0 step 1 reveals what the 154 cloud tests already cover                                                  | Highest business risk, but currently unmeasured                                                                      |
 
@@ -304,9 +310,9 @@ and any second-renderer copy of an existing Vue-nodes widget spec.
 1. Merge the node-search and asset-browser spec families per the redundancy
    table. Measure before and after with the per-component report from
    Phase 0; the merged files must not lower any component.
-2. Convert `interaction.spec.ts` screenshot assertions to state assertions
-   where the behavior is link, position, or selection state. Keep the
-   appearance ones. This removes the most churned snapshot directory.
+2. Keep `interaction.spec.ts` screenshots where the visual result is the
+   behavior. Replace the rest only when another user-visible assertion proves
+   the same result. This reduces churn without testing implementation state.
 3. Aggregate `flaky` outcomes from `report.json` in `merge-reports` and post
    the count in the PR comment. Once the count is stable, lower CI
    `retries` from 3 to 2. Lowering it before the count exists would only hide
@@ -316,11 +322,6 @@ and any second-renderer copy of an existing Vue-nodes widget spec.
 
 ### Phase 4: keep it from regressing
 
-- Add a `changes-filter` output for new files under
-  `src/renderer/extensions/**`, `src/platform/**`, and `src/workbench/**`, and
-  have the PR report comment ask for a spec folder when a new feature
-  directory ships with no matching `browser_tests/tests/<feature>/`. Advisory,
-  not blocking.
 - Once Phase 0 has run for a month, set per-component Codecov thresholds at
   current value minus 2% for the well-covered areas only (vueNodes, workflow,
   settings, subgraph). A global threshold is what got the project status disabled, so none is
@@ -332,9 +333,9 @@ and any second-renderer copy of an existing Vue-nodes widget spec.
 
 - It does not chase a global percentage. The Slack target of 80% stays as a
   trend line only.
-- It does not add E2E tests for pure logic that has unit tests. Coverage
-  gaps that are unit-shaped (schema, parsers, `graphMutations.ts`, which is
-  currently only imported by the agent CRDT follower) go to Vitest.
+- It does not add E2E tests for pure logic that has unit tests. Coverage gaps
+  that are unit-shaped, such as schema validators, parsers, and agent graph
+  mutations, go to Vitest.
 - It does not introduce mutation testing for the browser suite.
 - It does not add tests to `legacyDoNotReplicate`; new compatibility pins
   follow that folder's pattern only when a custom-node breakage proves the

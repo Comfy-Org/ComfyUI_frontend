@@ -10,6 +10,9 @@ Documentation for unit tests is organized into four guides:
 - [Unit Testing](./unit-testing.md) - How to test utility functions, composables, and other non-component code
 - [Store Testing](./store-testing.md) - How to test Pinia stores specifically
 - [LiteGraph Testing](./litegraph-testing.md) - How to test LiteGraph graph, node, link, and workflow behavior
+
+Playwright testing has a separate strategy guide:
+
 - [E2E Coverage Strategy](./e2e-coverage-strategy.md) - How Playwright coverage is measured, where the gaps are, and the plan to close them
 
 ## Testing Structure
