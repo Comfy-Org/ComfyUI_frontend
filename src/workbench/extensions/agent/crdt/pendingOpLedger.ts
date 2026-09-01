@@ -139,6 +139,7 @@ export function createPendingOpLedger<
 >(): PendingOpLedger<TShadow> {
   /** Insertion-ordered by first enqueue; ids are never re-minted or reused. */
   const ledger = new Map<string, MutableEntry<TShadow>>()
+  const seenOpIds = new Set<string>()
 
   const snapshot = (e: MutableEntry<TShadow>): PendingOpEntry<TShadow> =>
     e.failure === undefined
@@ -147,7 +148,8 @@ export function createPendingOpLedger<
 
   return {
     enqueue(opId, shadow) {
-      if (ledger.has(opId)) return false
+      if (seenOpIds.has(opId)) return false
+      seenOpIds.add(opId)
       ledger.set(opId, { opId, state: 'queued', shadow })
       return true
     },
