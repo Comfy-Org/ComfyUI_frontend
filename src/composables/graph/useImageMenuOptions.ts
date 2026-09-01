@@ -129,7 +129,7 @@ export function useImageMenuOptions() {
     if (!url) return
 
     if (!navigator.clipboard?.write) {
-      console.warn('Clipboard API not available')
+      useToastStore().addAlert(t('toastMessages.errorCopyImage'))
       return
     }
 
