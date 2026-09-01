@@ -299,6 +299,24 @@ describe('fetchModelMetadata', () => {
 describe('fetchModelMetadataWithStatus', () => {
   const emptyMetadata = { fileSize: null, gatedRepoUrl: null }
 
+  it('forwards a caller cancellation signal to the active request', async () => {
+    const controller = new AbortController()
+    const url =
+      'https://huggingface.co/org/model/resolve/main/cancelled.safetensors'
+    fetchMock.mockResolvedValueOnce(new Response())
+    const fetchWithSignal = fetchModelMetadataWithStatus as (
+      url: string,
+      options: { signal: AbortSignal }
+    ) => ReturnType<typeof fetchModelMetadataWithStatus>
+
+    await fetchWithSignal(url, { signal: controller.signal })
+
+    expect(fetchMock).toHaveBeenCalledWith(url, {
+      method: 'HEAD',
+      signal: controller.signal
+    })
+  })
+
   it.for([
     {
       name: 'a non-OK response',
