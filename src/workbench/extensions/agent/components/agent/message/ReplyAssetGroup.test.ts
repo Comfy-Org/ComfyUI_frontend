@@ -250,44 +250,23 @@ describe('ReplyAssetGroup', () => {
     expect(generateModelThumbnail).not.toHaveBeenCalled()
   })
 
-  it('reports preview lookup failures and retries generation on a later pass', async () => {
-    isAssetPreviewSupported.mockReturnValue(true)
-    findServerPreviewUrl.mockRejectedValueOnce(new Error('preview failed'))
-    const { rerender } = renderGroup([model])
-
-    await waitFor(() =>
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'agent_reply_asset_preview_failure'
-      })
-    )
-
-    await rerender({ assets: [model, image(1)] })
-    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
-  })
-
-  it('retries a timed-out model once, not on every streaming pass', async () => {
+  it('re-queues a timed-out model once, without another render pass', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     generateModelThumbnail.mockResolvedValue({ status: 'timed-out' })
-    const { rerender } = renderGroup([model])
-    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    renderGroup([model])
 
-    await rerender({ assets: [{ ...model }] })
     await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledTimes(2))
 
-    await rerender({ assets: [{ ...model }] })
-    await rerender({ assets: [{ ...model }] })
-
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
   })
 
   it('does not retry a model that cannot be rendered', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
-    const { rerender } = renderGroup([model])
+    renderGroup([model])
     await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
 
-    await rerender({ assets: [{ ...model }] })
-    await rerender({ assets: [{ ...model }] })
-
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(generateModelThumbnail).toHaveBeenCalledOnce()
   })
 

@@ -611,6 +611,28 @@ describe('LoaderManager', () => {
       expect(addAlert).not.toHaveBeenCalled()
     })
 
+    it('rejects when no adapter claims the extension and silent is set', async () => {
+      const { lm, modelManager } = makeLoaderManager()
+
+      await expect(
+        lm.loadModel('api/view?filename=scene.usdz', undefined, {
+          silent: true
+        })
+      ).rejects.toThrow(/No model could be loaded/)
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
+    it('rejects when the URL carries no filename and silent is set', async () => {
+      const { lm } = makeLoaderManager()
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(
+        lm.loadModel('api/view?type=output', 'scene.glb', { silent: true })
+      ).rejects.toThrow(/No model could be loaded/)
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
     it('discards the result of a stale load when a newer one has started', async () => {
       const { lm, modelManager, eventManager } = makeLoaderManager()
 

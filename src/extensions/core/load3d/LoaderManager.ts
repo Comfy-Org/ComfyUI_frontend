@@ -128,11 +128,17 @@ export class LoaderManager implements LoaderManagerInterface {
       const result = await this.loadModelInternal(url, fileExtension)
 
       if (loadId !== this.currentLoadId) {
-        if (result) this.disposeLoadResult(result)
+        // Only a disposed manager is guaranteed to hold no reference to
+        // this result; a newer load may still have it as originalModel.
+        if (result && this.disposed) this.disposeLoadResult(result)
         // A newer loadModel has superseded us — do not publish our adapter
         // and do not setup the model. Whichever load is current owns the
         // shared state.
         return
+      }
+
+      if (!result && options?.silent) {
+        throw new Error(`No model could be loaded from: ${url}`)
       }
 
       if (result) {

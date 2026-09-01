@@ -84,14 +84,38 @@ onBeforeUnmount(() => {
 })
 
 /**
- * Drop the placeholder so the next watcher pass retries this model once.
- * Streaming deltas rebuild the asset list on every chunk, so an unbounded
- * retry would restart generation for a slow model on every chunk.
+ * Look up a server-rendered preview, falling back to an offscreen render.
+ * A render that only ran out of time is re-queued once: it lands behind
+ * every other pending model, so a slow model cannot starve the rest.
  */
-function allowThumbnailRetry(url: string): void {
-  if (retriedThumbnails.has(url)) return
-  retriedThumbnails.add(url)
-  delete modelThumbnails.value[url]
+function loadModelThumbnail(url: string, filename: string): void {
+  modelThumbnails.value[url] = ''
+  void findServerPreviewUrl(filename)
+    .then(async (preview) => {
+      if (!mounted) return
+      if (preview) {
+        modelThumbnails.value[url] = preview
+        return
+      }
+      const result = await generateModelThumbnail(
+        url,
+        filename,
+        thumbnailAbort.signal
+      )
+      if (!mounted) return
+      if (result.status === 'rendered') {
+        modelThumbnails.value[url] = result.dataUrl
+      } else if (result.status === 'timed-out' && !retriedThumbnails.has(url)) {
+        retriedThumbnails.add(url)
+        loadModelThumbnail(url, filename)
+      }
+    })
+    .catch((error) => {
+      if (mounted) delete modelThumbnails.value[url]
+      reportError(error, {
+        errorType: 'agent_reply_asset_preview_failure'
+      })
+    })
 }
 
 watch(
@@ -103,30 +127,7 @@ watch(
     if (!isAssetPreviewSupported()) return
     for (const { url, filename, kind } of lookups) {
       if (kind === '3D' && !(url in modelThumbnails.value)) {
-        modelThumbnails.value[url] = ''
-        void findServerPreviewUrl(filename)
-          .then(async (preview) => {
-            if (!mounted) return
-            if (preview) {
-              modelThumbnails.value[url] = preview
-              return
-            }
-            const result = await generateModelThumbnail(
-              url,
-              filename,
-              thumbnailAbort.signal
-            )
-            if (!mounted) return
-            if (result.status === 'rendered')
-              modelThumbnails.value[url] = result.dataUrl
-            else if (result.status === 'timed-out') allowThumbnailRetry(url)
-          })
-          .catch((error) => {
-            if (mounted) allowThumbnailRetry(url)
-            reportError(error, {
-              errorType: 'agent_reply_asset_preview_failure'
-            })
-          })
+        loadModelThumbnail(url, filename)
       }
       if (!(url in assetNames.value)) {
         assetNames.value[url] = ''

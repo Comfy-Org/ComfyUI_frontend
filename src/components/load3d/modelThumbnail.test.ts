@@ -118,7 +118,7 @@ describe('generateModelThumbnail', () => {
     }
   })
 
-  it('returns null and still disposes when the model fails to load', async () => {
+  it('reports a failed render and still disposes the instance', async () => {
     const instance = mockInstance({
       loadModel: vi.fn().mockRejectedValue(new Error('bad model'))
     })
