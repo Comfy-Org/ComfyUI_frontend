@@ -84,7 +84,8 @@ const mocks = vi.hoisted(() => ({
   trackTemplateLibraryClosed: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal()),
   get isCloud() {
     return runtime.isCloud
   },
