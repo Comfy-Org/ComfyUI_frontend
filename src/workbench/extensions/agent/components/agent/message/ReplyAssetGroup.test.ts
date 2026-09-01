@@ -26,7 +26,13 @@ vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
 }))
 
 const generateModelThumbnail = vi.hoisted(() =>
-  vi.fn(async (): Promise<string | null> => null)
+  vi.fn(
+    async (
+      _modelUrl: string,
+      _assetName: string,
+      _callerSignal?: AbortSignal
+    ): Promise<string | null> => null
+  )
 )
 vi.mock('@/components/load3d/modelThumbnail', () => ({
   generateModelThumbnail
@@ -218,7 +224,8 @@ describe('ReplyAssetGroup', () => {
     expect(thumb).toHaveAttribute('src', 'data:image/png;base64,gen')
     expect(generateModelThumbnail).toHaveBeenCalledWith(
       'https://x/mesh.glb',
-      'mesh.glb'
+      'mesh.glb',
+      expect.any(AbortSignal)
     )
   })
 
@@ -252,6 +259,33 @@ describe('ReplyAssetGroup', () => {
 
     await rerender({ assets: [model, image(1)] })
     await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+  })
+
+  it('retries an unpreviewable model once, not on every streaming pass', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const { rerender } = renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    await rerender({ assets: [{ ...model }] })
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledTimes(2))
+
+    await rerender({ assets: [{ ...model }] })
+    await rerender({ assets: [{ ...model }] })
+
+    expect(generateModelThumbnail).toHaveBeenCalledTimes(2)
+  })
+
+  it('aborts queued generation when unmounted', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    const { unmount } = renderGroup([model])
+    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+
+    const [, , signal] = generateModelThumbnail.mock.calls[0]
+    expect(signal?.aborted).toBe(false)
+
+    unmount()
+
+    expect(signal?.aborted).toBe(true)
   })
 
   it('clears a pending thumbnail refresh when unmounted', async () => {
@@ -319,7 +353,7 @@ describe('ReplyAssetGroup', () => {
     expect(toggle()).toHaveTextContent('Show more')
   })
 
-  it('[11-T7 regression] generates thumbnails only for currently visible 3D entries', async () => {
+  it('generates thumbnails only for currently visible 3D entries', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     const models = Array.from({ length: 13 }, (_, n) => ({
       ...model,
@@ -333,14 +367,16 @@ describe('ReplyAssetGroup', () => {
     )
     expect(generateModelThumbnail).not.toHaveBeenCalledWith(
       'https://x/mesh-12.glb',
-      'mesh-12.glb'
+      'mesh-12.glb',
+      expect.any(AbortSignal)
     )
 
     await userEvent.click(toggle()!)
     await waitFor(() =>
       expect(generateModelThumbnail).toHaveBeenCalledWith(
         'https://x/mesh-12.glb',
-        'mesh-12.glb'
+        'mesh-12.glb',
+        expect.any(AbortSignal)
       )
     )
   })

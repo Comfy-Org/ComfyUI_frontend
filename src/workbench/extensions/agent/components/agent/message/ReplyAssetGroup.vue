@@ -73,12 +73,26 @@ const galleryIndex = ref(-1)
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
 const refreshTimeouts = new Set<ReturnType<typeof setTimeout>>()
+const retriedThumbnails = new Set<string>()
+const thumbnailAbort = new AbortController()
 let mounted = true
 onBeforeUnmount(() => {
   mounted = false
+  thumbnailAbort.abort()
   for (const timeout of refreshTimeouts) clearTimeout(timeout)
   refreshTimeouts.clear()
 })
+
+/**
+ * Drop the placeholder so the next watcher pass retries this model once.
+ * Streaming deltas rebuild the asset list on every chunk, so an unbounded
+ * retry would restart generation for an unpreviewable model indefinitely.
+ */
+function allowThumbnailRetry(url: string): void {
+  if (retriedThumbnails.has(url)) return
+  retriedThumbnails.add(url)
+  delete modelThumbnails.value[url]
+}
 
 watch(
   () => [
@@ -98,13 +112,17 @@ watch(
               return
             }
             if (!mounted) return
-            const generated = await generateModelThumbnail(url, filename)
+            const generated = await generateModelThumbnail(
+              url,
+              filename,
+              thumbnailAbort.signal
+            )
             if (!mounted) return
             if (generated) modelThumbnails.value[url] = generated
-            else delete modelThumbnails.value[url]
+            else allowThumbnailRetry(url)
           })
           .catch((error) => {
-            if (mounted) delete modelThumbnails.value[url]
+            if (mounted) allowThumbnailRetry(url)
             reportError(error, {
               errorType: 'agent_reply_asset_preview_failure'
             })

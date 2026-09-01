@@ -46,6 +46,34 @@ describe('generateModelThumbnail', () => {
     expect(result).toBe('data:image/png;base64,thumb')
     expect(instance.loadModel).toHaveBeenCalledWith('/api/view?filename=a.glb')
     expect(instance.remove).toHaveBeenCalledTimes(1)
+    expect(persistThumbnail).not.toHaveBeenCalled()
+  })
+
+  it('skips a queued render whose caller aborted before its turn', async () => {
+    const blocked = mockInstance({
+      loadModel: vi.fn(() => new Promise(() => {}))
+    })
+    const skipped = mockInstance()
+    createLoad3d.mockReturnValueOnce(blocked).mockReturnValueOnce(skipped)
+    const controller = new AbortController()
+
+    vi.useFakeTimers()
+    try {
+      const blockedRun = generateModelThumbnail('/stuck.glb', 'stuck.glb')
+      const skippedRun = generateModelThumbnail(
+        '/next.glb',
+        'next.glb',
+        controller.signal
+      )
+      controller.abort()
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(blockedRun).resolves.toBeNull()
+      await expect(skippedRun).resolves.toBeNull()
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('returns null and still disposes when the model fails to load', async () => {
@@ -81,7 +109,7 @@ describe('generateModelThumbnail', () => {
     expect(createLoad3d).toHaveBeenCalledTimes(2)
   })
 
-  it('[11-T5 regression] cancels a stuck load, disposes it, and advances the queue', async () => {
+  it('cancels a stuck load, disposes it, and advances the queue', async () => {
     vi.useFakeTimers()
     try {
       const first = mockInstance({
