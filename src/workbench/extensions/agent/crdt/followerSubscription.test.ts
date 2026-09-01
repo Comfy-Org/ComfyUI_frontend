@@ -148,7 +148,28 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
-  it('sends human ops before the subscription acknowledgement arrives', () => {
+  it('a workflow switch made while the socket is down lands on the next open', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe('wf-a')
+    expect(bridge.subscribedWorkflowId).toBe('wf-a')
+
+    transport.open = false
+    bridge.subscribe('wf-b')
+    // The old subscription is dropped locally (the server dropped it with the
+    // socket), and the new one is still owed.
+    expect(bridge.subscribedWorkflowId).toBeNull()
+    expect(bridge.hasPendingSubscribe).toBe(true)
+
+    transport.open = true
+    bridge.reconcile()
+    expect(bridge.subscribedWorkflowId).toBe('wf-b')
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+  })
+})
+
+describe('human op gating around subscription acknowledgement', () => {
+  it('sends distinct human ops before and after acknowledgement', () => {
     const { transport, bridge } = wire()
     const preAckOp: DocOp = {
       op_id: 'op-before-ack',
@@ -184,26 +205,66 @@ describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers',
     })
     bridge.sendHumanOps('tab-a', [postAckOp])
 
-    expect(transport.framesOfType('doc_ops')).toHaveLength(2)
+    expect(transport.framesOfType('doc_ops')).toEqual([
+      {
+        type: 'doc_ops',
+        data: {
+          v: 1,
+          workflow_id: WORKFLOW_ID,
+          tab: 'tab-a',
+          ops: [preAckOp]
+        }
+      },
+      {
+        type: 'doc_ops',
+        data: {
+          v: 1,
+          workflow_id: WORKFLOW_ID,
+          tab: 'tab-a',
+          ops: [postAckOp]
+        }
+      }
+    ])
   })
 
-  it('a workflow switch made while the socket is down lands on the next open', () => {
+  it('stops sending human ops after the host rejects the subscription', () => {
     const { transport, bridge } = wire()
+    const preNackOp: DocOp = {
+      op_id: 'op-before-nack',
+      actor: 'human:user:tab-a',
+      type: 'node.move'
+    }
+    const postNackOp: DocOp = {
+      op_id: 'op-after-nack',
+      actor: 'human:user:tab-a',
+      type: 'node.move'
+    }
     transport.open = true
-    bridge.subscribe('wf-a')
-    expect(bridge.subscribedWorkflowId).toBe('wf-a')
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.sendHumanOps('tab-a', [preNackOp])
 
-    transport.open = false
-    bridge.subscribe('wf-b')
-    // The old subscription is dropped locally (the server dropped it with the
-    // socket), and the new one is still owed.
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      seq: 0,
+      reason: 'not_found'
+    })
+    bridge.sendHumanOps('tab-a', [postNackOp])
+
     expect(bridge.subscribedWorkflowId).toBeNull()
     expect(bridge.hasPendingSubscribe).toBe(true)
-
-    transport.open = true
-    bridge.reconcile()
-    expect(bridge.subscribedWorkflowId).toBe('wf-b')
-    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+    expect(transport.framesOfType('doc_ops')).toEqual([
+      {
+        type: 'doc_ops',
+        data: {
+          v: 1,
+          workflow_id: WORKFLOW_ID,
+          tab: 'tab-a',
+          ops: [preNackOp]
+        }
+      }
+    ])
   })
 })
 

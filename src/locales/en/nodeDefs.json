@@ -7202,7 +7202,7 @@
   },
   "HiDreamO1ReferenceImages": {
     "display_name": "HiDream-O1 Reference Images",
-    "description": "Attach 1-10 reference images to conditioning, one for edit instructionor multiple for subject-driven personalization.",
+    "description": "Attach ordered reference images to positive and negative conditioning.",
     "inputs": {
       "positive": {
         "name": "positive"
@@ -7212,7 +7212,7 @@
       },
       "images": {
         "name": "images",
-        "tooltip": "Reference images. 1 image = instruction edit; 2-10 images = multi reference."
+        "tooltip": "Reference images are used in numeric socket order."
       }
     },
     "outputs": {
@@ -21032,6 +21032,23 @@
       },
       "blur_sigma": {
         "name": "blur_sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaSamplingOptions": {
+    "display_name": "SenseNova Sampling Options",
+    "description": "Set the SenseNova flow shift.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
       }
     },
     "outputs": {

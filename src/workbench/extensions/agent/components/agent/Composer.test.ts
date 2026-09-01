@@ -12,12 +12,12 @@ import { i18n } from '@/i18n'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 
-const tooltipBindings = new WeakMap<Element, DirectiveBinding['value']>()
+const tooltipBindings = new WeakMap<Element, unknown>()
 const tooltipDirectiveStub = {
-  mounted(element: Element, binding: DirectiveBinding) {
+  mounted(element: Element, binding: DirectiveBinding<unknown>) {
     tooltipBindings.set(element, binding.value)
   },
-  updated(element: Element, binding: DirectiveBinding) {
+  updated(element: Element, binding: DirectiveBinding<unknown>) {
     tooltipBindings.set(element, binding.value)
   }
 }
