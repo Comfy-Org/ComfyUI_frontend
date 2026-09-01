@@ -1,7 +1,12 @@
-import { zWorkflowListResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentRunMode as zGeneratedAgentRunMode,
+  zWorkflowListResponse
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
+
+export type { AgentRunMode as AgentRunModePreference } from '@comfyorg/ingest-types'
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
@@ -16,14 +21,8 @@ export const zAgentTurnAccepted = z
   .passthrough()
 export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
 
-const zAgentRunModeValue = z.enum(['ask_approval', 'auto', 'auto_limited'])
-
-export const zAgentRunMode = z
-  .object({
-    mode: zAgentRunModeValue,
-    credit_limit: z.number().int().positive().nullable()
-  })
-  .superRefine(({ mode, credit_limit }, ctx) => {
+export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
+  ({ mode, credit_limit }, ctx) => {
     if (mode === 'auto_limited' && credit_limit === null) {
       ctx.addIssue({
         code: 'custom',
@@ -38,9 +37,9 @@ export const zAgentRunMode = z
         message: 'credit limit is only valid for auto_limited'
       })
     }
-  })
-export type AgentRunModePreference = z.infer<typeof zAgentRunMode>
-export type AgentRunMode = AgentRunModePreference['mode']
+  }
+)
+export type AgentRunMode = z.infer<typeof zAgentRunMode>['mode']
 
 export const zAgentMessage = z
   .object({

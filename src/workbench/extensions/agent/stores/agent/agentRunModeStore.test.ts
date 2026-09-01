@@ -83,9 +83,9 @@ describe('agentRunModeStore', () => {
 
     expect(store.mode).toBe('auto')
     expect(store.creditLimit).toBeNull()
-    expect(localStorage.getItem('Comfy.Agent.RunModePreference')).toBe(
-      JSON.stringify({ mode: 'auto', credit_limit: null })
-    )
+    expect(
+      JSON.parse(localStorage.getItem('Comfy.Agent.RunModePreference')!)
+    ).toEqual({ mode: 'auto', credit_limit: null })
   })
 
   it.for([
