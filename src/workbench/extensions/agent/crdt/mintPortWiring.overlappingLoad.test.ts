@@ -9,10 +9,8 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
-import {
-  attachMintPortWiring,
-  type MintPortWiring
-} from '@/workbench/extensions/agent/crdt/mintPortWiring'
+import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+import type { MintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 const ROOT_ID = 'root-uuid'
 const ROOT_SCOPE: GraphScope = {
