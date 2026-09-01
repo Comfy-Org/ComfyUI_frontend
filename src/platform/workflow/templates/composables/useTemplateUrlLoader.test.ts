@@ -87,7 +87,6 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 describe('useTemplateUrlLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     routeMocks.query = {}
     mockCanvasStore.linearMode = false
   })
@@ -419,8 +418,8 @@ describe('useTemplateUrlLoader', () => {
       let resolveLoadTemplates: (() => void) | undefined
       mockLoadTemplates.mockImplementationOnce(
         () =>
-          new Promise<void>((resolve) => {
-            resolveLoadTemplates = resolve
+          new Promise<boolean>((resolve) => {
+            resolveLoadTemplates = () => resolve(true)
           })
       )
 

@@ -291,7 +291,9 @@ export function useWorkflowPersistenceV2() {
     return hasPreservedQuery(TEMPLATE_NAMESPACE)
   }
 
-  const loadTemplateFromUrlIfPresent = async (): Promise<boolean> => {
+  const loadTemplateFromUrlIfPresent = async (): Promise<
+    string | undefined
+  > => {
     const query = await ensureTemplateQueryFromIntent()
     const hasTemplateUrl = query.template && typeof query.template === 'string'
 
