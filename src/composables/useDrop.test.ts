@@ -57,7 +57,6 @@ describe('useDrop', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanvas = createMockCanvas()
   })
 
