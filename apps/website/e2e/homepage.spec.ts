@@ -76,7 +76,9 @@ test.describe('Homepage @smoke', () => {
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
-    const cards = section.locator('a[href]')
+    const cards = section
+      .getByRole('group', { name: 'Products' })
+      .getByRole('link')
     await expect(cards).toHaveCount(4)
   })
 
@@ -230,9 +232,10 @@ test.describe('Product cards links @smoke', () => {
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
+    const products = section.getByRole('group', { name: 'Products' })
 
-    for (const href of ['/download', '/cloud', '/api', '/cloud/enterprise']) {
-      await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
+    for (const href of ['/download', '/cloud', '/platform', '/enterprise']) {
+      await expect(products.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })
 })

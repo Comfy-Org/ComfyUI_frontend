@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "מצב",
-        "tooltip": "'speed' מהיר יותר; 'precision' מספק סנכרון שפתיים איכותי יותר במחיר כפול."
+        "tooltip": "‏'speed' מהיר יותר; 'precision' מפיק סנכרון שפתיים באיכות גבוהה יותר, במחיר גבוה יותר."
       },
       "output_language": {
         "name": "שפת יעד",
@@ -7201,12 +7201,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "צרף 1-10 תמונות ייחוס להתניה, אחת להנחיית עריכה או מספר תמונות להתאמה אישית מבוססת נושא.",
+    "description": "צרף תמונות ייחוס ממוינות להתניה חיובית ושלילית.",
     "display_name": "HiDream-O1 תמונות ייחוס",
     "inputs": {
       "images": {
         "name": "תמונות",
-        "tooltip": "תמונות ייחוס. תמונה אחת = עריכת הנחיה; 2-10 תמונות = ייחוס מרובה."
+        "tooltip": "תמונות הייחוס משמשות לפי הסדר המספרי של השקעים."
       },
       "negative": {
         "name": "שלילי"
@@ -12744,6 +12744,46 @@
     "outputs": {
       "0": {
         "name": "חיובי",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "החל MiniMax H3 Fun ControlNet על מודל מטקסט לווידאו כתיקון מודל.",
+    "display_name": "החל MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "הערך 1 מסמן את האזורים שיש ליצור מחדש."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "הווידאו שמאחורי המסכה; נקרא רק כאשר ניתנת מסכה."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -21121,6 +21161,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "הגדר את הסטת הזרימה של SenseNova.",
+    "display_name": "אפשרויות דגימה של SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "הגדר CLIP Hooks",
     "inputs": {
@@ -24755,6 +24812,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "חיתוך וידאו",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "אזור חיתוך בפיקסלים. רוחב/גובה אפס שומרים על המסגרת המלאה."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "דגום מספר קבוע של פריימים מווידאו באמצעות אסטרטגיות שונות.",
     "display_name": "דגימת פריים מווידאו",
@@ -24856,6 +24930,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "קיצוץ וידאו (מתקדם)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "אם הערך הוא True, וכאשר משך הזמן שצוין אינו אפשרי, תועלה שגיאה."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "חלון קיצוץ באמצעות פריימי התחלה/סיום."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
