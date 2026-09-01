@@ -1033,9 +1033,21 @@ describe('node:before-removed event', () => {
     graph.events.addEventListener('node:before-removed', () => {
       order.push('before-removed')
     })
-    target.onConnectionsChange = () => order.push('target-connection-change')
-    source.onConnectionsChange = () => order.push('source-connection-change')
-    source.onRemoved = () => order.push('onRemoved')
+    target.onConnectionsChange = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('target-connection-change')
+    }
+    source.onConnectionsChange = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('source-connection-change')
+    }
+    source.onRemoved = () => {
+      expect(source.graph).toBe(graph)
+      expect(target.graph).toBe(graph)
+      order.push('onRemoved')
+    }
     graph.onNodeRemoved = () => {
       order.push(
         `onNodeRemoved(graph=${source.graph === null ? 'null' : 'set'})`
