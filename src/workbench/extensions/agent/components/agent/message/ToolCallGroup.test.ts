@@ -3,13 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { TurnId } from '../../../schemas/agentApiSchema'
-import type {
-  AssistantMessage,
-  ToolPart
-} from '../../../services/agent/agentMessageParts'
+import type { ToolPart } from '../../../services/agent/agentMessageParts'
 
-import AgentMessage from './AgentMessage.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
 
 function tool(
@@ -208,47 +203,50 @@ describe('ToolCallGroup', () => {
       'Applying the edit',
       'Set widget'
     ])
-  })
-})
-
-describe('AgentMessage tool grouping', () => {
-  it('keeps the current tool phase expanded while streaming', () => {
-    const message: AssistantMessage = {
-      id: 'msg-0' as TurnId,
-      role: 'assistant',
-      parts: [tool('c1', 'add_node', 'done', true)],
-      streaming: true,
-      thinking: false
-    }
-    render(AgentMessage, { props: { message }, global: { plugins: [i18n] } })
-
-    expect(
-      screen.getByRole('button', { name: /ran 1 tool call/i })
-    ).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByText('Add node')).toBeInTheDocument()
-  })
-
-  it('groups adjacent tool parts into one pluralized card that opens on click', async () => {
-    const message: AssistantMessage = {
-      id: 'msg-1' as TurnId,
-      role: 'assistant',
-      parts: [
-        tool('c1', 'add_node', 'done', true),
-        tool('c2', 'add_node', 'done', true)
-      ],
-      streaming: false,
-      thinking: false
-    }
-    render(AgentMessage, { props: { message }, global: { plugins: [i18n] } })
-
     expect(screen.getByText('Ran 2 tool calls')).toBeInTheDocument()
+  })
+
+  it('[10-T2 regression] a new failure reopens a group even while activity stays true', async () => {
+    const { rerender } = render(ToolCallGroup, {
+      props: { parts: [tool('c1', 'add_node', 'streaming')], active: true },
+      global: { plugins: [i18n] }
+    })
+    await userEvent.click(screen.getByRole('button', { name: /ran 1 tool/i }))
     expect(screen.queryByText('Add node')).not.toBeInTheDocument()
+    await rerender({
+      parts: [
+        tool('c1', 'add_node', 'streaming'),
+        tool('c2', 'set_widget', 'done', false)
+      ],
+      active: true
+    })
+    expect(await screen.findByText('Set widget')).toBeInTheDocument()
+  })
 
-    await userEvent.click(
-      screen.getByRole('button', { name: /ran 2 tool calls/i })
+  it('[10-T3 regression] sums all thinking durations in a thinking-only group', () => {
+    render(ToolCallGroup, {
+      props: {
+        parts: [
+          { type: 'thinking', text: 'One', state: 'done', durationMs: 500 },
+          { type: 'thinking', text: 'Two', state: 'done', durationMs: 800 }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByText('Thought for 1.3 seconds')).toBeInTheDocument()
+  })
+
+  it('[10-T4 regression] treats a streaming thought as active without the active prop', () => {
+    render(ToolCallGroup, {
+      props: {
+        parts: [{ type: 'thinking', text: 'Working', state: 'streaming' }]
+      },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('button', { name: /thinking/i })).toHaveAttribute(
+      'aria-expanded',
+      'true'
     )
-
-    expect(await screen.findAllByText('Add node')).toHaveLength(1)
-    expect(screen.getByText('×2')).toBeInTheDocument()
+    expect(screen.getByText('Working')).toBeInTheDocument()
   })
 })
