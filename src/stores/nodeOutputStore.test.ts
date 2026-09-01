@@ -526,6 +526,27 @@ describe('nodeOutputStore getNodeImageUrlsByExecutionId', () => {
 
     expect(urls).toEqual([expect.stringContaining('filename=good.png')])
   })
+
+  it('emits view params in a fixed filename/subfolder/type order', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode()
+    const executionId = createNodeExecutionId([toNodeId(1)])
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([
+        { type: 'input', filename: '(upload a mesh file)', subfolder: '' }
+      ])
+    )
+
+    // The order is part of the contract: the custom-node console-error ledger
+    // (browser_tests/fixtures/customNode/consoleErrorLedger.ts) allowlists the
+    // 404s these previews provoke by matching the query string literally.
+    expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([
+      expect.stringContaining(
+        '/view?filename=%28upload+a+mesh+file%29&subfolder=&type=input'
+      )
+    ])
+  })
 })
 
 describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {

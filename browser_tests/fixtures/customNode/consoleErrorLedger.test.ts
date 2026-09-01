@@ -140,7 +140,11 @@ describe('consoleErrorLedger', () => {
     const cases = [
       [
         'ComfyUI-UltraShape1',
-        'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=&rand=0.5]'
+        'Failed to load resource: 404 [http://localhost:8188/api/view?filename=%28upload+a+mesh+file%29&subfolder=&type=input&rand=0.5]'
+      ],
+      [
+        'ComfyUI-KJNodes',
+        'Failed to load resource: 404 [http://localhost:8188/api/view?filename=undefined&subfolder=&type=input&rand=0.5]'
       ],
       [
         'WhatDreamsCost-ComfyUI',
