@@ -43,10 +43,10 @@ describe('useCanvasViewportInsets', () => {
     return mod.useCanvasViewportInsets()
   }
 
-  it('returns a singleton across calls', async () => {
+  it('returns component-scoped state across calls', async () => {
     const { useCanvasViewportInsets } =
       await import('./useCanvasViewportInsets')
-    expect(useCanvasViewportInsets()).toBe(useCanvasViewportInsets())
+    expect(useCanvasViewportInsets()).not.toBe(useCanvasViewportInsets())
   })
 
   it('reports zero insets when canvas and panel are coincident', async () => {
