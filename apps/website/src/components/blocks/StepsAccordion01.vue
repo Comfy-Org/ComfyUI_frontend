@@ -3,6 +3,8 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { resolveRel } from '../../utils/cta'
+
 import Accordion from '../ui/accordion/Accordion.vue'
 import AccordionContent from '../ui/accordion/AccordionContent.vue'
 import AccordionItem from '../ui/accordion/AccordionItem.vue'
@@ -20,7 +22,7 @@ const {
   id?: string
   title: string
   lead?: string
-  cta?: { label: string; href: string }
+  cta?: { label: string; href: string; newTab?: boolean }
   /** Triggers are numbered from their position, so callers pass titles only. */
   steps: readonly AccordionStep[]
   /** Step id to open on load; the first step unless overridden. */
@@ -48,7 +50,14 @@ const {
         >
           {{ lead }}
         </p>
-        <Button v-if="cta" as="a" :href="cta.href" class="mt-8">
+        <Button
+          v-if="cta"
+          as="a"
+          :href="cta.href"
+          :target="cta.newTab ? '_blank' : undefined"
+          :rel="cta.newTab ? resolveRel({ target: '_blank' }) : undefined"
+          class="mt-8"
+        >
           {{ cta.label }}
         </Button>
       </div>
