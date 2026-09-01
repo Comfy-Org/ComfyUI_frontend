@@ -75,7 +75,10 @@
           >
             {{ contentTitle }}
           </h2>
-          <div :class="contentContainerClass">
+          <div
+            :class="contentContainerClass"
+            @scroll="$emit('contentScroll', $event)"
+          >
             <slot name="content" />
           </div>
         </main>
@@ -173,6 +176,8 @@ const {
 }>()
 
 const sizeClasses = computed(() => SIZE_CLASSES[size])
+
+defineEmits<{ contentScroll: [event: Event] }>()
 
 const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {
   default: false

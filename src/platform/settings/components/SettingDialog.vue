@@ -5,6 +5,7 @@
     size="full"
     content-padding="none"
     header-padding="symmetric"
+    @content-scroll="handlePanelScroll"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
@@ -61,7 +62,7 @@
       >
         <template v-if="!isHeaderCollapsed">
           <WorkspaceProfilePic
-            class="size-11 text-2xl!"
+            class="size-11 text-2xl"
             :workspace-name="workspaceName"
           />
           <h1
@@ -179,7 +180,8 @@ const isWorkspaceCategoryActive = computed(
 )
 const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
 
-const { isHeaderCollapsed, resetHeaderCollapse } = useSettingsHeaderCollapse()
+const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
+  useSettingsHeaderCollapse()
 
 // A panel change swaps the scroller out from under the collapse state.
 watch(activeCategoryKey, resetHeaderCollapse)
