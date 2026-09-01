@@ -1,4 +1,8 @@
-export type GraphLoadToken = symbol
+declare const graphLoadTokenBrand: unique symbol
+
+export type GraphLoadToken = symbol & {
+  readonly [graphLoadTokenBrand]: true
+}
 
 export type GraphLoadLifecycleEvent =
   | { type: 'started'; token: GraphLoadToken }
@@ -7,7 +11,7 @@ export type GraphLoadLifecycleEvent =
 const listeners = new Set<(event: GraphLoadLifecycleEvent) => void>()
 
 export function beginGraphLoad(): GraphLoadToken {
-  const token = Symbol('graph-load')
+  const token = Symbol('graph-load') as GraphLoadToken
   for (const listener of listeners) listener({ type: 'started', token })
   return token
 }
