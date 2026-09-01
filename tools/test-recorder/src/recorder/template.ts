@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import {
   existsSync,
   writeFileSync,
@@ -25,8 +26,12 @@ interface TemplateOptions {
  * Every custom backend previously shared one cache key ('custom'), so a
  * session saved against one host got replayed against a completely
  * different one — a stale/foreign cookie an unrelated origin will reject,
- * which can surface as an auth redirect loop. Custom backends key by their
- * own hostname instead; the three fixed cloud distributions keep their id.
+ * which can surface as an auth redirect loop. Custom backends key by a hash
+ * of their full normalized origin+path instead (path included, since
+ * path-routed backends like /tenant-a/ vs /tenant-b/ are distinct sessions);
+ * the three fixed cloud distributions keep their id. Hashing also bounds the
+ * resulting filename length and gives every unparseable/malformed URL its
+ * own bucket instead of one shared fallback.
  */
 export function storageStateKey(distribution?: Distribution): string {
   if (!distribution) return 'cloud'
@@ -34,11 +39,24 @@ export function storageStateKey(distribution?: Distribution): string {
     return distribution.id
   }
   try {
-    const { protocol, hostname, port } = new URL(distribution.backendUrl)
-    const protocolKey = protocol === 'https:' ? '' : `${protocol}//`
-    return `custom-${encodeURIComponent(`${protocolKey}${hostname}${port ? `:${port}` : ''}`)}`
+    const { protocol, hostname, port, pathname } = new URL(
+      distribution.backendUrl
+    )
+    if ((protocol !== 'http:' && protocol !== 'https:') || !hostname) {
+      // A scheme-less input like 'localhost:8100' parses as a non-special
+      // `localhost:` URL with an empty hostname and the real host/port
+      // sitting in the opaque path — treat that the same as unparseable
+      // rather than silently sharing a bucket with other typos.
+      return 'custom-unparsed'
+    }
+    const origin = `${protocol}//${hostname}${port ? `:${port}` : ''}${pathname}`
+    const digest = createHash('sha256').update(origin).digest('hex')
+    return `custom-${digest.slice(0, 16)}`
   } catch {
-    return 'custom'
+    // Fail closed to a sentinel distinct from a real hashed key, so a
+    // malformed backend URL never resolves to a previously-recorded
+    // session's storage-state file.
+    return 'custom-unparsed'
   }
 }
 
@@ -52,7 +70,13 @@ export function removeLegacyCustomStorageState(storageStateFile: string): void {
     'storage-state.custom.json'
   )
   if (storageStateFile !== legacyStorageStateFile) {
-    rmSync(legacyStorageStateFile, { force: true })
+    try {
+      rmSync(legacyStorageStateFile, { force: true })
+    } catch {
+      // Best-effort cleanup of an obsolete file — EACCES/EPERM/a lock on it
+      // shouldn't abort the recording session, same as cleanupRecordingTemplate
+      // and cleanupRecordedCode below.
+    }
   }
 }
 
