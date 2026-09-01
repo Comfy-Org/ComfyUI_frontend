@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect } from '@playwright/test'
 
@@ -76,12 +76,52 @@ test.describe('Pricing', { tag: '@visual' }, () => {
   }
 })
 
+// Pricing renders a native <details> FAQ; Enterprise renders FAQSplit01, whose
+// Reka accordion has no <details> at all. Each page names its own trigger and
+// its own "this entry is open" marker.
 const FAQ_PAGES = [
-  { name: 'pricing', url: '/cloud/pricing' },
-  { name: 'enterprise', url: '/enterprise' }
+  {
+    name: 'pricing',
+    url: '/cloud/pricing',
+    trigger: 'details > summary',
+    opened: 'details[open]'
+  },
+  {
+    name: 'enterprise',
+    url: '/enterprise',
+    trigger: 'button[data-slot="accordion-trigger"]',
+    opened: '[data-slot="accordion-item"][data-state="open"]'
+  }
 ]
 
-for (const { name, url } of FAQ_PAGES) {
+async function openFirstTwoEntries(
+  faq: Locator,
+  { trigger, opened }: { trigger: string; opened: string }
+) {
+  const triggers = faq.locator(trigger)
+  const openEntries = faq.locator(opened)
+
+  // Fail in seconds when the FAQ markup changes. Clicking a selector that
+  // matches nothing instead burns the whole 60s test timeout, on every retry,
+  // for every viewport — enough on its own to blow the job's time budget.
+  await expect(triggers.nth(1)).toBeVisible()
+
+  // Enterprise hydrates its accordion as a client:visible island, so the first
+  // click can land before the component is listening. Re-click until both
+  // entries report themselves open.
+  await expect
+    .poll(
+      async () => {
+        const open = await openEntries.count()
+        if (open < 2) await triggers.nth(open).click()
+        return openEntries.count()
+      },
+      { message: 'FAQ entries did not open', timeout: 10_000 }
+    )
+    .toBe(2)
+}
+
+for (const { name, url, trigger, opened } of FAQ_PAGES) {
   test.describe(`${name} FAQ`, { tag: '@visual' }, () => {
     for (const vp of VIEWPORTS) {
       test(`${name}-faq-${vp.name}`, async ({ page }) => {
@@ -90,9 +130,7 @@ for (const { name, url } of FAQ_PAGES) {
 
         const faq = page.locator('#faq')
         await faq.scrollIntoViewIfNeeded()
-        const summaries = faq.locator('details > summary')
-        await summaries.nth(0).click()
-        await summaries.nth(1).click()
+        await openFirstTwoEntries(faq, { trigger, opened })
 
         await expect(faq).toHaveScreenshot(`${name}-faq-${vp.name}.png`)
       })
