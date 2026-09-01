@@ -128,11 +128,14 @@ const graphMutations = (workflowId: string) => {
     graphDocumentStore.createDocument({ workflowId })
   const mutations = createGraphMutations({
     getScope() {
+      // No bound tab means no live scope: refuse the write instead of
+      // replaying it against the last remembered scope (the tab may have
+      // been closed, and its ids may be reused when the workflow reopens).
+      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
+      if (!rootGraphId) return null
       const registered = documentId
         ? (graphDocumentStore.getDocument(documentId)?.scope ?? null)
         : null
-      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
-      if (!rootGraphId) return registered
       const scope = {
         rootGraphId: toRootGraphId(rootGraphId),
         owningGraphId: toOwningGraphId(rootGraphId)
