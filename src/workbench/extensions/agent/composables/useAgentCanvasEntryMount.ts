@@ -10,7 +10,7 @@ interface AgentCanvasEntryMount {
 }
 
 export function useAgentCanvasEntryMount(): AgentCanvasEntryMount {
-  if (__DISTRIBUTION__ !== 'cloud') {
+  if (__DISTRIBUTION__ !== 'cloud' && import.meta.env.MODE !== 'development') {
     return {
       enabled: computed(() => false),
       CompactAgentComposer: null,
