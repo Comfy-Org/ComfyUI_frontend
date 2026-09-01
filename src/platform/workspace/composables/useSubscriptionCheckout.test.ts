@@ -2653,12 +2653,21 @@ describe('useSubscriptionCheckout', () => {
 
     it('clears the charge when the cancel is accepted', async () => {
       mockCancelOperation.mockResolvedValue('canceled')
+      sessionStorage.setItem(
+        'comfy:pending-subscription-checkout',
+        JSON.stringify({ operationId: 'op-3ds' })
+      )
       const checkout = await verifyingCheckout()
 
       await checkout.handleCancelPendingPayment()
 
       expect(checkout.cancelUnavailable.value).toBe(false)
       expect(checkout.cancelUnreachable.value).toBe(false)
+      // The pointer never reaches a terminal status on cancel, so it must be
+      // cleared here — otherwise the next open resumes a canceled checkout.
+      expect(
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
     })
 
     it('says the charge is past cancelling when the service refuses', async () => {

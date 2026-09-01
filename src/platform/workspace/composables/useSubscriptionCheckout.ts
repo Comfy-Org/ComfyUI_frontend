@@ -33,6 +33,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
+  clearPendingSubscriptionCheckout,
   clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
@@ -1397,6 +1398,10 @@ export function useSubscriptionCheckout(
       cancelUnreachable.value = true
       return
     }
+    // A canceled operation never reaches a terminal status — it is removed
+    // outright — so the pending-checkout pointer must be cleared here or the
+    // next dialog open resumes the checkout the customer just canceled.
+    clearPendingSubscriptionCheckout(operation.opId)
     activeCheckoutOperationId.value = null
     cancelUnavailable.value = false
     cancelUnreachable.value = false
