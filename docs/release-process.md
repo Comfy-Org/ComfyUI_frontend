@@ -240,8 +240,11 @@ object of `scripts/release-sheriff/release-sheriff.ts`. Note `datadogSite` is
 `us5.datadoghq.com` — the Comfy org lives on that sub-domain and the default
 `api.datadoghq.com` returns 403.
 
-Requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY` (scope:
-`on_call_read`).
+The workflow requires repo secrets `DATADOG_API_KEY` and `DATADOG_APP_KEY`
+(scope: `on_call_read`). Running the manual tag-editing procedure additionally
+requires a local `DATADOG_WRITE_APP_KEY` scoped to `on_call_write`; request it
+from a Datadog organization administrator. Do not store that write key as a
+repo secret or substitute the read-only workflow key.
 
 If the on-call user cannot be mapped — a missing tag, missing secrets, an
 unreachable Datadog — the job still assigns `fallbackGithubLogin` so PRs are
