@@ -43,6 +43,8 @@ export type WorkspaceTokenResponse = z.infer<
 
 const MAX_SCHEDULED_REFRESH_RETRIES = 3
 
+const UNIFIED_REFRESH_RETRY_BASE_MS = 5000
+
 const RECOVERY_COOLDOWN_MS = 5000
 
 // Retain expired unified-token contexts briefly so a concurrent reactive-401
@@ -133,6 +135,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // The unified lifecycle keeps its own timer + request-id so it never shares
   // mutable state with the legacy switchWorkspace/refreshToken machinery.
   let unifiedRefreshTimerId: ReturnType<typeof setTimeout> | null = null
+  let unifiedRefreshRetryCount = 0
 
   // Request ID to prevent stale refresh operations from overwriting newer workspace contexts
   let refreshRequestId = 0
@@ -734,13 +737,38 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   function scheduleUnifiedRefresh(expiresAt: number): void {
     stopUnifiedRefreshTimer()
+    unifiedRefreshRetryCount = 0
     const now = Date.now()
     const refreshAt = expiresAt - TOKEN_REFRESH_BUFFER_MS
     const delay = Math.max(0, refreshAt - now)
 
     unifiedRefreshTimerId = setTimeout(() => {
+      unifiedRefreshTimerId = null
       void refreshUnified()
     }, delay)
+  }
+
+  /**
+   * Re-arms the proactive unified refresh after a transient failure, with
+   * bounded exponential backoff. Without this the proactive chain dies on a
+   * single network blip: reactive 401 re-mints recover API traffic, but
+   * cookie-authenticated <img>/media loads have no 401-retry path of their own
+   * and stay broken once the session cookie expires (FE-1595). Reuses
+   * `unifiedRefreshTimerId` so clearing the unified context cancels a pending
+   * retry.
+   */
+  function scheduleUnifiedRefreshRetry(): boolean {
+    if (unifiedRefreshRetryCount >= MAX_SCHEDULED_REFRESH_RETRIES) {
+      return false
+    }
+    const delay = UNIFIED_REFRESH_RETRY_BASE_MS * 2 ** unifiedRefreshRetryCount
+    unifiedRefreshRetryCount += 1
+    stopUnifiedRefreshTimer()
+    unifiedRefreshTimerId = setTimeout(() => {
+      unifiedRefreshTimerId = null
+      void refreshUnified()
+    }, delay)
+    return true
   }
 
   function pruneExpiredUnifiedTokenContexts(now: number): void {
@@ -754,6 +782,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   function clearUnifiedContext(): void {
     unifiedRefreshRequestId++
     stopUnifiedRefreshTimer()
+    unifiedRefreshRetryCount = 0
     unifiedToken.value = null
     unifiedTokenOwnerUid.value = null
     issuedUnifiedTokenContexts.clear()
@@ -845,11 +874,17 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     try {
       const minted = await mintUnified(target)
-      // Only a refresh re-mint rotates the session cookie; the initial login
-      // mint and workspace switches do not. A stale (discarded) re-mint does not
-      // rotate either.
+      // Only re-mints rotate the session cookie; the initial login mint and
+      // workspace switches establish it themselves. A stale (discarded)
+      // re-mint does not rotate either.
       if (minted) {
         useAuthStore().notifyTokenRefreshed()
+      } else if (unifiedRefreshTimerId === null) {
+        // A mint failure while the owner uid is momentarily null (Firebase
+        // re-initializing post-wake) resolves false instead of throwing. Only
+        // a false with no armed timer is a dead chain: a superseding mint has
+        // already scheduled its own refresh.
+        scheduleUnifiedRefreshRetry()
       }
     } catch (err) {
       // Guard the toast on a live token so concurrent permanent failures across
@@ -862,7 +897,13 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
             : undefined
         )
       } else {
-        console.warn('Unified token refresh failed:', err)
+        const retryScheduled = scheduleUnifiedRefreshRetry()
+        console.warn(
+          retryScheduled
+            ? 'Unified token refresh failed; retrying shortly:'
+            : 'Unified token refresh failed; retries exhausted, awaiting a reactive re-mint:',
+          err
+        )
       }
     }
   }
@@ -909,6 +950,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     try {
       const minted = await mintUnified(target)
       if (!minted) return null
+      useAuthStore().notifyTokenRefreshed()
       return getUnifiedToken() ?? null
     } catch (err) {
       // Mirror refreshUnified: a permanent failure tears down the session;

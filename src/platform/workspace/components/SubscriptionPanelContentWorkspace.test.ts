@@ -26,6 +26,12 @@ const { mockIsSettingUp, mockSubscriptionActionOperation } = vi.hoisted(() => ({
 }))
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
+  })
+}))
+
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockDistributionState.isCloud
@@ -77,6 +83,13 @@ const mockIsInPersonalWorkspace = ref(false)
 const mockIsWorkspaceSubscribed = ref(true)
 const mockCanManageSubscription = ref(true)
 const mockCanManageSubscriptionLifecycle = ref(true)
+const mockCanCancel = ref(true)
+const mockCanReactivate = ref(true)
+const mockCanReactivatePlan = ref(true)
+const mockCanOpenPricingSurface = ref(true)
+const mockShouldUseWorkspaceBilling = ref(true)
+const mockCanChangeSeats = ref(true)
+const mockCanSubscribeSelfServe = ref(true)
 const mockCanLeaveWorkspace = ref(true)
 const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
 const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
@@ -212,6 +225,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
       canLeaveWorkspace: mockCanLeaveWorkspace.value
     })),
+    canReactivatePlan: mockCanReactivatePlan,
+    canOpenPricingSurface: mockCanOpenPricingSurface,
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
@@ -223,6 +238,15 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
         ? mockUiConfig.value.workspaceMenuDisabledTooltip
         : null
     )
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canCancel: mockCanCancel,
+    canReactivate: mockCanReactivate,
+    canChangeSeats: mockCanChangeSeats,
+    canSubscribeSelfServe: mockCanSubscribeSelfServe
   })
 }))
 
@@ -322,6 +346,13 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsWorkspaceSubscribed.value = true
     mockCanManageSubscription.value = true
     mockCanManageSubscriptionLifecycle.value = true
+    mockCanCancel.value = true
+    mockCanReactivate.value = true
+    mockCanReactivatePlan.value = true
+    mockShouldUseWorkspaceBilling.value = true
+    mockCanChangeSeats.value = true
+    mockCanSubscribeSelfServe.value = true
+    mockCanOpenPricingSurface.value = true
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
     mockSubscriptionTier.value = 'PRO'
@@ -362,6 +393,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('hides verification from users without billing permission', () => {
     mockIsSettingUp.value = true
     mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockCanSubscribeSelfServe.value = false
     mockSubscriptionActionOperation.value = {
       actionUrl: 'https://verify.example/sensitive-token'
     }
@@ -389,6 +422,111 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'data-show-invoice-history',
       'true'
     )
+  })
+
+  describe('sales-managed tiers (FE-1662)', () => {
+    const runtimeTier = (tier: string) =>
+      tier as unknown as SubscriptionInfo['tier']
+
+    // Mirrors billing-api hideLifecycleCapabilities: lifecycle actions and the
+    // self-serve catalog close, credit top-up stays open.
+    function useSalesManagedCapabilities() {
+      mockCanCancel.value = false
+      mockCanReactivate.value = false
+      mockCanReactivatePlan.value = false
+      mockCanChangeSeats.value = false
+      mockCanSubscribeSelfServe.value = false
+      mockCanOpenPricingSurface.value = false
+    }
+
+    function useEnterprisePlan() {
+      mockHasTeamPlan.value = false
+      mockSubscriptionTier.value = 'ENTERPRISE'
+      mockPlanSlug.value = 'enterprise_monthly'
+      mockCurrentTeamCreditStop.value = null
+      useSalesManagedCapabilities()
+    }
+
+    it('renders Enterprise without price, benefits, or a plan-change action', () => {
+      useEnterprisePlan()
+      renderComponent()
+
+      expect(screen.getByText('Enterprise')).toBeInTheDocument()
+      expect(screen.queryByText('$665')).not.toBeInTheDocument()
+      expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+      expect(screen.queryByText('Your plan includes:')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('View more details about plans & pricing')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+      ).toBeInTheDocument()
+    })
+
+    it('keeps Billing & invoices open on an Enterprise plan', () => {
+      useEnterprisePlan()
+      renderComponent()
+
+      expect(
+        screen.getByRole('button', { name: 'Billing & invoices' })
+      ).toBeInTheDocument()
+    })
+
+    it('hides Reactivate for a cancelled Enterprise plan', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'canceled'
+      renderComponent()
+
+      expect(
+        screen.queryByRole('button', { name: /reactivate/i })
+      ).not.toBeInTheDocument()
+    })
+
+    it('offers no subscribe or reactivate path for an ended Enterprise plan', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'ended'
+      mockIsActiveSubscription.value = false
+      renderComponent()
+
+      expect(screen.getByText('Enterprise')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /subscribe|reactivate/i })
+      ).not.toBeInTheDocument()
+    })
+
+    it('renders an unrecognized tier as Current plan without catalog content', () => {
+      mockHasTeamPlan.value = false
+      mockSubscriptionTier.value = runtimeTier('GALACTIC')
+      mockPlanSlug.value = 'galactic_monthly'
+      mockCurrentTeamCreditStop.value = null
+      useSalesManagedCapabilities()
+      renderComponent()
+
+      expect(screen.getByText('Current plan')).toBeInTheDocument()
+      expect(screen.queryByText('$665')).not.toBeInTheDocument()
+      expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+      ).toBeInTheDocument()
+    })
+
+    it('labels a scheduled change to Enterprise outside the self-serve catalog', () => {
+      mockScheduledPlanSlug.value = 'enterprise_monthly'
+      mockChangeAt.value = END_DATE_ISO
+      renderComponent()
+
+      expect(
+        screen.getByText(
+          `Changes to Enterprise on ${formatPanelDate(END_DATE_ISO)}`
+        )
+      ).toBeInTheDocument()
+    })
   })
 
   it('shows a scheduled plan change instead of the renewal date', () => {
@@ -488,6 +626,19 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
+  it('hides Change plan when the server denies seat changes to a client-side owner', () => {
+    mockCanManageSubscription.value = true
+    mockCanChangeSeats.value = false
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Billing & invoices' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Change plan' })
+    ).not.toBeInTheDocument()
+  })
+
   it('preserves local Manage billing and Invoice history actions', async () => {
     const user = userEvent.setup()
     mockDistributionState.isCloud = false
@@ -506,6 +657,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsInPersonalWorkspace.value = true
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
+    mockCanCancel.value = false
+    mockCanReactivate.value = false
+    mockCanChangeSeats.value = false
+    mockCanSubscribeSelfServe.value = false
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = memberUiConfig
     renderComponent()
@@ -729,6 +884,19 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockResubscribe).not.toHaveBeenCalled()
   })
 
+  it('keeps ended Team credits inactive when self-serve capabilities are unavailable', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    mockCanSubscribeSelfServe.value = false
+    renderComponent()
+
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-inactive-plan',
+      'true'
+    )
+  })
+
   it('does not show stale renewal copy for an explicitly ended active state', () => {
     mockSubscriptionStatus.value = 'ended'
     renderComponent()
@@ -771,6 +939,22 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('hides Reactivate plan when the server denies reactivation to a client-side owner', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockHasTeamPlan.value = false
+    mockIsWorkspaceSubscribed.value = false
+    mockCanManageSubscriptionLifecycle.value = true
+    mockCanReactivatePlan.value = false
+    renderComponent()
+
+    expect(
+      screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Reactivate plan' })
+    ).not.toBeInTheDocument()
+  })
+
   it('keeps Billing & invoices available to unsubscribed team owners', async () => {
     const user = userEvent.setup()
     mockIsActiveSubscription.value = false
@@ -791,6 +975,25 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('lets a never-subscribed team workspace top up on Local instead of upselling', () => {
+    mockDistributionState.isCloud = false
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    mockHasSubscription.value = false
+    renderComponent()
+
+    expect(
+      screen.queryByText('This workspace is not on a subscription')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe Now' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-zero-state',
+      'false'
+    )
   })
 
   it('shows a loading indicator instead of a false Free plan while billing loads', () => {
@@ -818,12 +1021,29 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockInitialize).toHaveBeenCalledOnce()
   })
 
+  it('hides Subscribe Now when the server denies self-serve to a client-side owner', () => {
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    mockHasSubscription.value = false
+    mockCanManageSubscription.value = true
+    mockCanSubscribeSelfServe.value = false
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe Now' })
+    ).not.toBeInTheDocument()
+  })
+
   it('shows the zero-state contact-owner view to unsubscribed members', () => {
     mockIsActiveSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
     mockHasSubscription.value = false
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
+    mockCanCancel.value = false
+    mockCanReactivate.value = false
+    mockCanChangeSeats.value = false
+    mockCanSubscribeSelfServe.value = false
     renderComponent()
 
     expect(
@@ -898,6 +1118,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('lets a Free personal workspace only rename itself (no Cancel or Delete)', async () => {
     const user = userEvent.setup()
     mockIsInPersonalWorkspace.value = true
+    // A Free personal workspace routes to legacy billing, where lifecycle
+    // authorization stays on the client.
+    mockShouldUseWorkspaceBilling.value = false
     mockIsActiveSubscription.value = false
     mockHasSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
@@ -1002,6 +1225,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('offers members only Leave Workspace in the menu', () => {
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
+    mockCanCancel.value = false
+    mockCanReactivate.value = false
+    mockCanChangeSeats.value = false
+    mockCanSubscribeSelfServe.value = false
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
@@ -1023,6 +1250,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
+    mockCanCancel.value = false
+    mockCanReactivate.value = false
+    mockCanChangeSeats.value = false
+    mockCanSubscribeSelfServe.value = false
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
