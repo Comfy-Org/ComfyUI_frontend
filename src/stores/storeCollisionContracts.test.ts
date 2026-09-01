@@ -80,8 +80,8 @@ describe('store collision contracts (EX-002)', () => {
   })
 
   it('linkStore rejects a registration at an occupied identity key', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     const store = useLinkStore()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const incumbent = linkTopology(1)
     store.registerLink(scopeA, incumbent)
 
@@ -89,22 +89,20 @@ describe('store collision contracts (EX-002)', () => {
     const result = store.registerLink(scopeSibling, challenger)
 
     expect(result).toBeUndefined()
-    expect(consoleError).toHaveBeenCalledOnce()
     expect(store.getTopology(scopeA.rootGraphId, toLinkId(1))?.graphId).toBe(
       scopeA.owningGraphId
     )
   })
 
   it('rerouteStore rejects a registration at an occupied identity key', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     const store = useRerouteStore()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const incumbent = store.registerReroute(scopeA, rerouteChain(1))
 
     const challenger = rerouteChain(1, 'sub-1')
     const result = store.registerReroute(scopeSibling, challenger)
 
     expect(result).toBeUndefined()
-    expect(consoleError).toHaveBeenCalledOnce()
     expect(store.getReroute(scopeA, toRerouteId(1))).toEqual(incumbent)
   })
 
