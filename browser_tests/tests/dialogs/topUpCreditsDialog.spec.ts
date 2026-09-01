@@ -75,7 +75,7 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
   })
 })
 
-test.describe('Top Up Credits Dialog', { tag: '@ui' }, () => {
+test.describe('TopUpCredits dialog - with billing stubs', { tag: '@ui' }, () => {
   let dialog: TopUpCreditsDialog
 
   test.beforeEach(async ({ comfyPage }) => {
