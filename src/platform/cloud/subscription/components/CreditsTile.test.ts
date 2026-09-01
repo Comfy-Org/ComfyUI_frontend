@@ -375,12 +375,14 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('says nothing about the credits while the balance is still unknown', () => {
+  it('shows no figure and no verdict while the balance is still loading', () => {
     activeProSubscription()
     state.canTopUp = true
     state.isLoading = true
     const { container } = renderTile({ inactivePlan: true })
 
+    expect(screen.getAllByRole('status').length).toBeGreaterThan(0)
+    expect(container.textContent).not.toContain('633')
     expect(container.textContent).not.toContain(
       'Plan credits ended with your subscription.'
     )
@@ -389,12 +391,15 @@ describe('CreditsTile', () => {
     )
   })
 
-  it('says nothing about the credits when the balance is unavailable', () => {
+  it('shows no figure and no verdict when the balance is unavailable', () => {
     activeProSubscription()
     state.canTopUp = true
     state.balance = null
     const { container } = renderTile({ inactivePlan: true })
 
+    // A balance we could not read is not a balance of zero.
+    expect(screen.getAllByRole('status').length).toBeGreaterThan(0)
+    expect(container.textContent).not.toContain('0remaining')
     expect(container.textContent).not.toContain(
       'Plan credits ended with your subscription.'
     )

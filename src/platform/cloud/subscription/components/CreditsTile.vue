@@ -22,7 +22,7 @@
       <div class="text-sm text-muted">
         {{ $t('subscription.totalCredits') }}
       </div>
-      <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
+      <Skeleton v-if="!balanceIsKnown" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
         <i
           :class="
@@ -175,7 +175,7 @@
               <i class="icon-[lucide--info] size-4" />
             </Button>
           </span>
-          <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
+          <Skeleton v-if="!balanceIsKnown" width="3rem" height="1rem" />
           <span v-else class="flex items-center gap-1 font-bold">
             <i class="icon-[lucide--coins] size-4" />
             {{ displayPrepaid }}
