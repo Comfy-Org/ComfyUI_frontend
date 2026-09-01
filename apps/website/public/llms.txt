@@ -84,6 +84,7 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [ComfyUI Managed Builds](https://comfy.org/enterprise/managed-builds/): Reproducible ComfyUI environments for Enterprise: pin a release, runtime, custom nodes, and models, then build a deployable image.
 - [Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives/): Comfy experts who embed with your team, build your ComfyUI workflows, and teach your team to scale them.
 - [MiniMax Commercial License](https://comfy.org/minimax/license/): Commercial-use licenses for running MiniMax H3 and MiniMax Audio & Music locally; Comfy is the only official reseller, with Professional and Enterprise tiers.
+- [Request a MiniMax Professional License](https://comfy.org/minimax/license/professional-request/): Intake form for the Professional tier — a fixed-price monthly license covering up to 10 users.
 - [Launches](https://comfy.org/launches/): Everything new in ComfyUI in one place: the latest launches across desktop, cloud, and the core engine.
 
 ## Models
