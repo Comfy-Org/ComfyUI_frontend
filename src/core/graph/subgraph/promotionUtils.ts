@@ -313,7 +313,7 @@ export function promoteValueWidgetViaSubgraphInput(
   return { ok: true }
 }
 
-function seedNestedPromotedInputState(
+export function seedNestedPromotedInputState(
   subgraphNode: SubgraphNode,
   inputName: string,
   sourceSlot: { widgetId?: WidgetId; label?: string }
@@ -332,8 +332,7 @@ function seedNestedPromotedInputState(
   const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
   hostInput.widget ??= { name: inputName }
   hostInput.widget.name = inputName
-  hostInput.widgetId = id
-  store.registerWidget(
+  const registered = store.registerWidget(
     id,
     {
       type: sourceState.type,
@@ -345,6 +344,14 @@ function seedNestedPromotedInputState(
     },
     store.getWidgetRenderState(sourceSlot.widgetId) ?? {}
   )
+  if (!registered) {
+    delete hostInput.widget
+    delete hostInput.widgetId
+    hostInput._widget = undefined
+    return
+  }
+
+  hostInput.widgetId = id
 }
 
 function promotePreviewViaExposure(
