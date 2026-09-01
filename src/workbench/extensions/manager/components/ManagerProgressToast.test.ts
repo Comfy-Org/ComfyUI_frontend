@@ -109,7 +109,6 @@ const renderComponent = async () => {
 
 describe('ManagerProgressToast', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockFailedTasksIds.value = []
   })
 
