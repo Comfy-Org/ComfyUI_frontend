@@ -328,12 +328,9 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await expect.poll(() => deleteRequests).toHaveLength(1)
     expect(deleteRequests[0]).toEqual({ delete: ['alpha'] })
     await expect(tab.getAssetCardByName('alpha')).toHaveCount(0)
-    await expect(async () => {
-      await expect(comfyPage.toast.toastSuccesses).toContainText(
-        'Asset deleted successfully',
-        { timeout: 1000 }
-      )
-    }, 'Deletion is not supported on local').rejects.toThrow()
+    await expect(comfyPage.toast.toastSuccesses).toContainText(
+      'Deletion successful'
+    )
   })
 })
 

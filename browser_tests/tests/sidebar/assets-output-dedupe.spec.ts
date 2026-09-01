@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 /**
@@ -75,18 +75,15 @@ test.describe(
   'Expanded folder view dedupes duplicate composite output keys',
   { tag: '@cloud' },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.assets.mockCloudAssets({
+    test.beforeEach(async ({ page }) => {
+      const assets = new AssetsHelper(page)
+      await assets.mockCloudAssets({
         assets: CLOUD_ASSETS,
         total: CLOUD_ASSETS.length,
         has_more: false
       })
-      await comfyPage.assets.mockInputFiles([])
-      await comfyPage.assets.mockJobDetail(STACK_JOB_ID, STACK_JOB_DETAIL)
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.assets.clearMocks()
+      await assets.mockInputFiles([])
+      await assets.mockJobDetail(STACK_JOB_ID, STACK_JOB_DETAIL)
     })
 
     test('renders one tile per unique composite key', async ({

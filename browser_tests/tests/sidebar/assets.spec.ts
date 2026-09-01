@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
+  AssetsHelper,
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -139,20 +140,6 @@ const JOB_GAMMA_DETAIL: JobDetail = {
     }
   }
 }
-
-const cloudTest = test.extend<{ mockCloudAssetSidebarData: void }>({
-  mockCloudAssetSidebarData: async ({ comfyPage }, use) => {
-    await comfyPage.assets.mockCloudAssets({
-      assets: CLOUD_ASSETS,
-      total: CLOUD_ASSETS.length,
-      has_more: false
-    })
-
-    await use()
-
-    await comfyPage.assets.clearMocks()
-  }
-})
 
 // ==========================================================================
 // 1. Empty states
@@ -819,96 +806,98 @@ test.describe('Assets sidebar - bulk actions', () => {
   })
 })
 
-cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
-  cloudTest(
-    'Single job selection uses preserve naming strategy',
-    async ({ comfyPage, mockCloudAssetSidebarData }) => {
-      void mockCloudAssetSidebarData
-      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
+  test.beforeEach(async ({ page }) => {
+    await new AssetsHelper(page).mockCloudAssets({
+      assets: CLOUD_ASSETS,
+      total: CLOUD_ASSETS.length,
+      has_more: false
+    })
+  })
 
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
+  test('Single job selection uses preserve naming strategy', async ({
+    comfyPage
+  }) => {
+    const exportRequests = await comfyPage.assets.captureAssetExportRequests()
 
-      await tab.assetCards.first().click()
-      await expect(tab.downloadSelectedButton).toBeVisible()
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
 
-      await tab.downloadSelectedButton.click()
+    await tab.assetCards.first().click()
+    await expect(tab.downloadSelectedButton).toBeVisible()
 
-      await expect.poll(() => exportRequests).toHaveLength(1)
+    await tab.downloadSelectedButton.click()
 
-      const payload = exportRequests[0]
-      expect(payload.job_ids).toEqual([JOB_IDS.gamma])
-      expect(payload.job_asset_name_filters).toBeUndefined()
-      expect(payload.naming_strategy).toBe('preserve')
-    }
-  )
+    await expect.poll(() => exportRequests).toHaveLength(1)
 
-  cloudTest(
-    'Multiple selected assets from one job use preserve naming strategy',
-    async ({ comfyPage, mockCloudAssetSidebarData }) => {
-      void mockCloudAssetSidebarData
-      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
-      await comfyPage.assets.mockJobDetail(JOB_IDS.gamma, JOB_GAMMA_DETAIL)
+    const payload = exportRequests[0]
+    expect(payload.job_ids).toEqual([JOB_IDS.gamma])
+    expect(payload.job_asset_name_filters).toBeUndefined()
+    expect(payload.naming_strategy).toBe('preserve')
+  })
 
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
+  test('Multiple selected assets from one job use preserve naming strategy', async ({
+    comfyPage
+  }) => {
+    const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+    await comfyPage.assets.mockJobDetail(JOB_IDS.gamma, JOB_GAMMA_DETAIL)
 
-      await tab.assetCards
-        .first()
-        .getByRole('button', { name: 'See more outputs' })
-        .click()
-      await expect(tab.backToAssetsButton).toBeVisible()
-      await expect.poll(() => tab.assetCards.count()).toBe(2)
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
 
-      await tab.assetCards.first().click()
-      await comfyPage.page.keyboard.down('Control')
-      await tab.assetCards.nth(1).click()
-      await comfyPage.page.keyboard.up('Control')
+    await tab.assetCards
+      .first()
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+    await expect(tab.backToAssetsButton).toBeVisible()
+    await expect.poll(() => tab.assetCards.count()).toBe(2)
 
-      await expect(tab.selectedCards).toHaveCount(2)
-      await tab.downloadSelectedButton.click()
+    await tab.assetCards.first().click()
+    await comfyPage.page.keyboard.down('Control')
+    await tab.assetCards.nth(1).click()
+    await comfyPage.page.keyboard.up('Control')
 
-      await expect.poll(() => exportRequests).toHaveLength(1)
+    await expect(tab.selectedCards).toHaveCount(2)
+    await tab.downloadSelectedButton.click()
 
-      const payload = exportRequests[0]
-      expect(payload.job_ids).toEqual([JOB_IDS.gamma])
-      const assetNames = payload.job_asset_name_filters?.[JOB_IDS.gamma] ?? []
-      expect(assetNames).toHaveLength(2)
-      expect(assetNames).toEqual(
-        expect.arrayContaining(['abstract_art.png', 'abstract_art_alt.png'])
-      )
-      expect(payload.naming_strategy).toBe('preserve')
-    }
-  )
+    await expect.poll(() => exportRequests).toHaveLength(1)
 
-  cloudTest(
-    'Multiple selected jobs use job-time naming strategy',
-    async ({ comfyPage, mockCloudAssetSidebarData }) => {
-      void mockCloudAssetSidebarData
-      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+    const payload = exportRequests[0]
+    expect(payload.job_ids).toEqual([JOB_IDS.gamma])
+    const assetNames = payload.job_asset_name_filters?.[JOB_IDS.gamma] ?? []
+    expect(assetNames).toHaveLength(2)
+    expect(assetNames).toEqual(
+      expect.arrayContaining(['abstract_art.png', 'abstract_art_alt.png'])
+    )
+    expect(payload.naming_strategy).toBe('preserve')
+  })
 
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
+  test('Multiple selected jobs use job-time naming strategy', async ({
+    comfyPage
+  }) => {
+    const exportRequests = await comfyPage.assets.captureAssetExportRequests()
 
-      await tab.assetCards.nth(1).click()
-      await comfyPage.page.keyboard.down('Control')
-      await tab.assetCards.nth(2).click()
-      await comfyPage.page.keyboard.up('Control')
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
 
-      await expect(tab.selectedCards).toHaveCount(2)
-      await tab.downloadSelectedButton.click()
+    await tab.assetCards.nth(1).click()
+    await comfyPage.page.keyboard.down('Control')
+    await tab.assetCards.nth(2).click()
+    await comfyPage.page.keyboard.up('Control')
 
-      await expect.poll(() => exportRequests).toHaveLength(1)
+    await expect(tab.selectedCards).toHaveCount(2)
+    await tab.downloadSelectedButton.click()
 
-      const payload = exportRequests[0]
-      expect(payload.job_ids).toHaveLength(2)
-      expect(payload.job_ids).toEqual(
-        expect.arrayContaining([JOB_IDS.alpha, JOB_IDS.beta])
-      )
-      expect(payload.job_asset_name_filters).toBeUndefined()
-      expect(payload.naming_strategy).toBe('group_by_job_time')
-    }
-  )
+    await expect.poll(() => exportRequests).toHaveLength(1)
+
+    const payload = exportRequests[0]
+    expect(payload.job_ids).toHaveLength(2)
+    expect(payload.job_ids).toEqual(
+      expect.arrayContaining([JOB_IDS.alpha, JOB_IDS.beta])
+    )
+    expect(payload.job_asset_name_filters).toBeUndefined()
+    expect(payload.naming_strategy).toBe('group_by_job_time')
+  })
 })
 
 // ==========================================================================
@@ -994,10 +983,8 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     const dialog = comfyPage.confirmDialog.root
     await expect(dialog).toBeVisible()
-    await expect(dialog.getByText('Delete this asset?')).toBeVisible()
-    await expect(
-      dialog.getByText('This asset will be permanently removed.')
-    ).toBeVisible()
+    await expect(dialog.getByText('Delete these items')).toBeVisible()
+    await expect(dialog.getByText('abstract_art.png')).toBeVisible()
   })
 
   test('Confirming delete removes asset and shows success toast', async ({
@@ -1020,9 +1007,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
     const successToast = comfyPage.page.locator('.p-toast-message-success')
-    await expect(async () => {
-      await expect(successToast).toBeVisible({ timeout: 1000 })
-    }, 'Deletion is not supported on local').rejects.toThrow()
+    await expect(successToast).toBeVisible()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {
