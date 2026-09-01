@@ -147,6 +147,19 @@ function json(value: unknown): string {
   }
 }
 
+function redactEventPayloads(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactEventPayloads)
+  if (!isRecord(value)) return value
+  return Object.fromEntries(
+    Object.entries(value).map(([key, nested]) => [
+      key,
+      key === 'value' || key === 'widgets_values' || key === 'node'
+        ? REDACTED
+        : redactEventPayloads(nested)
+    ])
+  )
+}
+
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
   return `…(${text.length - max} earlier characters trimmed)…\n${text.slice(-max)}`
@@ -332,8 +345,11 @@ export async function collectCrdtDebugReport(
 
   sections.push(
     '## CRDT event log',
-    `${SHARING_WARNING} Frames are recorded as envelopes, but op ids and workflow ids appear verbatim.`,
-    fence('json', truncate(json(input.events), MAX_SECTION_CHARS))
+    `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`,
+    fence(
+      'json',
+      truncate(json(redactEventPayloads(input.events)), MAX_SECTION_CHARS)
+    )
   )
 
   sections.push(

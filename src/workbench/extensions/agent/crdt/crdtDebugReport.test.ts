@@ -167,6 +167,40 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('## System')
   })
 
+  it('redacts widget values from outbound operation events', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [
+        {
+          seq: 1,
+          at: 0,
+          kind: 'ws_out',
+          scope: 'wire',
+          level: 'trace',
+          detail: {
+            frame: {
+              type: 'doc_ops',
+              data: {
+                ops: [
+                  {
+                    op: 'set_widget',
+                    op_id: 'op-safe',
+                    node_id: 'A',
+                    widget: 'text',
+                    value: 'private prompt'
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    })
+
+    expect(report).toContain('op-safe')
+    expect(report).not.toContain('private prompt')
+  })
+
   it('redacts a credential nested under an innocuous key', async () => {
     getSettings.mockResolvedValue({
       'Comfy.Server.LaunchArgs': { '--api-token': 'nested-do-not-leak' },
