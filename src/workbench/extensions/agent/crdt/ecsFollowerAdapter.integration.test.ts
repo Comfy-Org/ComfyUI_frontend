@@ -562,6 +562,55 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('leaves an existing projection untouched when rebound', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            pos: [10, 20],
+            widgets_values: { seed: 42 }
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const createLayout = vi.fn()
+    const deleteLayouts = vi.fn()
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      })
+    )
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    adapter.applyFrame({ workflowId: 'wf', seq: 1, update })
+    const [projected] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
+
+    adapter.bind('wf', follower)
+
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([
+      projected
+    ])
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+        ?.value
+    ).toBe(42)
+    expect(createLayout).not.toHaveBeenCalled()
+    expect(deleteLayouts).not.toHaveBeenCalled()
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('applies an implicit disconnect when delete-wins installs no replacement', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
