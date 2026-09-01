@@ -460,6 +460,7 @@ import { useLazyPagination } from '@/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { isModelDownloadable } from '@/platform/missingModel/missingModelDownload'
 import { useTelemetry } from '@/platform/telemetry'
@@ -958,16 +959,10 @@ function invalidateDetailWork() {
   detailGeneration++
 }
 
-function formatRequirementType(directory: string): string {
-  const normalized = directory.trim().replace(/[_-]+/g, ' ')
-  if (!normalized) return ''
-  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
-}
-
 function getModelTypeLabel(row: TemplateModelSetupRow): string {
   return row.modelType.kind === 'known'
     ? t(`templateWorkflows.detail.modelTypes.${row.modelType.key}`)
-    : formatRequirementType(row.modelType.raw)
+    : formatCategoryLabel(row.modelType.raw)
 }
 
 function getModelDetailDescription(row: TemplateModelSetupRow): string {
@@ -994,8 +989,8 @@ function buildTemplateDetailGroups(
     {
       id: 'models',
       label: t('templateWorkflows.detail.models'),
-      ...(setup.rowTotal.isComplete && {
-        total: formatSize(setup.rowTotal.bytes)
+      ...(setup.declarationTotal.isComplete && {
+        total: formatSize(setup.declarationTotal.bytes)
       }),
       rows: setup.rows.map((row) => ({
         id: `model:${getModelFileKey(row.model)}`,
