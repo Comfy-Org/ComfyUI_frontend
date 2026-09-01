@@ -327,6 +327,29 @@ describe('recording template', () => {
       expect(keyA).not.toBe(keyB)
     })
 
+    it('keeps custom backends on different ports in separate buckets', () => {
+      const distribution = {
+        id: 'custom',
+        label: 'Custom backend',
+        hint: '',
+        script: 'dev',
+        needsLocalBackend: false
+      } as const
+
+      expect(
+        storageStateKey({
+          ...distribution,
+          backendUrl: 'http://localhost:8100/'
+        })
+      ).toBe('custom-localhost-8100')
+      expect(
+        storageStateKey({
+          ...distribution,
+          backendUrl: 'http://localhost:8200/'
+        })
+      ).toBe('custom-localhost-8200')
+    })
+
     it('falls back to a shared bucket if the custom backend URL cannot be parsed', () => {
       expect(
         storageStateKey({
