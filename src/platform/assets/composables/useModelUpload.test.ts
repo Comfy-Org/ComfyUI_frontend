@@ -26,7 +26,6 @@ vi.mock(
   () => ({ default: {} })
 )
 
-import { HUG_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 
 describe('useModelUpload', () => {
@@ -36,14 +35,17 @@ describe('useModelUpload', () => {
   })
 
   it.for([false, true])(
-    'shrink-wraps the dialog with the shared hug token (privateModels: %s)',
+    'opens the appropriate upload dialog (privateModels: %s)',
     (privateModelsEnabled) => {
       flags.privateModelsEnabled = privateModelsEnabled
 
       useModelUpload().showUploadDialog()
 
       const [args] = showDialog.mock.calls[0]
-      expect(args.dialogComponentProps.contentClass).toBe(HUG_CONTENT_CLASS)
+      expect(args.key).toBe(
+        privateModelsEnabled ? 'upload-model' : 'upload-model-upgrade'
+      )
+      expect(args.dialogComponentProps.renderer).toBe('reka')
     }
   )
 })
