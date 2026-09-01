@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import { findCanonicalDrift, parseLlmsTxtLinks } from '../src/lib/llms-txt'
 
 const DIST_DIR = join(process.cwd(), 'dist')
-const CANONICAL_LINK =
-  /<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i
+const CANONICAL_LINK = /<link\b[^>]*\brel=["']canonical["'][^>]*>/i
+const HREF_ATTRIBUTE = /\bhref=["']([^"']+)["']/i
 
 /** `/download/` -> `dist/download/index.html`, `/` -> `dist/index.html`. */
 function distFileFor(pathname: string): string {
@@ -22,7 +22,11 @@ function canonicalFor(pathname: string): string | undefined {
     return undefined
   }
 
-  const canonical = CANONICAL_LINK.exec(html)?.[1]
+  const canonicalTag = CANONICAL_LINK.exec(html)?.[0]
+  const canonical =
+    canonicalTag === undefined
+      ? undefined
+      : HREF_ATTRIBUTE.exec(canonicalTag)?.[1]
   if (canonical === undefined) {
     throw new Error(
       `Built page ${distFileFor(pathname)} has no canonical link.`
