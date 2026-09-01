@@ -589,11 +589,14 @@ describe('Composer', () => {
   })
 
   it('builds the remove tooltip for a selection chip', () => {
-    const spy = vi.spyOn(tooltipConfig, 'buildAgentTooltipConfig')
-
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    expect(spy).toHaveBeenCalledWith('Remove')
+    const removeButton = screen.getByRole('button', {
+      name: 'Remove KSampler #5 reference'
+    })
+    expect(tooltipBindings.get(removeButton)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig('Remove')
+    )
   })
 
   it('emits focusTag when a selection chip is activated', async () => {
