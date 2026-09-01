@@ -26,12 +26,8 @@ export class SubgraphHelper {
   }
 
   async toggleCollapse(nodeId: string): Promise<void> {
-    await this.page.evaluate((id) => {
-      const node = window.app!.graph!.getNodeById(id)
-      if (!node) throw new Error(`Node ${id} not found`)
-      node.collapse()
-    }, nodeId)
-    await this.comfyPage.nextFrame()
+    const node = await this.comfyPage.nodeOps.getNodeRefById(nodeId)
+    await node.toggleCollapse()
   }
 
   /**
