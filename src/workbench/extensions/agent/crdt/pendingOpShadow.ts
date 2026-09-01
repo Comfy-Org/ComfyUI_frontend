@@ -206,9 +206,10 @@ export function createPendingOpShadowSurface(): PendingOpShadowSurface {
     },
 
     subscribe(listener) {
-      listeners.add(listener)
+      const registration = (change: ShadowChange) => listener(change)
+      listeners.add(registration)
       return () => {
-        listeners.delete(listener)
+        listeners.delete(registration)
       }
     }
   }
