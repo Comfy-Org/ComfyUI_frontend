@@ -32,7 +32,7 @@ const WORKFLOWS = [
   { file: 'upscale-4k.json', endpoint: 'upscale-4k' }
 ] as const
 
-const CYCLE_INTERVAL_MS = 3000
+const CYCLE_INTERVAL_MS = 5000
 
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)

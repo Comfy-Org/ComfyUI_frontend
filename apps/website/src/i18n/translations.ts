@@ -7538,14 +7538,6 @@ Enterprise`
     en: 'Deploy and scale ComfyUI workflows. Your workflows. Every model. One API.',
     'zh-CN': '部署并扩展 ComfyUI 工作流。你的工作流。所有模型。一个 API。'
   },
-  'platform.terminal.buildResolved': {
-    en: 'Builder resolved 5 models, 3 custom nodes...',
-    'zh-CN': 'Builder 已解析 5 个模型、3 个自定义节点...'
-  },
-  'platform.terminal.deployed': {
-    en: 'Deployed https://abc-ref2v.run.comfy.app',
-    'zh-CN': '已部署 https://abc-ref2v.run.comfy.app'
-  },
   'enterprise.managedBuilds.badge': {
     en: 'Enterprise',
     'zh-CN': '企业版'
