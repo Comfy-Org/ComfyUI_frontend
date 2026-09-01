@@ -88,7 +88,7 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
       // preview 404s (and retries with a fresh rand). Console-only noise,
       // no visible error; upstream-report candidate.
       pattern:
-        /Failed to load resource.*\/api\/view\?type=input&filename=undefined/,
+        /Failed to load resource.*\/api\/view\?filename=undefined&subfolder=&type=input/,
       reason: 'loader preview fetches undefined filename on empty input dir',
       restore:
         'skip the preview request when no loader filename exists and remove this entry'
@@ -131,7 +131,7 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       id: 'ultrashape-mesh-placeholder-preview',
       pattern:
-        /Failed to load resource.*404.*api\/view\?type=input&filename=%28upload\+a\+mesh\+file%29&subfolder=&rand=/,
+        /Failed to load resource.*404.*api\/view\?filename=%28upload\+a\+mesh\+file%29&subfolder=&type=input&rand=/,
       global: true,
       reason:
         'mesh preview requests the literal upload-placeholder value on a backend with no mesh input',

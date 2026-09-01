@@ -98,7 +98,9 @@ const {
     resetAllOutputsAndPreviews: vi.fn(),
     stashPreviewsForWorkflow: vi.fn(),
     restorePreviewsForWorkflow: vi.fn(),
-    discardPreviewsForWorkflow: vi.fn()
+    discardPreviewsForWorkflow: vi.fn(),
+    getNodeOutputs: vi.fn(),
+    setNodeOutputImages: vi.fn()
   },
   mockSubgraphNavigationStore: {
     saveCurrentViewport: vi.fn(),
@@ -230,8 +232,8 @@ function createMockCanvas(): Partial<LGraphCanvas> {
   return {
     graph: mockGraph as LGraph,
     draw: vi.fn(),
-    selectItems: vi.fn(),
     setDirty: vi.fn(),
+    selectItems: vi.fn(),
     setGraph: vi.fn()
   }
 }
@@ -2339,6 +2341,48 @@ describe('ComfyApp', () => {
       resolveAfterLoad?.()
       await handleFile
       expect(settled).toBe(true)
+    })
+  })
+
+  describe('clipspace', () => {
+    it('pastes the image the user selected when outputs contain degenerate entries', () => {
+      singletonApp.canvas = mockCanvas
+      const good = { filename: 'good.png', subfolder: '', type: 'output' }
+      const source = createMockNode({
+        imgs: [{ src: 'a' }, { src: 'b' }],
+        imageIndex: 1
+      })
+      mockNodeOutputStore.getNodeOutputs.mockImplementation((node) =>
+        node === source
+          ? {
+              images: [
+                null,
+                { status: 'unavailable', reason: 'upload_failed' },
+                { filename: 'stale.png', subfolder: '', type: 'output' },
+                good
+              ]
+            }
+          : undefined
+      )
+      mockNodeOutputStore.setNodeOutputImages.mockImplementation(
+        (node, images) => {
+          node.images = images
+        }
+      )
+
+      ComfyApp.copyToClipspace(source)
+
+      const imageWidget = { name: 'image', type: 'combo', value: 'before.png' }
+      const target = createMockNode({
+        id: 2,
+        imgs: [],
+        widgets: [imageWidget]
+      })
+
+      ComfyApp.pasteFromClipspace(target)
+
+      expect(imageWidget.value).toBe('good.png [output]')
+      expect(target.images).toEqual([good])
     })
   })
 
