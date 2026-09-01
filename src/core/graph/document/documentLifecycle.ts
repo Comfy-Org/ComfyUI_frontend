@@ -64,7 +64,9 @@ export function reduceDocument(
         return state
       return { ...state, savedRevision: event.atRevision }
     case 'closed': {
-      if (state.phase !== 'loaded') return state
+      // `created` documents are closable too: a document whose hydration
+      // failed (or never ran) must not be stuck in the registry forever.
+      if (state.phase === 'closed') return state
       if (event.atRevision !== state.revision) return state
       if (!event.discardChanges && persistenceOf(state) !== 'clean')
         return state

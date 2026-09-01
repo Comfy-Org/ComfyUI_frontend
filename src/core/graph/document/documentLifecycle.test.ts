@@ -132,12 +132,21 @@ describe('reduceDocument', () => {
     ).toEqual(closed)
   })
 
-  it('cannot close a document that was never loaded', () => {
-    const attempted = reduceDocument(initialDocumentState, {
+  it('blocks closing a never-loaded document without an explicit discard', () => {
+    const blocked = reduceDocument(initialDocumentState, {
+      type: 'closed',
+      atRevision: 0,
+      discardChanges: false
+    })
+    expect(blocked.phase).toBe('created')
+  })
+
+  it('closes a never-loaded document when changes are explicitly discarded', () => {
+    const closed = reduceDocument(initialDocumentState, {
       type: 'closed',
       atRevision: 0,
       discardChanges: true
     })
-    expect(attempted.phase).toBe('created')
+    expect(closed.phase).toBe('closed')
   })
 })
