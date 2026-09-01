@@ -60,11 +60,12 @@ describe('deriveTemplateModelSetup', () => {
       { model: manual, status: 'missing' }
     ]
     const manualHref = 'https://metadata-resolver.example/gated-model'
+    const paddedManualHref = `  ${manualHref}  `
     const metadata: TemplateModelMetadataBatchResult = {
       status: 'completed',
       entries: [
-        resolvedMetadata(unavailable, 60),
-        resolvedMetadata(manual, 10, manualHref),
+        resolvedMetadata(unavailable, Number.NaN),
+        resolvedMetadata(manual, 10, paddedManualHref),
         {
           model: metadataFailed,
           fileSize: null,
@@ -106,6 +107,7 @@ describe('deriveTemplateModelSetup', () => {
       href: manualHref
     })
     expect(result.rows[2]).not.toHaveProperty('href')
+    expect(result.rows[5]).toMatchObject({ fileSize: null })
     expect(isDownloadable).toHaveBeenCalledTimes(3)
     expect(isDownloadable).toHaveBeenNthCalledWith(1, metadataFailed)
     expect(isDownloadable).toHaveBeenNthCalledWith(2, downloadable)
@@ -142,10 +144,10 @@ describe('deriveTemplateModelSetup', () => {
       }
     ])
     expect(isDownloadable).not.toHaveBeenCalled()
-    expect(result.rowTotal).toEqual({ bytes: 0, isComplete: false })
+    expect(result.declarationTotal).toEqual({ bytes: 0, isComplete: false })
   })
 
-  it('deduplicates totals by exact identity while preserving every row', () => {
+  it('totals every declaration once by exact identity', () => {
     const installed = model('installed.safetensors')
     const checkpoint = model('shared-name.safetensors', 'checkpoints')
     const duplicateCheckpoint = { ...checkpoint }
@@ -211,7 +213,10 @@ describe('deriveTemplateModelSetup', () => {
       fileSize: 100
     })
     expect(result.rows).toHaveLength(requirements.length)
-    expect(result.rowTotal).toEqual({ bytes: 720, isComplete: false })
+    expect(result.declarationTotal).toEqual({
+      bytes: 720,
+      isComplete: false
+    })
   })
 
   it('treats a known zero-byte downloadable model as complete', () => {
@@ -231,7 +236,7 @@ describe('deriveTemplateModelSetup', () => {
       status: 'downloadable',
       fileSize: 0
     })
-    expect(result.rowTotal).toEqual({ bytes: 0, isComplete: true })
+    expect(result.declarationTotal).toEqual({ bytes: 0, isComplete: true })
   })
 
   it('derives known model types and preserves a raw directory fallback', () => {
