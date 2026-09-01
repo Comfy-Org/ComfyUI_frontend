@@ -157,25 +157,24 @@ function pointerCancelEvent(clientX: number, clientY: number) {
 }
 
 beforeEach(() => {
-    testState.selectedNodeIds = ref(new Set<NodeId>())
-    testState.selectedItems = ref<unknown[]>([])
-    testState.nodeLayouts.clear()
-    testState.mutationFns.setSource.mockReset()
-    testState.mutationFns.moveNode.mockReset()
-    testState.mutationFns.batchMoveNodes.mockReset()
-    testState.batchUpdateNodeBounds.mockReset()
-    testState.nodeSnap.shouldSnap.mockReset()
-    testState.nodeSnap.shouldSnap.mockReturnValue(false)
-    testState.nodeSnap.applySnapToPosition.mockReset()
-    testState.nodeSnap.applySnapToPosition.mockImplementation(
-      (pos: { x: number; y: number }) => pos
-    )
-    testState.cancelAnimationFrame.mockReset()
-    testState.requestAnimationFrameCallback = null
-    testState.capturedOnPan.current = null
-    testState.capturedAutoPanInstance.current = null
-    testState.mockDs.offset = [0, 0]
-    testState.mockDs.scale = 1
+  testState.selectedNodeIds = ref(new Set<NodeId>())
+  testState.selectedItems = ref<unknown[]>([])
+  testState.nodeLayouts.clear()
+  testState.mutationFns.moveNode.mockReset()
+  testState.mutationFns.batchMoveNodes.mockReset()
+  testState.batchUpdateNodeBounds.mockReset()
+  testState.nodeSnap.shouldSnap.mockReset()
+  testState.nodeSnap.shouldSnap.mockReturnValue(false)
+  testState.nodeSnap.applySnapToPosition.mockReset()
+  testState.nodeSnap.applySnapToPosition.mockImplementation(
+    (pos: { x: number; y: number }) => pos
+  )
+  testState.cancelAnimationFrame.mockReset()
+  testState.requestAnimationFrameCallback = null
+  testState.capturedOnPan.current = null
+  testState.capturedAutoPanInstance.current = null
+  testState.mockDs.offset = [0, 0]
+  testState.mockDs.scale = 1
 
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
     testState.requestAnimationFrameCallback = cb
@@ -429,12 +428,12 @@ describe('useNodeDrag auto-pan', () => {
 
   it('releases pointer capture on pointercancel', () => {
     const drag = useNodeDrag()
-    drag.startDrag(pointerEvent(400, 300), '1')
+    drag.startDrag(pointerEvent(400, 300), node1)
 
     // Create pointercancel event with target that has pointer capture
     const cancelEvent = pointerCancelEvent(400, 300)
 
-    drag.endDrag(cancelEvent, '1')
+    drag.endDrag(cancelEvent, node1)
 
     // releasePointerCapture should be called for pointercancel
     expect(cancelEvent.target.releasePointerCapture).toHaveBeenCalledWith(1)
