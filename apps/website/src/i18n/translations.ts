@@ -7340,10 +7340,6 @@ const translations = {
   'fdct.closing.title': {
     en: 'Build your custom workflows with Comfy experts.',
     'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'
-  },
-  'test.emptyValue': {
-    en: 'Fallback Text',
-    'zh-CN': ''
   }
 } as const satisfies Record<
   string,
