@@ -1,7 +1,7 @@
 <template>
   <Toast
     position="bottom-right"
-    class="graph-toast top-[calc(anchor(--graph-canvas-panel_top,1rem)+0.25rem)] left-[calc(anchor(--graph-canvas-panel_right,anchor(--docked-agent-panel_left,calc(100vw-0.75rem)))-25.5rem)] z-10000 h-fit w-100 [&_.p-toast-close-button]:size-7 [&_.p-toast-close-icon]:size-4 [&_.p-toast-close-icon]:text-base [&_.p-toast-detail]:text-sm [&_.p-toast-message]:mb-4 [&_.p-toast-message]:min-h-[73px] [&_.p-toast-message-content]:gap-2 [&_.p-toast-message-content]:p-3 [&_.p-toast-message-icon]:size-4.5 [&_.p-toast-message-icon]:text-lg [&_.p-toast-message-text]:gap-2 [&_.p-toast-summary]:text-base"
+    class="graph-toast top-[calc(anchor(--graph-canvas-panel_top,1rem)+0.25rem)] left-[calc(anchor(--graph-canvas-panel_right,calc(100vw-var(--workspace-inset-right,0px)-0.75rem))-25.5rem)] z-10000 h-fit w-100 [&_.p-toast-close-button]:size-7 [&_.p-toast-close-icon]:size-4 [&_.p-toast-close-icon]:text-base [&_.p-toast-detail]:text-sm [&_.p-toast-message]:mb-4 [&_.p-toast-message]:min-h-[73px] [&_.p-toast-message-content]:gap-2 [&_.p-toast-message-content]:p-3 [&_.p-toast-message-icon]:size-4.5 [&_.p-toast-message-icon]:text-lg [&_.p-toast-message-text]:gap-2 [&_.p-toast-summary]:text-base"
   />
   <Toast group="billing-operation" position="top-right">
     <template #message="slotProps">
@@ -36,14 +36,6 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 const toast = useToast()
 const toastStore = useToastStore()
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
-
-/**
- * Messages raised while node selection mode is active. The mode hides the whole
- * toast layer, and adding to a hidden layer would let anything carrying a `life`
- * expire unseen - so they are held here and replayed on exit. Messages without a
- * `life` are sticky in PrimeVue, so errors already on screen survive the hide
- * untouched. Deliberately a plain array: nothing renders it.
- */
 let deferredMessages: ToastMessageOptions[] = []
 
 watch(
@@ -54,11 +46,8 @@ watch(
     }
 
     newMessages.forEach((message) => {
-      if (agentNodeSelectionStore.isActive) {
-        deferredMessages.push(message)
-      } else {
-        toast.add(message)
-      }
+      if (agentNodeSelectionStore.isActive) deferredMessages.push(message)
+      else toast.add(message)
     })
     toastStore.messagesToAdd = []
   },
@@ -69,9 +58,7 @@ watch(
   () => agentNodeSelectionStore.isActive,
   (active) => {
     if (active) return
-    deferredMessages.splice(0).forEach((message) => {
-      toast.add(message)
-    })
+    deferredMessages.splice(0).forEach((message) => toast.add(message))
   }
 )
 
@@ -95,8 +82,6 @@ watch(
   (requested) => {
     if (requested) {
       toast.removeAllGroups()
-      // Held messages were cleared too - replaying them on exit would resurrect
-      // exactly what the caller just dismissed.
       deferredMessages = []
       toastStore.removeAllRequested = false
     }

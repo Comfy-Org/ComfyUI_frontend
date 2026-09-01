@@ -229,6 +229,16 @@ describe('WorkflowSelectorChip', () => {
     expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
   })
 
+  it('[12-T5 regression] lets dropdown navigation keys escape the search input', async () => {
+    const { user } = renderChip()
+    await user.click(trigger())
+    const search = await screen.findByPlaceholderText(
+      enMessages.agent.searchWorkflows
+    )
+    await user.type(search, '{ArrowDown}{Enter}')
+    expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
+  })
+
   it('marks the row the agent is editing with a spinner', async () => {
     useWorkflowTabActivityStore().setEditing('workflows/upscale.json')
     const { user } = renderChip()
