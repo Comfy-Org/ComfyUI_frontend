@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkTopology } from '@/types/linkTopology'
 
+import { beginGraphLoad, settleGraphLoad } from '@/base/graphLoadLifecycle'
 import { useLinkStore } from '@/stores/linkStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -30,12 +31,26 @@ function topology(id: number): LinkTopology {
   }
 }
 
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let resolve = (): void => {}
+  const promise = new Promise<void>((fulfill) => {
+    resolve = fulfill
+  })
+  return { promise, resolve }
+}
+
+async function runGraphLoad(pause: Promise<void>): Promise<void> {
+  const token = beginGraphLoad()
+  await pause
+  settleGraphLoad(token)
+}
+
 describe('overlapping graph-load mint suppression', () => {
   let wiring: MintPortWiring | undefined
 
   afterEach(() => wiring?.detach())
 
-  it('characterizes an outer close releasing suppression while a nested load remains active', () => {
+  it('keeps a replacement load suppressed when a stale load settles', async () => {
     setActivePinia(createPinia())
     const minted: GraphOperation[] = []
     wiring = attachMintPortWiring({
@@ -53,22 +68,30 @@ describe('overlapping graph-load mint suppression', () => {
       })
     })
 
-    wiring.onBeforeGraphLoad()
-    wiring.onBeforeGraphLoad()
+    const pauseA = deferred()
+    const pauseB = deferred()
+    const loadA = runGraphLoad(pauseA.promise)
+    const loadB = runGraphLoad(pauseB.promise)
     useLinkStore().registerLink(ROOT_SCOPE, topology(1))
     expect(minted).toEqual([])
 
-    wiring.onAfterGraphConfigure()
+    pauseA.resolve()
+    await loadA
     useLinkStore().registerLink(ROOT_SCOPE, topology(2))
+    expect(minted).toEqual([])
+
+    pauseB.resolve()
+    await loadB
+    useLinkStore().registerLink(ROOT_SCOPE, topology(3))
 
     expect(minted).toEqual([
       {
         op: 'connect',
-        link_id: 2,
+        link_id: 3,
         from_node: toNodeId(1),
         from_slot: 0,
         to_node: toNodeId(2),
-        to_slot: 2,
+        to_slot: 3,
         link_type: 'IMAGE'
       }
     ])

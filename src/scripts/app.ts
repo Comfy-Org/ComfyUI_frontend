@@ -4,6 +4,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
+import { beginGraphLoad, settleGraphLoad } from '@/base/graphLoadLifecycle'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
@@ -1269,6 +1270,7 @@ export class ComfyApp {
       workflowNavigationId
     } = options
     useWorkflowService().beforeLoadNewGraph(clean !== false)
+    const graphLoadToken = beginGraphLoad()
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
     if (skipAssetScans) {
@@ -1534,6 +1536,7 @@ export class ComfyApp {
         'afterConfigureGraph',
         missingNodeTypes
       )
+      settleGraphLoad(graphLoadToken)
 
       const effectiveShareId =
         shareId ??

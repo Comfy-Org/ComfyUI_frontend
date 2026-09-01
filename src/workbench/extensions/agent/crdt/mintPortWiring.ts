@@ -2,9 +2,9 @@
  * Composition seam for the three mint ports. Layout pieces are injected
  * (workbench must not import renderer); link/widget adapt via Pinia $onAction,
  * which fires synchronously around each action. A replace maps to PLACED and
- * never DELETED (the store displaces incumbents internally). Load brackets
- * are a fail-closed boolean over beforeLoadGraph/afterConfigureGraph: a
- * failed load leaves mints suppressed until the next load's pair recloses.
+ * never DELETED (the store displaces incumbents internally). Graph-load
+ * suppression follows the latest-started load so a stale completion cannot
+ * reopen minting while its replacement is still loading.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -12,6 +12,8 @@ import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
+import { onGraphLoadLifecycle } from '@/base/graphLoadLifecycle'
+import type { GraphLoadToken } from '@/base/graphLoadLifecycle'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { isFloatingTopology } from '@/types/linkTopology'
@@ -58,21 +60,7 @@ export interface MintPortWiring {
   runRemoteScope(apply: () => void): void
   /** The layout port's intentional-clear window (human clear paths only). */
   runIntentionalClear<T>(fn: () => T): T
-  /** Forward from the app extension's `beforeLoadGraph` hook. */
-  onBeforeGraphLoad(): void
-  /** Forward from the app extension's `afterConfigureGraph` hook. */
-  onAfterGraphConfigure(): void
   detach(): void
-}
-
-const activeWirings = new Set<MintPortWiring>()
-
-export function notifyMintPortsBeforeGraphLoad(): void {
-  for (const wiring of activeWirings) wiring.onBeforeGraphLoad()
-}
-
-export function notifyMintPortsAfterGraphConfigure(): void {
-  for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
 }
 
 /**
@@ -106,6 +94,18 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
+  let currentGraphLoad: GraphLoadToken | null = null
+  const detachGraphLoadLifecycle = onGraphLoadLifecycle((event) => {
+    if (event.type === 'started') {
+      const bracketOpen = currentGraphLoad !== null
+      currentGraphLoad = event.token
+      if (!bracketOpen) session.beginGraphTeardown()
+      return
+    }
+    if (event.token !== currentGraphLoad) return
+    currentGraphLoad = null
+    session.endGraphTeardown()
+  })
 
   type PlacedListener = Parameters<
     Parameters<typeof attachLinkMintPort>[0]['events']['onPlaced']
@@ -223,8 +223,6 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     })
   })
 
-  let loadBracketOpen = false
-
   const wiring: MintPortWiring = {
     session,
     runRemoteScope(apply) {
@@ -235,18 +233,8 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     runIntentionalClear(fn) {
       return layoutPort.runIntentionalClear(fn)
     },
-    onBeforeGraphLoad() {
-      if (loadBracketOpen) return
-      loadBracketOpen = true
-      session.beginGraphTeardown()
-    },
-    onAfterGraphConfigure() {
-      if (!loadBracketOpen) return
-      loadBracketOpen = false
-      session.endGraphTeardown()
-    },
     detach() {
-      activeWirings.delete(wiring)
+      detachGraphLoadLifecycle()
       detachLinkActions()
       detachWidgetActions()
       widgetPort.detach()
@@ -254,6 +242,5 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       linkPort.detach()
     }
   }
-  activeWirings.add(wiring)
   return wiring
 }
