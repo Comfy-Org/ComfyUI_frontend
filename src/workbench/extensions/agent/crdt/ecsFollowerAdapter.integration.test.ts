@@ -1133,6 +1133,16 @@ describe('EcsFollowerAdapter integration', () => {
 
     // The bridge reuses one doc across a switch, so wf-b binds onto wf-a's.
     adapter.bind('wf-a', follower)
+    expect(
+      adapter.projectBaseline('wf-a', {
+        source: 'agent-remote',
+        actor: 'agent:test',
+        opId: 'baseline-a'
+      })
+    ).toBe(true)
+    expect(projectedNodes.sort()).toEqual(['wf-a:1', 'wf-a:2'])
+    expect(projectedLinks).toEqual(['wf-a:9'])
+
     adapter.unbind('wf-a')
     adapter.bind('wf-b', follower)
     expect(
@@ -1145,8 +1155,8 @@ describe('EcsFollowerAdapter integration', () => {
       })
     ).toBe(true)
 
-    expect(projectedNodes).toEqual([])
-    expect(projectedLinks).toEqual([])
+    expect(projectedNodes.sort()).toEqual(['wf-a:1', 'wf-a:2'])
+    expect(projectedLinks).toEqual(['wf-a:9'])
 
     adapter.destroy()
     follower.destroy()
