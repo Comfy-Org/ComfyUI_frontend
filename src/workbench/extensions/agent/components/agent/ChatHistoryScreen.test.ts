@@ -256,6 +256,22 @@ describe('ChatHistoryScreen', () => {
     expect(emitted().rename).toEqual([['thread-1', 'Kept on blur']])
   })
 
+  // The close-auto-focus fence is conditional: it must not eat the focus
+  // restore when the menu is dismissed without starting a rename, or keyboard
+  // users lose their place to <body>.
+  it('returns focus to the options trigger when the menu closes without a rename', async () => {
+    const user = userEvent.setup()
+    renderScreen(groupsWithTitle('Original title'))
+
+    const trigger = screen.getByRole('button', { name: 'Chat options' })
+    await user.click(trigger)
+    await screen.findByRole('menuitem', { name: 'Rename' })
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('menuitem', { name: 'Rename' })).toBeNull()
+    expect(trigger).toHaveFocus()
+  })
+
   it('still discards the draft on Escape', async () => {
     const user = userEvent.setup()
     const { emitted } = renderScreen(groupsWithTitle('Original title'))

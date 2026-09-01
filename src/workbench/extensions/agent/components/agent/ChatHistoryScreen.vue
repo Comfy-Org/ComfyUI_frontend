@@ -78,6 +78,10 @@ function focusInput(el: Element | ComponentPublicInstance | null): void {
   // before v-model has written the draft, so focusing here directly would
   // leave the caret at the end instead of selecting the existing title.
   void nextTick(() => {
+    // The row can unmount within the tick (rapid regroup, delete); focusing a
+    // detached element is a silent no-op in browsers, but bail explicitly
+    // instead of relying on that quirk.
+    if (!el.isConnected) return
     el.focus()
     if (shouldSelect) el.select()
   })
@@ -88,10 +92,21 @@ function cancelRename(): void {
 }
 
 function commitRename(session: ChatSession): void {
+  // Idempotence guard: commit is reachable from both Enter and blur, so a
+  // second call for an already-ended rename must not emit a duplicate.
+  if (renamingId.value !== session.id) return
   renamingId.value = null
   const title = renameDraft.value.trim()
   if (title !== '' && title !== session.title.trim())
     emit('rename', session.id, title)
+}
+
+// Fence reka-ui's close focus-restore only when a rename was just started
+// (@select fires before this event, so renamingId is already set on that
+// path); otherwise let Escape/outside-click return focus to the trigger so
+// keyboard users keep their place.
+function onMenuCloseAutoFocus(event: Event): void {
+  if (renamingId.value !== null) event.preventDefault()
 }
 
 function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
@@ -207,7 +222,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
                   align="end"
                   :side-offset="4"
                   class="agent-scope bg-agent-surface-raised z-1100 flex w-32 flex-col gap-1 overflow-clip rounded-[10px] p-1 shadow-md ring-1 ring-black/10 ring-inset"
-                  @close-auto-focus.prevent
+                  @close-auto-focus="onMenuCloseAutoFocus"
                 >
                   <DropdownMenuItem
                     class="text-agent-fg data-highlighted:bg-agent-surface-hover flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
