@@ -36,6 +36,7 @@ import {
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
+import type { LinkTopology } from '@/types/linkTopology'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
@@ -118,6 +119,37 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
   return undefined
 }
 
+function createSlotMetadata(
+  input: INodeInputSlot,
+  index: number,
+  link: LinkTopology | undefined,
+  graphRef: LGraph | null | undefined
+): WidgetSlotMetadata {
+  const originNode = link ? graphRef?.getNodeById(link.originNodeId) : null
+  return {
+    index,
+    linked: link !== undefined,
+    originNodeId: link?.originNodeId,
+    originOutputName: link
+      ? originNode?.outputs?.[link.originSlot]?.name
+      : undefined,
+    promoted: input.widgetId !== undefined,
+    type: String(input.type)
+  }
+}
+
+function getSlotWidgetName(
+  input: INodeInputSlot,
+  linked: boolean
+): string | undefined {
+  return (
+    input.widget?.name ||
+    ((input.widgetId !== undefined || linked) && input.name
+      ? input.name
+      : undefined)
+  )
+}
+
 function buildSlotMetadata(
   inputs: INodeInputSlot[] | undefined,
   graphRef: LGraph | null | undefined,
@@ -130,27 +162,9 @@ function buildSlotMetadata(
     const link = scope
       ? linkStore.getInputSlotLink(scope, nodeId, index)
       : undefined
-    const linked = link !== undefined
-    const originNode = link ? graphRef?.getNodeById(link.originNodeId) : null
-
-    const slotInfo: WidgetSlotMetadata = {
-      index,
-      linked,
-      originNodeId: link?.originNodeId,
-      originOutputName: link
-        ? originNode?.outputs?.[link.originSlot]?.name
-        : undefined,
-      promoted: input.widgetId !== undefined,
-      type: String(input.type)
-    }
-    const widgetName = input.widget?.name
-    if (widgetName) {
-      metadata.set(widgetName, slotInfo)
-      continue
-    }
-    if ((input.widgetId !== undefined || linked) && input.name) {
-      metadata.set(input.name, slotInfo)
-    }
+    const widgetName = getSlotWidgetName(input, link !== undefined)
+    if (!widgetName) continue
+    metadata.set(widgetName, createSlotMetadata(input, index, link, graphRef))
   }
   return metadata
 }

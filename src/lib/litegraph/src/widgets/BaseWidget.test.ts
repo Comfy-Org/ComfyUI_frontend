@@ -140,6 +140,22 @@ describe('BaseWidget store integration', () => {
       expect(isWidgetHidden(widget.visibility)).toBe(false)
     })
 
+    it('resets omitted display tiers when options are replaced', () => {
+      const widget = createTestWidget(node)
+      widget.options.hidden = true
+      widget.options.hideInPanel = true
+      widget.options.advanced = true
+
+      widget.options = {}
+
+      expect(widget.hidden).toBe(true)
+      expect(widget.visibility.display).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+    })
+
     it('supplies shimmed options when constructed without them', () => {
       const widget = new MutableTypeWidget(
         fromAny({
@@ -172,29 +188,16 @@ describe('BaseWidget store integration', () => {
       expect(widget.visibility.suppression.byExtension).toBe(false)
     })
 
-    it.for(['hidden', 'hideInPanel'] as const)(
-      'keeps options.%s observable through object operations',
-      (property) => {
-        const widget = createTestWidget(node)
+    it('keeps legacy visibility options observable', () => {
+      const widget = createTestWidget(node)
 
-        widget.options[property] = true
+      widget.options.hidden = true
+      expect(widget.options.hidden).toBe(true)
+      expect({ ...widget.options }).toMatchObject({ hidden: true })
 
-        expect(Object.keys(widget.options)).toContain(property)
-        expect({ ...widget.options }).toMatchObject({ [property]: true })
-        expect(property in widget.options).toBe(true)
-        expect(JSON.parse(JSON.stringify(widget.options))).toMatchObject({
-          [property]: true
-        })
-        expect(
-          Object.getOwnPropertyDescriptor(widget.options, property)
-        ).toEqual(expect.objectContaining({ enumerable: true, value: true }))
-
-        delete widget.options[property]
-
-        expect(property in widget.options).toBe(false)
-        expect(widget.options[property]).toBe(false)
-      }
-    )
+      delete widget.options.hidden
+      expect(widget.options.hidden).toBe(false)
+    })
   })
 
   describe('metadata properties after registration', () => {

@@ -56,7 +56,7 @@ interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   rightPadding?: number
 }
 
-const RAW_OPTIONS_TARGET = Symbol('rawOptionsTarget')
+const rawOptionsByShim = new WeakMap<object, object>()
 
 /**
  * Extensions sometimes assign a widget's own options facade back to itself
@@ -68,9 +68,10 @@ function unwrapOptionsShim<TOptions extends object>(
   options: TOptions | undefined
 ): TOptions | undefined {
   if (!options) return options
-  const raw = Reflect.get(options, RAW_OPTIONS_TARGET) as TOptions | undefined
-  return raw ?? options
+  return (rawOptionsByShim.get(options) ?? options) as TOptions
 }
+
+type LegacyVisibilityKey = 'hidden' | 'hideInPanel' | 'advanced'
 
 type BaseWidgetState<TWidget extends IBaseWidget> = WidgetState<
   TWidget['value'],
@@ -166,15 +167,23 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   private syncVisibilityFromOptions(): void {
     const raw = this._rawOptions
-    if (raw.hidden !== undefined) this.hidden = raw.hidden === true
-    if (raw.hideInPanel !== undefined) {
-      setWidgetHiddenInPanel(this._visibility, raw.hideInPanel === true)
-    }
-    if (raw.advanced !== undefined) {
-      setWidgetAdvanced(this._visibility, raw.advanced === true, [
-        'vueNode',
-        'panel'
-      ])
+    this.applyLegacyVisibilityKey('hidden', raw.hidden)
+    this.applyLegacyVisibilityKey('hideInPanel', raw.hideInPanel)
+    this.applyLegacyVisibilityKey('advanced', raw.advanced)
+  }
+
+  private applyLegacyVisibilityKey(
+    key: LegacyVisibilityKey,
+    value: unknown
+  ): void {
+    const enabled = value === true
+    if (key === 'hidden') {
+      if (value === undefined) applyLegacyHiddenWrite(this._visibility, false)
+      else this.hidden = enabled
+    } else if (key === 'hideInPanel') {
+      setWidgetHiddenInPanel(this._visibility, enabled)
+    } else {
+      setWidgetAdvanced(this._visibility, enabled, ['vueNode', 'panel'])
     }
   }
 
@@ -188,7 +197,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._rawOptions = unwrapOptionsShim(rawOptions) ?? {}
     this._options = new Proxy(this._rawOptions, {
       get: (target, property, receiver) => {
-        if (property === RAW_OPTIONS_TARGET) return target
         if (property === 'hidden') return isWidgetHidden(this._visibility)
         if (property === 'hideInPanel') {
           return isWidgetHiddenInPanel(this._visibility)
@@ -197,41 +205,30 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         return Reflect.get(target, property, receiver)
       },
       set: (target, property, value, receiver) => {
-        if (property === 'hidden') {
-          this.hidden = value === true
-          return Reflect.set(target, property, value, receiver)
-        }
-        if (property === 'hideInPanel') {
-          setWidgetHiddenInPanel(this._visibility, value === true)
-          return Reflect.set(target, property, value, receiver)
-        }
-        if (property === 'advanced') {
-          if (value !== undefined) {
-            setWidgetAdvanced(this._visibility, value === true, [
-              'vueNode',
-              'panel'
-            ])
-          }
+        if (this.isLegacyVisibilityKey(property)) {
+          this.applyLegacyVisibilityKey(property, value)
           return Reflect.set(target, property, value, receiver)
         }
         return Reflect.set(target, property, value, receiver)
       },
       deleteProperty: (target, property) => {
-        if (property === 'hidden') {
-          this.hidden = false
-          return Reflect.deleteProperty(target, property)
-        }
-        if (property === 'hideInPanel') {
-          setWidgetHiddenInPanel(this._visibility, false)
-          return Reflect.deleteProperty(target, property)
-        }
-        if (property === 'advanced') {
-          setWidgetAdvanced(this._visibility, false, ['vueNode', 'panel'])
-          return Reflect.deleteProperty(target, property)
+        if (this.isLegacyVisibilityKey(property)) {
+          this.applyLegacyVisibilityKey(property, undefined)
         }
         return Reflect.deleteProperty(target, property)
       }
     })
+    rawOptionsByShim.set(this._options, this._rawOptions)
+  }
+
+  private isLegacyVisibilityKey(
+    property: PropertyKey
+  ): property is LegacyVisibilityKey {
+    return (
+      property === 'hidden' ||
+      property === 'hideInPanel' ||
+      property === 'advanced'
+    )
   }
 
   private _type!: TWidget['type']
@@ -577,8 +574,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   /**
    * Draws only the widget's name for a row whose control is suppressed by an
    * upstream connection. The connected input slot dot is drawn separately by
-   * slot rendering.
+   * slot rendering. Called from LGraphNode via toConcreteWidget, which fallow
+   * cannot resolve.
    */
+  // fallow-ignore-next-line unused-class-member
   drawSuppressedRowLabel(
     ctx: CanvasRenderingContext2D,
     { width }: DrawWidgetOptions

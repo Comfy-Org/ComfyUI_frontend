@@ -17,38 +17,24 @@ import {
 } from '@/types/widgetVisibility'
 
 describe('deriveWidgetDisplay', () => {
-  it('defaults to shown on every surface', () => {
-    expect(deriveWidgetDisplay({ type: 'number' })).toEqual({
-      canvas: 'shown',
-      vueNode: 'shown',
-      panel: 'shown'
-    })
-  })
-
-  it('spec advanced gates the vueNode and panel surfaces only', () => {
-    expect(
-      deriveWidgetDisplay({ type: 'number', options: { advanced: true } })
-    ).toEqual({ canvas: 'shown', vueNode: 'advanced', panel: 'advanced' })
-  })
-
-  it('runtime advanced property gates every surface', () => {
-    expect(deriveWidgetDisplay({ type: 'number', advanced: true })).toEqual({
-      canvas: 'advanced',
-      vueNode: 'advanced',
-      panel: 'advanced'
-    })
-  })
-
-  it('canvasOnly removes vueNode and panel surfaces', () => {
-    expect(
-      deriveWidgetDisplay({ type: 'combo', options: { canvasOnly: true } })
-    ).toEqual({ canvas: 'shown', vueNode: 'never', panel: 'never' })
-  })
-
-  it('hideInPanel removes only the panel surface', () => {
-    expect(
-      deriveWidgetDisplay({ type: 'text', options: { hideInPanel: true } })
-    ).toEqual({ canvas: 'shown', vueNode: 'shown', panel: 'never' })
+  it.for([
+    [{ type: 'number' }, ['shown', 'shown', 'shown']],
+    [
+      { type: 'number', options: { advanced: true } },
+      ['shown', 'advanced', 'advanced']
+    ],
+    [{ type: 'number', advanced: true }, ['advanced', 'advanced', 'advanced']],
+    [
+      { type: 'combo', options: { canvasOnly: true } },
+      ['shown', 'never', 'never']
+    ],
+    [
+      { type: 'text', options: { hideInPanel: true } },
+      ['shown', 'shown', 'never']
+    ]
+  ] as const)('applies display policy for %o', ([widget, expected]) => {
+    const display = deriveWidgetDisplay(widget)
+    expect(WIDGET_SURFACES.map((surface) => display[surface])).toEqual(expected)
   })
 })
 

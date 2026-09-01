@@ -89,6 +89,52 @@ function collectDescriptors(value: object) {
   return descriptors
 }
 
+function preserveHiddenFacade(
+  descriptors: Map<PropertyKey, PropertyDescriptor>,
+  foreignDescriptors: Map<PropertyKey, PropertyDescriptor>
+): void {
+  const concrete = descriptors.get('hidden')
+  const foreign = foreignDescriptors.get('hidden')
+  if (!concrete?.get || !concrete.set || !foreign || foreign.get || foreign.set)
+    return
+
+  descriptors.set('hidden', {
+    configurable: foreign.configurable,
+    enumerable: foreign.enumerable,
+    get: concrete.get,
+    set: concrete.set
+  })
+}
+
+function mergeDescriptor(
+  concrete: PropertyDescriptor | undefined,
+  foreign: PropertyDescriptor,
+  ownForeign: PropertyDescriptor | undefined
+): PropertyDescriptor {
+  if (!concrete) return foreign
+
+  const concreteIsGetterOnly = concrete.get && !concrete.set
+  if (concreteIsGetterOnly && foreign.set) {
+    return { ...foreign, get: foreign.get ?? concrete.get }
+  }
+  if (concreteIsGetterOnly && ownForeign?.writable) return foreign
+  if (!foreign.get && !foreign.set) return concrete
+  if (!concrete.get || !concrete.set) return concrete
+
+  return {
+    configurable: foreign.configurable,
+    enumerable: foreign.enumerable,
+    get() {
+      foreign.get?.call(this)
+      return concrete.get?.call(this)
+    },
+    set(value: unknown) {
+      concrete.set?.call(this, value)
+      foreign.set?.call(this, value)
+    }
+  }
+}
+
 function adoptConcreteWidget<C extends BaseWidget>(
   widget: IBaseWidget,
   concrete: C
@@ -100,62 +146,16 @@ function adoptConcreteWidget<C extends BaseWidget>(
   const foreignDescriptors = collectDescriptors(widget)
   for (const [key, foreignDescriptor] of foreignDescriptors) {
     if (key === 'options') continue
-    const concreteDescriptor = descriptors.get(key)
-    if (!concreteDescriptor) {
-      descriptors.set(key, foreignDescriptor)
-      continue
-    }
-    const concreteIsGetterOnly =
-      concreteDescriptor.get !== undefined &&
-      concreteDescriptor.set === undefined
-    if (concreteIsGetterOnly && foreignDescriptor.set !== undefined) {
-      descriptors.set(key, {
-        ...foreignDescriptor,
-        get: foreignDescriptor.get ?? concreteDescriptor.get
-      })
-      continue
-    }
-    if (
-      concreteIsGetterOnly &&
-      Object.getOwnPropertyDescriptor(widget, key)?.writable === true
-    ) {
-      descriptors.set(key, foreignDescriptor)
-      continue
-    }
-    if (
-      foreignDescriptor.get === undefined &&
-      foreignDescriptor.set === undefined
-    ) {
-      if (
-        key === 'hidden' &&
-        concreteDescriptor.get &&
-        concreteDescriptor.set
-      ) {
-        descriptors.set(key, {
-          configurable: foreignDescriptor.configurable,
-          enumerable: foreignDescriptor.enumerable,
-          get: concreteDescriptor.get,
-          set: concreteDescriptor.set
-        })
-      }
-      continue
-    }
-
-    if (concreteDescriptor?.get && concreteDescriptor.set) {
-      descriptors.set(key, {
-        configurable: foreignDescriptor.configurable,
-        enumerable: foreignDescriptor.enumerable,
-        get() {
-          foreignDescriptor.get?.call(this)
-          return concreteDescriptor.get?.call(this)
-        },
-        set(value: unknown) {
-          concreteDescriptor.set?.call(this, value)
-          foreignDescriptor.set?.call(this, value)
-        }
-      })
-    }
+    descriptors.set(
+      key,
+      mergeDescriptor(
+        descriptors.get(key),
+        foreignDescriptor,
+        Object.getOwnPropertyDescriptor(widget, key)
+      )
+    )
   }
+  preserveHiddenFacade(descriptors, foreignDescriptors)
 
   if (
     Reflect.ownKeys(widget).some(
