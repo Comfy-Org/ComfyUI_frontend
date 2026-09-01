@@ -445,6 +445,7 @@ describe('CreditsTile', () => {
       'Spendable once the plan is active again.'
     )
     expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('status')).not.toHaveLength(0)
   })
 
   it('withholds the breakdown figures on an active plan until the balance is read', () => {
@@ -454,6 +455,7 @@ describe('CreditsTile', () => {
 
     expect(container.textContent).not.toContain('left of')
     expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('status')).not.toHaveLength(0)
   })
 
   it('gives an inactive sales-managed plan the same retained-credit treatment', () => {
