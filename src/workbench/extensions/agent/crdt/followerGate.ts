@@ -21,6 +21,8 @@
  * iframe) the gate degrades to param/flag behaviour instead of throwing.
  */
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 export const FOLLOWER_STORAGE_KEY = 'Comfy.Agent.CrdtFollower'
 export const FOLLOWER_QUERY_PARAM = 'agentCrdtFollower'
 
@@ -53,7 +55,10 @@ export function resolveFollowerEnabled(input: FollowerGateInput): boolean {
 function tryGet(storage: FollowerGateInput['storage']): string | null {
   try {
     return storage?.getItem(FOLLOWER_STORAGE_KEY) ?? null
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
     return null
   }
 }
@@ -61,7 +66,10 @@ function tryGet(storage: FollowerGateInput['storage']): string | null {
 function trySet(storage: FollowerGateInput['storage'], value: string): void {
   try {
     storage?.setItem(FOLLOWER_STORAGE_KEY, value)
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
     // Storage denied: the session still enables via the param; it just will
     // not persist across navigations.
   }
@@ -70,7 +78,10 @@ function trySet(storage: FollowerGateInput['storage'], value: string): void {
 function tryRemove(storage: FollowerGateInput['storage']): void {
   try {
     storage?.removeItem(FOLLOWER_STORAGE_KEY)
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
     // Storage denied: nothing was persisted, so nothing to clear.
   }
 }
