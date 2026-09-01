@@ -46,7 +46,7 @@ export interface MintPortWiringDeps {
   /** Stable workflow/root identity for the graph currently being edited. */
   target(): GraphMutationTarget | null
   /** Receives minted semantic operations (the sender's inbox). */
-  enqueue(batch: TargetedGraphOperations): void
+  enqueue(batch: TargetedGraphOperations): boolean
   /** The layout store's `onChange`, injected by the composition root. */
   layoutChanges(listener: (change: LayoutChangeView) => void): () => void
   /** The layout store's `withActor`, injected by the composition root. */

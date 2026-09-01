@@ -47,7 +47,7 @@ export interface WidgetMintPortDeps {
     owningGraphId: string
   ): string[] | null
   /** Receives minted semantic operations (the sender's inbox). */
-  enqueue(batch: TargetedGraphOperations): void
+  enqueue(batch: TargetedGraphOperations): boolean
 }
 
 export interface WidgetMintPort {
@@ -55,6 +55,15 @@ export interface WidgetMintPort {
 }
 
 export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
+  function surfaceUnminted(reason: string, set: WidgetSetView): void {
+    // The doc no longer matches the local graph; observable, never silent
+    // (the surfacing-honesty principle).
+    console.error(
+      `[agent-crdt] set_widget ${reason}; the bound doc diverges from the local graph`,
+      `${set.graphId}:${String(set.nodeId)}:${set.name}`
+    )
+  }
+
   function onSet(target: GraphMutationTarget, set: WidgetSetView): void {
     const mintable = shouldMint({
       flagEnabled: deps.isEnabled(),
@@ -65,7 +74,7 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     if (!mintable) return
 
     if (set.graphId === target.rootGraphId) {
-      deps.enqueue({
+      const accepted = deps.enqueue({
         target,
         operations: [
           {
@@ -77,22 +86,18 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
           }
         ]
       })
+      if (!accepted) surfaceUnminted('rejected by the sender', set)
       return
     }
 
     const subgraphNodePath = deps.resolveInteriorPath(target, set.graphId)
     if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-      // The doc no longer matches the local graph; observable, never silent
-      // (the surfacing-honesty principle).
-      console.error(
-        '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-        `${set.graphId}:${String(set.nodeId)}:${set.name}`
-      )
+      surfaceUnminted('with an unresolvable owner not minted', set)
       return
     }
 
     const [head, ...rest] = subgraphNodePath
-    deps.enqueue({
+    const accepted = deps.enqueue({
       target,
       operations: [
         {
@@ -106,6 +111,7 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
         }
       ]
     })
+    if (!accepted) surfaceUnminted('rejected by the sender', set)
   }
 
   const detach = deps.events.onSet(onSet)

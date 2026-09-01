@@ -64,7 +64,7 @@ export interface LayoutMintPortDeps {
   target(): GraphMutationTarget | null
   source: MintSnapshotSource
   /** Receives minted semantic operations (the sender's inbox). */
-  enqueue(batch: TargetedGraphOperations): void
+  enqueue(batch: TargetedGraphOperations): boolean
 }
 
 export interface LayoutMintPort {
@@ -113,6 +113,17 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     })
   }
 
+  function enqueue(
+    what: string,
+    id: unknown,
+    batch: TargetedGraphOperations
+  ): void {
+    if (deps.enqueue(batch)) return
+    // A dropped human mint is a local-graph-vs-doc divergence; it must be
+    // observable, never silent (the surfacing-honesty principle).
+    console.error(`[agent-crdt] ${what} mint rejected by the sender`, id)
+  }
+
   function onChange(
     target: GraphMutationTarget,
     change: LayoutChangeView
@@ -133,7 +144,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
           )
           return
         }
-        deps.enqueue({
+        enqueue('add_node', operation.nodeId, {
           target,
           operations: [
             {
@@ -150,7 +161,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'deleteNode': {
         if (!gate(target, change, inTeardown)) return
         if (operation.nodeId === undefined) return
-        deps.enqueue({
+        enqueue('delete_node', operation.nodeId, {
           target,
           operations: [
             {
@@ -170,7 +181,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         intentionalClear = null
         if (captured === null || !sameTarget(captured.target, target)) return
         if (!gate(target, change, inTeardown)) return
-        deps.enqueue({
+        enqueue('clear', target.rootGraphId, {
           target,
           operations: [{ op: 'clear', removed_nodes: captured.nodeIds }]
         })
