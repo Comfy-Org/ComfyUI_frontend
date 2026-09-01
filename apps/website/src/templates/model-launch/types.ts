@@ -144,7 +144,8 @@ export interface ModelLaunchClosingCta {
 interface ModelLaunchStep {
   id: string
   title: LocalizedText
-  description: LocalizedText
+  // Optional: a step can be a title on its own, with no supporting line.
+  description?: LocalizedText
 }
 
 export interface ModelLaunchSteps {

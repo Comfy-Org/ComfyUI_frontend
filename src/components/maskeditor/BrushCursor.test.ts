@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -121,17 +121,9 @@ describe('BrushCursor', () => {
       mockStore.zoomRatio = 1
 
       const container = document.createElement('div')
-      vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
-        left: 30,
-        top: 60,
-        right: 0,
-        bottom: 0,
-        width: 0,
-        height: 0,
-        x: 0,
-        y: 0,
-        toJSON: () => ({})
-      } as DOMRect)
+      vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
+        DOMRect.fromRect({ x: 30, y: 60 })
+      )
 
       renderCursor(container)
 
@@ -141,6 +133,46 @@ describe('BrushCursor', () => {
       })
       const style = styleOf(getBrushEl())
       expect(style).toContain('top: 220px')
+    })
+
+    it('should re-read the container offset when the cursor moves', async () => {
+      const container = document.createElement('div')
+      const getBoundingClientRect = vi
+        .spyOn(container, 'getBoundingClientRect')
+        .mockReturnValueOnce(DOMRect.fromRect({ x: 30, y: 60 }))
+        .mockReturnValue(DOMRect.fromRect({ x: 80, y: 110 }))
+
+      renderCursor(container)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 50px')
+      })
+
+      mockStore.cursorPoint = { x: 101, y: 51 }
+
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 1px')
+      })
+      expect(styleOf(getBrushEl())).toContain('top: -79px')
+      expect(getBoundingClientRect).toHaveBeenCalledTimes(2)
+    })
+
+    it('updates when the container moves under a stationary cursor', async () => {
+      const container = document.createElement('div')
+      vi.spyOn(container, 'getBoundingClientRect')
+        .mockReturnValueOnce(DOMRect.fromRect({ x: 30, y: 60 }))
+        .mockReturnValue(DOMRect.fromRect({ x: 80, y: 110 }))
+
+      renderCursor(container)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 50px')
+      })
+
+      await fireEvent.scroll(window)
+
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 0px')
+      })
+      expect(styleOf(getBrushEl())).toContain('top: -80px')
     })
   })
 
