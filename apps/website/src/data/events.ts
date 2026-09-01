@@ -112,10 +112,10 @@ export function toCalendarEvent(
   locale: Locale
 ): CalendarEvent {
   const target = eventVideoId(event)
-    ? eventPageHref(event.id)[locale]
+    ? localizeHref(eventPath(event), locale)
     : event.link?.href[locale] ||
       event.link?.href.en ||
-      eventPageHref(event.id)[locale]
+      localizeHref(eventPath(event), locale)
   const href = new URL(target, SITE_ORIGIN).href
   const start = new Date(event.startDateTime)
   return {
