@@ -364,7 +364,8 @@ describe('MediaLightbox', () => {
       await nextTick()
       const first = video()
       expect(first).not.toBeNull()
-      const pause = vi.spyOn(first!, 'pause')
+      if (!first) throw new Error('Expected the video to be rendered')
+      const pause = vi.spyOn(first, 'pause')
 
       await show(1)
 
