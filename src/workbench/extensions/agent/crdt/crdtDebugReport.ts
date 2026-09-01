@@ -18,7 +18,7 @@
  * is exactly when a report matters most, and a failed `getLogs()` must
  * degrade to a note in the log section rather than abort the whole bundle.
  */
-import { isCloud } from '@/platform/distribution/types'
+import { DISTRIBUTION } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -314,7 +314,7 @@ export async function collectCrdtDebugReport(
     [
       `- **Frontend version:** ${__COMFYUI_FRONTEND_VERSION__}`,
       `- **Frontend commit:** ${__COMFYUI_FRONTEND_COMMIT__}`,
-      `- **Distribution:** ${isCloud ? 'cloud' : 'local/desktop'}`,
+      `- **Distribution:** ${DISTRIBUTION}`,
       `- **API base:** ${api.apiURL('')}`,
       `- **User agent:** ${navigator.userAgent}`,
       `- **Viewport:** ${window.innerWidth}×${window.innerHeight}`,
