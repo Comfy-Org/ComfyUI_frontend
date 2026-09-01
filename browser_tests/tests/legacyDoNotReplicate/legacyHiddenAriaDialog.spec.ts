@@ -6,7 +6,7 @@ import { BAD_DO_NOT_DO_THIS_LegacyApiHelper } from '@e2e/fixtures/helpers/BAD_DO
 
 test(
   'Ctrl/Cmd+S works with mounted hidden ARIA dialogs from a legacy custom node',
-  { tag: ['@custom-nodes', '@keyboard'] },
+  { tag: '@keyboard' },
   async ({ comfyPage }) => {
     const legacyApi = new BAD_DO_NOT_DO_THIS_LegacyApiHelper(comfyPage.page)
     await legacyApi.addNodeWithMountedHiddenAriaDialog()
