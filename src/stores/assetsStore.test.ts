@@ -2389,7 +2389,6 @@ describe('assetsStore - reset() on identity change', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
   })
 
   it('clears cached history and flat outputs and restarts paging', async () => {
