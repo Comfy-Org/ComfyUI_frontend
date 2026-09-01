@@ -59,4 +59,12 @@ describe('rebuild-website endpoint', () => {
     const { status } = await callEndpoint({ id: 1, role: 'admin' })
     expect(status).toBe(502)
   })
+
+  it('returns 502 when the deploy hook is unreachable', async () => {
+    vi.stubEnv('WEBSITE_DEPLOY_HOOK_URL', 'https://hooks.test/deploy')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')))
+
+    const { status } = await callEndpoint({ id: 1, role: 'admin' })
+    expect(status).toBe(502)
+  })
 })
