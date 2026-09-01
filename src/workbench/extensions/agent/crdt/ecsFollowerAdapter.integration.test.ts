@@ -591,20 +591,41 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  it('lets a later frame re-add a node the baseline already projected', () => {
+  it('applies a remint wire delta after baseline projection', () => {
     const host = mint(
       {
         nodes: [
-          { id: 1, type: 'Source', title: 'Saved', pos: [0, 0], inputs: [] }
+          {
+            id: 1,
+            type: 'Source',
+            title: 'Saved',
+            pos: [0, 0],
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            pos: [200, 0],
+            inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
+            outputs: []
+          }
         ],
-        links: []
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
       },
       catalog
     )
     const reminted = mint(
       {
         nodes: [
-          { id: 1, type: 'Source', title: 'Reminted', pos: [9, 9], inputs: [] }
+          {
+            id: 1,
+            type: 'Source',
+            title: 'Reminted',
+            pos: [9, 9],
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          }
         ],
         links: []
       },
@@ -628,26 +649,30 @@ describe('EcsFollowerAdapter integration', () => {
       })
     ).toBe(true)
 
-    // A new incarnation of the same id stages as 'add', which prepare rejects
-    // outright once the baseline has already registered that node.
-    nodesMap(follower.doc).delete('1')
-    nodesMap(follower.doc).set('1', nodesMap(reminted).get('1')!.clone())
+    const beforeRemint = follower.stateVector()
+    nodesMap(host).delete('1')
+    nodesMap(host).set('1', nodesMap(reminted).get('1')!.clone())
+    const update = Y.encodeStateAsUpdate(host, beforeRemint)
+    follower.applyRemoteUpdate(update)
     expect(
       adapter.applyFrame({
         workflowId: 'wf',
         seq: 1,
-        update: new Uint8Array(),
+        update,
         actor: 'agent:test',
         opIds: ['remint']
       })
     ).toBe(true)
 
-    expect(projectedNodeIds()).toEqual([1])
+    expect(projectedNodeIds()).toEqual([1, 2])
     expect(
       useNodeDataStore()
         .getGraphNodesFor('root', 'root')
         .find(({ id }) => id === toNodeId(1))?.title
     ).toBe('Reminted')
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toMatchObject({ originNodeId: toNodeId(1), targetNodeId: toNodeId(2) })
 
     adapter.destroy()
     follower.destroy()

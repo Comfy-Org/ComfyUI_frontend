@@ -274,9 +274,9 @@ export class EcsFollowerAdapter {
     }
     for (const id of session.links.keys()) session.changedLinks.delete(id)
 
-    // Re-arm, not redundant: the store now holds every doc node, so a later
-    // frame re-adding one is rejected as registered and loses its whole batch.
-    session.reconcileNextFrame = true
+    // This baseline performed the initial reconciliation. Later wire deltas
+    // must use the normal add/update paths so links are updated atomically.
+    session.reconcileNextFrame = false
     return true
   }
 
