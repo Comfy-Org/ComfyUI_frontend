@@ -661,13 +661,13 @@ export class ChangeTracker {
           (locatorId) => locatorId !== nodeId
         )
       }
-      const preserveWidgetPreview =
+      const preservedWidgetImages =
         !hasIncomingImages &&
         output?.images &&
         snapshot.widgetSourcedPreviews.some((locatorId) => locatorId === nodeId)
-      const nextOutput = preserveWidgetPreview
-        ? { ...detail.output, images: output.images }
-        : detail.output
+          ? output.images
+          : undefined
+      const nextOutput = detail.output
       if (detail.merge && output) {
         for (const k in nextOutput ?? {}) {
           const v = output[k]
@@ -677,8 +677,11 @@ export class ChangeTracker {
             output[k] = nextOutput[k]
           }
         }
+        if (preservedWidgetImages) output.images = preservedWidgetImages
       } else {
-        snapshot.outputs[nodeId] = nextOutput
+        snapshot.outputs[nodeId] = preservedWidgetImages
+          ? { ...nextOutput, images: preservedWidgetImages }
+          : nextOutput
       }
     })
   }

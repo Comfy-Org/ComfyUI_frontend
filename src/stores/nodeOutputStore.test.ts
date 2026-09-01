@@ -789,9 +789,6 @@ describe('nodeOutputStore merge mode interactions', () => {
       inputOutput
     )
 
-    // Merge with empty images — the input-preview guard (lines 166-177)
-    // copies existing input images into the incoming outputs before the
-    // merge concat runs, resulting in duplication.
     const emptyOutput = createMockOutputs([])
     store.setNodeOutputsByExecutionId(
       createNodeExecutionId([toNodeId(3)]),
@@ -801,9 +798,8 @@ describe('nodeOutputStore merge mode interactions', () => {
       }
     )
 
-    expect(store.nodeOutputs['3']?.images).toHaveLength(2)
+    expect(store.nodeOutputs['3']?.images).toHaveLength(1)
     expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
-    expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('uploaded.png')
   })
 })
 
@@ -931,6 +927,21 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     store.setNodeOutputsByExecutionId(
       createNodeExecutionId([toNodeId(5)]),
       createMockOutputs()
+    )
+
+    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
+    expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('generated.png')
+  })
+
+  it('does not duplicate a preserved widget preview during a merged execution', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(5)]),
+      createMockOutputs(),
+      { merge: true }
     )
 
     expect(store.nodeOutputs['5']?.images).toHaveLength(1)

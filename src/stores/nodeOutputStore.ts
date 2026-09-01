@@ -201,16 +201,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       (!hasIncomingImages && widgetSourcedPreviews.has(nodeLocatorId))
 
     const existingOutput = nodeOutputs.value[nodeLocatorId]
-    if (
+    const preservedImages =
       !hasIncomingImages &&
       existingOutput &&
       (preserveWidgetSource || isInputPreviewOutput(existingOutput))
-    ) {
-      outputs = {
-        ...outputs,
-        images: existingOutput.images
-      }
-    }
+        ? existingOutput.images
+        : undefined
 
     if (options.merge) {
       if (existingOutput && outputs) {
@@ -226,6 +222,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
           }
         }
         outputs = mergedOutput
+      }
+    }
+
+    if (preservedImages) {
+      outputs = {
+        ...outputs,
+        images: preservedImages
       }
     }
 
