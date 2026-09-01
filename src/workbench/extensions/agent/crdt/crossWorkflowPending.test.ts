@@ -214,7 +214,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     })
   })
 
-  it('still accepts a late workflow A result by op_id while workflow B is active', async () => {
+  it('documents status contamination from a late workflow A result while workflow B is active', async () => {
     const { workflowId, enqueue, status } = mountFollower('wf-a')
 
     bridge().lastSequence = 41
@@ -236,8 +236,9 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     expect(clientState.sent[1].ops[0]).toMatchObject({ base_version: 0 })
     const operationBId = clientState.sent[1].ops[0].op_id
 
-    // Current risk characterization: result frames carry workflowId, but the
-    // composable/sender path correlates by op_id only.
+    // Documented defect expectation for R-73: result frames carry workflowId,
+    // but the composable updates workflow B's status from workflow A's frame.
+    // Flip this assertion when the result path gates status by workflowId.
     expect(status()).toMatchObject({
       workflowId: 'wf-b',
       lastFrameType: 'doc_ops_result'
