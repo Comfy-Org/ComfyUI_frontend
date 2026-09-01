@@ -172,7 +172,6 @@ function setSubscribedState(overrides: Record<string, unknown> = {}) {
 
 describe('SubscriptionPanelContentWorkspace (component smoke tests)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     isSettingUp.value = false
     isActiveSubscription.value = false
     isFreeTier.value = false
