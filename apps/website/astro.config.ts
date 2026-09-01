@@ -5,6 +5,7 @@ import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
 import { markdownTwins } from './src/integrations/markdown-twins'
+import { sitemapAlternates } from './src/lib/hreflang'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
@@ -19,6 +20,8 @@ export default defineConfig({
   // quotes into curly ones and drift from the rest of the site's copy.
   markdown: { smartypants: false },
   redirects: {
+    '/cloud/enterprise': { status: 301, destination: '/enterprise/' },
+    '/zh-CN/cloud/enterprise': { status: 301, destination: '/enterprise/' },
     '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
       '/customers/moment-factory/',
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
@@ -35,7 +38,8 @@ export default defineConfig({
     vue(),
     mdx(),
     sitemap({
-      filter: (page) => !isExcludedFromSitemap(page)
+      filter: (page) => !isExcludedFromSitemap(page),
+      serialize: (item) => ({ ...item, links: sitemapAlternates(item.url) })
     }),
     markdownTwins()
   ],
