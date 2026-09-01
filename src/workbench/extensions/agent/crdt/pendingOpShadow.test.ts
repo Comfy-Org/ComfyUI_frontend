@@ -53,6 +53,18 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     )
   })
 
+  it('rejects a malformed target in show before recording the op id', () => {
+    const surface = createPendingOpShadowSurface()
+    const malformed = { kind: 'group', nodeId: 'n1' } as unknown as ShadowTarget
+
+    expect(() => surface.show('op-1', [malformed])).toThrow(
+      'Unsupported shadow target'
+    )
+    // A later show with the same op id must not be treated as a duplicate:
+    // the rejected attempt above must not have reached seenOpIds.add/shadows.set.
+    expect(surface.show('op-1', [node('n1')])).toBe(true)
+  })
+
   it('revert removes the shadow and returns it; unknown id is a no-op', () => {
     const surface = createPendingOpShadowSurface()
     surface.show('op-1', [node('n1')])

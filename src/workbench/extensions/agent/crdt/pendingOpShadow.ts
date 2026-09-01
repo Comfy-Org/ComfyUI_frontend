@@ -121,6 +121,10 @@ function cloneTarget(target: ShadowTarget): ShadowTarget {
         nodeId: target.nodeId,
         widgetName: target.widgetName
       })
+    default: {
+      const unsupported: never = target
+      assert(false, `Unsupported shadow target: ${JSON.stringify(unsupported)}`)
+    }
   }
 }
 
