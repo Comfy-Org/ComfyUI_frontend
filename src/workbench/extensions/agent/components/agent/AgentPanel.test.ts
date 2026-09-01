@@ -366,7 +366,7 @@ describe('AgentPanel', () => {
 
   it('deletes only a current chat with a session id', async () => {
     const user = userEvent.setup()
-    const { emitted, unmount } = render(AgentPanel, {
+    const { emitted } = render(AgentPanel, {
       props: {
         entries: [],
         historyGroups: createHistoryGroups(),
@@ -389,14 +389,17 @@ describe('AgentPanel', () => {
       screen.getByRole('menuitem', { name: i18n.global.t('g.delete') })
     )
 
+    expect(emitted().deleteHistory).toHaveLength(1)
     expect(emitted().deleteHistory[0]).toEqual(['thread-1'])
+  })
 
-    unmount()
-    render(AgentPanel, {
+  it('hides the chat options dropdown when sessionId is null', () => {
+    const { emitted } = render(AgentPanel, {
       props: {
         entries: [],
         historyGroups: createHistoryGroups(),
-        sessionId: null
+        sessionId: null,
+        customTitle: 'Null session chat'
       },
       global: {
         plugins: [i18n],
@@ -407,6 +410,10 @@ describe('AgentPanel', () => {
     expect(
       screen.queryByRole('button', { name: i18n.global.t('agent.chatOptions') })
     ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Null session chat' })
+    ).toBeInTheDocument()
+    expect(emitted().deleteHistory).toBeUndefined()
   })
 
   it('forwards header, composer, and workflow chip actions', async () => {
