@@ -732,7 +732,7 @@ describe('useErrorGroups', () => {
     })
 
     it('recognizes agent prompt errors without accepting other prompt errors', () => {
-      expect(isAgentPromptErrorType('agent_draft_apply_failed')).toBe(true)
+      expect(isAgentPromptErrorType('agent_api_failed')).toBe(true)
       expect(isAgentPromptErrorType('prompt_no_outputs')).toBe(false)
     })
 

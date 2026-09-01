@@ -47,14 +47,13 @@ const PROMPT_CARD_ID = '__prompt__'
 
 const AGENT_PROMPT_ERROR_TYPE_LIST = [
   'agent_api_failed',
-  'agent_draft_apply_failed',
   'op_rejected',
   'prefix_abort',
   'guard_trip',
   'apply_failed'
 ] as const
 
-export type AgentPromptErrorType = (typeof AGENT_PROMPT_ERROR_TYPE_LIST)[number]
+type AgentPromptErrorType = (typeof AGENT_PROMPT_ERROR_TYPE_LIST)[number]
 
 const AGENT_PROMPT_ERROR_TYPES: ReadonlySet<string> = new Set(
   AGENT_PROMPT_ERROR_TYPE_LIST
