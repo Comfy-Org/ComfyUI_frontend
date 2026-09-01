@@ -37,11 +37,14 @@ describe('parseAssetInfo', () => {
     ['attachment_ref', { attachment_ref: '' }],
     ['media_kind', { media_kind: 'hologram' }],
     ['preview_url', { preview_url: 'not a url' }]
-  ] as const)('drops a malformed %s without rejecting the payload', ([name, extra]) => {
-    const parsed = parseAssetInfo(transferWith({ ...BASE_ITEM, ...extra }))
-    expect(parsed).toMatchObject(BASE_ITEM)
-    expect(parsed?.[name]).toBeUndefined()
-  })
+  ] as const)(
+    'drops a malformed %s without rejecting the payload',
+    ([name, extra]) => {
+      const parsed = parseAssetInfo(transferWith({ ...BASE_ITEM, ...extra }))
+      expect(parsed).toMatchObject(BASE_ITEM)
+      expect(parsed?.[name]).toBeUndefined()
+    }
+  )
 
   it('still rejects malformed base fields', () => {
     expect(
