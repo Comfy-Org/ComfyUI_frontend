@@ -323,6 +323,11 @@ test.describe('Assets sidebar - view mode', () => {
     const generatedAssetIds = await tab.assetCards.evaluateAll((cards) =>
       cards.map((card) => card.getAttribute('data-asset-id'))
     )
+    expect(
+      generatedAssetIds.every(
+        (id) => typeof id === 'string' && id.trim().length > 0
+      )
+    ).toBe(true)
     expect(new Set(generatedAssetIds).size).toBe(generatedAssetIds.length)
 
     await tab.close()
