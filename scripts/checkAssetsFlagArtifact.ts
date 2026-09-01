@@ -98,17 +98,18 @@ export function checkAssetsFlagArtifact(directory = 'dist'): void {
   const expectedCommit = process.env.EXPECTED_FRONTEND_COMMIT
   const expectedDistribution = process.env.EXPECTED_DISTRIBUTION
 
-  if (expectedCommit && expectedDistribution) {
-    assertBuildProvenance(
-      readFileSync(join(directory, 'build-manifest.json'), 'utf8'),
-      expectedCommit,
-      expectedDistribution
-    )
+  if (!expectedCommit) {
+    throw new Error('EXPECTED_FRONTEND_COMMIT is required')
   }
-  assertNoTestFixtures(chunks)
   if (!expectedDistribution) {
     throw new Error('EXPECTED_DISTRIBUTION is required')
   }
+  assertBuildProvenance(
+    readFileSync(join(directory, 'build-manifest.json'), 'utf8'),
+    expectedCommit,
+    expectedDistribution
+  )
+  assertNoTestFixtures(chunks)
   assertAssetApiGate(chunks, expectedDistribution)
 }
 
