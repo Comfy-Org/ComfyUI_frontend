@@ -132,7 +132,9 @@ export class PrimitiveNode extends LGraphNode {
     const values = serialisedNode.widgets_values
     const type = serialisedNode.outputs?.[0]?.type
     this.configuredWidgetValues =
-      values && typeof type === 'string' ? { type, values } : undefined
+      values && typeof type === 'string'
+        ? { type, values: Array.from(values) }
+        : undefined
   }
 
   override onAfterGraphConfigured() {
@@ -308,9 +310,12 @@ export class PrimitiveNode extends LGraphNode {
 
     configuredWidgetValues?.slice(1).forEach((value, index) => {
       const controlWidget = this.widgets?.[index + 1]
-      if (controlWidget && typeof value === 'string' && value !== '') {
-        controlWidget.value = value
-      }
+      if (!controlWidget || typeof value !== 'string' || value === '') return
+
+      const allowed = controlWidget.options?.values
+      if (Array.isArray(allowed) && !allowed.includes(value)) return
+
+      controlWidget.value = value
     })
 
     // Restore any saved control values
@@ -372,7 +377,7 @@ export class PrimitiveNode extends LGraphNode {
   recreateWidget() {
     const values = this.widgets?.map((w) => w.value)
     this._removeWidgets()
-    this._onFirstConnection(true)
+    this._onFirstConnection(!!values?.length)
     if (values?.length && this.widgets) {
       for (let i = 0; i < this.widgets.length; i++)
         this.widgets[i].value = values[i]

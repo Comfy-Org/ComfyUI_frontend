@@ -289,6 +289,83 @@ describe('PrimitiveNode', () => {
     })
   })
 
+  it('survives a widgets_values that is not an array', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromAny({ widgets_values: 5, outputs: [{ type: 'INT' }] })
+    )
+    appState.configuringGraph = false
+
+    expect(() => primitive.onAfterGraphConfigured()).not.toThrow()
+    expect(primitive.widgets?.[0].value).toBe(111)
+  })
+
+  it('ignores a serialized control value the control widget does not offer', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', {}]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({
+        widgets_values: [222, 'not-a-control-mode'],
+        outputs: [{ type: 'INT' }]
+      })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[1].value).toBe('fixed')
+  })
+
+  it('restores its serialized value when the widget is built by a recreate', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+    appState.configuringGraph = false
+
+    primitive.recreateWidget()
+
+    expect(primitive.widgets?.[0].value).toBe(222)
+  })
+
   it('resets itself when the store reports a link the graph cannot resolve', () => {
     const graph = new LGraph()
     const node = new PrimitiveNode('Primitive')
