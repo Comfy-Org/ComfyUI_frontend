@@ -42,10 +42,8 @@ describe('getProviderIcon', () => {
     expect(getProviderIcon('GEMINI')).toBe('icon-[comfy--gemini]')
   })
 
-  it('aliases Comfy Cloud to the Comfy C mark in brand yellow', () => {
-    expect(getProviderIcon('Comfy Cloud')).toBe(
-      'icon-[comfy--comfy-c] text-brand-yellow'
-    )
+  it('gives Comfy Cloud its own full-colour logo', () => {
+    expect(getProviderIcon('Comfy Cloud')).toBe('icon-[comfy--comfy-cloud]')
   })
 })
 

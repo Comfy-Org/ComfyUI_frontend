@@ -2,7 +2,7 @@
   <BadgePill
     v-if="nodeDef.api_node && providerName"
     :text="providerName"
-    :icon="getProviderIcon(providerName)"
+    :icon="isComfyCloud ? COMFY_MARK_ICON : getProviderIcon(providerName)"
     :border-style="getProviderBorderStyle(providerName)"
     :solid="isComfyCloud"
     :icon-class="isComfyCloud ? 'text-primary-comfy-ink' : undefined"
@@ -15,6 +15,7 @@ import { computed } from 'vue'
 import BadgePill from '@/components/common/BadgePill.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import {
+  COMFY_MARK_ICON,
   getProviderBorderStyle,
   getProviderIcon,
   getProviderName,
