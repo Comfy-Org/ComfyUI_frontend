@@ -36,7 +36,7 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
     await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
   })
 
-  test('T-29 / PM-650 / FE-1283 uses a megaphone for the Agent entry point', async ({
+  test('T-29 / PM-650 / FE-1283 uses the Comfy icon for the Agent entry point', async ({
     comfyPage
   }) => {
     const button = comfyPage.page.getByRole('button', {
@@ -44,7 +44,7 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
     })
 
     await expect(button).toBeVisible()
-    await expect(button.locator('span')).toHaveClass(/lucide--megaphone/)
+    await expect(button.locator('i')).toHaveClass(/icon-\[comfy--comfy-c\]/)
   })
 
   for (const width of [320, 640]) {
