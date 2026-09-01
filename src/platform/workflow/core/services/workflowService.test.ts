@@ -1619,6 +1619,8 @@ describe('useWorkflowService', () => {
   describe('insertWorkflow', () => {
     it('inserts into the canvas with its requested position when nothing changes while loading', async () => {
       const canvas = app.canvas
+      const priorGraph = canvas.graph
+      const priorDeserialize = canvas._deserializeItems
       const originalGraph = {}
       const deserialize = vi.fn()
       Reflect.set(canvas, 'graph', originalGraph)
@@ -1637,12 +1639,15 @@ describe('useWorkflowService', () => {
           options
         )
       } finally {
-        Reflect.set(canvas, 'graph', originalGraph)
+        Reflect.set(canvas, 'graph', priorGraph)
+        Reflect.set(canvas, '_deserializeItems', priorDeserialize)
       }
     })
 
     it('does not insert after the canvas itself is replaced while loading', async () => {
       const originalCanvas = app.canvas
+      const priorGraph = originalCanvas.graph
+      const priorDeserialize = originalCanvas._deserializeItems
       const originalGraph = {}
       const deserialize = vi.fn()
       Reflect.set(originalCanvas, 'graph', originalGraph)
@@ -1670,12 +1675,15 @@ describe('useWorkflowService', () => {
         expect(app.canvas._deserializeItems).not.toHaveBeenCalled()
       } finally {
         Reflect.set(app, 'canvas', originalCanvas)
-        Reflect.set(originalCanvas, 'graph', originalGraph)
+        Reflect.set(originalCanvas, 'graph', priorGraph)
+        Reflect.set(originalCanvas, '_deserializeItems', priorDeserialize)
       }
     })
 
     it('does not insert after the canvas graph changes while loading', async () => {
       const canvas = app.canvas
+      const priorGraph = canvas.graph
+      const priorDeserialize = canvas._deserializeItems
       const originalGraph = {}
       const deserialize = vi.fn()
       Reflect.set(canvas, 'graph', originalGraph)
@@ -1698,7 +1706,8 @@ describe('useWorkflowService', () => {
 
         expect(deserialize).not.toHaveBeenCalled()
       } finally {
-        Reflect.set(canvas, 'graph', originalGraph)
+        Reflect.set(canvas, 'graph', priorGraph)
+        Reflect.set(canvas, '_deserializeItems', priorDeserialize)
       }
     })
   })
