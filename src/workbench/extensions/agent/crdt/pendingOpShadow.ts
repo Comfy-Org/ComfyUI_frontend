@@ -27,6 +27,8 @@
  *   queries. No timers, no clocks, no IO.
  */
 
+import { assert } from '@/base/assert'
+
 /** One canvas entity that renders pending styling while an op is in flight. */
 export type ShadowTarget =
   | { readonly kind: 'node'; readonly nodeId: string }
@@ -101,9 +103,7 @@ function targetKey(target: ShadowTarget): string {
       return `widget:${encodeURIComponent(target.nodeId)}:${encodeURIComponent(target.widgetName)}`
     default: {
       const unsupported: never = target
-      throw new Error(
-        `Unsupported shadow target: ${JSON.stringify(unsupported)}`
-      )
+      assert(false, `Unsupported shadow target: ${JSON.stringify(unsupported)}`)
     }
   }
 }
