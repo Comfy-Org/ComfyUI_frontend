@@ -51,9 +51,9 @@ const rows = computed(() => directoryRows(visibleEvents.value, locale, NOW))
 // the list and never reach the map. The block takes a generic markers prop, so
 // the events -> markers mapping lives here rather than inside it.
 const markers = computed<MapPinMarker[]>(() =>
-  visibleEvents.value.flatMap((event) =>
-    event.coords
-      ? [{ id: event.id, coords: event.coords, label: event.title[locale] }]
+  rows.value.flatMap((row) =>
+    row.event.coords
+      ? [{ id: row.event.id, coords: row.event.coords, label: row.title }]
       : []
   )
 )

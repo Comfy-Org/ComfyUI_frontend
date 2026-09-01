@@ -56,9 +56,9 @@ function matchesQuery(
   const needle = query.trim().toLocaleLowerCase(locale)
   if (!needle) return true
   return [
-    event.title[locale],
-    event.description[locale],
-    event.location?.[locale] ?? ''
+    event.title[locale] || event.title.en,
+    event.description[locale] || event.description.en,
+    event.location?.[locale] || event.location?.en || ''
   ].some((field) => field.toLocaleLowerCase(locale).includes(needle))
 }
 
@@ -96,7 +96,7 @@ function inEventOffset(startDateTime: string): Date {
 
 /** The hand-written label when the event has one, else the start date. */
 export function eventDateLabel(event: ComfyEvent, locale: Locale): string {
-  const written = event.dateLabel?.[locale]
+  const written = event.dateLabel?.[locale] || event.dateLabel?.en
   if (written) return written
   return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
@@ -113,6 +113,10 @@ export type DirectoryRow = {
   /** Set once here so no view needs its own clock to classify a row. */
   upcoming: boolean
   category: string
+  /** Resolved here, with the site's English fallback, so views never reach
+   * back into the event for localized text. */
+  title: string
+  description: string
   date: string
   location: string
   media?: { src: string; alt: string; poster?: string; isVideo: boolean }
@@ -129,7 +133,7 @@ function mediaOf(event: ComfyEvent, locale: Locale): DirectoryRow['media'] {
   const isVideo = media.type === 'video'
   return {
     src: media.src,
-    alt: media.alt[locale],
+    alt: media.alt[locale] || media.alt.en,
     poster: isVideo ? media.poster : undefined,
     isVideo
   }
@@ -143,7 +147,10 @@ function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {
     return { href: localizeHref(eventPath(event), locale), newTab: false }
   }
   if (!event.link) return undefined
-  return { href: event.link.href[locale], newTab: event.link.newTab ?? false }
+  return {
+    href: event.link.href[locale] || event.link.href.en,
+    newTab: event.link.newTab ?? false
+  }
 }
 
 export function directoryRows(
@@ -157,9 +164,13 @@ export function directoryRows(
       event,
       upcoming,
       category: t(`events.category.${event.category}`, locale),
+      title: event.title[locale] || event.title.en,
+      description: event.description[locale] || event.description.en,
       date: eventDateLabel(event, locale),
       location:
-        event.location?.[locale] ?? t('events.directory.virtual', locale),
+        event.location?.[locale] ||
+        event.location?.en ||
+        t('events.directory.virtual', locale),
       media: mediaOf(event, locale),
       watch: upcoming ? undefined : watchOf(event, locale),
       calendar: upcoming ? toCalendarEvent(event, locale) : undefined
