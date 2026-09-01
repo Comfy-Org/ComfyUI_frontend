@@ -112,6 +112,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
   }
 
+  trackFeatureFlagEvaluation(key: string, value: unknown): void {
+    this.dispatch((provider) =>
+      provider.trackFeatureFlagEvaluation?.(key, value)
+    )
+  }
+
   trackUserLoggedIn(): void {
     this.dispatch((provider) => provider.trackUserLoggedIn?.())
   }
