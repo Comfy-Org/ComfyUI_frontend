@@ -231,6 +231,9 @@ describe('SignUpForm', () => {
     expect(requirements).toBeInTheDocument()
 
     await user.tab()
+    expect(requirements).toBeInTheDocument()
+
+    await user.tab()
 
     expect(confirmPasswordInput).toHaveFocus()
     expect(requirements).not.toBeInTheDocument()
