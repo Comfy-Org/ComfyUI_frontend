@@ -35,6 +35,7 @@ const MAX_WORKFLOW_CHARS = 200_000
 const MAX_SECTION_CHARS = 60_000
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
+const SOURCE_TIMEOUT_MS = 5_000
 
 /**
  * Setting keys whose VALUE is replaced before the report leaves the browser.
@@ -115,8 +116,18 @@ export interface CrdtDebugReportInput {
 }
 
 async function attempt<T>(label: string, load: () => Promise<T>) {
+  let timeout: ReturnType<typeof setTimeout> | undefined
   try {
-    return { label, ok: true as const, value: await load() }
+    const value = await Promise.race([
+      load(),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error(`${label} timed out`)),
+          SOURCE_TIMEOUT_MS
+        )
+      })
+    ])
+    return { label, ok: true as const, value }
   } catch (error) {
     reportError(error, {
       errorType: 'agent_crdt_debug_report_source_failed',
@@ -124,6 +135,8 @@ async function attempt<T>(label: string, load: () => Promise<T>) {
       level: 'warning'
     })
     return { label, ok: false as const, error: String(error) }
+  } finally {
+    clearTimeout(timeout)
   }
 }
 

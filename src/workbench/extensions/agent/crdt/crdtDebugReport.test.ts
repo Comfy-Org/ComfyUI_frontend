@@ -129,6 +129,17 @@ describe('collectCrdtDebugReport', () => {
     })
   })
 
+  it('times out a stalled backend source', async () => {
+    vi.useFakeTimers()
+    getSystemStats.mockReturnValue(new Promise(() => {}))
+
+    const reportPromise = collectCrdtDebugReport({ crdt: SNAPSHOT, events: [] })
+    await vi.advanceTimersByTimeAsync(5_000)
+
+    await expect(reportPromise).resolves.toContain('System stats timed out')
+    vi.useRealTimers()
+  })
+
   it('redacts credential-shaped setting values and says the section needs review', async () => {
     getSettings.mockResolvedValue({
       'Comfy.Theme': 'dark',
