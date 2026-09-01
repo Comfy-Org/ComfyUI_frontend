@@ -217,6 +217,44 @@ describe('reconcileOpsResult', () => {
     ).toEqual([])
     expect(statesOf(ledger.entries())).toEqual(['inflight', 'inflight'])
   })
+
+  it('ignores late results from a superseded send attempt', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['op-1'])
+    ledger.reconcileOpsResult({
+      batch: ['op-1'],
+      applied: [],
+      skipped: [],
+      failedOpId: 'op-1',
+      attempts: { 'op-1': 1 }
+    })
+    expect(ledger.markInFlight(['op-1'])).toEqual([])
+
+    ledger.reconcileOpsResult({
+      batch: ['op-1'],
+      applied: ['op-1'],
+      skipped: [],
+      attempts: { 'op-1': 1 }
+    })
+    expect(ledger.get('op-1')?.state).toBe('inflight')
+
+    ledger.reconcileOpsResult({
+      batch: ['op-1'],
+      applied: ['op-1'],
+      skipped: [],
+      attempts: { 'op-1': 2 }
+    })
+    expect(ledger.get('op-1')?.state).toBe('applied')
+
+    ledger.reconcileOpsResult({
+      batch: ['op-1'],
+      applied: [],
+      skipped: [],
+      failedOpId: 'op-1',
+      attempts: { 'op-1': 1 }
+    })
+    expect(ledger.get('op-1')?.state).toBe('applied')
+  })
 })
 
 describe('clearOnEffect (KA-9)', () => {

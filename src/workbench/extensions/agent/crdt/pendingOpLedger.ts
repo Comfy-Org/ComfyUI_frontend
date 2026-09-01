@@ -69,6 +69,8 @@ export interface OpsResultOutcome {
   failedOpId?: string | null
   /** Verbatim failure detail to preserve on the failed entry. */
   failure?: unknown
+  /** Send attempt per op id, used to reject late results after a retry. */
+  attempts?: Readonly<Record<string, number>>
 }
 
 /** What `reconcileOpsResult` did, per op id, for observability and tests. */
@@ -127,6 +129,7 @@ interface MutableEntry<TShadow> {
   state: PendingOpState
   shadow: TShadow
   failure?: unknown
+  attempt: number
 }
 
 const RETRYABLE: ReadonlySet<PendingOpState> = new Set([
@@ -158,7 +161,7 @@ export function createPendingOpLedger<
     enqueue(opId, shadow) {
       if (seenOpIds.has(opId)) return false
       seenOpIds.add(opId)
-      ledger.set(opId, { opId, state: 'queued', shadow })
+      ledger.set(opId, { opId, state: 'queued', shadow, attempt: 0 })
       return true
     },
 
@@ -171,6 +174,7 @@ export function createPendingOpLedger<
 
       for (const opId of opIds) {
         const entry = ledger.get(opId)!
+        entry.attempt += 1
         entry.state = 'inflight'
         delete entry.failure
       }
@@ -201,6 +205,9 @@ export function createPendingOpLedger<
           summary.unknown.push(opId)
           return
         }
+        if (entry.state !== 'inflight') return
+        const resultAttempt = outcome.attempts?.[opId]
+        if (entry.attempt > 1 && resultAttempt !== entry.attempt) return
         entry.state = state
         if (state === 'failed')
           entry.failure = failure ?? MISSING_FAILURE_DETAIL
