@@ -59,7 +59,8 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   const getPacksByIds = async (
     ids: (NodePack['id'] | undefined)[]
   ): Promise<NodePack[]> => {
-    const [cachedPacksIds, uncachedPacksIds] = partition(ids, (id) =>
+    const validIds = ids.filter((id): id is string => id !== undefined)
+    const [cachedPacksIds, uncachedPacksIds] = partition(validIds, (id) =>
       getPacksByIdCache.has(id)
     )
 
@@ -70,11 +71,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     if (uncachedPacksIds.length) {
       getPacksByIdController = new AbortController()
       const uncachedPacks = await registryService.listAllPacks(
-        {
-          node_id: uncachedPacksIds.filter(
-            (id): id is string => id !== undefined
-          )
-        },
+        { node_id: uncachedPacksIds },
         getPacksByIdController.signal
       )
 

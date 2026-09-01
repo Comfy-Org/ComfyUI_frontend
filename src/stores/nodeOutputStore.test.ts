@@ -1012,7 +1012,6 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 describe('nodeOutputStore image URLs', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
     vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
     app.nodeOutputs = {}
@@ -1034,7 +1033,7 @@ describe('nodeOutputStore image URLs', () => {
   it('builds view URLs from output images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
-    app.nodeOutputs['5'] = createMockOutputs([
+    store.nodeOutputs['5'] = createMockOutputs([
       { filename: 'a.png', subfolder: 'x', type: 'temp' }
     ])
 
@@ -1082,7 +1081,6 @@ describe('nodeOutputStore image URLs', () => {
 describe('nodeOutputStore locator misses', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -1109,7 +1107,6 @@ describe('nodeOutputStore locator misses', () => {
 describe('nodeOutputStore merge branches', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -1158,7 +1155,6 @@ describe('nodeOutputStore merge branches', () => {
 describe('nodeOutputStore previews and removal', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -1213,8 +1209,8 @@ describe('nodeOutputStore previews and removal', () => {
 
   it('skips non-iterable preview entries when revoking all previews', () => {
     const store = useNodeOutputStore()
-    app.nodePreviewImages = { '6': ['blob:preview'] }
-    ;(app.nodePreviewImages as Record<string, unknown>)['5'] = {}
+    store.nodePreviewImages['6'] = ['blob:preview']
+    ;(store.nodePreviewImages as Record<string, unknown>)['5'] = {}
 
     store.revokeAllPreviews()
 
@@ -1331,63 +1327,15 @@ describe('nodeOutputStore previews and removal', () => {
 describe('nodeOutputStore output refresh', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
 
-  it('updates stored output images from legacy node images', () => {
-    const store = useNodeOutputStore()
-    const node = createMockNode({
-      id: 5,
-      images: [{ filename: 'new.png', type: 'temp' }]
-    })
-
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(5)]),
-      createMockOutputs([{ filename: 'old.png', type: 'temp' }])
-    )
-    store.updateNodeImages(node)
-
-    expect(store.nodeOutputs['5']?.images).toEqual([
-      { filename: 'new.png', type: 'temp' }
-    ])
-  })
-
-  it('ignores legacy image updates when the node has no images', () => {
-    const store = useNodeOutputStore()
-
-    store.updateNodeImages(createMockNode({ id: 5 }))
-
-    expect(store.nodeOutputs).toEqual({})
-  })
-
-  it('ignores legacy image updates when no locator exists', () => {
-    const store = useNodeOutputStore()
-    mockNodeIdToNodeLocatorId.mockReturnValueOnce(undefined)
-
-    store.updateNodeImages(
-      createMockNode({ id: 5, images: [{ filename: 'new.png' }] })
-    )
-
-    expect(store.nodeOutputs).toEqual({})
-  })
-
-  it('ignores legacy image updates when no output exists', () => {
-    const store = useNodeOutputStore()
-
-    store.updateNodeImages(
-      createMockNode({ id: 5, images: [{ filename: 'new.png' }] })
-    )
-
-    expect(store.nodeOutputs).toEqual({})
-  })
-
-  it('copies app outputs into reactive state during refresh', () => {
+  it('replaces stored output with a fresh object during refresh', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
     const output = createMockOutputs([{ filename: 'result.png' }])
-    app.nodeOutputs['5'] = output
+    store.nodeOutputs['5'] = output
 
     store.refreshNodeOutputs(node)
 

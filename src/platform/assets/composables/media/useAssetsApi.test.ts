@@ -27,13 +27,13 @@ function createAsset(id: string): AssetItem {
     name: `${id}.png`,
     size: 1,
     created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
     tags: ['input']
   }
 }
 
 describe('useAssetsApi', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockAssetsStore.inputAssets = [createAsset('input-1')]
     mockAssetsStore.historyAssets = [createAsset('history-1')]
     mockAssetsStore.inputLoading = true

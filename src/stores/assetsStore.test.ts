@@ -33,7 +33,6 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     getAssetsByTag: vi.fn(),
     getAssetsPageByTag: vi.fn(),
     getAllAssetsByTag: vi.fn(),
-    getAssetsForNodeType: vi.fn(),
     getAssetsPageForNodeType: vi.fn(),
     invalidateInputAssetsIncludingPublic: vi.fn(),
     updateAsset: vi.fn(),
@@ -1203,8 +1202,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
     it('ignores a model response after the category is invalidated', async () => {
       const store = useAssetsStore()
-      let resolveFetch!: (assets: AssetItem[]) => void
-      vi.mocked(assetService.getAssetsForNodeType).mockReturnValueOnce(
+      let resolveFetch!: (response: AssetResponse) => void
+      vi.mocked(assetService.getAssetsPageForNodeType).mockReturnValueOnce(
         new Promise((resolve) => {
           resolveFetch = resolve
         })
@@ -1212,7 +1211,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       const request = store.updateModelsForNodeType('CheckpointLoaderSimple')
       store.invalidateCategory('checkpoints')
-      resolveFetch([createMockAsset('stale-response')])
+      resolveFetch(makePage([createMockAsset('stale-response')]))
       await request
 
       expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
@@ -1223,7 +1222,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       try {
         let rejectFetch!: (error: Error) => void
-        vi.mocked(assetService.getAssetsForNodeType).mockReturnValueOnce(
+        vi.mocked(assetService.getAssetsPageForNodeType).mockReturnValueOnce(
           new Promise((_resolve, reject) => {
             rejectFetch = reject
           })
@@ -1304,14 +1303,14 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const nodeType = 'CheckpointLoaderSimple'
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        createMockAsset('first')
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([createMockAsset('first')])
+      )
       await store.updateModelsForNodeType(nodeType)
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        createMockAsset('second')
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([createMockAsset('second')])
+      )
       await store.updateModelsForNodeType(nodeType)
 
       expect(store.getAssets(nodeType).map((asset) => asset.id)).toEqual([
@@ -1324,9 +1323,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const nodeType = 'CheckpointLoaderSimple'
 
       expect(store.hasMore(nodeType)).toBe(false)
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        createMockAsset('only-page')
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([createMockAsset('only-page')])
+      )
 
       await store.updateModelsForNodeType(nodeType)
 
@@ -1338,7 +1337,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const error = new Error('model fetch failed')
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       try {
-        vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce(
+        vi.mocked(assetService.getAssetsPageForNodeType).mockRejectedValueOnce(
           error
         )
 
@@ -1355,7 +1354,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       try {
-        vi.mocked(assetService.getAssetsForNodeType).mockRejectedValueOnce(
+        vi.mocked(assetService.getAssetsPageForNodeType).mockRejectedValueOnce(
           'boom'
         )
 
@@ -1536,8 +1535,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     it('refreshes provider and tag caches for the completed model type', async () => {
       const store = useAssetsStore()
       const downloadStore = useAssetDownloadStore()
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([])
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([])
+      )
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(makePage([]))
 
       downloadStore.lastCompletedDownload = {
         taskId: 'task-1',
@@ -1546,19 +1547,19 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       }
 
       await vi.waitFor(() =>
-        expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
+        expect(assetService.getAssetsPageByTag).toHaveBeenCalledWith(
           'models',
           true,
           expect.objectContaining({ limit: 500, offset: 0 })
         )
       )
 
-      expect(assetService.getAssetsForNodeType).toHaveBeenCalledWith(
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledWith(
         'CheckpointLoaderSimple',
         expect.objectContaining({ limit: 500, offset: 0 })
       )
-      expect(assetService.getAssetsForNodeType).toHaveBeenCalledTimes(1)
-      expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetsPageByTag).toHaveBeenCalledWith(
         'checkpoints',
         true,
         expect.objectContaining({ limit: 500, offset: 0 })
@@ -1644,9 +1645,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         user_metadata: { note: 'before' } as Record<string, unknown>
       }
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        cached
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([cached])
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
       vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
         ...missing,
@@ -1778,9 +1779,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-remove-only', ['models', 'archived'])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
       vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
@@ -1919,11 +1920,13 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const asset = createMockAsset('tags-target-fail', ['models', 'loras'])
       const otherAsset = createMockAsset('tags-other', ['models'])
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        asset
-      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([asset])
+      )
       await store.updateModelsForNodeType('LoraLoader')
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([otherAsset])
+      vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+        makePage([otherAsset])
+      )
       await store.updateModelsForTag('models')
 
       vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
@@ -2420,11 +2423,11 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
         const store = useAssetsStore()
 
         vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
-          {
+          fromPartial({
             id: 'input-1',
             name: 'plain.png',
             tags: ['input']
-          }
+          })
         ])
         await store.updateInputs()
 

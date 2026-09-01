@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import axios from 'axios'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -26,10 +26,6 @@ describe('useNodeDefStore', () => {
 
   beforeEach(() => {
     store = useNodeDefStore()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   const createMockNodeDef = (

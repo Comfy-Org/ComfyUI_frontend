@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -247,6 +245,15 @@ describe('useComfyRegistryStore', () => {
       { node_id: ['test-pack-id'] },
       expect.any(Object)
     )
+  })
+
+  it('should skip lookups when every pack ID is undefined', async () => {
+    const store = useComfyRegistryStore()
+
+    const result = await store.getPacksByIds.call([undefined])
+
+    expect(result).toEqual([])
+    expect(mockRegistryService.listAllPacks).not.toHaveBeenCalled()
   })
 
   describe('inferPackFromNodeName', () => {

@@ -71,6 +71,7 @@ describe('getAssetUrl', () => {
 
   it('omits the subfolder param for an asset at the type root', () => {
     expect(getAssetUrl(createAsset())).not.toContain('subfolder')
+  })
 
   it('builds encoded view URLs with type and subfolder', () => {
     const url = getAssetUrl(

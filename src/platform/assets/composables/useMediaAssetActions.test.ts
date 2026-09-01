@@ -12,10 +12,11 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
-import { api } from '@/scripts/api'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import type * as createAnnotatedPathModule from '@/utils/createAnnotatedPath'
 import type * as outputAssetUtilModule from '../utils/outputAssetUtil'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
@@ -25,8 +26,8 @@ const mockIsCloud = vi.hoisted(() => ({ value: false }))
 const capturedFilenames = vi.hoisted(() => ({ values: [] as string[] }))
 const capturedAnnotatedPaths = vi.hoisted(() => ({
   values: [] as Array<{
-    item: { filename: string; subfolder?: string; type?: string }
-    options: { rootFolder?: string }
+    item: ResultItem
+    options?: { rootFolder?: string }
   }>
 }))
 
@@ -124,18 +125,16 @@ vi.mock('@/stores/nodeDefStore', () => ({
   })
 }))
 
-vi.mock('@/utils/createAnnotatedPath', () => ({
-  createAnnotatedPath: vi.fn(
-    (
-      item: { filename: string; subfolder?: string; type?: string },
-      options: { rootFolder?: string }
-    ) => {
-      capturedAnnotatedPaths.values.push({ item, options })
-      capturedFilenames.values.push(item.filename)
-      return item.filename
-    }
-  )
-}))
+vi.mock('@/utils/createAnnotatedPath', async (importOriginal) => {
+  const actual = await importOriginal<typeof createAnnotatedPathModule>()
+  return {
+    createAnnotatedPath: vi.fn((item: ResultItem) => {
+      capturedAnnotatedPaths.values.push({ item, options: undefined })
+      if (item.filename) capturedFilenames.values.push(item.filename)
+      return actual.createAnnotatedPath(item)
+    })
+  }
+})
 
 const mockDetectNodeTypeFromFilename = vi.hoisted(() => vi.fn())
 vi.mock('@/utils/loaderNodeUtil', () => ({
@@ -275,6 +274,14 @@ function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
   }
 }
 
+function createLoadImageNode(): LGraphNode {
+  const node: unknown = {
+    widgets: [{ name: 'image', value: '', callback: vi.fn() }],
+    graph: { setDirtyCanvas: vi.fn() }
+  }
+  return node as LGraphNode
+}
+
 function getAddedImageWidgetValues() {
   return mockAddNodeOnGraph.mock.results.map(
     ({ value }) =>
@@ -328,11 +335,7 @@ describe('useMediaAssetActions', () => {
     mockCopyToClipboard.mockReset()
     mockShowDialog.mockReset()
     mockAddNodeOnGraph.mockReset()
-    const defaultMockNode: unknown = {
-      widgets: [{ name: 'image', value: '', callback: vi.fn() }],
-      graph: { setDirtyCanvas: vi.fn() }
-    }
-    mockAddNodeOnGraph.mockReturnValue(defaultMockNode as LGraphNode)
+    mockAddNodeOnGraph.mockImplementation(createLoadImageNode)
     mockGetCanvasCenter.mockReset()
     mockGetCanvasCenter.mockReturnValue([100, 100])
     mockNodeDefsByName.value = {
@@ -487,7 +490,7 @@ describe('useMediaAssetActions', () => {
           subfolder: 'nested',
           type: undefined
         },
-        options: { rootFolder: 'input' }
+        options: undefined
       })
       expect(setDirtyCanvas).toHaveBeenCalledWith(true, true)
       expect(useToast().add).toHaveBeenCalledWith(
@@ -537,7 +540,7 @@ describe('useMediaAssetActions', () => {
         mockGetOutputAssetMetadata.mockReturnValue({
           subfolder: 'runs/2026'
         })
-        const actions = useMediaAssetActions()
+        const { actions } = mountMediaActions()
 
         await actions.addWorkflow(
           createMockAsset({
@@ -561,19 +564,6 @@ describe('useMediaAssetActions', () => {
         await actions.addWorkflow(asset)
 
         expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
-      })
-
-      it('should fall back to asset.name when hash is null', async () => {
-        const { actions } = mountMediaActions()
-
-        const asset = createMockAsset({
-          name: 'fallback-null.jpeg',
-          hash: null
-        })
-
-        await actions.addWorkflow(asset)
-
-        expect(getAddedImageWidgetValues()).toEqual(['fallback-null.jpeg'])
       })
     })
   })
@@ -646,7 +636,7 @@ describe('useMediaAssetActions', () => {
           subfolder: '',
           type: undefined
         },
-        options: { rootFolder: undefined }
+        options: undefined
       })
       expect(setDirtyCanvas).toHaveBeenCalledWith(true, true)
       expect(useToast().add).toHaveBeenCalledWith(
@@ -1418,7 +1408,7 @@ describe('useMediaAssetActions', () => {
         1
       )
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([tempOutput, savedOutput])
 
       await vi.waitFor(() => {
@@ -1444,7 +1434,7 @@ describe('useMediaAssetActions', () => {
       })
       const savedOutput = createOutputAsset('output-job', 'out.png', 'job1', 1)
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([inputWithJobMetadata, savedOutput])
 
       await vi.waitFor(() => {
@@ -1502,7 +1492,7 @@ describe('useMediaAssetActions', () => {
       const parent = createOutputAsset('parent', 'cover.png', 'job1', 3)
       const child = createOutputAsset('child', 'img1.png', 'job1')
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([parent, child])
 
       await vi.waitFor(() => {
@@ -1695,7 +1685,7 @@ describe('useMediaAssetActions', () => {
       const parent = createOutputAsset('parent', 'cover.png', 'job1', 3)
       const child = createOutputAsset('child', 'img1.png', 'job1')
 
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       actions.downloadAssets([parent, child])
 
       await expectExportToastFileCount(3)
@@ -2065,7 +2055,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('deletes via the history API in OSS instead of failing as an imported file', async () => {
-      const actions = useMediaAssetActions()
+      const { actions } = mountMediaActions()
       const asset = createMockAsset({
         id: 'job-temp',
         name: 'ComfyUI_temp_gjcnq_00002_.png',

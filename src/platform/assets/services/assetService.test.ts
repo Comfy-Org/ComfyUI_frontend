@@ -80,7 +80,7 @@ type AssetListResponseOptions = {
 
 function buildResponse(
   body: unknown,
-  init: { ok?: boolean; status?: number } = {}
+  init: { status?: number } = {}
 ): Response {
   return new Response(body == null ? null : JSON.stringify(body), {
     status: init.status ?? 200
@@ -182,7 +182,7 @@ describe(assetService.shouldUseAssetBrowser, () => {
 describe(assetService.getAssetMetadata, () => {
   it('throws a localized message when the response is not ok', async () => {
     fetchApiMock.mockResolvedValueOnce(
-      buildResponse({ code: 'FILE_TOO_LARGE' }, { ok: false, status: 413 })
+      buildResponse({ code: 'FILE_TOO_LARGE' }, { status: 413 })
     )
 
     await expect(
@@ -192,7 +192,7 @@ describe(assetService.getAssetMetadata, () => {
 
   it('falls back to the unknown localized message for unrecognized error codes', async () => {
     fetchApiMock.mockResolvedValueOnce(
-      buildResponse({ code: 'NOT_A_REAL_CODE' }, { ok: false, status: 400 })
+      buildResponse({ code: 'NOT_A_REAL_CODE' }, { status: 400 })
     )
 
     await expect(
@@ -262,7 +262,6 @@ describe(assetService.getAssetMetadata, () => {
 
 describe(assetService.getAssetsForNodeType, () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGetCategoryForNodeType.mockReset()
   })
 
@@ -318,14 +317,8 @@ describe(assetService.getAssetsForNodeType, () => {
 })
 
 describe(assetService.getAssetDetails, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('throws when the details response is not ok', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse({}, { ok: false, status: 404 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse({}, { status: 404 }))
 
     await expect(assetService.getAssetDetails('missing')).rejects.toThrow(
       'Unable to load asset details for missing: Server returned 404'
@@ -356,9 +349,7 @@ describe(assetService.uploadAssetFromUrl, () => {
   })
 
   it('throws when URL upload returns a non-ok response', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse(null, { ok: false, status: 500 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 500 }))
 
     await expect(
       assetService.uploadAssetFromUrl({
@@ -452,9 +443,7 @@ describe(assetService.uploadAssetFromBase64, () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('hello'))
     try {
-      fetchApiMock.mockResolvedValueOnce(
-        buildResponse(null, { ok: false, status: 507 })
-      )
+      fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 507 }))
 
       await expect(
         assetService.uploadAssetFromBase64({
@@ -567,10 +556,7 @@ describe(assetService.uploadAssetAsync, () => {
 
   it('returns an async result when the server responds 202', async () => {
     fetchApiMock.mockResolvedValueOnce(
-      buildResponse(
-        { task_id: 'task-1', status: 'running' },
-        { ok: true, status: 202 }
-      )
+      buildResponse({ task_id: 'task-1', status: 'running' }, { status: 202 })
     )
 
     const result = await assetService.uploadAssetAsync({
@@ -599,9 +585,7 @@ describe(assetService.uploadAssetAsync, () => {
   })
 
   it('throws when the async upload response is not ok', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse(null, { ok: false, status: 502 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 502 }))
 
     await expect(
       assetService.uploadAssetAsync({
@@ -640,7 +624,7 @@ describe(assetService.uploadAssetAsync, () => {
       .mockResolvedValueOnce(
         buildResponse(
           { task_id: 'task-1', status: 'completed' },
-          { ok: true, status: 202 }
+          { status: 202 }
         )
       )
       .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
@@ -659,9 +643,7 @@ describe(assetService.uploadAssetAsync, () => {
 
 describe(assetService.deleteAsset, () => {
   it('throws an error containing the status code when the response is not ok', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse(null, { ok: false, status: 503 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 503 }))
 
     await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
   })
@@ -720,9 +702,7 @@ describe(assetService.addAssetTags, () => {
   })
 
   it('throws when adding tags fails', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse(null, { ok: false, status: 403 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 403 }))
 
     await expect(
       assetService.addAssetTags('asset-1', ['mask'])
@@ -763,9 +743,7 @@ describe(assetService.removeAssetTags, () => {
   })
 
   it('throws when removing tags fails', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse(null, { ok: false, status: 404 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 404 }))
 
     await expect(
       assetService.removeAssetTags('asset-1', ['mask'])
@@ -1166,16 +1144,14 @@ describe(assetService.seedModelAssets, () => {
 
   it('treats an already-running scan (409) as success', async () => {
     fetchApiMock.mockResolvedValueOnce(
-      buildResponse({ status: 'already_running' }, { ok: false, status: 409 })
+      buildResponse({ status: 'already_running' }, { status: 409 })
     )
 
     await expect(assetService.seedModelAssets()).resolves.toBeUndefined()
   })
 
   it('throws on other error statuses', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse({}, { ok: false, status: 500 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse({}, { status: 500 }))
 
     await expect(assetService.seedModelAssets()).rejects.toThrow('500')
   })
@@ -1215,9 +1191,7 @@ describe(assetService.updateAsset, () => {
   })
 
   it('throws when the update response is not ok', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse(null, { ok: false, status: 409 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 409 }))
 
     await expect(
       assetService.updateAsset('asset-1', { name: 'renamed.safetensors' })
@@ -1628,9 +1602,7 @@ describe(assetService.createAssetExport, () => {
   })
 
   it('throws when creating an export fails', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse(null, { ok: false, status: 503 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 503 }))
 
     await expect(
       assetService.createAssetExport({ asset_ids: ['asset-1'] })
@@ -1654,9 +1626,7 @@ describe(assetService.getExportDownloadUrl, () => {
   })
 
   it('throws when export download URL lookup fails', async () => {
-    fetchApiMock.mockResolvedValueOnce(
-      buildResponse(null, { ok: false, status: 404 })
-    )
+    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 404 }))
 
     await expect(
       assetService.getExportDownloadUrl('missing.zip')
@@ -1848,10 +1818,7 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
     fetchApiMock
       .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
       .mockResolvedValueOnce(
-        buildResponse(
-          { task_id: 'task-1', status: 'running' },
-          { ok: true, status: 202 }
-        )
+        buildResponse({ task_id: 'task-1', status: 'running' }, { status: 202 })
       )
 
     await assetService.getInputAssetsIncludingPublic()

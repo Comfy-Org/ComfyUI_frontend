@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -388,11 +386,11 @@ describe('useUploadModelWizard', () => {
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-lora',
         name: 'model.safetensors',
         tags: ['models', 'loras']
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(
@@ -438,11 +436,11 @@ describe('useUploadModelWizard', () => {
 
     resolveUpload({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-1',
         name: 'model.safetensors',
         tags: ['models', 'checkpoints']
-      }
+      })
     })
 
     await expect(firstUpload).resolves.toEqual(
@@ -483,11 +481,11 @@ describe('useUploadModelWizard', () => {
     )
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-1',
         name: 'model.safetensors',
         tags: ['models', 'checkpoints']
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(modelTypes)
@@ -520,11 +518,11 @@ describe('useUploadModelWizard', () => {
     )
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-1',
         name: 'model.safetensors',
         tags: ['models', 'checkpoints']
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(modelTypes)
@@ -676,11 +674,11 @@ describe('useUploadModelWizard', () => {
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-unknown',
         name: 'model.safetensors',
         tags: ['models']
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(modelTypes, {
