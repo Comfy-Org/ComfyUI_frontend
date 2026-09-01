@@ -131,12 +131,19 @@ export class EcsFollowerAdapter {
 
   constructor(private readonly mutations: MutationsForTarget) {}
 
-  bind(workflowId: string, follower: FollowerDoc): void {
+  bind(
+    workflowId: string,
+    follower: FollowerDoc,
+    baselineContext?: RemoteMutationContext
+  ): boolean {
     this.unbind(workflowId)
     const session = this.createSession(workflowId, follower)
     this.targets.set(workflowId, session)
     session.nodes.observeDeep(session.onNodesChanged)
     session.links.observe(session.onLinksChanged)
+    return baselineContext
+      ? this.projectBaseline(session, baselineContext)
+      : true
   }
 
   unbind(workflowId: string): void {
@@ -210,11 +217,34 @@ export class EcsFollowerAdapter {
       onLinksChanged: (_event): void => undefined
     }
 
-    session.nodes.forEach((_node, id) => session.nodeActions.set(id, 'add'))
-    session.links.forEach((_link, id) => session.changedLinks.add(id))
     session.onNodesChanged = (events) => this.onNodesChanged(session, events)
     session.onLinksChanged = (event) => this.onLinksChanged(session, event)
     return session
+  }
+
+  private projectBaseline(
+    session: TargetSession,
+    context: RemoteMutationContext
+  ): boolean {
+    const nodes = [...session.nodes.keys()].flatMap((id) => {
+      const payload = readSemanticNode(session.follower.doc, id)
+      return payload ? [payload] : []
+    })
+    const nodeIds = new Set(nodes.map(({ id }) => String(id)))
+    const links = [...session.links.keys()].flatMap((id) => {
+      const link = readSemanticLink(session.follower.doc, id)
+      return link &&
+        nodeIds.has(String(link.originNodeId)) &&
+        nodeIds.has(String(link.targetNodeId))
+        ? [link]
+        : []
+    })
+    const applied = session.mutations.batch(context, (batch) => {
+      for (const node of nodes) batch.reconcileNode(node)
+      for (const link of links) batch.connect(link)
+    })
+    if (applied) session.reconcileNextFrame = false
+    return applied
   }
 
   private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
