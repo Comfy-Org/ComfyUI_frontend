@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { DirectiveBinding } from 'vue'
 
 import * as tooltipConfig from '@/composables/useTooltipConfig'
@@ -43,10 +43,11 @@ describe('PanelHeader', () => {
     [true, 'Minimize panel'],
     [false, 'Close']
   ] as const)('shows the %s panel tooltip for %s', ([isMaximized, label]) => {
-    const spy = vi.spyOn(tooltipConfig, 'buildAgentTooltipConfig')
-
     mount(isMaximized)
 
-    expect(spy).toHaveBeenCalledWith(label)
+    const button = screen.getByRole('button', { name: label })
+    expect(tooltipBindings.get(button)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig(label)
+    )
   })
 })
