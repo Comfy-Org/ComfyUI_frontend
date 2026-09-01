@@ -184,6 +184,26 @@ describe('reconcileOpsResult', () => {
       'Host rejected operation without failure details'
     )
   })
+
+  it('ignores overlapping and out-of-batch outcome ids', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['op-1', 'op-2'])
+    const summary = ledger.reconcileOpsResult({
+      batch: ['op-1'],
+      applied: ['op-1', 'op-1', 'op-2'],
+      skipped: ['op-1', 'op-2'],
+      failedOpId: 'op-1'
+    })
+    expect(summary).toEqual({
+      applied: ['op-1'],
+      skipped: [],
+      failed: [],
+      unprocessed: [],
+      unknown: []
+    })
+    expect(ledger.get('op-1')?.state).toBe('applied')
+    expect(ledger.get('op-2')?.state).toBe('inflight')
+  })
 })
 
 describe('clearOnEffect (KA-9)', () => {

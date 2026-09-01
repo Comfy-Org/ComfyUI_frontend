@@ -186,6 +186,7 @@ export function createPendingOpLedger<
         unknown: []
       }
       const resolved = new Set<string>()
+      const batchIds = new Set(outcome.batch)
 
       const transition = (
         opId: string,
@@ -193,6 +194,7 @@ export function createPendingOpLedger<
         bucket: string[],
         failure?: unknown
       ) => {
+        if (resolved.has(opId) || !batchIds.has(opId)) return
         resolved.add(opId)
         const entry = ledger.get(opId)
         if (!entry) {
