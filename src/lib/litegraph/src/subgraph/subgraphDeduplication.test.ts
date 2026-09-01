@@ -21,6 +21,7 @@ import {
   deduplicateSubgraphLinkIds,
   deduplicateSubgraphNodeIds,
   deduplicateSubgraphRerouteIds,
+  normalizeSubgraphDefinitionIds,
   normalizeSubgraphDefinitions,
   topologicalSortSubgraphs
 } from './subgraphDeduplication'
@@ -48,6 +49,96 @@ function makeSubgraph(id: string, nodeTypes: string[] = []): ExportedSubgraph {
     outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 100, 100] }
   }
 }
+
+describe('normalizeSubgraphDefinitionIds', () => {
+  it('normalizes a legacy id at the top level and rewrites its references', () => {
+    const legacy = makeSubgraph('legacy-id')
+    const parent = makeSubgraph('parent', ['legacy-id'])
+
+    const result = normalizeSubgraphDefinitionIds([legacy, parent])
+    const normalizedId = result.subgraphs[0].id
+
+    expect(result.subgraphs).toHaveLength(2)
+    expect(isUuidShapedSubgraphId(normalizedId)).toBe(true)
+    expect(result.subgraphs[1].nodes![0].type).toBe(normalizedId)
+  })
+
+  it('recursively normalizes a subgraph-within-subgraph definition and hoists it to the flat result', () => {
+    // Regression for #16012: a nested subgraph definition (embedded in a
+    // parent subgraph's own `definitions.subgraphs`, e.g. from an external
+    // tool or older export) must be normalized and surfaced, not skipped
+    // because normalization only looked at the top-level array.
+    const nestedChild = makeSubgraph('legacy-nested-id')
+    const parent = makeSubgraph('parent', ['legacy-nested-id'])
+    ;(
+      parent as ExportedSubgraph & {
+        definitions?: { subgraphs?: ExportedSubgraph[] }
+      }
+    ).definitions = { subgraphs: [nestedChild] }
+    const root = makeSubgraph('root', ['parent'])
+
+    const result = normalizeSubgraphDefinitionIds([parent, root])
+
+    // Both the parent and the previously-nested child are present in the
+    // flat result.
+    expect(result.subgraphs).toHaveLength(3)
+    const normalizedParent = result.subgraphs.find((sg) => sg.name === 'parent')
+    const normalizedChild = result.subgraphs.find(
+      (sg) => sg.name === 'legacy-nested-id'
+    )
+    expect(normalizedParent).toBeDefined()
+    expect(normalizedChild).toBeDefined()
+
+    // The nested child's legacy id was normalized to a fresh UUID.
+    expect(isUuidShapedSubgraphId(normalizedChild!.id)).toBe(true)
+    expect(normalizedChild!.id).not.toBe('legacy-nested-id')
+
+    // The parent's node referencing the nested child by its old id now
+    // references the normalized UUID.
+    expect(normalizedParent!.nodes![0].type).toBe(normalizedChild!.id)
+
+    // The now-redundant nested list is cleared: callers read the flat
+    // top-level result, not each definition's own nested subgraphs.
+    expect(
+      (normalizedParent as unknown as { definitions?: { subgraphs?: unknown } })
+        .definitions?.subgraphs
+    ).toBeUndefined()
+  })
+
+  it('normalizes multiple levels of subgraph-within-subgraph nesting', () => {
+    const grandchild = makeSubgraph('legacy-grandchild')
+    const child = makeSubgraph('legacy-child', ['legacy-grandchild'])
+    ;(
+      child as ExportedSubgraph & {
+        definitions?: { subgraphs?: ExportedSubgraph[] }
+      }
+    ).definitions = { subgraphs: [grandchild] }
+    const parent = makeSubgraph('parent', ['legacy-child'])
+    ;(
+      parent as ExportedSubgraph & {
+        definitions?: { subgraphs?: ExportedSubgraph[] }
+      }
+    ).definitions = { subgraphs: [child] }
+
+    const result = normalizeSubgraphDefinitionIds([parent])
+
+    expect(result.subgraphs).toHaveLength(3)
+    const normalizedChild = result.subgraphs.find(
+      (sg) => sg.name === 'legacy-child'
+    )!
+    const normalizedGrandchild = result.subgraphs.find(
+      (sg) => sg.name === 'legacy-grandchild'
+    )!
+    const normalizedParent = result.subgraphs.find(
+      (sg) => sg.name === 'parent'
+    )!
+
+    expect(isUuidShapedSubgraphId(normalizedChild.id)).toBe(true)
+    expect(isUuidShapedSubgraphId(normalizedGrandchild.id)).toBe(true)
+    expect(normalizedParent.nodes![0].type).toBe(normalizedChild.id)
+    expect(normalizedChild.nodes![0].type).toBe(normalizedGrandchild.id)
+  })
+})
 
 describe('topologicalSortSubgraphs', () => {
   it('returns original order when there are no dependencies', () => {
