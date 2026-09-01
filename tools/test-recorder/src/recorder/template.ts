@@ -36,7 +36,7 @@ export function storageStateKey(distribution?: Distribution): string {
   try {
     const { protocol, hostname, port } = new URL(distribution.backendUrl)
     const protocolKey = protocol === 'https:' ? '' : `${protocol}//`
-    return `custom-${encodeURIComponent(protocolKey)}${encodeURIComponent(hostname)}${port ? `-${port}` : ''}`
+    return `custom-${encodeURIComponent(`${protocolKey}${hostname}${port ? `:${port}` : ''}`)}`
   } catch {
     return 'custom'
   }

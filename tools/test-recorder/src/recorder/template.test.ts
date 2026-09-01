@@ -365,13 +365,36 @@ describe('recording template', () => {
           ...distribution,
           backendUrl: 'http://localhost:8100/'
         })
-      ).toBe('custom-http%3A%2F%2Flocalhost-8100')
+      ).toBe('custom-http%3A%2F%2Flocalhost%3A8100')
       expect(
         storageStateKey({
           ...distribution,
           backendUrl: 'http://localhost:8200/'
         })
-      ).toBe('custom-http%3A%2F%2Flocalhost-8200')
+      ).toBe('custom-http%3A%2F%2Flocalhost%3A8200')
+    })
+
+    it('does not confuse hostname suffixes with port separators', () => {
+      const distribution = {
+        id: 'custom',
+        label: 'Custom backend',
+        hint: '',
+        script: 'dev',
+        needsLocalBackend: false
+      } as const
+
+      expect(
+        storageStateKey({
+          ...distribution,
+          backendUrl: 'https://example.com-8100/'
+        })
+      ).toBe('custom-example.com-8100')
+      expect(
+        storageStateKey({
+          ...distribution,
+          backendUrl: 'https://example.com:8100/'
+        })
+      ).toBe('custom-example.com%3A8100')
     })
 
     it('encodes IPv6 hostnames for Windows-safe storage paths', () => {
@@ -384,7 +407,7 @@ describe('recording template', () => {
           needsLocalBackend: false,
           backendUrl: 'http://[::1]:8100/'
         })
-      ).toBe('custom-http%3A%2F%2F%5B%3A%3A1%5D-8100')
+      ).toBe('custom-http%3A%2F%2F%5B%3A%3A1%5D%3A8100')
     })
 
     it('removes the legacy shared custom-backend storage state', () => {
