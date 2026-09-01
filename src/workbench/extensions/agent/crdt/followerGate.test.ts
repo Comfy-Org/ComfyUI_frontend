@@ -144,7 +144,13 @@ describe('resolveFollowerEnabled', () => {
       resolveFollowerEnabled({ buildFlag: 'true', search: '', storage })
     ).toBe(true)
     expect(reportError).toHaveBeenCalledTimes(3)
-    expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
+    expect(reportError).toHaveBeenNthCalledWith(1, expect.any(DOMException), {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
+    expect(reportError).toHaveBeenNthCalledWith(2, expect.any(DOMException), {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
+    expect(reportError).toHaveBeenNthCalledWith(3, expect.any(DOMException), {
       errorType: 'agent_crdt_follower_storage_access_failed'
     })
   })
