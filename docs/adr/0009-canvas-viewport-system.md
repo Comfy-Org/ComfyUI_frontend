@@ -80,7 +80,7 @@ Following the ECS principles established in [ADR 0008](0008-entity-component-sys
 ### Negative
 
 - Adds a new abstraction layer that all canvas-sizing code must flow through.
-- `DragAndScale` and `layoutStore` still read `window.devicePixelRatio` directly because they lack a reference to the canvas instance. A future refactor could thread the `dpr` value through, but the current exception is documented and stable.
+- `DragAndScale` still reads `window.devicePixelRatio` directly because it lacks a reference to the canvas instance. `layoutStore` accepts a caller-supplied `dpr` and falls back to the browser value for legacy callers. A future refactor could remove these exceptions, but the current behavior is documented and stable.
 
 ## Notes
 
