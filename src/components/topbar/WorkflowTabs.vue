@@ -24,7 +24,6 @@
       pt:bar-x="h-1"
     >
       <SelectButton
-        :key="selectionRevision"
         class="workflow-tabs bg-transparent"
         :class="props.class"
         :model-value="selectedWorkflow"
@@ -202,7 +201,6 @@ const containerRef = ref<HTMLElement | null>(null)
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
-const selectionRevision = ref(0)
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -229,15 +227,7 @@ const onWorkflowClick = async (event: MouseEvent) => {
       ?.querySelector<HTMLElement>('[data-workflow-path]')
   const path = workflowElement?.dataset.workflowPath
   const option = options.value.find(({ value }) => value === path)
-  if (!option) return
-
-  try {
-    await workflowService.openWorkflow(option.workflow)
-  } catch (error) {
-    selectionRevision.value++
-    await nextTick()
-    throw error
-  }
+  if (option) await workflowService.openWorkflow(option.workflow)
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
