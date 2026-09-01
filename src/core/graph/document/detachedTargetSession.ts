@@ -207,7 +207,9 @@ export function createDetachedTargetSession(
     lineage = createUuidv4()
     committedSeq = atSeq
     committedSeqFloor = atSeq
-    expectedSeq = null
+    // The next frame continues the new lineage contiguously at atSeq + 1; a
+    // later seq means a frame was lost in transit and must trigger a resync.
+    expectedSeq = atSeq + 1
     lastCommitId = null
     needsResync = false
     queue = []

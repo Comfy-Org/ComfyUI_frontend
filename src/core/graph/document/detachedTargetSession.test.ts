@@ -346,6 +346,24 @@ describe('createDetachedTargetSession', () => {
     freshHost.destroy()
   })
 
+  it('detects a lost-in-transit frame after a lineage reset as a gap', () => {
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    session.resetLineage(10)
+
+    // The new lineage continues at seq 11; seq 12 means a frame was lost.
+    const freshHost = new Y.Doc()
+    setNode(freshHost, '9', { type: 'Fresh' })
+    const outcome = session.enqueue({
+      workflowId: WORKFLOW_ID,
+      seq: 12,
+      update: Y.encodeStateAsUpdate(freshHost)
+    })
+    freshHost.destroy()
+
+    expect(outcome).toEqual({ status: 'gap', expectedSeq: 11, receivedSeq: 12 })
+    expect(session.snapshot().needsResync).toBe(true)
+  })
+
   it('rejects frames addressed to another target loudly', () => {
     const session = createDetachedTargetSession(WORKFLOW_ID)
     const stranger = createFrameSource('wf-other')
