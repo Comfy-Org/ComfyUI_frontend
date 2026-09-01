@@ -44,6 +44,17 @@ describe('assertAssetApiGate', () => {
       'Expected one Asset API gate in the build, found 0'
     )
   })
+
+  it('parses a gate with a nested block through its matching brace', () => {
+    expect(() =>
+      assertAssetApiGate(
+        [
+          'function isAssetAPIEnabled() {\n  if (!isCloud) {\n    return false\n  }\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI")\n}'
+        ],
+        'cloud'
+      )
+    ).not.toThrow()
+  })
 })
 
 describe('assertBuildProvenance', () => {
