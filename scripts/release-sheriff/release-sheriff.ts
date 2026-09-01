@@ -105,14 +105,37 @@ export function parseGithubLogins(raw: string | undefined): DirectoryParse {
     return [[emailKey(email), login.trim()] as const]
   })
 
+  // Two valid entries can still normalize to the same key (e.g. different
+  // domains, or case-only differences email.trim().toLowerCase() collapses).
+  // Silently keeping whichever happened to sort last would let the wrong
+  // person get assigned and stay green, so ambiguous keys are dropped
+  // entirely rather than resolved by pair order.
+  const keyCounts = new Map<string, number>()
+  for (const [key] of pairs) {
+    keyCounts.set(key, (keyCounts.get(key) ?? 0) + 1)
+  }
+  const conflictingKeys = [...keyCounts]
+    .filter(([, count]) => count > 1)
+    .map(([key]) => key)
+  const usablePairs = pairs.filter(([key]) => !conflictingKeys.includes(key))
+
   const skipped = parsed.length - pairs.length
+  const warnings = [
+    skipped > 0
+      ? `${DIRECTORY_ENV} has ${skipped} ${skipped === 1 ? 'entry' : 'entries'} ` +
+        `without a usable datadog_email/github_login pair. ${DIRECTORY_FIX}`
+      : null,
+    conflictingKeys.length > 0
+      ? `${DIRECTORY_ENV} has ${conflictingKeys.length} conflicting ` +
+        `${conflictingKeys.length === 1 ? 'key' : 'keys'} (${conflictingKeys.sort().join(', ')}) ` +
+        `where multiple entries normalize to the same login lookup; all of ` +
+        `them were excluded rather than guessing. ${DIRECTORY_FIX}`
+      : null
+  ].filter((warning) => warning !== null)
+
   return {
-    githubLoginByUser: Object.fromEntries(pairs),
-    warning:
-      skipped > 0
-        ? `${DIRECTORY_ENV} has ${skipped} ${skipped === 1 ? 'entry' : 'entries'} ` +
-          `without a usable datadog_email/github_login pair. ${DIRECTORY_FIX}`
-        : null
+    githubLoginByUser: Object.fromEntries(usablePairs),
+    warning: warnings.length > 0 ? warnings.join(' ') : null
   }
 }
 

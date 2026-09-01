@@ -128,6 +128,19 @@ describe('parseGithubLogins', () => {
     expect(result.githubLoginByUser).toEqual({ ann: 'ann-gh' })
     expect(result.warning).toMatch(/3 entries/)
   })
+
+  it('excludes keys that multiple entries normalize to, instead of keeping the last one', () => {
+    const result = parseGithubLogins(
+      JSON.stringify([
+        { datadog_email: 'ann@comfy.org', github_login: 'ann-gh' },
+        { datadog_email: 'Ann@Example.org', github_login: 'ann-impersonator' },
+        { datadog_email: 'bo@comfy.org', github_login: 'bo-gh' }
+      ])
+    )
+
+    expect(result.githubLoginByUser).toEqual({ bo: 'bo-gh' })
+    expect(result.warning).toMatch(/1 conflicting key \(ann\)/)
+  })
 })
 
 describe('nextInRotation', () => {
