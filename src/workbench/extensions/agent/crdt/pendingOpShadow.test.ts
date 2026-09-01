@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import type {
@@ -186,10 +187,11 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     // yjs (or anything else) from this module would be the first step toward
     // encoding shadows into the shared doc, so pin the import surface itself.
     const source = readFileSync(
-      'src/workbench/extensions/agent/crdt/pendingOpShadow.ts',
+      new URL('./pendingOpShadow.ts', pathToFileURL(import.meta.filename)),
       'utf8'
     )
-    expect(source).not.toMatch(/^\s*import /m)
-    expect(source).not.toMatch(/from 'yjs'/)
+    expect(source).not.toMatch(/\b(?:import|export)\s*(?:\(|\{|\*|["'])/)
+    expect(source).not.toMatch(/\brequire\s*\(/)
+    expect(source).not.toMatch(/\bfrom\s*["']yjs["']/)
   })
 })
