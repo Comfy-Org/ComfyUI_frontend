@@ -7630,8 +7630,8 @@ Enterprise`
     'zh-CN': '从你的工作流开始'
   },
   'platform.serverlessScale.heading': {
-    en: 'Engineered for scale',
-    'zh-CN': '为规模而生'
+    en: 'Built for teams',
+    'zh-CN': '为团队打造'
   },
   'platform.serverlessScale.subtitle': {
     en: 'Deploy across thousands of GPUs with autoscaling, logs, and performance controls built in.',
@@ -7642,17 +7642,17 @@ Enterprise`
     'zh-CN': '自动扩缩'
   },
   'platform.serverlessScale.1.description': {
-    en: 'Endpoints scale with request volume. Set minimum and maximum workers, and keep warm workers where cold starts matter.',
+    en: 'APIs scale up and down with your team or project’s needs to keep you moving fast. No engineering required.',
     'zh-CN':
-      '端点随请求量自动扩缩。设置最小和最大工作节点数，在冷启动敏感的场景保留常驻节点。'
+      'API 随团队或项目的需求自动扩缩，让你保持高效推进。无需任何工程投入。'
   },
   'platform.serverlessScale.2.title': {
-    en: 'Logs & events',
-    'zh-CN': '日志与事件'
+    en: 'Billing & audit logs',
+    'zh-CN': '计费与审计日志'
   },
   'platform.serverlessScale.2.description': {
-    en: 'Stream deployment logs and job events straight from the CLI or the console.',
-    'zh-CN': '直接从 CLI 或控制台实时查看部署日志和任务事件。'
+    en: 'View every workflow run, and how much your team is spending. Debug using built-in logs from the console.',
+    'zh-CN': '查看每次工作流运行以及团队的花费，并使用控制台内置日志进行调试。'
   },
   'platform.serverlessScale.3.title': {
     en: 'Run any workflow & model',
