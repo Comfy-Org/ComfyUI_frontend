@@ -15,6 +15,10 @@
   pointer-events: auto;
 }
 
+.node-selection-active .p-toast {
+  visibility: hidden;
+}
+
 /* Use 0.001ms instead of 0s so transitionend/animationend events still fire
    and JS listeners aren't broken. */
 .disable-animations *,

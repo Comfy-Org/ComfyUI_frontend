@@ -5153,8 +5153,7 @@
     "nodeSelection": {
       "bannerTitle": "Add nodes from graph",
       "bannerSubtitle": "Select one or many nodes to add as reference",
-      "exit": "Exit mode",
-      "selectNode": "Select node"
+      "exit": "Exit mode"
     },
     "addFromAssets": "Add from assets panel",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
@@ -5165,7 +5164,7 @@
     "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
     "chooseWorkflowForChat": "Choose a workflow for this chat",
-    "dontWorkInWorkflow": "Don't work in a workflow",
+    "dontWorkInWorkflow": "Don’t work in a workflow",
     "searchWorkflows": "Search workflows",
     "selectWorkflowToGenerate": "Select a workflow to generate in",
     "switchWorkflow": "Switch workflow",

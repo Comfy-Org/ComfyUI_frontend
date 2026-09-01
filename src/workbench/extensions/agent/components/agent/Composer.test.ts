@@ -1,4 +1,6 @@
-import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
@@ -8,21 +10,10 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
-
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
-
-function jsonResponse(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  })
-}
 
 function mount(props: ComponentProps<typeof Composer> = {}) {
   return render(Composer, {
@@ -146,19 +137,20 @@ describe('Composer', () => {
 
   it('shows Stop instead of a spinner while submitting and emits stop', async () => {
     const { emitted } = mount({ submitting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'keep this{Enter}')
+    expect(emitted().stop).toHaveLength(1)
+    expect(emitted().send).toBeUndefined()
+    expect(box).toHaveValue('keep this')
     const stop = screen.getByRole('button', { name: 'Stop' })
     await userEvent.click(stop)
-    expect(emitted().stop).toHaveLength(1)
+    expect(emitted().stop).toHaveLength(2)
     expect(emitted().send).toBeUndefined()
   })
 
-  describe('run permissions popover', () => {
+  describe.skip('run permissions popover pending enforced API support', () => {
     beforeEach(() => {
       localStorage.clear()
-      fetchApi.mockReset()
-      fetchApi.mockImplementation(async () =>
-        jsonResponse(404, { error: 'not found' })
-      )
     })
 
     it('opens from the mode control with the ask mode selected by default', async () => {
@@ -186,21 +178,21 @@ describe('Composer', () => {
         await screen.findByRole('radio', { name: /Auto-run with limits/ })
       )
       const save = screen.getByRole('button', { name: 'Save changes' })
-      expect(save).toBeDisabled()
+      expect(save).toBeEnabled()
       const input = screen.getByRole('spinbutton', { name: 'credits' })
       await userEvent.clear(input)
       await userEvent.type(input, '500')
       expect(save).toBeEnabled()
       await userEvent.click(save)
 
+      expect(store.mode).toBe('auto_limited')
+      expect(store.creditLimit).toBe(500)
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
+        screen.getByRole('button', { name: 'Auto (limited)' })
       ).toBeInTheDocument()
-      expect(store.mode).toBe('auto_limited')
-      expect(store.creditLimit).toBe(500)
     })
 
     it('keeps Save disabled while the limit draft is invalid', async () => {
@@ -236,7 +228,7 @@ describe('Composer', () => {
       expect(save).toBeEnabled()
 
       await userEvent.click(save)
-      await vi.waitFor(() => expect(store.creditLimit).toBe(460))
+      expect(store.creditLimit).toBe(460)
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
@@ -290,31 +282,37 @@ describe('Composer', () => {
     })
   })
 
+  it('[12-T7 regression] hides unenforced run-mode promises', () => {
+    mount()
+    expect(
+      screen.queryByRole('button', { name: 'Ask' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Choose when the agent needs your consent')
+    ).not.toBeInTheDocument()
+  })
+
   describe('typed @ mention', () => {
     const NODES = [
       { id: '5', title: 'KSampler' },
       { id: '7', title: 'KSampler' },
       { id: '9', title: 'VAE Decode' }
     ]
-    const ASSETS = [
-      {
+    const ASSETS: AssetItem[] = [
+      fromPartial({
         id: 'asset-1',
         name: 'sunset-original.png',
         hash: 'sunset-hash.png',
         tags: ['input'],
         display_name: 'Sunset.png',
-        thumbnail_url: '/api/assets/asset-1/thumbnail',
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z'
-      },
-      {
+        thumbnail_url: '/api/assets/asset-1/thumbnail'
+      }),
+      fromPartial({
         id: 'asset-2',
         name: 'forest.png',
         tags: ['input'],
-        user_metadata: { name: 'Forest reference' },
-        created_at: '2026-01-01T00:00:00.000Z',
-        updated_at: '2026-01-01T00:00:00.000Z'
-      }
+        user_metadata: { name: 'Forest reference' }
+      })
     ]
 
     it('lists matching nodes alphabetically', async () => {
@@ -400,6 +398,17 @@ describe('Composer', () => {
 
       expect(emitted().mentionPick[0]).toEqual([NODES[0]])
       expect(emitted().send).toBeUndefined()
+    })
+
+    it('excludes only the referenced id when node titles match', async () => {
+      mount({ selectionTags: [NODES[0]], getMentionNodes: () => NODES })
+
+      await userEvent.type(screen.getByRole('textbox'), '@')
+      const listbox = screen.getByRole('listbox')
+
+      expect(within(listbox).queryByText('#5')).not.toBeInTheDocument()
+      expect(within(listbox).getByText('#7')).toBeInTheDocument()
+      expect(within(listbox).getByText('VAE Decode')).toBeInTheDocument()
     })
 
     it('filters assets, stages a keyboard pick, removes its token, and sends its ref', async () => {

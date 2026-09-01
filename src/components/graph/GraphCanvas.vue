@@ -7,7 +7,13 @@
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         data-testid="topbar-workflow-tabs"
-        class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
+        :inert="agentNodeSelectionStore.isActionBarsHidden"
+        :class="
+          cn(
+            'workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full transition-opacity duration-300',
+            agentNodeSelectionStore.isActionBarsHidden && 'opacity-0'
+          )
+        "
       >
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
@@ -19,24 +25,43 @@
       </div>
     </template>
     <template #side-toolbar>
-      <SideToolbar v-if="showUI && !isBuilderMode && !linearMode" />
+      <SideToolbar
+        v-if="
+          showUI &&
+          !isBuilderMode &&
+          !linearMode &&
+          !agentNodeSelectionStore.isActionBarsHidden
+        "
+      />
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
         :inert="agentNodeSelectionStore.isActive"
-        class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto transition-opacity duration-200 ease-in-out"
-        :class="{ 'opacity-0': agentNodeSelectionStore.isActive }"
+        :class="
+          cn(
+            'sidebar-content-container size-full overflow-x-hidden overflow-y-auto transition-opacity duration-200',
+            agentNodeSelectionStore.isActive && 'opacity-0'
+          )
+        "
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
     </template>
-    <template v-if="showUI && !isBuilderMode" #topmenu>
+    <template
+      v-if="
+        showUI && !isBuilderMode && !agentNodeSelectionStore.isActionBarsHidden
+      "
+      #topmenu
+    >
       <TopMenuSection />
     </template>
-    <template v-if="showUI" #bottom-panel>
+    <template v-if="showUI && !agentNodeSelectionStore.isActive" #bottom-panel>
       <BottomPanel />
     </template>
-    <template v-if="showUI" #right-side-panel>
+    <template
+      v-if="showUI && !agentNodeSelectionStore.isActive"
+      #right-side-panel
+    >
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
@@ -49,13 +74,13 @@
         class="pointer-events-none absolute inset-0"
       />
       <GraphCanvasMenu
-        v-if="canvasMenuEnabled && !isBuilderMode"
+        v-if="
+          canvasMenuEnabled &&
+          !isBuilderMode &&
+          !agentNodeSelectionStore.isActive
+        "
         class="pointer-events-auto"
       />
-      <!-- No node-selection condition here on purpose: entering the mode turns
-           the minimap setting off, so this reacts the same way it does to the
-           user's own toggle - and leaves them free to switch it back on while
-           they pick. -->
       <MiniMap
         v-if="
           comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
@@ -104,10 +129,13 @@
     :panel-el="canvasPanelBoundsRef ?? undefined"
   />
 
-  <NodeTooltip v-if="tooltipEnabled" />
-  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+  <NodeTooltip v-if="tooltipEnabled && !agentNodeSelectionStore.isActive" />
+  <NodeSearchboxPopover
+    v-if="!agentNodeSelectionStore.isActive"
+    ref="nodeSearchboxPopoverRef"
+  />
   <NodeDragPreview />
-  <VueNodeSwitchPopup />
+  <VueNodeSwitchPopup v-if="!agentNodeSelectionStore.isActive" />
 
   <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
   canvasStore.canvas to be initialized. -->
@@ -121,6 +149,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,

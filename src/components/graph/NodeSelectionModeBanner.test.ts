@@ -13,7 +13,7 @@ vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
 }))
 
 describe('NodeSelectionModeBanner', () => {
-  it('shows the selection instructions and exits from the CTA', async () => {
+  it('shows guidance and exits selection mode', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const store = useAgentNodeSelectionStore()
@@ -30,7 +30,6 @@ describe('NodeSelectionModeBanner', () => {
     ).toBeVisible()
 
     await userEvent.click(screen.getByRole('button', { name: 'Exit mode' }))
-
     expect(store.isActive).toBe(false)
   })
 })
