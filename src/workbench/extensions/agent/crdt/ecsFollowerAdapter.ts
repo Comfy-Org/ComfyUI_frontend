@@ -101,7 +101,11 @@ function connectableSlots(slots: readonly unknown[] | undefined): number {
   ).length
 }
 
-/** Every way `prepare` rejects a `connect`, mirrored: it fails the whole batch. */
+/**
+ * The `prepare` connect rejections observable from the doc alone, mirrored
+ * because it fails the whole batch on the first one. Graph ownership is not
+ * among them: only the link store knows an id already belongs elsewhere.
+ */
 function isConnectable(
   link: SemanticLinkPayload,
   projectedIds: ReadonlySet<string>
@@ -203,9 +207,16 @@ export class EcsFollowerAdapter {
    * An unprojectable link is skipped rather than batched, since `prepare`
    * rejects a whole batch on its first invalid entry.
    *
-   * Returns false when nothing is bound, when the doc fails the KA-11 read
-   * gate, or when the batch was rejected. Restores arrive out of band, so this
-   * is the only place that gate can run for them.
+   * Additive: ECS entities the doc does not mention are left alone, so this
+   * converges the graph on the doc rather than replacing it. A caller wanting a
+   * true replace must clear first, accepting that the two batches are separate.
+   *
+   * Returns false when nothing is bound, when the doc fails the KA-11 read gate
+   * with a {@link FollowerSchemaError}, or when the batch was rejected.
+   * Restores arrive out of band, so this is the only place that gate can run
+   * for them.
+   *
+   * No production caller yet: nothing persists or restores Yjs bytes today.
    */
   projectBaseline(workflowId: string, context: RemoteMutationContext): boolean {
     const session = this.targets.get(workflowId)
@@ -227,16 +238,28 @@ export class EcsFollowerAdapter {
       return link && isConnectable(link, projectedIds) ? [link] : []
     })
 
+    const skipped =
+      session.nodes.size - nodes.length + (session.links.size - links.length)
+    if (skipped > 0) {
+      console.warn(
+        `[agent-crdt] baseline for ${workflowId} skipped ${skipped} unprojectable entries`
+      )
+    }
+
     const projected = session.mutations.batch(context, (batch) => {
       for (const node of nodes) batch.reconcileNode(node)
       for (const link of links) batch.connect(link)
     })
     if (!projected) return false
 
-    // The baseline is the whole doc, so whatever the observers staged is
-    // already in it; leaving it queued re-reconciles every node next frame.
-    this.discardSessionPending(session)
-    session.reconcileNextFrame = false
+    // Drop only what this batch committed, so a restore after bind does not
+    // re-reconcile next frame. A staged deletion is absent from the doc and so
+    // never listed here: it must survive, the baseline cannot rediscover it.
+    for (const id of projectedIds) {
+      session.nodeActions.delete(id)
+      session.changedWidgets.delete(id)
+    }
+    for (const link of links) session.changedLinks.delete(String(link.id))
     return true
   }
 

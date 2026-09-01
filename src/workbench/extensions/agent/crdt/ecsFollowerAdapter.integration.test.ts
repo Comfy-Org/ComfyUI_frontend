@@ -2,7 +2,8 @@ import {
   SCHEMA_VERSION,
   applyOps,
   linksMap,
-  mint
+  mint,
+  nodesMap
 } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
@@ -50,8 +51,10 @@ function graphSnapshot() {
           id: node.id,
           type: node.type,
           title: node.title,
-          inputs: node.inputs,
-          outputs: node.outputs
+          // Detached: updateNode splices these arrays in place, so holding the
+          // store's own arrays would compare a later snapshot to itself.
+          inputs: node.inputs.map((slot) => ({ ...slot })),
+          outputs: node.outputs.map((slot) => ({ ...slot }))
         }))
     ),
     links: byId(
@@ -472,6 +475,69 @@ describe('EcsFollowerAdapter integration', () => {
     expect(createLayout).not.toHaveBeenCalled()
     expect(deleteLayouts).not.toHaveBeenCalled()
     expect(graphSnapshot()).toEqual(projected)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
+  it('leaves entities the doc never mentions, and still drains a staged delete', () => {
+    const host = mint(
+      {
+        nodes: [
+          { id: 1, type: 'Source', pos: [0, 0], inputs: [], outputs: [] },
+          { id: 2, type: 'Sink', pos: [200, 0], inputs: [], outputs: [] }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+    const deleteLayouts = vi.fn()
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      })
+    )
+    const context = {
+      source: 'agent-remote',
+      actor: 'agent:replay',
+      opId: 'baseline'
+    } as const
+
+    adapter.bind('wf', follower)
+    expect(adapter.projectBaseline('wf', context)).toBe(true)
+
+    // Node 2 leaves the doc after bind, so the observer stages its deletion.
+    nodesMap(follower.doc).delete('2')
+    expect(adapter.projectBaseline('wf', context)).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1), toNodeId(2)])
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: new Uint8Array(),
+        actor: 'agent:test',
+        opIds: ['later']
+      })
+    ).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1)])
+    expect(deleteLayouts).toHaveBeenCalledWith(
+      scope,
+      [toNodeId(2)],
+      expect.objectContaining({ opId: 'later' })
+    )
 
     adapter.destroy()
     follower.destroy()
