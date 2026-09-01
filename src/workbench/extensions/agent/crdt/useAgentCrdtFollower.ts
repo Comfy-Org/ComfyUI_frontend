@@ -315,8 +315,14 @@ export function useAgentCrdtFollower(
     // new doc — otherwise it keeps observing the destroyed one and goes deaf
     // when the socket recovers and updates land in the replacement.
     const workflowId = subscribedWorkflowId.value
-    if (isTargetActive.value && workflowId !== null)
+    if (isTargetActive.value && workflowId !== null) {
+      adapter.clearForReset(workflowId, {
+        source: 'agent-remote',
+        actor: 'agent-lineage',
+        opId: `follower-replaced:${workflowId}`
+      })
       adapter.bind(workflowId, bridge.follower)
+    }
   }
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so

@@ -283,6 +283,11 @@ describe('useAgentCrdtFollower', () => {
     })
 
     dispatchFrame('follower_replaced', { seq: 43 })
+    expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
+      source: 'agent-remote',
+      actor: 'agent-lineage',
+      opId: 'follower-replaced:wf-1'
+    })
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
