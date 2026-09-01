@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.describe('Sign In dialog', { tag: '@ui' }, () => {
   let dialog: SignInDialog
@@ -89,5 +90,71 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
   test('Should close dialog via Escape key', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Escape')
     await expect(dialog.root).toBeHidden()
+  })
+})
+
+test.describe('Sign In dialog - resolution', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  })
+
+  test('Paste content to signin dialog should not paste node on canvas', async ({
+    comfyPage
+  }) => {
+    const nodeNum = await comfyPage.nodeOps.getNodeCount()
+    await comfyPage.canvas.click({
+      position: DefaultGraphPositions.emptyLatentWidgetClick
+    })
+    await comfyPage.page.mouse.move(10, 10)
+    await comfyPage.nextFrame()
+    await comfyPage.clipboard.copy()
+
+    const textBox = comfyPage.widgetTextBox
+    await textBox.click()
+    await textBox.fill('test_password')
+    await textBox.press('Control+a')
+    await textBox.press('Control+c')
+
+    await comfyPage.page.evaluate(() => {
+      void window.app!.extensionManager.dialog.showSignInDialog()
+    })
+
+    const input = comfyPage.page.locator('#comfy-org-sign-in-password')
+    await input.waitFor({ state: 'visible' })
+    await input.press('Control+v')
+    await expect(input).toHaveValue('test_password')
+
+    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeNum)
+  })
+
+  test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
+    await comfyPage.page.route('**/customers', (route) =>
+      route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'test-user-e2e', email: 'test@example.com' })
+      })
+    )
+    const dialog = new SignInDialog(comfyPage.page)
+    const { result: dialogResult } = await dialog.openWithResult()
+
+    await dialog.emailInput.fill('test@example.com')
+    await dialog.passwordInput.fill('TestPassword123!')
+    await expect(dialog.root).toBeVisible()
+
+    await dialog.signInButton.click()
+    await expect(dialog.root).toBeHidden()
+    expect(await dialogResult).toBe(true)
+  })
+
+  test('Sign-in dialog resolves false when closed without sign-in', async ({
+    comfyPage
+  }) => {
+    const dialog = new SignInDialog(comfyPage.page)
+    const { result: dialogResult } = await dialog.openWithResult()
+
+    await dialog.close()
+    await expect(dialog.root).toBeHidden()
+    expect(await dialogResult).toBe(false)
   })
 })

@@ -70,3 +70,31 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
     await expect(comfyPage.bottomPanel.root).toBeHidden()
   })
 })
+
+test.describe('Topbar Help menu', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+  })
+
+  test('Help > Support opens the external zendesk link with the OSS tag', async ({
+    comfyPage
+  }) => {
+    // Prevent loading the external page
+    await comfyPage.page
+      .context()
+      .route('https://support.comfy.org/**', (route) =>
+        route.fulfill({ body: '<html></html>', contentType: 'text/html' })
+      )
+
+    const popupPromise = comfyPage.page.waitForEvent('popup')
+    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
+    const popup = await popupPromise
+    await popup.waitForURL('https://support.comfy.org/**')
+
+    const url = new URL(popup.url())
+    expect(url.hostname).toBe('support.comfy.org')
+    expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+
+    await popup.close()
+  })
+})
