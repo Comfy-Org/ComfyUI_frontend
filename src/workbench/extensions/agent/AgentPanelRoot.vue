@@ -5,6 +5,7 @@ import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   provide,
@@ -82,10 +83,13 @@ import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
-import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { isCrdtDebugEnabled } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+
+const CrdtDevPanel = defineAsyncComponent(
+  () => import('./crdt/CrdtDevPanel.vue')
+)
 
 const { t } = useI18n()
 const toast = useToastStore()
