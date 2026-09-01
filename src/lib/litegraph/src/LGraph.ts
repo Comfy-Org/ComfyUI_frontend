@@ -1441,7 +1441,7 @@ export class LGraph
 
     // callback
     node.onRemoved?.()
-    clearNodeOwnedStoreState(node)
+    clearNodeOwnedStoreState(node, 'keep-values')
 
     const order = node.order
     useExecutionOrderStore().remove(graphScopeOf(this), node.id)
