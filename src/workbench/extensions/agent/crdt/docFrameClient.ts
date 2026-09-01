@@ -168,7 +168,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
 
   if (
     frame.type === 'doc_update' &&
-    typeof data.seq === 'number' &&
+    isNonNegativeInteger(data.seq) &&
     typeof data.update_b64 === 'string'
   ) {
     return {
@@ -187,13 +187,17 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
-  if (frame.type === 'doc_subscribed' && typeof data.ok === 'boolean') {
+  if (
+    frame.type === 'doc_subscribed' &&
+    typeof data.ok === 'boolean' &&
+    (data.seq === undefined || isNonNegativeInteger(data.seq))
+  ) {
     return {
       type: frame.type,
       data: {
         workflowId: data.workflow_id,
         ok: data.ok,
-        ...(typeof data.seq === 'number' && { seq: data.seq }),
+        ...(data.seq !== undefined && { seq: data.seq }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message })
       }
@@ -216,7 +220,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
               (item): item is string => typeof item === 'string'
             )
           : [],
-        ...(typeof data.seq === 'number' && { seq: data.seq }),
+        ...(isNonNegativeInteger(data.seq) && { seq: data.seq }),
         ...(typeof data.code === 'string' && { code: data.code }),
         ...(typeof data.message === 'string' && { message: data.message }),
         // PoC diagnostics: surface the failure verbatim (object, not array).
@@ -225,7 +229,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
-  if (frame.type === 'doc_reset' && typeof data.seq === 'number') {
+  if (frame.type === 'doc_reset' && isNonNegativeInteger(data.seq)) {
     return {
       type: frame.type,
       data: {
