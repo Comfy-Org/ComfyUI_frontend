@@ -1,14 +1,20 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import type { DirectiveBinding } from 'vue'
 
 import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 
 import PanelHeader from './PanelHeader.vue'
 
+const tooltipBindings = new WeakMap<Element, DirectiveBinding['value']>()
 const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
+  mounted(element: Element, binding: DirectiveBinding) {
+    tooltipBindings.set(element, binding.value)
+  },
+  updated(element: Element, binding: DirectiveBinding) {
+    tooltipBindings.set(element, binding.value)
+  }
 }
 
 function mount(isMaximized = false) {
@@ -22,6 +28,15 @@ function mount(isMaximized = false) {
 }
 
 describe('PanelHeader', () => {
+  it('passes the full tooltip config to the button directive', () => {
+    mount()
+
+    const button = screen.getByRole('button', { name: 'New chat' })
+    expect(tooltipBindings.get(button)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig('New chat')
+    )
+  })
+
   it.for([
     [false, 'New chat'],
     [false, 'Maximize panel'],
