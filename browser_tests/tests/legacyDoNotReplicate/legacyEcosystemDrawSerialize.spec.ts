@@ -64,7 +64,8 @@ test.describe(
         const source = window.LiteGraph!.createNode('Note')!
         source.addOutput('steps', 'INT')
         window.app!.graph.add(source)
-        source.connect(0, node, 0)
+        const link = source.connect(0, node, 0)
+        if (!link) throw new Error('Failed to connect custom draw widget input')
         window.app!.graph.setDirtyCanvas(true, true)
       })
       await comfyPage.nextFrame()
@@ -124,42 +125,34 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
 
-      await comfyPage.page.evaluate(() => {
+      const { before, after } = await comfyPage.page.evaluate(() => {
         const node = window.app!.graph.nodes.find(
           (candidate) => candidate.type === 'KSampler'
         )
         const widget = node?.widgets?.find(
           (candidate) => candidate.name === 'steps'
         )
-        if (!widget) throw new Error('KSampler steps widget not found')
+        if (!node || !widget) throw new Error('KSampler steps widget not found')
 
+        widget.value = 37
+        const before = node.serialize()
         widget.serialize = false
+        const after = node.serialize()
+        return { before, after }
       })
 
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const node = window.app!.graph.nodes.find(
-              (candidate) => candidate.type === 'KSampler'
-            )
-            const serialized = node?.serialize()
-            return {
-              positional: serialized?.widgets_values,
-              named: serialized?.widgets_values_named
-            }
-          })
+      expect(before.widgets_values_named?.steps).toBe(37)
+      expect(after.widgets_values_named).toEqual(
+        Object.fromEntries(
+          Object.entries(before.widgets_values_named ?? {}).filter(
+            ([name]) => name !== 'steps'
+          )
         )
-        .toEqual({
-          positional: [156680208700286, 'randomize', 8, 'euler', 'normal', 1],
-          named: {
-            cfg: 8,
-            control_after_generate: 'randomize',
-            denoise: 1,
-            sampler_name: 'euler',
-            scheduler: 'normal',
-            seed: 156680208700286
-          }
-        })
+      )
+      expect(before.widgets_values).toContain(37)
+      expect(after.widgets_values).toEqual(
+        before.widgets_values?.filter((value) => value !== 37)
+      )
     })
 
     test('wholesale options replacement keeps a toggle functional and preserves hidden state', async ({

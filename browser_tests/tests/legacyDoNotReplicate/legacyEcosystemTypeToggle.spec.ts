@@ -60,7 +60,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       await expect(widget).toHaveCount(0)
-      await expect(node.locator('.lg-node-widget canvas')).toHaveCount(1)
+      await expect(node.locator('.lg-node-widget canvas')).toBeVisible()
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
@@ -147,7 +147,7 @@ test.describe(
         .toBe('euler')
     })
 
-    test('renders an unknown sentinel as a zero-height legacy fallback', async ({
+    test('renders an unknown sentinel as a visible legacy fallback', async ({
       comfyPage
     }) => {
       const widget = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
@@ -170,7 +170,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       await expect(widget).toHaveCount(0)
-      await expect(node.locator('.lg-node-widget canvas')).toHaveCount(1)
+      await expect(node.locator('.lg-node-widget canvas')).toBeVisible()
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
