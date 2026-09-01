@@ -6,14 +6,17 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingFailure } from '@/platform/telemetry/types'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -30,9 +33,9 @@ export interface DowngradePreview {
   requiresReactivationConfirmation: boolean
 }
 
-/** Thrown by `downgradeToPersonal` before any member is removed, so a caller
- *  can collect consent and retry with `confirmReactivation: true` instead of
- *  losing team members on a request the BE was always going to reject. */
+/** Thrown by `downgradeToPersonal` when the billing authority requires
+ *  reactivation consent, so the still-open confirmation can collect it and
+ *  retry with `confirmReactivation: true`. */
 export class ReactivationConfirmationRequiredError extends Error {
   constructor(public readonly preview: PreviewSubscribeResponse) {
     super(t('subscription.downgrade.reactivationConfirmationRequired'))
@@ -51,6 +54,8 @@ export class ReactivationAmountChangedError extends Error {
 /**
  * Team-plan downgrade to personal: validate via `previewSubscribe`, remove
  * every member except the original owner, then initiate the tier change.
+ * Billing is not committed until member cleanup succeeds, so a removal failure
+ * cannot leave a personal plan with Team members still attached.
  * The removal-email and an atomic downgrade endpoint are backend-owned future
  * work; until then the frontend orchestrates the two steps non-atomically.
  */
@@ -62,6 +67,7 @@ export function useDowngradeToPersonal() {
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
+  const { canDowngradeToPersonal } = useBillingCapabilities()
   const telemetry = useTelemetry()
 
   const removableMembers = computed(() => {
@@ -76,9 +82,22 @@ export function useDowngradeToPersonal() {
   const hasOtherMembers = computed(() => removableMembers.value.length > 0)
 
   function ensureCanDowngrade(): void {
-    if (!permissions.value.canDowngradeToPersonal) {
+    if (
+      !(isCloud
+        ? canDowngradeToPersonal.value
+        : permissions.value.canDowngradeToPersonal)
+    ) {
       throw new Error(t('subscription.downgrade.notAllowed'))
     }
+  }
+
+  function hasErrorCode(error: unknown, code: string): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === code
+    )
   }
 
   async function refreshMembers(): Promise<void> {
@@ -138,8 +157,10 @@ export function useDowngradeToPersonal() {
     let memberRemovalFailures = 0
     let targetTier: TierKey | undefined
     let targetCycle: BillingCycle | undefined
-    let telemetryFailure: BillingFailure = { failure_category: 'unknown' }
+    let telemetryFailure: BillingFailure | undefined
+    let checkoutStartedAt: number | undefined
 
+    const downgradeStartedAt = Date.now()
     telemetry?.trackBillingEvent({
       operation: 'downgrade_to_personal',
       stage: 'started',
@@ -149,13 +170,35 @@ export function useDowngradeToPersonal() {
     })
 
     function trackSucceeded() {
+      const now = Date.now()
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
         stage: 'succeeded',
         outcome: 'success',
         member_removal_count: membersToRemove.length,
         member_removal_failures: memberRemovalFailures,
-        target_tier: targetTier
+        target_tier: targetTier,
+        duration_ms: now - downgradeStartedAt
+      })
+      if (checkoutStartedAt === undefined) return
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'succeeded',
+        outcome: 'success',
+        tier: targetTier,
+        cycle: targetCycle,
+        checkout_type: 'change',
+        duration_ms: now - checkoutStartedAt
+      })
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'succeeded',
+        outcome: 'success',
+        operation_type: 'subscription',
+        tier: targetTier,
+        cycle: targetCycle,
+        checkout_type: 'change',
+        duration_ms: now - checkoutStartedAt
       })
     }
 
@@ -172,7 +215,7 @@ export function useDowngradeToPersonal() {
       }
       ensureCanDowngrade()
       targetTier = preview.new_plan?.tier
-        ? TIER_TO_KEY[preview.new_plan.tier]
+        ? (toTierKey(preview.new_plan.tier) ?? undefined)
         : undefined
       targetCycle = preview.new_plan
         ? preview.new_plan.duration === 'ANNUAL'
@@ -180,11 +223,11 @@ export function useDowngradeToPersonal() {
           : 'monthly'
         : undefined
 
-      // Guard before touching membership: the BE rejects this subscribe
-      // without confirm_reactivation, so members must never be removed for a
-      // transition that's going to fail on consent anyway. Refresh the
-      // cached subscription first — it can predate a cancellation that
-      // happened after the earlier previewDowngrade() call.
+      // Catch cancellations visible to billing status before touching
+      // membership. Refresh first because the cached value can predate a
+      // cancellation that happened after previewDowngrade(); legacy-rail
+      // cancellations omitted by status are recovered from the later
+      // authority rejection while the confirmation remains open.
       await fetchStatus()
       if (requiresReactivationConfirmation(preview)) {
         if (!confirmReactivation) {
@@ -210,7 +253,7 @@ export function useDowngradeToPersonal() {
         } catch (error) {
           memberRemovalFailures += 1
           telemetryFailure = {
-            failure_category: 'unknown',
+            failure_category: categorizeBillingApiError(error),
             error_code: 'member_removal_failed'
           }
           throw new Error(
@@ -223,11 +266,45 @@ export function useDowngradeToPersonal() {
       }
 
       ensureCanDowngrade()
-      const response = await subscribe(planSlug, {
-        returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-        confirmReactivation
+      checkoutStartedAt = Date.now()
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'started',
+        outcome: 'pending',
+        tier: targetTier,
+        cycle: targetCycle,
+        checkout_type: 'change'
       })
+      telemetry?.trackBillingEvent({
+        operation: 'operation',
+        stage: 'started',
+        outcome: 'pending',
+        operation_type: 'subscription',
+        tier: targetTier,
+        cycle: targetCycle,
+        checkout_type: 'change'
+      })
+      let response: SubscribeResponse | void
+      try {
+        response = await subscribe(planSlug, {
+          returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+          cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+          confirmReactivation,
+          ...(preview.proration_at && { prorationAt: preview.proration_at })
+        })
+      } catch (error) {
+        if (
+          !confirmReactivation &&
+          hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')
+        ) {
+          telemetryFailure = {
+            failure_category: 'validation',
+            error_code: 'reactivation_not_confirmed'
+          }
+          throw new ReactivationConfirmationRequiredError(preview)
+        }
+        throw error
+      }
       if (!response) {
         telemetryFailure = {
           failure_category: 'unknown',
@@ -266,8 +343,10 @@ export function useDowngradeToPersonal() {
             downgradeToPersonal: {
               memberRemovalCount: membersToRemove.length,
               memberRemovalFailures,
-              targetTier
-            }
+              targetTier,
+              startedAt: downgradeStartedAt
+            },
+            attemptStartedAt: checkoutStartedAt
           }
         )
         return null
@@ -284,8 +363,10 @@ export function useDowngradeToPersonal() {
             downgradeToPersonal: {
               memberRemovalCount: membersToRemove.length,
               memberRemovalFailures,
-              targetTier
-            }
+              targetTier,
+              startedAt: downgradeStartedAt
+            },
+            attemptStartedAt: checkoutStartedAt
           }
         )
         return null
@@ -294,6 +375,10 @@ export function useDowngradeToPersonal() {
       trackSucceeded()
       return { preview, response }
     } catch (error) {
+      const failure = telemetryFailure ?? {
+        failure_category: categorizeBillingApiError(error)
+      }
+      const now = Date.now()
       telemetry?.trackBillingEvent({
         operation: 'downgrade_to_personal',
         stage: 'failed',
@@ -301,8 +386,32 @@ export function useDowngradeToPersonal() {
         member_removal_count: membersToRemove.length,
         member_removal_failures: memberRemovalFailures,
         target_tier: targetTier,
-        ...telemetryFailure
+        ...failure,
+        duration_ms: now - downgradeStartedAt
       })
+      if (checkoutStartedAt !== undefined) {
+        telemetry?.trackBillingEvent({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: targetTier,
+          cycle: targetCycle,
+          checkout_type: 'change',
+          ...failure,
+          duration_ms: now - checkoutStartedAt
+        })
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'failed',
+          outcome: 'failure',
+          operation_type: 'subscription',
+          tier: targetTier,
+          cycle: targetCycle,
+          checkout_type: 'change',
+          ...failure,
+          duration_ms: now - checkoutStartedAt
+        })
+      }
       throw error
     }
   }

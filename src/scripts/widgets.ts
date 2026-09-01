@@ -14,6 +14,7 @@ import { useCurveWidget } from '@/renderer/extensions/vueNodes/widgets/composabl
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
+import { useCompositorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget'
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
 import { useBoundingBoxesWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget'
@@ -180,11 +181,12 @@ export function addValueControlWidgets(
     widgets.push(comboFilter)
   }
 
-  function applyWidgetControl(isPartialExecution: boolean | undefined) {
+  function applyWidgetControl() {
     if (
       node.inputs?.some(
-        (input) =>
-          input.widget?.name === targetWidget.name && input.link != null
+        (input, index) =>
+          input.widget?.name === targetWidget.name &&
+          node.isInputConnected(index)
       )
     )
       return
@@ -192,8 +194,7 @@ export function addValueControlWidgets(
     const next = nextValueForLinkedTarget({
       target: targetWidget,
       linkedWidgets: targetWidget.linkedWidgets,
-      nodeId: node.id,
-      isPartialExecution
+      nodeId: node.id
     })
     if (next === undefined) return
 
@@ -201,19 +202,19 @@ export function addValueControlWidgets(
     targetWidget.callback?.(next)
   }
 
-  valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
+  valueControl.beforeQueued = () => {
     if (controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
-        applyWidgetControl(isPartialExecution)
+        applyWidgetControl()
       }
     }
     valueControl[HAS_EXECUTED] = true
   }
 
-  valueControl.afterQueued = ({ isPartialExecution } = {}) => {
+  valueControl.afterQueued = () => {
     if (!controlValueRunBefore()) {
-      applyWidgetControl(isPartialExecution)
+      applyWidgetControl()
     }
   }
 
@@ -234,6 +235,7 @@ export const ComfyWidgets = {
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
   PAINTER: transformWidgetConstructorV2ToV1(usePainterWidget()),
+  COMPOSITOR: transformWidgetConstructorV2ToV1(useCompositorWidget()),
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
   CURVE: transformWidgetConstructorV2ToV1(useCurveWidget()),
   RANGE: transformWidgetConstructorV2ToV1(useRangeWidget()),

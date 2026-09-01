@@ -49,7 +49,7 @@ jobs:
         if: >
           github.event_name == 'issue_comment' &&
           contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->')
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
@@ -62,7 +62,7 @@ jobs:
 
       - name: Get PR info
         id: pr-info
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
         with:
@@ -75,7 +75,7 @@ jobs:
             core.setOutput('pr-number', prNumber)
             core.setOutput('branch', pr.head.ref)
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ steps.pr-info.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
@@ -99,6 +99,8 @@ jobs:
       - name: Commit updated screenshots
         id: commit
         if: steps.update-screenshots.outcome == 'success'
+        env:
+          TARGET_BRANCH: ${{ steps.pr-info.outputs.branch }}
         run: |
           git config --global --add safe.directory "$(pwd)"
           git config --global user.name 'github-actions'
@@ -116,7 +118,7 @@ jobs:
           echo "has-changes=true" >> $GITHUB_OUTPUT
           git add apps/website/e2e/
           git commit -m "[automated] Update website screenshot expectations"
-          git push origin ${{ steps.pr-info.outputs.branch }}
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
 
       - name: Upload test report
         uses: actions/upload-artifact@v6
@@ -131,7 +133,7 @@ jobs:
         # Label cleanup is best-effort; the restricted pull_request token may
         # lack permission to remove labels and must not fail the run.
         continue-on-error: true
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ steps.pr-info.outputs.pr-number }}
         with:
@@ -177,12 +179,12 @@ jobs:
       group: website-pr-comment-${{ github.event.number || github.event.issue.number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ github.event.number || github.event.issue.number }}
           section-name: screenshot-update
-          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
             ## 📸 Screenshot Update
@@ -201,11 +203,11 @@ jobs:
       group: website-pr-comment-${{ needs.update-screenshots.outputs.pr-number }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build screenshot-update section content
         id: content
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           UPDATE_OUTCOME: ${{ needs.update-screenshots.outputs.update-outcome }}
           HAS_CHANGES: ${{ needs.update-screenshots.outputs.has-changes }}
@@ -243,6 +245,6 @@ jobs:
         with:
           pr-number: ${{ needs.update-screenshots.outputs.pr-number }}
           section-name: screenshot-update
-          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: ${{ steps.content.outputs.section-content }}

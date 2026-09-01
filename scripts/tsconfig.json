@@ -3,10 +3,12 @@
   "compilerOptions": {
     /* Script files configuration */
     "noEmit": true,
+    "incremental": false,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["node", "vitest/globals", "vite/client"]
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "../src/types/**/*.d.ts", "../global.d.ts"]
 }

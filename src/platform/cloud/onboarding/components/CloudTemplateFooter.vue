@@ -1,9 +1,7 @@
 <template>
-  <footer
-    class="mx-auto flex h-[5%] max-h-[60px] w-5/6 items-start justify-center gap-2.5"
-  >
+  <footer class="mt-10 flex w-full shrink-0 items-start justify-center gap-2.5">
     <a
-      href="https://www.comfy.org/terms-of-service"
+      href="https://comfy.org/terms-of-service/"
       target="_blank"
       rel="noopener noreferrer"
       class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"
@@ -11,7 +9,7 @@
       {{ t('auth.login.termsLink') }}
     </a>
     <a
-      href="https://www.comfy.org/privacy-policy"
+      href="https://comfy.org/privacy-policy/"
       target="_blank"
       rel="noopener noreferrer"
       class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"

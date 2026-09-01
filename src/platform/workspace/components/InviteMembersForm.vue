@@ -7,7 +7,7 @@
       :delimiter="EMAIL_DELIMITER"
       :convert-value="normalizeEmail"
       :model-value="emails"
-      :class="tagsInputClass"
+      :class="cn('max-h-48 overflow-y-auto', tagsInputClass)"
       @update:model-value="onEmailsUpdate"
     >
       <TagsInputItem
@@ -44,12 +44,34 @@
       }}
     </p>
     <p
-      v-if="isAtSeatLimit"
-      :id="seatLimitHintId"
+      v-if="alreadyInvitedEmails.length > 0"
+      :id="pendingInvitesHintId"
       aria-live="polite"
-      class="m-0 text-xs text-muted-foreground"
+      class="m-0 text-xs text-warning-background"
     >
-      {{ $t('workspacePanel.inviteMemberDialog.seatLimitReached', maxSeats) }}
+      <template v-if="alreadyInvitedEmails.length === 1">
+        {{ $t('workspacePanel.inviteMemberDialog.pendingInviteSingle') }}
+      </template>
+      <template v-else>
+        {{
+          $t('workspacePanel.inviteMemberDialog.pendingInviteCount', {
+            count: alreadyInvitedEmails.length
+          })
+        }}
+      </template>
+    </p>
+    <p
+      v-if="seatOverage > 0"
+      :id="seatLimitHintId"
+      role="alert"
+      class="text-danger m-0 text-xs"
+    >
+      {{
+        $t('workspacePanel.inviteMemberDialog.seatLimitExceeded', {
+          max: maxSeats,
+          overage: seatOverage
+        })
+      }}
     </p>
 
     <div
@@ -83,10 +105,12 @@
 </template>
 
 <script setup lang="ts">
+import { useAsyncState } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
 import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
@@ -95,6 +119,7 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import type { WorkspaceInviteMetadata } from '@/platform/telemetry/types'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   EMAIL_DELIMITER,
@@ -104,12 +129,15 @@ import {
 } from '@/platform/workspace/utils/inviteEmails'
 import { cn } from '@comfyorg/tailwind-utils'
 
+const MAX_INVITES_PER_BATCH = 30
+
 const {
   submitLabel,
   placeholder,
   source,
   cancelLabel,
-  maxSeats = Number.POSITIVE_INFINITY,
+  maxSeats = MAX_INVITES_PER_BATCH,
+  occupiedSeats = 0,
   showSubmit = true,
   autoFocus = false,
   tagsInputClass = 'min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover'
@@ -118,7 +146,8 @@ const {
   placeholder: string
   source: WorkspaceInviteMetadata['source']
   cancelLabel?: string
-  maxSeats?: number
+  maxSeats?: number | null
+  occupiedSeats?: number | null
   /** Hide the built-in submit row so a parent can place the action elsewhere
    *  (e.g. the team-upgrade success footer); drive it via the exposed submit. */
   showSubmit?: boolean
@@ -137,44 +166,88 @@ const { t } = useI18n()
 const toast = useToast()
 const telemetry = useTelemetry()
 const workspaceStore = useTeamWorkspaceStore()
+const { fetchStatus } = useBillingContext()
 
 const emails = ref<string[]>([])
 const invitedEmails = ref<string[]>([])
 const loading = ref(false)
 
+const { state: pendingInvites, execute: refreshPendingInvites } = useAsyncState<
+  WorkspacePendingInvite[]
+>(
+  async () => {
+    try {
+      return await workspaceStore.fetchPendingInvites()
+    } catch (error) {
+      console.error(error)
+      return []
+    }
+  },
+  workspaceStore.pendingInvites,
+  { immediate: false }
+)
+const pendingInvitesRequest = refreshPendingInvites()
+
 const invalidEmailsHintId = useId()
+const pendingInvitesHintId = useId()
 const seatLimitHintId = useId()
 
 const invalidEmails = computed(() =>
   emails.value.filter((email) => !isValidEmail(email))
 )
-const isAtSeatLimit = computed(() => emails.value.length >= maxSeats)
+const pendingInviteEmailSet = computed(
+  () =>
+    new Set(pendingInvites.value.map((invite) => normalizeEmail(invite.email)))
+)
+const alreadyInvitedEmails = computed(() =>
+  emails.value.filter((email) => pendingInviteEmailSet.value.has(email))
+)
+const newInviteEmails = computed(() =>
+  emails.value.filter((email) => !pendingInviteEmailSet.value.has(email))
+)
+const remainingSeats = computed(() => {
+  if (maxSeats === null || occupiedSeats === null) return null
+  return maxSeats === 0
+    ? MAX_INVITES_PER_BATCH
+    : Math.max(0, maxSeats - occupiedSeats)
+})
+const seatOverage = computed(() => {
+  if (remainingSeats.value === null) return 0
+  return Math.max(0, newInviteEmails.value.length - remainingSeats.value)
+})
 const canSubmit = computed(
   () =>
+    remainingSeats.value !== null &&
     emails.value.length > 0 &&
-    emails.value.length <= maxSeats &&
-    invalidEmails.value.length === 0
+    newInviteEmails.value.length > 0 &&
+    invalidEmails.value.length === 0 &&
+    seatOverage.value === 0
 )
 
 const describedBy = computed(
   () =>
     [
       invalidEmails.value.length > 0 ? invalidEmailsHintId : undefined,
-      isAtSeatLimit.value ? seatLimitHintId : undefined
+      alreadyInvitedEmails.value.length > 0 ? pendingInvitesHintId : undefined,
+      seatOverage.value > 0 ? seatLimitHintId : undefined
     ]
       .filter(Boolean)
       .join(' ') || undefined
 )
 
 function onEmailsUpdate(value: string[]) {
-  emails.value = sanitizeInviteEmails(value, maxSeats)
+  emails.value = sanitizeInviteEmails(value, MAX_INVITES_PER_BATCH)
 }
 
 async function onSubmit() {
   if (loading.value || !canSubmit.value) return
   loading.value = true
   try {
-    const emailSnapshot = [...emails.value]
+    await pendingInvitesRequest
+    if (!canSubmit.value) return
+
+    const emailSnapshot = [...newInviteEmails.value]
+    if (emailSnapshot.length === 0) return
     const results = await Promise.allSettled(
       emailSnapshot.map((email) => workspaceStore.createInvite(email))
     )
@@ -191,6 +264,7 @@ async function onSubmit() {
         source,
         count: successfulEmails.length
       })
+      void fetchStatus().catch(console.error)
     }
 
     if (failedEmails.length === 0) {

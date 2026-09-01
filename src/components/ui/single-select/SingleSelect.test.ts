@@ -1,5 +1,6 @@
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -38,17 +39,21 @@ function findContentElement(): HTMLElement | null {
   return document.querySelector('[data-dismissable-layer]')
 }
 
-function renderInParent(modelValue?: string) {
+function renderInParent(
+  modelValue?: string,
+  singleSelectProps: Partial<ComponentProps<typeof SingleSelect>> = {}
+) {
   const parentEscapeCount = { value: 0 }
 
   const Parent = {
     template:
-      '<div @keydown.escape="onEsc"><SingleSelect v-model="sel" :options="options" label="Pick" /></div>',
+      '<div @keydown.escape="onEsc"><SingleSelect v-model="sel" :options="options" label="Pick" v-bind="extraProps" /></div>',
     components: { SingleSelect },
     setup() {
       return {
         sel: ref(modelValue),
         options,
+        extraProps: singleSelectProps,
         onEsc: () => {
           parentEscapeCount.value++
         }
@@ -94,6 +99,23 @@ describe('SingleSelect', () => {
     ZIndex.set('modal', openModal, 3702)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderInParent()
+
+    await openSelect(screen.getByRole('combobox'))
+
+    const content = findContentElement()
+    expect(content).not.toBeNull()
+    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+
+    unmount()
+  })
+
+  it('opens above a dialog even when the caller passes its own contentStyle z-index', async () => {
+    openModal = document.createElement('div')
+    ZIndex.set('modal', openModal, 3702)
+    const dialogZIndex = Number(openModal.style.zIndex)
+    const { unmount } = renderInParent(undefined, {
+      contentStyle: { zIndex: 3000 }
+    })
 
     await openSelect(screen.getByRole('combobox'))
 

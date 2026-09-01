@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import MembersPanelContent from './MembersPanelContent.vue'
 
 import type {
-  PendingInvite,
+  WorkspacePendingInvite,
   WorkspaceMember
 } from '../../../stores/teamWorkspaceStore'
 
@@ -25,6 +25,8 @@ const {
   mockOriginalOwnerId,
   mockFilteredMembers,
   mockFilteredPendingInvites,
+  mockMaxSeats,
+  mockIsInPersonalWorkspace,
   mockHasTeamPlan,
   mockHasLapsedTeamPlan,
   mockIsPlanLoading,
@@ -44,7 +46,7 @@ const {
 
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
-    mockPendingInvites: ref<PendingInvite[]>([]),
+    mockPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
     mockHasMultipleMembers: ref(true),
     mockShowSearch: ref(true),
@@ -52,7 +54,9 @@ const {
     mockShowInviteButton: ref(true),
     mockIsInviteDisabled: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
-    mockFilteredPendingInvites: ref<PendingInvite[]>([]),
+    mockFilteredPendingInvites: ref<WorkspacePendingInvite[]>([]),
+    mockMaxSeats: ref<number | null>(20),
+    mockIsInPersonalWorkspace: ref(false),
     mockHasTeamPlan: ref(true),
     mockHasLapsedTeamPlan: ref(false),
     mockIsPlanLoading: ref(false),
@@ -67,8 +71,7 @@ const {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }),
     mockUiConfig: ref({
       showMembersList: true,
@@ -89,8 +92,12 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
   useMembersPanel: () => ({
     searchQuery: mockSearchQuery,
     activeView: mockActiveView,
-    maxSeats: computed(() => 20),
+    maxSeats: mockMaxSeats,
+    isInPersonalWorkspace: mockIsInPersonalWorkspace,
     hasTeamPlan: mockHasTeamPlan,
+    hasMemberSeats: computed(
+      () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
+    ),
     isPlanLoading: mockIsPlanLoading,
     isOnTeamPlan: mockIsOnTeamPlan,
     hasLapsedTeamPlan: mockHasLapsedTeamPlan,
@@ -204,7 +211,9 @@ function createMember(
   }
 }
 
-function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
+function createInvite(
+  overrides: Partial<WorkspacePendingInvite> = {}
+): WorkspacePendingInvite {
   return {
     id: 'invite-1',
     email: 'invitee@example.com',
@@ -216,13 +225,14 @@ function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
 
 describe('MembersPanelContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
     mockPendingInvites.value = []
     mockOriginalOwnerId.value = null
     mockFilteredMembers.value = []
     mockFilteredPendingInvites.value = []
+    mockMaxSeats.value = 20
+    mockIsInPersonalWorkspace.value = false
     mockHasTeamPlan.value = true
     mockHasLapsedTeamPlan.value = false
     mockIsPlanLoading.value = false
@@ -242,8 +252,7 @@ describe('MembersPanelContent', () => {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }
     mockUiConfig.value = {
       showMembersList: true,
@@ -261,6 +270,8 @@ describe('MembersPanelContent', () => {
 
   describe('personal plan', () => {
     beforeEach(() => {
+      mockMaxSeats.value = 1
+      mockIsInPersonalWorkspace.value = true
       mockHasTeamPlan.value = false
       mockIsOnTeamPlan.value = false
       mockHasMultipleMembers.value = false
@@ -296,6 +307,18 @@ describe('MembersPanelContent', () => {
   })
 
   describe('Team plan member list', () => {
+    it('keeps rendering members while seat capacity is unresolved', () => {
+      mockMaxSeats.value = null
+      mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+
+      renderComponent()
+
+      expect(screen.getByText('Alice')).toBeTruthy()
+      expect(
+        screen.queryByText('workspacePanel.members.upsellBanner')
+      ).toBeNull()
+    })
+
     it('shows the Role column header and member roles', () => {
       mockFilteredMembers.value = [
         createMember({ role: 'owner', email: 'boss@test.com' }),
@@ -418,8 +441,7 @@ describe('MembersPanelContent', () => {
         canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
-        canManageSubscription: false,
-        canTopUp: false
+        canManageSubscription: false
       }
       mockUiConfig.value.showPendingTab = false
     })
@@ -477,8 +499,21 @@ describe('MembersPanelContent', () => {
     })
   })
 
+  it('renders fetched personal members while seat capacity is unresolved', () => {
+    mockIsInPersonalWorkspace.value = true
+    mockMaxSeats.value = null
+    mockFilteredMembers.value = [createMember({ name: 'Alice' })]
+
+    renderComponent()
+
+    expect(screen.getByText('Alice')).toBeTruthy()
+    expect(screen.queryByText('workspacePanel.members.upsellBanner')).toBeNull()
+  })
+
   describe('not on team plan', () => {
     beforeEach(() => {
+      mockMaxSeats.value = 1
+      mockIsInPersonalWorkspace.value = true
       mockHasTeamPlan.value = false
       mockIsOnTeamPlan.value = false
       mockShowSearch.value = false
@@ -493,6 +528,8 @@ describe('MembersPanelContent', () => {
     })
 
     it('hides the upsell banner when on a team plan', () => {
+      mockMaxSeats.value = 20
+      mockIsInPersonalWorkspace.value = false
       mockHasTeamPlan.value = true
       mockIsOnTeamPlan.value = true
       renderComponent()
@@ -543,7 +580,7 @@ describe('MembersPanelContent', () => {
   })
 
   describe('contact us footer', () => {
-    it('opens discord in a new tab on a Team plan', async () => {
+    it('opens the Team plan request form in a new tab', async () => {
       const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       renderComponent()
       expect(
@@ -553,7 +590,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://discord.com/invite/comfyorg',
+        'https://comfysupport.portal.usepylon.com/forms/team-plan-requests',
         '_blank',
         'noopener,noreferrer'
       )

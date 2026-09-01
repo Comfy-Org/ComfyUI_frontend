@@ -195,7 +195,7 @@ export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 export const zTaskOutput = z.record(zNodeId, zOutputs)
 export type TaskOutput = z.infer<typeof zTaskOutput>
 
-const zEmbeddingsResponse = z.array(z.string())
+export const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
 const zError = z.object({
   type: z.string(),
@@ -377,6 +377,7 @@ const zSettings = z.object({
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
+  'Comfy.Workflow.NamedValuesRestore': z.boolean(),
   'Comfy.Execution.PreviewMethod': zPreviewMethod,
   'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),

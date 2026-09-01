@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
@@ -37,11 +37,6 @@ const i18n = createI18n({
 const mockNode = createMockLGraphNode({ id: 'node-1' })
 
 describe('ViewerControls', () => {
-  beforeEach(() => {
-    showDialog.mockClear()
-    handleViewerClose.mockClear()
-  })
-
   it('renders the open-in-viewer button labeled by the localized aria-label', () => {
     render(ViewerControls, {
       props: { node: mockNode },

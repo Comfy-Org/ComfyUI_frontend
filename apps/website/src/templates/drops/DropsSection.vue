@@ -13,19 +13,19 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const items = computed<CardArticleGalleryItem[]>(() =>
   drops.map((drop) => ({
     id: drop.id,
-    badge: drop.badge?.[locale],
-    category: drop.category[locale],
-    title: drop.title[locale],
-    description: drop.description[locale],
+    badge: drop.badge?.[locale] || drop.badge?.en,
+    category: drop.category[locale] || drop.category.en,
+    title: drop.title[locale] || drop.title.en,
+    description: drop.description[locale] || drop.description.en,
     media: {
       type: drop.media.type,
       src: drop.media.src,
-      alt: drop.media.alt[locale],
-      poster: drop.media.poster
+      alt: drop.media.alt[locale] || drop.media.alt.en,
+      poster: drop.media.type === 'video' ? drop.media.poster : undefined
     },
     cta: {
-      label: drop.cta.label[locale],
-      href: drop.cta.href[locale]
+      label: drop.cta.label[locale] || drop.cta.label.en,
+      href: drop.cta.href[locale] || drop.cta.href.en
     }
   }))
 )

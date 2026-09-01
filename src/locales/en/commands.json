@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Interrupt"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Open Layer Editor for Selected Node"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Load Default Workflow"
   },

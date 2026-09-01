@@ -1,6 +1,6 @@
 <template>
   <CoachmarkLanding
-    v-if="tour.step?.landing"
+    v-if="tour.step?.kind === 'landing'"
     :title="tour.title"
     :message="tour.body"
     :image="tour.step.image"
@@ -11,7 +11,7 @@
     @skip="tour.skip"
   />
   <TourSpotlight
-    v-else-if="tour.step"
+    v-else-if="tour.step?.kind === 'spotlight'"
     :step="tour.step"
     :title="tour.title"
     :body="tour.body"

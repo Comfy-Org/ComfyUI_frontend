@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
@@ -27,10 +27,6 @@ function createMockChip(
 }
 
 describe(NodeSearchTypeFilterPopover, () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
   function createRender(
     props: {
       chip?: FilterChip

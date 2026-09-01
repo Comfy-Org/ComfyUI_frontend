@@ -1,11 +1,10 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
 interface InFlightCreateSession {
   ownerUid: string | null
-  usesFirebaseToken: boolean
   promise: Promise<void>
 }
 
@@ -38,42 +37,22 @@ export const useSessionCookie = () => {
     return typeof message === 'string' ? message : response.statusText
   }
 
-  const getSessionHeaderOrThrow = async (
-    useFirebaseToken: boolean
-  ): Promise<Record<string, string>> => {
-    const { flags } = useFeatureFlags()
+  const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
     const authStore = useAuthStore()
-
-    if (useFirebaseToken || flags.teamWorkspacesEnabled) {
-      const firebaseToken = await authStore.getIdToken()
-      if (!firebaseToken) {
-        throw new Error('No Firebase token available for session creation')
-      }
-
-      return { Authorization: `Bearer ${firebaseToken}` }
+    const firebaseToken = await authStore.getIdToken()
+    if (!firebaseToken) {
+      throw new Error('No Firebase token available for session creation')
     }
 
-    const authHeader = await authStore.getAuthHeader()
-    if (!authHeader) {
-      throw new Error('No auth header available for session creation')
-    }
-    return authHeader
+    return { Authorization: `Bearer ${firebaseToken}` }
   }
 
-  /**
-   * Creates or refreshes the session cookie.
-   * Called after login and on token refresh.
-   *
-   * When team_workspaces_enabled is true, uses Firebase token directly
-   * (since getAuthHeader() returns workspace token which shouldn't be used for session creation).
-   * When disabled, uses getAuthHeader() for backward compatibility.
-   */
+  /** Creates or refreshes the session cookie after login or token refresh. */
   const performCreateSession = async (
-    expectedOwnerUid: string,
-    useFirebaseToken: boolean
+    expectedOwnerUid: string
   ): Promise<void> => {
     const authStore = useAuthStore()
-    const authHeader = await getSessionHeaderOrThrow(useFirebaseToken)
+    const authHeader = await getSessionHeaderOrThrow()
 
     if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) {
       throw new Error('Session identity changed during creation')
@@ -88,8 +67,7 @@ export const useSessionCookie = () => {
 
   const establishSession = (
     ownerUid: string,
-    forceRefresh: boolean,
-    useFirebaseToken = false
+    forceRefresh: boolean
   ): Promise<void> => {
     if (
       !forceRefresh &&
@@ -98,23 +76,19 @@ export const useSessionCookie = () => {
     ) {
       return Promise.resolve()
     }
-    if (
-      inFlightCreateSession?.ownerUid === ownerUid &&
-      (!useFirebaseToken || inFlightCreateSession.usesFirebaseToken)
-    ) {
+    if (inFlightCreateSession?.ownerUid === ownerUid) {
       return inFlightCreateSession.promise
     }
 
     pendingSessionMutations++
     const request: InFlightCreateSession = {
       ownerUid,
-      usesFirebaseToken: useFirebaseToken,
       promise: sessionMutationTail
         .then(async () => {
           if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed before creation')
           }
-          await performCreateSession(ownerUid, useFirebaseToken)
+          await performCreateSession(ownerUid)
           confirmedSessionOwnerUid = ownerUid
           if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed during creation')
@@ -150,13 +124,16 @@ export const useSessionCookie = () => {
     try {
       await establishSession(currentOwnerUidOrThrow(), true)
     } catch (error) {
+      // The session cookie is the only credential <img>/media loads carry, so
+      // a swallowed creation failure means images break with no other signal.
+      reportError(error, { errorType: 'session_cookie_creation_failure' })
       console.warn('Failed to create session cookie:', error)
     }
   }
 
   const createSessionOrThrow = async (): Promise<void> => {
     if (!isCloud) return
-    await establishSession(currentOwnerUidOrThrow(), true, true)
+    await establishSession(currentOwnerUidOrThrow(), true)
   }
 
   /**

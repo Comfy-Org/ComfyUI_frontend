@@ -33,6 +33,11 @@ interface CustomDialogComponentProps {
   maximized?: boolean
   onClose?: () => void
   closable?: boolean
+  /**
+   * Hides the header close button while keeping `closable` dismissal paths
+   * (Escape, programmatic close) available. Defaults to shown.
+   */
+  showCloseButton?: boolean
   modal?: boolean
   position?: DialogPosition
   pt?: DialogPassThroughOptions
@@ -211,7 +216,7 @@ export const useDialogStore = defineStore('dialog', () => {
         dismissableMask: true,
         renderer: 'reka' as DialogRenderer,
         ...options.dialogComponentProps,
-        maximized: false,
+        maximized: options.dialogComponentProps?.maximized ?? false,
         onMaximize: () => {
           dialog.dialogComponentProps.maximized = true
         },
