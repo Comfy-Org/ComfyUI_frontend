@@ -19,9 +19,8 @@ export function createInputSlotView(
         isArrayIndex(property) && isInputSlot(value)
           ? toClass(NodeInputSlot, value, node)
           : value
-      if (isInputSlot(value) && isInputSlot(input) && value !== input) {
+      if (isInputSlot(value) && isInputSlot(input) && value !== input)
         assignedViews.set(value, input)
-      }
       return Reflect.set(target, property, input, receiver)
     }
   })
