@@ -22,6 +22,19 @@ const awarenessFrame = (expiresAt: unknown) => ({
   }
 })
 
+const sequencedFrame = (
+  type: 'doc_subscribed' | 'doc_reset',
+  seq: unknown
+) => ({
+  type,
+  data: {
+    v: 1,
+    workflow_id: 'wf-1',
+    seq,
+    ...(type === 'doc_subscribed' && { ok: true })
+  }
+})
+
 describe('doc frame numeric domains', () => {
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN])(
     'rejects an invalid doc_update seq: %s',
@@ -37,16 +50,19 @@ describe('doc frame numeric domains', () => {
     }
   )
 
-  it.for([
-    ['doc_subscribed', { ok: true }],
-    ['doc_reset', {}]
-  ])('rejects an invalid %s seq', (type, data) => {
-    expect(
-      parseServerDocFrame({
-        type,
-        data: { v: 1, workflow_id: 'wf-1', seq: -1, ...data }
+  describe.for(['doc_subscribed', 'doc_reset'] as const)('%s seq', (type) => {
+    it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
+      'rejects an invalid value: %s',
+      (seq) => {
+        expect(parseServerDocFrame(sequencedFrame(type, seq))).toBeNull()
+      }
+    )
+
+    it('accepts zero', () => {
+      expect(parseServerDocFrame(sequencedFrame(type, 0))?.data).toMatchObject({
+        seq: 0
       })
-    ).toBeNull()
+    })
   })
 
   it('accepts finite non-negative integer sequence and expiry values', () => {
