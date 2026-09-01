@@ -166,6 +166,18 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     expect(lateChanges).toEqual([{ type: 'show', opId: 'op-2' }])
   })
 
+  it('keeps duplicate listener registrations independently subscribed', () => {
+    const surface = createPendingOpShadowSurface()
+    const changes: ShadowChange[] = []
+    const listener = (change: ShadowChange) => changes.push(change)
+    const unsubscribeFirst = surface.subscribe(listener)
+    surface.subscribe(listener)
+
+    unsubscribeFirst()
+    surface.show('op-1', [node('n1')])
+    expect(changes).toEqual([{ type: 'show', opId: 'op-1' }])
+  })
+
   it('snapshots are decoupled from caller input and internal state', () => {
     const surface = createPendingOpShadowSurface()
     const input = [node('n1')]
