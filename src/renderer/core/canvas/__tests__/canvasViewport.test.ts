@@ -42,6 +42,11 @@ describe('measureViewport', () => {
     expect(vp.dpr).toBe(1)
   })
 
+  it('falls back to 1 for non-finite DPR', () => {
+    expect(measureViewport(100, 100, Number.POSITIVE_INFINITY, 0).dpr).toBe(1)
+    expect(measureViewport(100, 100, Number.NaN, 0).dpr).toBe(1)
+  })
+
   it('increments generation from previous value', () => {
     const vp1 = measureViewport(800, 600, 1, 0)
     expect(vp1.generation).toBe(1)
