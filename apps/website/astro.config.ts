@@ -7,7 +7,7 @@ import { isExcludedFromSitemap } from './src/config/indexing'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { sitemapAlternates } from './src/lib/hreflang'
 
-const LOCALES = ['en', 'zh-CN'] as const
+const LOCALES = ['en', 'zh-CN', 'ja'] as const
 const DEFAULT_LOCALE = 'en'
 export default defineConfig({
   site: 'https://comfy.org',
