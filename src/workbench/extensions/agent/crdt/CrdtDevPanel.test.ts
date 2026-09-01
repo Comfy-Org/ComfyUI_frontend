@@ -37,9 +37,7 @@ function openPanel() {
 }
 
 function createClipboardSpy(): ReturnType<typeof vi.spyOn> {
-  return vi
-    .spyOn(navigator.clipboard, 'writeText')
-    .mockResolvedValue(undefined)
+  return vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
 }
 
 describe('CrdtDevPanel', () => {
@@ -51,6 +49,8 @@ describe('CrdtDevPanel', () => {
     ;(window as unknown as { __agentCrdtPoc?: unknown }).__agentCrdtPoc =
       undefined
   })
+
+  afterEach(vi.useRealTimers)
 
   afterEach(() => {
     cleanup()
