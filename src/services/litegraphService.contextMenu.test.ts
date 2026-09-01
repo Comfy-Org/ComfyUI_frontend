@@ -260,17 +260,17 @@ function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
   return node
 }
 
-function createMockWidget(
-  overrides: Record<string, unknown> = {}
-): IBaseWidget {
+function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
   return {
     name: 'test_widget',
     label: undefined,
+    type: 'number',
     value: 42,
+    y: 0,
     callback: vi.fn(),
     options: {},
     ...overrides
-  } as unknown as IBaseWidget
+  }
 }
 
 describe('litegraphService context menu & canvas helpers', () => {
