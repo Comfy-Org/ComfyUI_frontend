@@ -176,11 +176,10 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     clientState.sent = []
     clientState.sendOps.mockClear()
     devLogState.recordDevEvent.mockClear()
-    vi.useRealTimers()
+    vi.useFakeTimers()
   })
 
   it('does not retarget a transport retry after workflow A switches to workflow B', async () => {
-    vi.useFakeTimers()
     clientState.transportUp = false
     const { workflowId, enqueue } = mountFollower('wf-a')
 
