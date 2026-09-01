@@ -40,6 +40,7 @@ const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
+  private hasConfiguredWidgetValue = false
   private configuredWidgetValue?: WidgetValue
   static override category: string
   constructor(title: string) {
@@ -127,6 +128,9 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   override onConfigure(serialisedNode: ISerialisedNode) {
+    this.hasConfiguredWidgetValue =
+      serialisedNode.widgets_values !== undefined &&
+      0 in serialisedNode.widgets_values
     this.configuredWidgetValue = serialisedNode.widgets_values?.[0]
   }
 
@@ -141,6 +145,7 @@ export class PrimitiveNode extends LGraphNode {
       // Merge values if required
       this._mergeWidgetConfig()
     }
+    this.hasConfiguredWidgetValue = false
     this.configuredWidgetValue = undefined
   }
 
@@ -258,9 +263,9 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
-    const configuredWidgetValue = recreating
-      ? undefined
-      : this.configuredWidgetValue
+    const hasConfiguredWidgetValue =
+      !recreating && this.hasConfiguredWidgetValue
+    const configuredWidgetValue = this.configuredWidgetValue
 
     if (
       type === 'COMBO' &&
@@ -269,8 +274,7 @@ export class PrimitiveNode extends LGraphNode {
       widget = this._createAssetWidget(node, widgetName, inputData)
       const theirWidget = node.widgets?.find((w) => w.name === widgetName)
       if (theirWidget) widget.value = theirWidget.value
-      if (configuredWidgetValue !== undefined)
-        widget.value = configuredWidgetValue
+      if (hasConfiguredWidgetValue) widget.value = configuredWidgetValue
       this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
       return
     }
@@ -288,8 +292,7 @@ export class PrimitiveNode extends LGraphNode {
         widget.value = theirWidget.value
       }
     }
-    if (configuredWidgetValue !== undefined)
-      widget.value = configuredWidgetValue
+    if (hasConfiguredWidgetValue) widget.value = configuredWidgetValue
 
     if (
       !inputData?.[1]?.control_after_generate &&

@@ -118,6 +118,29 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
+  it('restores an explicitly undefined serialized value', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('value', 'STRING')
+    target.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['STRING', {}]
+    }
+    target.addWidget('text', 'value', 'stale', () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(fromPartial({ widgets_values: [undefined] }))
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0].value).toBeUndefined()
+  })
+
   it('keeps its serialized value for an asset browser widget', () => {
     vi.spyOn(assetService, 'shouldUseAssetBrowser').mockReturnValue(true)
     const graph = new LGraph()
