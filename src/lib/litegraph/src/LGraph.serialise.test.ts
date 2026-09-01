@@ -136,6 +136,28 @@ describe('LGraph Serialisation', () => {
     expect(error).toHaveBeenCalledOnce()
   })
 
+  test('serialises one entry per id when distinct live nodes share an id', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const impostor = new LGraphNode('Impostor')
+    impostor.id = registered.id
+    graph._nodes.push(impostor)
+    const adapterOnly = new LGraphNode('Adapter only')
+    adapterOnly.id = toNodeId(99)
+    graph._nodes.push(adapterOnly)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const serialized = graph.serialize()
+
+    const ids = serialized.nodes.map(({ id }) => id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toHaveLength(2)
+    expect(error).toHaveBeenCalledOnce()
+  })
+
   test('round trips namespaced node and graph extension payloads', ({
     expect,
     minimalGraph

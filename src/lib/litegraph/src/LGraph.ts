@@ -369,8 +369,7 @@ function serialiseOwnedTopology(owner: LGraph) {
 }
 
 function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
-  const liveNodes = [...new Set(owner._nodes)]
-  const adapters = new Map(liveNodes.map((node) => [node.id, node]))
+  const adapters = new Map(owner._nodes.map((node) => [node.id, node]))
   const states = useNodeDataStore().getGraphNodesFor(
     owner.rootGraph.id,
     owner.id
@@ -386,6 +385,7 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     serialisers.length !== ordered.length ||
     ordered.length !== adapters.size
   ) {
+    const liveNodes = [...adapters.values()]
     const missingState = ordered.find((state) => !adapters.has(state.id))
     let missingAdapter: LGraphNode | undefined
     if (missingState === undefined) {
