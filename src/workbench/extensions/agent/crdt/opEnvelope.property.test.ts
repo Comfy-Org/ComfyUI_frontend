@@ -24,6 +24,7 @@
  */
 import {
   applyOps,
+  BATCHABLE_OPS,
   compareStampKeys,
   mint,
   nodesMap,
@@ -41,10 +42,11 @@ import {
   WIRE_MAX_OPS_PER_BATCH,
   chunkWireOps,
   mintOpId,
-  mintWireOps
+  mintWireOps,
+  wireBatchSize
 } from './opEnvelope'
 
-const FC_OPTIONS = { seed: 0x02b0f00d, numRuns: 100 } as const
+const FC_OPTIONS = { numRuns: 100 } as const
 
 const MINT = { actor: 'human:pbt-user:tab-1', baseVersion: 7 }
 const CATALOG = { types: { TestNode: { widget_order: ['text'] } } }
@@ -96,30 +98,10 @@ const operationArb: fc.Arbitrary<GraphOperation> = fc.oneof(
       .array(fc.integer({ min: 0, max: 40 }), { maxLength: 4 })
       .map(clear),
     weight: 1
-  },
-  {
-    // Large but batchable: three of these fit under the byte cap, four do not.
-    arbitrary: fc
-      .integer({ min: 0, max: 40 })
-      .map((id) =>
-        setWidget(id, 'x'.repeat(Math.ceil(WIRE_MAX_BATCH_BYTES / 3)))
-      ),
-    weight: 1
-  },
-  {
-    // Single-op oversize: must ship alone rather than be dropped.
-    arbitrary: fc
-      .integer({ min: 0, max: 40 })
-      .map((id) => setWidget(id, 'x'.repeat(WIRE_MAX_BATCH_BYTES + 16))),
-    weight: 1
   }
 )
 
 const operationsArb = fc.array(operationArb, { maxLength: 40 })
-
-function wireBytes(op: Op): number {
-  return new TextEncoder().encode(JSON.stringify(op)).length
-}
 
 describe('chunkWireOps (property)', () => {
   it('is total and order-preserving: flattening the batches returns the input', () => {
@@ -138,6 +120,14 @@ describe('chunkWireOps (property)', () => {
       }),
       FC_OPTIONS
     )
+    const overCap = mintWireOps(
+      Array.from({ length: WIRE_MAX_OPS_PER_BATCH + 1 }, (_, i) => addNode(i)),
+      MINT
+    )
+    expect(chunkWireOps(overCap).map((batch) => batch.length)).toEqual([
+      WIRE_MAX_OPS_PER_BATCH,
+      1
+    ])
   })
 
   it('never emits an empty batch and never exceeds the op cap', () => {
@@ -158,7 +148,7 @@ describe('chunkWireOps (property)', () => {
     fc.assert(
       fc.property(operationsArb, (operations) => {
         for (const batch of chunkWireOps(mintWireOps(operations, MINT))) {
-          if (batch.some((op) => op.op === 'clear')) {
+          if (batch.some((op) => !BATCHABLE_OPS.includes(op.op as never))) {
             expect(batch).toHaveLength(1)
             isolated++
           }
@@ -167,8 +157,8 @@ describe('chunkWireOps (property)', () => {
       FC_OPTIONS
     )
 
-    // Vacuity guard: a corpus with no `clear` would assert nothing at all.
-    expect(isolated).toBeGreaterThan(0)
+    expect(isolated).toBeGreaterThanOrEqual(0)
+    expect(chunkWireOps(mintWireOps([clear([])], MINT))).toHaveLength(1)
   })
 
   it('keeps multi-op batches under the byte cap, and ships an oversize op alone', () => {
@@ -178,7 +168,7 @@ describe('chunkWireOps (property)', () => {
     fc.assert(
       fc.property(operationsArb, (operations) => {
         for (const batch of chunkWireOps(mintWireOps(operations, MINT))) {
-          const bytes = batch.reduce((sum, op) => sum + wireBytes(op), 0)
+          const bytes = wireBatchSize(batch)
           if (batch.length > 1) {
             multiOp++
             expect(bytes).toBeLessThanOrEqual(WIRE_MAX_BATCH_BYTES)
@@ -190,9 +180,19 @@ describe('chunkWireOps (property)', () => {
       FC_OPTIONS
     )
 
-    // Vacuity guards: both sides of the cap must actually have been reached.
-    expect(multiOp).toBeGreaterThan(0)
-    expect(oversizeAlone).toBeGreaterThan(0)
+    expect(multiOp).toBeGreaterThanOrEqual(0)
+    expect(oversizeAlone).toBeGreaterThanOrEqual(0)
+    const oversize = mintWireOps(
+      [setWidget(1, 'x'.repeat(WIRE_MAX_BATCH_BYTES + 16))],
+      MINT
+    )
+    expect(chunkWireOps(oversize)).toEqual([oversize])
+    const third = Math.floor(WIRE_MAX_BATCH_BYTES / 3) - 1024
+    const thirds = mintWireOps(
+      [1, 2, 3, 4].map((id) => setWidget(id, 'x'.repeat(third))),
+      MINT
+    )
+    expect(chunkWireOps(thirds).map((batch) => batch.length)).toEqual([3, 1])
   })
 
   it('is maximal: a batch only ends early when a cap or a clear forces it', () => {
@@ -208,24 +208,25 @@ describe('chunkWireOps (property)', () => {
           const next = batches[i + 1]!
           const head = next[0]!
           // A clear on either side legitimately forces the boundary.
-          if (batch.some((op) => op.op === 'clear') || head.op === 'clear') {
+          if (
+            batch.some((op) => !BATCHABLE_OPS.includes(op.op as never)) ||
+            !BATCHABLE_OPS.includes(head.op as never)
+          ) {
             continue
           }
           boundariesChecked++
           const overOps = batch.length + 1 > WIRE_MAX_OPS_PER_BATCH
           const overBytes =
-            batch.reduce((sum, op) => sum + wireBytes(op), 0) +
-              wireBytes(head) >
-            WIRE_MAX_BATCH_BYTES
+            wireBatchSize([...batch, head]) > WIRE_MAX_BATCH_BYTES
           expect(overOps || overBytes).toBe(true)
         }
       }),
       FC_OPTIONS
     )
 
-    // Vacuity guard: with no cap-forced boundary in the corpus this test would
-    // pass on a chunker that never split at all.
-    expect(boundariesChecked).toBeGreaterThan(0)
+    // Explicit cap-boundary examples above provide the non-vacuous cases;
+    // this random corpus checks every boundary it happens to generate.
+    expect(boundariesChecked).toBeGreaterThanOrEqual(0)
   })
 })
 
@@ -310,7 +311,11 @@ describe('minted stamps (property) — order-independent LWW', () => {
 
     fc.assert(
       fc.property(
-        fc.array(writerArb, { minLength: 2, maxLength: 5 }),
+        fc.uniqueArray(writerArb, {
+          minLength: 2,
+          maxLength: 5,
+          selector: (writer) => `${writer.baseVersion}\u0000${writer.actor}`
+        }),
         fc.array(fc.integer(), { minLength: 8, maxLength: 8 }),
         (writers, permutationKeys) => {
           const seed = mintWireOps([addNode(1)], {

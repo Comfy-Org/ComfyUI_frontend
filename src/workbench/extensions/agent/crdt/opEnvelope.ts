@@ -13,6 +13,9 @@ import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256
 export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
+// Reserve space for the doc_ops frame fields outside `ops` (type, protocol,
+// workflow id and tab). The server's identifiers are bounded well below this.
+export const WIRE_FRAME_OVERHEAD_BYTES = 1024
 
 export interface MintContext {
   actor: Actor
@@ -54,8 +57,12 @@ function isBatchable(op: Op): boolean {
   return (BATCHABLE_OPS as readonly string[]).includes(op.op)
 }
 
-function wireSize(op: Op): number {
-  return new TextEncoder().encode(JSON.stringify(op)).length
+/** Conservative encoded size of a complete doc_ops frame carrying `ops`. */
+export function wireBatchSize(ops: readonly Op[]): number {
+  return (
+    new TextEncoder().encode(JSON.stringify(ops)).length +
+    WIRE_FRAME_OVERHEAD_BYTES
+  )
 }
 
 /**
@@ -68,12 +75,10 @@ function wireSize(op: Op): number {
 export function chunkWireOps(ops: Op[]): Op[][] {
   const batches: Op[][] = []
   let current: Op[] = []
-  let currentBytes = 0
 
   const flush = (): void => {
     if (current.length > 0) batches.push(current)
     current = []
-    currentBytes = 0
   }
 
   for (const op of ops) {
@@ -82,13 +87,12 @@ export function chunkWireOps(ops: Op[]): Op[][] {
       batches.push([op])
       continue
     }
-    const bytes = wireSize(op)
     const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
     const overBytes =
-      current.length > 0 && currentBytes + bytes > WIRE_MAX_BATCH_BYTES
+      current.length > 0 &&
+      wireBatchSize([...current, op]) > WIRE_MAX_BATCH_BYTES
     if (overOps || overBytes) flush()
     current.push(op)
-    currentBytes += bytes
   }
   flush()
   return batches
