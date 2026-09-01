@@ -1047,10 +1047,21 @@ describe('useQueueStore', () => {
     })
 
     it('should let the new identity fetch while a previous request is still pending', async () => {
-      mockGetQueue.mockReturnValueOnce(new Promise<QueueResponse>(() => {}))
-      mockGetHistory.mockReturnValueOnce(new Promise<JobListItem[]>(() => {}))
+      let resolveQueue!: QueueResolver
+      let resolveHistory!: (value: JobListItem[]) => void
 
-      void store.update()
+      mockGetQueue.mockReturnValueOnce(
+        new Promise<QueueResponse>((resolve) => {
+          resolveQueue = resolve
+        })
+      )
+      mockGetHistory.mockReturnValueOnce(
+        new Promise<JobListItem[]>((resolve) => {
+          resolveHistory = resolve
+        })
+      )
+
+      const previousIdentityUpdate = store.update()
 
       store.reset()
 
@@ -1062,6 +1073,13 @@ describe('useQueueStore', () => {
       await store.update()
 
       expect(store.runningTasks.map((t) => t.jobId)).toEqual(['run-b'])
+
+      resolveQueue({ Running: [createRunningJob(4, 'run-a')], Pending: [] })
+      resolveHistory([createHistoryJob(5, 'hist-a')])
+      await previousIdentityUpdate
+
+      expect(store.runningTasks.map((t) => t.jobId)).toEqual(['run-b'])
+      expect(store.historyTasks).toEqual([])
     })
   })
 
