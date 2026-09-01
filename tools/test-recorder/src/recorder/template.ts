@@ -2,6 +2,7 @@ import { existsSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { formatInitialFeatureFlags } from '../featureFlags'
+import type { Distribution } from '../devserver/distributions'
 
 export type RecordingTarget = 'local' | 'cloud'
 
@@ -12,6 +13,25 @@ interface TemplateOptions {
   target?: RecordingTarget
   /** Browser storage-state file that persists sign-in across recordings. */
   storageStateFile?: string
+}
+
+/**
+ * Every custom backend previously shared one cache key ('custom'), so a
+ * session saved against one host got replayed against a completely
+ * different one — a stale/foreign cookie an unrelated origin will reject,
+ * which can surface as an auth redirect loop. Custom backends key by their
+ * own hostname instead; the three fixed cloud distributions keep their id.
+ */
+export function storageStateKey(distribution?: Distribution): string {
+  if (!distribution) return 'cloud'
+  if (distribution.id !== 'custom' || !distribution.backendUrl) {
+    return distribution.id
+  }
+  try {
+    return `custom-${new URL(distribution.backendUrl).hostname}`
+  } catch {
+    return 'custom'
+  }
 }
 
 export function storageStatePath(distributionId: string): string {
