@@ -103,7 +103,9 @@ describe('CrdtDevPanel', () => {
     expect(screen.getByText('doc-123')).toBeVisible()
     expect(screen.getByText('yes')).toBeVisible()
     expect(screen.getByText('7')).toBeVisible()
-    expect(screen.getAllByText('doc_update')[0]).toBeVisible()
+    expect(
+      within(screen.getByRole('table')).getByText('doc_update')
+    ).toBeVisible()
     expect(screen.getByText('tab-abc')).toBeVisible()
     expect(screen.getByText('42')).toBeVisible()
     expect(screen.getByText('http://agent.test')).toBeVisible()
