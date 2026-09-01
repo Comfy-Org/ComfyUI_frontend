@@ -173,6 +173,13 @@ describe('llms.txt', () => {
     expect(listedButExcluded).toEqual([])
   })
 
+  it('uses only literal redirect sources for stale link checks', () => {
+    const patternedSources = [...vercelRedirectSources].filter((source) =>
+      /[:*(]/.test(source)
+    )
+    expect(patternedSources).toEqual([])
+  })
+
   it('links a redirect destination rather than its stale source', () => {
     const redirected = findRedirectedLinks(links, vercelRedirectSources)
     expect(redirected).toEqual([])
