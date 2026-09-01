@@ -222,9 +222,12 @@ For every code-review task:
    security, performance, memory-leak, import-graph, accessibility, Vue, and
    Playwright checks when the changed code makes them applicable.
 4. For changed or newly added test files, also apply the matching review input:
-   - `*.test.ts` — `docs/testing/README.md`,
+   - `src/`, `packages/`, `scripts/`, and `tools/` tests — Vitest accepts both
+     `*.test.ts` and `*.spec.ts`; prefer `*.test.ts` for new unit and component
+     tests. Read `docs/testing/README.md`,
      `docs/guidance/vitest.md`, and `.agents/checks/test-quality.md`.
-   - `*.spec.ts` — `docs/testing/README.md`,
+   - `browser_tests/**/*.spec.ts` — Playwright; `browser_tests/**/*.test.ts` is
+     ignored. Read `docs/testing/README.md`,
      `docs/guidance/playwright.md`, `.agents/checks/test-quality.md`, and the
      nearest applicable `AGENTS.md` under `browser_tests/`.
 
