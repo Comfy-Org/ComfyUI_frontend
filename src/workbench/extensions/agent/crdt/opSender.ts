@@ -97,6 +97,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
   let inFlight: InFlight | null = null
   let detached = false
+  let lastMintedVersion = -1
   // Late-result credits: a batch that settled 'unacknowledged' was
   // transmitted twice, so up to two of its results may still arrive - as
   // ANONYMOUS failures (empty id lists, no failure op_id) they are
@@ -200,9 +201,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   return {
     enqueue(operations) {
       if (detached || operations.length === 0) return
+      const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
+      lastMintedVersion = baseVersion
       const minted = mintWireOps(operations, {
         actor: deps.actor(),
-        baseVersion: deps.baseVersion()
+        baseVersion
       })
       const workflowId = deps.workflowId()
       if (workflowId === null) {

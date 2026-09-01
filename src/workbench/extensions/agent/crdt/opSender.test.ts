@@ -25,6 +25,7 @@ describe('createOpSender', () => {
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
   let boundWorkflow: string | null
+  let baseVersion: number
   let sender: ReturnType<typeof createOpSender>
 
   function ackInFlight(): void {
@@ -43,6 +44,7 @@ describe('createOpSender', () => {
     resultListener = null
     transportUp = true
     boundWorkflow = WORKFLOW
+    baseVersion = 41
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (!transportUp) return false
@@ -58,7 +60,7 @@ describe('createOpSender', () => {
       workflowId: () => boundWorkflow,
       tab: TAB,
       actor: () => ACTOR,
-      baseVersion: () => 41,
+      baseVersion: () => baseVersion,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -97,6 +99,20 @@ describe('createOpSender', () => {
     ackInFlight()
     expect(sender.pending()).toBe(0)
     expect(settled).toHaveLength(2)
+  })
+
+  it('advances the local stamp when the observed sequence has not changed', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+
+    expect(sent[0].ops[0].stamp).toEqual([41, ACTOR])
+    ackInFlight()
+    expect(sent[1].ops[0].stamp).toEqual([42, ACTOR])
+
+    baseVersion = 50
+    ackInFlight()
+    sender.enqueue([addNode(3)])
+    expect(sent[2].ops[0].stamp).toEqual([50, ACTOR])
   })
 
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
