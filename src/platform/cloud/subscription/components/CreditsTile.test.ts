@@ -365,11 +365,39 @@ describe('CreditsTile', () => {
     // report the customer's own purchases as gone.
     expect(container.textContent).toContain('1,055remaining')
     expect(container.textContent).toContain('Additional credits')
+    // The prepaid figure specifically — a regression that zeroed only
+    // displayPrepaid would pass on the total alone.
+    expect(screen.getByText('633')).toBeInTheDocument()
     expect(container.textContent).toContain(
       'Spendable once the plan is active again.'
     )
     expect(container.textContent).not.toContain('Monthly')
     expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('says nothing about the credits while the balance is still unknown', () => {
+    activeProSubscription()
+    state.canTopUp = true
+    state.isLoading = true
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).not.toContain(
+      'Plan credits ended with your subscription.'
+    )
+    expect(container.textContent).not.toContain(
+      'Spendable once the plan is active again.'
+    )
+  })
+
+  it('says nothing about the credits when the balance is unavailable', () => {
+    activeProSubscription()
+    state.canTopUp = true
+    state.balance = null
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).not.toContain(
+      'Plan credits ended with your subscription.'
+    )
   })
 
   it('states what happened when nothing was retained', () => {

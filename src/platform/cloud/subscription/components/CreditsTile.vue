@@ -175,12 +175,13 @@
               <i class="icon-[lucide--info] size-4" />
             </Button>
           </span>
-          <span class="flex items-center gap-1 font-bold">
+          <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
+          <span v-else class="flex items-center gap-1 font-bold">
             <i class="icon-[lucide--coins] size-4" />
             {{ displayPrepaid }}
           </span>
         </div>
-        <span class="text-sm">
+        <span v-if="balanceIsKnown" class="text-sm">
           {{
             $t(
               prepaidCreditsValue > 0
@@ -303,6 +304,12 @@ const creditPoolTotalCredits = computed<number | null>(() => {
 // credit pool above: can_top_up is a rollout-defaulted capability that also
 // fails open for owners on an unreadable snapshot, which would drop a lapsed
 // self-serve team out of this state during a capabilities outage.
+// An unread balance surfaces as 0, which would otherwise announce that the
+// customer's credits ended when we simply do not know yet.
+const balanceIsKnown = computed(
+  () => !isLoadingBalance.value && balance.value != null
+)
+
 const showsInactivePlanState = computed(
   () => inactivePlan === true && !isSalesManagedTier(subscription.value?.tier)
 )
