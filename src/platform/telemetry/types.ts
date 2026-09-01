@@ -593,6 +593,7 @@ export interface WidgetFavoriteToggledMetadata {
   source: 'right_side_panel'
 }
 
+/** Reports serialized payload IDs before subgraph-wide ID remapping. */
 export interface LinkDedupDropMetadata {
   context: 'root' | 'subgraph'
   target: string

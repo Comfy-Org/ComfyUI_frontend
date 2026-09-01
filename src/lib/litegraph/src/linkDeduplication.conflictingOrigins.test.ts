@@ -2,8 +2,12 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { normalizeConfiguredTopology } from '@/lib/litegraph/src/linkDeduplication'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  normalizeConfiguredTopology
+} from '@/lib/litegraph/src/litegraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import { useLinkStore } from '@/stores/linkStore'
@@ -124,11 +128,16 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
     })
   })
 
-  it('reports the actual survivor origin when competing links share an id', () => {
+  it('reports serialized IDs and the actual origins when links share an id', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const data = structuredClone(conflictingOriginLinksRoot)
-    data.links![1].id = 1
-    data.nodes![2].inputs![0].link = 1
+    const competingLink = data.links?.find((link) => link.origin_id === 2)
+    const targetInput = data.nodes
+      ?.find((node) => node.id === 3)
+      ?.inputs?.find((input) => input.name === 'input_0')
+    if (!competingLink || !targetInput) throw new Error('Invalid fixture')
+    competingLink.id = 1
+    targetInput.link = 1
 
     normalizeConfiguredTopology(data, 'subgraph')
 

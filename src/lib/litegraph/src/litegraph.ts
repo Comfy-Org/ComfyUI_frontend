@@ -163,6 +163,7 @@ export { isComboWidget } from './widgets/widgetMap'
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export { isAssetWidget } from './widgets/widgetMap'
 // Additional test-specific exports
+export { normalizeConfiguredTopology } from './linkDeduplication'
 export { LGraphButton } from './LGraphButton'
 export { MovingOutputLink } from './canvas/MovingOutputLink'
 export { ToOutputRenderLink } from './canvas/ToOutputRenderLink'
