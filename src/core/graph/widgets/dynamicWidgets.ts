@@ -93,7 +93,19 @@ function dynamicComboWidget(
   const { addNodeInput } = useLitegraphService()
   const { deleteWidget } = useWidgetValueStore()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
-  if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
+  if (!parseResult.success) {
+    console.warn(
+      `Unparseable COMFY_DYNAMICCOMBO_V3 spec for input "${inputName}"; falling back to a plain combo widget.`,
+      parseResult.error.issues
+    )
+    return app.widgets['COMBO'](
+      node,
+      inputName,
+      [['*'], {}] as ComboInputSpec,
+      appArg,
+      widgetName
+    )
+  }
   const inputData = parseResult.data
   const options = Object.fromEntries(
     inputData[1].options.map(({ key, inputs }) => [key, inputs])
@@ -415,7 +427,22 @@ function dynamicGroupWidget(
   _appArg: ComfyApp
 ) {
   const parseResult = zDynamicGroupInputSpec.safeParse(untypedInputData)
-  if (!parseResult.success) throw new Error('invalid DynamicGroup spec')
+  if (!parseResult.success) {
+    console.warn(
+      `Unparseable COMFY_DYNAMICGROUP_V3 spec for input "${inputName}"; falling back to a no-op widget.`,
+      parseResult.error.issues
+    )
+    node.widgets ??= []
+    const fallback = node.addCustomWidget({
+      name: inputName,
+      type: 'dynamic_group',
+      value: 0,
+      y: 0,
+      serialize: false,
+      options: { socketless: true, disabled: true, min: 0, max: 0 }
+    })
+    return { widget: fallback }
+  }
   const [, { template, min, max, group_name: groupName }] = parseResult.data
 
   const toSpecs = (
@@ -858,7 +885,13 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)
-  if (!parseResult.success) throw new Error('invalid Autogrow spec')
+  if (!parseResult.success) {
+    console.warn(
+      `Unparseable COMFY_AUTOGROW_V3 spec for input "${inputSpecV2.name}"; skipping autogrow.`,
+      parseResult.error.issues
+    )
+    return
+  }
   const inputSpec = parseResult.data
   const { input, min = 1, names, prefix, max = 100 } = inputSpec.template
 
