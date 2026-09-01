@@ -52,7 +52,9 @@ const previewData: PreviewSubscribeResponse = {
 }
 
 function renderPreview(
-  authenticationState: 'failed_retryable' | 'requires_action'
+  recovery:
+    | { authenticationState: 'failed_retryable' | 'requires_action' }
+    | { reconciliationOperationId: string }
 ) {
   return render(SubscriptionAddPaymentPreviewWorkspace, {
     props: {
@@ -69,7 +71,7 @@ function renderPreview(
           is_default: true
         } satisfies SavedPaymentMethod
       ],
-      authenticationState
+      ...recovery
     },
     global: {
       plugins: [i18n],
@@ -80,7 +82,7 @@ function renderPreview(
 
 describe('SubscriptionAddPaymentPreviewWorkspace — confirm lock', () => {
   it('keeps the pay action live after a failed challenge', () => {
-    renderPreview('failed_retryable')
+    renderPreview({ authenticationState: 'failed_retryable' })
 
     // The intent has fallen back to requires_payment_method; a fresh attempt
     // is the only way forward, so the action that starts one must not be
@@ -90,8 +92,16 @@ describe('SubscriptionAddPaymentPreviewWorkspace — confirm lock', () => {
     ).toBeEnabled()
   })
 
+  it('locks the pay action during a reconciliation hold', () => {
+    renderPreview({ reconciliationOperationId: 'op_1' })
+
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeDisabled()
+  })
+
   it('locks the pay action while a challenge is still open', () => {
-    renderPreview('requires_action')
+    renderPreview({ authenticationState: 'requires_action' })
 
     expect(
       screen.getByRole('button', { name: 'Pay and subscribe' })
