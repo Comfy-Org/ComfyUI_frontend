@@ -41,7 +41,7 @@ import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AppMode } from '@/utils/appMode'
-import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
+import { isAppModeValue } from '@/utils/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
@@ -525,7 +525,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent<string | number | null>): void {
-    cancelPendingProgressUpdates()
+    progressCoalescer.cancel()
+    if (e.detail == null) progressStateCoalescer.cancel()
 
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
@@ -841,6 +842,7 @@ export const useExecutionStore = defineStore('execution', () => {
     startTime,
     submissionAcceptedAt,
     workflow,
+    mode,
     workflowContext,
     workflowExecutionIntent = defaultWorkflowExecutionIntent
   }: {
@@ -850,6 +852,7 @@ export const useExecutionStore = defineStore('execution', () => {
     startTime?: number
     submissionAcceptedAt?: number
     workflow: ComfyWorkflow
+    mode: AppMode
     workflowContext?: WorkflowExecutionContext
     workflowExecutionIntent?: WorkflowExecutionIntent
   }) {
@@ -870,9 +873,8 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.workflow = workflow
     if (workflow) jobIdToWorkflow.set(String(id), workflow)
     queuedJob.shareId = workflow?.shareId
-    const queuedMode = getWorkflowMode(workflow)
-    queuedJob.viewMode = queuedMode
-    queuedJob.isAppMode = isAppModeValue(queuedMode)
+    queuedJob.viewMode = mode
+    queuedJob.isAppMode = isAppModeValue(mode)
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)

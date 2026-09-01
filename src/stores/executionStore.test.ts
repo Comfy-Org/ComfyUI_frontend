@@ -609,7 +609,8 @@ describe('useExecutionStore - workflowStatus', () => {
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
       submissionAcceptedAt: 62,
-      workflow
+      workflow,
+      mode: 'graph'
     })
   }
 
@@ -774,6 +775,7 @@ describe('useExecutionStore - workflowStatus', () => {
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
       workflow: workflowA,
+      mode: 'graph',
       workflowContext,
       workflowExecutionIntent: {
         trigger_source: 'button'
@@ -1298,7 +1300,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       promptOutput: {
         '123': createPromptNode('Test Node', 'TestNode')
       },
-      workflow: createQueuedWorkflow()
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
     })
     store.activeJobId = 'test-prompt'
 
@@ -1326,7 +1329,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       promptOutput: {
         '456:789': createPromptNode('Nested Node', 'NestedNode')
       },
-      workflow: createQueuedWorkflow()
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
     })
     store.activeJobId = 'test-prompt'
 
@@ -1360,7 +1364,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       promptOutput: {
         '123': createPromptNode('Test Node', 'TestNode')
       },
-      workflow: createQueuedWorkflow()
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
     })
     store.activeJobId = 'test-prompt'
 
@@ -1780,19 +1785,25 @@ describe('useExecutionStore - RAF batching', () => {
     })
   })
 
-  describe('executing cancels both coalescers', () => {
-    it('discards pending progress_state RAF when a new node starts executing', () => {
+  describe('executing preserves node progress state', () => {
+    it('applies the initial running state when executing follows in the same frame', () => {
       expect.assertions(1)
+      const startHandler = getRegisteredHandler('execution_start')
       const progressStateHandler = getRegisteredHandler('progress_state')
       const executingHandler = getRegisteredHandler('executing')
 
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
       progressStateHandler(
         new CustomEvent('progress_state', {
           detail: {
             prompt_id: 'job-1',
             nodes: {
               '1': {
-                value: 5,
+                value: 0,
                 max: 10,
                 state: 'running',
                 node_id: '1',
@@ -1804,7 +1815,38 @@ describe('useExecutionStore - RAF batching', () => {
         })
       )
 
-      executingHandler(new CustomEvent('executing', { detail: '2' }))
+      executingHandler(new CustomEvent('executing', { detail: '1' }))
+      vi.advanceTimersToNextFrame()
+
+      expect(store.nodeProgressStates['1']).toEqual(
+        expect.objectContaining({ state: 'running' })
+      )
+    })
+
+    it('discards a pending node progress state when execution stops', () => {
+      expect.assertions(1)
+      const progressStateHandler = getRegisteredHandler('progress_state')
+      const executingHandler = apiEventHandlers.get('executing')!
+
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 0,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      executingHandler(new CustomEvent('executing', { detail: null }))
       vi.advanceTimersToNextFrame()
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
@@ -2032,7 +2074,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'graph'
       })
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
@@ -2058,7 +2101,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'graph'
       })
 
       fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
@@ -2080,7 +2124,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'graph'
       })
 
       mockAppModeState.mode.value = 'app'
@@ -2095,17 +2140,18 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
     })
 
-    it('attributes shared workflow run to the queued workflow, not the active one', () => {
+    it('attributes shared workflow run to the passed mode, not the workflow current mode', () => {
       const workflow = createQueuedWorkflow()
       workflow.shareId = 'share-1'
-      workflow.activeMode = 'app'
+      workflow.activeMode = 'graph'
       store.storeJob({
         nodes: ['a'],
         id: 'job-1',
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'app'
       })
 
       fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
@@ -2363,7 +2409,8 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
         a: createPromptNode('Node A', 'NodeA'),
         b: createPromptNode('Node B', 'NodeB')
       },
-      workflow
+      workflow,
+      mode: 'graph'
     })
 
     expect(store.queuedJobs['job-1']?.nodes).toEqual({ a: false, b: false })

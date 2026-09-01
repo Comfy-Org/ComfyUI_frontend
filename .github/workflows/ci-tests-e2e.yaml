@@ -223,6 +223,18 @@ jobs:
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
+  upload-e2e-coverage:
+    needs: [changes, playwright-tests-chromium-sharded]
+    if: >-
+      ${{
+        always() &&
+        needs.changes.outputs.should-run == 'true' &&
+        needs.playwright-tests-chromium-sharded.result != 'cancelled'
+      }}
+    uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
+    with:
+      source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+
   # Records video only for spec files newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:
     needs: setup
