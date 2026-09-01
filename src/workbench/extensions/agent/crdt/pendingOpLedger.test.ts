@@ -204,6 +204,19 @@ describe('reconcileOpsResult', () => {
     expect(ledger.get('op-1')?.state).toBe('applied')
     expect(ledger.get('op-2')?.state).toBe('inflight')
   })
+
+  it('only marks the suffix after a reported failure as unprocessed', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['op-1', 'op-2'])
+    expect(
+      ledger.reconcileOpsResult({
+        batch: ['op-1', 'op-2'],
+        applied: [],
+        skipped: []
+      }).unprocessed
+    ).toEqual([])
+    expect(statesOf(ledger.entries())).toEqual(['inflight', 'inflight'])
+  })
 })
 
 describe('clearOnEffect (KA-9)', () => {

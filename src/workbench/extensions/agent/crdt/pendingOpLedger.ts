@@ -219,9 +219,15 @@ export function createPendingOpLedger<
           summary.failed,
           outcome.failure
         )
-      for (const opId of outcome.batch) {
-        if (resolved.has(opId)) continue
-        transition(opId, 'unprocessed', summary.unprocessed)
+      const failedIndex =
+        outcome.failedOpId == null
+          ? -1
+          : outcome.batch.indexOf(outcome.failedOpId)
+      if (failedIndex >= 0) {
+        for (const opId of outcome.batch.slice(failedIndex + 1)) {
+          if (resolved.has(opId)) continue
+          transition(opId, 'unprocessed', summary.unprocessed)
+        }
       }
       return summary
     },
