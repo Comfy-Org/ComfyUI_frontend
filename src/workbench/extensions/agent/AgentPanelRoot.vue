@@ -124,30 +124,33 @@ const resolveDocumentId = (workflowId: string) =>
   graphDocumentStore.createDocument({ workflowId })
 /**
  * Record every successful write against the target's document so its
- * revision advances (ADR-0024 dirty tracking). Each method re-resolves the
- * document id at success time: the workflow may have been rebound to a new
- * document between creation and the write.
+ * revision advances (ADR-0024 dirty tracking). Each method resolves the
+ * document id when the write starts — not at wrapper creation (the workflow
+ * may have been rebound to a new document since) and not at success time
+ * (the write itself can synchronously trigger a rebind, and the mutation
+ * belongs to the document that was bound when the write began).
  */
 const withMutationTracking = (
   inner: GraphMutations,
   workflowId: string
 ): GraphMutations => {
-  const track = (committed: boolean): boolean => {
-    if (committed) {
-      const documentId = resolveDocumentId(workflowId)
-      if (documentId) graphDocumentStore.markMutated(documentId)
-    }
+  const tracked = (write: () => boolean): boolean => {
+    const documentId = resolveDocumentId(workflowId)
+    const committed = write()
+    if (committed && documentId) graphDocumentStore.markMutated(documentId)
     return committed
   }
   return {
-    batch: (context, define) => track(inner.batch(context, define)),
-    addNode: (payload, context) => track(inner.addNode(payload, context)),
+    batch: (context, define) => tracked(() => inner.batch(context, define)),
+    addNode: (payload, context) =>
+      tracked(() => inner.addNode(payload, context)),
     setWidget: (nodeId, name, value, context) =>
-      track(inner.setWidget(nodeId, name, value, context)),
-    connect: (link, context) => track(inner.connect(link, context)),
+      tracked(() => inner.setWidget(nodeId, name, value, context)),
+    connect: (link, context) => tracked(() => inner.connect(link, context)),
     deleteNode: (nodeId, removedLinkIds, context) =>
-      track(inner.deleteNode(nodeId, removedLinkIds, context)),
-    clearSemanticGraph: (context) => track(inner.clearSemanticGraph(context))
+      tracked(() => inner.deleteNode(nodeId, removedLinkIds, context)),
+    clearSemanticGraph: (context) =>
+      tracked(() => inner.clearSemanticGraph(context))
   }
 }
 const graphMutations = (workflowId: string) => {
