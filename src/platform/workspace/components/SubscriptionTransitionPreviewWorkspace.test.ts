@@ -22,7 +22,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: {
+    en: {
+      subscription: {
+        preview: { renewsAt: 'Renews at {amount} on {date}' }
+      }
+    }
+  }
 })
 
 const globalOptions = {
@@ -128,6 +134,33 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     ).toBeTruthy()
     expect(screen.getByText('21,100')).toBeTruthy()
     expect(screen.getByText('$82.50')).toBeTruthy()
+  })
+
+  it('renders legacy preview pricing when embedded checkout is disabled', () => {
+    const legacyPreview = preview({
+      cost_today_cents: 8250,
+      cost_next_period_cents: 10_000,
+      current_plan: plan('CREATOR', 'MONTHLY', 3500),
+      new_plan: plan('PRO', 'MONTHLY', 10_000)
+    })
+    delete legacyPreview.amount_due_cents
+    delete legacyPreview.currency
+    delete legacyPreview.renewal_amount_cents
+    delete legacyPreview.renewal_at
+
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: legacyPreview,
+        embeddedCheckoutEnabled: false
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$82.50')).toBeTruthy()
+    expect(screen.getByText('Renews at $100.00 on Jun 28, 2027')).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.quoteUnavailable')
+    ).toBeNull()
   })
 
   it('opens verification only from its button without exposing the URL', async () => {

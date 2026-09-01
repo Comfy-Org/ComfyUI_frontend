@@ -46,7 +46,10 @@ function previewFixture(
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key,
+    t: (key: string, values?: Record<string, unknown>) =>
+      key === 'subscription.preview.renewsAt'
+        ? `Renews at ${values?.amount} on ${values?.date}`
+        : key,
     n: (value: number) => value.toLocaleString('en-US'),
     locale: { value: 'en' }
   })
@@ -238,6 +241,26 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(
       screen.queryByText('subscription.preview.eachYearCreditsRefill')
     ).toBeNull()
+  })
+
+  it('renders legacy preview pricing when embedded checkout is disabled', () => {
+    const legacyPreview = previewFixture('MONTHLY', 3500)
+    delete legacyPreview.amount_due_cents
+    delete legacyPreview.currency
+    delete legacyPreview.renewal_amount_cents
+    delete legacyPreview.renewal_at
+
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: legacyPreview,
+        embeddedCheckoutEnabled: false
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$35.00')).toBeTruthy()
+    expect(screen.getByText('Renews at $35.00 on Jun 19, 2027')).toBeTruthy()
   })
 
   it('shows the annual total for a yearly team plan', () => {

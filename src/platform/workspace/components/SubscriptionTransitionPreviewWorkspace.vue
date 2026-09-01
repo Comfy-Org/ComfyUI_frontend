@@ -648,16 +648,29 @@ const confirmCta = computed(() => {
     amount: chargeDisplay.value
   })
 })
-const exactAmountDue = computed(() =>
-  previewData.amount_due_cents === undefined
+const exactAmountDue = computed(() => {
+  if (!embeddedCheckoutEnabled) {
+    return formatQuoteMoney(previewData.cost_today_cents, 'usd', locale.value)
+  }
+  return previewData.amount_due_cents === undefined
     ? t('subscription.preview.quoteUnavailable')
     : formatQuoteMoney(
         previewData.amount_due_cents,
         previewData.currency,
         locale.value
       )
-)
+})
 const renewalTerms = computed(() => {
+  if (!embeddedCheckoutEnabled) {
+    return t('subscription.preview.renewsAt', {
+      amount: formatQuoteMoney(
+        previewData.cost_next_period_cents,
+        'usd',
+        locale.value
+      ),
+      date: nextPaymentDate.value
+    })
+  }
   if (
     previewData.renewal_amount_cents === undefined ||
     !previewData.renewal_at

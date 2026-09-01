@@ -559,17 +559,40 @@ const creditsRefillLabelKey = computed(() =>
     : 'subscription.preview.eachMonthCreditsRefill'
 )
 
-const totalDueToday = computed(() =>
-  previewData?.amount_due_cents === undefined
+const totalDueToday = computed(() => {
+  if (!previewData) return ''
+  if (!embeddedCheckoutEnabled) {
+    return formatQuoteMoney(previewData.cost_today_cents, 'usd', locale.value)
+  }
+  return previewData.amount_due_cents === undefined
     ? ''
     : formatQuoteMoney(
         previewData.amount_due_cents,
         previewData.currency,
         locale.value
       )
-)
+})
 
 const renewalTerms = computed(() => {
+  if (!embeddedCheckoutEnabled) {
+    if (!previewData?.new_plan.period_end) return ''
+    return t('subscription.preview.renewsAt', {
+      amount: formatQuoteMoney(
+        previewData.cost_next_period_cents,
+        'usd',
+        locale.value
+      ),
+      date: new Date(previewData.new_plan.period_end).toLocaleDateString(
+        undefined,
+        {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          timeZone: 'UTC'
+        }
+      )
+    })
+  }
   if (
     previewData?.renewal_amount_cents === undefined ||
     !previewData.renewal_at
