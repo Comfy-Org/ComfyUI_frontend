@@ -56,10 +56,11 @@ jobs:
 
       - name: Build and verify desktop Assets default
         run: |
-          DISTRIBUTION=desktop pnpm exec vite build --config vite.config.mts
+          DISTRIBUTION=desktop pnpm build
           pnpm test:assets-flag-artifact
         env:
           EXPECTED_DISTRIBUTION: desktop
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
       - name: Build cloud frontend
         uses: ./.github/actions/build-cloud-frontend
