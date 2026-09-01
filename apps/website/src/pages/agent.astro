@@ -1,9 +1,7 @@
 ---
 import { agentCards } from '../components/agent/agentCards'
-import AgentBetaWaitlistForm from '../components/agent/AgentBetaWaitlistForm.vue'
-import ProductHeroBadge from '../components/common/ProductHeroBadge.vue'
+import HeroWaitlist01 from '../components/blocks/HeroWaitlist01.vue'
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { isDownloadLinkRequestEnabled } from '../scripts/customerio'
 ---
 
 <BaseLayout
@@ -11,68 +9,14 @@ import { isDownloadLinkRequestEnabled } from '../scripts/customerio'
   description="The Comfy Agent lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas, runs it, and hands back the result."
   noindex
 >
-  <!-- ============ HERO ============ -->
-  <section
-    class="relative isolate flex min-h-[56vh] items-center justify-center overflow-hidden px-6 pt-25 pb-12 text-primary-warm-white"
-  >
-    <!-- Plum wash -->
-    <div
-      aria-hidden="true"
-      class="animate-backdrop-sway absolute inset-[-20%] -z-4 bg-[radial-gradient(ellipse_50%_40%_at_30%_35%,color-mix(in_srgb,var(--color-primary-comfy-plum)_55%,transparent),transparent_70%),radial-gradient(ellipse_45%_45%_at_72%_62%,color-mix(in_srgb,var(--color-primary-comfy-plum)_38%,transparent),transparent_70%)] blur-[40px] will-change-transform"
-    >
-    </div>
-
-    <!-- Even dot grid, then a brighter drifting cloud of dots masked over it -->
-    <div
-      aria-hidden="true"
-      class="absolute inset-0 -z-3 bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary-warm-white)_16%,transparent)_1px,transparent_1.1px)] bg-[size:5px_5px]"
-    >
-    </div>
-    <div
-      aria-hidden="true"
-      class="animate-backdrop-drift absolute inset-0 -z-2 bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary-warm-white)_42%,transparent)_1.15px,transparent_1.25px)] bg-[size:5px_5px] [mask-image:radial-gradient(circle,#000_0%,transparent_62%),radial-gradient(circle,#000_0%,transparent_58%),radial-gradient(circle,#000_0%,transparent_66%)] [mask-repeat:no-repeat] [mask-size:1100px_900px,800px_700px,1300px_1000px] will-change-[mask-position]"
-    >
-    </div>
-
-    <!-- Darkens the edges and blends the hero into the page background -->
-    <div
-      aria-hidden="true"
-      class="absolute inset-0 -z-1 bg-[linear-gradient(to_bottom,transparent_55%,var(--color-primary-comfy-ink)_92%),radial-gradient(ellipse_65%_50%_at_50%_50%,color-mix(in_srgb,var(--color-primary-comfy-ink)_72%,transparent)_0%,color-mix(in_srgb,var(--color-primary-comfy-ink)_90%,transparent)_65%,color-mix(in_srgb,var(--color-primary-comfy-ink)_98%,transparent)_100%)]"
-    >
-    </div>
-
-    <div class="relative mx-auto max-w-190 text-center">
-      <div class="mx-auto mb-10 flex justify-center [zoom:0.85]">
-        <ProductHeroBadge text="AGENT" />
-      </div>
-
-      <h1
-        class="mb-7 text-[clamp(28px,4.2vw,48px)]/[1.18] font-light tracking-[-0.02em] text-primary-warm-white"
-      >
-        The first agent for craft
-      </h1>
-
-      <p
-        class="mx-auto mb-10 max-w-140 text-[clamp(16px,2vw,19px)]/[1.6] text-primary-warm-white/82"
-      >
-        An agent that lives inside ComfyUI, local and cloud. Describe what you
-        want: it builds the workflow on your canvas with you, reviews assets,
-        runs generations, and iterates until the result is production ready.
-      </p>
-
-      <AgentBetaWaitlistForm client:load />
-
-      {
-        /* Same kill switch as the form: with no write key there is no signup
-           control, so the promise to email would have nothing behind it. */
-        isDownloadLinkRequestEnabled && (
-          <p class="mx-auto mt-5 text-[11px]/[1.5] text-primary-warm-white/55">
-            We'll prepare your account and email you when it's ready.
-          </p>
-        )
-      }
-    </div>
-  </section>
+  <HeroWaitlist01
+    client:load
+    badgeText="AGENT"
+    title="The first agent for craft"
+    subtitle="An agent that lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas with you, reviews assets, runs generations, and iterates until the result is production ready."
+    footnote="We'll prepare your account and email you when it's ready."
+    signupEvent="agent_beta_waitlist_joined"
+  />
 
   <!-- ============ CARDS ============ -->
   <section

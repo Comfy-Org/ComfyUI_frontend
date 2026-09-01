@@ -42,10 +42,14 @@ export async function requestDownloadLink(email: string, locale: Locale) {
   })
 }
 
-export async function joinAgentBetaWaitlist(email: string) {
+/**
+ * Adds `email` to a waitlist and records the signup under `event`. The event
+ * name is the caller's so one form can serve more than one waitlist.
+ */
+export async function joinWaitlist(email: string, event: string) {
   const analytics = await loadAnalytics()
   await analytics.identify(email, { email })
-  await analytics.track('agent_beta_waitlist_joined', {
+  await analytics.track(event, {
     page: window.location.pathname
   })
 }

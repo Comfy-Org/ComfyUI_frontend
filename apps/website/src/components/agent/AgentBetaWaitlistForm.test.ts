@@ -15,7 +15,7 @@ vi.mock('../../scripts/customerio', () => ({
   get isDownloadLinkRequestEnabled() {
     return hoisted.isEnabled
   },
-  joinAgentBetaWaitlist: hoisted.submit,
+  joinWaitlist: hoisted.submit,
   preloadDownloadLinkAnalytics: hoisted.preload
 }))
 
@@ -79,6 +79,22 @@ describe('AgentBetaWaitlistForm', () => {
     expect(openSpy).not.toHaveBeenCalled()
   })
 
+  it('tracks the signup under the caller-supplied event', async () => {
+    const user = userEvent.setup()
+    render(AgentBetaWaitlistForm, {
+      props: { signupEvent: 'cloud_beta_waitlist_joined' }
+    })
+
+    await user.type(screen.getByRole('textbox'), 'someone@example.com')
+    await user.click(screen.getByRole('button', { name: /join the waitlist/i }))
+
+    await screen.findByRole('status')
+    expect(hoisted.submit).toHaveBeenCalledWith(
+      'someone@example.com',
+      'cloud_beta_waitlist_joined'
+    )
+  })
+
   it('shows pending feedback, then replaces the form with confirmation', async () => {
     let resolveSubmit!: () => void
     hoisted.submit.mockImplementationOnce(
@@ -96,7 +112,10 @@ describe('AgentBetaWaitlistForm', () => {
     const pendingButton = screen.getByRole('button', { name: /joining/i })
     expect(pendingButton.getAttribute('aria-busy')).toBe('true')
     expect((pendingButton as HTMLButtonElement).disabled).toBe(true)
-    expect(hoisted.submit).toHaveBeenCalledWith('someone@example.com')
+    expect(hoisted.submit).toHaveBeenCalledWith(
+      'someone@example.com',
+      'agent_beta_waitlist_joined'
+    )
 
     resolveSubmit()
 

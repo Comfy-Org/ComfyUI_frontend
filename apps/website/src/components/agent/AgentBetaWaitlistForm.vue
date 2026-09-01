@@ -3,9 +3,14 @@ import { computed, nextTick, onMounted, ref, useId } from 'vue'
 
 import {
   isDownloadLinkRequestEnabled,
-  joinAgentBetaWaitlist,
+  joinWaitlist,
   preloadDownloadLinkAnalytics
 } from '../../scripts/customerio'
+
+const { signupEvent = 'agent_beta_waitlist_joined' } = defineProps<{
+  /** Customer.io event tracked on a successful signup. */
+  signupEvent?: string
+}>()
 
 type FormStatus = 'idle' | 'invalid' | 'pending' | 'error' | 'success'
 
@@ -64,7 +69,7 @@ async function onSubmit() {
   status.value = 'pending'
   openApplication()
   try {
-    await joinAgentBetaWaitlist(submittedEmail.value)
+    await joinWaitlist(submittedEmail.value, signupEvent)
     await showSuccess()
   } catch {
     status.value = 'error'
