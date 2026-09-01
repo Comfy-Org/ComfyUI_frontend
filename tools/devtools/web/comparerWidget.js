@@ -4,18 +4,12 @@ import { app } from '../../scripts/app.js'
 const NODE_TYPE = 'DevToolsNodeWithComparerWidget'
 const WIDGET_NAME = 'devtools_comparer'
 
-// The images rgthree's comparer receives from onExecuted, minus the backend run.
 const EXECUTED_IMAGES = [
   { name: 'A', selected: true, url: '/devtools/comparer/a.png' },
   { name: 'B', selected: true, url: '/devtools/comparer/b.png' }
 ]
 
-/**
- * Mirrors rgthree-comfy's image comparer widget: the value is owned behind an
- * accessor pair, assignment takes either the serialised list or `{ images }`,
- * and reads always return `{ images }`.
- * @see https://github.com/rgthree/rgthree-comfy/blob/main/web/comfyui/image_comparer.js
- */
+/** @see https://github.com/rgthree/rgthree-comfy/blob/main/web/comfyui/image_comparer.js */
 class ComparerWidget {
   constructor(name, node) {
     this.name = name

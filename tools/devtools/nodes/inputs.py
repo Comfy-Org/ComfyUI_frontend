@@ -355,11 +355,7 @@ class NodeWithComparerWidget:
     RETURN_TYPES = ()
     FUNCTION = "node_with_comparer_widget"
     CATEGORY = "DevTools"
-    DESCRIPTION = (
-        "A node whose web extension mirrors rgthree's image comparer: a foreign "
-        "widget that normalises its own value and a node that rewrites "
-        "widgets_values in onSerialize"
-    )
+    DESCRIPTION = "A node whose web extension mirrors rgthree's image comparer"
 
     def node_with_comparer_widget(self):
         return ()

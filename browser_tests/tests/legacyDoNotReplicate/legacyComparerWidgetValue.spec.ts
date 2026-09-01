@@ -17,8 +17,9 @@ const SERIALISED_IMAGES = [
   { name: 'B', selected: true, url: '/devtools/comparer/b.png' }
 ]
 
-/** The comparer is the node's only widget, so it owns the first positional value. */
-async function exportedComparerValue(comfyPage: ComfyPage): Promise<unknown> {
+async function exportedComparerWidgetValue(
+  comfyPage: ComfyPage
+): Promise<unknown> {
   const workflow = await comfyPage.workflow.getExportedWorkflow()
   const values = workflow.nodes.find(
     (node) => node.type === NODE_TYPE
@@ -26,14 +27,6 @@ async function exportedComparerValue(comfyPage: ComfyPage): Promise<unknown> {
   return Array.isArray(values) ? values[0] : values
 }
 
-/**
- * The devtools comparer node mirrors rgthree's image comparer: its widget takes
- * either the serialised image list or `{ images }` and always reads back
- * `{ images }`, and the node rewrites `widgets_values` with the bare list in
- * `onSerialize`. Reopening a saved workflow feeds the list back to the widget,
- * and serialising afterwards — which is what switching workflows does — used to
- * throw `value.images is undefined`.
- */
 test.describe('Legacy comparer widget', { tag: ['@widget', '@ui'] }, () => {
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
@@ -54,7 +47,9 @@ test.describe('Legacy comparer widget', { tag: ['@widget', '@ui'] }, () => {
     await comfyPage.menu.topbar.saveWorkflow(WORKFLOW_NAME)
     await openWorkflowFromSidebar(comfyPage, WORKFLOW_NAME)
 
-    expect(await exportedComparerValue(comfyPage)).toEqual(SERIALISED_IMAGES)
+    expect(await exportedComparerWidgetValue(comfyPage)).toEqual(
+      SERIALISED_IMAGES
+    )
 
     await comfyPage.workflow.loadWorkflow('default')
 
