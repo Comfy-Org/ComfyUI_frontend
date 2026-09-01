@@ -315,6 +315,9 @@ catalogs:
     oxlint-tsgolint:
       specifier: ^7.0.2001
       version: 7.0.2001
+    parse5:
+      specifier: 8.0.1
+      version: 8.0.1
     picocolors:
       specifier: ^1.1.1
       version: 1.1.1
@@ -977,6 +980,9 @@ importers:
       lottie-web:
         specifier: 'catalog:'
         version: 5.13.0
+      parse5:
+        specifier: 'catalog:'
+        version: 8.0.1
       posthog-js:
         specifier: 'catalog:'
         version: 1.402.3
