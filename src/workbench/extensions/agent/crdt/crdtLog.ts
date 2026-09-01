@@ -5,8 +5,8 @@
  * Before this module the two were wired independently — a handful of
  * `recordDevEvent` calls that never printed, and a handful of bare
  * `console.warn`s the panel never saw — so the console and the copied report
- * disagreed about what happened. Every CRDT-internal event now goes through
- * {@link crdtLog}, which is what makes the report a transcript.
+ * disagreed about what happened. New structured wire events use
+ * {@link crdtLog}; existing document events remain in the shared ring buffer.
  */
 import type { CrdtLogLevel } from './crdtDebugGate'
 import {
@@ -23,9 +23,7 @@ import { recordDevEvent } from './devPanelLog'
  */
 const SCOPE_STYLE: Record<CrdtLogScope, string> = {
   wire: 'color:#7dd3fc',
-  doc: 'color:#a5b4fc',
-  ecs: 'color:#86efac',
-  ops: 'color:#fcd34d'
+  doc: 'color:#a5b4fc'
 }
 
 const CONSOLE_METHOD: Record<CrdtLogLevel, 'warn' | 'info' | 'debug'> = {

@@ -129,7 +129,7 @@ const STATUS_ROWS = [
   ['last frame', () => status.lastFrameType ?? S.none]
 ] as const
 
-const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc', 'ecs', 'ops']
+const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc']
 
 const EVENT_KINDS: readonly DevEventKind[] = [
   'ws_out',
@@ -138,17 +138,12 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'doc_ops_result',
   'human_ops_settled',
   'doc_reset',
-  'doc_gap',
-  'doc_effects',
   'doc_nodes_changed',
   'schema_error',
   'reconnected',
   'subscribe_retry',
   'stale_probe',
-  'rebind',
-  'op_minted',
-  'op_batch_settled',
-  'send_dropped'
+  'rebind'
 ]
 
 const VERDICT_TONE: Record<string, string> = {

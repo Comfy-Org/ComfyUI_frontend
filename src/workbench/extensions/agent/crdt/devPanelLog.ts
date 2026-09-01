@@ -16,11 +16,10 @@ import type { CrdtLogLevel } from './crdtDebugGate'
 
 /**
  * The layer an event came from. Filtering by scope is how the panel offers
- * "varying levels of abstraction": `wire` is bytes on the socket, `doc` is
- * document lineage, `ecs` is the projection onto canvas state, `ops` is the
- * human write leg's semantic intent.
+ * "varying levels of abstraction": `wire` is bytes on the socket and `doc`
+ * is document lineage.
  */
-export type CrdtLogScope = 'wire' | 'doc' | 'ecs' | 'ops'
+export type CrdtLogScope = 'wire' | 'doc'
 
 export type DevEventKind =
   | 'ws_out'
@@ -35,11 +34,6 @@ export type DevEventKind =
   | 'doc_nodes_changed'
   | 'rebind'
   | 'stale_probe'
-  | 'doc_gap'
-  | 'doc_effects'
-  | 'op_minted'
-  | 'op_batch_settled'
-  | 'send_dropped'
 
 export interface DevEvent {
   seq: number

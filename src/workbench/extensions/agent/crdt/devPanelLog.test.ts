@@ -98,7 +98,7 @@ describe('devPanelLog', () => {
 
   it('keeps a value referenced twice from sibling positions', () => {
     const shared = { id: 'node-7' }
-    recordDevEvent('doc_effects', { added: shared, removed: shared })
+    recordDevEvent('doc_update', { added: shared, removed: shared })
 
     const serialized = stringifyDevEvents(devEvents.value)
     expect(serialized).not.toContain('[Circular]')
@@ -108,14 +108,14 @@ describe('devPanelLog', () => {
   it('survives a genuine cycle instead of throwing', () => {
     const cyclic: Record<string, unknown> = { kind: 'self' }
     cyclic.self = cyclic
-    recordDevEvent('doc_effects', cyclic)
+    recordDevEvent('doc_update', cyclic)
 
     expect(() => stringifyDevEvents(devEvents.value)).not.toThrow()
     expect(stringifyDevEvents(devEvents.value)).toContain('[Circular]')
   })
 
   it('carries the scope and level a consumer filters on', () => {
-    recordDevEvent('doc_gap', null, { scope: 'wire', level: 'warn' })
+    recordDevEvent('doc_update', null, { scope: 'wire', level: 'warn' })
 
     const [event] = devEvents.value
     expect(event.scope).toBe('wire')
