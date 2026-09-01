@@ -3,6 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createTestingPinia } from '@pinia/testing'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
@@ -357,7 +358,7 @@ function addTab(path: string, overrides: Partial<FakeTab> = {}): FakeTab {
 
 describe('AgentPanelRoot layout', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ createSpy: vi.fn }))
     ws.clear()
   })
 
