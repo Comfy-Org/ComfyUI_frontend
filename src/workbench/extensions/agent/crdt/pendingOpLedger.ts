@@ -114,6 +114,8 @@ export interface PendingOpLedger<TShadow = unknown> {
    * or undefined when the id is not held.
    */
   take(opId: string): PendingOpEntry<TShadow> | undefined
+  /** Drop all retained payloads during session reset; consumed ids stay used. */
+  reset(): PendingOpEntry<TShadow>[]
   /** Snapshot of current entries, optionally filtered by state. */
   entries(state?: PendingOpState): PendingOpEntry<TShadow>[]
   get(opId: string): PendingOpEntry<TShadow> | undefined
@@ -238,6 +240,12 @@ export function createPendingOpLedger<
       if (!entry) return undefined
       ledger.delete(opId)
       return snapshot(entry)
+    },
+
+    reset() {
+      const removed = [...ledger.values()].map(snapshot)
+      ledger.clear()
+      return removed
     },
 
     entries(state) {
