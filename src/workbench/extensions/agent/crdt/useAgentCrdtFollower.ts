@@ -222,7 +222,7 @@ export function useAgentCrdtFollower(
     useTelemetry()?.trackAgentReconnectFailed({
       attempt: subscribeRetryAttempt,
       error_class: 'subscription_refused',
-      retryable: false,
+      retryable: true,
       reconnect_duration_ms: Math.max(
         0,
         Math.round(performance.now() - (subscribeRetryStartedAt ?? performance.now()))
