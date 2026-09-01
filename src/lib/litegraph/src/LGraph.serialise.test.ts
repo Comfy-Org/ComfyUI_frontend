@@ -180,6 +180,26 @@ describe('LGraph Serialisation', () => {
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
   })
 
+  test('serializes nested live slot adapters in configure hooks', ({
+    expect,
+    minimalGraph
+  }) => {
+    const node = new LGraphNode('Extended')
+    node.addInput('input', 'number')
+    minimalGraph.add(node)
+    const saved = minimalGraph.asSerialisable()
+    saved.nodes[0].inputs = node.inputs
+    let configuredInput: object | undefined
+    minimalGraph.onConfigure = (data) => {
+      configuredInput = data.nodes?.[0]?.inputs?.[0]
+    }
+
+    minimalGraph.configure(saved)
+
+    expect(configuredInput).toMatchObject({ name: 'input', type: 'number' })
+    expect(configuredInput).not.toHaveProperty('node')
+  })
+
   test('preserves non-JSON numeric and undefined values in configure hooks', ({
     expect
   }) => {
