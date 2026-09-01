@@ -206,11 +206,17 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       const offsetBefore = await comfyPage.canvasOps.getOffset()
+      const safeSpot = await comfyPage.canvas.evaluate((canvas) => {
+        const { width, height } = canvas.getBoundingClientRect()
+        for (let y = 100; y < height - 100; y += 25) {
+          for (let x = 75; x < width - 25; x += 25) {
+            if (document.elementFromPoint(x, y) === canvas) return { x, y }
+          }
+        }
+        throw new Error('No unobstructed canvas point found for touch pan')
+      })
 
-      await comfyPage.canvasOps.panWithTouch(
-        { x: 64, y: 64 },
-        { x: 256, y: 256 }
-      )
+      await comfyPage.canvasOps.panWithTouch({ x: 64, y: 64 }, safeSpot)
 
       // Fail on a pan that never landed here, not as a screenshot diff.
       await expect
