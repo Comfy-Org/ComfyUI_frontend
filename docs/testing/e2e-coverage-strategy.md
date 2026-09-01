@@ -99,8 +99,8 @@ regenerated.
    `GradientSliderWidget`, `InputIndicators`, and `FloatingRenderLink` are at
    0 to 5%.
 
-4. No per-area view. Codecov's project status is off and patch status is
-   informational. The Slack post reports two global percentages. A global 68%
+4. There is no per-area view: Codecov's project status is off and patch
+   status is informational. The Slack post reports two global percentages. A global 68%
    cannot tell anyone that `platform/workspace` is at 34% while `vueNodes` is
    at 81%.
 
@@ -108,8 +108,8 @@ regenerated.
    nothing runs it, and there is no list of the user journeys the suite
    promises to protect, so behavior coverage is unmeasured.
 
-6. Flakes are masked. With `retries: 3`, a test that fails twice per run
-   is still green. The `cloud` job on the analysed run had one flaky test.
+6. Three retries mask flakes, because a test that fails twice per run is
+   still green. The `cloud` job on the analysed run had one flaky test.
    `report.json` records `flaky` outcomes, and nothing aggregates them.
 
 ## 3. Principles from the research
@@ -233,21 +233,22 @@ Ordered by safety gained per hour. Each phase is independently shippable.
 
 ### Phase 0: make the existing measurement honest (three small PRs)
 
-1. Collect coverage in every Playwright project. Set
-   `COLLECT_COVERAGE: 'true'` on the `playwright-tests` matrix job and pass it
+1. Collect coverage in every Playwright project by setting
+   `COLLECT_COVERAGE: 'true'` on the `playwright-tests` matrix job and passing
+   it
    to `build-cloud-frontend` so the cloud bundle keeps its
    `sourceMappingURL` comments. Upload each project's `coverage/playwright/`
    as `e2e-coverage-shard-<project>`; the package script already merges any
    `e2e-coverage-shard-*` artifact. Expected effect: workspace, subscription,
    onboarding, auth, and agent code starts being credited, and the real gap
    there becomes visible.
-2. Count never-loaded files. Give monocart the `all` option in
+2. Count never-loaded files by giving monocart the `all` option in
    `globalTeardown.ts` (`all: { dir: ['src'], filter: coverageSourceFilter }`)
    so source files with no V8 entry are reported at 0% instead of omitted, and
    the Slack target and the Pages report then describe the whole app. The
    headline number will drop, and that drop is the intended effect.
-3. Report per area. Add Codecov `component_management` entries keyed to
-   the areas in section 4 (vueNodes, litegraph canvas, litegraph widgets,
+3. Report per area by adding Codecov `component_management` entries keyed
+   to the areas in section 4 (vueNodes, litegraph canvas, litegraph widgets,
    extensions/core, workflow, assets, manager, workspace, cloud, layerEditor,
    maskeditor, agent). Each PR comment then shows a per-component table for
    `unit`, `e2e`, and combined. Keep statuses informational. The goal is that people see the table, and a
