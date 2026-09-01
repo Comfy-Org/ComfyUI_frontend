@@ -249,6 +249,12 @@ export interface LoadModelOptions {
    * (e.g. shared workflows on a fresh machine).
    */
   silentOnNotFound?: boolean
+  /**
+   * When true, suppress every user-facing toast for this load. Use for
+   * offscreen renders the viewer never asked for (e.g. thumbnail
+   * generation), where a failure has no surface the user can act on.
+   */
+  silent?: boolean
 }
 
 export interface SceneOverlay {

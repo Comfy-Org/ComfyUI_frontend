@@ -590,6 +590,19 @@ describe('LoaderManager', () => {
       expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
     })
 
+    it('raises no alert at all when silent is set', async () => {
+      const { lm } = makeLoaderManager()
+      meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await lm.loadModel('api/view?filename=cube.glb', undefined, {
+        silent: true
+      })
+      await lm.loadModel('api/view?filename=cube', undefined, { silent: true })
+
+      expect(addAlert).not.toHaveBeenCalled()
+    })
+
     it('discards the result of a stale load when a newer one has started', async () => {
       const { lm, modelManager, eventManager } = makeLoaderManager()
 
