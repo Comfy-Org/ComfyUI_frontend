@@ -175,15 +175,15 @@ describe('mint ports against the real layout store delivery', () => {
 
     expect(minted).toEqual([
       {
+        op: 'delete_node',
+        node_id: '2',
+        removed_links: [toLinkId(41)]
+      },
+      {
         op: 'disconnect',
         link_id: toLinkId(41),
         to_node: toNodeId('2'),
         to_slot: 0
-      },
-      {
-        op: 'delete_node',
-        node_id: '2',
-        removed_links: [toLinkId(41)]
       }
     ])
     expect(consoleError).not.toHaveBeenCalled()
