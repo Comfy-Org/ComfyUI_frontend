@@ -180,6 +180,28 @@ describe('LGraph Serialisation', () => {
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
   })
 
+  test('preserves non-JSON numeric and undefined values in configure hooks', ({
+    expect
+  }) => {
+    const node = new LGraphNode('Extended')
+    const saved = node.serialize()
+    saved.properties = {
+      absent: undefined,
+      infinity: Number.POSITIVE_INFINITY,
+      notANumber: Number.NaN
+    }
+    let configuredData: ISerialisedNode | undefined
+    node.onConfigure = (data) => {
+      configuredData = data
+    }
+
+    node.configure(saved)
+
+    expect(configuredData?.properties).toHaveProperty('absent', undefined)
+    expect(configuredData?.properties?.infinity).toBe(Number.POSITIVE_INFINITY)
+    expect(configuredData?.properties?.notANumber).toBeNaN()
+  })
+
   test('isolates configure-hook mutations from serialized extension data', ({
     expect
   }) => {
