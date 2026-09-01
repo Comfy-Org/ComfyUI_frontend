@@ -11,10 +11,11 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 
-    test('supports the efficiency-nodes type toggle hide and restore cycle', async ({
+    test('restoring an efficiency-nodes type toggle leaves a legacy fallback', async ({
       comfyPage
     }) => {
       const widget = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
+      const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
       await expect(widget).toBeVisible()
 
       await comfyPage.page.evaluate(() => {
@@ -58,8 +59,8 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
-      await expect(widget).toBeVisible()
-      await widget.fill('38')
+      await expect(widget).toHaveCount(0)
+      await expect(node.locator('.lg-node-widget canvas')).toHaveCount(1)
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
@@ -69,7 +70,7 @@ test.describe(
             return node?.serialize().widgets_values_named?.steps
           })
         )
-        .toBe(38)
+        .toBe(37)
     })
 
     test('keeps a pre-hidden widget hidden after restoring its type', async ({
@@ -228,7 +229,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       await expect(widget).toBeVisible()
-      await expect(widget).toHaveValue('40')
+      await expect(widget.getByRole('spinbutton')).toHaveValue('40')
     })
   }
 )

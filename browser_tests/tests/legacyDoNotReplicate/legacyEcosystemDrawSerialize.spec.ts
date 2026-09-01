@@ -48,7 +48,7 @@ test.describe(
         .toBe(37)
     })
 
-    test('assigning a custom draw to a connected widget keeps its Vue control rendered', async ({
+    test('assigning a custom draw removes its Vue control while connected', async ({
       comfyPage
     }) => {
       await comfyPage.nodeOps.clearGraph()
@@ -76,8 +76,20 @@ test.describe(
         'Connected custom draw',
         'steps'
       )
+      await expect(steps).toHaveCount(0)
+
+      await comfyPage.page.evaluate(() => {
+        const node = window.app!.graph.nodes.find(
+          (candidate) => candidate.title === 'Connected custom draw'
+        )
+        if (!node) throw new Error('Connected custom draw node not found')
+
+        node.disconnectInput(0)
+      })
+      await comfyPage.nextFrame()
+
       await expect(steps).toBeVisible()
-      await expect(steps).toBeDisabled()
+      await expect(steps.getByRole('spinbutton')).toHaveValue('20')
     })
 
     test('serialize false removes a widget from both positional and named values', async ({
@@ -128,7 +140,7 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow('widgets/boolean_widget')
       const toggle = comfyPage.vueNodes.getWidgetByName(
-        'DevToolsNodeWithBooleanInput',
+        'Node With Boolean Input',
         'boolean_input'
       )
 
