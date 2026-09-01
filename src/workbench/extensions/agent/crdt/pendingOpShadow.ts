@@ -99,6 +99,10 @@ function targetKey(target: ShadowTarget): string {
       return `link:${target.linkId}`
     case 'widget':
       return `widget:${encodeURIComponent(target.nodeId)}:${encodeURIComponent(target.widgetName)}`
+    default: {
+      const unsupported: never = target
+      throw new Error(`Unsupported shadow target: ${JSON.stringify(unsupported)}`)
+    }
   }
 }
 
