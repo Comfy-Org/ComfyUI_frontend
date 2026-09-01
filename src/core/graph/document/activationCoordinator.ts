@@ -5,6 +5,11 @@ import type { DocumentId } from '@/types/documentId'
  * renderer/canvas binding, render-attached caches, viewport projection, and
  * input/event hooks. Attach and detach must not touch semantic document
  * state (ADR-0024: activation is presentation).
+ *
+ * Contract: the coordinator may call `detach` to undo an `attach` that threw
+ * or was superseded mid-handoff, so `detach` must tolerate a partially
+ * attached binding. A throwing `detach` should best-effort clean up first;
+ * the coordinator treats it as detached and never retries it.
  */
 export interface DocumentViewBinding {
   attach(documentId: DocumentId): void
@@ -42,7 +47,7 @@ export interface ActivationCoordinatorDeps {
  */
 export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
   let generation = 0
-  let pendingDocumentId: DocumentId | null = null
+  let pending: { documentId: DocumentId; generation: number } | null = null
   let active: { documentId: DocumentId; binding: DocumentViewBinding } | null =
     null
 
@@ -51,10 +56,12 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     binding: DocumentViewBinding
   ): Promise<ActivationOutcome> {
     const requestGeneration = ++generation
-    pendingDocumentId = documentId
+    pending = { documentId, generation: requestGeneration }
     const stale = (): boolean => requestGeneration !== generation
     const finish = (outcome: ActivationOutcome): ActivationOutcome => {
-      if (!stale()) pendingDocumentId = null
+      // Clear only this request's own pending record: a newer activate may
+      // have replaced it, and its record must survive this stale finish.
+      if (pending?.generation === requestGeneration) pending = null
       return outcome
     }
     try {
@@ -74,15 +81,44 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
     active = null
     try {
       if (previous) previous.binding.detach(previous.documentId)
-      binding.attach(documentId)
     } catch {
-      // A throwing detach/attach must not leave a stale published binding: a
-      // later activate/deactivate would detach the old document twice.
+      // A throwing detach must not leave a stale published binding: a later
+      // activate/deactivate would detach the old document twice.
       return finish({
         status: 'rejected',
         documentId,
         reason: 'handoff-failed'
       })
+    }
+    // detach and attach may synchronously re-enter activate/deactivate (e.g.
+    // via a store subscriber). The reentrant call wins: re-check staleness
+    // around attach so this request never publishes over the winner.
+    if (stale()) return finish({ status: 'superseded', documentId })
+    try {
+      binding.attach(documentId)
+    } catch {
+      // Best-effort cleanup of hooks a partially-run attach installed; the
+      // binding stays unpublished either way.
+      try {
+        binding.detach(documentId)
+      } catch {
+        /* treated as detached (DocumentViewBinding contract) */
+      }
+      return finish({
+        status: 'rejected',
+        documentId,
+        reason: 'handoff-failed'
+      })
+    }
+    if (stale()) {
+      // A reentrant call from within attach superseded this request: undo
+      // the attach instead of publishing over the winner's state.
+      try {
+        binding.detach(documentId)
+      } catch {
+        /* treated as detached (DocumentViewBinding contract) */
+      }
+      return finish({ status: 'superseded', documentId })
     }
     active = { documentId, binding }
     return finish({ status: 'activated', documentId })
@@ -96,10 +132,10 @@ export function createActivationCoordinator(deps: ActivationCoordinatorDeps) {
   function deactivate(documentId: DocumentId): boolean {
     // Cancel an in-flight activate for this document even when it has not
     // been published yet; otherwise the activation would still complete.
-    const cancelledInFlight = pendingDocumentId === documentId
+    const cancelledInFlight = pending?.documentId === documentId
     if (cancelledInFlight) {
       generation++
-      pendingDocumentId = null
+      pending = null
     }
     if (active?.documentId !== documentId) return cancelledInFlight
     generation++
