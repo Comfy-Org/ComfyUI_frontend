@@ -130,19 +130,12 @@ export class EcsFollowerAdapter {
 
   constructor(private readonly mutations: MutationsForTarget) {}
 
-  bind(
-    workflowId: string,
-    follower: FollowerDoc,
-    baselineContext?: RemoteMutationContext
-  ): boolean {
+  bind(workflowId: string, follower: FollowerDoc): void {
     this.unbind(workflowId)
     const session = this.createSession(workflowId, follower)
     this.targets.set(workflowId, session)
     session.nodes.observeDeep(session.onNodesChanged)
     session.links.observe(session.onLinksChanged)
-    return baselineContext
-      ? this.projectBaseline(session, baselineContext)
-      : true
   }
 
   unbind(workflowId: string): void {
@@ -170,6 +163,44 @@ export class EcsFollowerAdapter {
       session.applying = false
     }
     return true
+  }
+
+  /**
+   * Commit the bound doc's current content under its own provenance, for a doc
+   * preloaded from a saved snapshot: Yjs observers only report what changes
+   * after `bind`, so that content would otherwise stay unprojected until an
+   * unrelated later delta arrived.
+   *
+   * Opt-in, never done by `bind`, because the bridge reuses one long-lived
+   * follower doc across workflow switches: seeding at bind would project the
+   * previous workflow's graph into this one, and re-reconcile every node on an
+   * ordinary unbind/rebind of an unchanged doc.
+   *
+   * A link whose endpoints are missing is skipped rather than batched, since
+   * `prepare` rejects a whole batch on its first invalid entry.
+   */
+  projectBaseline(workflowId: string, context: RemoteMutationContext): boolean {
+    const session = this.targets.get(workflowId)
+    if (!session) return false
+
+    const nodes = [...session.nodes.keys()].flatMap((id) => {
+      const payload = readSemanticNode(session.follower.doc, id)
+      return payload ? [payload] : []
+    })
+    const projectedIds = new Set(nodes.map(({ id }) => String(id)))
+    const links = [...session.links.keys()].flatMap((id) => {
+      const link = readSemanticLink(session.follower.doc, id)
+      if (!link) return []
+      const connectable =
+        projectedIds.has(String(link.originNodeId)) &&
+        projectedIds.has(String(link.targetNodeId))
+      return connectable ? [link] : []
+    })
+
+    return session.mutations.batch(context, (batch) => {
+      for (const node of nodes) batch.reconcileNode(node)
+      for (const link of links) batch.connect(link)
+    })
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
@@ -215,31 +246,6 @@ export class EcsFollowerAdapter {
     session.onNodesChanged = (events) => this.onNodesChanged(session, events)
     session.onLinksChanged = (event) => this.onLinksChanged(session, event)
     return session
-  }
-
-  private projectBaseline(
-    session: TargetSession,
-    context: RemoteMutationContext
-  ): boolean {
-    const nodes = [...session.nodes.keys()].flatMap((id) => {
-      const payload = readSemanticNode(session.follower.doc, id)
-      return payload ? [payload] : []
-    })
-    const nodeIds = new Set(nodes.map(({ id }) => String(id)))
-    const links = [...session.links.keys()].flatMap((id) => {
-      const link = readSemanticLink(session.follower.doc, id)
-      return link &&
-        nodeIds.has(String(link.originNodeId)) &&
-        nodeIds.has(String(link.targetNodeId))
-        ? [link]
-        : []
-    })
-    const applied = session.mutations.batch(context, (batch) => {
-      for (const node of nodes) batch.reconcileNode(node)
-      for (const link of links) batch.connect(link)
-    })
-    if (applied) session.reconcileNextFrame = false
-    return applied
   }
 
   private applyQueuedFrame(session: TargetSession, update: DocUpdate): void {
