@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
 import { selectWorkflowRoute } from './selectWorkflowRoute'
-import type { WorkflowRouteCandidate } from './selectWorkflowRoute'
+import type {
+  RunnableWorkflowRouteSelection,
+  WorkflowRouteAvailability,
+  WorkflowRouteCandidate
+} from './selectWorkflowRoute'
 import type { WorkflowPlan } from '../../schemas/workflowPlanSchema'
+
+const readyAvailability = {
+  status: 'ready'
+} satisfies WorkflowRouteAvailability
 
 function plan(overrides: Partial<WorkflowPlan> = {}): WorkflowPlan {
   return {
@@ -39,7 +47,7 @@ function route(
     taskFitScore: 80,
     qualityScore: 80,
     speedScore: 80,
-    availability: { status: 'ready' },
+    availability: readyAvailability,
     ...overrides
   }
 }
@@ -152,10 +160,11 @@ describe('selectWorkflowRoute', () => {
       })
     ])
 
-    expect(selection).toMatchObject({
-      status: 'approval-required',
-      route: { id: 'cloud' }
-    })
+    expect(selection.status).toBe('approval-required')
+    if (selection.status !== 'approval-required')
+      throw new Error('expected approval to be required')
+    const runnableSelection: RunnableWorkflowRouteSelection = selection
+    expect(runnableSelection.route.id).toBe('cloud')
   })
 
   it('requires approval for any paid route', () => {
@@ -231,16 +240,16 @@ describe('selectWorkflowRoute', () => {
   })
 
   it('uses a locale-independent id tie-breaker', () => {
-    const alpha = route('alpha')
-    const zulu = route('zulu')
+    const upperCase = route('Zebra')
+    const lowerCase = route('alpha')
 
     for (const candidates of [
-      [zulu, alpha],
-      [alpha, zulu]
+      [lowerCase, upperCase],
+      [upperCase, lowerCase]
     ]) {
       expect(selectWorkflowRoute(plan(), candidates)).toMatchObject({
         status: 'ready',
-        route: { id: 'alpha' }
+        route: { id: 'Zebra' }
       })
     }
   })

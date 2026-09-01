@@ -4,7 +4,7 @@ import type {
   WorkflowPlan
 } from '../../schemas/workflowPlanSchema'
 
-type WorkflowRouteAvailability =
+export type WorkflowRouteAvailability =
   | { status: 'ready' }
   | {
       status: 'setup-required'
@@ -31,7 +31,7 @@ export interface WorkflowRouteCandidate {
   availability: WorkflowRouteAvailability
 }
 
-type RunnableWorkflowRouteSelection =
+export type RunnableWorkflowRouteSelection =
   | { status: 'ready'; route: WorkflowRouteCandidate }
   | { status: 'approval-required'; route: WorkflowRouteCandidate }
 

@@ -131,13 +131,15 @@ describe('workflowPlanSchema', () => {
   it.for([
     {
       name: 'a missing unit duration',
-      durations: [30, undefined]
+      durations: [30, undefined],
+      message: 'A timed sequence requires a duration for every unit'
     },
     {
       name: 'durations that do not fill the target',
-      durations: [20, 20]
+      durations: [20, 20],
+      message: 'Sequence unit durations must equal the target duration'
     }
-  ])('rejects a timed sequence with $name', ({ durations }) => {
+  ])('rejects a timed sequence with $name', ({ durations, message }) => {
     const result = zWorkflowPlan.safeParse({
       ...basePlan(),
       targetDurationSeconds: 60,
@@ -154,6 +156,10 @@ describe('workflowPlanSchema', () => {
     })
 
     expect(result.success).toBe(false)
+    if (result.success) throw new Error('expected plan validation to fail')
+    expect(result.error.issues).toContainEqual(
+      expect.objectContaining({ message })
+    )
   })
 
   it('rejects a partially timed sequence without a declared total', () => {
@@ -356,13 +362,17 @@ describe('workflowPlanSchema', () => {
             { id: 'shot', label: 'One', instruction: 'First shot' },
             { id: 'shot', label: 'Two', instruction: 'Second shot' }
           ],
-          continuityConstraints: []
+          continuityConstraints: ['Keep the subject consistent']
         }
       }
     }
   ])('rejects $name', ({ patch }) => {
-    expect(zWorkflowPlan.safeParse({ ...basePlan(), ...patch }).success).toBe(
-      false
+    const result = zWorkflowPlan.safeParse({ ...basePlan(), ...patch })
+
+    expect(result.success).toBe(false)
+    if (result.success) throw new Error('expected plan validation to fail')
+    expect(result.error.issues).toContainEqual(
+      expect.objectContaining({ message: 'Values must be unique' })
     )
   })
 
