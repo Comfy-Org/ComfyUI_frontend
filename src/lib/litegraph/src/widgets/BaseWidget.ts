@@ -56,6 +56,22 @@ interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   rightPadding?: number
 }
 
+const RAW_OPTIONS_TARGET = Symbol('rawOptionsTarget')
+
+/**
+ * Extensions sometimes assign a widget's own options facade back to itself
+ * (e.g. `widget.options = widget.options || {}`). Unwrap any shim proxy to its
+ * plain target so `_rawOptions` never aliases a proxy, which would make the
+ * hidden-mirror write in the `hidden` setter recurse through the set trap.
+ */
+function unwrapOptionsShim<TOptions extends object>(
+  options: TOptions | undefined
+): TOptions | undefined {
+  if (!options) return options
+  const raw = Reflect.get(options, RAW_OPTIONS_TARGET) as TOptions | undefined
+  return raw ?? options
+}
+
 type BaseWidgetState<TWidget extends IBaseWidget> = WidgetState<
   TWidget['value'],
   TWidget['type'],
@@ -169,9 +185,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * otherwise visibility writes land on the discarded donor instance.
    */
   installOptionsShim(rawOptions: TWidget['options'] = this._rawOptions): void {
-    this._rawOptions = rawOptions ?? {}
+    this._rawOptions = unwrapOptionsShim(rawOptions) ?? {}
     this._options = new Proxy(this._rawOptions, {
       get: (target, property, receiver) => {
+        if (property === RAW_OPTIONS_TARGET) return target
         if (property === 'hidden') return isWidgetHidden(this._visibility)
         if (property === 'hideInPanel') {
           return isWidgetHiddenInPanel(this._visibility)

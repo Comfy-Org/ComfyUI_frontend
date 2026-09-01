@@ -124,6 +124,22 @@ describe('BaseWidget store integration', () => {
       expect(widget.advanced).toBe(false)
     })
 
+    it('survives self-assignment of the options facade', () => {
+      const widget = createTestWidget(node)
+      widget.hidden = true
+
+      widget.options = widget.options || {}
+      widget.options.read_only = true
+
+      expect(widget.hidden).toBe(true)
+      expect(widget.options.read_only).toBe(true)
+
+      widget.options.hidden = false
+
+      expect(widget.hidden).toBe(false)
+      expect(isWidgetHidden(widget.visibility)).toBe(false)
+    })
+
     it('supplies shimmed options when constructed without them', () => {
       const widget = new MutableTypeWidget(
         fromAny({
