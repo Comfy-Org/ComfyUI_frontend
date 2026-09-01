@@ -16,7 +16,8 @@ const englishFormId = '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
 
 const contactFormIds: Partial<Record<Locale, string>> = {
   en: englishFormId,
-  'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93'
+  'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93',
+  ja: englishFormId
 }
 
 function tk(suffix: string): TranslationKey {
