@@ -17,7 +17,6 @@ export interface TranslationPipelineConfig {
   localeFileConcurrency: number
   requestConcurrency: number
   maxTranslationRounds: number
-  requestBudgetMultiplier: number
   glossary: string
   outputLocales: OutputLocale[]
 }
@@ -55,7 +54,6 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
   localeFileConcurrency: 3,
   requestConcurrency: 2,
   maxTranslationRounds: 3,
-  requestBudgetMultiplier: 12,
   glossary,
   outputLocales: [
     {

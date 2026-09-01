@@ -11,6 +11,8 @@ import {
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+import type { OpenAI } from 'openai'
+
 import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { translationPipelineConfig } from './config'
 import type {
@@ -40,7 +42,7 @@ import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
   createOpenAiTranslator,
-  createRequestBudget,
+  createRequestCounter,
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
@@ -329,6 +331,24 @@ function print(line: string): void {
   process.stdout.write(`${line}\n`)
 }
 
+export function formatUsageSummary(
+  usages: ReadonlyArray<Partial<OpenAI.CompletionUsage> | undefined>,
+  requestCount: number
+): string {
+  let promptTokens = 0
+  let completionTokens = 0
+  let reasoningTokens = 0
+  let totalTokens = 0
+  for (const usage of usages) {
+    if (!usage) continue
+    promptTokens += usage.prompt_tokens ?? 0
+    completionTokens += usage.completion_tokens ?? 0
+    reasoningTokens += usage.completion_tokens_details?.reasoning_tokens ?? 0
+    totalTokens += usage.total_tokens ?? 0
+  }
+  return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} completions; ${promptTokens} input, ${completionTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
+}
+
 function reportCheck(states: readonly LocaleFileState[]): number {
   let pendingTotal = 0
   let strayTotal = 0
@@ -437,16 +457,6 @@ async function run(argv: readonly string[]): Promise<void> {
   const states = loadLocaleFileStates(config, outputDir, plans)
   const orphans = orphanedOutputFiles(outputDir, config, filenames)
 
-  if (check) {
-    for (const orphan of orphans) {
-      print(
-        `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
-      )
-    }
-    process.exitCode = reportCheck(states)
-    return
-  }
-
   const translationPlans = new Map(
     states.map((state) => [
       state,
@@ -479,41 +489,34 @@ async function run(argv: readonly string[]): Promise<void> {
     )
   }
 
+  if (check) {
+    for (const orphan of orphans) {
+      print(
+        `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
+      )
+    }
+    process.exitCode = reportCheck(states)
+    return
+  }
+
   const apiKey = process.env.OPENAI_API_KEY
   if (pendingTotal > 0 && !apiKey) {
     throw new Error(
       `${pendingTotal} strings need translation but OPENAI_API_KEY is not set.`
     )
   }
-  const usage = {
-    completions: 0,
-    completionTokens: 0,
-    promptTokens: 0,
-    reasoningTokens: 0,
-    totalTokens: 0
-  }
-  const maxRequests = initialBatchCount * config.requestBudgetMultiplier
-  const budget = createRequestBudget(
-    maxRequests,
-    `Stopped at the budget of ${maxRequests} HTTP requests for ${initialBatchCount} initial batches (requestBudgetMultiplier ${config.requestBudgetMultiplier}); raise it, or lower maxItemsPerRequest so batches translate without splitting.`
-  )
+  const completionUsages: (OpenAI.CompletionUsage | undefined)[] = []
+  const counter = createRequestCounter()
   const translateBatch: TranslateBatch = apiKey
     ? createOpenAiTranslator({
         apiKey,
-        fetchFn: budget.fetch,
-        signal: budget.signal,
+        fetchFn: counter.fetch,
         model: config.model,
         reasoningEffort: config.reasoningEffort,
         glossary: config.glossary,
         maxTruncationSplitDepth: config.maxTruncationSplitDepth,
         onCompletion: (completion) => {
-          usage.completions++
-          if (!completion.usage) return
-          usage.completionTokens += completion.usage.completion_tokens
-          usage.promptTokens += completion.usage.prompt_tokens
-          usage.reasoningTokens +=
-            completion.usage.completion_tokens_details?.reasoning_tokens ?? 0
-          usage.totalTokens += completion.usage.total_tokens
+          completionUsages.push(completion.usage)
         }
       })
     : async () => {
@@ -562,10 +565,8 @@ async function run(argv: readonly string[]): Promise<void> {
     }
   )
 
-  if (budget.requestCount() > 0) {
-    print(
-      `OpenAI usage: ${budget.requestCount()} HTTP requests for ${usage.completions} completions; ${usage.promptTokens} input, ${usage.completionTokens} output (${usage.reasoningTokens} reasoning), ${usage.totalTokens} total tokens.`
-    )
+  if (counter.requestCount() > 0) {
+    print(formatUsageSummary(completionUsages, counter.requestCount()))
   }
 
   const failuresByFile = new Map<string, string[]>()

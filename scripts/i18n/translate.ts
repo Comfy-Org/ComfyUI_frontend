@@ -22,7 +22,8 @@ const maxMalformedResponseRetries = 1
 
 // Unlike es-toolkit's mapAsync, which dispatches every item up front, this
 // pool stops dispatching once any task fails so a fatal error does not keep
-// spending API requests whose results nobody will consume
+// spending API requests whose results nobody will consume; in-flight tasks
+// settle before the first failure is rethrown so no work outlives the call
 export async function mapWithConcurrency<T, R>(
   items: readonly T[],
   concurrency: number,
@@ -30,22 +31,22 @@ export async function mapWithConcurrency<T, R>(
 ): Promise<R[]> {
   const results: R[] = new Array(items.length)
   let next = 0
-  let failed = false
+  let firstFailure: { reason: unknown } | undefined
   const workers = Array.from(
     { length: Math.min(concurrency, items.length) },
     async () => {
-      while (!failed && next < items.length) {
+      while (!firstFailure && next < items.length) {
         const index = next++
         try {
           results[index] = await task(items[index])
         } catch (error) {
-          failed = true
-          throw error
+          firstFailure ??= { reason: error }
         }
       }
     }
   )
   await Promise.all(workers)
+  if (firstFailure) throw firstFailure.reason
   return results
 }
 
@@ -108,37 +109,29 @@ function parseBatchResponse(
   return record
 }
 
-export interface RequestBudget {
+export interface RequestCounter {
   fetch: typeof fetch
-  signal: AbortSignal
   requestCount: () => number
 }
 
-// The SDK retries a fetch that throws, so counting alone cannot hold a ceiling:
-// the request admitted at the boundary would still spend maxNetworkRetries more
-// attempts. Aborting the signal makes the rejection terminal, because the SDK
-// checks signal.aborted before both the send and the retry
-export function createRequestBudget(
-  maxRequests: number,
-  stopMessage: string,
+export function createRequestCounter(
   fetchFn: typeof fetch = globalThis.fetch
-): RequestBudget {
-  const controller = new AbortController()
+): RequestCounter {
   let requests = 0
-  const budgetedFetch: typeof fetch = async (input, init) => {
-    if (requests >= maxRequests) {
-      const stop = new Error(stopMessage)
-      controller.abort(stop)
-      throw stop
-    }
+  const countingFetch: typeof fetch = async (input, init) => {
     requests++
     return fetchFn(input, init)
   }
-  return {
-    fetch: budgetedFetch,
-    signal: controller.signal,
-    requestCount: () => requests
-  }
+  return { fetch: countingFetch, requestCount: () => requests }
+}
+
+function splitTruncatedBatch(items: TranslationItem[]): TranslationItem[][] {
+  const totalChars = items.reduce((sum, item) => sum + item.source.length, 0)
+  return chunkItems(
+    items,
+    Math.ceil(items.length / 2),
+    Math.ceil(totalChars / 2)
+  )
 }
 
 interface OpenAiTranslatorOptions {
@@ -148,7 +141,6 @@ interface OpenAiTranslatorOptions {
   glossary: string
   maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
-  signal?: AbortSignal
   onCompletion?: (completion: OpenAI.ChatCompletion) => void
   requestTimeoutMs?: number
 }
@@ -170,67 +162,58 @@ export function createOpenAiTranslator(
   ): Promise<Record<string, string>> {
     if (items.length === 0) return {}
     const requestedIds = new Set(items.map((item) => item.id))
-    let lastError = new Error('translation request was not attempted')
+    let deferralReason = 'the request was not attempted'
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
-      const completion = await client.chat.completions
-        .create(
+      const completion = await client.chat.completions.create({
+        model: options.model,
+        reasoning_effort: options.reasoningEffort,
+        response_format: { type: 'json_object' },
+        messages: [
           {
-            model: options.model,
-            reasoning_effort: options.reasoningEffort,
-            response_format: { type: 'json_object' },
-            messages: [
-              {
-                role: 'system',
-                content: buildSystemPrompt(locale, options.glossary)
-              },
-              { role: 'user', content: JSON.stringify({ items }) }
-            ]
+            role: 'system',
+            content: buildSystemPrompt(locale, options.glossary)
           },
-          { signal: options.signal }
-        )
-        .catch((error: unknown) => {
-          if (options.signal?.aborted) throw options.signal.reason
-          throw error
-        })
+          { role: 'user', content: JSON.stringify({ items }) }
+        ]
+      })
       options.onCompletion?.(completion)
       const choice = completion.choices[0]
       if (choice?.finish_reason === 'length') {
         if (items.length === 1) {
-          throw new Error(
-            `OpenAI response was truncated (finish_reason "length") for a single string (${items[0].context}), which cannot be split further`
-          )
+          deferralReason = `the response was truncated (finish_reason "length") for the single string ${items[0].context}`
+          continue
         }
         if (splitDepth >= options.maxTruncationSplitDepth) {
-          throw new Error(
-            `OpenAI response was truncated (finish_reason "length") and ${items.length} strings still do not fit at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}; lower maxItemsPerRequest or maxSourceCharsPerRequest`
-          )
+          deferralReason = `${items.length} strings were still truncated (finish_reason "length") at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
+          break
         }
-        const splitIndex = Math.ceil(items.length / 2)
-        const nextDepth = splitDepth + 1
-        const first = await translateBatch(
-          locale,
-          items.slice(0, splitIndex),
-          nextDepth
+        const settled = await Promise.allSettled(
+          splitTruncatedBatch(items).map((chunk) =>
+            translateBatch(locale, chunk, splitDepth + 1)
+          )
         )
-        const second = await translateBatch(
-          locale,
-          items.slice(splitIndex),
-          nextDepth
-        )
-        return { ...first, ...second }
+        const merged: Record<string, string> = {}
+        for (const result of settled) {
+          if (result.status === 'rejected') throw result.reason
+          Object.assign(merged, result.value)
+        }
+        return merged
       }
-      const content = choice?.message.content
+      const content = choice?.message?.content
       if (typeof content !== 'string') {
-        lastError = new Error('OpenAI response has no message content')
+        deferralReason = 'the response has no message content'
         continue
       }
       try {
         return parseBatchResponse(content, requestedIds)
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error))
+        deferralReason = error instanceof Error ? error.message : String(error)
       }
     }
-    throw lastError
+    console.warn(
+      `${locale.code}: deferring ${items.length} strings for retry: ${deferralReason}`
+    )
+    return {}
   }
 
   return (locale, items) => translateBatch(locale, items, 0)
