@@ -22,13 +22,18 @@ export function classifyAssetUrl(href: string): ReplyAsset | null {
   } catch {
     return null
   }
-  const rawFilename =
-    url.searchParams.get('filename') ?? url.pathname.split('/').at(-1) ?? ''
-  let filename = rawFilename
-  try {
-    filename = decodeURIComponent(rawFilename)
-  } catch {
-    // A malformed percent escape is still a valid literal filename.
+  // searchParams.get already percent-decodes; only the raw pathname segment
+  // needs decoding. Decoding twice would corrupt literal percent sequences.
+  const queryFilename = url.searchParams.get('filename')
+  let filename = queryFilename ?? ''
+  if (queryFilename === null) {
+    const rawSegment = url.pathname.split('/').at(-1) ?? ''
+    filename = rawSegment
+    try {
+      filename = decodeURIComponent(rawSegment)
+    } catch {
+      // A malformed percent escape is still a valid literal filename.
+    }
   }
   if (!filename) return null
   const kind = getMediaTypeFromFilename(filename)

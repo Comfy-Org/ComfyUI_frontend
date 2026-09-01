@@ -65,6 +65,22 @@ describe('classifyAssetUrl', () => {
       kind: 'video'
     })
   })
+
+  it('decodes a query filename exactly once, keeping literal percent sequences', () => {
+    expect(classifyAssetUrl(view('my%2520file.png'))).toMatchObject({
+      filename: 'my%20file.png',
+      kind: 'image'
+    })
+  })
+
+  it('decodes a pathname filename exactly once', () => {
+    expect(classifyAssetUrl('https://x.com/media/my%20file.png')).toMatchObject(
+      {
+        filename: 'my file.png',
+        kind: 'image'
+      }
+    )
+  })
 })
 
 describe('tokenReplyAssets', () => {
