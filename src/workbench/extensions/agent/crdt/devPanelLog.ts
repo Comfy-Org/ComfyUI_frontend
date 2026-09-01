@@ -1,7 +1,7 @@
 import { shallowRef, triggerRef } from 'vue'
 
-import { isCrdtDebugOptedOut } from './crdtDebugGate';
-import type { CrdtLogLevel } from './crdtDebugGate';
+import { isCrdtDebugOptedOut } from './crdtDebugGate'
+import type { CrdtLogLevel } from './crdtDebugGate'
 
 /**
  * In-memory ring buffer feeding the CRDT debug panel. Deliberately
