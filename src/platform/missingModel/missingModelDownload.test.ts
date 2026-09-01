@@ -4,6 +4,7 @@ import {
   clearMetadataCache,
   downloadModel,
   fetchModelMetadata,
+  fetchModelMetadataWithStatus,
   isModelDownloadable,
   isTrustedHuggingFaceUrl,
   openGatedRepoPage,
@@ -292,6 +293,125 @@ describe('fetchModelMetadata', () => {
 
     expect(first.fileSize).toBe(2048)
     expect(second.fileSize).toBe(2048)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('fetchModelMetadataWithStatus', () => {
+  const emptyMetadata = { fileSize: null, gatedRepoUrl: null }
+
+  it('forwards a caller cancellation signal to the active request', async () => {
+    const controller = new AbortController()
+    const url =
+      'https://huggingface.co/org/model/resolve/main/cancelled.safetensors'
+    fetchMock.mockResolvedValueOnce(new Response())
+    const fetchWithSignal = fetchModelMetadataWithStatus as (
+      url: string,
+      options: { signal: AbortSignal }
+    ) => ReturnType<typeof fetchModelMetadataWithStatus>
+
+    await fetchWithSignal(url, { signal: controller.signal })
+
+    expect(fetchMock).toHaveBeenCalledWith(url, {
+      method: 'HEAD',
+      signal: controller.signal
+    })
+  })
+
+  it.for([
+    {
+      name: 'a non-OK response',
+      slug: 'not-found',
+      prepare: () =>
+        fetchMock.mockResolvedValueOnce(new Response(null, { status: 404 }))
+    },
+    {
+      name: 'a network error',
+      slug: 'network',
+      prepare: () =>
+        fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    }
+  ])('reports $name for an allowed URL as failed', async (testCase) => {
+    testCase.prepare()
+
+    await expect(
+      fetchModelMetadataWithStatus(
+        `https://huggingface.co/org/model/resolve/main/${testCase.slug}.safetensors`
+      )
+    ).resolves.toEqual({ metadata: emptyMetadata, resolution: 'failed' })
+  })
+
+  it.for([
+    {
+      name: 'gated proof',
+      url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
+      response: () =>
+        new Response(null, {
+          status: 403,
+          headers: { 'x-error-code': 'GatedRepo' }
+        }),
+      metadata: {
+        fileSize: null,
+        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+      }
+    },
+    {
+      name: 'a successful response without size',
+      url: 'https://huggingface.co/org/model/resolve/main/no-size.safetensors',
+      response: () => new Response(),
+      metadata: emptyMetadata
+    }
+  ])('reports $name as resolved', async (testCase) => {
+    fetchMock.mockResolvedValueOnce(testCase.response())
+
+    await expect(fetchModelMetadataWithStatus(testCase.url)).resolves.toEqual({
+      metadata: testCase.metadata,
+      resolution: 'resolved'
+    })
+  })
+
+  it.for([
+    {
+      url: 'https://example.com/model.safetensors',
+      resolution: 'resolved'
+    },
+    {
+      url: 'https://civitai.com/api/v1/models/123',
+      resolution: 'failed'
+    }
+  ] as const)(
+    'reports $url as $resolution without a request',
+    async ({ url, resolution }) => {
+      await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
+        metadata: emptyMetadata,
+        resolution
+      })
+      expect(fetchMock).not.toHaveBeenCalled()
+    }
+  )
+
+  it('shares one inflight request and cache with the legacy metadata API', async () => {
+    const url =
+      'https://huggingface.co/org/model/resolve/main/shared-outcome.safetensors'
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-length': '2048' })
+    })
+
+    const [outcome, legacyMetadata] = await Promise.all([
+      fetchModelMetadataWithStatus(url),
+      fetchModelMetadata(url)
+    ])
+
+    expect(outcome).toEqual({
+      metadata: { fileSize: 2048, gatedRepoUrl: null },
+      resolution: 'resolved'
+    })
+    expect(legacyMetadata).toEqual({
+      fileSize: 2048,
+      gatedRepoUrl: null
+    })
+    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual(outcome)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })

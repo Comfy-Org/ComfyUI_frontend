@@ -43,13 +43,19 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const { mockCloseDialog, mockIsCloud, mockReportError, mockTrackTemplate } =
-  vi.hoisted(() => ({
-    mockCloseDialog: vi.fn(),
-    mockIsCloud: { value: true },
-    mockReportError: vi.fn(),
-    mockTrackTemplate: vi.fn()
-  }))
+const {
+  mockCloseDialog,
+  mockIsCloud,
+  mockReportError,
+  mockToastAdd,
+  mockTrackTemplate
+} = vi.hoisted(() => ({
+  mockCloseDialog: vi.fn(),
+  mockIsCloud: { value: true },
+  mockReportError: vi.fn(),
+  mockToastAdd: vi.fn(),
+  mockTrackTemplate: vi.fn()
+}))
 
 // Mock the dialog store
 vi.mock('@/stores/dialogStore', () => ({
@@ -66,6 +72,10 @@ vi.mock('@/platform/telemetry', () => ({
 
 vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: mockReportError
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: mockToastAdd })
 }))
 
 // Mock fetch
