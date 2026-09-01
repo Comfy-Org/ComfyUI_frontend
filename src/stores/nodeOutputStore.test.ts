@@ -325,14 +325,11 @@ describe('nodeOutputStore replaceNodeOutputImages', () => {
   it('drops the previous output metadata when replacing the images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 7 })
-    store.setOutputFromLegacy(
-      '7',
-      fromAny({
-        images: [{ filename: 'previous.webp' }],
-        animated: [true],
-        video: [{ filename: 'previous.mp4' }]
-      })
-    )
+    store.setOutputFromLegacy('7', {
+      images: [{ filename: 'previous.webp' }],
+      animated: [true],
+      video: [{ filename: 'previous.mp4' }]
+    })
 
     const images = [
       {
