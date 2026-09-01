@@ -239,13 +239,15 @@ describe('usePackInstall', () => {
     expect(managerStore.installPack.clear).not.toHaveBeenCalled()
   })
 
-  it('clears the command when payload validation rejects', async () => {
+  it('clears the command when payload validation fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { performInstallation } = usePackInstall(() => [])
 
-    await expect(
-      performInstallation([pack({ id: undefined })])
-    ).rejects.toThrow('Node ID is required for installation')
+    await performInstallation([pack({ id: undefined })])
 
+    expect(consoleError).toHaveBeenCalledWith(
+      'Node ID is required for installation'
+    )
     expect(managerStore.installPack.call).not.toHaveBeenCalled()
     expect(managerStore.installPack.clear).toHaveBeenCalledTimes(1)
   })

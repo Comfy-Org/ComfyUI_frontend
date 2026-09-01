@@ -42,7 +42,6 @@ async function flushSearch() {
 
 describe('useRegistrySearch', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockSearchGateway.searchPacks.mockResolvedValue({
       nodePacks: [],
       querySuggestions: []
