@@ -106,7 +106,7 @@ function deriveRow(
   if (availability?.status !== 'missing') {
     return { ...row, status: 'unknown' }
   }
-  if (!metadata || metadata.resolution === 'failed') {
+  if (!metadata) {
     return { ...row, status: 'unknown' }
   }
   if (metadata.gatedRepoUrl?.trim()) {
