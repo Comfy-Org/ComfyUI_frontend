@@ -306,7 +306,7 @@ describe('recording template', () => {
       ).toBe('cloud-staging')
     })
 
-    it('keys a custom backend by its own hostname, not a shared "custom" bucket', () => {
+    it('keys a custom backend by a hash of its own origin, not a shared "custom" bucket', () => {
       const keyA = storageStateKey({
         id: 'custom',
         label: 'Custom backend (https://agent.comfy.org/)',
@@ -323,9 +323,20 @@ describe('recording template', () => {
         needsLocalBackend: false,
         backendUrl: 'https://other-env.comfy.org/'
       })
-      expect(keyA).toBe('custom-agent.comfy.org')
-      expect(keyB).toBe('custom-other-env.comfy.org')
+      expect(keyA).toMatch(/^custom-[0-9a-f]{16}$/)
+      expect(keyB).toMatch(/^custom-[0-9a-f]{16}$/)
       expect(keyA).not.toBe(keyB)
+      // Stable across calls, so the same backend always reuses its file.
+      expect(
+        storageStateKey({
+          id: 'custom',
+          label: '',
+          hint: '',
+          script: 'dev',
+          needsLocalBackend: false,
+          backendUrl: 'https://agent.comfy.org/'
+        })
+      ).toBe(keyA)
     })
 
     it('keeps HTTP and HTTPS custom backends in separate buckets', () => {
@@ -342,13 +353,12 @@ describe('recording template', () => {
           ...distribution,
           backendUrl: 'http://agent.comfy.org/'
         })
-      ).toBe('custom-http%3A%2F%2Fagent.comfy.org')
-      expect(
+      ).not.toBe(
         storageStateKey({
           ...distribution,
           backendUrl: 'https://agent.comfy.org/'
         })
-      ).toBe('custom-agent.comfy.org')
+      )
     })
 
     it('keeps custom backends on different ports in separate buckets', () => {
@@ -365,13 +375,38 @@ describe('recording template', () => {
           ...distribution,
           backendUrl: 'http://localhost:8100/'
         })
-      ).toBe('custom-http%3A%2F%2Flocalhost%3A8100')
-      expect(
+      ).not.toBe(
         storageStateKey({
           ...distribution,
           backendUrl: 'http://localhost:8200/'
         })
-      ).toBe('custom-http%3A%2F%2Flocalhost%3A8200')
+      )
+    })
+
+    it('keeps custom backends on different paths in separate buckets', () => {
+      // normalizeBackendUrl preserves path prefixes for path-routed backends
+      // (e.g. one gateway hosting several tenants); the key must too, or
+      // https://gw.example.com/tenant-a/ and .../tenant-b/ collapse into one
+      // storage-state file and replay each other's session.
+      const distribution = {
+        id: 'custom',
+        label: 'Custom backend',
+        hint: '',
+        script: 'dev',
+        needsLocalBackend: false
+      } as const
+
+      expect(
+        storageStateKey({
+          ...distribution,
+          backendUrl: 'https://gw.example.com/tenant-a/'
+        })
+      ).not.toBe(
+        storageStateKey({
+          ...distribution,
+          backendUrl: 'https://gw.example.com/tenant-b/'
+        })
+      )
     })
 
     it('does not confuse hostname suffixes with port separators', () => {
@@ -388,16 +423,15 @@ describe('recording template', () => {
           ...distribution,
           backendUrl: 'https://example.com-8100/'
         })
-      ).toBe('custom-example.com-8100')
-      expect(
+      ).not.toBe(
         storageStateKey({
           ...distribution,
           backendUrl: 'https://example.com:8100/'
         })
-      ).toBe('custom-example.com%3A8100')
+      )
     })
 
-    it('encodes IPv6 hostnames for Windows-safe storage paths', () => {
+    it('hashes IPv6 hostnames to a fixed-length, filesystem-safe key', () => {
       expect(
         storageStateKey({
           id: 'custom',
@@ -407,7 +441,24 @@ describe('recording template', () => {
           needsLocalBackend: false,
           backendUrl: 'http://[::1]:8100/'
         })
-      ).toBe('custom-http%3A%2F%2F%5B%3A%3A1%5D%3A8100')
+      ).toMatch(/^custom-[0-9a-f]{16}$/)
+    })
+
+    it('treats a scheme-less URL as unparseable rather than silently sharing a bucket', () => {
+      // new URL('localhost:8100') parses as a non-special 'localhost:'
+      // scheme with an empty hostname — the real host/port land in the
+      // discarded opaque path, so without a guard every scheme-less typo
+      // collapses into the same key.
+      expect(
+        storageStateKey({
+          id: 'custom',
+          label: 'Custom backend',
+          hint: '',
+          script: 'dev',
+          needsLocalBackend: false,
+          backendUrl: 'localhost:8100'
+        })
+      ).toBe('custom-unparsed')
     })
 
     it('removes the legacy shared custom-backend storage state', () => {
@@ -415,13 +466,29 @@ describe('recording template', () => {
       writeFileSync(legacyStateFile, '{"cookies":[]}')
 
       removeLegacyCustomStorageState(
-        join(browserTestsDir, 'storage-state.custom-localhost-8100.json')
+        join(browserTestsDir, 'storage-state.custom-0123456789abcdef.json')
       )
 
       expect(existsSync(legacyStateFile)).toBe(false)
     })
 
-    it('falls back to a shared bucket if the custom backend URL cannot be parsed', () => {
+    it('does not delete the legacy file when it is the resolved path itself', () => {
+      const legacyStateFile = join(browserTestsDir, 'storage-state.custom.json')
+      writeFileSync(legacyStateFile, '{"cookies":[]}')
+
+      removeLegacyCustomStorageState(legacyStateFile)
+
+      // Covers the guard's equal-path branch: removeLegacyCustomStorageState
+      // must not delete the very file it was asked to load.
+      expect(existsSync(legacyStateFile)).toBe(true)
+    })
+
+    it('falls back to a distinct sentinel if the custom backend URL cannot be parsed', () => {
+      // A bare 'custom' fallback resolves to the legacy shared storage-state
+      // file, so removeLegacyCustomStorageState's !== guard would skip the
+      // migration deletion and every unparseable backend would still share
+      // one bucket. The sentinel must differ from both 'custom' and any real
+      // hashed key.
       expect(
         storageStateKey({
           id: 'custom',
@@ -431,7 +498,7 @@ describe('recording template', () => {
           needsLocalBackend: false,
           backendUrl: 'not a url'
         })
-      ).toBe('custom')
+      ).toBe('custom-unparsed')
     })
   })
 })
