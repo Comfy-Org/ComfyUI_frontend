@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -47,12 +47,11 @@ async function runGraphLoad(pause: Promise<void>): Promise<void> {
 
 describe('overlapping graph-load mint suppression', () => {
   let wiring: MintPortWiring | undefined
+  let minted: GraphOperation[]
 
-  afterEach(() => wiring?.detach())
-
-  it('keeps a replacement load suppressed when a stale load settles', async () => {
+  beforeEach(() => {
     setActivePinia(createPinia())
-    const minted: GraphOperation[] = []
+    minted = []
     wiring = attachMintPortWiring({
       isEnabled: () => true,
       isDocBound: () => true,
@@ -67,7 +66,11 @@ describe('overlapping graph-load mint suppression', () => {
         _nodes: []
       })
     })
+  })
 
+  afterEach(() => wiring?.detach())
+
+  it('keeps a replacement load suppressed when a stale load settles', async () => {
     const pauseA = deferred()
     const pauseB = deferred()
     const loadA = runGraphLoad(pauseA.promise)
@@ -92,6 +95,34 @@ describe('overlapping graph-load mint suppression', () => {
         from_slot: 0,
         to_node: toNodeId(2),
         to_slot: 3,
+        link_type: 'IMAGE'
+      }
+    ])
+  })
+
+  it('keeps suppression active when the newer load settles first', async () => {
+    const pauseA = deferred()
+    const pauseB = deferred()
+    const loadA = runGraphLoad(pauseA.promise)
+    const loadB = runGraphLoad(pauseB.promise)
+
+    pauseB.resolve()
+    await loadB
+    useLinkStore().registerLink(ROOT_SCOPE, topology(1))
+    expect(minted).toEqual([])
+
+    pauseA.resolve()
+    await loadA
+    useLinkStore().registerLink(ROOT_SCOPE, topology(2))
+
+    expect(minted).toEqual([
+      {
+        op: 'connect',
+        link_id: 2,
+        from_node: toNodeId(1),
+        from_slot: 0,
+        to_node: toNodeId(2),
+        to_slot: 2,
         link_type: 'IMAGE'
       }
     ])

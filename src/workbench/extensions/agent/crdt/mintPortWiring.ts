@@ -3,8 +3,7 @@
  * (workbench must not import renderer); link/widget adapt via Pinia $onAction,
  * which fires synchronously around each action. A replace maps to PLACED and
  * never DELETED (the store displaces incumbents internally). Graph-load
- * suppression follows the latest-started load so a stale completion cannot
- * reopen minting while its replacement is still loading.
+ * suppression stays active until every overlapping load has settled.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -94,17 +93,16 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
-  let currentGraphLoad: GraphLoadToken | null = null
+  const activeGraphLoads = new Set<GraphLoadToken>()
   const detachGraphLoadLifecycle = onGraphLoadLifecycle((event) => {
     if (event.type === 'started') {
-      const bracketOpen = currentGraphLoad !== null
-      currentGraphLoad = event.token
-      if (!bracketOpen) session.beginGraphTeardown()
+      const wasEmpty = activeGraphLoads.size === 0
+      activeGraphLoads.add(event.token)
+      if (wasEmpty) session.beginGraphTeardown()
       return
     }
-    if (event.token !== currentGraphLoad) return
-    currentGraphLoad = null
-    session.endGraphTeardown()
+    if (!activeGraphLoads.delete(event.token)) return
+    if (activeGraphLoads.size === 0) session.endGraphTeardown()
   })
 
   type PlacedListener = Parameters<
