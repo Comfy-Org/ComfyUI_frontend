@@ -151,7 +151,7 @@ describe('useWorkspaceMenuItems', () => {
   it('defers to the capability for subscription state it already encodes', () => {
     state.canCancel = true
     state.isSubscriptionCancelled = true
-    state.isActiveSubscription = false
+    state.canAccessSubscriptionFeatures = false
     state.planSlug = null
 
     const { menuItems } = useWorkspaceMenuItems()

@@ -164,7 +164,7 @@ export const OutOfCreditsMember: Story = story(
 export const OutOfCreditsSelfServe: Story = story(
   {
     subscription: exhausted,
-    isActiveSubscription: true,
+    canAccessSubscriptionFeatures: true,
     billingStatus: 'paid',
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
