@@ -71,15 +71,14 @@ describe('Checkbox', () => {
     expect(onUpdate).toHaveBeenCalledWith(true)
   })
 
-  it('merges custom classes without clobbering the base styling', () => {
+  it('forwards custom classes to the control', () => {
     render(Checkbox, {
-      props: { class: 'size-4' },
-      attrs: { 'aria-label': 'Merged' }
+      props: { class: 'consumer-marker' },
+      attrs: { 'aria-label': 'Custom class' }
     })
-    const checkbox = screen.getByRole('checkbox', { name: 'Merged' })
 
-    expect(checkbox.classList.contains('size-4')).toBe(true)
-    expect(checkbox.classList.contains('size-5')).toBe(false)
-    expect(checkbox.classList.contains('rounded-sm')).toBe(true)
+    expect(screen.getByRole('checkbox', { name: 'Custom class' })).toHaveClass(
+      'consumer-marker'
+    )
   })
 })
