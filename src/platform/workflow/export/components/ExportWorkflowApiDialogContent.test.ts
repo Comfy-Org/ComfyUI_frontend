@@ -47,7 +47,6 @@ function renderDialog(
 
 describe('ExportWorkflowApiDialogContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockWorkflowService.exportWorkflow.mockResolvedValue(undefined)
   })
 
