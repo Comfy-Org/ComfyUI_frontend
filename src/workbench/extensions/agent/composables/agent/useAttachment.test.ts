@@ -162,6 +162,63 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
+  // 12-T2: remove `.fails` when rejected deferred sources settle as upload errors.
+  it.fails('[12-T2 regression] catches a rejected deferred resolver and removes its chip', async () => {
+    const upload = vi.fn()
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addDeferredFile } = useAttachment({
+      upload,
+      onError,
+      ...registry
+    })
+
+    await expect(
+      addDeferredFile('missing.mp4', () => Promise.reject(new Error('gone')))
+    ).resolves.toBeUndefined()
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+    expect(onError).toHaveBeenCalledOnce()
+  })
+
+  // 12-T4: remove `.fails` when a batch stages before uploads settle concurrently.
+  it.fails('[12-T4 regression] stages a whole batch before concurrent uploads settle', async () => {
+    const resolvers: Array<(result: { ref: string }) => void> = []
+    const upload = vi.fn(
+      () =>
+        new Promise<{ ref: string }>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+    const pending = addFiles([
+      fileOfSize('a.png', 1),
+      fileOfSize('b.png', 1),
+      fileOfSize('c.png', 1)
+    ])
+
+    expect(registry.chips.map(({ name }) => name)).toEqual([
+      'a.png',
+      'b.png',
+      'c.png'
+    ])
+    registry.remove(registry.chips[1].id)
+    resolvers[2]({ ref: 'c.png' })
+    resolvers[0]({ ref: 'a.png' })
+    resolvers[1]({ ref: 'b.png' })
+    await pending
+    expect(registry.chips.map(({ ref }) => ref)).toEqual(['a.png', 'c.png'])
+  })
+
+  it.todo(
+    '[12 server-limit surface] uses the server-declared video limit once #16373 or #16375 exposes it'
+  )
+
+  it.todo(
+    '[12 server-limit surface] rejects video above the server-declared limit once #16373 or #16375 exposes it'
+  )
+
   it('removes an oversized deferred chip and reports the resolved limit', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
