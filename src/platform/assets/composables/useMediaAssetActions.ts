@@ -11,7 +11,6 @@ import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
-import type { JobId } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -652,7 +651,7 @@ export function useMediaAssetActions() {
     }
     interface JobDeletion extends BaseDeleteOperation {
       kind: 'job'
-      id: JobId
+      id: string
     }
     type DeleteOperation = AssetDeletion | JobDeletion
 
