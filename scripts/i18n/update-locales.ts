@@ -225,15 +225,13 @@ function readManifestSource(
   }
 }
 
-export function exceedsPruneThreshold(
+export function formatPruneSummary(
+  filename: string,
   deletedCount: number,
-  previousLeafCount: number,
-  { pruneCountFloor, pruneRatioLimit } = translationPipelineConfig
-): boolean {
-  return (
-    deletedCount >
-    Math.max(pruneCountFloor, Math.ceil(previousLeafCount * pruneRatioLimit))
-  )
+  previousLeafCount: number
+): string | undefined {
+  if (deletedCount === 0) return
+  return `WARNING: ${filename}: ${deletedCount} of ${previousLeafCount} English keys deleted; matching locale keys will be pruned.`
 }
 
 function writeManifest(
@@ -425,24 +423,13 @@ async function run(argv: readonly string[]): Promise<void> {
     }
   })
 
-  const oversizedPrunes = plans
-    .filter((plan) =>
-      exceedsPruneThreshold(plan.changes.deleted.length, plan.previousLeafCount)
+  for (const plan of plans) {
+    const summary = formatPruneSummary(
+      plan.filename,
+      plan.changes.deleted.length,
+      plan.previousLeafCount
     )
-    .map(
-      (plan) =>
-        `${plan.filename}: ${plan.changes.deleted.length} of ${plan.previousLeafCount} keys would be deleted`
-    )
-  if (oversizedPrunes.length > 0) {
-    if (check) {
-      for (const line of oversizedPrunes) {
-        print(`WARNING: large prune pending — ${line}`)
-      }
-    } else if (!argv.includes('--allow-prune')) {
-      throw new Error(
-        `Refusing to prune:\n${oversizedPrunes.join('\n')}\nA shrink this large usually means collect-i18n observed a partial app (failed custom-node imports or an incomplete server node list). Verify the English sources are complete, or rerun with --allow-prune to confirm the deletions.`
-      )
-    }
+    if (summary) print(summary)
   }
 
   const states = loadLocaleFileStates(config, outputDir, plans)
