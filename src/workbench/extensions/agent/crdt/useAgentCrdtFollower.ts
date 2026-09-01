@@ -399,14 +399,14 @@ export function useAgentCrdtFollower(
     refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    let applied: boolean
+    let projected: boolean
     try {
-      applied = adapter.applyFrame(update)
+      projected = adapter.applyFrame(update)
     } catch (error) {
-      applied = false
+      projected = false
       reportError(error, { errorType: 'agent_crdt_apply_frame_failure' })
     }
-    outcomes.value = applied
+    outcomes.value = projected
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
     recordDevEvent('doc_update', {
@@ -414,9 +414,9 @@ export function useAgentCrdtFollower(
       seq: update.seq,
       actor: update.actor,
       bytes: update.update instanceof Uint8Array ? update.update.length : null,
-      applied
+      projected
     })
-    if (!applied) {
+    if (!projected) {
       recordDevEvent('doc_update_dropped', {
         workflowId: update.workflowId,
         seq: update.seq

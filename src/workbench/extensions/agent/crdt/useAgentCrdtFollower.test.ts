@@ -624,7 +624,7 @@ describe('useAgentCrdtFollower', () => {
 
     expect(recordDevEvent).toHaveBeenCalledWith(
       'doc_update',
-      expect.objectContaining({ applied: false })
+      expect.objectContaining({ projected: false })
     )
     expect(recordDevEvent).toHaveBeenCalledWith('doc_update_dropped', {
       workflowId: 'wf-1',
@@ -640,7 +640,7 @@ describe('useAgentCrdtFollower', () => {
 
     expect(recordDevEvent).toHaveBeenCalledWith(
       'doc_update',
-      expect.objectContaining({ applied: true })
+      expect.objectContaining({ projected: true })
     )
     expect(recordDevEvent).not.toHaveBeenCalledWith(
       'doc_update_dropped',
