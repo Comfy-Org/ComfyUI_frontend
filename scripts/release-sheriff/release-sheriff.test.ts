@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { PullRequestSummary } from './release-sheriff'
 import {
   CONFIG,
-  fetchGithubLogins,
+  fetchDirectory,
   fetchOnCallEmails,
   isSheriffPr,
   nextInRotation,
@@ -63,33 +63,63 @@ describe('parseOnCallEmails', () => {
 })
 
 describe('parseGithubLogins', () => {
-  it('reads github:<user>:<login> tags and ignores unrelated ones', () => {
-    const payload = {
-      data: {
-        attributes: {
-          tags: [
-            'github:ben:benceruleanlu',
-            'team:frontend',
-            'github:drjkl:drjkl',
-            'github:malformed',
-            42
-          ]
-        }
-      }
-    }
+  // The shape RELEASE_SHERIFF_DIRECTORY actually holds, mirroring
+  // rosters/release-sheriff-directory.json in Comfy-Org/github-workflows-ops.
+  const liveDirectory = JSON.stringify([
+    { datadog_email: 'austin@comfy.org', github_login: 'AustinMroz' },
+    { datadog_email: 'ben@comfy.org', github_login: 'benceruleanlu' },
+    { datadog_email: 'cbyrne@comfy.org', github_login: 'christian-byrne' },
+    { datadog_email: 'drjkl@comfy.org', github_login: 'DrJKL' },
+    { datadog_email: 'jaewon@comfy.org', github_login: 'dante01yoon' },
+    { datadog_email: 'nathaniel@comfy.org', github_login: 'CodeJuggernaut' },
+    { datadog_email: 'shihchi@comfy.org', github_login: 'huang47' }
+  ])
 
-    expect(parseGithubLogins(payload)).toEqual({
-      ben: 'benceruleanlu',
-      drjkl: 'drjkl'
+  it('keys the whole rotation by email local part, as the tags did', () => {
+    expect(parseGithubLogins(liveDirectory)).toEqual({
+      githubLoginByUser: {
+        austin: 'AustinMroz',
+        ben: 'benceruleanlu',
+        cbyrne: 'christian-byrne',
+        drjkl: 'DrJKL',
+        jaewon: 'dante01yoon',
+        nathaniel: 'CodeJuggernaut',
+        shihchi: 'huang47'
+      },
+      warning: null
     })
   })
 
-  it('ignores payloads without a usable tag list', () => {
-    expect(parseGithubLogins(null)).toEqual({})
-    expect(parseGithubLogins({ data: {} })).toEqual({})
-    expect(parseGithubLogins({ data: { attributes: { tags: 'no' } } })).toEqual(
-      {}
+  it('tolerates unknown fields and upper-cased addresses', () => {
+    expect(
+      parseGithubLogins(
+        JSON.stringify([
+          { datadog_email: 'Ann@Comfy.org', github_login: 'ann-gh', team: 'fe' }
+        ])
+      )
+    ).toEqual({ githubLoginByUser: { ann: 'ann-gh' }, warning: null })
+  })
+
+  it('warns and maps nothing when the secret is absent or unparseable', () => {
+    for (const raw of [undefined, '  ', '{not json', '{"a":1}']) {
+      const result = parseGithubLogins(raw)
+      expect(result.githubLoginByUser).toEqual({})
+      expect(result.warning).toMatch(/release-sheriff-directory\.json/)
+    }
+  })
+
+  it('keeps usable entries and warns about the ones it dropped', () => {
+    const result = parseGithubLogins(
+      JSON.stringify([
+        { datadog_email: 'ann@comfy.org', github_login: 'ann-gh' },
+        { datadog_email: 'bo@comfy.org' },
+        { datadog_email: 'cy@comfy.org', github_login: '  ' },
+        'nope'
+      ])
     )
+
+    expect(result.githubLoginByUser).toEqual({ ann: 'ann-gh' })
+    expect(result.warning).toMatch(/3 entries/)
   })
 })
 
@@ -243,23 +273,26 @@ describe('fetchOnCallEmails', () => {
     })
   })
 
-  it('reads the login directory from the schedule itself', async () => {
+  it('takes the rotation from Datadog and the logins from the secret', async () => {
     const fetchSpy = vi.fn().mockResolvedValue({
       ok: true,
-      json: () =>
-        Promise.resolve({
-          data: { attributes: { tags: ['github:sheriff:sheriff-dev'] } }
-        })
+      json: () => Promise.resolve({})
     })
     vi.stubGlobal('fetch', fetchSpy)
 
-    const result = await fetchGithubLogins(datadog, creds)
+    const result = await fetchDirectory(
+      datadog,
+      creds,
+      JSON.stringify([
+        { datadog_email: 'sheriff@comfy.org', github_login: 'sheriff-dev' }
+      ])
+    )
 
     expect(result).toEqual({
       githubLoginByUser: { sheriff: 'sheriff-dev' },
       rotation: [],
       unmappedMembers: [],
-      warning: null
+      warnings: []
     })
     expect(String(fetchSpy.mock.calls[0][0])).toBe(
       'https://api.datadoghq.com/api/v2/on-call/schedules/sched-1' +
@@ -267,14 +300,13 @@ describe('fetchOnCallEmails', () => {
     )
   })
 
-  it('separates tagged members from those still missing a login', async () => {
+  it('separates listed members from those still missing a login', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
           Promise.resolve({
-            data: { attributes: { tags: ['github:ann:ann-gh'] } },
             included: [
               {
                 type: 'layers',
@@ -304,20 +336,39 @@ describe('fetchOnCallEmails', () => {
       })
     )
 
-    const result = await fetchGithubLogins(datadog, creds)
+    const result = await fetchDirectory(
+      datadog,
+      creds,
+      JSON.stringify([
+        { datadog_email: 'ann@comfy.org', github_login: 'ann-gh' }
+      ])
+    )
 
     expect(result.rotation).toEqual(['ann-gh'])
     expect(result.unmappedMembers).toEqual(['bo'])
   })
 
-  it('degrades the directory to empty when Datadog is unreachable', async () => {
+  it('degrades the rotation to empty when Datadog is unreachable', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')))
 
-    const result = await fetchGithubLogins(datadog, creds)
+    const result = await fetchDirectory(datadog, creds, '[]')
 
-    expect(result.githubLoginByUser).toEqual({})
+    expect(result.rotation).toEqual([])
     expect(result.unmappedMembers).toEqual([])
-    expect(result.warning).toMatch(/lookup failed/)
+    expect(result.warnings).toEqual([expect.stringMatching(/lookup failed/)])
+  })
+
+  // Datadog going down and the secret going missing are separate failures and
+  // the Slack alert has to name both, not whichever is checked first.
+  it('reports the Datadog and directory failures together', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')))
+
+    const result = await fetchDirectory(datadog, creds, undefined)
+
+    expect(result.warnings).toEqual([
+      expect.stringMatching(/lookup failed/),
+      expect.stringMatching(/RELEASE_SHERIFF_DIRECTORY is unset/)
+    ])
   })
 })
 

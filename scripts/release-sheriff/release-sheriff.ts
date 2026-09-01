@@ -49,29 +49,67 @@ export function parseOnCallEmails(payload: unknown): string[] {
   return [...new Set(emails)]
 }
 
-// Datadog holds no GitHub identity, and GitHub only resolves commit emails its
-// users chose to make public — three of seven sheriffs are unresolvable that
-// way. The bridge is therefore declared on the schedule itself, as tags of the
-// form github:<datadog-email-local-part>:<github-login>, so a rotation change
-// stays a Datadog edit. Datadog rejects "@" and "+" outright and lower-cases
-// what it does accept; GitHub logins are case-insensitive, so that is lossless.
-const GITHUB_LOGIN_TAG = /^github:([^:]+):([^:]+)$/
-
 export function emailKey(email: string): string {
   return email.split('@')[0].trim().toLowerCase()
 }
 
-export function parseGithubLogins(payload: unknown): Record<string, string> {
-  if (!isRecord(payload) || !isRecord(payload.data)) return {}
-  const { attributes } = payload.data
-  if (!isRecord(attributes) || !Array.isArray(attributes.tags)) return {}
+const DIRECTORY_ENV = 'RELEASE_SHERIFF_DIRECTORY'
 
-  return Object.fromEntries(
-    attributes.tags.flatMap((tag) => {
-      const match = typeof tag === 'string' ? GITHUB_LOGIN_TAG.exec(tag) : null
-      return match ? [[match[1].toLowerCase(), match[2]]] : []
-    })
-  )
+// Naming the file and the follow-up in every message: the previous guidance
+// said "add a tag to the schedule", and people did exactly that for months.
+const DIRECTORY_FIX =
+  'Add an entry to rosters/release-sheriff-directory.json in ' +
+  'Comfy-Org/github-workflows-ops and run its sync script.'
+
+export interface DirectoryParse {
+  githubLoginByUser: Record<string, string>
+  warning: string | null
+}
+
+// Datadog holds no GitHub identity, and GitHub only resolves commit emails its
+// users chose to make public — three of seven sheriffs are unresolvable that
+// way — so the bridge has to be declared somewhere. Not here: this repo is
+// public. Not on the Datadog schedule either, where it used to live as
+// github:<user>:<login> tags: PUT /api/v2/on-call/schedules/{id} is a full
+// replace, so one tags-unaware rotation edit deleted the whole map, returned
+// 200, and warned about nothing. It is now an Actions secret, fed from a
+// reviewed file in a private repo.
+export function parseGithubLogins(raw: string | undefined): DirectoryParse {
+  const degraded = (warning: string): DirectoryParse => ({
+    githubLoginByUser: {},
+    warning: `${warning} — using the fallback. ${DIRECTORY_FIX}`
+  })
+
+  if (!raw?.trim()) return degraded(`${DIRECTORY_ENV} is unset`)
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch (error) {
+    return degraded(`${DIRECTORY_ENV} is not valid JSON (${String(error)})`)
+  }
+  if (!Array.isArray(parsed)) {
+    return degraded(`${DIRECTORY_ENV} is not a JSON array`)
+  }
+
+  const pairs = parsed.flatMap((entry) => {
+    if (!isRecord(entry)) return []
+    const email = entry.datadog_email
+    const login = entry.github_login
+    if (typeof email !== 'string' || typeof login !== 'string') return []
+    if (!email.trim() || !login.trim()) return []
+    return [[emailKey(email), login.trim()] as const]
+  })
+
+  const skipped = parsed.length - pairs.length
+  return {
+    githubLoginByUser: Object.fromEntries(pairs),
+    warning:
+      skipped > 0
+        ? `${DIRECTORY_ENV} has ${skipped} ${skipped === 1 ? 'entry' : 'entries'} ` +
+          `without a usable datadog_email/github_login pair. ${DIRECTORY_FIX}`
+        : null
+  }
 }
 
 export interface OnCallLookup {
@@ -113,10 +151,10 @@ export function parseRotationKeys(payload: unknown): string[] {
 export interface DirectoryLookup {
   githubLoginByUser: Record<string, string>
   rotation: string[]
-  // Rotation members with no github: tag. They break silently when their own
-  // shift starts, weeks after the tag was forgotten, so surface them now.
+  // Rotation members with no directory entry. They break silently when their
+  // own shift starts, weeks after the entry was forgotten, so surface them now.
   unmappedMembers: string[]
-  warning: string | null
+  warnings: string[]
 }
 
 interface DatadogResponse {
@@ -193,14 +231,17 @@ export async function fetchOnCallEmails(
   return { emails: parseOnCallEmails(payload), warning }
 }
 
-export async function fetchGithubLogins(
+// Datadog still owns the rotation and its order; only the identity map moved.
+export async function fetchDirectory(
   config: Pick<typeof CONFIG, 'datadogSite' | 'scheduleId'>,
-  credentials: { apiKey?: string; appKey?: string }
+  credentials: { apiKey?: string; appKey?: string },
+  rawDirectory: string | undefined
 ): Promise<DirectoryLookup> {
   const { payload, warning } = await datadogGet(config, credentials, '', {
     include: 'layers.members.user'
   })
-  const githubLoginByUser = parseGithubLogins(payload)
+  const { githubLoginByUser, warning: directoryWarning } =
+    parseGithubLogins(rawDirectory)
   const keys = parseRotationKeys(payload)
   return {
     githubLoginByUser,
@@ -209,7 +250,7 @@ export async function fetchGithubLogins(
       return login ? [login] : []
     }),
     unmappedMembers: keys.filter((key) => !githubLoginByUser[key]),
-    warning
+    warnings: [warning, directoryWarning].filter((w) => w !== null)
   }
 }
 
@@ -429,12 +470,14 @@ async function main() {
   }
   const [oncall, directory] = await Promise.all([
     fetchOnCallEmails(CONFIG, credentials),
-    fetchGithubLogins(CONFIG, credentials)
+    fetchDirectory(CONFIG, credentials, process.env[DIRECTORY_ENV])
   ])
   // Both lookups hit the same API, so a credentials or outage failure arrives
   // twice; the Slack alert should say it once.
   const problems = [
-    ...new Set([oncall.warning, directory.warning].filter((w) => w !== null))
+    ...new Set(
+      [oncall.warning, ...directory.warnings].filter((w) => w !== null)
+    )
   ]
 
   const { login, source, unmappedEmails } = resolveSheriff(oncall.emails, {
@@ -442,20 +485,19 @@ async function main() {
     githubLoginByUser: directory.githubLoginByUser
   })
   // Keyed, not the full address: this repo is public, so the warning lands in
-  // public Actions logs and in Slack. The key is what the tag needs anyway.
+  // public Actions logs and in Slack. The key is the directory's own key anyway.
   for (const email of unmappedEmails) {
     problems.push(
-      `Datadog on-call user "${emailKey(email)}" has no GitHub login. Add ` +
-        `the tag "github:${emailKey(email)}:<github-login>" to the schedule.`
+      `Datadog on-call user "${emailKey(email)}" has no GitHub login. ${DIRECTORY_FIX}`
     )
   }
   // Checked for the whole rotation, not just whoever is on call: a member
-  // added without a tag works fine until their own shift begins, then falls
+  // added without an entry works fine until their own shift begins, then falls
   // back silently. Fail now, while it is still someone else's week.
   for (const key of directory.unmappedMembers) {
     problems.push(
       `Rotation member "${key}" has no GitHub login and will fall back when ` +
-        `their shift starts. Add "github:${key}:<github-login>" to the schedule.`
+        `their shift starts. ${DIRECTORY_FIX}`
     )
   }
   for (const problem of problems) warn(problem)
