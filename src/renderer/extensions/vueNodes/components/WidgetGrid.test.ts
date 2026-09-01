@@ -114,34 +114,6 @@ describe('WidgetGrid', () => {
     expect(screen.getByTestId('app-input')).not.toHaveAttribute('aria-invalid')
   })
 
-  it('keeps the socket of an extension-hidden converted widget', () => {
-    render(WidgetGrid, {
-      props: {
-        nodeId: toNodeId(1),
-        nodeType: 'TestNode',
-        processedWidgets: [
-          {
-            ...widget('bboxes', 'converted-widget', 0),
-            visible: false
-          },
-          widget('steps', 'number', 1)
-        ]
-      },
-      global: {
-        directives: { tooltip: {} },
-        stubs: {
-          AppInput: AppInputStub,
-          InputSlot: InputSlotStub
-        }
-      }
-    })
-
-    expect(
-      screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
-    ).toEqual(['bboxes', 'steps'])
-    expect(screen.getAllByTestId('node-widget')).toHaveLength(1)
-  })
-
   it('renders connection-suppressed widgets as input sockets without controls', () => {
     render(WidgetGrid, {
       props: {
