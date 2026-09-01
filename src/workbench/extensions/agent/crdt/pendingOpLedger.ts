@@ -133,6 +133,7 @@ const RETRYABLE: ReadonlySet<PendingOpState> = new Set([
   'failed',
   'unprocessed'
 ])
+const MISSING_FAILURE_DETAIL = 'Host rejected operation without failure details'
 
 export function createPendingOpLedger<
   TShadow = unknown
@@ -197,8 +198,9 @@ export function createPendingOpLedger<
           return
         }
         entry.state = state
-        if (failure === undefined) delete entry.failure
-        else entry.failure = failure
+        if (state === 'failed')
+          entry.failure = failure ?? MISSING_FAILURE_DETAIL
+        else delete entry.failure
         bucket.push(opId)
       }
 

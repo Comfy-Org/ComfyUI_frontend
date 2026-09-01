@@ -170,6 +170,20 @@ describe('reconcileOpsResult', () => {
     expect(summary.unknown).toEqual(['op-foreign'])
     expect(ledger.size()).toBe(1)
   })
+
+  it('retains a diagnostic when rejection has no failure payload', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['op-1'])
+    ledger.reconcileOpsResult({
+      batch: ['op-1'],
+      applied: [],
+      skipped: [],
+      failedOpId: 'op-1'
+    })
+    expect(ledger.get('op-1')?.failure).toBe(
+      'Host rejected operation without failure details'
+    )
+  })
 })
 
 describe('clearOnEffect (KA-9)', () => {
