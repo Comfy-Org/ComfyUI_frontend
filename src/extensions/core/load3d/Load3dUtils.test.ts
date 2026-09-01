@@ -41,7 +41,6 @@ describe('Load3dUtils.mapSceneLightIntensityToHdri', () => {
 describe('Load3dUtils.uploadFile', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   it('returns the uploaded path on success', async () => {
@@ -110,7 +109,6 @@ describe('Load3dUtils.uploadFile', () => {
 describe('Load3dUtils.uploadTempImage', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   it('returns the upload response on success', async () => {
@@ -157,7 +155,6 @@ describe('Load3dUtils.uploadTempImage', () => {
 describe('Load3dUtils.uploadMultipleFiles', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
   })
 
   it('filters out failed uploads', async () => {
