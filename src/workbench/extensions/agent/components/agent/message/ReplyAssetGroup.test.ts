@@ -250,14 +250,22 @@ describe('ReplyAssetGroup', () => {
     expect(generateModelThumbnail).not.toHaveBeenCalled()
   })
 
-  it('does not retry a model that failed to render', async () => {
+  it('leaves a model that failed to render as a placeholder', async () => {
     isAssetPreviewSupported.mockReturnValue(true)
     renderGroup([model])
-    await waitFor(() => expect(generateModelThumbnail).toHaveBeenCalledOnce())
+    await vi.waitFor(() =>
+      expect(generateModelThumbnail).toHaveBeenCalledOnce()
+    )
 
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    vi.useFakeTimers()
+    try {
+      await vi.advanceTimersByTimeAsync(30_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
     expect(generateModelThumbnail).toHaveBeenCalledOnce()
-    expect(screen.getByRole('button', { name: 'mesh.glb' })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'mesh.glb' })).toBeNull()
   })
 
   it('aborts queued generation when unmounted', async () => {

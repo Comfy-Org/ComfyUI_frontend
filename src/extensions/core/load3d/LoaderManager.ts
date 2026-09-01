@@ -128,8 +128,9 @@ export class LoaderManager implements LoaderManagerInterface {
       const result = await this.loadModelInternal(url, fileExtension)
 
       if (loadId !== this.currentLoadId) {
-        // Only a disposed manager is guaranteed to hold no reference to
-        // this result; a newer load may still have it as originalModel.
+        // A newer load on a live manager may already have published this
+        // object as originalModel, so only dispose once the manager is
+        // torn down and nothing can reach it.
         if (result && this.disposed) this.disposeLoadResult(result)
         // A newer loadModel has superseded us — do not publish our adapter
         // and do not setup the model. Whichever load is current owns the

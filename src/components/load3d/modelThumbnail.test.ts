@@ -182,7 +182,7 @@ describe('generateModelThumbnail', () => {
     }
   })
 
-  it('bounds thumbnail capture and clears the timeout after success', async () => {
+  it('gives up on a stalled capture and leaves no timer behind', async () => {
     vi.useFakeTimers()
     try {
       const first = mockInstance({

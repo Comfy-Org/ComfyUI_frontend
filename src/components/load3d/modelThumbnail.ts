@@ -18,11 +18,13 @@ export type ModelThumbnailResult =
 
 /**
  * Render a model to a thumbnail data URL offscreen, without opening the
- * viewer. Starts one render at a time so only one WebGL context is ever
+ * viewer. Starts one render at a time so at most one offscreen scene is
  * live, and persists the result through the asset API so other surfaces
  * pick it up.
  *
- * A render that outlives its deadline is given up on: its viewer is torn
+ * The viewer chunk and the model each get their own deadline, so a cold
+ * code-split fetch is bounded without spending the model's budget. A
+ * render that outlives its deadline is given up on: its viewer is torn
  * down and the queue moves on, but the underlying transfer and parse are
  * not abortable and run to completion in the background. Aborting
  * `callerSignal` gives up the same way, and skips the render entirely if
@@ -53,15 +55,27 @@ async function renderThumbnailWithTimeout(
   const cancelError = new Error('Model thumbnail generation cancelled')
   let timeoutId: ReturnType<typeof setTimeout> | undefined
   let onCallerAbort: (() => void) | undefined
+  let expire: (error: Error) => void = () => {}
+
+  const restartDeadline = () => {
+    if (timeoutId !== undefined) clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => {
+      abortController.abort(timeoutError)
+      expire(timeoutError)
+    }, MODEL_THUMBNAIL_TIMEOUT_MS)
+  }
 
   try {
     const dataUrl = await Promise.race([
-      renderThumbnail(modelUrl, assetName, abortController.signal),
+      renderThumbnail(
+        modelUrl,
+        assetName,
+        abortController.signal,
+        restartDeadline
+      ),
       new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          abortController.abort(timeoutError)
-          reject(timeoutError)
-        }, MODEL_THUMBNAIL_TIMEOUT_MS)
+        expire = reject
+        restartDeadline()
       }),
       new Promise<never>((_, reject) => {
         onCallerAbort = () => {
@@ -87,10 +101,12 @@ async function renderThumbnailWithTimeout(
 async function renderThumbnail(
   modelUrl: string,
   assetName: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  restartDeadline: () => void
 ): Promise<string> {
   const { createLoad3d } = await import('@/extensions/core/load3d/createLoad3d')
   signal.throwIfAborted()
+  restartDeadline()
 
   const load3d = createLoad3d(document.createElement('div'), {
     width: 256,
