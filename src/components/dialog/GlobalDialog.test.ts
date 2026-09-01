@@ -17,7 +17,6 @@ import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
-import { viewerDialogContentClass } from '@/components/ui/dialog/dialog.variants'
 
 vi.mock(
   '@/platform/workspace/composables/useSubscriptionCheckout',
@@ -374,7 +373,8 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       dialogComponentProps: {
         renderer: 'reka',
         maximizable: true,
-        contentClass: viewerDialogContentClass
+        contentClass:
+          'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]'
       }
     })
 
@@ -390,10 +390,8 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
     expect(dialog.classList.contains('w-[80vw]')).toBe(false)
     expect(dialog.classList.contains('h-[80vh]')).toBe(false)
     expect(dialog.classList.contains('max-h-[80vh]')).toBe(false)
-    const viewerSmCap = viewerDialogContentClass
-      .split(' ')
-      .find((cls) => cls.startsWith('sm:max-w-'))!
-    expect(dialog.classList.contains(viewerSmCap)).toBe(false)
+    expect(dialog.classList.contains('max-w-[80vw]')).toBe(false)
+    expect(dialog.classList.contains('sm:max-w-[80vw]')).toBe(false)
     expect(dialog.classList.contains('sm:max-w-none')).toBe(true)
   })
 })
