@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { createMcpConnections, isConnectionId, isMcpClientId } from './clients'
+import {
+  createMcpConnections,
+  isConnectionId,
+  isMcpClientId
+} from './mcpClients'
 
 const connections = createMcpConnections('en')
 

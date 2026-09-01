@@ -1,6 +1,6 @@
-import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+import { externalLinks } from './routes'
 
 export interface McpClient {
   name: string

@@ -7,6 +7,17 @@ import SectionHeader from '../../components/common/SectionHeader.vue'
 import SurfaceToggle from '../../components/common/SurfaceToggle.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
+import type {
+  ConnectionId,
+  McpClient,
+  McpClientId,
+  McpConnections
+} from '../../config/mcpClients'
+import {
+  createMcpConnections,
+  isConnectionId,
+  isMcpClientId
+} from '../../config/mcpClients'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -14,13 +25,6 @@ import {
   captureMcpClientTabClick,
   captureMcpConnectionTabClick
 } from '../../scripts/posthog'
-import type {
-  ConnectionId,
-  McpClient,
-  McpClientId,
-  McpConnections
-} from './clients'
-import { createMcpConnections, isConnectionId, isMcpClientId } from './clients'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
