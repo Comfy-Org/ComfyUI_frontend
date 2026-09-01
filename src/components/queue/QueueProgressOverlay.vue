@@ -234,21 +234,21 @@ const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
-const focusAssetInSidebar = (item: JobListItem) => {
+const focusAssetInSidebar = async (item: JobListItem) => {
   const task = item.taskRef
   const jobId = task?.jobId
   const preview = task?.previewOutput
   if (!jobId || !preview) return
 
-  assetSelectionStore.focusAsset(String(jobId), { source: 'output' })
   openAssetsSidebar()
+  await assetSelectionStore.focusAssetByJobId(jobId, { source: 'output' })
 }
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
     trackFeatureUsed()
     await openResultGallery(item)
-    focusAssetInSidebar(item)
+    await focusAssetInSidebar(item)
   }
 )
 

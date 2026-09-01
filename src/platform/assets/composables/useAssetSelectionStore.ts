@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, toValue } from 'vue'
 
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetOutputCount,
   getTotalAssetOutputCount
 } from '@/platform/assets/utils/outputAssetCountUtil'
 import type { SelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 export type AssetSource = 'output' | 'input'
 
@@ -86,7 +88,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     index: number,
     allAssets: AssetItem[]
   ) {
-    if (!asset?.id || index < 0 || index >= allAssets.length) {
+    if (!asset.id || index < 0 || index >= allAssets.length) {
       console.warn('Invalid asset selection parameters')
       return
     }
@@ -101,7 +103,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     allAssets: AssetItem[],
     { shift, cmdOrCtrl }: SelectionModifiers
   ) {
-    if (!asset?.id || index < 0 || index >= allAssets.length) {
+    if (!asset.id || index < 0 || index >= allAssets.length) {
       console.warn('Invalid asset selection parameters')
       return
     }
@@ -183,10 +185,35 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     syncAnchorFromAssets(assets)
   }
 
-  function focusAsset(assetId: AssetId, options: { source: AssetSource }) {
+  async function focusAssetByJobId(
+    jobId: string,
+    options: { source: AssetSource }
+  ) {
     setSource(options.source)
-    setSelection([assetId])
-    setAnchor(-1, assetId)
+
+    const assetsStore = useAssetsStore()
+    const pagedList =
+      options.source === 'output'
+        ? assetsStore.outputAssets
+        : assetsStore.inputAssets
+    const matchesJob = (asset: AssetItem) =>
+      getOutputAssetMetadata(asset.user_metadata)?.jobId === jobId
+
+    let items = toValue(pagedList.items)
+    let match = items.find(matchesJob)
+    let scanned = items.length
+
+    while (!match && toValue(pagedList.hasMore)) {
+      await pagedList.loadMore()
+      items = toValue(pagedList.items)
+      match = items.slice(scanned).find(matchesJob)
+      scanned = items.length
+    }
+
+    if (!match) return
+
+    setSelection([match.id])
+    setAnchor(-1, match.id)
   }
 
   function getOutputCount(item: AssetItem): number {
@@ -224,7 +251,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     setSelectedIds,
     getSelectedAssets,
     reconcileSelection,
-    focusAsset,
+    focusAssetByJobId,
     getOutputCount,
     getTotalOutputCount
   }
