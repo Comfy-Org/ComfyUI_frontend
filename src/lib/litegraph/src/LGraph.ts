@@ -29,12 +29,12 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
-  MINT_ID_MIN,
   createLGraphState,
   mintGroupId,
   mintLinkId,
@@ -43,7 +43,8 @@ import {
   observeGroupId,
   observeLinkId,
   observeNodeId,
-  observeRerouteId
+  observeRerouteId,
+  toSequentialCounter
 } from './idAllocation'
 import type { LGraphState } from './idAllocation'
 import {
@@ -622,13 +623,8 @@ export class LGraph
   }
 
   set last_node_id(value) {
-    const numeric = Number(value)
-    if (
-      typeof value === 'number' &&
-      Number.isSafeInteger(numeric) &&
-      numeric >= 0 &&
-      numeric < MINT_ID_MIN
-    ) {
+    const numeric = toSequentialCounter(value)
+    if (numeric !== undefined) {
       this.state.lastNodeId = numeric
     } else if (import.meta.env.DEV) {
       console.warn(
@@ -643,13 +639,8 @@ export class LGraph
   }
 
   set last_link_id(value) {
-    const numeric = Number(value)
-    if (
-      typeof value === 'number' &&
-      Number.isSafeInteger(numeric) &&
-      numeric >= 0 &&
-      numeric < MINT_ID_MIN
-    ) {
+    const numeric = toSequentialCounter(value)
+    if (numeric !== undefined) {
       this.state.lastLinkId = toLinkId(numeric)
     } else if (import.meta.env.DEV) {
       console.warn(
@@ -2838,14 +2829,11 @@ export class LGraph
           const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
             data.state
           const { state } = this
-          if (lastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
+          if (lastGroupId != null) observeGroupId(state, toGroupId(lastGroupId))
           if (lastLinkId != null) observeLinkId(state, toLinkId(lastLinkId))
           if (lastNodeId != null) observeNodeId(state, toNodeId(lastNodeId))
           if (lastRerouteId != null)
-            state.lastRerouteId = toRerouteId(
-              Math.max(state.lastRerouteId, lastRerouteId)
-            )
+            observeRerouteId(state, toRerouteId(lastRerouteId))
         }
 
         // Links

@@ -2,7 +2,6 @@ import type { LGraph } from '../LGraph'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
 import {
-  MINT_ID_MIN,
   mintGroupId,
   mintRerouteId,
   observeGroupId,
@@ -252,8 +251,10 @@ function remapNodeIds(
     const numericId = numericSerializedNodeId(id)
 
     if (usedNodeIdKeys.has(key)) {
-      const newId = findNextAvailableId(usedNodeIds, () =>
-        mintSequentialNodeId(state)
+      const newId = findNextAvailableId(
+        usedNodeIds,
+        () => mintSequentialNodeId(state),
+        'node'
       )
       remappedIds.set(key, newId)
       node.id = newId
@@ -275,18 +276,12 @@ function remapNodeIds(
 }
 
 function mintSequentialNodeId(state: LGraphState): number {
-  if (state.lastNodeId + 1 >= MINT_ID_MIN) {
-    throw new Error('Node ID space exhausted')
-  }
   state.lastNodeId += 1
   return state.lastNodeId
 }
 
 function mintSequentialLinkId(state: LGraphState): number {
   const next = Number(state.lastLinkId) + 1
-  if (next >= MINT_ID_MIN) {
-    throw new Error('Node ID space exhausted')
-  }
   state.lastLinkId = toLinkId(next)
   return next
 }
@@ -306,12 +301,14 @@ function numericSerializedNodeId(id: SerializedNodeId): number | null {
  */
 function findNextAvailableId(
   usedIds: Set<number>,
-  advance: () => number
+  advance: () => number,
+  entity: 'node' | 'group' | 'link' | 'reroute'
 ): number {
   while (true) {
     const nextId = advance()
     if (nextId > MAX_ID) {
-      throw new Error('Node ID space exhausted')
+      const label = entity[0].toUpperCase() + entity.slice(1)
+      throw new Error(`${label} ID space exhausted`)
     }
     if (!usedIds.has(nextId)) return nextId
   }
@@ -475,7 +472,7 @@ function remapNumericIds<T extends { id: number }>(
   for (const item of items) {
     const oldId = item.id
     if (usedIds.has(oldId)) {
-      const newId = findNextAvailableId(usedIds, nextId)
+      const newId = findNextAvailableId(usedIds, nextId, entity)
       remapped.set(oldId, newId)
       item.id = newId
       usedIds.add(newId)

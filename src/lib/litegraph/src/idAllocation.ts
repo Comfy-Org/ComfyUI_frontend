@@ -48,6 +48,17 @@ function isSequentialCounter(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0 && value < MINT_ID_MIN
 }
 
+/**
+ * Narrows a serialized counter write to the sequential range, accepting the
+ * numeric strings legacy workflow payloads still carry.
+ */
+export function toSequentialCounter(value: unknown): number | undefined {
+  if (typeof value === 'string' && value.trim() === '') return undefined
+  if (typeof value !== 'number' && typeof value !== 'string') return undefined
+  const numeric = Number(value)
+  return isSequentialCounter(numeric) ? numeric : undefined
+}
+
 export function setCoordinationFreeIds(
   state: LGraphState,
   enabled: boolean
@@ -106,7 +117,9 @@ export function observeNodeId(state: LGraphState, id: NodeId): void {
 }
 
 export function observeGroupId(state: LGraphState, id: GroupId): void {
-  if (id > state.lastGroupId) state.lastGroupId = id
+  const numericId = Number(id)
+  if (isSequentialCounter(numericId) && numericId > state.lastGroupId)
+    state.lastGroupId = numericId
 }
 
 export function observeLinkId(state: LGraphState, id: LinkId): void {
@@ -116,5 +129,7 @@ export function observeLinkId(state: LGraphState, id: LinkId): void {
 }
 
 export function observeRerouteId(state: LGraphState, id: RerouteId): void {
-  if (id > state.lastRerouteId) state.lastRerouteId = id
+  const numericId = Number(id)
+  if (isSequentialCounter(numericId) && numericId > Number(state.lastRerouteId))
+    state.lastRerouteId = toRerouteId(numericId)
 }
