@@ -256,17 +256,21 @@ describe('nodeOutputStore legacy entry synchronization', () => {
   })
 })
 
-describe('nodeOutputStore setNodeOutputImages', () => {
+describe('nodeOutputStore replaceNodeOutputImages', () => {
   beforeEach(() => {
     app.nodeOutputs = {}
   })
 
-  it('drops the previous animated flags when replacing the images', () => {
+  it('drops the previous output metadata when replacing the images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 7 })
     store.setOutputFromLegacy(
       '7',
-      fromAny({ images: [{ filename: 'previous.webp' }], animated: [true] })
+      fromAny({
+        images: [{ filename: 'previous.webp' }],
+        animated: [true],
+        video: [{ filename: 'previous.mp4' }]
+      })
     )
 
     const images = [
@@ -276,9 +280,10 @@ describe('nodeOutputStore setNodeOutputImages', () => {
         type: 'input' as const
       }
     ]
-    store.setNodeOutputImages(node, images)
+    store.replaceNodeOutputImages(node, images)
 
     expect(store.nodeOutputs['7']?.animated).toBeUndefined()
+    expect(store.nodeOutputs['7']?.video).toBeUndefined()
     expect(store.nodeOutputs['7']?.images).toEqual(images)
   })
 })

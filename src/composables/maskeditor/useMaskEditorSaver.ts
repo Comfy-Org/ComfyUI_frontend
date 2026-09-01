@@ -285,7 +285,7 @@ export function useMaskEditorSaver() {
     )
 
     node.imgs = undefined
-    nodeOutputStore.setNodeOutputImages(node, [
+    nodeOutputStore.replaceNodeOutputImages(node, [
       {
         filename: mainRef.filename,
         subfolder: mainRef.subfolder,

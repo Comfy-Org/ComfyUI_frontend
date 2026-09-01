@@ -1,5 +1,5 @@
 import { useTimeoutFn } from '@vueuse/core'
-import { mapKeys, omit } from 'es-toolkit'
+import { mapKeys } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -246,9 +246,26 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (!locatorId) return
 
     setOutputsByLocatorId(locatorId, {
-      ...omit(nodeOutputs.value[locatorId] ?? {}, ['animated']),
+      ...nodeOutputs.value[locatorId],
       images
     })
+    node.images = images
+  }
+
+  /**
+   * Replaces a node's output with exactly these images, dropping any media
+   * metadata the previous output carried. `animated`, `video` and friends are
+   * parallel to the images they were produced with, so an editor that rewrites
+   * the image list wholesale must not inherit them.
+   */
+  function replaceNodeOutputImages(
+    node: LGraphNode,
+    images: NonNullable<ExecutedWsMessage['output']['images']>
+  ) {
+    const locatorId = nodeToNodeLocatorId(node)
+    if (!locatorId) return
+
+    setOutputsByLocatorId(locatorId, { images })
     node.images = images
   }
 
@@ -508,6 +525,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     setNodeOutputs,
     setNodeOutputImages,
+    replaceNodeOutputImages,
     setNodeOutputsByExecutionId,
     setNodePreviewsByExecutionId,
     setNodePreviewsByLocatorId,
