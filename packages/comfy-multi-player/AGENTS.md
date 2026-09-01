@@ -36,6 +36,8 @@ fewer source blocks than its floor — and `2` is never a pass. The purity gate 
 
 Mutation testing (`npm run test:mutation`, nightly in `mutation.yml`) is only comparable across runs because `stryker.config.mjs` pins `timeoutMS`, `timeoutFactor`, `concurrency` and `coverageAnalysis`. Stryker scores a `Timeout` as killed, so with those unpinned the score rises with host load. Do not unpin them, and do not quote a score without running `npm run check:mutation-report` — it re-derives the number, reports `Timeout` separately, and exits 2 INCONCLUSIVE when timeouts are material.
 
+CI deliberately omits a raw line or branch coverage floor. The mutation threshold plus the survivor and no-coverage inventory is the primary coverage-quality gate; adding a line/branch floor would measure execution breadth without proving assertions catch behavioral changes. This is a gate choice, not an invariant exception, so it belongs here and in `docs/mutation-testing.md`, not in `docs/decisions/EXCEPTIONS.md`.
+
 Reviewer-agent concern profiles live in `.agents/checks/`. Apply every relevant profile to semantic, export, dependency, catalog, and replication-boundary changes.
 
 ## Permutation and property testing
