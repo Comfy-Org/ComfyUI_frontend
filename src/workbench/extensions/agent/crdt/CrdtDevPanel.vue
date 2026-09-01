@@ -202,6 +202,8 @@ function setOpen(value: boolean) {
 // ── live document facts ───────────────────────────────────────────────────
 const docState = shallowRef<CrdtDebugSnapshot | null>(null)
 let pollHandle: ReturnType<typeof setInterval> | undefined
+let logCopyReset: ReturnType<typeof setTimeout> | undefined
+let reportCopyReset: ReturnType<typeof setTimeout> | undefined
 
 function poll() {
   if (!open.value || tab.value !== 'status') return
@@ -215,6 +217,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (pollHandle !== undefined) clearInterval(pollHandle)
+  clearTimeout(logCopyReset)
+  clearTimeout(reportCopyReset)
 })
 
 watch(tab, poll)
@@ -319,15 +323,23 @@ function verdictLabel(entry: MergeTraceEntry): string {
 }
 
 // ── copy actions ──────────────────────────────────────────────────────────
-const copyState = ref<'idle' | 'busy' | 'done' | 'failed'>('idle')
+type CopyState = 'idle' | 'busy' | 'done' | 'failed'
+const logCopyState = ref<CopyState>('idle')
+const reportCopyState = ref<CopyState>('idle')
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
 const { copy } = useClipboard({ legacy: true })
 
 const copyReportLabel = computed(() => {
-  if (copyState.value === 'busy') return S.copying
-  if (copyState.value === 'done') return S.copied
-  if (copyState.value === 'failed') return S.copyFailed
+  if (reportCopyState.value === 'busy') return S.copying
+  if (reportCopyState.value === 'done') return S.copied
+  if (reportCopyState.value === 'failed') return S.copyFailed
   return S.copyReport
+})
+
+const copyLogLabel = computed(() => {
+  if (logCopyState.value === 'done') return S.copied
+  if (logCopyState.value === 'failed') return S.copyFailed
+  return S.copyLog
 })
 
 async function writeClipboard(text: string): Promise<boolean> {
@@ -339,23 +351,31 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-function flashCopyState(ok: boolean) {
-  copyState.value = ok ? 'done' : 'failed'
-  setTimeout(() => (copyState.value = 'idle'), 1600)
+function flashLogCopyState(ok: boolean) {
+  clearTimeout(logCopyReset)
+  logCopyState.value = ok ? 'done' : 'failed'
+  logCopyReset = setTimeout(() => (logCopyState.value = 'idle'), 1600)
+}
+
+function flashReportCopyState(ok: boolean) {
+  clearTimeout(reportCopyReset)
+  reportCopyState.value = ok ? 'done' : 'failed'
+  reportCopyReset = setTimeout(() => (reportCopyState.value = 'idle'), 1600)
 }
 
 async function copyLog() {
   try {
-    flashCopyState(
+    flashLogCopyState(
       await writeClipboard(stringifyDevEvents(matchingEvents.value))
     )
   } catch {
-    flashCopyState(false)
+    flashLogCopyState(false)
   }
 }
 
 async function copyReport() {
-  copyState.value = 'busy'
+  clearTimeout(reportCopyReset)
+  reportCopyState.value = 'busy'
   try {
     const report = await collectCrdtDebugReport({
       crdt: snapshot?.() ?? docState.value ?? fallbackSnapshot(),
@@ -367,9 +387,9 @@ async function copyReport() {
         ? serializeActiveWorkflow()
         : undefined
     })
-    flashCopyState(await writeClipboard(report))
+    flashReportCopyState(await writeClipboard(report))
   } catch {
-    flashCopyState(false)
+    flashReportCopyState(false)
   }
 }
 
@@ -845,11 +865,11 @@ function fmtTime(at: number): string {
             class="border-agent-border hover:bg-agent-surface-hover flex-1 cursor-pointer rounded-sm border px-2 py-1"
             @click="copyLog"
           >
-            {{ S.copyLog }}
+            {{ copyLogLabel }}
           </button>
           <button
             type="button"
-            :disabled="copyState === 'busy'"
+            :disabled="reportCopyState === 'busy'"
             class="border-agent-accent hover:bg-agent-surface-hover flex-2 cursor-pointer rounded-sm border px-2 py-1 disabled:cursor-default"
             data-testid="crdt-dev-panel-copy-report"
             @click="copyReport"
