@@ -8,6 +8,8 @@ const TEST_FIXTURE_MARKERS = [
   'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
 ] as const
 
+const DISTRIBUTIONS = ['localhost', 'desktop', 'cloud'] as const
+
 function artifactFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name)
@@ -45,6 +47,9 @@ export function assertAssetApiGate(
   chunks: ReadonlyArray<string>,
   distribution: string
 ): void {
+  if (!DISTRIBUTIONS.includes(distribution as (typeof DISTRIBUTIONS)[number])) {
+    throw new Error(`Unsupported distribution: ${distribution}`)
+  }
   const gate = assetApiGates(chunks)
   const hasDisabledReturn = /return(?: false|!1)/.test(gate)
   const hasSettingLookup = /Comfy\.Assets\.UseAssetAPI/.test(gate)
