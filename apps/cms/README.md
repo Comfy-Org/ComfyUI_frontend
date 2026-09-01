@@ -47,6 +47,31 @@ Uploads land on the Next server's local disk unless `GCS_BUCKET` is set. With th
 GCS vars configured, uploads go to the bucket behind the `media.comfy.org` CDN and
 each media doc's `url` becomes an absolute CDN url. See `.env.example`.
 
+With GCS enabled, the admin browser uploads the file directly to a signed GCS
+url (`clientUploads`) rather than through `/api/media` — Vercel rejects request
+bodies over 4.5 MB at the edge, and the event videos run 5–25 MB. Minting a
+signed write url requires the `admin` role. This needs a one-time CORS rule on
+the bucket allowing `PUT` from the CMS origin (check the existing rules first
+with `gcloud storage buckets describe gs://<GCS_BUCKET> --format='default(cors_config)'`
+and merge rather than overwrite):
+
+```bash
+cat > cors.json <<'EOF'
+[
+  {
+    "origin": ["https://<cms-domain>"],
+    "method": ["PUT"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]
+EOF
+gcloud storage buckets update gs://<GCS_BUCKET> --cors-file=cors.json
+```
+
+Without the CORS rule the browser's `PUT` is blocked and every upload in the
+deployed admin panel fails; local dev (no `GCS_BUCKET`) is unaffected.
+
 **Uploading publishes the file immediately.** Media has no draft state: the
 moment an asset is uploaded it is downloadable from the CDN and listed by
 `GET /api/media`, even while the document using it is still a draft. This

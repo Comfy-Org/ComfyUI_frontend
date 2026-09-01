@@ -13,6 +13,7 @@ import { Events } from './collections/Events'
 import { Creators } from './collections/Creators'
 import { Teams } from './collections/Teams'
 import { Tools } from './collections/Tools'
+import { isAdmin } from './access/adminOnly'
 import { rebuildWebsiteEndpoint } from './endpoints/rebuildWebsite'
 import { gcsMediaPrefix, gcsPublicBase } from './mediaUrl'
 
@@ -111,6 +112,16 @@ export default buildConfig({
       enabled: Boolean(gcsBucket),
       bucket: gcsBucket || '',
       acl: 'Public',
+      // The admin browser PUTs the file straight to a signed GCS url instead of
+      // POSTing it through /api/media — Vercel rejects request bodies over
+      // 4.5 MB at the edge, and the event videos run 5–25 MB. The plugin's
+      // default access is any authenticated user, which would let a
+      // `website-preview` key mint signed write urls into the public CDN
+      // bucket, so minting is admin-only. Needs bucket CORS allowing PUT from
+      // the CMS origin (see README, "Media storage").
+      clientUploads: {
+        access: ({ req }) => isAdmin(req.user),
+      },
       options: {
         projectId: process.env.GCS_PROJECT_ID,
         credentials: gcsCredentials,

@@ -1,6 +1,6 @@
 import type { Access, PayloadRequest } from 'payload'
 
-const isAdmin = (user: PayloadRequest['user']) => user?.role === 'admin'
+export const isAdmin = (user: PayloadRequest['user']) => user?.role === 'admin'
 
 // Content mutations and user administration are admin-only. The `website-preview`
 // role exists solely to read drafts through an API key, so it must fail this
