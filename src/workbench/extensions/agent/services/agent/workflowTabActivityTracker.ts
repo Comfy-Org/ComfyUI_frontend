@@ -14,10 +14,10 @@ export function registerWorkflowTabActivityTracker(
   enabled: Readonly<Ref<boolean>>
 ): () => void {
   const scope = effectScope(true)
+  let trackerScope: EffectScope | undefined
   scope.run(() => {
     const workflowStore = useWorkflowStore()
     const tabActivity = useWorkflowTabActivityStore()
-    let trackerScope: EffectScope | undefined
 
     watch(
       enabled,
@@ -46,5 +46,8 @@ export function registerWorkflowTabActivityTracker(
       { immediate: true }
     )
   })
-  return () => scope.stop()
+  return () => {
+    trackerScope?.stop()
+    scope.stop()
+  }
 }
