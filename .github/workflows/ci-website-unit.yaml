@@ -1,0 +1,83 @@
+# Description: Unit tests + coverage reporting for the website (apps/website)
+name: 'CI: Website Unit'
+
+on:
+  push:
+    branches: [main, master, website/*]
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app-website-changes: ${{ steps.changes.outputs.app-website-changes }}
+      packages-changes: ${{ steps.changes.outputs.packages-changes }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  website-unit:
+    needs: changes
+    if: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run website unit tests with coverage
+        run: pnpm --filter @comfyorg/website test:coverage
+
+      - name: Upload website coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          working-directory: ./apps/website
+          files: ./coverage/lcov.info
+          disable_search: true
+          flags: website-unit
+          # Re-root LCOV paths to prevent collisions with root-app coverage.
+          network_prefix: apps/website/
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # Forks have no token, so upload failures cannot block contributors.
+          fail_ci_if_error: ${{ github.event.pull_request.head.repo.fork != true }}
+
+  # Stable branch-protection context when tests are skipped.
+  website-unit-gate:
+    needs: [changes, website-unit]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify website unit tests passed or were not required
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          UNIT_RESULT: ${{ needs.website-unit.result }}
+          WEBSITE_CHANGED: ${{ needs.changes.outputs.app-website-changes }}
+          PACKAGES_CHANGED: ${{ needs.changes.outputs.packages-changes }}
+        run: |
+          if [ "$UNIT_RESULT" = "success" ]; then
+            echo "Website unit tests passed."
+            exit 0
+          fi
+          # Pass skipped tests only after successful filtering found no relevant changes.
+          if [ "$UNIT_RESULT" = "skipped" ] &&
+             [ "$CHANGES_RESULT" = "success" ] &&
+             [ "$WEBSITE_CHANGED" != "true" ] &&
+             [ "$PACKAGES_CHANGED" != "true" ]; then
+            echo "No website or package changes; website unit tests not required."
+            exit 0
+          fi
+          echo "::error title=Website unit tests::changes=$CHANGES_RESULT unit=$UNIT_RESULT website=$WEBSITE_CHANGED packages=$PACKAGES_CHANGED"
+          exit 1

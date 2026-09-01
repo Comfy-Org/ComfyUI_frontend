@@ -2,6 +2,7 @@ import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const MCP_ENDPOINT = 'https://cloud.comfy.org/mcp'
 
@@ -30,11 +31,14 @@ test.describe('MCP page @smoke', () => {
     }
   })
 
-  test('Claude Desktop is the default tab and shows only the connector card', async ({
+  test('cloud is the default connection with Claude Desktop active', async ({
     page
   }) => {
     const setup = page.locator('#setup')
     await setup.scrollIntoViewIfNeeded()
+    await expect(
+      setup.getByRole('tab', { name: /Comfy Cloud/ })
+    ).toHaveAttribute('data-state', 'active')
     await expect(
       setup.getByRole('tab', { name: 'Claude Desktop' })
     ).toHaveAttribute('data-state', 'active')
@@ -55,7 +59,11 @@ test.describe('MCP page @smoke', () => {
   }) => {
     const setup = page.locator('#setup')
     await setup.scrollIntoViewIfNeeded()
-    const activePanel = setup.locator('[role="tabpanel"][data-state="active"]')
+    // Nested tabs: the connection panel and the client panel are both active,
+    // so target the innermost (client) panel.
+    const activePanel = setup
+      .locator('[role="tabpanel"][data-state="active"]')
+      .last()
     const agentHeading = setup.getByRole('heading', {
       name: 'Ask your agent to install Comfy MCP'
     })
@@ -109,6 +117,59 @@ test.describe('MCP page @smoke', () => {
     ).toHaveAttribute('href', 'https://github.com/Comfy-Org/comfy-skills')
   })
 
+  test('local connection tab swaps in the open-source install flow', async ({
+    page
+  }) => {
+    const setup = page.locator('#setup')
+    await setup.scrollIntoViewIfNeeded()
+
+    const localTab = setup.getByRole('tab', { name: /Local ComfyUI/ })
+    await expect(async () => {
+      await localTab.click()
+      await expect(localTab).toHaveAttribute('data-state', 'active', {
+        timeout: 500
+      })
+    }).toPass()
+
+    await expect(
+      setup.getByRole('heading', { name: 'Install the server' })
+    ).toBeVisible()
+    await expect(
+      setup.getByText('pip install comfy-mcp', { exact: true })
+    ).toBeVisible()
+
+    // Claude Code is the default local client and pairs with the agent card.
+    await expect(
+      setup.getByText('claude mcp add comfy-mcp -- comfy-mcp', { exact: true })
+    ).toBeVisible()
+    await expect(
+      setup.getByRole('heading', {
+        name: 'Ask your agent to install Comfy MCP'
+      })
+    ).toBeVisible()
+
+    // The open-source requirement line replaces the subscription note.
+    await expect(
+      setup.getByRole('link', { name: 'open source on GitHub' })
+    ).toHaveAttribute('href', 'https://github.com/Comfy-Org/comfy-mcp')
+    await expect(
+      setup.getByRole('link', { name: 'subscription of any tier' })
+    ).toHaveCount(0)
+
+    // Client tabs inside the local panel swap the per-client instructions.
+    await selectClientTab(setup, 'Cursor')
+    await expect(
+      setup.locator('[role="tabpanel"][data-state="active"]').last()
+    ).toContainText('.cursor/mcp.json')
+
+    // Switching back to cloud restores the subscription note and endpoint.
+    await setup.getByRole('tab', { name: /Comfy Cloud/ }).click()
+    await expect(
+      setup.getByRole('link', { name: 'subscription of any tier' })
+    ).toBeVisible()
+    await expect(setup.getByText(MCP_ENDPOINT, { exact: true })).toBeVisible()
+  })
+
   test('capabilities section shows all six tool cards', async ({ page }) => {
     for (const title of [
       'Generate anything',
@@ -124,6 +185,20 @@ test.describe('MCP page @smoke', () => {
     }
   })
 
+  test('production use cases section offers a click-to-play walkthrough', async ({
+    page
+  }) => {
+    const heading = page.getByRole('heading', {
+      name: 'Production use cases.'
+    })
+    await heading.scrollIntoViewIfNeeded()
+    await expect(heading).toBeVisible()
+
+    const video = page.getByLabel(/running production jobs/)
+    await expect(video).toHaveAttribute('poster', /production-use-cases/)
+    await expect(video).not.toHaveAttribute('autoplay', /.*/)
+  })
+
   test('FAQ lists nine questions and autolinks the server URL', async ({
     page
   }) => {
@@ -134,6 +209,7 @@ test.describe('MCP page @smoke', () => {
     const question = page.getByRole('button', {
       name: "What's the server URL?"
     })
+    await waitForIsland(page, question)
     await question.click()
     await expect(question).toHaveAttribute('aria-expanded', 'true')
     await expect(

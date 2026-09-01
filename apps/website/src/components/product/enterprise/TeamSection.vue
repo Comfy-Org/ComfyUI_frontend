@@ -3,13 +3,10 @@ import { computed } from 'vue'
 
 import type { Locale } from '../../../i18n/translations'
 
-import { getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import FeatureShowcaseSection from '../shared/FeatureShowcaseSection.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-
-const routes = computed(() => getRoutes(locale))
 
 const features = computed(() => [
   {

@@ -17,7 +17,7 @@ jobs:
       app-frontend-changes: ${{ steps.changes.outputs.app-frontend-changes }}
       packages-changes: ${{ steps.changes.outputs.packages-changes }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -35,7 +35,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Upsert storybook starting section into unified report
         uses: ./.github/actions/upsert-comment-section
@@ -60,7 +60,7 @@ jobs:
       workflow-url: ${{ steps.workflow-url.outputs.url }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -107,7 +107,7 @@ jobs:
       chromatic-storybook-url: ${{ steps.chromatic.outputs.storybookUrl }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Required for Chromatic baseline
 
@@ -152,11 +152,11 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Download Storybook build
         if: needs.storybook-build.outputs.conclusion == 'success'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: storybook-static
           path: storybook-static
@@ -182,7 +182,7 @@ jobs:
       - name: Read storybook section
         id: section
         if: hashFiles('storybook-section.md') != ''
-        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+        uses: juliangruber/read-file-action@271ff311a4947af354c6abcd696a306553b9ec18 # v1.1.8
         with:
           path: storybook-section.md
 
@@ -202,7 +202,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -215,7 +215,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          npx wrangler@^4.0.0 pages deploy storybook-static \
+          pnpx wrangler@^4.0.0 pages deploy storybook-static \
             --project-name=comfy-storybook \
             --branch=main
 
@@ -228,7 +228,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Upsert Chromatic section into unified report
         uses: ./.github/actions/upsert-comment-section

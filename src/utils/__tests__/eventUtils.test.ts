@@ -1,5 +1,5 @@
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { extractFilesFromDragEvent, getDroppedAsset } from '@/utils/eventUtils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
   describe('extractFilesFromDragEvent', () => {
@@ -10,9 +10,6 @@ describe('eventUtils', () => {
       vi.stubGlobal('fetch', fetchSpy)
     })
 
-    afterEach(() => {
-      vi.unstubAllGlobals()
-    })
     it('should return empty array when no dataTransfer', async () => {
       const actual = await extractFilesFromDragEvent(new FakeDragEvent('drop'))
       expect(actual).toEqual([])
@@ -158,6 +155,61 @@ describe('eventUtils', () => {
       )
 
       expect(actual).toEqual([])
+    })
+  })
+
+  describe('getDroppedAsset', () => {
+    it('returns the media-card name and URI before the URI is fetched', () => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({
+          filename: 'asset.png',
+          display_name: 'My asset',
+          attachment_ref: 'stored-asset.png',
+          media_kind: 'image',
+          preview_url: 'http://localhost/api/assets/asset/content'
+        })
+      )
+      dataTransfer.setData('text/uri-list', 'http://localhost/api/view?x=1')
+
+      expect(getDroppedAsset(dataTransfer)).toEqual({
+        name: 'My asset',
+        uri: 'http://localhost/api/view?x=1',
+        ref: 'stored-asset.png',
+        kind: 'image',
+        previewUrl: 'http://localhost/api/assets/asset/content'
+      })
+    })
+
+    it('returns an existing attachment reference without requiring a URI', () => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({
+          filename: 'asset.mp4',
+          attachment_ref: 'stored-asset.mp4',
+          media_kind: 'video'
+        })
+      )
+
+      expect(getDroppedAsset(dataTransfer)).toEqual({
+        name: 'asset.mp4',
+        uri: undefined,
+        ref: 'stored-asset.mp4',
+        kind: 'video',
+        previewUrl: undefined
+      })
+    })
+
+    it('returns undefined when a Media card has no URI', () => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({ filename: 'asset.png' })
+      )
+
+      expect(getDroppedAsset(dataTransfer)).toBeUndefined()
     })
   })
 })

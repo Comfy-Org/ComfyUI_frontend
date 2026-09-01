@@ -25,7 +25,6 @@ describe('forwardMiddleButtonToCanvas', () => {
   let controller: AbortController
 
   beforeEach(() => {
-    vi.clearAllMocks()
     inputEl = document.createElement('div')
     controller = new AbortController()
     forwardMiddleButtonToCanvas(inputEl, controller.signal)

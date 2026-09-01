@@ -57,7 +57,10 @@ export function pageContext(
 ): PageContext & { url: string } {
   return {
     siteUrl: siteUrlFrom(site),
-    locale: currentLocale === 'zh-CN' ? 'zh-CN' : 'en',
+    locale:
+      currentLocale === 'zh-CN' || currentLocale === 'ja'
+        ? currentLocale
+        : 'en',
     url: absoluteUrl(site, pathname)
   }
 }
@@ -140,6 +143,21 @@ export function itemListNode(
       position: index + 1,
       url: item.url,
       ...(item.name ? { name: item.name } : {})
+    }))
+  }
+}
+
+export function faqPageNode(
+  pageUrl: string,
+  items: readonly { question: string; answer: string }[]
+): JsonLdNode {
+  return {
+    '@type': 'FAQPage',
+    '@id': jsonLdId(pageUrl, 'faq'),
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer }
     }))
   }
 }
@@ -398,7 +416,8 @@ export interface VideoObjectInput {
   name: string
   description: string
   thumbnailUrl: string
-  contentUrl: string
+  /** Self-hosted media URL; omit for embed-only videos (set embedUrl instead). */
+  contentUrl?: string
   uploadDate: string
   locale: Locale
   embedUrl?: string

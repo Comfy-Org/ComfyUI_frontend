@@ -60,7 +60,7 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: { value: true },
+    canAccessSubscriptionFeatures: { value: true },
     isFreeTier: { value: false },
     type: { value: 'legacy' }
   })
@@ -90,7 +90,6 @@ import { useDialogService } from '@/services/dialogService'
 
 describe('showDowngradeToPersonalDialog', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     hasOtherMembers.value = false
     openDialogKeys.value = []
     refreshMembers.mockResolvedValue(undefined)

@@ -32,6 +32,26 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
+  test('ModelReleaseSection carousel shows the active slide', async ({
+    page
+  }) => {
+    const activeSlide = page.locator('article[aria-hidden="false"]', {
+      hasText: 'New Model Release'
+    })
+    await expect(activeSlide.getByText('New Model Release')).toBeVisible()
+    const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
+    await expect(cta).toBeVisible()
+    await expect(cta).toHaveAttribute('href', '/seedance-2.5')
+  })
+
+  test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {
+    const carousel = page.locator('[aria-roledescription="carousel"]')
+    await expect(carousel).toBeVisible()
+    await expect(
+      carousel.getByRole('link', { name: 'FLUX 3 Video: Text to Video' })
+    ).toBeVisible()
+  })
+
   test('ProductShowcase section is visible', async ({ page }) => {
     await expect(page.getByText('HOW', { exact: true }).first()).toBeVisible()
     await expect(
@@ -39,10 +59,11 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
-  test('UseCaseSection is visible', async ({ page }) => {
+  test('IndustriesSection is visible', async ({ page }) => {
     await expect(
-      page.getByText('Industries that create with ComfyUI')
+      page.getByRole('button', { name: 'VFX & Animation' })
     ).toBeVisible()
+    await expect(page.getByText(/Powered by 60,000\+ nodes/)).toBeVisible()
   })
 
   test('GetStartedSection with heading is visible', async ({ page }) => {
@@ -112,11 +133,6 @@ test.describe('Homepage @smoke', () => {
     expect(ctaBox).not.toBeNull()
     expect(ctaBox!.y - (subBox!.y + subBox!.height)).toBeGreaterThanOrEqual(24)
   })
-
-  test('BuildWhatSection is visible', async ({ page }) => {
-    // "DOESN'T EXIST" is the actual badge text rendered in the Build What section
-    await expect(page.getByText("DOESN'T EXIST")).toBeVisible()
-  })
 })
 
 test.describe('Product showcase accordion @interaction', () => {
@@ -150,6 +166,22 @@ test.describe('Product showcase accordion @interaction', () => {
 
     await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
     await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
+  })
+
+  test('third feature shows the mask scene on mobile @mobile', async ({
+    page
+  }) => {
+    const thirdFeature = page
+      .getByRole('button', { name: /Community Workflows/i })
+      .first()
+
+    await thirdFeature.scrollIntoViewIfNeeded()
+    await thirdFeature.click()
+
+    // The CSS-hidden desktop copy is also in the DOM; target the mobile one.
+    const maskScene = page.locator('.vms-stage:visible')
+    await expect(maskScene).toBeVisible()
+    await expect(maskScene.locator('video').first()).toBeAttached()
   })
 })
 
@@ -199,7 +231,7 @@ test.describe('Product cards links @smoke', () => {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
 
-    for (const href of ['/download', '/cloud', '/api', '/cloud/enterprise']) {
+    for (const href of ['/download', '/cloud', '/api', '/enterprise']) {
       await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })

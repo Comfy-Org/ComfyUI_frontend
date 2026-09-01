@@ -17,13 +17,6 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ onUserResolved: mockOnUserResolved })
 }))
 
-const topupMocks = vi.hoisted(() => ({
-  startTopupTracking: vi.fn(),
-  clearTopupTracking: vi.fn(),
-  checkForCompletedTopup: vi.fn().mockReturnValue(true)
-}))
-vi.mock('@/platform/telemetry/topupTracker', () => topupMocks)
-
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
   normalizeSurveyResponses: mockNormalizeSurveyResponses
@@ -58,13 +51,8 @@ const waitForMixpanelInit = () =>
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
 
-beforeEach(() => {
-  localStorage.clear()
-})
-
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     delete (window as unknown as ConfigWindow).__CONFIG__
   })
 
@@ -88,7 +76,6 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
 
 describe('MixpanelTelemetryProvider — with configured token', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -281,7 +268,6 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
 describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -532,25 +518,5 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
         is_app_mode: true
       }
     )
-  })
-})
-
-describe('MixpanelTelemetryProvider — topup delegation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    delete (window as unknown as ConfigWindow).__CONFIG__
-  })
-
-  it('forwards topup lifecycle calls to the topupTracker utility', () => {
-    const provider = new MixpanelTelemetryProvider()
-
-    provider.startTopupTracking()
-    provider.clearTopupTracking()
-    const result = provider.checkForCompletedTopup([])
-
-    expect(topupMocks.startTopupTracking).toHaveBeenCalled()
-    expect(topupMocks.clearTopupTracking).toHaveBeenCalled()
-    expect(topupMocks.checkForCompletedTopup).toHaveBeenCalledWith([])
-    expect(result).toBe(true)
   })
 })

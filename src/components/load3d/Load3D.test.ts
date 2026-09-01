@@ -154,7 +154,6 @@ function renderLoad3D(options: RenderOptions = {}) {
 
 describe('Load3D', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     load3dState.current = null
   })
 

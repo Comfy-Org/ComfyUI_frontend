@@ -28,7 +28,6 @@ function makePack(overrides: Partial<NodePack> = {}): NodePack {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
   mockIsPackInstalled.mockReturnValue(true)
   mockIsPackEnabled.mockReturnValue(true)
   mockGetInstalledPackVersion.mockReturnValue('1.0.0')

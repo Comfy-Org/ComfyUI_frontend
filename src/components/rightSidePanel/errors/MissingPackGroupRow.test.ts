@@ -127,9 +127,6 @@ function renderRow(
 
 describe('MissingPackGroupRow', () => {
   beforeEach(() => {
-    mockInstallAllPacks.mockClear()
-    mockOpenManager.mockClear()
-    mockIsPackInstalled.mockReset()
     mockIsPackInstalled.mockReturnValue(false)
     mockShouldShowManagerButtons.value = false
     mockIsInstalling.value = false

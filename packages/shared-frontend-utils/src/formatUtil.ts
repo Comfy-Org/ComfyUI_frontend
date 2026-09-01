@@ -1,4 +1,3 @@
-import { default as DOMPurify } from 'dompurify'
 import type { operations } from '@comfyorg/registry-types'
 
 export function formatCamelCase(str: string): string {
@@ -64,15 +63,16 @@ export function ensureWorkflowSuffix(
   return name + '.' + suffix
 }
 
+interface HighlightQueryPart {
+  text: string
+  highlighted: boolean
+}
+
 export function highlightQuery(
   text: string,
-  query: string,
-  sanitize: boolean = true
-) {
-  if (!query) return text
-  if (sanitize) {
-    text = DOMPurify.sanitize(text)
-  }
+  query: string
+): HighlightQueryPart[] {
+  if (!query) return [{ text, highlighted: false }]
 
   // Escape special regex characters, then join with an optional single
   // space so cross-word matches (e.g. "geto" → "imaGE TO") are
@@ -81,8 +81,26 @@ export function highlightQuery(
     .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     .join('[ ]?')
 
-  const regex = new RegExp(`(${pattern})`, 'gi')
-  return text.replace(regex, '<span class="highlight">$1</span>')
+  const regex = new RegExp(pattern, 'gi')
+  const parts: HighlightQueryPart[] = []
+  let lastIndex = 0
+
+  for (const match of text.matchAll(regex)) {
+    if (match.index > lastIndex) {
+      parts.push({
+        text: text.slice(lastIndex, match.index),
+        highlighted: false
+      })
+    }
+    parts.push({ text: match[0], highlighted: true })
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < text.length || parts.length === 0) {
+    parts.push({ text: text.slice(lastIndex), highlighted: false })
+  }
+
+  return parts
 }
 
 export function formatNumberWithSuffix(
@@ -176,6 +194,33 @@ export function getPathDetails(path: string) {
  */
 export function normalizeI18nKey(key: string) {
   return typeof key === 'string' ? key.replace(/\./g, '_') : ''
+}
+
+const VUE_I18N_BACKSLASH = /\\/g
+const VUE_I18N_SYNTAX_CHARS = /[@${}|%]/g
+
+/**
+ * Escapes vue-i18n message syntax so arbitrary text can be stored as a locale
+ * message and rendered verbatim by `t()`.
+ *
+ * Backslash is doubled rather than wrapped in a literal interpolation: since
+ * vue-i18n 11 the message compiler reads `\` as an escape introducer, so a
+ * backslash before an escaped character would swallow the `{` this emits, and
+ * `{'\'}` would escape its own closing quote. Doubling must therefore run
+ * first; the literal interpolations it emits contain no backslashes.
+ *
+ * Apply exactly once. This is NOT idempotent, because the escape output itself
+ * contains `{`/`}`.
+ *
+ * Apply only to values read back through `t()`/`st()`. Values read through
+ * `tm()`/`stRaw()` are never compiled, so escaping them renders the escape
+ * syntax literally.
+ */
+export function escapeI18nMessage(text: string): string {
+  if (typeof text !== 'string') return ''
+  return text
+    .replace(VUE_I18N_BACKSLASH, '\\\\')
+    .replace(VUE_I18N_SYNTAX_CHARS, (char) => `{'${char}'}`)
 }
 
 /**
@@ -357,6 +402,13 @@ export const paramsToCacheKey = (params: unknown): string => {
 
   return String(params)
 }
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Accepts canonical UUIDs of any version or variant for legacy compatibility. */
+export const isValidUuid = (value: unknown): value is string =>
+  typeof value === 'string' && UUID_PATTERN.test(value)
 
 /**
  * Generates a RFC4122 compliant UUID v4 using the native crypto API when available
@@ -590,7 +642,7 @@ const IMAGE_EXTENSIONS = [
   'svg'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus'] as const
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus', 'm4a'] as const
 const THREE_D_EXTENSIONS = [
   'obj',
   'fbx',

@@ -74,9 +74,6 @@ describe('Load3DScene', () => {
   beforeEach(() => {
     dragState.isDragging = ref(false)
     dragState.dragMessage = ref('')
-    dragState.handleDragOver.mockReset()
-    dragState.handleDragLeave.mockReset()
-    dragState.handleDrop.mockReset()
     dragState.capturedOptions = null
   })
 

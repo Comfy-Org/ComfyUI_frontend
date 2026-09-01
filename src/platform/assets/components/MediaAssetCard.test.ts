@@ -1,13 +1,13 @@
-import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
 const { downloadAssets } = vi.hoisted(() => ({
   downloadAssets: vi.fn()
@@ -34,17 +34,16 @@ vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
   })
 }))
 
-const asset: AssetItem = {
+const asset: AssetItem = fromPartial({
   id: 'a',
   name: 'a.png',
   tags: [],
   preview_url: '/preview.png'
-}
+})
 
 function renderCard(
   props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
 ) {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -84,10 +83,6 @@ function dispatchDragStart(
 }
 
 describe('MediaAssetCard', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('dragStart', () => {
     it('cancels the native drag when Ctrl is held so a marquee can start over the card', () => {
       const { container } = renderCard()
@@ -112,14 +107,31 @@ describe('MediaAssetCard', () => {
       const { event, add } = dispatchDragStart(container)
 
       expect(event.defaultPrevented).toBe(false)
-      expect(add).toHaveBeenCalledWith(
+      expect(add).toHaveBeenNthCalledWith(
+        1,
         JSON.stringify({
           filename: 'a.png',
           subfolder: '',
           type: 'output',
-          display_name: 'Display A'
+          display_name: 'Display A',
+          // The agent composer resolves an attachment from these three.
+          attachment_ref: 'a.png',
+          media_kind: 'image',
+          preview_url: 'http://localhost:3000/api/preview.png'
         }),
-        expect.any(String)
+        MIME_ASSET_INFO
+      )
+    })
+
+    it('offers the preview URL as a uri-list flavour for external drop targets', () => {
+      const { container } = renderCard()
+
+      const { add } = dispatchDragStart(container)
+
+      expect(add).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:3000/api/preview.png',
+        'text/uri-list'
       )
     })
   })
@@ -127,6 +139,8 @@ describe('MediaAssetCard', () => {
   it('keeps download and more actions independent from selection', async () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({ loading: false, selected: true })
+
+    await user.hover(await screen.findByRole('img', { name: 'a.png' }))
 
     await user.click(
       screen.getByRole('button', { name: 'mediaAsset.actions.download' })
@@ -180,6 +194,111 @@ describe('MediaAssetCard', () => {
     expect(emitted().zoom).toBeUndefined()
   })
 
+  it.for([
+    { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+    { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+    { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+  ])(
+    '$modifier-clicks a video preview to select without starting playback',
+    async ({ keyDown, keyUp }) => {
+      const user = userEvent.setup()
+      const { container, emitted } = renderCard({
+        loading: false,
+        asset: { ...asset, name: 'clip.mp4' }
+      })
+      const video = await vi.waitFor(() => {
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+        const element = container.querySelector('video')
+        expect(element).toBeInTheDocument()
+        return element!
+      })
+      const playSpy = vi
+        .spyOn(video, 'play')
+        .mockImplementation(() => Promise.resolve())
+
+      Object.defineProperty(video, 'paused', {
+        value: true,
+        configurable: true
+      })
+
+      await user.keyboard(keyDown)
+      await user.click(video)
+      await user.keyboard(keyUp)
+
+      expect(playSpy).not.toHaveBeenCalled()
+      expect(emitted().select).toHaveLength(1)
+    }
+  )
+
+  it('disables native controls for compact video cards', async () => {
+    const user = userEvent.setup()
+    const { container } = renderCard({
+      loading: false,
+      asset: { ...asset, name: 'clip.mp4' },
+      showNativeVideoControls: false
+    })
+    const video = await vi.waitFor(() => {
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const element = container.querySelector('video')
+      expect(element).toBeInTheDocument()
+      return element!
+    })
+    const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
+
+    Object.defineProperty(video, 'paused', {
+      value: false,
+      configurable: true
+    })
+
+    await fireEvent.play(video)
+    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
+    const hoverTarget = video.parentElement!
+    await user.hover(hoverTarget)
+
+    expect(video.controls).toBe(false)
+    expect(
+      screen.getByRole('button', { name: 'mediaAsset.actions.download' })
+    ).toBeInTheDocument()
+
+    await user.click(video)
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
+    await fireEvent.pause(video)
+  })
+
+  it('preserves action focus when the pointer leaves a playing compact video', async () => {
+    const user = userEvent.setup()
+    const { container } = renderCard({
+      loading: false,
+      asset: { ...asset, name: 'clip.mp4' },
+      showNativeVideoControls: false
+    })
+    const video = await vi.waitFor(() => {
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const element = container.querySelector('video')
+      expect(element).toBeInTheDocument()
+      return element!
+    })
+
+    // eslint-disable-next-line testing-library/no-node-access -- the video hover target has no role
+    const hoverTarget = video.parentElement!
+    const selectionControl = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    await user.tab()
+    expect(selectionControl).toHaveFocus()
+    await user.tab()
+    const downloadButton = screen.getByRole('button', {
+      name: 'mediaAsset.actions.download'
+    })
+    expect(downloadButton).toHaveFocus()
+
+    await user.hover(hoverTarget)
+    await fireEvent.play(video)
+    await user.unhover(hoverTarget)
+
+    expect(downloadButton).toHaveFocus()
+  })
+
   it('selects the asset from the info area or selection control', async () => {
     const user = userEvent.setup()
     const { emitted } = renderCard({ loading: false })
@@ -206,6 +325,49 @@ describe('MediaAssetCard', () => {
       'group-hover:pointer-events-auto',
       'focus-visible:pointer-events-auto'
     )
+  })
+
+  it('preserves card action tab order after a pointer interaction', async () => {
+    const user = userEvent.setup()
+    renderCard({ loading: false })
+
+    const selectionControl = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    await user.click(selectionControl)
+    await user.unhover(selectionControl)
+
+    expect(selectionControl).toHaveFocus()
+
+    await user.tab()
+
+    expect(
+      screen.getByRole('button', { name: 'mediaAsset.actions.download' })
+    ).toHaveFocus()
+  })
+
+  it('keeps card actions visible while keyboard focus is within the card', async () => {
+    const user = userEvent.setup()
+    renderCard({ loading: false })
+
+    const selectionControl = screen.getByRole('button', {
+      name: 'assetBrowser.ariaLabel.assetCard'
+    })
+    await user.tab()
+
+    expect(selectionControl).toHaveFocus()
+
+    const downloadButton = screen.getByRole('button', {
+      name: 'mediaAsset.actions.download'
+    })
+    expect(downloadButton).toBeInTheDocument()
+
+    await user.tab()
+
+    expect(downloadButton).toHaveFocus()
+    expect(
+      screen.getByRole('button', { name: 'mediaAsset.actions.moreOptions' })
+    ).toBeInTheDocument()
   })
 
   it('shows image format and dimensions without file size', () => {
