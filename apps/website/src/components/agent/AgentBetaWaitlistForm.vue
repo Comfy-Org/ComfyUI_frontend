@@ -80,7 +80,7 @@ async function onSubmit() {
     <form
       v-if="status !== 'success'"
       novalidate
-      class="bg-primary-comfy-ink-light mx-auto flex max-w-130 items-center rounded-3xl border border-[#f5f5f5]/25 p-2 max-[560px]:flex-wrap max-[560px]:gap-3 max-[560px]:border-0 max-[560px]:bg-transparent max-[560px]:p-0"
+      class="bg-primary-comfy-ink-light mx-auto flex max-w-130 items-center rounded-3xl border border-primary-warm-white/25 p-2 max-[560px]:flex-wrap max-[560px]:gap-3 max-[560px]:border-0 max-[560px]:bg-transparent max-[560px]:p-0"
       @submit.prevent="onSubmit"
     >
       <label for="agent-beta-email" class="sr-only">Email address</label>
@@ -103,7 +103,7 @@ async function onSubmit() {
         required
         :aria-invalid="status === 'invalid' || undefined"
         :aria-describedby="errorMessage ? errorMessageId : undefined"
-        class="max-[560px]:bg-primary-comfy-ink-light min-w-0 flex-1 border-0 bg-transparent px-5 py-3.5 text-sm text-primary-comfy-canvas outline-none placeholder:text-primary-comfy-canvas/70 focus-visible:rounded-2xl focus-visible:shadow-[inset_0_0_0_2px_var(--color-primary-comfy-yellow)] max-[560px]:w-full max-[560px]:basis-full max-[560px]:rounded-3xl max-[560px]:border max-[560px]:border-[#f5f5f5]/25 max-[560px]:px-5.5 max-[560px]:py-4"
+        class="max-[560px]:bg-primary-comfy-ink-light min-w-0 flex-1 border-0 bg-transparent px-5 py-3.5 text-sm text-primary-comfy-canvas outline-none placeholder:text-primary-comfy-canvas/70 focus-visible:rounded-2xl focus-visible:shadow-[inset_0_0_0_2px_var(--color-primary-comfy-yellow)] max-[560px]:w-full max-[560px]:basis-full max-[560px]:rounded-3xl max-[560px]:border max-[560px]:border-primary-warm-white/25 max-[560px]:px-5.5 max-[560px]:py-4"
       />
       <button
         type="submit"
@@ -117,7 +117,7 @@ async function onSubmit() {
         v-if="errorMessage"
         :id="errorMessageId"
         role="alert"
-        class="basis-full px-3 pb-2 text-[13px] text-[#ffb4a8]"
+        class="text-destructive-light basis-full px-3 pb-2 text-[13px]"
       >
         {{ errorMessage }}
       </p>
@@ -127,7 +127,7 @@ async function onSubmit() {
       ref="successRegion"
       role="status"
       tabindex="-1"
-      class="bg-primary-comfy-ink-light focus:outline-primary-comfy-yellow mx-auto max-w-130 rounded-3xl border border-[#d6f24e]/55 px-6 py-5 text-base text-primary-comfy-canvas focus:outline-2 focus:outline-offset-[3px]"
+      class="bg-primary-comfy-ink-light focus:outline-primary-comfy-yellow border-primary-comfy-yellow/55 mx-auto max-w-130 rounded-3xl border px-6 py-5 text-base text-primary-comfy-canvas focus:outline-2 focus:outline-offset-[3px]"
     >
       You're on the waitlist! We'll email {{ submittedEmail }} when it's ready.
       A few questions just opened in a new tab —
