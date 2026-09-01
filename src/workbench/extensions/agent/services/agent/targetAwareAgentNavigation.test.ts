@@ -42,7 +42,19 @@ function harness() {
     focus
   })
 
-  return { focus, navigation, nodeA, nodeB, open, tabA, tabB, tabs }
+  return {
+    focus,
+    navigation,
+    nodeA,
+    nodeB,
+    open,
+    setActive: (tab: TestTab) => {
+      active = tab
+    },
+    tabA,
+    tabB,
+    tabs
+  }
 }
 
 describe('target-aware agent navigation', () => {
@@ -90,5 +102,17 @@ describe('target-aware agent navigation', () => {
       })
     ).rejects.toMatchObject({ code: 'missing_node', recoverable: true })
     expect(focus).not.toHaveBeenCalled()
+  })
+
+  it('rejects navigation when the active tab changes during focus', async () => {
+    const { focus, navigation, setActive, tabB } = harness()
+    focus.mockImplementation(() => setActive(tabB))
+
+    await expect(
+      navigation.navigate({
+        workflowId: 'wf-a',
+        locatorId: 'root-a:shared'
+      })
+    ).rejects.toMatchObject({ code: 'activation_failed', recoverable: true })
   })
 })

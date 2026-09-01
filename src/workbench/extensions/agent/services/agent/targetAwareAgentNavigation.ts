@@ -73,6 +73,12 @@ export function createTargetAwareAgentNavigation<Tab, Node>(
         reference.locatorId
       )
     await dependencies.focus(node)
+    if (dependencies.activeTab() !== tab)
+      throw new AgentTargetNavigationError(
+        'activation_failed',
+        reference.workflowId,
+        reference.locatorId
+      )
     return node
   }
 
