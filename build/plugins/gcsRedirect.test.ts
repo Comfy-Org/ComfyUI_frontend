@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { PassThrough } from 'node:stream'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { handleGcsRedirect } from './gcsRedirect'
 
@@ -51,6 +51,10 @@ const GCS_REDIRECT_HEADERS = {
 }
 
 describe('handleGcsRedirect', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('passes non-redirect responses through with their headers', () => {
     const proxyRes = createProxyRes(
       { 'content-type': 'application/json', 'x-custom': 'yes' },
