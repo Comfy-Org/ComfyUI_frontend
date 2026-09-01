@@ -163,16 +163,22 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return (pendingAddedNodeScans.get(rootGraph)?.get(executionId) ?? 0) > 0
   }
 
+  /**
+   * Also called after a graph load settles: the sync watcher below skips
+   * transitions that happen while a load is in flight, and no later
+   * transition reruns it.
+   */
+  function retireResolvedMissingNodePromptError() {
+    if (missingNodesStore.hasMissingNodes) return
+    if (!isMissingNodePromptError(lastPromptError.value)) return
+    lastPromptError.value = null
+  }
+
   whenever(
     () => !missingNodesStore.hasMissingNodes,
     () => {
-      if (
-        ChangeTracker.isLoadingGraph ||
-        !isMissingNodePromptError(lastPromptError.value)
-      ) {
-        return
-      }
-      lastPromptError.value = null
+      if (ChangeTracker.isLoadingGraph) return
+      retireResolvedMissingNodePromptError()
     },
     // The missing-node scan and prompt recording share a synchronous block; clear before recording the new error.
     { flush: 'sync' }
@@ -712,6 +718,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
+    retireResolvedMissingNodePromptError,
 
     // Overlay UI
     isErrorOverlayOpen,

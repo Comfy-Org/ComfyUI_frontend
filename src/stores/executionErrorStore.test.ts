@@ -974,6 +974,77 @@ describe('absorbed-error retirement on candidate resolution', () => {
     expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
   })
 
+  it('retires a promoted media combo error stored under the host id', async () => {
+    const { rootGraph } = createBoundaryLinkedSubgraph()
+    mockGraphReady(rootGraph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '12',
+        nodeType: 'LoadImage',
+        widgetName: 'seed',
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '12:5': nodeError([
+        validationError('value_not_in_list', 'seed_input', {
+          received_value: 'portrait.png'
+        })
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(createNodeExecutionId([toNodeId(12)]))
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('retires a promoted media error stored under the host id', async () => {
+    const { rootGraph } = createBoundaryLinkedSubgraph()
+    mockGraphReady(rootGraph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    // Production scanning keys promoted media by the host execution id and
+    // the boundary (renamed) widget, while the raw error stays interior.
+    // Shaped like a promoted-widget scan result: keyed by the host, carrying
+    // the interior identity the host widget name hides.
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '12',
+        nodeType: 'LoadImage',
+        widgetName: 'seed',
+        sourceExecutionId: createNodeExecutionId([toNodeId(12), toNodeId(5)]),
+        sourceWidgetName: 'seed_input',
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '12:5': nodeError([
+        validationError(
+          'custom_validation_failed',
+          'seed_input',
+          { received_value: 'portrait.png' },
+          'Invalid image file'
+        )
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(createNodeExecutionId([toNodeId(12)]))
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
   it('retires media-absorbed errors when the node leaves tracking', async () => {
     const store = useExecutionErrorStore()
     const mediaStore = useMissingMediaStore()

@@ -1,14 +1,14 @@
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type {
-  ExecutionErrorWsMessage,
-  NodeError,
-  PromptError
-} from '@/schemas/apiSchema'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
+import type {
+  ExecutionErrorWsMessage,
+  NodeError,
+  PromptError
+} from './errorsWsTypes'
 import {
   classifyValidationErrorAbsorption,
   isMissingNodePromptErrorAbsorbed

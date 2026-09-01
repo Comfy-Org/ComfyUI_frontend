@@ -1,6 +1,5 @@
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { PromptError } from '@/schemas/apiSchema'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getLiftedErrorSource } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LiftedErrorExtraInfo } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
@@ -9,6 +8,8 @@ import {
   isMissingNodePromptError
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
+
+import type { PromptError } from './errorsWsTypes'
 
 export type MissingResourceAbsorption = 'missing_model' | 'missing_media'
 
@@ -63,15 +64,39 @@ function matchesErrorInputName(
   )
 }
 
+/**
+ * A promoted widget's own (interior node, widget) pair. Node-level errors are
+ * never lifted to the host, so they can only be matched against this.
+ */
+interface PromotedWidgetSource {
+  executionId: string | number
+  widgetName: string
+}
+
+function matchesPromotedSource(
+  source: PromotedWidgetSource | undefined,
+  error: NodeValidationError,
+  nodeId: NodeExecutionId
+): boolean {
+  if (!source) return false
+  if (String(source.executionId) !== String(nodeId)) return false
+  return source.widgetName === error.extra_info?.input_name
+}
+
 function matchesCandidate(
   candidateNodeIds: readonly (string | number | null | undefined)[],
   candidateInputName: string,
   candidateName: string,
   isMissing: boolean | undefined,
   error: NodeValidationError,
-  nodeId: NodeExecutionId
+  nodeId: NodeExecutionId,
+  promotedSource?: PromotedWidgetSource
 ): boolean {
   if (isMissing !== true) return false
+  // Checked before the host-identity gate: an unlifted interior error never
+  // carries the host id the candidate is keyed by.
+  if (matchesPromotedSource(promotedSource, error, nodeId)) return true
+
   const liftedSource = getLiftedErrorSource(error)
   if (!matchesErrorNodeId(candidateNodeIds, liftedSource, nodeId)) {
     return false
@@ -119,7 +144,13 @@ function matchesMissingMedia(
     candidate.name,
     candidate.isMissing,
     error,
-    nodeId
+    nodeId,
+    candidate.sourceExecutionId && candidate.sourceWidgetName
+      ? {
+          executionId: candidate.sourceExecutionId,
+          widgetName: candidate.sourceWidgetName
+        }
+      : undefined
   )
 }
 

@@ -33,6 +33,11 @@ describe('scanNodeMediaCandidates — promoted host widgets', () => {
       name: 'missing-host.png',
       isMissing: true
     })
+    // Node-level validation errors stay on the interior node, so the candidate
+    // has to carry the source identity the host widget name hides.
+    expect(result[0].sourceExecutionId).toBeDefined()
+    expect(result[0].sourceWidgetName).toBeDefined()
+    expect(String(result[0].sourceExecutionId)).toContain(':')
   })
 
   it('does not report a promoted host when its leaf source is bypassed', () => {
@@ -145,6 +150,8 @@ describe('scanAllMediaCandidates — promoted host widgets', () => {
         nodeId: '65',
         nodeType: 'LoadImage',
         widgetName: 'outer_image',
+        sourceExecutionId: expect.stringContaining(':'),
+        sourceWidgetName: expect.any(String),
         mediaType: 'image',
         name: 'missing-host.png',
         isMissing: true

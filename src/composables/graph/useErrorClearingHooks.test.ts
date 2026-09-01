@@ -1034,6 +1034,43 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
   })
 
+  it('retires the surviving prompt error once the load settles', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('MissingNode')
+    graph.add(node)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const nodesStore = useMissingNodesErrorStore()
+    nodesStore.setMissingNodeTypes([
+      {
+        type: 'MissingNode',
+        nodeId: String(node.id),
+        isReplaceable: false
+      }
+    ])
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordPromptError({
+      type: 'missing_node_type',
+      message: 'MissingNode is unavailable',
+      details: ''
+    })
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      graph.remove(node)
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+    expect(executionErrorStore.lastPromptError?.type).toBe('missing_node_type')
+
+    // loadGraphData runs this after clearing isLoadingGraph.
+    executionErrorStore.retireResolvedMissingNodePromptError()
+
+    expect(executionErrorStore.lastPromptError).toBeNull()
+  })
+
   it('keeps a desynced missing-node prompt error after deleting an unrelated node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('UnrelatedNode')
