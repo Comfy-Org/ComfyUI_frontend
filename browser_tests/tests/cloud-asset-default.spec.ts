@@ -1,51 +1,20 @@
 import { expect } from '@playwright/test'
-import type { Route } from '@playwright/test'
 
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import type { Asset } from '@comfyorg/ingest-types'
+import {
+  assetRequestIncludesTag,
+  createCloudAssetsFixture
+} from '@e2e/fixtures/assetApiFixture'
 import {
   STABLE_CHECKPOINT,
   STABLE_CHECKPOINT_2
 } from '@e2e/fixtures/data/assetFixtures'
 
-function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
-  return { assets, total: assets.length, has_more: false }
-}
-
 const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT, STABLE_CHECKPOINT_2]
 const WAITING_FOR_WIDGET_TYPE = 'waiting:type'
 const WAITING_FOR_WIDGET_VALUE = 'waiting:value'
 
-// Stub /api/assets before the app loads. The local ComfyUI backend has no
-// /api/assets endpoint (returns 503), which poisons the assets store on
-// first load. Narrow pattern avoids intercepting static /assets/*.js bundles.
-//
-// TODO: Consider moving this stub into ComfyPage fixture for all @cloud tests.
-const test = comfyPageFixture.extend<{
-  cloudAssetRequests: string[]
-  stubCloudAssets: void
-}>({
-  cloudAssetRequests: async ({ page: _page }, use) => {
-    await use([])
-  },
-  stubCloudAssets: [
-    async ({ cloudAssetRequests, page }, use) => {
-      const pattern = /\/api\/assets(?:\?.*)?$/
-      const assetsRouteHandler = (route: Route) => {
-        cloudAssetRequests.push(route.request().url())
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(makeAssetsResponse(CLOUD_ASSETS))
-        })
-      }
-      await page.route(pattern, assetsRouteHandler)
-      await use()
-      await page.unroute(pattern, assetsRouteHandler)
-    },
-    { auto: true }
-  ]
-})
+const test = createCloudAssetsFixture(CLOUD_ASSETS)
 
 test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
   test.afterEach(async ({ comfyPage }) => {
@@ -62,11 +31,9 @@ test.describe('Asset-supported node default value', { tag: '@cloud' }, () => {
     // new nodes resolve against the cloud asset list after the fetch.
     await expect
       .poll(() =>
-        cloudAssetRequests.some((url) => {
-          const includeTags =
-            new URL(url).searchParams.get('include_tags') ?? ''
-          return includeTags.split(',').includes('checkpoints')
-        })
+        cloudAssetRequests.some((url) =>
+          assetRequestIncludesTag(url, 'checkpoints')
+        )
       )
       .toBe(true)
 

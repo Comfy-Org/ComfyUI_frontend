@@ -5,8 +5,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test('@vue-nodes Audio Widget', async ({ comfyPage, comfyFiles }) => {
-  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
-
   const loadAudioNode = comfyPage.vueNodes.getNodeByTitle('Load Audio')
   const audioPreview = new AudioPreview(loadAudioNode)
 
@@ -14,9 +12,7 @@ test('@vue-nodes Audio Widget', async ({ comfyPage, comfyFiles }) => {
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.nextFrame()
 
-    //await comfyPage.canvasOps.doubleClick()
-    await comfyPage.page.mouse.dblclick(500, 500, { delay: 5 })
-    await comfyPage.searchBox.fillAndSelectFirstNode('Load Audio')
+    await comfyPage.searchBoxV2.addNode('Load Audio')
     await expect(loadAudioNode).toBeVisible()
   })
 

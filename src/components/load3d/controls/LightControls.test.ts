@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -26,24 +26,7 @@ vi.mock('@/composables/useDismissableOverlay', () => ({
   useDismissableOverlay: vi.fn()
 }))
 
-vi.mock('@/components/ui/slider/Slider.vue', () => ({
-  default: {
-    name: 'UiSlider',
-    props: ['modelValue', 'min', 'max', 'step'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="range"
-        role="slider"
-        :value="Array.isArray(modelValue) ? modelValue[0] : modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        @input="$emit('update:modelValue', [Number($event.target.value)])"
-      />
-    `
-  }
-}))
+vi.mock('@/components/ui/slider/Slider.vue')
 
 const i18n = createI18n({
   legacy: false,
@@ -94,10 +77,6 @@ function renderComponent(opts: RenderOpts = {}) {
 }
 
 describe('LightControls', () => {
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
-
   describe('material mode gating', () => {
     it('renders the intensity control when materialMode is original', () => {
       renderComponent({ materialMode: 'original' })
@@ -107,7 +86,7 @@ describe('LightControls', () => {
       ).toBeInTheDocument()
     })
 
-    it.each(['normal', 'wireframe'] as const)(
+    it.for(['normal', 'wireframe'] as const)(
       'hides the intensity control when materialMode is %s',
       (mode) => {
         renderComponent({ materialMode: mode })

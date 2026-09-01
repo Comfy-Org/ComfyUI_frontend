@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 
@@ -21,13 +21,19 @@ vi.mock('@/components/common/LazyImage.vue', () => ({
   }
 }))
 
-vi.mock('@vueuse/core', () => ({
-  useMouseInElement: () => ({
-    elementX: ref(50),
-    elementWidth: ref(100),
-    isOutside: ref(false)
-  })
-}))
+const mockRect = (el: HTMLElement, width: number) => {
+  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+    left: 0,
+    top: 0,
+    right: width,
+    bottom: 100,
+    width,
+    height: 100,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  } as DOMRect)
+}
 
 describe('CompareSliderThumbnail', () => {
   const renderThumbnail = (props = {}) => {
@@ -71,6 +77,46 @@ describe('CompareSliderThumbnail', () => {
 
   it('positions slider based on default value', () => {
     renderThumbnail()
+    const divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('50%')
+  })
+
+  it('updates slider position on mousemove', async () => {
+    renderThumbnail()
+    const container = screen.getByTestId('compare-slider-container')
+    mockRect(container, 200)
+
+    const user = userEvent.setup()
+    await user.pointer({ target: container, coords: { clientX: 50 } })
+
+    const divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('25%')
+  })
+
+  it('clamps slider position to [0, 100] when pointer overshoots', async () => {
+    renderThumbnail()
+    const container = screen.getByTestId('compare-slider-container')
+    mockRect(container, 200)
+
+    const user = userEvent.setup()
+
+    await user.pointer({ target: container, coords: { clientX: -10 } })
+    let divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('0%')
+
+    await user.pointer({ target: container, coords: { clientX: 250 } })
+    divider = screen.getByTestId('compare-slider-divider')
+    expect(divider.style.left).toBe('100%')
+  })
+
+  it('ignores mousemove when container has zero width', async () => {
+    renderThumbnail()
+    const container = screen.getByTestId('compare-slider-container')
+    mockRect(container, 0)
+
+    const user = userEvent.setup()
+    await user.pointer({ target: container, coords: { clientX: 50 } })
+
     const divider = screen.getByTestId('compare-slider-divider')
     expect(divider.style.left).toBe('50%')
   })

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type Load3d from './Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
@@ -41,14 +41,6 @@ function makeLoad3d(
 }
 
 describe('createExportMenuItems', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('returns a separator followed by a Save submenu', () => {
     const items = createExportMenuItems(makeLoad3d())
 
@@ -76,7 +68,8 @@ describe('createExportMenuItems', () => {
     expect(submenuOptions.map((o: { content: string }) => o.content)).toEqual([
       'GLB',
       'OBJ',
-      'STL'
+      'STL',
+      'FBX'
     ])
   })
 
@@ -98,13 +91,13 @@ describe('createExportMenuItems', () => {
     )
   })
 
-  it.each([
+  it.for<[label: string, value: string]>([
     ['GLB', 'glb'],
     ['OBJ', 'obj'],
     ['STL', 'stl']
   ])(
     'invokes load3d.exportModel(%s) and shows a success toast when the %s submenu item is clicked',
-    async (label, value) => {
+    async ([label, value]) => {
       const exportModel = vi.fn().mockResolvedValue(undefined)
       const items = createExportMenuItems(makeLoad3d(exportModel))
       ;(items[1]!.callback as (...args: unknown[]) => void)(

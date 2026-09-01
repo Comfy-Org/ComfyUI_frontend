@@ -20,10 +20,10 @@ export function loadPolyfills() {
       radius: number | number[],
       radius_low: number | number[]
     ) {
-      let top_left_radius = 0
-      let top_right_radius = 0
-      let bottom_left_radius = 0
-      let bottom_right_radius = 0
+      let top_left_radius: number
+      let top_right_radius: number
+      let bottom_left_radius: number
+      let bottom_right_radius: number
 
       if (radius === 0) {
         this.rect(x, y, w, h)

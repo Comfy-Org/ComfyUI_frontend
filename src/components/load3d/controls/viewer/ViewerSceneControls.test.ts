@@ -6,23 +6,6 @@ import { createI18n } from 'vue-i18n'
 
 import ViewerSceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'
 
-vi.mock('primevue/checkbox', () => ({
-  default: {
-    name: 'Checkbox',
-    props: ['modelValue', 'inputId', 'binary', 'name'],
-    emits: ['update:modelValue'],
-    template: `
-      <input
-        type="checkbox"
-        :id="inputId"
-        :name="name"
-        :checked="modelValue"
-        @change="$emit('update:modelValue', $event.target.checked)"
-      />
-    `
-  }
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

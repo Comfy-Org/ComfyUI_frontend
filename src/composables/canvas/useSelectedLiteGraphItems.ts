@@ -1,8 +1,10 @@
+import { uniq } from 'es-toolkit'
+
 import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
 import { collectFromNodes } from '@/utils/graphTraversalUtil'
+import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
 /**
  * Composable for handling selected LiteGraph items filtering and operations.
@@ -64,33 +66,49 @@ export function useSelectedLiteGraphItems() {
   }
 
   /**
+   * The top-level selected nodes from the canonical selection set.
+   * Shallow — does NOT expand subgraph children, unlike {@link getSelectedNodes}.
+   * Mode toggles use this so they apply to the selected subgraph node, not its
+   * descendants. Returns `[]` when the canvas is not yet available, preserving
+   * the prior null-tolerance for callers wired to early-firing commands.
+   */
+  const getSelectedNodesShallow = (): LGraphNode[] =>
+    uniq(
+      [...(canvasStore.canvas?.selectedItems ?? [])].flatMap((item) => {
+        if (isLGraphNode(item)) return [item]
+        if (isLGraphGroup(item)) return [...item.children].filter(isLGraphNode)
+        return []
+      })
+    )
+
+  /**
    * Get only the selected nodes (LGraphNode instances) from the canvas.
    * This filters out other types of selected items like groups or reroutes.
    * If a selected node is a subgraph, this also includes all nodes within it.
    * @returns Array of selected LGraphNode instances and their descendants.
    */
   const getSelectedNodes = (): LGraphNode[] => {
-    const selectedNodes = app.canvas.selected_nodes
-    if (!selectedNodes) return []
+    const nodeArray = getSelectedNodesShallow()
 
-    // Convert selected_nodes object to array, preserving order
-    const nodeArray: LGraphNode[] = []
-    for (const i in selectedNodes) {
-      nodeArray.push(selectedNodes[i])
-    }
-
-    // Check if any selected nodes are subgraphs
     const hasSubgraphs = nodeArray.some(
       (node) => node.isSubgraphNode?.() && node.subgraph
     )
+    if (!hasSubgraphs) return nodeArray
 
-    // If no subgraphs, just return the array directly to preserve order
-    if (!hasSubgraphs) {
-      return nodeArray
-    }
-
-    // Use collectFromNodes to get all nodes including those in subgraphs
     return collectFromNodes(nodeArray)
+  }
+
+  /**
+   * True iff every selected node is in `mode`. Mirrors the predicate used by
+   * {@link toggleSelectedNodesMode} so labels match the toggle's effect.
+   * An empty selection returns `false` (no node is in the mode).
+   */
+  const areAllSelectedNodesInMode = (mode: LGraphEventMode): boolean => {
+    const selectedNodeArray = getSelectedNodesShallow()
+    return (
+      selectedNodeArray.length > 0 &&
+      selectedNodeArray.every((node) => node.mode === mode)
+    )
   }
 
   /**
@@ -102,18 +120,10 @@ export function useSelectedLiteGraphItems() {
    * @param mode - The LGraphEventMode to toggle to (e.g., NEVER for mute, BYPASS for bypass)
    */
   const toggleSelectedNodesMode = (mode: LGraphEventMode): void => {
-    const selectedNodes = app.canvas.selected_nodes
-    if (!selectedNodes) return
-
-    // Convert selected_nodes object to array
-    const selectedNodeArray: LGraphNode[] = []
-    for (const i in selectedNodes) {
-      selectedNodeArray.push(selectedNodes[i])
-    }
-    const allNodesMatch = !selectedNodeArray.some(
-      (selectedNode) => selectedNode.mode !== mode
-    )
-    const newModeForSelectedNode = allNodesMatch ? LGraphEventMode.ALWAYS : mode
+    const selectedNodeArray = getSelectedNodesShallow()
+    const newModeForSelectedNode = areAllSelectedNodesInMode(mode)
+      ? LGraphEventMode.ALWAYS
+      : mode
 
     for (const selectedNode of selectedNodeArray)
       selectedNode.mode = newModeForSelectedNode
@@ -126,6 +136,7 @@ export function useSelectedLiteGraphItems() {
     hasSelectableItems,
     hasMultipleSelectableItems,
     getSelectedNodes,
+    areAllSelectedNodesInMode,
     toggleSelectedNodesMode
   }
 }

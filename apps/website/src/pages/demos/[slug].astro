@@ -1,0 +1,108 @@
+---
+import type { GetStaticPaths } from 'astro'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import DemoHeroSection from '../../components/demos/DemoHeroSection.vue'
+import ArcadeEmbed from '../../components/demos/ArcadeEmbed.vue'
+import DemoTranscript from '../../components/demos/DemoTranscript.vue'
+import DemoNavSection from '../../components/demos/DemoNavSection.vue'
+import { demos, getDemoBySlug, getNextDemo } from '../../config/demos'
+import { t } from '../../i18n/translations'
+import type { JsonLdNode } from '../../utils/jsonLd'
+import {
+  absoluteUrl,
+  jsonLdId,
+  organizationId,
+  pageContext,
+} from '../../utils/jsonLd'
+
+export const getStaticPaths: GetStaticPaths = () => {
+  return demos.map((demo) => ({
+    params: { slug: demo.slug }
+  }))
+}
+
+const { slug } = Astro.params
+const demo = getDemoBySlug(slug as string)!
+const nextDemo = getNextDemo(slug as string)
+const title = t(demo.title)
+const description = t(demo.description)
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const educationalLevel =
+  demo.difficulty === 'beginner'
+    ? 'Beginner'
+    : demo.difficulty === 'intermediate'
+      ? 'Intermediate'
+      : 'Advanced'
+const learningId = jsonLdId(url, 'learning')
+const learningResource: JsonLdNode = {
+  '@type': 'LearningResource',
+  '@id': learningId,
+  name: title,
+  description,
+  url,
+  image: new URL(demo.ogImage, Astro.site).href,
+  learningResourceType: 'interactive tutorial',
+  interactivityType: 'active',
+  educationalLevel,
+  timeRequired: demo.durationIso,
+  datePublished: demo.publishedDate,
+  dateModified: demo.modifiedDate,
+  isPartOf: { '@id': jsonLdId(url, 'webpage') },
+  author: { '@id': organizationId(siteUrl) },
+}
+---
+
+<BaseLayout
+  title={`${title} - Comfy`}
+  description={description}
+  ogImage={demo.ogImage}
+  mainEntityId={learningId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('demos.breadcrumb.demos', locale),
+      url: absoluteUrl(Astro.site, '/demos'),
+    },
+    { name: title },
+  ]}
+  extraJsonLd={[learningResource]}
+>
+  <Fragment slot="head">
+    <meta property="article:published_time" content={demo.publishedDate} />
+    <meta property="article:modified_time" content={demo.modifiedDate} />
+    <link rel="preconnect" href="https://demo.arcade.software" />
+  </Fragment>
+
+  <DemoHeroSection
+    label={t(demo.category)}
+    title={title}
+    description={description}
+    difficulty={demo.difficulty}
+    estimatedTime={demo.estimatedTime}
+  />
+
+  <ArcadeEmbed
+    arcadeId={demo.arcadeId}
+    title={title}
+    aspectRatio={demo.aspectRatio}
+    client:load
+  />
+
+  {demo.transcript && (
+    <DemoTranscript
+      transcript={t(demo.transcript)}
+      client:visible
+    />
+  )}
+
+  <DemoNavSection
+    nextTitle={t(nextDemo.title)}
+    nextSlug={nextDemo.slug}
+    nextThumbnail={nextDemo.thumbnail}
+  />
+</BaseLayout>

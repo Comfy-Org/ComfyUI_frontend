@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -31,7 +29,6 @@ const makeCanvas = (): HTMLCanvasElement => {
 
 describe('maskEditorStore', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockHistory.canUndo.value = false
     mockHistory.canRedo.value = false
   })
@@ -256,13 +253,13 @@ describe('maskEditorStore', () => {
   })
 
   describe('canvas → ctx watchers', () => {
-    it.each([
+    it.for([
       ['maskCanvas', 'maskCtx'],
       ['rgbCanvas', 'rgbCtx'],
       ['imgCanvas', 'imgCtx']
     ] as const)(
       'should derive %s using getContext with willReadFrequently',
-      async (canvasKey, ctxKey) => {
+      async ([canvasKey, ctxKey]) => {
         const store = useMaskEditorStore()
         const canvas = makeCanvas()
 
@@ -276,13 +273,13 @@ describe('maskEditorStore', () => {
       }
     )
 
-    it.each([
+    it.for([
       ['maskCanvas', 'maskCtx'],
       ['rgbCanvas', 'rgbCtx'],
       ['imgCanvas', 'imgCtx']
     ] as const)(
       'should leave existing %s ctx untouched when canvas is cleared',
-      async (canvasKey, ctxKey) => {
+      async ([canvasKey, ctxKey]) => {
         const store = useMaskEditorStore()
         const canvas = makeCanvas()
         store[canvasKey] = canvas

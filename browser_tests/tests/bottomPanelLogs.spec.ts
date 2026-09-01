@@ -147,5 +147,68 @@ test.describe('Bottom Panel Logs', { tag: '@ui' }, () => {
       )
       await expect(comfyPage.bottomPanel.logs.terminalRoot).toBeHidden()
     })
+
+    test('resyncs the terminal when the WebSocket reconnects', async ({
+      comfyPage,
+      logsTerminal,
+      getWebSocket
+    }) => {
+      const subscribeFetches = await logsTerminal.mockSubscribeLogs()
+      const initialLine = 'pre-reboot log line'
+      const postRebootLineA = 'post-reboot line A'
+      const postRebootLineB = 'post-reboot line B'
+
+      await logsTerminal.mockRawLogs([initialLine])
+      await comfyPage.bottomPanel.toggleLogs()
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        initialLine
+      )
+
+      // Swap the raw-logs mock so the next fetch returns the post-reboot view.
+      await logsTerminal.mockRawLogs([postRebootLineA, postRebootLineB])
+
+      const ws = await getWebSocket()
+      await logsTerminal.triggerReconnect(ws, subscribeFetches)
+
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        postRebootLineA
+      )
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        postRebootLineB
+      )
+      // reset() before write means the pre-reboot line must be gone.
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).not.toContainText(
+        initialLine
+      )
+    })
+
+    test('resumes WebSocket log streaming after the reconnect', async ({
+      comfyPage,
+      logsTerminal,
+      getWebSocket
+    }) => {
+      const subscribeFetches = await logsTerminal.mockSubscribeLogs()
+      await logsTerminal.mockRawLogs(['initial'])
+      await comfyPage.bottomPanel.toggleLogs()
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        'initial'
+      )
+
+      await logsTerminal.mockRawLogs(['after-reboot snapshot'])
+
+      const ws = await getWebSocket()
+      await logsTerminal.triggerReconnect(ws, subscribeFetches)
+
+      // The route handler fires again on the new connection; pull the latest
+      // WebSocketRoute and push a live frame to prove the 'logs' listener
+      // survived the reconnect.
+      const liveLine = 'live log emitted after the reconnect'
+      const newWs = await getWebSocket()
+      newWs.send(LogsTerminalHelper.buildWsLogFrame([liveLine]))
+
+      await expect(comfyPage.bottomPanel.logs.terminalRoot).toContainText(
+        liveLine
+      )
+    })
   })
 })

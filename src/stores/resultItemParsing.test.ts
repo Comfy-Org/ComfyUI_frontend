@@ -83,6 +83,21 @@ describe(parseNodeOutput, () => {
     expect(types).toContain('3d')
   })
 
+  it('flattens files outputs (e.g. SaveText)', () => {
+    const output = makeOutput({
+      files: [{ filename: 'result.txt', subfolder: '', type: 'output' }],
+      text: 'some generated text'
+    })
+
+    const result = parseNodeOutput('9', output)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].filename).toBe('result.txt')
+    expect(result[0].mediaType).toBe('files')
+    expect(result[0].isText).toBe(true)
+    expect(result[0].supportsPreview).toBe(true)
+  })
+
   it('ignores empty arrays', () => {
     const output = makeOutput({ images: [], audio: [] })
     const result = parseNodeOutput('1', output)

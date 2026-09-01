@@ -28,6 +28,7 @@ describe('getProviderIcon', () => {
   it('returns icon class for simple provider name', () => {
     expect(getProviderIcon('BFL')).toBe('icon-[comfy--bfl]')
     expect(getProviderIcon('OpenAI')).toBe('icon-[comfy--openai]')
+    expect(getProviderIcon('Anthropic')).toBe('icon-[comfy--anthropic]')
   })
 
   it('converts spaces to hyphens', () => {
@@ -47,6 +48,7 @@ describe('getProviderBorderStyle', () => {
     expect(getProviderBorderStyle('BFL')).toBe('#ffffff')
     expect(getProviderBorderStyle('OpenAI')).toBe('#B6B6B6')
     expect(getProviderBorderStyle('Bria')).toBe('#B6B6B6')
+    expect(getProviderBorderStyle('Anthropic')).toBe('#D97757')
   })
 
   it('returns gradient for dual-color providers', () => {

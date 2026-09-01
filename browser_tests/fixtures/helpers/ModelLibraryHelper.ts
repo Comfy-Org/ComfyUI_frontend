@@ -9,7 +9,7 @@ const modelFoldersRoutePattern = /\/api\/experiment\/models$/
 const modelFilesRoutePattern = /\/api\/experiment\/models\/([^?]+)/
 const viewMetadataRoutePattern = /\/api\/view_metadata\/([^?]+)/
 
-export interface MockModelMetadata {
+interface MockModelMetadata {
   'modelspec.title'?: string
   'modelspec.author'?: string
   'modelspec.architecture'?: string
@@ -18,14 +18,11 @@ export interface MockModelMetadata {
   'modelspec.tags'?: string
 }
 
-export function createMockModelFolders(names: string[]): ModelFolderInfo[] {
+function createMockModelFolders(names: string[]): ModelFolderInfo[] {
   return names.map((name) => ({ name, folders: [] }))
 }
 
-export function createMockModelFiles(
-  filenames: string[],
-  pathIndex = 0
-): ModelFile[] {
+function createMockModelFiles(filenames: string[], pathIndex = 0): ModelFile[] {
   return filenames.map((name) => ({ name, pathIndex }))
 }
 

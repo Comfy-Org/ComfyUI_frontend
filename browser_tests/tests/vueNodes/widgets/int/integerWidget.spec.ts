@@ -38,4 +38,15 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
     await controls.decrementButton.click()
     await expect(controls.input).toHaveValue(initialValue.toString())
   })
+
+  test('displays control widgets with default state', async ({ comfyPage }) => {
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.nextFrame()
+    await comfyPage.searchBoxV2.addNode('Int')
+    const widget = comfyPage.vueNodes.getWidgetByName('Int', 'value')
+    await expect(widget).toBeVisible()
+
+    const { valueControl } = comfyPage.vueNodes.getInputNumberControls(widget)
+    await expect(valueControl).toBeVisible()
+  })
 })

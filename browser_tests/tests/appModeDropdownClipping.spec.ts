@@ -87,7 +87,9 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     const codecSelect = widgetList.getByRole('combobox', { name: 'codec' })
     await codecSelect.click()
 
-    const overlay = comfyPage.page.locator('.p-select-overlay').first()
+    const overlay = comfyPage.page
+      .getByTestId('widget-select-default-overlay')
+      .first()
     await expect(overlay).toBeVisible()
 
     await expect
@@ -129,13 +131,10 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
       el.scrollTo({ top: el.scrollHeight, behavior: 'instant' })
     )
 
-    // Click the FormDropdown trigger button for the image widget.
-    // The button emits 'select-click' which toggles the Popover.
-    const imageRow = widgetList.locator(
-      'div:has(> div > span:text-is("image"))'
+    const imageInput = comfyPage.appMode.widgets.getSelectDropdown(
+      `${loadImageId}:image`
     )
-    const dropdownButton = imageRow.locator('button:has(> span)').first()
-    await dropdownButton.click()
+    await imageInput.open()
 
     // The unstyled PrimeVue Popover renders with role="dialog".
     // Locate the one containing the image grid (filter buttons like "All", "Inputs").

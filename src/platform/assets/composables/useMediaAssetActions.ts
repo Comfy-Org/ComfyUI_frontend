@@ -6,18 +6,31 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import {
+  getAssetDisplayName,
+  getAssetStoredFilename
+} from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
-import { getAssetOutputCount } from '../utils/outputAssetUtil'
+import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
+import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
+import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
+import {
+  getTotalAssetOutputCount,
+  resolveOutputAssetItems
+} from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -29,6 +42,47 @@ import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
+
+function createAssetWidgetPath(asset: AssetItem): string {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  const assetType = getAssetType(asset, 'input')
+
+  return createAnnotatedPath({
+    filename: getAssetStoredFilename(asset),
+    subfolder: metadata?.subfolder ?? '',
+    type: isResultItemType(assetType) ? assetType : undefined
+  })
+}
+
+/**
+ * Canonical widget-value strings that may reference this asset, scoped by the
+ * asset's source type so basenames cannot cross-match across input/output.
+ *
+ * Output assets emit `<name> [output]` (and the subfolder-prefixed form when
+ * present in metadata). Input/temp assets emit the bare name plus the explicit
+ * annotation. The content `hash` is included whenever present, since
+ * cloud-stored assets can be referenced by hash.
+ */
+function widgetValueVariantsForAsset(asset: AssetItem): string[] {
+  const variants: string[] = []
+  const type = getAssetType(asset, 'input')
+  const name = asset.name
+  if (name) {
+    if (type === 'output') {
+      const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
+      const path = subfolder ? `${subfolder}/${name}` : name
+      variants.push(`${path} [output]`)
+    } else if (type === 'temp') {
+      variants.push(`${name} [temp]`)
+    } else {
+      variants.push(name)
+      variants.push(`${name} [input]`)
+    }
+  }
+  const hash = asset.hash
+  if (hash) variants.push(hash)
+  return variants
+}
 
 export function useMediaAssetActions() {
   const { t } = useI18n()
@@ -49,7 +103,9 @@ export function useMediaAssetActions() {
     asset: AssetItem,
     assetType: string
   ): Promise<void> => {
-    if (assetType === 'output') {
+    // Temp files (e.g. preview-node outputs) are history-backed outputs that
+    // happen to live in the temp dir, so they delete via the history API too.
+    if (assetType === 'output' || assetType === 'temp') {
       const jobId =
         getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
       if (!jobId) {
@@ -69,8 +125,9 @@ export function useMediaAssetActions() {
    * Download one or more assets.
    * In cloud mode, creates a ZIP export via the backend when called with
    * 2+ assets or with any asset whose job has `outputCount > 1`.
-   * Falls back to direct downloads in OSS mode and for single single-output
-   * assets. With no argument, uses the asset from `MediaAssetKey` context.
+   * In OSS mode, downloads each file directly, expanding grouped assets
+   * (`outputCount > 1`) into their individual outputs.
+   * With no argument, uses the asset from `MediaAssetKey` context.
    */
   const downloadAssets = (assets?: AssetItem[]) => {
     const targetAssets =
@@ -87,17 +144,77 @@ export function useMediaAssetActions() {
       return
     }
 
-    try {
-      targetAssets.forEach((asset) => {
-        const filename = getAssetDisplayName(asset)
-        const downloadUrl = asset.preview_url || getAssetUrl(asset)
-        downloadFile(downloadUrl, filename)
-      })
+    if (hasMultiOutputJobs) {
+      void downloadAssetsIndividually(targetAssets)
+      return
+    }
 
+    try {
+      targetAssets.forEach((asset) => downloadSingleAsset(asset))
       toast.add({
         severity: 'success',
         summary: t('g.success'),
         detail: t('mediaAsset.selection.downloadsStarted', targetAssets.length),
+        life: 2000
+      })
+    } catch (error) {
+      console.error('Failed to download assets:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.failedToDownloadImage')
+      })
+    }
+  }
+
+  function downloadSingleAsset(asset: AssetItem) {
+    const filename = getAssetDisplayName(asset)
+    const downloadUrl = asset.preview_url || getAssetUrl(asset)
+    downloadFile(downloadUrl, filename)
+  }
+
+  async function expandAssetForDownload(
+    asset: AssetItem
+  ): Promise<AssetItem[]> {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    if (
+      !metadata ||
+      typeof metadata.outputCount !== 'number' ||
+      metadata.outputCount <= 1
+    ) {
+      return [asset]
+    }
+
+    try {
+      const resolved = await resolveOutputAssetItems(metadata, {
+        createdAt: asset.created_at
+      })
+      return resolved.length > 0 ? resolved : [asset]
+    } catch (error) {
+      console.error('Failed to expand grouped asset for download:', error)
+      return [asset]
+    }
+  }
+
+  async function downloadAssetsIndividually(assets: AssetItem[]) {
+    try {
+      const expanded = await Promise.all(assets.map(expandAssetForDownload))
+      const seenAssetIds = new Set<string>()
+      const filesToDownload = expanded.flat().filter((asset) => {
+        if (seenAssetIds.has(asset.id)) return false
+        seenAssetIds.add(asset.id)
+        return true
+      })
+
+      filesToDownload.forEach((asset) => downloadSingleAsset(asset))
+
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t(
+          'mediaAsset.selection.downloadsStarted',
+          filesToDownload.length
+        ),
         life: 2000
       })
     } catch (error) {
@@ -116,42 +233,39 @@ export function useMediaAssetActions() {
     try {
       const jobIds: string[] = []
       const assetIds: string[] = []
-      const jobAssetNameFilters: Record<string, string[]> = {}
-      const countedOutputJobIds = new Set<string>()
-      let fileCount = 0
+      const namesByJobId = new Map<string, Set<string>>()
+      const wholeJobIds = new Set<string>()
+      const fileCount = getTotalAssetOutputCount(assets)
 
       for (const asset of assets) {
-        if (getAssetType(asset) === 'output') {
-          const metadata = getOutputAssetMetadata(asset.user_metadata)
+        const assetType = getAssetType(asset)
+        const metadata = getOutputAssetMetadata(asset.user_metadata)
+        if (assetType === 'output' || (assetType === 'temp' && metadata)) {
           const jobId = metadata?.jobId || asset.id
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
-          // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
           if (metadata?.outputCount != null) {
-            if (!countedOutputJobIds.has(jobId)) {
-              countedOutputJobIds.add(jobId)
-              fileCount += getAssetOutputCount(asset)
-            }
-          } else {
-            fileCount += 1
-          }
-
-          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
-            if (!jobAssetNameFilters[metadata.jobId]) {
-              jobAssetNameFilters[metadata.jobId] = []
-            }
-            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
-              jobAssetNameFilters[metadata.jobId].push(asset.name)
-            }
+            wholeJobIds.add(jobId)
+          } else if (metadata?.jobId && asset.name) {
+            const names = namesByJobId.get(metadata.jobId) ?? new Set<string>()
+            names.add(asset.name)
+            namesByJobId.set(metadata.jobId, names)
           }
         } else {
           assetIds.push(asset.id)
-          fileCount += 1
         }
       }
+
+      // A job-level selection outranks any name filter a sibling child of the
+      // same job contributed, whichever order they were selected in.
+      const jobAssetNameFilters = Object.fromEntries(
+        [...namesByJobId]
+          .filter(([jobId]) => !wholeJobIds.has(jobId))
+          .map(([jobId, names]): [string, string[]] => [jobId, [...names]])
+      )
 
       const spansMultipleJobs = jobIds.length > 1
       const namingStrategy = spansMultipleJobs
@@ -164,7 +278,8 @@ export function useMediaAssetActions() {
         ...(Object.keys(jobAssetNameFilters).length > 0
           ? { job_asset_name_filters: jobAssetNameFilters }
           : {}),
-        naming_strategy: namingStrategy
+        naming_strategy: namingStrategy,
+        include_previews: true
       })
 
       assetExportStore.trackExport(result.task_id)
@@ -244,9 +359,11 @@ export function useMediaAssetActions() {
       return
     }
 
-    const node = litegraphService.addNodeOnGraph(nodeDef, {
-      pos: litegraphService.getCanvasCenter()
-    })
+    const node = withNodeAddSource('programmatic', () =>
+      litegraphService.addNodeOnGraph(nodeDef, {
+        pos: litegraphService.getCanvasCenter()
+      })
+    )
 
     if (!node) {
       toast.add({
@@ -257,28 +374,7 @@ export function useMediaAssetActions() {
       return
     }
 
-    // Get metadata to construct the annotated path
-    const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
-    const assetType = getAssetType(targetAsset, 'input')
-
-    // In Cloud mode, use asset_hash (the actual stored filename)
-    // In OSS mode, use the original name
-    const filename =
-      isCloud && targetAsset.asset_hash
-        ? targetAsset.asset_hash
-        : targetAsset.name
-
-    // Create annotated path for the asset
-    const annotated = createAnnotatedPath(
-      {
-        filename,
-        subfolder: metadata?.subfolder || '',
-        type: isResultItemType(assetType) ? assetType : undefined
-      },
-      {
-        rootFolder: isResultItemType(assetType) ? assetType : undefined
-      }
-    )
+    const annotated = createAssetWidgetPath(targetAsset)
 
     const widget = node.widgets?.find((w) => w.name === widgetName)
     if (widget) {
@@ -343,6 +439,8 @@ export function useMediaAssetActions() {
       filename
     )
 
+    if (result.cancelled) return
+
     if (!result.success) {
       const isNoWorkflow = result.error?.includes('No workflow')
       toast.add({
@@ -388,36 +486,21 @@ export function useMediaAssetActions() {
       }
 
       const center = litegraphService.getCanvasCenter()
-      const node = litegraphService.addNodeOnGraph(nodeDef, {
-        pos: [
-          center[0] + nodeIndex * NODE_OFFSET,
-          center[1] + nodeIndex * NODE_OFFSET
-        ]
-      })
+      const node = withNodeAddSource('programmatic', () =>
+        litegraphService.addNodeOnGraph(nodeDef, {
+          pos: [
+            center[0] + nodeIndex * NODE_OFFSET,
+            center[1] + nodeIndex * NODE_OFFSET
+          ]
+        })
+      )
 
       if (!node) {
         failed++
         continue
       }
 
-      const metadata = getOutputAssetMetadata(asset.user_metadata)
-      const assetType = getAssetType(asset, 'input')
-
-      // In Cloud mode, use asset_hash (the actual stored filename)
-      // In OSS mode, use the original name
-      const filename =
-        isCloud && asset.asset_hash ? asset.asset_hash : asset.name
-
-      const annotated = createAnnotatedPath(
-        {
-          filename,
-          subfolder: metadata?.subfolder || '',
-          type: isResultItemType(assetType) ? assetType : undefined
-        },
-        {
-          rootFolder: isResultItemType(assetType) ? assetType : undefined
-        }
-      )
+      const annotated = createAssetWidgetPath(asset)
 
       const widget = node.widgets?.find((w) => w.name === widgetName)
       if (widget) {
@@ -530,13 +613,16 @@ export function useMediaAssetActions() {
 
         if (result.success) {
           succeeded++
-        } else {
+        } else if (!result.cancelled) {
           failed++
         }
       } catch {
         failed++
       }
     }
+
+    // All cancelled
+    if (succeeded === 0 && failed === 0) return
 
     if (failed === 0) {
       toast.add({
@@ -625,9 +711,10 @@ export function useMediaAssetActions() {
               })
 
               // Update stores after deletions
-              const hasOutputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'output'
-              )
+              const hasOutputAssets = assetArray.some((a) => {
+                const type = getAssetType(a)
+                return type === 'output' || type === 'temp'
+              })
               const hasInputAssets = assetArray.some(
                 (a) => getAssetType(a) === 'input'
               )
@@ -637,6 +724,31 @@ export function useMediaAssetActions() {
               }
               if (hasInputAssets) {
                 await assetsStore.updateInputs()
+              }
+
+              const rootGraph = app.rootGraph
+              if (rootGraph) {
+                const deletedValues = new Set<string>()
+                assetArray.forEach((asset, index) => {
+                  if (results[index].status !== 'fulfilled') return
+                  for (const value of widgetValueVariantsForAsset(asset)) {
+                    deletedValues.add(value)
+                  }
+                })
+                if (deletedValues.size > 0) {
+                  const nodeOutputStore = useNodeOutputStore()
+                  // Order matters: mark + cache-clear both look up nodes by
+                  // current widget.value, so they must run before
+                  // clearDeletedAssetWidgetValues blanks those values.
+                  markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
+                  clearNodePreviewCacheForValues(
+                    rootGraph,
+                    deletedValues,
+                    (node) => nodeOutputStore.removeNodeOutputsForNode(node)
+                  )
+                  clearDeletedAssetWidgetValues(rootGraph, deletedValues)
+                  useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+                }
               }
 
               // Invalidate model caches for affected categories
@@ -709,6 +821,10 @@ export function useMediaAssetActions() {
           onCancel: () => {
             resolve(false)
           }
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md'
         }
       })
     })

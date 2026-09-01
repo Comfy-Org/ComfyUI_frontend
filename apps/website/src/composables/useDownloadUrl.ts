@@ -2,28 +2,41 @@ import { computed, onMounted, ref } from 'vue'
 
 import { externalLinks } from '@/config/routes'
 
-const downloadUrls = {
-  windows: 'https://download.comfy.org/windows/nsis/x64',
+export const downloadUrls = {
+  windows: 'https://comfy.org/download/windows/nsis/x64',
   macArm: 'https://download.comfy.org/mac/dmg/arm64'
 } as const
 
-type DetectedPlatform = 'windows' | 'mac' | null
+export type Platform = 'windows' | 'mac'
 
-function isMobile(ua: string): boolean {
-  return /iphone|ipad|ipod|android/.test(ua)
+export interface DetectedDevice {
+  platform: Platform | null
+  isMobileUa: boolean
 }
 
-function detectPlatform(ua: string): DetectedPlatform {
-  if (isMobile(ua)) return null
-  if (ua.includes('win')) return 'windows'
-  if (ua.includes('macintosh') || ua.includes('mac os x')) return 'mac'
-  return null
+// iPadOS Safari sends a Macintosh desktop UA by default; real Macs report no
+// touch points, so a "Mac" with a touchscreen is an iPad.
+export function detectDevice(
+  ua: string,
+  maxTouchPoints: number
+): DetectedDevice {
+  const lowerUa = ua.toLowerCase()
+  const isIpadOs = lowerUa.includes('macintosh') && maxTouchPoints > 1
+  const isMobileUa = /iphone|ipad|ipod|android/.test(lowerUa) || isIpadOs
+  if (isMobileUa) return { platform: null, isMobileUa }
+  if (lowerUa.includes('win')) return { platform: 'windows', isMobileUa }
+  if (lowerUa.includes('macintosh') || lowerUa.includes('mac os x')) {
+    return { platform: 'mac', isMobileUa }
+  }
+  return { platform: null, isMobileUa }
 }
 
 // TODO: Only Windows x64 and macOS arm64 are available today.
 // When Linux and/or macIntel builds are added, extend detection and URLs here.
 export function useDownloadUrl() {
-  const platform = ref<DetectedPlatform>(null)
+  const platform = ref<Platform | null>(null)
+  const detected = ref(false)
+  const isMobileUa = ref(false)
 
   const downloadUrl = computed(() => {
     if (platform.value === 'windows') return downloadUrls.windows
@@ -31,9 +44,16 @@ export function useDownloadUrl() {
     return externalLinks.github
   })
 
+  const showFallback = computed(
+    () => detected.value && !platform.value && !isMobileUa.value
+  )
+
   onMounted(() => {
-    platform.value = detectPlatform(navigator.userAgent.toLowerCase())
+    const device = detectDevice(navigator.userAgent, navigator.maxTouchPoints)
+    isMobileUa.value = device.isMobileUa
+    platform.value = device.platform
+    detected.value = true
   })
 
-  return { downloadUrl, platform }
+  return { downloadUrl, platform, showFallback, isMobileUa }
 }

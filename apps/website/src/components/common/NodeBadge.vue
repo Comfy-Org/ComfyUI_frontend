@@ -26,7 +26,7 @@ const {
     <img
       src="/icons/node-left.svg"
       alt=""
-      class="-mx-px self-stretch"
+      class="-mx-px h-full w-auto self-stretch"
       aria-hidden="true"
     />
 
@@ -38,7 +38,7 @@ const {
         v-if="i > 0"
         src="/icons/node-union.svg"
         alt=""
-        class="-mx-px self-stretch"
+        class="-mx-px h-full w-auto self-stretch"
         aria-hidden="true"
       />
       <span
@@ -72,7 +72,7 @@ const {
     <img
       src="/icons/node-right.svg"
       alt=""
-      class="-mx-px self-stretch"
+      class="-mx-px h-full w-auto self-stretch"
       aria-hidden="true"
     />
   </div>

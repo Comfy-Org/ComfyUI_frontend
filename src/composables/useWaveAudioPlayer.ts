@@ -1,5 +1,5 @@
 import { useMediaControls, whenever } from '@vueuse/core'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { api } from '@/scripts/api'
@@ -12,14 +12,14 @@ interface WaveformBar {
 interface UseWaveAudioPlayerOptions {
   src: Ref<string>
   barCount?: number
+  waveform?: boolean
 }
 
 export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
-  const { src, barCount = 40 } = options
+  const { src, barCount = 40, waveform = true } = options
 
   const audioRef = ref<HTMLAudioElement>()
   const waveformRef = ref<HTMLElement>()
-  const blobUrl = ref<string>()
   const loading = ref(false)
   let decodeRequestId = 0
   const bars = ref<WaveformBar[]>(generatePlaceholderBars())
@@ -34,10 +34,6 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
 
   const formattedCurrentTime = computed(() => formatTime(currentTime.value))
   const formattedDuration = computed(() => formatTime(duration.value))
-
-  const audioSrc = computed(() =>
-    src.value ? (blobUrl.value ?? src.value) : ''
-  )
 
   function generatePlaceholderBars(): WaveformBar[] {
     return Array.from({ length: barCount }, () => ({
@@ -84,17 +80,15 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       const response = await api.fetchApi(route)
       if (requestId !== decodeRequestId) return
       if (!response.ok) {
-        throw new Error(`Failed to fetch audio (${response.status})`)
+        console.error(`Failed to fetch audio (${response.status})`)
+        if (requestId === decodeRequestId) {
+          bars.value = generatePlaceholderBars()
+        }
+        return
       }
       const arrayBuffer = await response.arrayBuffer()
 
       if (requestId !== decodeRequestId) return
-
-      const blob = new Blob([arrayBuffer.slice(0)], {
-        type: response.headers.get('content-type') ?? 'audio/wav'
-      })
-      if (blobUrl.value) URL.revokeObjectURL(blobUrl.value)
-      blobUrl.value = URL.createObjectURL(blob)
 
       ctx = new AudioContext()
       const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
@@ -102,10 +96,6 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       generateBarsFromBuffer(audioBuffer)
     } catch {
       if (requestId === decodeRequestId) {
-        if (blobUrl.value) {
-          URL.revokeObjectURL(blobUrl.value)
-          blobUrl.value = undefined
-        }
         bars.value = generatePlaceholderBars()
       }
     } finally {
@@ -168,24 +158,14 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     (url) => {
       playing.value = false
       currentTime.value = 0
-      void decodeAudioSource(url)
+      if (waveform) void decodeAudioSource(url)
     },
     { immediate: true }
   )
 
-  onUnmounted(() => {
-    decodeRequestId += 1
-    audioRef.value?.pause()
-    if (blobUrl.value) {
-      URL.revokeObjectURL(blobUrl.value)
-      blobUrl.value = undefined
-    }
-  })
-
   return {
     audioRef,
     waveformRef,
-    audioSrc,
     bars,
     loading,
     isPlaying: playing,
@@ -197,6 +177,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     seekToStart,
     seekToEnd,
     volume,
+    muted,
     volumeIcon,
     toggleMute,
     seekToRatio,

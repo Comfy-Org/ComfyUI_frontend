@@ -1,27 +1,24 @@
+import { createSharedComposable, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
-import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type {
-  NodeBoundsUpdate,
-  NodeId,
-  Point
-} from '@/renderer/core/layout/types'
+import type { NodeBoundsUpdate, Point } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { isLGraphGroup } from '@/utils/litegraphUtil'
-import { createSharedComposable } from '@vueuse/core'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 
 function useNodeDragIndividual() {
-  const mutations = useLayoutMutations()
+  const mutations = useLayoutMutations(LayoutSource.Vue)
   const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
 
   // Get transform utilities from TransformPane if available
@@ -38,13 +35,12 @@ function useNodeDragIndividual() {
   // Drag state
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
-  let otherSelectedNodesStartPositions: Map<string, Point> | null = null
+  let otherSelectedNodesStartPositions: Map<NodeId, Point> | null = null
   let rafId: number | null = null
   let stopShiftSync: (() => void) | null = null
 
-  // For groups: track the last applied canvas delta to compute frame delta
-  let lastCanvasDelta: Point | null = null
-  let selectedGroups: LGraphGroup[] | null = null
+  /** `pos` is readonly on Positionable, so absolute targets are reached via `move()`. */
+  let nonNodeStartPositions: Map<Positionable, Point> | null = null
 
   // Auto-pan state
   let autoPan: AutoPanController | null = null
@@ -52,7 +48,10 @@ function useNodeDragIndividual() {
   let lastPointerY = 0
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
-    const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
+
+    const layout = layoutStore.getNodeLayout(rootGraphId, nodeId)
     if (!layout) return
     const position = layout.position ?? { x: 0, y: 0 }
 
@@ -77,7 +76,7 @@ function useNodeDragIndividual() {
         // Skip the current node being dragged
         if (id === nodeId) continue
 
-        const nodeLayout = layoutStore.getNodeLayoutRef(id).value
+        const nodeLayout = layoutStore.getNodeLayout(rootGraphId, id)
         if (nodeLayout) {
           otherSelectedNodesStartPositions.set(id, { ...nodeLayout.position })
         }
@@ -88,45 +87,49 @@ function useNodeDragIndividual() {
 
     // Capture selected groups only if the dragged node is part of the selection
     // This prevents groups from moving when dragging an unrelated node
-    if (isDraggedNodeInSelection) {
-      selectedGroups = toValue(selectedItems).filter(isLGraphGroup)
-      lastCanvasDelta = { x: 0, y: 0 }
-    } else {
-      selectedGroups = null
-      lastCanvasDelta = null
-    }
+    nonNodeStartPositions = isDraggedNodeInSelection
+      ? new Map(
+          toValue(selectedItems)
+            .filter((item) => !isLGraphNode(item))
+            .map((item) => [item, { x: item.pos[0], y: item.pos[1] }])
+        )
+      : null
+  }
 
-    mutations.setSource(LayoutSource.Vue)
-
-    // Start auto-pan
-    const lgCanvas = canvasStore.canvas
-    if (lgCanvas?.ds) {
-      autoPan = new AutoPanController({
-        canvas: lgCanvas.canvas,
-        ds: lgCanvas.ds,
-        maxPanSpeed: lgCanvas.auto_pan_speed,
-        onPan: (panX, panY) => {
-          if (dragStartPos) {
-            dragStartPos.x += panX
-            dragStartPos.y += panY
-          }
-          if (otherSelectedNodesStartPositions) {
-            for (const pos of otherSelectedNodesStartPositions.values()) {
-              pos.x += panX
-              pos.y += panY
-            }
-          }
-          if (selectedGroups) {
-            for (const group of selectedGroups) {
-              group.move(panX, panY, true)
-            }
-          }
-          updateNodePositions(nodeId)
-        }
-      })
+  function startAutoPan(event: PointerEvent, nodeId: NodeId) {
+    if (autoPan) {
       autoPan.updatePointer(event.clientX, event.clientY)
-      autoPan.start()
+      return
     }
+    const lgCanvas = canvasStore.canvas
+    if (!lgCanvas?.ds) return
+
+    autoPan = new AutoPanController({
+      canvas: lgCanvas.canvas,
+      ds: lgCanvas.ds,
+      maxPanSpeed: lgCanvas.auto_pan_speed,
+      onPan: (panX, panY) => {
+        if (dragStartPos) {
+          dragStartPos.x += panX
+          dragStartPos.y += panY
+        }
+        if (otherSelectedNodesStartPositions) {
+          for (const pos of otherSelectedNodesStartPositions.values()) {
+            pos.x += panX
+            pos.y += panY
+          }
+        }
+        if (nonNodeStartPositions) {
+          for (const start of nonNodeStartPositions.values()) {
+            start.x += panX
+            start.y += panY
+          }
+        }
+        updateNodePositions(nodeId)
+      }
+    })
+    autoPan.updatePointer(event.clientX, event.clientY)
+    autoPan.start()
   }
 
   /**
@@ -135,6 +138,9 @@ function useNodeDragIndividual() {
    */
   function updateNodePositions(nodeId: NodeId) {
     if (!dragStartPos || !dragStartMouse) return
+
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
 
     const mouseDelta = {
       x: lastPointerX - dragStartMouse.x,
@@ -174,24 +180,35 @@ function useNodeDragIndividual() {
       }
     }
 
-    mutations.batchMoveNodes(updates)
+    mutations.batchMoveNodes(rootGraphId, updates)
 
-    if (selectedGroups && selectedGroups.length > 0 && lastCanvasDelta) {
-      const frameDelta = {
-        x: canvasDelta.x - lastCanvasDelta.x,
-        y: canvasDelta.y - lastCanvasDelta.y
-      }
-
-      for (const group of selectedGroups) {
-        group.move(frameDelta.x, frameDelta.y, true)
-      }
+    for (const [item, start] of nonNodeStartPositions ?? []) {
+      // Absolute target every frame, so a dropped frame cannot leave the item
+      // behind and per-frame deltas cannot drift out of step with the nodes.
+      item.move(
+        start.x + canvasDelta.x - item.pos[0],
+        start.y + canvasDelta.y - item.pos[1],
+        true
+      )
     }
-
-    lastCanvasDelta = canvasDelta
   }
 
   function handleDrag(event: PointerEvent, nodeId: NodeId) {
     if (!dragStartPos || !dragStartMouse) {
+      return
+    }
+    if (canvasStore.isReadOnly) {
+      autoPan?.stop()
+      const canvas = canvasStore.getCanvas()
+      const delta = [event.clientX - lastPointerX, event.clientY - lastPointerY]
+
+      canvas.ds.offset[0] += delta[0] / canvas.ds.scale
+      canvas.ds.offset[1] += delta[1] / canvas.ds.scale
+      canvas.setDirty(true, true)
+      lastPointerX = event.clientX
+      lastPointerY = event.clientY
+      dragStartMouse.x += delta[0]
+      dragStartMouse.y += delta[1]
       return
     }
 
@@ -206,7 +223,7 @@ function useNodeDragIndividual() {
 
     lastPointerX = event.clientX
     lastPointerY = event.clientY
-    autoPan?.updatePointer(event.clientX, event.clientY)
+    startAutoPan(event, nodeId)
 
     rafId = requestAnimationFrame(() => {
       rafId = null
@@ -216,11 +233,12 @@ function useNodeDragIndividual() {
 
   function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
-    if (shouldSnap(event) && nodeId) {
+    const { rootGraphId } = canvasStore
+    if (shouldSnap(event) && nodeId && rootGraphId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
 
       // Snap main node
-      const currentLayout = toValue(layoutStore.getNodeLayoutRef(nodeId))
+      const currentLayout = layoutStore.getNodeLayout(rootGraphId, nodeId)
       if (currentLayout) {
         const currentPos = currentLayout.position
         const snappedPos = applySnapToPosition({ ...currentPos })
@@ -246,7 +264,7 @@ function useNodeDragIndividual() {
         otherSelectedNodesStartPositions.size > 0
       ) {
         for (const otherNodeId of otherSelectedNodesStartPositions.keys()) {
-          const nodeLayout = layoutStore.getNodeLayoutRef(otherNodeId).value
+          const nodeLayout = layoutStore.getNodeLayout(rootGraphId, otherNodeId)
           if (nodeLayout) {
             const currentPos = { ...nodeLayout.position }
             const snappedPos = applySnapToPosition(currentPos)
@@ -272,31 +290,34 @@ function useNodeDragIndividual() {
 
       // Apply all snap updates in a single batched transaction
       if (boundsUpdates.length > 0) {
-        layoutStore.batchUpdateNodeBounds(boundsUpdates)
+        layoutStore.batchUpdateNodeBounds(rootGraphId, boundsUpdates, {
+          source: LayoutSource.Vue
+        })
       }
     }
 
+    resetDragState()
+  }
+
+  function resetDragState() {
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
-    selectedGroups = null
-    lastCanvasDelta = null
+    nonNodeStartPositions = null
 
-    // Stop auto-pan
     autoPan?.stop()
     autoPan = null
 
-    // Stop tracking shift key state
     stopShiftSync?.()
     stopShiftSync = null
 
-    // Cancel any pending animation frame
     if (rafId !== null) {
       cancelAnimationFrame(rafId)
       rafId = null
     }
   }
 
+  whenever(() => !layoutStore.isDraggingVueNodes.value, resetDragState)
   return {
     startDrag,
     handleDrag,

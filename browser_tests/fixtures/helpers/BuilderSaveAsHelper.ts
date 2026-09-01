@@ -36,9 +36,11 @@ export class BuilderSaveAsHelper {
     this.closeButton = this.successDialog
       .getByRole('button', { name: 'Close', exact: true })
       .filter({ hasText: 'Close' })
-    this.dismissButton = this.successDialog.locator(
-      'button.p-dialog-close-button'
-    )
+    // The icon-only X carries an aria-label, while the footer Close button
+    // is named by its text — getByLabel only matches the former.
+    this.dismissButton = this.successDialog.getByLabel('Close', {
+      exact: true
+    })
     this.exitBuilderButton = this.successDialog.getByRole('button', {
       name: 'Exit builder'
     })
