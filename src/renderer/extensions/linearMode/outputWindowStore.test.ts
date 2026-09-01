@@ -24,7 +24,6 @@ describe('outputWindowStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     mockAppModeState.noZoomMode = false
     store = useOutputWindowStore()
-    vi.clearAllMocks()
   })
 
   describe('upsert', () => {
