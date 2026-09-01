@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { ComparerWidget } from '@/lib/litegraph/src/__fixtures__/legacyDoNotReplicate'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
@@ -25,6 +24,23 @@ class AccessorHeightWidget implements IBaseWidget {
   set height(value: number) {
     this.heightWrites++
     this.#height = value
+  }
+}
+
+class NormalisingValueWidget implements IBaseWidget {
+  [symbol: symbol]: boolean
+  #value: { entries: number[] } = { entries: [] }
+  name = 'custom'
+  type = 'legacy_test'
+  options = {}
+  y = 0
+
+  get value(): { entries: number[] } {
+    return this.#value
+  }
+
+  set value(value: { entries: number[] } | number[]) {
+    this.#value.entries = Array.isArray(value) ? value : value.entries
   }
 }
 
@@ -126,13 +142,12 @@ describe('toConcreteWidget', () => {
     expect(result.height).not.toBeUndefined()
   })
 
-  it('reads back the value normalised by a foreign setter', () => {
+  it('stores the value a foreign setter normalised', () => {
     const node = new LGraphNode('test')
-    const widget = toConcreteWidget(new ComparerWidget(), node)
-    const images = [{ url: 'a.png', name: 'A', selected: true }]
+    const widget = toConcreteWidget(new NormalisingValueWidget(), node)
 
-    widget.value = images
+    widget.value = [1, 2]
 
-    expect(widget.value).toEqual({ images })
+    expect(widget.value).toEqual({ entries: [1, 2] })
   })
 })
