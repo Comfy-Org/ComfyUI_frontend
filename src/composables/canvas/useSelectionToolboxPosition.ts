@@ -159,8 +159,6 @@ export function useSelectionToolboxPosition(
     }
   })
 
-  // Re-evaluate when select-only mode flips: entering hides the toolbox
-  // (fail-closed), leaving restores it for the still-current selection.
   watch(
     () => canvasStore.canvas?.selectOnly,
     () => updateSelectionBounds()

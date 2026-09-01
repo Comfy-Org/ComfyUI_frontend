@@ -268,8 +268,6 @@ describe('error mapping', () => {
   it.for(['42', 'null', 'true', '"   "'])(
     'degrades a JSON-primitive error body %s to the fallback like the canonical parser',
     async (raw) => {
-      // The canonical parser pins these four in errors.test.ts; the agent
-      // path must degrade them identically, never surface them as messages.
       respond(new Response(raw, { status: 502 }))
 
       const error = await createAgentRestClient()
