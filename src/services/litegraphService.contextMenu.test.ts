@@ -275,7 +275,6 @@ function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
 
 describe('litegraphService context menu & canvas helpers', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockFavoritedWidgetsStore.isFavorited.mockReturnValue(false)
     mockPrompt.mockReset()
     mockCreateBounds.mockReset()
