@@ -242,7 +242,9 @@ describe('document activation persistence (ADR-0024 seam)', () => {
     const saved = JSON.parse(
       new TextDecoder().decode(serializeDocumentScope(scope))
     ) as { nodes: Array<{ id: string; node_incarnation?: string }> }
+    expect(saved.nodes).toHaveLength(2)
     for (const node of saved.nodes) {
+      expect(node.node_incarnation).toEqual(expect.any(String))
       expect(node.node_incarnation).toBe(
         nodesMap(host).get(node.id)?.get(NODE_INCARNATION_KEY)
       )

@@ -1,5 +1,3 @@
-import { NODE_INCARNATION_KEY } from '@comfyorg/comfy-multi-player'
-
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -7,18 +5,6 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { compareNodeIds } from '@/types/nodeId'
 
 const RENDER_ONLY_KEYS = new Set(['boundingRect'])
-
-function nodeIncarnation(
-  serialization: unknown
-): { node_incarnation: string } | Record<string, never> {
-  if (typeof serialization !== 'object' || serialization === null) return {}
-  const incarnation = (serialization as Record<string, unknown>)[
-    NODE_INCARNATION_KEY
-  ]
-  return typeof incarnation === 'string'
-    ? { node_incarnation: incarnation }
-    : {}
-}
 
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize)
@@ -55,14 +41,23 @@ export function serializeDocumentScope(scope: GraphScope): Uint8Array {
     ...nodeStore.getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
   ]
     .sort((left, right) => compareNodeIds(left.id, right.id))
-    .map(({ graphId: _graphId, lastSerialization, ...semantic }) => ({
-      ...semantic,
-      ...nodeIncarnation(lastSerialization),
-      widgets: widgetStore
-        .getNodeWidgets(scope.rootGraphId, semantic.id)
-        .map(({ name, type, value }) => ({ name, type, value }))
-        .sort((left, right) => left.name.localeCompare(right.name))
-    }))
+    .map(
+      ({
+        graphId: _graphId,
+        lastSerialization: _cache,
+        nodeIncarnation,
+        ...semantic
+      }) => ({
+        ...semantic,
+        ...(nodeIncarnation !== undefined && {
+          node_incarnation: nodeIncarnation
+        }),
+        widgets: widgetStore
+          .getNodeWidgets(scope.rootGraphId, semantic.id)
+          .map(({ name, type, value }) => ({ name, type, value }))
+          .sort((left, right) => left.name.localeCompare(right.name))
+      })
+    )
 
   const links = [...linkStore.graphTopologies(scope)]
     .sort((left, right) => left.id - right.id)

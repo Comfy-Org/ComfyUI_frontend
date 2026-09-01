@@ -26,6 +26,8 @@ export interface NodeState {
   inputs: INodeInputSlot[]
   lastSerialization?: ISerialisedNode
   mode: LGraphEventMode
+  /** Shared-applier identity for the current occupant of this node id. */
+  nodeIncarnation?: string
   outputs: INodeOutputSlot[]
   properties: Record<string, NodeProperty | undefined>
   title: string
