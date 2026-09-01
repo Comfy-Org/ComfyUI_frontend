@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  applyLegacyAdvancedWrite,
   applyLegacyHiddenWrite,
   deriveWidgetDisplay,
   deriveWidgetVisibility,
@@ -196,5 +197,36 @@ describe('legacy facades', () => {
     setWidgetAdvanced(visibility, false)
     expect(isWidgetAdvanced(visibility)).toBe(false)
     expect(visibility.display.panel).toBe('never')
+  })
+
+  it('runtime advanced writes gate all surfaces without registration advanced', () => {
+    const visibility = deriveWidgetVisibility({ type: 'number' })
+    applyLegacyAdvancedWrite(visibility, true, false)
+    expect(visibility.display).toEqual({
+      canvas: 'advanced',
+      vueNode: 'advanced',
+      panel: 'advanced'
+    })
+    applyLegacyAdvancedWrite(visibility, undefined, false)
+    expect(visibility.display).toEqual({
+      canvas: 'shown',
+      vueNode: 'shown',
+      panel: 'shown'
+    })
+  })
+
+  it('runtime advanced writes gate only the canvas when registration advanced exists', () => {
+    const visibility = deriveWidgetVisibility({
+      type: 'number',
+      options: { advanced: true }
+    })
+    applyLegacyAdvancedWrite(visibility, true, true)
+    expect(visibility.display.canvas).toBe('advanced')
+    applyLegacyAdvancedWrite(visibility, undefined, true)
+    expect(visibility.display).toEqual({
+      canvas: 'shown',
+      vueNode: 'advanced',
+      panel: 'advanced'
+    })
   })
 })

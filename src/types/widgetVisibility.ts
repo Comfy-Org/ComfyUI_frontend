@@ -208,3 +208,21 @@ export function applyLegacyHiddenWrite(
 ): void {
   visibility.suppression.byExtension = hidden
 }
+
+/**
+ * Legacy runtime `widget.advanced` write. Runtime writes always gate the
+ * canvas surface; they reach the Vue node and panel surfaces only when
+ * registration metadata (`options.advanced`) is absent, matching the legacy
+ * read precedence `options.advanced ?? widget.advanced`. Writing `undefined`
+ * clears the runtime advanced flag.
+ */
+export function applyLegacyAdvancedWrite(
+  visibility: WidgetVisibilityComponent,
+  advanced: boolean | undefined,
+  hasRegistrationAdvanced: boolean
+): void {
+  const surfaces: readonly WidgetSurface[] = hasRegistrationAdvanced
+    ? ['canvas']
+    : WIDGET_SURFACES
+  setWidgetAdvanced(visibility, advanced === true, surfaces)
+}

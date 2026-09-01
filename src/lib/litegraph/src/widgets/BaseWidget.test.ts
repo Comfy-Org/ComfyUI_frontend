@@ -210,6 +210,31 @@ describe('BaseWidget store integration', () => {
       delete widget.options.hidden
       expect(widget.options.hidden).toBe(false)
     })
+
+    it('keeps options.hidden scoped to extension writes under connection suppression', () => {
+      const widget = createTestWidget(node)
+
+      widget.connectionSuppressed = true
+
+      expect(widget.hidden).toBe(true)
+      expect(widget.options.hidden).toBe(false)
+    })
+
+    it('clearing runtime advanced preserves registration advanced tiers', () => {
+      const widget = createTestWidget(node, {
+        options: { min: 0, max: 100, advanced: true }
+      })
+
+      widget.advanced = true
+      expect(widget.visibility.display.canvas).toBe('advanced')
+
+      widget.advanced = undefined
+      expect(widget.visibility.display).toEqual({
+        canvas: 'shown',
+        vueNode: 'advanced',
+        panel: 'advanced'
+      })
+    })
   })
 
   describe('metadata properties after registration', () => {
@@ -295,6 +320,18 @@ describe('BaseWidget store integration', () => {
       widget.type = 'number'
 
       expect(widget.hidden).toBe(false)
+    })
+
+    it('restoring a converted widget keeps registration hidden state', () => {
+      const widget = createMutableTypeWidget(node, 'hiddenConvertedWidget')
+      widget.setNodeId(toNodeId(1))
+
+      widget.options.hidden = true
+      widget.type = 'converted-widget'
+      widget.type = 'number'
+
+      expect(widget.hidden).toBe(true)
+      expect(widget.options.hidden).toBe(true)
     })
 
     it('syncs value with store', () => {

@@ -22,6 +22,7 @@ import type { WidgetId } from '@/types/widgetId'
 import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
+  applyLegacyAdvancedWrite,
   applyLegacyHiddenWrite,
   isLegacyHiddenWidgetType,
   isLegacyWidgetHidingType,
@@ -30,13 +31,9 @@ import {
   isWidgetHiddenInPanel,
   deriveWidgetVisibility,
   setWidgetAdvanced,
-  setWidgetHiddenInPanel,
-  WIDGET_SURFACES
+  setWidgetHiddenInPanel
 } from '@/types/widgetVisibility'
-import type {
-  WidgetSurface,
-  WidgetVisibilityComponent
-} from '@/types/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -197,7 +194,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._rawOptions = unwrapOptionsShim(rawOptions) ?? {}
     this._options = new Proxy(this._rawOptions, {
       get: (target, property, receiver) => {
-        if (property === 'hidden') return isWidgetHidden(this._visibility)
+        if (property === 'hidden')
+          return this._visibility.suppression.byExtension
         if (property === 'hideInPanel') {
           return isWidgetHiddenInPanel(this._visibility)
         }
@@ -240,10 +238,16 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   private setWidgetType(value: TWidget['type']): void {
-    const wasLegacyHidden = isLegacyWidgetHidingType(this._type)
+    const wasLegacyHiding = isLegacyWidgetHidingType(this._type)
     this._type = value
-    if (isLegacyHiddenWidgetType(value)) this.hidden = true
-    else if (wasLegacyHidden) this.hidden = false
+    if (isLegacyHiddenWidgetType(value)) {
+      applyLegacyHiddenWrite(this._visibility, true)
+    } else if (wasLegacyHiding) {
+      applyLegacyHiddenWrite(
+        this._visibility,
+        this._rawOptions?.hidden === true
+      )
+    }
   }
 
   private installTypeVisibilityShim(): void {
@@ -288,23 +292,24 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
   set hidden(value: boolean | undefined) {
     applyLegacyHiddenWrite(this._visibility, value ?? false)
-    if (this._rawOptions) this._rawOptions.hidden = value
+    // Hidden writes made while the widget type itself forces hiding (e.g.
+    // 'converted-widget') are conversion bookkeeping, not registration
+    // intent; keep them out of rawOptions so restoring the type recovers
+    // the registration-time hidden state.
+    if (this._rawOptions && !isLegacyWidgetHidingType(this._type)) {
+      this._rawOptions.hidden = value
+    }
   }
 
   get advanced(): boolean {
     return isWidgetAdvanced(this._visibility)
   }
-  /**
-   * Runtime `widget.advanced` writes always gate the canvas surface. They
-   * reach the Vue node and panel surfaces only when registration metadata
-   * (`options.advanced`) is absent, matching the legacy read precedence
-   * `options.advanced ?? widget.advanced`.
-   */
   set advanced(value: boolean | undefined) {
-    if (value === undefined) return
-    const surfaces: readonly WidgetSurface[] =
-      this._rawOptions?.advanced === undefined ? WIDGET_SURFACES : ['canvas']
-    setWidgetAdvanced(this._visibility, value === true, surfaces)
+    applyLegacyAdvancedWrite(
+      this._visibility,
+      value,
+      this._rawOptions?.advanced !== undefined
+    )
   }
 
   get connectionSuppressed(): boolean {
