@@ -380,6 +380,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     pushEvent(await getWebSocket(), MESSAGE_DONE_EVENT)
     const editButton = panel.getByRole('button', { name: enMessages.g.edit })
     await expect(editButton).toHaveCount(1)
+    // The action row is pointer-events-none until the message group is hovered.
+    await panel.getByText(originalPrompt).hover()
     await editButton.click()
 
     await expect(composer).toHaveValue(originalPrompt)

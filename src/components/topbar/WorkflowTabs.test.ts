@@ -229,6 +229,11 @@ function renderComponent() {
   return { user, ...result }
 }
 
+// The component's OSS-gate literal reads the runtime global in tests.
+beforeEach(() => {
+  vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+})
+
 describe('WorkflowTabs feedback button', () => {
   beforeEach(() => {
     distribution.isCloud = false
@@ -272,8 +277,6 @@ describe('WorkflowTabs feedback button', () => {
 
 describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
-    // The component's literal guard reads the runtime global in tests.
-    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = true
     agentPanelHolder.store.isOpen.value = false
