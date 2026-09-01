@@ -1640,6 +1640,58 @@ describe('useWorkflowService', () => {
   })
 
   describe('insertWorkflow', () => {
+    it('inserts into the canvas when nothing changes while loading', async () => {
+      const canvas = app.canvas
+      const originalGraph = {}
+      const deserialize = vi.fn()
+      Reflect.set(canvas, 'graph', originalGraph)
+      Reflect.set(canvas, '_deserializeItems', deserialize)
+      const workflow = {
+        load: vi.fn(async () => ({ initialState: { nodes: [], links: [] } }))
+      } as unknown as ComfyWorkflow
+
+      try {
+        await useWorkflowService().insertWorkflow(workflow)
+
+        expect(deserialize).toHaveBeenCalledTimes(1)
+      } finally {
+        Reflect.set(canvas, 'graph', originalGraph)
+      }
+    })
+
+    it('does not insert after the canvas itself is replaced while loading', async () => {
+      const originalCanvas = app.canvas
+      const originalGraph = {}
+      const deserialize = vi.fn()
+      Reflect.set(originalCanvas, 'graph', originalGraph)
+      Reflect.set(originalCanvas, '_deserializeItems', deserialize)
+      let finishLoad: (value: unknown) => void = () => {}
+      const workflow = {
+        load: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              finishLoad = resolve
+            })
+        )
+      } as unknown as ComfyWorkflow
+
+      try {
+        const pending = useWorkflowService().insertWorkflow(workflow)
+        Reflect.set(app, 'canvas', {
+          graph: originalGraph,
+          _deserializeItems: vi.fn()
+        })
+        finishLoad({ initialState: { nodes: [], links: [] } })
+        await pending
+
+        expect(deserialize).not.toHaveBeenCalled()
+        expect(app.canvas._deserializeItems).not.toHaveBeenCalled()
+      } finally {
+        Reflect.set(app, 'canvas', originalCanvas)
+        Reflect.set(originalCanvas, 'graph', originalGraph)
+      }
+    })
+
     it('does not insert after the canvas graph changes while loading', async () => {
       const canvas = app.canvas
       const originalGraph = {}

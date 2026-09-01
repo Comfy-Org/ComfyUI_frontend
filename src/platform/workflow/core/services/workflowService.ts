@@ -744,7 +744,12 @@ export const useWorkflowService = () => {
     const canvas = app.canvas
     const graph = canvas.graph
     const loadedWorkflow = await workflow.load()
-    if (app.canvas !== canvas || canvas.graph !== graph) return
+    if (app.canvas !== canvas || canvas.graph !== graph) {
+      console.warn(
+        '[workflowService] insertWorkflow aborted: canvas or graph was replaced while the workflow loaded'
+      )
+      return
+    }
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.
