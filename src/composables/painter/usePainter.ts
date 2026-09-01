@@ -85,12 +85,21 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   })
 
   function numberWidgetProjection(name: string, fallback: number) {
+    const fallbackValue = ref(fallback)
     return computed<number>({
       get: () => {
-        const v = getNodeWidgetValue(litegraphNode.value, name)
-        return typeof v === 'number' && v > 0 ? v : fallback
+        const node = litegraphNode.value
+        if (!node) return fallbackValue.value
+        const value = getNodeWidgetValue(node, name)
+        return typeof value === 'number' && value > 0
+          ? value
+          : fallbackValue.value
       },
-      set: (v) => setNodeWidgetValue(litegraphNode.value, name, v)
+      set: (value) => {
+        fallbackValue.value = value
+        const node = litegraphNode.value
+        if (node) setNodeWidgetValue(node, name, value)
+      }
     })
   }
 
@@ -98,10 +107,15 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const canvasHeight = numberWidgetProjection('height', 512)
   const backgroundColor = computed<string>({
     get: () => {
-      const v = getNodeWidgetValue(litegraphNode.value, 'bg_color')
+      const node = litegraphNode.value
+      if (!node) return '#000000'
+      const v = getNodeWidgetValue(node, 'bg_color')
       return typeof v === 'string' ? v : '#000000'
     },
-    set: (v) => setNodeWidgetValue(litegraphNode.value, 'bg_color', v)
+    set: (v) => {
+      const node = litegraphNode.value
+      if (node) setNodeWidgetValue(node, 'bg_color', v)
+    }
   })
 
   const tool = ref<PainterTool>(PAINTER_TOOLS.BRUSH)

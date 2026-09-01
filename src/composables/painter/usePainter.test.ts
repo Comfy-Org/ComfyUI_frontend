@@ -1,7 +1,8 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
-import type * as VueI18n from 'vue-i18n'
+import { createI18n } from 'vue-i18n'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
@@ -13,17 +14,6 @@ import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import { usePainter } from './usePainter'
-
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal<typeof VueI18n>()
-  return {
-    ...actual,
-    useI18n: vi.fn(() => ({
-      t: (key: string, params?: Record<string, unknown>) =>
-        params ? `${key}:${JSON.stringify(params)}` : key
-    }))
-  }
-})
 
 vi.mock('@vueuse/core', () => ({
   useElementSize: vi.fn(() => ({
@@ -138,7 +128,8 @@ function mountPainter(
     }
   })
 
-  render(Wrapper)
+  const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+  render(Wrapper, { global: { plugins: [i18n] } })
   return { painter, canvasEl, cursorEl, modelValue }
 }
 
@@ -172,20 +163,30 @@ describe('usePainter', () => {
 
     it('resizes the canvas and preserves its content on external store writes', async () => {
       registerWidgetState('width', 'number', 512)
-      const mainCtx = { drawImage: vi.fn() }
-      const fakeCanvas = {
+      const mainCtx = fromPartial<CanvasRenderingContext2D>({
+        drawImage: vi.fn()
+      })
+      const fakeCanvas = fromPartial<HTMLCanvasElement>({
         width: 4,
         height: 4,
-        getContext: () => mainCtx
-      } as unknown as HTMLCanvasElement
+        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
+          () => mainCtx
+        )
+      })
       const { painter, canvasEl } = mountPainter()
       canvasEl.value = fakeCanvas
 
-      const tmpCtx = { drawImage: vi.fn() }
-      const tmpCanvas = { width: 0, height: 0, getContext: () => tmpCtx }
+      const tmpCtx = fromPartial<CanvasRenderingContext2D>({
+        drawImage: vi.fn()
+      })
+      const tmpCanvas = fromPartial<HTMLCanvasElement>({
+        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
+          () => tmpCtx
+        )
+      })
       const createElement = vi
         .spyOn(document, 'createElement')
-        .mockReturnValue(tmpCanvas as unknown as HTMLElement)
+        .mockReturnValue(tmpCanvas)
 
       useWidgetValueStore().setValue(painterWidgetId('width'), 2048)
       await nextTick()
@@ -285,6 +286,17 @@ describe('usePainter', () => {
       expect(store.getWidget(painterWidgetId('bg_color'))?.value).toBe(
         '#ff00ff'
       )
+    })
+
+    it('projects external background color store writes', async () => {
+      const store = useWidgetValueStore()
+      registerWidgetState('bg_color', 'color', '#000000')
+      const { painter } = mountPainter()
+
+      store.setValue(painterWidgetId('bg_color'), '#123456')
+      await nextTick()
+
+      expect(painter.backgroundColor.value).toBe('#123456')
     })
   })
 

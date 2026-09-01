@@ -88,7 +88,7 @@ describe('setNodeWidgetValue', () => {
   it('writes the store value for a registered widget', () => {
     const node = makeRegisteredNode()
 
-    setNodeWidgetValue(node, WIDGET_NAME, 'next.png')
+    expect(setNodeWidgetValue(node, WIDGET_NAME, 'next.png')).toBe(true)
 
     expect(useWidgetValueStore().getWidget(registeredId(node))?.value).toBe(
       'next.png'
@@ -98,7 +98,7 @@ describe('setNodeWidgetValue', () => {
   it('falls back to the widget object when the store has no entry', () => {
     const node = makeMockNode({ widgetValue: 'legacy.png' })
 
-    setNodeWidgetValue(node, WIDGET_NAME, 'next.png')
+    expect(setNodeWidgetValue(node, WIDGET_NAME, 'next.png')).toBe(true)
 
     expect(node.widgets?.[0].value).toBe('next.png')
   })
@@ -109,7 +109,7 @@ describe('setNodeWidgetValue', () => {
       graph: { rootGraph: { id: GRAPH_ID } }
     })
 
-    setNodeWidgetValue(node, WIDGET_NAME, 'next.png')
+    expect(setNodeWidgetValue(node, WIDGET_NAME, 'next.png')).toBe(false)
 
     expect(
       useWidgetValueStore().getWidget(widgetId(GRAPH_ID, node.id, WIDGET_NAME))
