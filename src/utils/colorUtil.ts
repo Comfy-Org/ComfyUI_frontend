@@ -228,7 +228,7 @@ const identifyColorFormat = (color: string): ColorFormatInternal | null => {
       color.length === 9)
   )
     return 'hex'
-  if (/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*/.test(color))
+  if (/rgba?\(\s*-?\d+\s*,\s*-?\d+\s*,\s*-?\d+\s*/.test(color))
     return color.includes('rgba') ? 'rgba' : 'rgb'
   if (/hsla?\(\s*\d+(\.\d+)?\s*,\s*\d+(\.\d+)?%\s*,\s*\d+(\.\d+)?%/.test(color))
     return color.includes('hsla') ? 'hsla' : 'hsl'
@@ -339,7 +339,7 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
 
     case 'rgb':
     case 'rgba': {
-      match = color.match(/\d+(\.\d+)?/g)
+      match = color.match(/-?\d+(\.\d+)?/g)
       if (!match || match.length < 3) return null
       const [r, g, b] = match.map(Number)
       const hsl = rgbToHsl({ r, g, b })

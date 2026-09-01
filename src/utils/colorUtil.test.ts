@@ -360,7 +360,6 @@ describe('colorUtil - adjustColor', () => {
   it('returns the original value for invalid color formats', () => {
     const invalidColors = [
       'cmky(100, 50, 50, 0.5)',
-      'rgb(300, -10, 256)',
       'xyz(255, 255, 255)',
       'hsl(100, 50, 50%)',
       'hsl(100, 50%, 50)',
@@ -460,6 +459,9 @@ describe('colorUtil - adjustColor', () => {
     it('clamps RGB channels before applying adjustments', () => {
       expect(adjustColor('rgb(510, 0, 0)', { opacity: 0.5 })).toBe(
         'hsla(0, 100%, 50%, 0.5)'
+      )
+      expect(adjustColor('rgb(-510, 255, 0)', { opacity: 0.5 })).toBe(
+        'hsla(120, 100%, 50%, 0.5)'
       )
     })
   })
