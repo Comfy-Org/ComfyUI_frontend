@@ -11,6 +11,13 @@ describe('crdtDebugGate', () => {
     localStorage.clear()
   })
 
+  it('stays disabled when neither a link nor a saved choice enables it', async () => {
+    vi.stubEnv('DEV', false)
+    const gate = await loadGate('')
+
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+  })
+
   it('lets a tester enable the instrument from a link, and remembers it', async () => {
     await loadGate('?crdtDebug=1')
     const afterReload = await loadGate('')
