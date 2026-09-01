@@ -45,14 +45,19 @@ describe('CodeBlock', () => {
   })
 
   it('[10-T5 regression] leaves oversized blocks plain without invoking Shiki', async () => {
-    const code = 'x'.repeat(50_001)
-    render(CodeBlock, {
-      props: { code, lang: 'text' },
-      global: { plugins: [i18n] }
-    })
-    expect(screen.getByText(code)).toBeInTheDocument()
-    await new Promise((resolve) => setTimeout(resolve, 120))
-    expect(codeToHtml).not.toHaveBeenCalled()
+    vi.useFakeTimers()
+    try {
+      const code = 'x'.repeat(50_001)
+      render(CodeBlock, {
+        props: { code, lang: 'text' },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByText(code)).toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(120)
+      expect(codeToHtml).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('[10-T6 regression] never displays a highlight for a stale code snapshot', async () => {
