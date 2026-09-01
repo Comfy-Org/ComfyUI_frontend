@@ -943,7 +943,7 @@ function onPanelDrop(event: DragEvent): void {
 <template>
   <div
     id="agent-panel-root"
-    class="size-full"
+    class="flex size-full flex-col"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -977,6 +977,7 @@ function onPanelDrop(event: DragEvent): void {
     <CrdtDevPanel v-if="isCrdtDevPanelEnabled" :status="crdtStatus" />
     <AgentPanel
       ref="panelRef"
+      class="min-h-0 flex-1"
       :entries
       :editable-turn-id="editableTurnId"
       :user-name="userName"
