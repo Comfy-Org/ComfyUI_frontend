@@ -44,6 +44,7 @@ function mountRedirect() {
 
 describe('useOAuthPostLoginRedirect', () => {
   beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     sessionStorage.clear()
     routerPush.mockClear()
     createSessionOrThrow.mockReset().mockResolvedValue(undefined)
@@ -87,7 +88,7 @@ describe('useOAuthPostLoginRedirect', () => {
     })
   })
 
-  it('returns an error with the thrown message when session creation fails', async () => {
+  it('returns a translated error and logs the cause when session creation fails', async () => {
     createSessionOrThrow.mockRejectedValue(new Error('Unauthorized'))
     const { api } = mountRedirect()
 
@@ -95,7 +96,14 @@ describe('useOAuthPostLoginRedirect', () => {
       oauth_request_id: VALID_REQUEST_ID
     })
 
-    expect(result).toEqual({ kind: 'error', message: 'Unauthorized' })
+    expect(result).toEqual({
+      kind: 'error',
+      message: 'oauth.consent.sessionError'
+    })
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to establish OAuth session:',
+      expect.objectContaining({ message: 'Unauthorized' })
+    )
     expect(routerPush).not.toHaveBeenCalled()
   })
 

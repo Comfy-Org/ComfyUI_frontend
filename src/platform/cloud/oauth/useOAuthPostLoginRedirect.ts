@@ -33,12 +33,10 @@ export function useOAuthPostLoginRedirect() {
     try {
       await sessionCookie.createSessionOrThrow()
     } catch (error) {
+      console.error('Failed to establish OAuth session:', error)
       return {
         kind: 'error',
-        message:
-          error instanceof Error
-            ? error.message
-            : t('oauth.consent.sessionError')
+        message: t('oauth.consent.sessionError')
       }
     }
 
