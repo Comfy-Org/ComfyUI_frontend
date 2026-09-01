@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ToInputRenderLink } from '@/lib/litegraph/src/canvas/ToInputRenderLink'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -150,10 +150,6 @@ describe('collectFanInputs', () => {
 })
 
 describe('createBatchImagesNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('wires every source into the batch node and connects it to the target input', async () => {
     const graph = new LGraph()
     const source1 = addImageSource(graph)
@@ -231,10 +227,6 @@ function imageOutputLink(node: LGraphNode): Partial<ToInputRenderLink> {
 }
 
 describe('connectImageBatchToCreatedNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('routes a multi-image fan-out through a batch node into the created node', async () => {
     const graph = new LGraph()
     const source1 = addImageSource(graph)
