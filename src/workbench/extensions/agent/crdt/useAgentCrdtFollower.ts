@@ -365,8 +365,6 @@ export function useAgentCrdtFollower(
     )
   }
   const onReconnected: EventListener = () => {
-    clearSubscribeRetry()
-    subscribeRetryStartedAt = performance.now()
     connected.value = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)
