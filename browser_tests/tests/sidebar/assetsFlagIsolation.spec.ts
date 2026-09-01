@@ -11,6 +11,8 @@ const emptyAssetsResponse: ListAssetsResponse = {
 }
 
 test.describe('Assets sidebar flag-off isolation', { tag: '@oss' }, () => {
+  test.use({ initialFeatureFlags: { assets: false } })
+
   test('uses history without requesting the Asset API', async ({
     comfyPage,
     page
@@ -26,8 +28,6 @@ test.describe('Assets sidebar flag-off isolation', { tag: '@oss' }, () => {
       createMockJob({ id: 'legacy-output' })
     ])
     await comfyPage.assets.mockInputFiles([])
-    await comfyPage.featureFlags.seedFlags({ assets: false })
-    await comfyPage.setup()
 
     const tab = comfyPage.menu.assetsTab
     await tab.open({ waitForAssets: false })
@@ -45,6 +45,8 @@ test.describe(
   'Assets sidebar flag-off isolation on Cloud',
   { tag: '@cloud' },
   () => {
+    test.use({ initialFeatureFlags: { assets: false } })
+
     test('falls back to history without Asset API controls', async ({
       comfyPage,
       page
@@ -67,8 +69,6 @@ test.describe(
         createMockJob({ id: 'legacy-output' })
       ])
       await comfyPage.assets.mockInputFiles([])
-      await comfyPage.featureFlags.seedFlags({ assets: false })
-      await comfyPage.setup()
 
       const tab = comfyPage.menu.assetsTab
       await tab.open({ waitForAssets: false })
