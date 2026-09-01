@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useClipboard } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -310,6 +311,7 @@ function verdictLabel(entry: MergeTraceEntry): string {
 // ── copy actions ──────────────────────────────────────────────────────────
 const copyState = ref<'idle' | 'busy' | 'done' | 'failed'>('idle')
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
+const { copy } = useClipboard({ legacy: true })
 
 const copyReportLabel = computed(() => {
   if (copyState.value === 'busy') return S.copying
@@ -320,25 +322,10 @@ const copyReportLabel = computed(() => {
 
 async function writeClipboard(text: string): Promise<boolean> {
   try {
-    await navigator.clipboard.writeText(text)
+    await copy(text)
     return true
   } catch {
-    // Non-secure context or denied permission: fall back to a selection copy,
-    // which is the only path that works over plain http on a LAN address.
-    const textarea = document.createElement('textarea')
-    textarea.value = text
-    textarea.setAttribute('readonly', '')
-    textarea.style.position = 'fixed'
-    textarea.style.left = '-9999px'
-    document.body.appendChild(textarea)
-    textarea.select()
-    try {
-      return document.execCommand('copy')
-    } catch {
-      return false
-    } finally {
-      textarea.remove()
-    }
+    return false
   }
 }
 
