@@ -188,6 +188,7 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     const shadow = surface.get('op-1')
     expect(shadow && Object.isFrozen(shadow)).toBe(true)
     expect(shadow && Object.isFrozen(shadow.targets)).toBe(true)
+    expect(shadow && Object.isFrozen(shadow.targets[0])).toBe(true)
 
     const listed = surface.pendingShadows()
     listed.pop()
