@@ -42,10 +42,6 @@ export type OAuthConsentDecisionParams = {
   workspaceId: string
 }
 
-export type OAuthConsentDecision = (
-  params: OAuthConsentDecisionParams
-) => Promise<void>
-
 export class OAuthApiError extends Error {
   constructor(
     message: string,
