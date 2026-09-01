@@ -2,6 +2,10 @@ import { useMagicKeys } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import {
+  CORE_CONTEXT_KEY_OWNER,
+  useContextKeyStore
+} from '@/platform/keybindings/contextKeyStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -93,6 +97,17 @@ function workspaceStoreSetup() {
 
   const executionErrorStore = useExecutionErrorStore()
 
+  const contextKeyStore = useContextKeyStore()
+  const contextKey = {
+    set(name: string, value: boolean) {
+      if (contextKeyStore.ownerOf(name) === CORE_CONTEXT_KEY_OWNER) {
+        console.warn(`Context key "${name}" is owned by core`)
+        return
+      }
+      contextKeyStore.set(name, value)
+    }
+  }
+
   return {
     spinner,
     shiftDown,
@@ -109,6 +124,7 @@ function workspaceStoreSetup() {
     colorPalette,
     dialog,
     bottomPanel,
+    contextKey,
     user: partialUserStore,
 
     // Execution error state (read-only, exposed for custom extensions)

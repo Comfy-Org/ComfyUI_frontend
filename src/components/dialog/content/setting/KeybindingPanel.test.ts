@@ -250,7 +250,10 @@ describe('KeybindingPanel', () => {
     await user.click(within(row).getByRole('button', { name: 'Edit' }))
     expect(editKeybinding).toHaveBeenCalledOnce()
     expect(editKeybinding).toHaveBeenCalledWith(
-      expect.objectContaining({ commandId: 'command-single', mode: 'edit' })
+      expect.objectContaining({
+        commandId: 'command-single',
+        existingBinding: expect.anything()
+      })
     )
     expect(row).not.toHaveAttribute('data-state', 'selected')
 
@@ -259,7 +262,7 @@ describe('KeybindingPanel', () => {
       within(row).getByRole('button', { name: 'Add new keybinding' })
     )
     expect(editKeybinding).not.toHaveBeenCalledWith(
-      expect.objectContaining({ mode: 'edit' })
+      expect.objectContaining({ existingBinding: expect.anything() })
     )
   })
 
@@ -277,7 +280,10 @@ describe('KeybindingPanel', () => {
 
       expect(editKeybinding).toHaveBeenCalledOnce()
       expect(editKeybinding).toHaveBeenCalledWith(
-        expect.objectContaining({ commandId: 'command-single', mode: 'add' })
+        expect.objectContaining({
+          commandId: 'command-single',
+          currentCombo: null
+        })
       )
       expect(row).not.toHaveAttribute('data-state', 'selected')
     }
@@ -299,7 +305,10 @@ describe('KeybindingPanel', () => {
 
     expect(editKeybinding).toHaveBeenCalledOnce()
     expect(editKeybinding).toHaveBeenCalledWith(
-      expect.objectContaining({ commandId: 'command-plain', mode: 'add' })
+      expect.objectContaining({
+        commandId: 'command-plain',
+        currentCombo: null
+      })
     )
     await waitFor(() =>
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
