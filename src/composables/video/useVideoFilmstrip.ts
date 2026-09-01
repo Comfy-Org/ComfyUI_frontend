@@ -161,11 +161,8 @@ async function waitForDecodableFrame(
   context: CanvasRenderingContext2D,
   signal: AbortSignal
 ): Promise<string> {
-  for (
-    let waitedMs = 0;
-    waitedMs < FRAME_DECODE_TIMEOUT_MS;
-    waitedMs += FRAME_DECODE_RETRY_INTERVAL_MS
-  ) {
+  const deadlineMs = Date.now() + FRAME_DECODE_TIMEOUT_MS
+  while (Date.now() < deadlineMs) {
     try {
       await delay(FRAME_DECODE_RETRY_INTERVAL_MS, { signal })
     } catch {

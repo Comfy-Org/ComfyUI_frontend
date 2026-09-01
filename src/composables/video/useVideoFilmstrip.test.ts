@@ -375,6 +375,45 @@ describe('useVideoFilmstrip', () => {
     expect(createImageBitmapMock.mock.calls.length).toBeGreaterThan(1)
     expect(thumbnail.value).toBe('')
     expect(error.value).toBeNull()
+
+    const attemptsAtTimeout = createImageBitmapMock.mock.calls.length
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(createImageBitmapMock.mock.calls.length).toBe(attemptsAtTimeout)
+  })
+
+  it('stops polling for a frame when the load is superseded', async () => {
+    const bitmap = { width: 171, height: 96, close: vi.fn() }
+    const videos: MockVideoElement[] = []
+    const createImageBitmapMock = vi.fn(async () => {
+      if (videos.length === 1) throw new Error('decode failed')
+      return bitmap
+    })
+    vi.stubGlobal('createImageBitmap', createImageBitmapMock)
+    vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas)
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        videos.push(video)
+      }
+    })
+
+    const videoUrl = ref('https://example.com/first.mp4')
+    const { thumbnail, error, loading } = runWithScope(() =>
+      useVideoFilmstrip(videoUrl)
+    )
+    await vi.advanceTimersByTimeAsync(500)
+    const attemptsBeforeSwitch = createImageBitmapMock.mock.calls.length
+    expect(attemptsBeforeSwitch).toBeGreaterThan(1)
+
+    videoUrl.value = 'https://example.com/second.mp4'
+    await vi.waitFor(() => expect(loading.value).toBe(false))
+
+    expect(videos[0].src).toBe('')
+    expect(error.value).toBeNull()
+    expect(thumbnail.value).not.toBe('')
+
+    const attemptsAfterSettle = createImageBitmapMock.mock.calls.length
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(createImageBitmapMock.mock.calls.length).toBe(attemptsAfterSettle)
   })
 
   it('retries the capture when the frame is not yet decodable', async () => {
