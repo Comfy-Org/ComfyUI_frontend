@@ -316,6 +316,7 @@ export function useAgentCrdtFollower(
     // when the socket recovers and updates land in the replacement.
     const workflowId = subscribedWorkflowId.value
     if (isTargetActive.value && workflowId !== null) {
+      updatesApplied.value = 0
       adapter.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
