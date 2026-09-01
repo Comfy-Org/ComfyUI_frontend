@@ -246,5 +246,27 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     },
     commandId: 'Comfy.Canvas.DeleteSelectedItems',
     targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      key: 'z',
+      ctrl: true
+    },
+    commandId: 'Comfy.Undo'
+  },
+  {
+    combo: {
+      key: 'y',
+      ctrl: true
+    },
+    commandId: 'Comfy.Redo'
+  },
+  {
+    combo: {
+      key: 'z',
+      ctrl: true,
+      shift: true
+    },
+    commandId: 'Comfy.Redo'
   }
 ]

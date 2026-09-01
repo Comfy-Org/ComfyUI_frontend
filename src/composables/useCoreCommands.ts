@@ -72,9 +72,6 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useDialogStore } from '@/stores/dialogStore'
-
 const moveSelectedNodesVersionAdded = '1.22.2'
 let onboardingReplayInProgress: Promise<void> | undefined
 
@@ -116,9 +113,6 @@ export function useCoreCommands(): ComfyCommand[] {
   const settingStore = useSettingStore()
 
   const bottomPanelStore = useBottomPanelStore()
-
-  const dialogStore = useDialogStore()
-  const maskEditorStore = useMaskEditorStore()
 
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
@@ -262,13 +256,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-undo',
       label: 'Undo',
       category: 'essentials' as const,
-      mutatesGraph: () => !dialogStore.isDialogOpen('global-mask-editor'),
+      mutatesGraph: true,
       function: async () => {
-        // If Mask Editor is open, use its history instead of the graph
-        if (dialogStore.isDialogOpen('global-mask-editor')) {
-          maskEditorStore.canvasHistory.undo()
-          return
-        }
         await getTracker()?.undo()
       }
     },
@@ -277,12 +266,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-refresh',
       label: 'Redo',
       category: 'essentials' as const,
-      mutatesGraph: () => !dialogStore.isDialogOpen('global-mask-editor'),
+      mutatesGraph: true,
       function: async () => {
-        if (dialogStore.isDialogOpen('global-mask-editor')) {
-          maskEditorStore.canvasHistory.redo()
-          return
-        }
         await getTracker()?.redo()
       }
     },

@@ -136,6 +136,7 @@ import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 import { useMaskEditorSaver } from '@/composables/maskeditor/useMaskEditorSaver'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { MASK_EDITOR_DIALOG_KEY } from '@/components/maskeditor/maskEditorDialogKey'
 
 const { t } = useI18n()
 const store = useMaskEditorStore()
@@ -219,6 +220,6 @@ const handleSave = async () => {
 }
 
 const handleCancel = () => {
-  dialogStore.closeDialog({ key: 'global-mask-editor' })
+  dialogStore.closeDialog({ key: MASK_EDITOR_DIALOG_KEY })
 }
 </script>
