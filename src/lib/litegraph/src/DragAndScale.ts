@@ -32,6 +32,8 @@ export type AnimationOptions = {
   easing?: EaseFunction
   /** Insets that reduce the effective viewport for panel-aware fitting. */
   insets?: ViewportInsetsSource
+  /** CSS-pixel canvas region to fit and center the bounds within. */
+  viewport?: ReadOnlyRect
 }
 
 export class DragAndScale {
@@ -204,7 +206,10 @@ export class DragAndScale {
    */
   fitToBounds(
     bounds: ReadOnlyRect,
-    { zoom = 0.75, insets }: { zoom?: number; insets?: ViewportInsetsSource } = {}
+    {
+      zoom = 0.75,
+      insets
+    }: { zoom?: number; insets?: ViewportInsetsSource } = {}
   ): void {
     //If element hasn't initialized (browser tab is in background)
     //it has a size of 300x150 and a more reasonable default is used instead.
@@ -258,7 +263,8 @@ export class DragAndScale {
       duration = 350,
       zoom = 0.75,
       easing = EaseFunction.EASE_IN_OUT_QUAD,
-      insets
+      insets,
+      viewport
     }: AnimationOptions = {}
   ) {
     if (!(duration > 0)) throw new RangeError('Duration must be greater than 0')
@@ -278,8 +284,13 @@ export class DragAndScale {
     const startTimestamp = performance.now()
     const fullCw = this.element.width / window.devicePixelRatio
     const fullCh = this.element.height / window.devicePixelRatio
-    const cw = fullCw - insetLeft - insetRight
-    const ch = fullCh
+    const [vx, vy, vw, vh] = viewport ?? [
+      insetLeft,
+      0,
+      fullCw - insetLeft - insetRight,
+      fullCh
+    ]
+    if (vw <= 0 || vh <= 0) return
     const startX = this.offset[0]
     const startY = this.offset[1]
     const startX2 = startX - fullCw / this.scale
@@ -288,19 +299,16 @@ export class DragAndScale {
     let targetScale = startScale
 
     if (zoom > 0) {
-      const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
-      const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
+      const targetScaleX = (zoom * vw) / Math.max(bounds[2], 300)
+      const targetScaleY = (zoom * vh) / Math.max(bounds[3], 300)
 
       // Choose the smaller scale to ensure the node fits into the viewport
       // Ensure we don't go over the max scale
       targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
     }
-    const scaledWidth = cw / targetScale
-    const scaledHeight = ch / targetScale
 
-    const targetX =
-      -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5 + insetLeft / targetScale
-    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
+    const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
+    const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
     const targetX2 = targetX - fullCw / targetScale
     const targetY2 = targetY - fullCh / targetScale
 
