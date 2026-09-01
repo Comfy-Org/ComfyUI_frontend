@@ -9,5 +9,3 @@ export const SIDEBAR_MIN_SIZE = 10
 
 /** Minimum panel size (%) for the builder panel */
 export const BUILDER_MIN_SIZE = 15
-
-export const GRAPH_CANVAS_ANCHOR = '--graph-canvas-panel'
