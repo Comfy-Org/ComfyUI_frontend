@@ -157,7 +157,7 @@ export class EcsFollowerAdapter {
     try {
       while (session.frameQueue.length > 0) {
         const frame = session.frameQueue.shift()
-        if (frame) this.applyQueuedFrame(session, frame)
+        if (frame && !this.applyQueuedFrame(session, frame)) return false
       }
     } finally {
       session.applying = false
@@ -210,7 +210,7 @@ export class EcsFollowerAdapter {
     return session
   }
 
-  private applyQueuedFrame(session: TargetSession, update: DocUpdate): void {
+  private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
     const nodeActions = new Map(session.nodeActions)
     const changedWidgets = new Map(
       [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
@@ -241,7 +241,7 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
-    session.mutations.batch(frameContext(update), (batch) => {
+    return session.mutations.batch(frameContext(update), (batch) => {
       batch.removeLinks(removedLinkIds)
       for (const [id, action] of nodeActions) {
         if (action === 'delete' || action === 'update')

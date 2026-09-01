@@ -132,11 +132,13 @@ export function useAgentCrdtFollower(
   const opNacks = ref(0)
   const lastOpNack = ref<OpNack | null>(null)
   const projectionErrors = ref(0)
+  let projectionFailureReported = false
 
   const resetBindingDiagnostics = (): void => {
     opNacks.value = 0
     lastOpNack.value = null
     projectionErrors.value = 0
+    projectionFailureReported = false
   }
 
   // Dev-panel tap (poc-4): log every outbound frame with its delivery result.
@@ -171,12 +173,19 @@ export function useAgentCrdtFollower(
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as DocOpsResult
+        const detail = event.detail as Partial<DocOpsResult> | null
+        if (
+          detail === null ||
+          typeof detail.workflowId !== 'string' ||
+          detail.workflowId !== bridge.subscribedWorkflowId ||
+          typeof detail.ok !== 'boolean'
+        )
+          return
         const failure = failureView(detail.failed)
         listener({
           ok: detail.ok,
-          applied: detail.applied,
-          skipped: detail.skipped,
+          applied: detail.applied ?? [],
+          skipped: detail.skipped ?? [],
           ...(failure && { failure })
         })
       }
@@ -299,7 +308,8 @@ export function useAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     try {
-      adapter.applyFrame(update)
+      if (adapter.applyFrame(update) === false)
+        throw new Error('ECS mutation batch rejected the authoritative update')
     } catch (error) {
       projectionErrors.value += 1
       const failure = {
@@ -308,10 +318,18 @@ export function useAgentCrdtFollower(
         message: error instanceof Error ? error.message : String(error)
       }
       recordDevEvent('projection_error', failure)
-      reportError(error, {
-        errorType: 'agent_crdt_projection_failure',
-        tags: { workflow_id: update.workflowId, sequence: update.seq }
-      })
+      connected.value = false
+      adapter.discardPending(update.workflowId)
+      bridge.resubscribe()
+      if (!projectionFailureReported) {
+        projectionFailureReported = true
+        reportError(error, {
+          errorType: 'agent_crdt_projection_failure',
+          tags: { workflow_id: update.workflowId },
+          context: { sequence: update.seq }
+        })
+      }
+      return
     }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
@@ -332,39 +350,44 @@ export function useAgentCrdtFollower(
     if (detail === null) return
     const resultWorkflowId = detail?.workflowId
     if (
-      !isTargetActive.value ||
       typeof resultWorkflowId !== 'string' ||
       resultWorkflowId !== subscribedWorkflowId.value
     )
       return
     if (staleProbeTimer !== null) armStaleProbe()
     lastFrameType.value = event.type
-    recordDevEvent('doc_ops_result', detail)
-    if (detail.ok) return
+    const failed = failureView(detail.failed)
+    recordDevEvent('doc_ops_result', {
+      ...detail,
+      failed: failed ?? null
+    })
+    if (detail.ok !== false) return
 
     const nack: OpNack = {
       workflowId: resultWorkflowId,
       code: detail.code ?? null,
       message: detail.message ?? null,
-      failed: detail.failed ?? null,
+      failed: failed ?? null,
       applied: detail.applied?.length ?? 0,
       skipped: detail.skipped?.length ?? 0
     }
     opNacks.value += 1
     lastOpNack.value = nack
     recordDevEvent('op_nack', nack)
-    reportError(
-      new Error(nack.message ?? nack.code ?? 'Host rejected CRDT operations'),
-      {
+    if (opNacks.value === 1)
+      reportError(new Error('Host rejected CRDT operations'), {
         errorType: 'agent_crdt_host_operation_rejected',
         tags: {
           workflow_id: nack.workflowId,
           applied_ops: nack.applied,
           skipped_ops: nack.skipped
         },
-        context: { failed: nack.failed }
-      }
-    )
+        context: {
+          failed: nack.failed,
+          host_code: nack.code,
+          host_message: nack.message
+        }
+      })
   }
   const onDocReset: EventListener = (event) => {
     const detail =
@@ -468,7 +491,6 @@ export function useAgentCrdtFollower(
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
-      resetBindingDiagnostics()
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
@@ -505,6 +527,7 @@ export function useAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
+        resetBindingDiagnostics()
         if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
         adapter.bind(next, bridge.follower)
         boundWorkflowId = next
