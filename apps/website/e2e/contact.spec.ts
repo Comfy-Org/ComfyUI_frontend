@@ -1,0 +1,53 @@
+import { expect } from '@playwright/test'
+
+import { t } from '../src/i18n/translations'
+import { test } from './fixtures/blockExternalMedia'
+
+const HUBSPOT_SCRIPT_SRC =
+  'https://js-na2.hsforms.net/forms/embed/developer/244637579.js'
+const HUBSPOT_SCRIPT_PATTERN = '**/js-na2.hsforms.net/**'
+
+// Locale → form ID is wired in FormSection.vue; a swapped ID would route
+// leads to the wrong HubSpot pipeline while every page still renders.
+const CONTACT_FORMS = [
+  {
+    locale: 'en',
+    path: '/contact',
+    formId: '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
+  },
+  {
+    locale: 'zh-CN',
+    path: '/zh-CN/contact',
+    formId: '6885750c-02ef-4aa2-ba0d-213be9cccf93'
+  }
+] as const
+
+test.describe('Contact form embed @smoke', () => {
+  for (const { locale, path, formId } of CONTACT_FORMS) {
+    test(`mounts the ${locale} HubSpot form`, async ({ page }) => {
+      // Stubbed so the assertions below cover our embed contract, not
+      // HubSpot's availability.
+      await page.route(HUBSPOT_SCRIPT_PATTERN, (route) =>
+        route.fulfill({ status: 200, contentType: 'text/javascript', body: '' })
+      )
+      await page.goto(path)
+
+      await expect(
+        page.getByRole('heading', {
+          level: 1,
+          name: t('contact.form.heading', locale)
+        })
+      ).toBeVisible()
+
+      await expect(page.locator('.hs-form-html')).toHaveAttribute(
+        'data-form-id',
+        formId
+      )
+
+      await expect(page.locator('script#hubspot-form-embed')).toHaveAttribute(
+        'src',
+        HUBSPOT_SCRIPT_SRC
+      )
+    })
+  }
+})
