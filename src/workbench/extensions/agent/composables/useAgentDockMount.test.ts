@@ -11,7 +11,7 @@ const { loadDockedAgentPanel } = vi.hoisted(() => ({
 }))
 vi.mock(
   '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue',
-  () => ({ default: loadDockedAgentPanel() })
+  () => ({ __esModule: true, default: loadDockedAgentPanel() })
 )
 
 function getAsyncLoader(component: unknown): () => Promise<unknown> {
@@ -55,7 +55,10 @@ describe('useAgentDockMount', () => {
     expect(docked.value).toBe(false)
     store.isOpen = true
     expect(docked.value).toBe(true)
-    await getAsyncLoader(DockedAgentPanel)()
+    const resolvedPanel = await getAsyncLoader(DockedAgentPanel)()
+    const { default: expectedPanel } =
+      await import('@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue')
+    expect(resolvedPanel).toBe(expectedPanel)
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
     store.close('close_button')
     expect(docked.value).toBe(false)
