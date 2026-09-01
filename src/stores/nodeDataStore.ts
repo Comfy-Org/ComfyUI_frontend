@@ -42,6 +42,9 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     }
   }
 
+  /**
+   * @returns The registered state, or `undefined` when the node ID is occupied.
+   */
   function registerNode(
     graphScope: GraphScope,
     state: NodeState,

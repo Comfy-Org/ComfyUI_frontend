@@ -46,7 +46,7 @@ const tutorialList = itemListNode(
   url,
   label ?? learningTitle,
   filterByCategory(category).map((tutorial) => ({
-    name: tutorial.title[locale],
+    name: tutorial.title[locale] || tutorial.title.en,
     url: absoluteUrl(Astro.site, localizeHref(tutorialPath(tutorial), locale))
   }))
 )
