@@ -111,7 +111,14 @@ describe('useSubgraphDragBridge', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
+    mockCreateAdapter.mockClear()
+    mockLayoutStore.getAllSlotKeys.mockClear()
+    mockLayoutStore.getSlotLayout.mockClear()
+    mockRegistry.getNode.mockClear()
+    mockOrchestrator.resolveSlotTargetCandidate.mockClear()
+    mockOrchestrator.resolveNodeSurfaceSlotCandidate.mockClear()
+    mockResolvePointerTarget.mockClear()
+    setDirty.mockClear()
     mockLayoutStore.getAllSlotKeys.mockReturnValue([])
     useSlotLinkDragUIState().endDrag()
     canvas = createMockCanvas()
