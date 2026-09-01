@@ -86,7 +86,7 @@ const features = [
     </div>
 
     <div class="mt-8 flex justify-center">
-      <Button as="a" :href="routes.enterpriseManagedBuilds" variant="outline">
+      <Button as="a" :href="routes.managedBuilds" variant="outline">
         {{ t('enterprise.managedBuilds.explore', locale) }}
       </Button>
     </div>

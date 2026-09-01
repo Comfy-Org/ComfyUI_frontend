@@ -373,7 +373,10 @@ test.describe('FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /Do I need a GPU/i
     })
+    // aria-expanded="false" is already in the server-rendered markup, so it
+    // cannot tell us whether Vue has taken over. Gate on the island instead.
     await waitForIsland(page, firstQuestion)
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await firstQuestion.click()
 
     await expect(
@@ -385,7 +388,10 @@ test.describe('FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /Do I need a GPU/i
     })
+    // aria-expanded="false" is already in the server-rendered markup, so it
+    // cannot tell us whether Vue has taken over. Gate on the island instead.
     await waitForIsland(page, firstQuestion)
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')

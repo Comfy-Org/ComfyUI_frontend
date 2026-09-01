@@ -49,7 +49,7 @@ test.describe('Cloud page @smoke', () => {
 
     const section = heading.locator('xpath=ancestor::section')
     const grid = section.locator('.grid')
-    const modelCards = grid.locator('a[href="https://comfy.org/workflows"]')
+    const modelCards = grid.locator('a[href="https://comfy.org/workflows/"]')
     await expect(modelCards).toHaveCount(6)
   })
 
@@ -60,7 +60,7 @@ test.describe('Cloud page @smoke', () => {
     await expect(cta.first()).toBeVisible()
     await expect(cta.first()).toHaveAttribute(
       'href',
-      'https://comfy.org/workflows'
+      'https://comfy.org/workflows/'
     )
   })
 
@@ -104,7 +104,10 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /What is Comfy Cloud/i
     })
+    // aria-expanded="false" is already in the server-rendered markup, so it
+    // cannot tell us whether Vue has taken over. Gate on the island instead.
     await waitForIsland(page, firstQuestion)
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await firstQuestion.click()
 
     await expect(
@@ -116,7 +119,10 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     const firstQuestion = page.getByRole('button', {
       name: /What is Comfy Cloud/i
     })
+    // aria-expanded="false" is already in the server-rendered markup, so it
+    // cannot tell us whether Vue has taken over. Gate on the island instead.
     await waitForIsland(page, firstQuestion)
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')

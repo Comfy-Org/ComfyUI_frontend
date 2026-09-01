@@ -474,29 +474,29 @@ const translations = {
 
   // Enterprise – TeamSection
   'enterprise.team.heading': {
-    en: 'Team workspaces\nand shared assets.',
-    'zh-CN': '团队工作区\n与共享资产。'
+    en: 'A team plan built\naround shared usage.',
+    'zh-CN': '围绕共享用量打造的\n团队方案。'
   },
   'enterprise.team.subtitle': {
-    en: 'Organize workflows, models, and outputs in shared workspaces. Control who builds, who runs, and who deploys.',
+    en: 'Pool credits across the team, centralize billing, and give people the right way to use Comfy for their role.',
     'zh-CN':
-      '在共享工作区中组织工作流、模型和输出。控制谁构建、谁运行、谁部署。'
+      '为团队共享点数池，统一结算，并根据每个人的角色提供合适的 Comfy 使用方式。'
   },
   'enterprise.team.feature1.title': {
-    en: 'Role-based access',
-    'zh-CN': '基于角色的访问控制'
+    en: 'Shared credit pool',
+    'zh-CN': '共享点数池'
   },
   'enterprise.team.feature1.description': {
-    en: 'Control who builds, who runs, and who deploys.',
-    'zh-CN': '控制谁构建、谁运行、谁部署。'
+    en: 'Give the team one shared balance for Cloud GPU time and partner model usage.',
+    'zh-CN': '为团队提供一个共享余额，用于 Cloud GPU 时长和合作伙伴模型用量。'
   },
   'enterprise.team.feature2.title': {
     en: 'Single Sign-On',
     'zh-CN': '单点登录'
   },
   'enterprise.team.feature2.description': {
-    en: 'Enable secure, centralized user authentication across your organization with SSO and SCIM provisioning.',
-    'zh-CN': '为您的组织启用集中式安全用户认证，支持 SSO 和 SCIM 配置。'
+    en: 'Enable secure, centralized user authentication across your organization with SSO.',
+    'zh-CN': '通过 SSO 为组织启用安全、集中的用户身份验证。'
   },
   'enterprise.team.feature2.cta': {
     en: 'SEE CLOUD FEATURES',
@@ -507,8 +507,8 @@ const translations = {
     'zh-CN': 'App 模式'
   },
   'enterprise.team.feature3.description': {
-    en: 'Non-technical team members run workflows without touching the node graph.',
-    'zh-CN': '非技术团队成员无需接触节点图即可运行工作流。'
+    en: 'Let non-technical teammates run approved experiences without touching the node graph.',
+    'zh-CN': '让非技术团队成员无需接触节点图即可运行获批的体验。'
   },
 
   // Enterprise – ReasonSection
@@ -565,17 +565,17 @@ const translations = {
 
   // Enterprise – HeroSection
   'enterprise.hero.heading': {
-    en: 'Your team already runs ComfyUI. Scale it with confidence.',
-    'zh-CN': '你的团队已经在使用 ComfyUI。放心地扩展它。'
+    en: 'Govern ComfyUI across every team and runtime.',
+    'zh-CN': '在每个团队和运行环境中治理 ComfyUI。'
   },
   'enterprise.hero.subtitle': {
-    en: 'Comfy Enterprise adds managed infrastructure, team controls, and dedicated support to the workflows your organization already builds.',
+    en: 'Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, team plans, commercial licensing, and hands-on implementation support.',
     'zh-CN':
-      'Comfy 企业版为你的组织已有的工作流添加托管基础设施、团队控制和专属支持。'
+      '通过 ComfyUI Managed Builds、团队方案、商业许可和实施支持，统一团队构建、运行和部署视觉 AI 的方式。'
   },
   'enterprise.hero.contactSales': {
-    en: 'CONTACT SALES',
-    'zh-CN': '联系销售'
+    en: 'REQUEST DEMO',
+    'zh-CN': '申请演示'
   },
 
   // Enterprise – DataOwnershipSection
@@ -592,36 +592,36 @@ const translations = {
     'zh-CN': '你的条款。'
   },
   'enterprise.ownership.subtitle': {
-    en: 'Your workflows, models, and generated outputs stay within your organization\u2019s environment. Role-based access controls and data isolation built for organizations with the strictest requirements.',
+    en: 'Keep Comfy Workflows on your machines with Managed Builds, use your own provider contracts and keys, and choose the runtime that fits each workload.',
     'zh-CN':
-      '你的工作流、模型和生成输出始终保留在你的组织环境中。基于角色的访问控制和数据隔离，为最严格要求的组织而构建。'
+      '通过 Managed Builds 将 Comfy Workflows 保留在你的机器上，使用自有的服务商合约和密钥，并为每项工作负载选择合适的运行环境。'
   },
 
   // Enterprise – BYOKeySection
   'enterprise.byoKey.heading': {
-    en: 'Bring your own API key',
-    'zh-CN': '自带 API 密钥'
+    en: 'Bring your own keys. Govern the models.',
+    'zh-CN': '自带密钥。治理模型。'
   },
   'enterprise.byoKey.subtitle': {
-    en: 'Use your own contracts with third-party model providers. Comfy orchestrates the pipeline. You choose which models to run and whose API keys to use.',
+    en: 'Use your existing provider contracts and decide which partner and private models are available to each team.',
     'zh-CN':
-      '使用你与第三方模型提供商的合约。Comfy 编排管线。你决定运行哪些模型、使用谁的 API 密钥。'
+      '使用现有的服务商合约，并决定每个团队可以使用哪些合作伙伴模型和私有模型。'
   },
   'enterprise.byoKey.card1.title': {
     en: 'API key management',
     'zh-CN': 'API 密钥管理'
   },
   'enterprise.byoKey.card1.description': {
-    en: 'Bring your own API keys from any model provider. Use your existing contracts and pricing.',
-    'zh-CN': '从任何模型提供商导入你自己的 API 密钥。使用你现有的合约和定价。'
+    en: 'Use supported provider keys with the contracts and pricing your organization already has.',
+    'zh-CN': '使用受支持的服务商密钥，以及你的组织已有的合约和定价。'
   },
   'enterprise.byoKey.card2.title': {
-    en: 'Real-time progress',
-    'zh-CN': '实时进度'
+    en: 'Model governance',
+    'zh-CN': '模型治理'
   },
   'enterprise.byoKey.card2.description': {
-    en: 'Step-by-step execution updates via WebSocket.',
-    'zh-CN': '通过 WebSocket 逐步更新执行状态。'
+    en: 'Choose which partner models, open models, and private assets are approved for each environment.',
+    'zh-CN': '选择每个环境获准使用的合作伙伴模型、开放模型和私有资产。'
   },
 
   // Enterprise – OrchestrationSection
@@ -655,9 +655,9 @@ const translations = {
     'zh-CN': 'MiniMax 商业许可'
   },
   'enterprise.minimaxBand.text': {
-    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Add full local commercial rights, LoRA training included, to your Enterprise plan.',
+    en: 'Comfy is an official reseller of MiniMax commercial-use licenses. Add local commercial rights, with LoRA training included, to your Enterprise plan.',
     'zh-CN':
-      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。在你的企业版计划之上增加完整的本地商业使用权利，并包含 LoRA 训练。'
+      'Comfy 是 MiniMax 商业使用许可的官方经销商。可将本地商业使用权添加到企业方案中，其中包括 LoRA 训练。'
   },
   'enterprise.minimaxBand.cta': { en: 'Get your license', 'zh-CN': '获取许可' },
 
@@ -3480,8 +3480,8 @@ const translations = {
 
   // SiteFooter
   'footer.tagline': {
-    en: 'The most powerful workflow engine for visual AI.',
-    'zh-CN': '最强大的视觉 AI 工作流引擎。'
+    en: 'The open standard for visual AI.',
+    'zh-CN': '视觉 AI 的开放标准。'
   },
   'footer.products': { en: 'Products', 'zh-CN': '产品' },
   'footer.resources': { en: 'Resources', 'zh-CN': '资源' },
@@ -3510,6 +3510,8 @@ const translations = {
     en: 'Affiliate Program',
     'zh-CN': 'Affiliate Program'
   },
+  'footer.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'footer.useCases': { en: 'Use Cases', 'zh-CN': '用例' },
   'footer.location': {
     en: 'San Francisco, USA',
     'zh-CN': '美国旧金山'
@@ -5205,11 +5207,13 @@ const translations = {
     en: 'Find your answer here',
     'zh-CN': '在这里找到答案'
   },
-  'contact.form.embedLoadErrorPrefix': {
-    en: 'Unable to load the contact form. Email us at',
-    'zh-CN': '联系表单无法加载。请发送邮件至'
+
+  // HubspotFormEmbed – shared by every page that embeds a HubSpot form
+  'hubspotForm.embedLoadErrorPrefix': {
+    en: 'Unable to load the form. Email us at',
+    'zh-CN': '表单无法加载。请发送邮件至'
   },
-  'contact.form.embedLoadErrorSuffix': {
+  'hubspotForm.embedLoadErrorSuffix': {
     en: "and we'll route your request.",
     'zh-CN': '我们会为您处理请求。'
   },
@@ -5848,13 +5852,13 @@ const translations = {
   // Launches page (/launches) — head metadata
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.page.title': {
-    en: 'ComfyUI Live Demo & Q&A - June 29 Launch Livestream',
-    'zh-CN': 'ComfyUI 直播演示与问答 - 6 月 29 日发布直播'
+    en: 'Launches: Everything New in ComfyUI',
+    'zh-CN': '发布：ComfyUI 的所有新内容'
   },
   'launches.page.description': {
-    en: 'Join the ComfyUI livestream on June 29 for a hands-on product demo and live Q&A. See what’s new across desktop, cloud, and community, and get your questions answered.',
+    en: 'Every ComfyUI launch in one place: new models, desktop, cloud, MCP, CLI, and core engine releases, with the livestreams that walk through them.',
     'zh-CN':
-      '6 月 29 日加入 ComfyUI 直播，观看实操产品演示并参与实时问答。了解桌面、云端和社区的最新内容，并获得解答。'
+      '所有 ComfyUI 发布汇总：新模型、桌面版、云端、MCP、CLI 与核心引擎更新，以及逐一讲解的直播回放。'
   },
 
   // Launches page (/launches) — hero section
@@ -6961,6 +6965,31 @@ const translations = {
   'minimaxLicense.reviews.highlightCta': {
     en: 'MEET THE TEAM',
     'zh-CN': '认识团队'
+  },
+
+  // ── MiniMax professional license request ───────────────────────────
+  // English-only, by design: the page embeds the English-only HubSpot
+  // "MiniMax Commercial License - Professional" form, so the zh values
+  // intentionally duplicate the English. See the matching header comment
+  // in src/pages/minimax/license/professional-request.astro and the
+  // LOCALE_INVARIANT_ROUTE_KEYS entry in src/config/routes.ts.
+  'minimaxLicense.professionalRequest.title': {
+    en: 'Request MiniMax Professional License',
+    'zh-CN': 'Request MiniMax Professional License'
+  },
+  'minimaxLicense.professionalRequest.meta.description': {
+    en: 'Request a MiniMax Professional commercial license through Comfy, the official reseller of MiniMax commercial-use licenses. Fixed monthly price, up to 10 licensed users.',
+    'zh-CN':
+      'Request a MiniMax Professional commercial license through Comfy, the official reseller of MiniMax commercial-use licenses. Fixed monthly price, up to 10 licensed users.'
+  },
+  'minimaxLicense.professionalRequest.intro': {
+    en: "Tell us about your team and we'll get your license set up. Professional is a fixed-price monthly license covering up to 10 users —",
+    'zh-CN':
+      "Tell us about your team and we'll get your license set up. Professional is a fixed-price monthly license covering up to 10 users —"
+  },
+  'minimaxLicense.professionalRequest.introCta': {
+    en: 'see what it includes',
+    'zh-CN': 'see what it includes'
   },
   // FDCT page (/forward-deployed-creatives) — Forward Deployed Creatives
   'fdct.meta.title': {

@@ -63,6 +63,11 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     title: t('footer.resources', locale),
     links: [
       { label: t('nav.learning', locale), href: routes.learning },
+      { label: t('footer.workflows', locale), href: externalLinks.workflows },
+      {
+        label: t('footer.useCases', locale),
+        href: externalLinks.workflowUseCases
+      },
       { label: t('nav.launches', locale), href: routes.launches },
       { label: t('nav.fdct', locale), href: routes.fdct },
       {

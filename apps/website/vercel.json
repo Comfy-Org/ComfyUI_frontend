@@ -83,6 +83,26 @@
       "permanent": false
     },
     {
+      "source": "/cloud/enterprise",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/enterprise/",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise/",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
       "source": "/blog",
       "destination": "https://blog.comfy.org/",
       "permanent": true
@@ -118,16 +138,6 @@
       "permanent": true
     },
     {
-      "source": "/cloud/enterprise",
-      "destination": "/enterprise",
-      "permanent": true
-    },
-    {
-      "source": "/zh-CN/cloud/enterprise",
-      "destination": "/zh-CN/enterprise",
-      "permanent": true
-    },
-    {
       "source": "/platform/router",
       "destination": "/platform/models",
       "permanent": true
@@ -155,16 +165,6 @@
     {
       "source": "/zh-CN/api/",
       "destination": "/zh-CN/platform",
-      "permanent": true
-    },
-    {
-      "source": "/cloud/enterprise/",
-      "destination": "/enterprise",
-      "permanent": true
-    },
-    {
-      "source": "/zh-CN/cloud/enterprise/",
-      "destination": "/zh-CN/enterprise",
       "permanent": true
     },
     {

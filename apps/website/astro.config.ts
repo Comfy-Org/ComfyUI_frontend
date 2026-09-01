@@ -5,6 +5,7 @@ import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
 import { markdownTwins } from './src/integrations/markdown-twins'
+import { sitemapAlternates } from './src/lib/hreflang'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
@@ -30,7 +31,7 @@ export default defineConfig({
     '/cloud/enterprise': '/enterprise/',
     '/cloud/pricing': '/pricing/',
     '/zh-CN/cloud/pricing': '/zh-CN/pricing/',
-    '/zh-CN/cloud/enterprise': '/zh-CN/enterprise/',
+    '/zh-CN/cloud/enterprise': '/enterprise/',
     '/zh-CN/api': '/zh-CN/platform/',
     '/minimax': { status: 307, destination: '/minimax-h3/' },
     '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
@@ -43,7 +44,8 @@ export default defineConfig({
     vue(),
     mdx(),
     sitemap({
-      filter: (page) => !isExcludedFromSitemap(page)
+      filter: (page) => !isExcludedFromSitemap(page),
+      serialize: (item) => ({ ...item, links: sitemapAlternates(item.url) })
     }),
     markdownTwins()
   ],
