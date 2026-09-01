@@ -41,7 +41,6 @@ describe('LinkConnector.dropOnNothing event dispatch', () => {
 
   beforeEach(() => {
     connector = new LinkConnector(mockSetConnectingLinks)
-    vi.clearAllMocks()
   })
 
   test('dispatches before-drop-on-canvas before dropped-on-canvas', () => {
@@ -92,7 +91,6 @@ describe('LinkConnector rewire flows dispatch connecting event', () => {
 
   beforeEach(() => {
     connector = new LinkConnector(mockSetConnectingLinks)
-    vi.clearAllMocks()
   })
 
   test('moveInputLink dispatches connecting with connectingTo: input', () => {
