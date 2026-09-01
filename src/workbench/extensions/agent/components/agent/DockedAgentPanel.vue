@@ -21,51 +21,68 @@
       <div
         class="size-full overflow-hidden rounded-lg border border-interface-stroke"
       >
-        <AgentPanelRoot />
+        <div v-if="loadFailed" class="size-full bg-base-background p-3">
+          <h2 id="agent-panel-title" class="sr-only">
+            {{ t('agent.title') }}
+          </h2>
+          <p class="text-sm text-base-foreground">
+            {{ t('agent.loadFailed') }}
+          </p>
+        </div>
+        <Suspense v-else>
+          <AgentPanelRoot />
+          <template #fallback>
+            <div class="size-full bg-base-background">
+              <h2 id="agent-panel-title" class="sr-only">
+                {{ t('agent.title') }}
+              </h2>
+            </div>
+          </template>
+        </Suspense>
       </div>
     </div>
   </div>
 </template>
 
+<script lang="ts">
+import { defineAsyncComponent, ref } from 'vue'
+
+import { reportError } from '@/platform/telemetry/reportError'
+
+// Module-scoped so a second docked host (the graph/linear mode switch)
+// mounts the already-resolved panel synchronously, keeping the old and new
+// roots' lifecycles overlapped for the session handoff.
+const loadFailed = ref(false)
+// Only a failed chunk load is a load failure; runtime errors inside the
+// resolved panel keep their normal propagation.
+const AgentPanelRoot = defineAsyncComponent(() =>
+  import('@/workbench/extensions/agent/AgentPanelRoot.vue').catch(
+    (error: unknown) => {
+      reportError(error, { errorType: 'agent_panel_load_failure' })
+      loadFailed.value = true
+      throw error
+    }
+  )
+)
+</script>
+
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-const AgentPanelLoadError = defineComponent({
-  name: 'AgentPanelLoadError',
-  setup() {
-    const { t } = useI18n()
-    return () =>
-      h('div', { class: 'size-full bg-base-background p-3' }, [
-        h(
-          'h2',
-          { id: 'agent-panel-title', class: 'sr-only' },
-          t('agent.title')
-        ),
-        h('p', { class: 'text-sm text-base-foreground' }, t('agent.loadFailed'))
-      ])
-  }
-})
-
-// Only a failed chunk load is a load failure; runtime errors inside the
-// resolved panel keep their normal propagation.
-const AgentPanelRoot = defineAsyncComponent({
-  loader: () => import('@/workbench/extensions/agent/AgentPanelRoot.vue'),
-  errorComponent: AgentPanelLoadError,
-  onError: (error, _retry, fail) => {
-    reportError(error, { errorType: 'agent_panel_load_failure' })
-    fail()
-  }
-})
-
+const { t } = useI18n()
 const agentPanelStore = useAgentPanelStore()
 const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
 const docked = computed(() => enabled.value && isOpen.value)
+
+// Body-mounted overlays center on the raw viewport; declaring the docked
+// width as --workspace-inset-right lets them center on the visible workspace.
+useWorkspaceInsetRight(() => (docked.value ? width.value : 0))
 
 const isResizing = ref(false)
 let resizeStartX = 0

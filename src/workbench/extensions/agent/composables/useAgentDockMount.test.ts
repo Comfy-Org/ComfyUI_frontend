@@ -5,8 +5,6 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { useAgentDockMount } from './useAgentDockMount'
 
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
-
 describe('useAgentDockMount', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -34,7 +32,7 @@ describe('useAgentDockMount', () => {
     expect(docked.value).toBe(false)
     store.isOpen = true
     expect(docked.value).toBe(true)
-    store.close('close_button')
+    store.close('topbar_button')
     expect(docked.value).toBe(false)
   })
 })

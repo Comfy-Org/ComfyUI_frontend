@@ -550,35 +550,39 @@ export interface UiButtonClickMetadata {
 export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
   message_id: string
   vote: 'up' | 'down' | null
+  workflow_id: string | null
 }
 
-export type AgentPanelCloseSource =
-  | 'close_button'
-  | 'workflow_switch'
-  | 'topbar_button'
+export type AgentPanelCloseSource = 'topbar_button' | 'close_button'
+
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button'
+  source: 'topbar_button' | 'restored'
 }
+
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
 }
+
 export interface AgentEntryButtonClickedMetadata extends Record<
   string,
   unknown
 > {
   resulting_state: 'opened' | 'closed'
 }
+
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
 }
+
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
 }
+
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
-  target: 'active_tab_switch' | 'active_tab_open'
+  target: 'new_tab' | 'existing_tab' | 'active_tab_open' | 'active_tab_switch'
 }
 
 /**
@@ -1067,6 +1071,8 @@ export interface TelemetryProvider {
 
   // In-App Agent message rating (PM-98)
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
+
+  // In-App Agent panel engagement (FE-1187)
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
   trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
   trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
@@ -1330,6 +1336,13 @@ export type TelemetryEventProperties =
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
+  | AgentMessageFeedbackMetadata
+  | AgentPanelOpenedMetadata
+  | AgentPanelClosedMetadata
+  | AgentEntryButtonClickedMetadata
+  | AgentMessageSentMetadata
+  | AgentNodeTaggedMetadata
+  | AgentWorkflowAppliedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
   | ShareFlowMetadata

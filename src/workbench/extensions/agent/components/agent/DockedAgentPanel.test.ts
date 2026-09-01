@@ -2,10 +2,13 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Component } from 'vue'
 import { defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import { i18n } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentRestClient } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -18,7 +21,22 @@ vi.mock('@/platform/telemetry', () => ({
 const rootLiveness = vi.hoisted(() => ({ live: 0, maxLive: 0 }))
 
 vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', async () => {
-  const { defineComponent, h, onUnmounted } = await import('vue')
+  const { defineComponent, h, onBeforeUnmount, onUnmounted } =
+    await import('vue')
+  const { useAgentSession } =
+    await import('@/workbench/extensions/agent/composables/agent/useAgentSession')
+  const unusedRest = async (): Promise<never> => {
+    throw new Error('rest is unused in this harness')
+  }
+  const rest: AgentRestClient = {
+    postMessage: unusedRest,
+    getMessages: async () => [],
+    listThreads: unusedRest,
+    listCloudWorkflows: unusedRest,
+    cancelMessage: unusedRest,
+    getDraft: unusedRest,
+    uploadImage: unusedRest
+  }
   return {
     __esModule: true,
     default: defineComponent({
@@ -26,6 +44,12 @@ vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', async () => {
       setup() {
         rootLiveness.live++
         rootLiveness.maxLive = Math.max(rootLiveness.maxLive, rootLiveness.live)
+        const session = useAgentSession({
+          rest,
+          events: { subscribe: () => () => {} }
+        })
+        session.start()
+        onBeforeUnmount(() => session.stop())
         onUnmounted(() => {
           rootLiveness.live--
         })
@@ -42,8 +66,15 @@ function openPanel() {
   return store
 }
 
-function renderPanel() {
-  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+// The merged panel keeps the chain's i18n-labeled load states, so every
+// render needs the i18n plugin installed.
+function renderWithI18n(component: Component) {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
+  return render(component, { global: { plugins: [i18n] } })
 }
 
 describe('DockedAgentPanel', () => {
@@ -56,7 +87,7 @@ describe('DockedAgentPanel', () => {
 
   it('docks the panel at the store width when enabled and open', async () => {
     const store = openPanel()
-    renderPanel()
+    renderWithI18n(DockedAgentPanel)
 
     const container = screen.getByTestId('docked-agent-panel')
     expect(container.style.width).toBe(`${store.width}px`)
@@ -70,7 +101,7 @@ describe('DockedAgentPanel', () => {
 
   it('fills the panel shell and draws the canvas seam border', () => {
     openPanel()
-    renderPanel()
+    renderWithI18n(DockedAgentPanel)
 
     const shell = screen.getByTestId('docked-agent-panel-shell')
 
@@ -80,7 +111,7 @@ describe('DockedAgentPanel', () => {
   it('renders nothing while the panel is closed', () => {
     const store = openPanel()
     store.isOpen = false
-    renderPanel()
+    renderWithI18n(DockedAgentPanel)
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
   })
@@ -88,7 +119,7 @@ describe('DockedAgentPanel', () => {
   it('renders nothing while the feature is disabled', () => {
     const store = openPanel()
     store.enabled = false
-    renderPanel()
+    renderWithI18n(DockedAgentPanel)
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
   })
@@ -96,7 +127,7 @@ describe('DockedAgentPanel', () => {
   it('resizes via pointer drag on the handle, clamped to the width bounds', async () => {
     const store = openPanel()
     const user = userEvent.setup()
-    renderPanel()
+    renderWithI18n(DockedAgentPanel)
 
     const handle = screen.getByTestId('agent-panel-resize-handle')
     handle.setPointerCapture = () => {}
@@ -137,7 +168,7 @@ describe('DockedAgentPanel', () => {
       `
     })
 
-    render(DualHostHarness, { global: { plugins: [i18n] } })
+    renderWithI18n(DualHostHarness)
     await screen.findByTestId('agent-panel-root-stub')
     expect(screen.getAllByTestId('docked-agent-panel')).toHaveLength(1)
 
@@ -148,8 +179,7 @@ describe('DockedAgentPanel', () => {
 
     linearMode.value = true
     await nextTick()
-    await vi.waitFor(() => expect(rootLiveness.live).toBe(1))
-    expect(rootLiveness.maxLive).toBe(1)
+    expect(rootLiveness.maxLive).toBe(2)
     expect(rootLiveness.live).toBe(1)
     expect(screen.getAllByTestId('docked-agent-panel')).toHaveLength(1)
     await vi.waitFor(() => expect(conversation.activeTurnId).toBe('turn-live'))
@@ -158,7 +188,6 @@ describe('DockedAgentPanel', () => {
 
     linearMode.value = false
     await nextTick()
-    await vi.waitFor(() => expect(rootLiveness.live).toBe(1))
     expect(rootLiveness.live).toBe(1)
     expect(screen.getAllByTestId('docked-agent-panel')).toHaveLength(1)
     await vi.waitFor(() => expect(conversation.activeTurnId).toBe('turn-live'))

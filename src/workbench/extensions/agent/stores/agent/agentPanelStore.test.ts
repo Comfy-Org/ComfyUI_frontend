@@ -169,13 +169,6 @@ describe('agentPanelStore open-state persistence', () => {
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
   })
 
-  it('starts unsettled and does not plant a storage key for flag-off users', () => {
-    const store = useAgentPanelStore()
-
-    expect(store.gateSettled).toBe(false)
-    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
-  })
-
   it('clamps setWidth to the panel min and max bounds', () => {
     const store = useAgentPanelStore()
 
@@ -197,5 +190,12 @@ describe('agentPanelStore open-state persistence', () => {
     store.toggleMaximize()
     expect(store.width).toBe(420)
     expect(store.isMaximized).toBe(false)
+  })
+
+  it('starts unsettled and does not plant a storage key for flag-off users', () => {
+    const store = useAgentPanelStore()
+
+    expect(store.gateSettled).toBe(false)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
 })

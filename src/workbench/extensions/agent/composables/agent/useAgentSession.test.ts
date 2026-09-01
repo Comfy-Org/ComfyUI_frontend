@@ -6,6 +6,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import type {
   AgentCancelAccepted,
+  AgentDraftSnapshot,
   AgentMessages,
   AgentThreadSummary,
   AgentTurnAccepted,
@@ -20,9 +21,11 @@ import type {
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentDraftStore } from '../../stores/agent/agentDraftStore'
+
+import type { AgentEventSource } from '../../services/agent/agentEventSource'
 
 import type { SelectedNode } from './useCanvasSelection'
-import type { AgentEventSource } from '../../services/agent/agentEventSource'
 import { useAgentSession } from './useAgentSession'
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
@@ -39,6 +42,9 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     listCloudWorkflows: vi.fn(async () => []),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    ),
+    getDraft: vi.fn(
+      async (): Promise<AgentDraftSnapshot> => ({ content: {}, version: 1 })
     ),
     uploadImage: vi.fn(
       async (): Promise<UploadImageResult> => ({
@@ -97,6 +103,18 @@ const done = (id: string) =>
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th-1', usage: null }
   })
+const draftPatch = (workflowId: string, version: number) =>
+  wire({
+    type: 'draft_patch',
+    data: {
+      base_version: version - 1,
+      version,
+      content: { n: 1 },
+      workflow_id: workflowId
+    }
+  })
+const draftVersion = (workflowId: string, version: number) =>
+  wire({ type: 'draft_version', data: { version, workflow_id: workflowId } })
 const deltaIn = (threadId: string, id: string, text: string) =>
   wire({
     type: 'agent_message_delta',
@@ -471,7 +489,54 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
   })
 
-  it('(g) onStatus(false) aborts the active turn; onStatus(true) is inert', async () => {
+  it('(e) foreign chat events are ignored, but a mid-turn draft_patch still adopts', async () => {
+    const rest = fakeRest()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('hi')
+    emit(delta('msg-1', 'kept'))
+    emit(delta('msg-OTHER', 'DROP'))
+    emit(draftPatch('wf-1', 5))
+
+    const assistant = session.entries.value.at(-1)
+    const textPart =
+      assistant?.role === 'assistant'
+        ? assistant.parts.find((p) => p.type === 'text')
+        : undefined
+    expect(textPart).toMatchObject({ text: 'kept' })
+    const draft = useAgentDraftStore()
+    expect(draft.version).toBe(5)
+    expect(draft.content).toEqual({ n: 1 })
+  })
+
+  it('(f) draft_version ahead triggers exactly one single-flight resync', async () => {
+    let resolveDraft: ((snapshot: AgentDraftSnapshot) => void) | undefined
+    const getDraft = vi.fn<(workflowId: string) => Promise<AgentDraftSnapshot>>(
+      () =>
+        new Promise<AgentDraftSnapshot>((resolve) => {
+          resolveDraft = resolve
+        })
+    )
+    const rest = fakeRest({ getDraft })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    const draft = useAgentDraftStore()
+    draft.bind('wf-1')
+
+    emit(draftVersion('wf-1', 9))
+    emit(draftVersion('wf-1', 10))
+    expect(getDraft).toHaveBeenCalledTimes(1)
+
+    resolveDraft?.({ content: { adopted: true }, version: 10 })
+    await Promise.resolve()
+    expect(draft.version).toBe(10)
+    expect(draft.content).toEqual({ adopted: true })
+  })
+
+  it('(g) onStatus(false) aborts the active turn; onStatus(true) resyncs the draft', async () => {
     const rest = fakeRest()
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -480,15 +545,13 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
     expect(session.isStreaming.value).toBe(true)
-    const requestsBefore = vi.mocked(rest.postMessage).mock.calls.length
+    expect(rest.getDraft).not.toHaveBeenCalled()
 
     status(false)
     expect(session.isStreaming.value).toBe(false)
 
-    // Reconnection recovery is the CRDT follower's job now; the session
-    // makes no REST calls on a live transition.
     status(true)
-    expect(vi.mocked(rest.postMessage).mock.calls.length).toBe(requestsBefore)
+    expect(rest.getDraft).toHaveBeenCalledTimes(1)
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
@@ -533,43 +596,168 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
   })
 
-  it('(h4) the turn post never carries a draft field (upload retired)', async () => {
-    const postMessage = vi.fn(async () => ({
-      thread_id: 'th-1',
-      message_id: 'msg-1',
-      workflow_id: 'wf-1'
-    })) as unknown as AgentRestClient['postMessage']
-    const rest = fakeRest({ postMessage })
-    const { source } = fakeEvents()
+  it('(h4) attaches the draft snapshot and reports the upload to adopted', async () => {
+    const rest = fakeRest()
     const adopted = vi.fn()
     const session = useAgentSession({
       rest,
-      events: source,
+      events: fakeEvents().source,
       workflow: {
         current: () => undefined,
-        adopted
+        adopted,
+        snapshot: () => ({
+          content: { nodes: [{ id: 1 }] },
+          version: null
+        })
+      }
+    })
+    session.start()
+    await session.sendMessage('hi')
+    expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toMatchObject({
+      draft: { content: { nodes: [{ id: 1 }] }, version: null }
+    })
+    expect(adopted).toHaveBeenCalledWith('wf-1', undefined, true)
+  })
+
+  it('(h6) a 5xx draft rejection retries without the draft and reports uploaded=false', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValueOnce(
+        new AgentApiError('internal server error', 500, {
+          error: 'internal server error'
+        })
+      )
+      .mockResolvedValueOnce({
+        thread_id: 'th-1',
+        message_id: 'msg-1',
+        workflow_id: 'wf-1'
+      })
+    const rest = fakeRest({ postMessage })
+    const adopted = vi.fn()
+    const uploadSkipped = vi.fn()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted,
+        uploadSkipped,
+        snapshot: () => ({
+          content: { nodes: [{ id: 1 }] },
+          version: null
+        })
+      }
+    })
+    session.start()
+    const sent = await session.sendMessage('hi')
+
+    expect(sent).toBe(true)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+    expect(postMessage.mock.calls[0][1]).toHaveProperty('draft')
+    expect(postMessage.mock.calls[1][1].draft).toBeUndefined()
+    expect(uploadSkipped).toHaveBeenCalledTimes(1)
+    expect(adopted).toHaveBeenCalledWith('wf-1', undefined, false)
+  })
+
+  it('(h5) a 409 draft conflict adopts the server version and retries once', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValueOnce(
+        new AgentApiError('draft moved', 409, { error: 'conflict', version: 7 })
+      )
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+    const rest = fakeRest({ postMessage })
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        snapshot: () => ({ content: { nodes: [{ id: 1 }] }, version: 3 })
+      }
+    })
+    session.start()
+    const ok = await session.sendMessage('hi')
+    expect(ok).toBe(true)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+    expect(postMessage.mock.calls[0][1].draft).toMatchObject({ version: 3 })
+    expect(postMessage.mock.calls[1][1].draft).toMatchObject({
+      content: { nodes: [{ id: 1 }] },
+      version: 7
+    })
+  })
+
+  it('(h5b) the 409 retry is bounded to one attempt', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('draft moved', 409, { error: 'conflict', version: 7 })
+      )
+    const rest = fakeRest({ postMessage })
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        snapshot: () => ({ content: { nodes: [{ id: 1 }] }, version: 3 })
       }
     })
     session.start()
 
-    await session.sendMessage('hello')
+    const ok = await session.sendMessage('hi')
 
-    expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
-    expect(adopted).toHaveBeenCalledWith('wf-1', undefined)
-    expect(session.boundWorkflowId.value).toBe('wf-1')
+    // A second conflict must surface, not recurse: the retry adopts once and
+    // gives up, so an endlessly-conflicting server cannot spin the send loop.
+    expect(ok).toBe(false)
+    expect(postMessage).toHaveBeenCalledTimes(2)
   })
 
-  it("(i2) loadThread drops the previous thread's workflow binding", async () => {
+  it("(i2) loadThread drops the previous thread's draft binding", async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
 
     await session.sendMessage('bind me')
-    expect(session.boundWorkflowId.value).toBe('wf-1')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
 
     await session.loadThread('th-2')
-    expect(session.boundWorkflowId.value).toBeNull()
+    expect(useAgentDraftStore().workflowId).toBeNull()
+  })
+
+  it('(j) a rebind during resyncDraft does not adopt the stale workflow draft', async () => {
+    let resolveDraft: ((snapshot: AgentDraftSnapshot) => void) | undefined
+    const getDraft = vi.fn<(workflowId: string) => Promise<AgentDraftSnapshot>>(
+      () =>
+        new Promise<AgentDraftSnapshot>((resolve) => {
+          resolveDraft = resolve
+        })
+    )
+    const rest = fakeRest({ getDraft })
+    const { source, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    const draft = useAgentDraftStore()
+    draft.bind('wf-1')
+    status(true)
+    expect(getDraft).toHaveBeenCalledWith('wf-1')
+
+    draft.bind('wf-2')
+
+    resolveDraft?.({ content: { stale: true }, version: 99 })
+    await Promise.resolve()
+
+    expect(draft.workflowId).toBe('wf-2')
+    expect(draft.content).toBeNull()
+    expect(draft.version).toBeNull()
   })
 
   it('(k) a failed POST records the user text plus a settled error reply and returns false', async () => {
@@ -1248,6 +1436,45 @@ describe('useAgentSession (v1 composition root)', () => {
       })
   })
 
+  it('(l12) draft patches from a backgrounded thread cannot drive the displayed draft', async () => {
+    const rest = fakeRest()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    const draft = useAgentDraftStore()
+    expect(draft.workflowId).toBe('wf-1')
+
+    emit(
+      wire({
+        type: 'draft_patch',
+        data: {
+          base_version: 0,
+          version: 1,
+          content: { n: 1 },
+          workflow_id: 'wf-1',
+          thread_id: 'th-OTHER'
+        }
+      })
+    )
+    expect(draft.content).toBeNull()
+
+    emit(
+      wire({
+        type: 'draft_patch',
+        data: {
+          base_version: 0,
+          version: 1,
+          content: { n: 1 },
+          workflow_id: 'wf-1',
+          thread_id: 'th-1'
+        }
+      })
+    )
+    expect(draft.content).toEqual({ n: 1 })
+  })
+
   it('[08-T6 regression] a second send while a turn is active posts once and records a busy notice', async () => {
     let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
     const postMessage = vi
@@ -1281,6 +1508,27 @@ describe('useAgentSession (v1 composition root)', () => {
 
     resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
     await first
+  })
+
+  it('(n) a getDraft rejecting with a network TypeError surfaces a notice, not an unhandled rejection', async () => {
+    const getDraft = vi
+      .fn<(workflowId: string) => Promise<AgentDraftSnapshot>>()
+      .mockRejectedValue(new TypeError('fetch failed'))
+    const { source, status } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getDraft }),
+      events: source
+    })
+    session.start()
+
+    useAgentDraftStore().bind('wf-1')
+    status(true)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(session.notices.value).toEqual([
+      { level: 'error', text: 'fetch failed' }
+    ])
   })
 
   it('(o) a malformed done for the active turn settles it; a foreign malformed done does not', async () => {
@@ -1320,8 +1568,40 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
     expect(session.notices.value).toHaveLength(0)
   })
-})
 
+  it('(i) a 404 draft resync is benign; a 403 pushes an error notice', async () => {
+    const draft = useAgentDraftStore()
+
+    const getDraft404 = vi
+      .fn<(workflowId: string) => Promise<AgentDraftSnapshot>>()
+      .mockRejectedValue(new AgentApiError('not found', 404, undefined))
+    const events404 = fakeEvents()
+    const session404 = useAgentSession({
+      rest: fakeRest({ getDraft: getDraft404 }),
+      events: events404.source
+    })
+    session404.start()
+    draft.bind('wf-1')
+    events404.status(true)
+    await Promise.resolve()
+    expect(session404.notices.value).toHaveLength(0)
+
+    const getDraft403 = vi
+      .fn<(workflowId: string) => Promise<AgentDraftSnapshot>>()
+      .mockRejectedValue(new AgentApiError('forbidden', 403, undefined))
+    const events403 = fakeEvents()
+    const session403 = useAgentSession({
+      rest: fakeRest({ getDraft: getDraft403 }),
+      events: events403.source
+    })
+    session403.start()
+    events403.status(true)
+    await Promise.resolve()
+    expect(session403.notices.value).toEqual([
+      { level: 'error', text: 'forbidden' }
+    ])
+  })
+})
 describe('thread resume (B17)', () => {
   const HISTORY: AgentMessages = [
     {
@@ -1596,7 +1876,7 @@ describe('08-fix1 receipts and pins', () => {
 
     expect(ok).toBe(true)
     expect(adopted).toHaveBeenCalledTimes(1)
-    expect(session.boundWorkflowId.value).toBe('wf-1')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
     expect(session.isSending.value).toBe(false)
     emit(delta('msg-1', 'reply landed'))
     emit(done('msg-1'))
@@ -1694,7 +1974,7 @@ describe('08-fix1 receipts and pins', () => {
     expect(body.workflowId).toBe('wf-7')
     expect(body.tabs).toBe(tabsSnapshot)
     expect(adopted).toHaveBeenCalledTimes(1)
-    expect(adopted).toHaveBeenCalledWith('wf-1', context)
+    expect(adopted).toHaveBeenCalledWith('wf-1', context, false)
   })
 
   it('[08-T3 regression] a resolving prepare gates the post and preserves its destination snapshot', async () => {
@@ -1834,17 +2114,20 @@ describe('08-fix1 receipts and pins', () => {
   })
 
   it('(t5a) a remount with a surviving thread keeps the ack-established workflow binding', async () => {
+    // The binding now lives in the draft store (bound on ack), which
+    // survives a panel remount within the same app the same way the
+    // module-level memory it replaced did.
     const rest = fakeRest()
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
     await first.sendMessage('bind me')
-    expect(first.boundWorkflowId.value).toBe('wf-1')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
     first.stop()
 
     const second = useAgentSession({ rest, events: fakeEvents().source })
-    expect(second.boundWorkflowId.value).toBe('wf-1')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
     second.start()
-    expect(second.boundWorkflowId.value).toBe('wf-1')
+    expect(useAgentDraftStore().workflowId).toBe('wf-1')
     expect(rest.getMessages).toHaveBeenCalledTimes(1)
     await vi.mocked(rest.getMessages).mock.results[0].value
     await Promise.resolve()
@@ -1861,7 +2144,7 @@ describe('08-fix1 receipts and pins', () => {
     localStorage.clear()
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
-    expect(second.boundWorkflowId.value).toBeNull()
+    expect(useAgentDraftStore().workflowId).toBeNull()
   })
 })
 
