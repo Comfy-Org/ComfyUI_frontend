@@ -254,6 +254,16 @@ describe('take (explicit reconciliation)', () => {
   })
 })
 
+describe('reset', () => {
+  it('releases every retained payload without allowing id reuse', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['op-1', 'op-2'])
+    expect(ledger.reset().map((entry) => entry.opId)).toEqual(['op-1', 'op-2'])
+    expect(ledger.size()).toBe(0)
+    expect(ledger.enqueue('op-1', 'again')).toBe(false)
+  })
+})
+
 describe('entries', () => {
   it('returns immutable-by-copy snapshots in insertion order, filterable by state', () => {
     const ledger = createPendingOpLedger<{ label: string }>()
