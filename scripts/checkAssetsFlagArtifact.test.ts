@@ -39,6 +39,17 @@ describe('assertAssetApiGate', () => {
     ).not.toThrow()
   })
 
+  it('rejects a localhost artifact that still carries the Cloud setting gate', () => {
+    expect(() =>
+      assertAssetApiGate(
+        [
+          'function isAssetAPIEnabled() {\n  if (!isCloud) return false;\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI");\n}'
+        ],
+        'localhost'
+      )
+    ).toThrow('Built Asset API gate is invalid for localhost')
+  })
+
   it('rejects a Cloud build that enables the Asset API unconditionally', () => {
     expect(() =>
       assertAssetApiGate(
