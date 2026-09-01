@@ -79,6 +79,8 @@ export const NoWorkspaces: Story = {
   }
 }
 
+export const Error: Story = {}
+
 export const UnknownScope: Story = {
   args: {
     initialChallenge: {
