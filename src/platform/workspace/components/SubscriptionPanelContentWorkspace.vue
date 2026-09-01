@@ -237,6 +237,12 @@
                 <div v-if="planDateDisplay" class="text-sm text-text-secondary">
                   {{ planDateDisplay }}
                 </div>
+                <p
+                  v-if="isNonCatalogPlan && isSubscriptionEnded"
+                  class="m-0 text-sm text-text-secondary"
+                >
+                  {{ $t('subscription.inactive.salesManagedDescription') }}
+                </p>
               </div>
 
               <div
@@ -316,7 +322,10 @@
           <div class="w-full lg:max-w-md">
             <CreditsTile
               :zero-state="showZeroState"
-              :inactive-plan="showInactiveTeamSubscription"
+              :inactive-plan="
+                showInactiveTeamSubscription ||
+                (isNonCatalogPlan && isSubscriptionEnded)
+              "
             />
           </div>
 

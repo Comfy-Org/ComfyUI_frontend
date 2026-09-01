@@ -518,6 +518,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
       expect(
         screen.queryByTestId('subscription-state-card')
       ).not.toBeInTheDocument()
+      expect(
+        screen.getByText(
+          "You can't run workflows or add new members. Contact your Comfy account manager to restore access."
+        )
+      ).toBeInTheDocument()
     })
 
     it('marks an ended Personal plan inactive when it cannot self-serve', () => {

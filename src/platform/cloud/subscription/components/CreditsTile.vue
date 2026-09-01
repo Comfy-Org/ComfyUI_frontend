@@ -181,7 +181,15 @@
           </span>
         </div>
         <span class="text-sm">
-          {{ $t('subscription.reactivateToUseCredits') }}
+          {{
+            $t(
+              isSalesManagedPlan
+                ? prepaidCreditsValue > 0
+                  ? 'subscription.inactive.salesManagedSpendable'
+                  : 'subscription.inactive.salesManagedEnded'
+                : 'subscription.reactivateToUseCredits'
+            )
+          }}
         </span>
       </div>
     </template>
@@ -296,8 +304,9 @@ const creditPoolTotalCredits = computed<number | null>(() => {
 // credit pool above: can_top_up is a rollout-defaulted capability that also
 // fails open for owners on an unreadable snapshot, which would drop a lapsed
 // self-serve team out of this state during a capabilities outage.
-const showsInactivePlanState = computed(
-  () => inactivePlan === true && !isSalesManagedTier(subscription.value?.tier)
+const showsInactivePlanState = computed(() => inactivePlan === true)
+const isSalesManagedPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
 )
 
 const usage = computed(() =>

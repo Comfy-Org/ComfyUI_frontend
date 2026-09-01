@@ -143,6 +143,10 @@ const i18n = createI18n({
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
         reactivateToUseCredits: 'Reactivate your plan to use these credits',
+        inactive: {
+          salesManagedSpendable: 'Spendable once your plan is restored.',
+          salesManagedEnded: 'Plan credits ended with your subscription.'
+        },
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
         monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
@@ -413,11 +417,13 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('keeps Add credits and the real balance on an inactive sales-managed plan', () => {
+  it('gives an inactive sales-managed plan the ended treatment with restore copy', () => {
     activeProSubscription()
-    // A sales-managed plan has no self-serve reactivation to sell, so the
-    // reactivate-to-use-credits treatment must not apply.
-    state.canTopUp = true
+    // cloud#8001 withholds top-up once a sales-managed subscription is
+    // terminal, so the tile no longer keeps a live Add credits here. The note
+    // names restoration rather than reactivation: there is no Reactivate for
+    // a sales-managed plan, only the account manager.
+    state.canTopUp = false
     state.tier = 'ENTERPRISE'
     state.subscription = {
       tier: 'ENTERPRISE',
@@ -426,10 +432,34 @@ describe('CreditsTile', () => {
     }
     const { container } = renderTile({ inactivePlan: true })
 
+    expect(container.textContent).toContain(
+      'Spendable once your plan is restored.'
+    )
     expect(container.textContent).not.toContain(
       'Reactivate your plan to use these credits'
     )
-    expect(screen.getByText('Add credits')).toBeInTheDocument()
+    expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('states what happened when an inactive sales-managed plan retained nothing', () => {
+    activeProSubscription()
+    state.canTopUp = false
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).toContain(
+      'Plan credits ended with your subscription.'
+    )
   })
 
   it('does not borrow a catalog monthly pool for an Enterprise plan', () => {

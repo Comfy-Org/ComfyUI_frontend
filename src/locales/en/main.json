@@ -2955,6 +2955,9 @@
       "memberCta": "Ok, got it",
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run",
+      "salesManagedDescription": "You can't run workflows or add new members. Contact your Comfy account manager to restore access.",
+      "salesManagedSpendable": "Spendable once your plan is restored.",
+      "salesManagedEnded": "Plan credits ended with your subscription.",
       "badge": "Inactive"
     },
     "paymentRecovery": {
