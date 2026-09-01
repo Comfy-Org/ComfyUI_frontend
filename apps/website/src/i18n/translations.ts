@@ -7380,8 +7380,8 @@ Enterprise`
     'zh-CN': '开发者平台'
   },
   'home.platform.body': {
-    en: 'Scale your custom nodes in your Comfy workflows in custom environments through Serverless.',
-    'zh-CN': '通过 Serverless 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
+    en: 'Scale your custom nodes in your Comfy workflows in custom environments through Comfy API.',
+    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
   },
   'home.platform.cta': {
     en: 'Explore the Developer Platform',

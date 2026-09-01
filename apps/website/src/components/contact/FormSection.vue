@@ -14,7 +14,8 @@ const { locale = 'en' } = defineProps<{
 
 const contactFormIds: Record<Locale, string> = {
   en: '94e05eab-1373-47f7-ab5e-d84f9e6aa262',
-  'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93'
+  'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93',
+  ja: '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
 }
 
 function tk(suffix: string): TranslationKey {
