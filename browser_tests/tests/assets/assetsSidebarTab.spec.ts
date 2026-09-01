@@ -231,6 +231,28 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     ).toBeVisible()
   })
 
+  test('shows footer actions for single and multiple generated selections', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await comfyPage.setup()
+    await tab.open()
+
+    await tab.getAssetCardByName('alpha').click()
+    await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+    await expect(tab.deleteSelectedButton).toBeVisible()
+    await expect(tab.downloadSelectedButton).toBeVisible()
+
+    await comfyPage.page.keyboard.down('Control')
+    await tab.getAssetCardByName('beta').click()
+    await comfyPage.page.keyboard.up('Control')
+
+    await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+    await expect(tab.deleteSelectedButton).toBeVisible()
+    await expect(tab.downloadSelectedButton).toBeVisible()
+  })
+
   test('loads full generated job outputs from job detail', async ({
     comfyPage,
     jobsRoutes

@@ -211,6 +211,15 @@ test.describe('Assets sidebar - grid view display', () => {
     await comfyPage.assets.clearMocks()
   })
 
+  test('Displays generated assets as cards in grid view', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
+  })
+
   test('Displays svg outputs', async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory([
       createMockJob({
@@ -972,6 +981,108 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount)
+  })
+})
+
+const MIXED_MEDIA_JOBS: RawJobListItem[] = [
+  createMockJob({
+    id: 'job-image',
+    create_time: 1000,
+    execution_start_time: 1000,
+    execution_end_time: 1010,
+    preview_output: {
+      filename: 'photo.png',
+      subfolder: '',
+      type: 'output',
+      nodeId: '1',
+      mediaType: 'images'
+    },
+    outputs_count: 1
+  }),
+  createMockJob({
+    id: 'job-video',
+    create_time: 2000,
+    execution_start_time: 2000,
+    execution_end_time: 2010,
+    preview_output: {
+      filename: 'clip.mp4',
+      subfolder: '',
+      type: 'output',
+      nodeId: '2',
+      mediaType: 'video'
+    },
+    outputs_count: 1
+  }),
+  createMockJob({
+    id: 'job-audio',
+    create_time: 3000,
+    execution_start_time: 3000,
+    execution_end_time: 3010,
+    preview_output: {
+      filename: 'track.mp3',
+      subfolder: '',
+      type: 'output',
+      nodeId: '3',
+      mediaType: 'audio'
+    },
+    outputs_count: 1
+  })
+]
+
+test.describe('Assets sidebar - media type filter', () => {
+  test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
+
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
+    await comfyPage.assets.mockInputFiles([])
+    await comfyPage.setup()
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.assets.clearMocks()
+  })
+
+  test('Filter menu shows media type options', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await tab.openFilterMenu()
+
+    await expect(tab.filterCheckbox('Image')).toBeVisible()
+    await expect(tab.filterCheckbox('Video')).toBeVisible()
+    await expect(tab.filterCheckbox('Audio')).toBeVisible()
+    await expect(tab.filterCheckbox('3D')).toBeVisible()
+  })
+
+  test('Unchecking image filter hides image assets', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    const initialCount = tab.assetCards
+    await expect(
+      initialCount,
+      'All three mixed-media jobs should render'
+    ).toHaveCount(3)
+
+    await tab.openFilterMenu()
+    await tab.filterCheckbox('Image').click()
+
+    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
+    await expect(tab.getAssetCardByName('photo.png')).toBeVisible()
+  })
+
+  test('Re-enabling filter restores hidden assets', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    const initialCount = await tab.assetCards.count()
+
+    await tab.openFilterMenu()
+    await tab.filterCheckbox('Image').click()
+    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
+
+    await tab.filterCheckbox('Image').click()
+    await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
   })
 })
 

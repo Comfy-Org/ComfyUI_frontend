@@ -96,6 +96,18 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await expect(searchBoxV2.results.first()).toContainText('KSampler')
     })
 
+    test('Category filters results to matching nodes', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+
+      await searchBoxV2.open()
+      await searchBoxV2.categoryButton('model').click()
+      await searchBoxV2.categoryButton('model/sampling').click()
+
+      await expect(searchBoxV2.results.first()).toBeVisible()
+    })
+
     test('Category navigation updates results', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
 
