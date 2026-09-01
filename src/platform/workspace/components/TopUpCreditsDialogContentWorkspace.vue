@@ -219,6 +219,15 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
+          v-else-if="topupIsFailedRetryable"
+          variant="primary"
+          size="lg"
+          class="h-10 w-full justify-center"
+          @click="startOverTopup"
+        >
+          {{ $t('credits.topUp.startOver') }}
+        </Button>
+        <Button
           v-else-if="!topupReconciliationOperationId"
           variant="primary"
           size="lg"
@@ -326,6 +335,9 @@ const topupCanResumeAuthentication = computed(
 )
 const topupIsAuthenticating = computed(
   () => topupOperation.value?.isAuthenticating ?? false
+)
+const topupIsFailedRetryable = computed(
+  () => topupOperation.value?.authenticationState === 'failed_retryable'
 )
 const topupReconciliationOperationId = computed(() =>
   topupOperation.value?.status === 'reconciliation_needed'
@@ -460,6 +472,12 @@ function resumeTopupAuthentication() {
   const operation = topupOperation.value
   if (!operation || !canTopUp.value) return
   void billingOperationStore.retryPaymentAuthentication(operation.opId)
+}
+
+function startOverTopup() {
+  const operation = topupOperation.value
+  if (operation) billingOperationStore.clearOperation(operation.opId)
+  step.value = 'amount'
 }
 
 function handleClose(clearTracking = true) {

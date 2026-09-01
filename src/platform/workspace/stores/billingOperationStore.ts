@@ -1,4 +1,5 @@
 import type { ToastMessageOptions } from 'primevue/toast'
+import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
@@ -41,7 +42,10 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
 // Statuses that mean the resumed challenge handed the payment on to Stripe.
 // Anything else leaves the intent where it started, awaiting a fresh attempt.
-const RESUMED_INTENT_STATUSES: ReadonlySet<string> = new Set([
+// requires_confirmation is intentionally absent: these intents are never
+// created with Stripe's manual confirmation_method, so a resumed challenge
+// cannot land there.
+const RESUMED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
   'processing',
   'succeeded',
   'requires_capture'
@@ -139,6 +143,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     [...operations.value.values()].some(
       (op) =>
         op.status === 'pending' &&
+        op.authenticationState !== 'failed_retryable' &&
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId
     )
@@ -525,8 +530,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         return false
       }
       // With no action left to resume the call succeeds and changes nothing, so
-      // an intent still sitting on its pre-challenge status has not paid.
-      if (paymentIntent && !RESUMED_INTENT_STATUSES.has(paymentIntent.status)) {
+      // an intent still sitting on its pre-challenge status has not paid. A
+      // missing intent is the same non-advancement, not a success.
+      if (
+        !paymentIntent ||
+        !RESUMED_INTENT_STATUSES.has(paymentIntent.status)
+      ) {
         setAuthenticationFailed(
           opId,
           t('billingOperation.authenticationFailedDetail')

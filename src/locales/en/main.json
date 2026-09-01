@@ -2731,6 +2731,7 @@
       "unknownError": "An unknown error occurred",
       "verifyBody": "Your bank requires additional verification to complete this payment.",
       "verifyTitle": "Verify your payment",
+      "startOver": "Start over",
       "viewPricing": "View pricing details",
       "youPay": "Amount (USD)",
       "youGet": "Credits",

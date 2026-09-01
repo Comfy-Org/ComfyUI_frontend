@@ -23,6 +23,7 @@ const mockTopup =
   vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
 const mockRetryPaymentAuthentication = vi.fn()
+const mockClearOperation = vi.fn()
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 const mockCloseDialog = vi.fn()
@@ -92,7 +93,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
         return mockBillingOperationState.topupActionOperation?.value
       },
       startOperation: mockStartOperation,
-      retryPaymentAuthentication: mockRetryPaymentAuthentication
+      retryPaymentAuthentication: mockRetryPaymentAuthentication,
+      clearOperation: mockClearOperation
     })
   }
 })
@@ -471,7 +473,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   it('reports a failed challenge without offering to resume it', async () => {
     renderDialog()
 
-    setIsAddingCredits(true)
     setTopupActionOperation({
       opId: 'op-failed',
       status: 'pending',
@@ -485,9 +486,29 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       screen.getByText('Your bank rejected the verification.')
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Complete verification' })
-    ).toBeDisabled()
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
     expect(mockRetryPaymentAuthentication).not.toHaveBeenCalled()
+  })
+
+  it('lets the customer start over after a failed challenge', async () => {
+    renderDialog()
+
+    setTopupActionOperation({
+      opId: 'op-failed',
+      status: 'pending',
+      actionUrl: null,
+      authenticationState: 'failed_retryable',
+      errorMessage: 'Your bank rejected the verification.'
+    })
+    await nextTick()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
+
+    expect(mockClearOperation).toHaveBeenCalledWith('op-failed')
+    expect(
+      screen.getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
   })
 
   it('keeps a top-up locked when reconciliation needs support', () => {
