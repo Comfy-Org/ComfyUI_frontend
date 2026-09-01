@@ -111,6 +111,59 @@ describe('useCanvasViewportInsets', () => {
     expect(insets.value).toEqual({ left: 0, right: 0, top: 0, bottom: 0 })
   })
 
+  it('returns zero insets when the panel does not overlap the canvas', async () => {
+    mockRect(canvasEl, {
+      left: 0,
+      right: 1920,
+      top: 0,
+      bottom: 1080,
+      width: 1920,
+      height: 1080
+    })
+    mockRect(panelEl, {
+      left: 1920,
+      right: 2220,
+      top: 0,
+      bottom: 1080,
+      width: 300,
+      height: 1080,
+      x: 1920
+    })
+
+    const insets = await load()
+    await nextTick()
+    expect(insets.value).toEqual({ left: 0, right: 0, top: 0, bottom: 0 })
+  })
+
+  it('keeps horizontal insets when the panel has zero height', async () => {
+    mockRect(canvasEl, {
+      left: 0,
+      right: 1920,
+      top: 0,
+      bottom: 1080,
+      width: 1920,
+      height: 1080
+    })
+    mockRect(panelEl, {
+      left: 300,
+      right: 1620,
+      top: 0,
+      bottom: 0,
+      width: 1320,
+      height: 0,
+      x: 300
+    })
+
+    const insets = await load()
+    await nextTick()
+    expect(insets.value).toEqual({
+      left: 300,
+      right: 300,
+      top: 0,
+      bottom: 0
+    })
+  })
+
   it('clamps negative differences to zero', async () => {
     mockRect(canvasEl, {
       left: 100,
