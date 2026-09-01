@@ -12,7 +12,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   applyViewport,
-  measureViewport
+  measureViewport,
+  normalizeDpr
 } from '@/renderer/core/canvas/canvasViewport'
 import { devAssert } from '@/base/common/devAssert'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -1956,7 +1957,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.bgcanvas = document.createElement('canvas')
     this.bgcanvas.width = this.canvas.width
     this.bgcanvas.height = this.canvas.height
-    this.dpr = window.devicePixelRatio ?? 1
+    this.dpr = normalizeDpr(window.devicePixelRatio)
 
     const ctx = element.getContext?.('2d')
     if (ctx == null) {
