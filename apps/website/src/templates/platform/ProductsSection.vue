@@ -47,20 +47,20 @@ const modelsTabs = modelsApiCodeTabs
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
       <article
         id="models"
-        class="group/models bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent p-6 transition-colors hover:border-white/25 lg:scroll-mt-36 lg:p-10"
+        class="bg-transparency-white-t4 relative flex scroll-mt-24 flex-col rounded-4xl border border-transparent p-6 lg:scroll-mt-36 lg:p-10"
       >
-        <a
-          :href="routes.platformModels"
-          :aria-label="t('platform.products.models.title', locale)"
-          class="absolute inset-0 rounded-4xl"
-        ></a>
-        <h3 class="text-lg font-normal text-primary-warm-white lg:text-xl">
+        <h3
+          class="flex items-center gap-2.5 text-lg font-normal text-primary-warm-white lg:text-xl"
+        >
           {{ t('platform.products.models.title', locale) }}
+          <Badge variant="subtle" size="xs">
+            {{ t('nav.badgeComingSoon', locale) }}
+          </Badge>
         </h3>
         <p class="mt-3 text-sm/relaxed font-light text-primary-comfy-canvas">
           {{ t('platform.products.models.description', locale) }}
         </p>
-        <div class="relative z-10 mt-6">
+        <div class="mt-6">
           <CodeTabs
             :tabs="modelsTabs"
             :label="t('platform.products.models.title', locale)"
