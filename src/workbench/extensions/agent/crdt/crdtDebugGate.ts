@@ -37,6 +37,7 @@ const DEFAULT_LEVEL: CrdtLogLevel = 'info'
  * setters it invokes are not reaching into a temporal dead zone.
  */
 let cachedEnabled: boolean | null = null
+let cachedStoredEnabled: string | null = null
 let cachedLevel: CrdtLogLevel | null = null
 
 function isLogLevel(value: unknown): value is CrdtLogLevel {
@@ -113,7 +114,7 @@ applyQueryOverride()
  */
 export function isCrdtDebugEnabled(): boolean {
   if (cachedEnabled === null) {
-    const stored = readStorage(ENABLED_KEY)
+    const stored = readStoredEnabled()
     cachedEnabled =
       stored === 'true'
         ? true
@@ -124,8 +125,15 @@ export function isCrdtDebugEnabled(): boolean {
   return cachedEnabled
 }
 
+function readStoredEnabled(): string | null {
+  if (cachedStoredEnabled === null)
+    cachedStoredEnabled = readStorage(ENABLED_KEY)
+  return cachedStoredEnabled
+}
+
 export function setCrdtDebugEnabled(enabled: boolean): void {
   cachedEnabled = enabled
+  cachedStoredEnabled = String(enabled)
   writeStorage(ENABLED_KEY, String(enabled))
 }
 
@@ -136,7 +144,7 @@ export function setCrdtDebugEnabled(enabled: boolean): void {
  * buy silence, not just a quiet console.
  */
 export function isCrdtDebugOptedOut(): boolean {
-  return !isCrdtDebugEnabled() && readStorage(ENABLED_KEY) === 'false'
+  return !isCrdtDebugEnabled() && readStoredEnabled() === 'false'
 }
 
 export function crdtLogLevel(): CrdtLogLevel {

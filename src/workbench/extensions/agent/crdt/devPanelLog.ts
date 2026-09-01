@@ -1,6 +1,7 @@
 import { shallowRef, triggerRef } from 'vue'
 
-import type { CrdtLogLevel } from './crdtDebugGate'
+import { isCrdtDebugOptedOut } from './crdtDebugGate';
+import type { CrdtLogLevel } from './crdtDebugGate';
 
 /**
  * In-memory ring buffer feeding the CRDT debug panel. Deliberately
@@ -71,6 +72,7 @@ export function recordDevEvent(
   detail: unknown,
   options: DevEventOptions = {}
 ): void {
+  if (isCrdtDebugOptedOut()) return
   buffer.push({
     seq: nextSeq++,
     at: Date.now(),

@@ -7,9 +7,11 @@ import {
   recordDevEvent,
   stringifyDevEvents
 } from './devPanelLog'
+import { setCrdtDebugEnabled } from './crdtDebugGate'
 
 describe('devPanelLog', () => {
   beforeEach(() => {
+    setCrdtDebugEnabled(true)
     clearDevEvents()
   })
 
@@ -118,5 +120,13 @@ describe('devPanelLog', () => {
     const [event] = devEvents.value
     expect(event.scope).toBe('wire')
     expect(event.level).toBe('warn')
+  })
+
+  it('honors explicit opt-out for direct recorders', () => {
+    setCrdtDebugEnabled(false)
+
+    recordDevEvent('doc_update', { seq: 1 })
+
+    expect(devEvents.value).toHaveLength(0)
   })
 })

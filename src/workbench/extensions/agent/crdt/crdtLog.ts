@@ -54,9 +54,10 @@ interface CrdtLogEntry {
  */
 function crdtLog(entry: CrdtLogEntry): void {
   const { scope, level, kind, message, detail } = entry
-  if (isCrdtDebugOptedOut()) return
-  recordDevEvent(kind, detail ?? null, { scope, level })
+  const optedOut = isCrdtDebugOptedOut()
+  if (!optedOut) recordDevEvent(kind, detail ?? null, { scope, level })
 
+  if (optedOut && level !== 'warn') return
   if (!isLevelEnabled(level)) return
   const line = `%c[crdt:${scope}]%c ${kind} — ${message}`
   const args: unknown[] = [line, SCOPE_STYLE[scope], '']
