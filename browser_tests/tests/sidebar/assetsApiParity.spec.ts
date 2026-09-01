@@ -9,6 +9,7 @@ const contractTest = test.extend<{ assetApiRequests: URL[] }>({
     const outputAsset = {
       id: 'output-asset',
       name: 'enabled-output.png',
+      size: 1024,
       mime_type: 'image/png',
       tags: ['output'],
       preview_url: '/api/view?filename=enabled-output.png&type=output',
@@ -18,6 +19,7 @@ const contractTest = test.extend<{ assetApiRequests: URL[] }>({
     const inputAsset = {
       id: 'input-asset',
       name: 'enabled-input.png',
+      size: 1024,
       mime_type: 'image/png',
       tags: ['input'],
       preview_url: '/api/view?filename=enabled-input.png&type=input',
@@ -60,8 +62,6 @@ contractTest.describe(
   'Assets sidebar Asset API contract',
   { tag: '@oss' },
   () => {
-    contractTest.use({ initialFeatureFlags: { assets: true } })
-
     contractTest(
       'uses the shared query contract when enabled on OSS',
       async ({ assetApiRequests, comfyPage }) => {
@@ -81,8 +81,6 @@ contractTest.describe(
   'Assets sidebar Asset API contract on Cloud',
   { tag: '@cloud' },
   () => {
-    contractTest.use({ initialFeatureFlags: { assets: true } })
-
     contractTest(
       'uses the shared query contract',
       async ({ assetApiRequests, comfyPage }) => {
