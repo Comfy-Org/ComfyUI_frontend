@@ -234,7 +234,7 @@ function useNodeDragIndividual() {
   function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
     // Release pointer capture in case this is a pointercancel (browser doesn't auto-release on cancel)
     const { target, pointerId } = event
-    if (target instanceof HTMLElement && target.hasPointerCapture(pointerId)) {
+    if (target instanceof Element && target.hasPointerCapture(pointerId)) {
       try {
         target.releasePointerCapture(pointerId)
       } catch {
