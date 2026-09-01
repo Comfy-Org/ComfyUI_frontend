@@ -223,6 +223,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
     enqueue([deleteNode('b-pending')])
+    expect(clientState.sent).toHaveLength(1)
 
     dispatchOpsResult({
       workflowId: 'wf-a',
