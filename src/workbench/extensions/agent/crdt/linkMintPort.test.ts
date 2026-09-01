@@ -134,8 +134,8 @@ describe('attachLinkMintPort', () => {
   it('captures a severed link under both endpoints, consumed exactly once', () => {
     remove(ROOT_SCOPE, topology(41))
 
-    expect(port.severances.take('2')).toEqual([41])
-    expect(port.severances.take('1')).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '2')).toEqual([41])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
   })
 
   it('mints a standalone disconnect for a local link deletion', async () => {
@@ -159,7 +159,7 @@ describe('attachLinkMintPort', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
-    port.severances.take('1')
+    port.severances.take(ROOT_SCOPE.owningGraphId, '1')
     await afterSweep()
 
     expect(minted).toEqual([])
@@ -182,16 +182,31 @@ describe('attachLinkMintPort', () => {
     consoleError.mockRestore()
   })
 
-  it('stays silent for a consumed subgraph-interior deletion', async () => {
+  it('does not consume a subgraph-interior deletion into delete_node', async () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     remove(SUBGRAPH_SCOPE, topology(41))
-    port.severances.take('1')
+    expect(port.severances.take(SUBGRAPH_SCOPE.owningGraphId, '1')).toEqual([])
     await afterSweep()
 
     expect(minted).toEqual([])
-    expect(consoleError).not.toHaveBeenCalled()
+    expect(consoleError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
+  })
+
+  it('keeps same-id severances isolated by their owning graph', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    remove(ROOT_SCOPE, topology(41))
+    remove(SUBGRAPH_SCOPE, topology(41))
+
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([41])
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledOnce()
     consoleError.mockRestore()
   })
 
@@ -214,8 +229,8 @@ describe('attachLinkMintPort', () => {
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(port.severances.take('1')).toEqual([])
-    expect(port.severances.take('2')).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '2')).toEqual([])
   })
 
   it('stops minting after detach', () => {

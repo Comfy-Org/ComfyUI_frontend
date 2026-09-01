@@ -52,7 +52,7 @@ export interface SeveranceLog {
    * Link ids severed for `nodeId` in the current capture window, each
    * consumed globally (a link touches two nodes; only one delete carries it).
    */
-  take(nodeId: string): WireNodeId[]
+  take(owningGraphId: string, nodeId: string): WireNodeId[]
 }
 
 export interface LinkMintPortDeps {
@@ -74,6 +74,7 @@ export interface LinkMintPort {
 interface SeveranceEntry {
   linkId: WireNodeId
   topology: LinkTopologyView
+  owningGraphId: string
   /** The gate was open at severance: unconsumed means a real divergence. */
   mintable: boolean
   /** Only root-scope link deletions can be represented as standalone ops. */
@@ -88,6 +89,14 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   const severancesByNode = new Map<string, SeveranceEntry[]>()
   const consumedLinkIds = new Set<string>()
   let sweepScheduled = false
+
+  function graphEntityKey(owningGraphId: string, entityId: string | number) {
+    return `${owningGraphId}:${String(entityId)}`
+  }
+
+  function linkKey(entry: SeveranceEntry): string {
+    return graphEntityKey(entry.owningGraphId, entry.linkId)
+  }
 
   function gateOpen(): boolean {
     return shouldMint({
@@ -137,7 +146,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
         const surfaced = new Set<string>()
         for (const entries of severancesByNode.values()) {
           for (const entry of entries) {
-            const key = String(entry.linkId)
+            const key = linkKey(entry)
             if (!entry.mintable || consumedLinkIds.has(key)) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
@@ -165,7 +174,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function capture(nodeId: string | number, entry: SeveranceEntry): void {
-    const key = String(nodeId)
+    const key = graphEntityKey(entry.owningGraphId, nodeId)
     const bucket = severancesByNode.get(key)
     if (bucket) bucket.push(entry)
     else severancesByNode.set(key, [entry])
@@ -177,6 +186,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     const entry: SeveranceEntry = {
       linkId: topology.id,
       topology,
+      owningGraphId: String(scope.owningGraphId),
       mintable,
       rootScoped
     }
@@ -190,10 +200,12 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
 
   return {
     severances: {
-      take(nodeId: string): WireNodeId[] {
+      take(owningGraphId: string, nodeId: string): WireNodeId[] {
         const taken: WireNodeId[] = []
-        for (const entry of severancesByNode.get(nodeId) ?? []) {
-          const key = String(entry.linkId)
+        const nodeKey = graphEntityKey(owningGraphId, nodeId)
+        for (const entry of severancesByNode.get(nodeKey) ?? []) {
+          if (!entry.rootScoped) continue
+          const key = linkKey(entry)
           if (consumedLinkIds.has(key)) continue
           consumedLinkIds.add(key)
           taken.push(entry.linkId)
