@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.61.1-noble
-    timeout-minutes: 20
+    timeout-minutes: 15
     permissions:
       contents: read
     outputs:
@@ -63,10 +63,7 @@ jobs:
 
       - name: Upload test report
         uses: actions/upload-artifact@v6
-        # always(), not !cancelled(): a job that hits timeout-minutes is
-        # cancelled, and skipping the upload there leaves no report at all —
-        # exactly the run you most need to look at.
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: website-playwright-report
           path: apps/website/playwright-report/
