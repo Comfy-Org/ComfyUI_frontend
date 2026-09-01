@@ -38,13 +38,28 @@ function renderDetail({
   renderedGroups = groups,
   cloudUrl,
   isPartnerNode = false,
-  openPending = false
+  openPending = false,
+  modelSetupEnabled = false,
+  setupPending = false,
+  requirementsMet = false,
+  starterPackAvailable = false
 }: {
   renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
+  modelSetupEnabled?: boolean
+  setupPending?: boolean
+  requirementsMet?: boolean
+  starterPackAvailable?: boolean
 } = {}) {
+  const modelSetupProps = {
+    modelSetupEnabled,
+    setupPending,
+    requirementsMet,
+    starterPackAvailable
+  }
+
   return render(WorkflowTemplateDetail, {
     props: {
       title: 'Wan 2.2 Image to Video',
@@ -52,7 +67,8 @@ function renderDetail({
       groups: renderedGroups,
       cloudUrl,
       isPartnerNode,
-      openPending
+      openPending,
+      ...modelSetupProps
     },
     slots: {
       preview: '<img src="/thumbnail.webp" alt="Wan 2.2 workflow preview" />'
@@ -98,19 +114,47 @@ describe('WorkflowTemplateDetail', () => {
     expect(within(detail).queryByText(/left$/i)).not.toBeInTheDocument()
     expect(within(detail).getAllByRole('button')).toHaveLength(1)
     expect(
-      within(detail).getByRole('button', { name: 'Open template' })
+      within(detail).getByRole('button', { name: 'Open now' })
     ).toBeInTheDocument()
   })
 
-  it('emits the sole launch action and disables it while opening', async () => {
+  it('emits the sole Open now action and disables it while opening', async () => {
     const user = userEvent.setup()
     const result = renderDetail()
 
-    await user.click(screen.getByRole('button', { name: 'Open template' }))
+    await user.click(screen.getByRole('button', { name: 'Open now' }))
     expect(result.emitted('open-template')).toEqual([[]])
 
     await result.rerender({ openPending: true })
-    expect(screen.getByRole('button', { name: 'Open template' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Open now' })).toBeDisabled()
+  })
+
+  it('keeps Open now available while offering Download models & open', async () => {
+    const user = userEvent.setup()
+    const result = renderDetail({
+      modelSetupEnabled: true,
+      starterPackAvailable: true
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Open now' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Download models & open' })
+    )
+
+    expect(result.emitted('open-template')).toEqual([[]])
+    expect(result.emitted('download-starter-pack')).toEqual([[]])
+    expect(
+      screen.queryByRole('button', { name: 'Open without downloading' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not block Open now while model metadata is pending', () => {
+    renderDetail({ modelSetupEnabled: true, setupPending: true })
+
+    expect(screen.getByRole('button', { name: 'Open now' })).toBeEnabled()
+    expect(
+      screen.getByRole('button', { name: 'Download models & open' })
+    ).toBeDisabled()
   })
 
   it('omits the requirements region when nothing is declared', () => {
@@ -119,9 +163,7 @@ describe('WorkflowTemplateDetail', () => {
     expect(
       screen.queryByRole('region', { name: 'Template requirements' })
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Open template' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open now' })).toBeInTheDocument()
   })
 
   it('offers a generic Cloud alternative without free-run messaging or an icon', () => {
