@@ -104,12 +104,14 @@ describe('CrdtDevPanel', () => {
     expect(chip()).toBeNull()
     expect(sheet()).toBeNull()
     expect(restore()).toBeTruthy()
-    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('false')
+    expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe('true')
+    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
 
     await user.click(restore()!)
 
     expect(chip()).toBeTruthy()
     expect(restore()).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe('false')
     expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
   })
 

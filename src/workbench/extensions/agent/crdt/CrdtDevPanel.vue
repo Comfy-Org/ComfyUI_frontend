@@ -18,8 +18,6 @@ import type { CrdtLogLevel } from './crdtDebugGate'
 import {
   CRDT_LOG_LEVELS,
   crdtLogLevel,
-  isCrdtDebugEnabled,
-  setCrdtDebugEnabled,
   setCrdtLogLevel
 } from './crdtDebugGate'
 import type { ReportSources } from './crdtDebugReport'
@@ -163,13 +161,11 @@ const VERDICT_TONE: Record<string, string> = {
 
 // ── open/close state, persisted ───────────────────────────────────────────
 const OPEN_KEY = 'Comfy.Agent.CrdtDevPanel.open'
+const HIDDEN_KEY = 'Comfy.Agent.CrdtDevPanel.hidden'
 
 const open = ref(readOpen())
 const tab = ref<'status' | 'log' | 'merge'>('status')
-// Seeded from the persisted decision, not from `false`: this component is
-// destroyed and re-created whenever chat history opens, and a per-mount flag
-// would resurrect a chip the tester had explicitly hidden.
-const dismissed = ref(!isCrdtDebugEnabled())
+const dismissed = ref(readHidden())
 
 function readOpen(): boolean {
   try {
@@ -177,6 +173,20 @@ function readOpen(): boolean {
   } catch {
     return false
   }
+}
+
+function readHidden(): boolean {
+  try {
+    return localStorage.getItem(HIDDEN_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function setHidden(hidden: boolean): void {
+  try {
+    localStorage.setItem(HIDDEN_KEY, String(hidden))
+  } catch {}
 }
 
 function setOpen(value: boolean) {
@@ -386,14 +396,14 @@ function serializeActiveWorkflow(): unknown {
 }
 
 function dismiss() {
-  setCrdtDebugEnabled(false)
   setOpen(false)
   dismissed.value = true
+  setHidden(true)
 }
 
 function restore() {
-  setCrdtDebugEnabled(true)
   dismissed.value = false
+  setHidden(false)
 }
 
 const proxyTarget = computed(() => api.apiURL(''))
