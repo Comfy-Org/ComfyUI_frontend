@@ -47,15 +47,20 @@ describe('CodeBlock', () => {
 
   // Slice #16210 10-T5, reproduced on main@00b9c69ad; remove `.fails` when oversized blocks bypass Shiki.
   it.fails('leaves oversized blocks plain without invoking Shiki', async () => {
+    vi.useFakeTimers()
     const code = 'x'.repeat(50_001)
-    render(CodeBlock, {
-      props: { code, lang: 'text' },
-      global: { plugins: [i18n] }
-    })
+    try {
+      render(CodeBlock, {
+        props: { code, lang: 'text' },
+        global: { plugins: [i18n] }
+      })
 
-    expect(screen.getByText(code)).toBeInTheDocument()
-    await new Promise((resolve) => setTimeout(resolve, 120))
-    expect(codeToHtml).not.toHaveBeenCalled()
+      expect(screen.getByText(code)).toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(120)
+      expect(codeToHtml).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   // Slice #16210 10-T6, reproduced on main@00b9c69ad; remove `.fails` when rerenders clear stale highlights.
