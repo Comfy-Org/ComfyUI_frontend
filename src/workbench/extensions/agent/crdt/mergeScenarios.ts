@@ -277,121 +277,131 @@ let mergeScenarios: readonly MergeScenario[] | undefined
 
 export function getMergeScenarios(): readonly MergeScenario[] {
   return (mergeScenarios ??= [
-  {
-    id: 'delete-then-write-then-add',
-    title: 'delete A → set widget on A → add A',
-    question:
-      'Does an edit made while a node is deleted survive if the node comes back?',
-    workflow: SEED_WORKFLOW,
-    catalog: CATALOG,
-    batches: separately(
-      op({ op: 'delete_node', node_id: 'A', removed_links: [] }, ALICE, 1),
-      op(
-        { op: 'set_widget', node_id: 'A', widget: 'text', value: 'a bird' },
-        BOB,
-        1
-      ),
-      addNodeA(BOB, 2)
-    )
-  },
-  {
-    id: 'write-then-delete-then-write',
-    title: 'set widget → delete A → set widget again',
-    question:
-      'Where exactly does the delete cut the timeline for a node\u2019s values?',
-    workflow: SEED_WORKFLOW,
-    catalog: CATALOG,
-    batches: separately(
-      op(
-        { op: 'set_widget', node_id: 'A', widget: 'text', value: 'first' },
-        ALICE,
-        1
-      ),
-      op({ op: 'delete_node', node_id: 'A', removed_links: [] }, BOB, 2),
-      op(
-        { op: 'set_widget', node_id: 'A', widget: 'text', value: 'second' },
-        ALICE,
-        3
-      )
-    )
-  },
-  {
-    id: 'concurrent-widget-writes',
-    title: 'two people set the same widget concurrently',
-    question:
-      'Both were minted against the same document version, and the one that arrives SECOND loses. What decided it?',
-    workflow: SEED_WORKFLOW,
-    catalog: CATALOG,
-    batches: separately(
-      op(
-        { op: 'set_widget', node_id: 'B', widget: 'seed', value: 222 },
-        BOB,
-        4
-      ),
-      op(
-        { op: 'set_widget', node_id: 'B', widget: 'seed', value: 111 },
-        ALICE,
-        4
-      )
-    )
-  },
-  {
-    id: 'stale-write-loses',
-    title: 'a stale write arrives after a newer one',
-    question:
-      'Does arrival order or stamp order decide a widget register contest?',
-    workflow: SEED_WORKFLOW,
-    catalog: CATALOG,
-    batches: separately(
-      op(
-        { op: 'set_widget', node_id: 'B', widget: 'steps', value: 50 },
-        ALICE,
-        9
-      ),
-      op({ op: 'set_widget', node_id: 'B', widget: 'steps', value: 4 }, BOB, 2)
-    )
-  },
-  {
-    id: 'idempotent-resend',
-    title: 'the same op is sent twice',
-    question: 'Is a retry safe, and how is it distinguishable from a conflict?',
-    workflow: SEED_WORKFLOW,
-    catalog: CATALOG,
-    batches: (() => {
-      const once = op(
-        { op: 'set_widget', node_id: 'B', widget: 'seed', value: 7 },
-        ALICE,
-        1
-      )
-      return separately(once, once)
-    })()
-  },
-  {
-    id: 'batch-abort',
-    title: 'a rejected op in the middle of ONE batch',
-    question:
-      'All three ship together. What happens to the ops queued behind the rejection?',
-    workflow: SEED_WORKFLOW,
-    catalog: CATALOG,
-    batches: [
-      [
+    {
+      id: 'delete-then-write-then-add',
+      title: 'delete A → set widget on A → add A',
+      question:
+        'Does an edit made while a node is deleted survive if the node comes back?',
+      workflow: SEED_WORKFLOW,
+      catalog: CATALOG,
+      batches: separately(
+        op({ op: 'delete_node', node_id: 'A', removed_links: [] }, ALICE, 1),
         op(
-          { op: 'set_widget', node_id: 'B', widget: 'seed', value: 99 },
+          { op: 'set_widget', node_id: 'A', widget: 'text', value: 'a bird' },
+          BOB,
+          1
+        ),
+        addNodeA(BOB, 2)
+      )
+    },
+    {
+      id: 'write-then-delete-then-write',
+      title: 'set widget → delete A → set widget again',
+      question:
+        'Where exactly does the delete cut the timeline for a node\u2019s values?',
+      workflow: SEED_WORKFLOW,
+      catalog: CATALOG,
+      batches: separately(
+        op(
+          { op: 'set_widget', node_id: 'A', widget: 'text', value: 'first' },
           ALICE,
           1
         ),
+        op({ op: 'delete_node', node_id: 'A', removed_links: [] }, BOB, 2),
         op(
-          { op: 'set_widget', node_id: 'B', widget: 'not_a_widget', value: 1 },
-          ALICE,
-          2
-        ),
-        op(
-          { op: 'set_widget', node_id: 'B', widget: 'steps', value: 3 },
+          { op: 'set_widget', node_id: 'A', widget: 'text', value: 'second' },
           ALICE,
           3
         )
+      )
+    },
+    {
+      id: 'concurrent-widget-writes',
+      title: 'two people set the same widget concurrently',
+      question:
+        'Both were minted against the same document version, and the one that arrives SECOND loses. What decided it?',
+      workflow: SEED_WORKFLOW,
+      catalog: CATALOG,
+      batches: separately(
+        op(
+          { op: 'set_widget', node_id: 'B', widget: 'seed', value: 222 },
+          BOB,
+          4
+        ),
+        op(
+          { op: 'set_widget', node_id: 'B', widget: 'seed', value: 111 },
+          ALICE,
+          4
+        )
+      )
+    },
+    {
+      id: 'stale-write-loses',
+      title: 'a stale write arrives after a newer one',
+      question:
+        'Does arrival order or stamp order decide a widget register contest?',
+      workflow: SEED_WORKFLOW,
+      catalog: CATALOG,
+      batches: separately(
+        op(
+          { op: 'set_widget', node_id: 'B', widget: 'steps', value: 50 },
+          ALICE,
+          9
+        ),
+        op(
+          { op: 'set_widget', node_id: 'B', widget: 'steps', value: 4 },
+          BOB,
+          2
+        )
+      )
+    },
+    {
+      id: 'idempotent-resend',
+      title: 'the same op is sent twice',
+      question:
+        'Is a retry safe, and how is it distinguishable from a conflict?',
+      workflow: SEED_WORKFLOW,
+      catalog: CATALOG,
+      batches: (() => {
+        const once = op(
+          { op: 'set_widget', node_id: 'B', widget: 'seed', value: 7 },
+          ALICE,
+          1
+        )
+        return separately(once, once)
+      })()
+    },
+    {
+      id: 'batch-abort',
+      title: 'a rejected op in the middle of ONE batch',
+      question:
+        'All three ship together. What happens to the ops queued behind the rejection?',
+      workflow: SEED_WORKFLOW,
+      catalog: CATALOG,
+      batches: [
+        [
+          op(
+            { op: 'set_widget', node_id: 'B', widget: 'seed', value: 99 },
+            ALICE,
+            1
+          ),
+          op(
+            {
+              op: 'set_widget',
+              node_id: 'B',
+              widget: 'not_a_widget',
+              value: 1
+            },
+            ALICE,
+            2
+          ),
+          op(
+            { op: 'set_widget', node_id: 'B', widget: 'steps', value: 3 },
+            ALICE,
+            3
+          )
+        ]
       ]
-    ]
-  }
+    }
   ])
 }
