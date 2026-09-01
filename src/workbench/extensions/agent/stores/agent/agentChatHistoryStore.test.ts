@@ -1,8 +1,10 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ChatSession } from './agentChatHistoryStore'
 import {
+  chatSessionFromThread,
   groupSessionsByRecency,
   useAgentChatHistoryStore
 } from './agentChatHistoryStore'
@@ -14,6 +16,34 @@ const session = (id: string, updatedAt: number): ChatSession => ({
   id,
   title: id,
   updatedAt
+})
+
+describe('chatSessionFromThread', () => {
+  it('uses the best title and valid newest timestamp with deterministic fallbacks', () => {
+    expect(
+      chatSessionFromThread(
+        {
+          id: 'thread-1',
+          title: '',
+          preview: 'make a duck',
+          last_message_at: '2026-07-07T10:00:00Z'
+        },
+        'Untitled',
+        NOW
+      )
+    ).toEqual({
+      id: 'thread-1',
+      title: 'make a duck',
+      updatedAt: Date.parse('2026-07-07T10:00:00Z')
+    })
+    expect(
+      chatSessionFromThread(
+        { id: 'thread-2', title: '', created_at: 'invalid' },
+        'Untitled',
+        NOW
+      )
+    ).toEqual({ id: 'thread-2', title: 'Untitled', updatedAt: NOW })
+  })
 })
 
 describe('groupSessionsByRecency', () => {
@@ -59,7 +89,7 @@ describe('groupSessionsByRecency', () => {
 
 describe('useAgentChatHistoryStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
   })
 

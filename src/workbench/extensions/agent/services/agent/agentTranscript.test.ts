@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { normalizeAgentTranscript } from './agentTranscript'
+import {
+  buildTranscriptMarkdown,
+  normalizeAgentTranscript
+} from './agentTranscript'
 
 const row = (
   seq: number,
@@ -75,5 +78,31 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.userTexts.get('turn-a' as TurnId)).toBe('Prompt')
     expect(transcript.assistantTurnIds).toEqual(new Set())
     expect(transcript.rowIds).toEqual(new Set(['row-1', 'row-2']))
+  })
+})
+
+describe('buildTranscriptMarkdown', () => {
+  it('serializes user text and assistant text parts in conversation order', () => {
+    const entries: Parameters<typeof buildTranscriptMarkdown>[0] = [
+      { role: 'user', text: 'make a cat' },
+      {
+        role: 'assistant',
+        parts: [
+          { type: 'text', text: 'Here is ', state: 'done' },
+          {
+            type: 'tool',
+            callId: 'tool-1',
+            name: 'add_node',
+            state: 'done',
+            ok: true
+          },
+          { type: 'text', text: 'a cat.', state: 'done' }
+        ]
+      }
+    ]
+
+    expect(buildTranscriptMarkdown(entries)).toBe(
+      '**You:** make a cat\n\n**Agent:** Here is a cat.'
+    )
   })
 })

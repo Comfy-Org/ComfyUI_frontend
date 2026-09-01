@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -40,8 +41,7 @@ import { useAgentConversationStore } from '../../stores/agent/agentConversationS
 import ConversationView from './ConversationView.vue'
 
 const T = 'msg-1' as TurnId
-const chat = (raw: unknown): AgentChatEvent =>
-  zAgentWsEvent.parse(raw) as AgentChatEvent
+const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
   chat({
     type: 'agent_thinking',
@@ -73,7 +73,7 @@ const Harness = defineComponent({
 })
 
 function mountHarness() {
-  const pinia = createPinia()
+  const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
   const utils = render(Harness, { global: { plugins: [pinia, i18n] } })
   return { store: useAgentConversationStore(), ...utils }
@@ -82,7 +82,7 @@ function mountHarness() {
 describe('ConversationView', () => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     intersectionCallbacks.length = 0
   })
 
@@ -105,6 +105,33 @@ describe('ConversationView', () => {
       role: 'assistant',
       streaming: false
     })
+  })
+
+  it('forwards assistant feedback with its turn id', async () => {
+    const assistant: AssistantMessage = {
+      id: T,
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'hello', state: 'done' }],
+      streaming: false,
+      thinking: false
+    }
+    const { emitted } = render(ConversationView, {
+      props: { entries: [assistant] },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          AgentMessage: {
+            emits: ['feedback'],
+            template:
+              '<button type="button" @click="$emit(\'feedback\', \'up\')">Vote up</button>'
+          }
+        }
+      }
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Vote up' }))
+
+    expect(emitted().feedback).toEqual([[T, 'up']])
   })
 
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {

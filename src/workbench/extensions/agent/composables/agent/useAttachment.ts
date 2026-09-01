@@ -1,8 +1,17 @@
 import { i18n } from '@/i18n'
-import { hasImageType } from '@/utils/eventUtils'
+import { hasImageType, hasVideoType } from '@/utils/eventUtils'
 import type { ComposerAttachment } from './useComposer'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
+
+export function agentAttachmentMaxBytes(
+  file: File,
+  serverMaxBytes: number
+): number {
+  return hasVideoType(file)
+    ? serverMaxBytes
+    : Math.min(MAX_ATTACHMENT_BYTES, serverMaxBytes)
+}
 
 interface UploadResult {
   ref: string

@@ -9,6 +9,25 @@ export interface NormalizedAgentTranscript {
   assistantTurnIds: Set<TurnId>
 }
 
+type TranscriptEntry =
+  | { role: 'user'; text: string }
+  | { role: 'assistant'; parts: AssistantMessage['parts'] }
+
+export function buildTranscriptMarkdown(
+  entries: readonly TranscriptEntry[]
+): string {
+  return entries
+    .map((entry) => {
+      if (entry.role === 'user') return `**You:** ${entry.text}`
+      const text = entry.parts
+        .filter((part) => part.type === 'text')
+        .map((part) => part.text)
+        .join('')
+      return `**Agent:** ${text}`
+    })
+    .join('\n\n')
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {

@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ComposerAttachment } from './useComposer'
-import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
+import {
+  agentAttachmentMaxBytes,
+  MAX_ATTACHMENT_BYTES,
+  useAttachment
+} from './useAttachment'
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
@@ -26,6 +30,29 @@ function chipRegistry() {
 }
 
 describe('useAttachment', () => {
+  it('allows videos up to the server limit but caps other files at 20MB', () => {
+    const serverMaxBytes = 100 * 1024 * 1024
+
+    expect(
+      agentAttachmentMaxBytes(
+        fileOfSize('movie.mp4', 1, 'video/mp4'),
+        serverMaxBytes
+      )
+    ).toBe(serverMaxBytes)
+    expect(
+      agentAttachmentMaxBytes(
+        fileOfSize('image.png', 1, 'image/png'),
+        serverMaxBytes
+      )
+    ).toBe(MAX_ATTACHMENT_BYTES)
+    expect(
+      agentAttachmentMaxBytes(
+        fileOfSize('audio.mp3', 1, 'audio/mpeg'),
+        serverMaxBytes
+      )
+    ).toBe(MAX_ATTACHMENT_BYTES)
+  })
+
   it('gives an image a thumbnail but leaves a video to the icon tile', async () => {
     // A video object URL in an <img> renders as a broken thumbnail, so only
     // images get a previewUrl.

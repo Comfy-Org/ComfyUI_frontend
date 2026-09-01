@@ -26,11 +26,7 @@ import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import {
-  fetchDroppedAsset,
-  getDroppedAsset,
-  hasVideoType
-} from '@/utils/eventUtils'
+import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -57,9 +53,16 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
+  agentAttachmentMaxBytes,
   MAX_ATTACHMENT_BYTES,
   useAttachment
 } from './composables/agent/useAttachment'
+import {
+  agentTabFilename,
+  buildOpenTabsSnapshot,
+  uniqueCloudWorkflowIdsByName,
+  workflowIdForTab
+} from './utils/agentWorkflowTabs'
 import type { ActiveTab } from './types/activeTab'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
 import {
@@ -68,19 +71,18 @@ import {
 } from './composables/agent/useCanvasSelection'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import type { ComposerAttachment } from './composables/agent/useComposer'
-import type {
-  AgentActiveTabData,
-  AgentThreadSummary
-} from './schemas/agentApiSchema'
-import type { ChatSession } from './stores/agent/agentChatHistoryStore'
-import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import type { AgentActiveTabData } from './schemas/agentApiSchema'
 import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
-import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { buildTranscriptMarkdown } from './services/agent/agentTranscript'
+import {
+  chatSessionFromThread,
+  useAgentChatHistoryStore
+} from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
@@ -241,18 +243,8 @@ let cloudIdsByName = new Map<string, string>()
 
 async function refreshCloudWorkflowIds(): Promise<void> {
   try {
-    const workflows = await rest.listCloudWorkflows()
-    const nameCounts = new Map<string, number>()
-    for (const { name } of workflows) {
-      if (name !== undefined)
-        nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
-    }
-    cloudIdsByName = new Map(
-      workflows.flatMap(({ id, name }) =>
-        name !== undefined && nameCounts.get(name) === 1
-          ? [[name, id] as const]
-          : []
-      )
+    cloudIdsByName = uniqueCloudWorkflowIdsByName(
+      await rest.listCloudWorkflows()
     )
   } catch (error) {
     reportError(error, {
@@ -268,11 +260,12 @@ function openSavedTabsNamed(filename: string): ComfyWorkflow[] {
 }
 
 function cloudIdFor(tab: ComfyWorkflow): string | undefined {
-  const saved =
-    !tab.isTemporary && openSavedTabsNamed(tab.filename).length === 1
-      ? cloudIdsByName.get(tab.filename)
-      : undefined
-  return saved ?? bindingStore.workflowIdFor(tab.path)
+  return workflowIdForTab({
+    tab,
+    openTabs: workflowStore.openWorkflows,
+    cloudIdsByName,
+    boundWorkflowId: bindingStore.workflowIdFor(tab.path)
+  })
 }
 
 const workflowDetached = ref(false)
@@ -317,19 +310,12 @@ function onClearWorkflow(): void {
 }
 
 function openTabsSnapshot(): OpenTabsSnapshot | undefined {
-  const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
-    const workflowId = cloudIdFor(tab)
-    return workflowId === undefined
-      ? []
-      : [{ workflow_id: workflowId, name: tab.filename }]
+  return buildOpenTabsSnapshot({
+    openTabs: workflowStore.openWorkflows,
+    activeTab: workflowStore.activeWorkflow,
+    detached: workflowDetached.value,
+    workflowIdFor: cloudIdFor
   })
-  if (openTabs.length === 0) return undefined
-  const active = workflowStore.activeWorkflow
-  return {
-    open_tabs: openTabs,
-    current_tab:
-      active && !workflowDetached.value ? cloudIdFor(active) : undefined
-  }
 }
 
 function onWorkflowAdopted(
@@ -470,21 +456,6 @@ function enqueueActiveTab(data: AgentActiveTabData): void {
   activeTabChain = activeTabChain.then(() => onAgentActiveTab(data, generation))
 }
 
-function agentTabFilename(name: string | undefined): string | undefined {
-  const cleaned = [
-    ...(name ?? '')
-      .replace(/[/\\\p{Cc}]/gu, '-')
-      .replace(/\.json$/i, '')
-      .trim()
-      .replace(/^\.+/, '')
-  ]
-    .slice(0, 80)
-    .join('')
-    .replace(/^[\s.]+/u, '')
-    .trim()
-  return cleaned.length === 0 ? undefined : `${cleaned}.json`
-}
-
 async function onAgentActiveTab(
   data: AgentActiveTabData,
   generation: number
@@ -567,19 +538,13 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   })
 }
 
-function toChatSession(thread: AgentThreadSummary): ChatSession {
-  const stamp = thread.last_message_at ?? thread.updated_at ?? thread.created_at
-  const updatedAt = stamp ? Date.parse(stamp) : Date.now()
-  return {
-    id: thread.id,
-    title: thread.title || thread.preview || t('agent.untitledChat'),
-    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt
-  }
-}
-
 async function refreshHistory(): Promise<void> {
   try {
-    history.replaceAll((await listThreads()).map(toChatSession))
+    history.replaceAll(
+      (await listThreads()).map((thread) =>
+        chatSessionFromThread(thread, t('agent.untitledChat'))
+      )
+    )
   } catch (error) {
     surfaceAgentError(
       'agent_api_failed',
@@ -597,19 +562,6 @@ async function onSelectHistory(id: string): Promise<void> {
   workflowDetached.value = false
   await loadThread(id)
   void refreshHistory()
-}
-
-function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
-  return entries
-    .map((entry) => {
-      if (entry.role === 'user') return `**You:** ${entry.text}`
-      const text = entry.parts
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text)
-        .join('')
-      return `**Agent:** ${text}`
-    })
-    .join('\n\n')
 }
 
 function onCopyMarkdown(id: string): void {
@@ -786,9 +738,7 @@ const attachment = useAttachment({
       'max_upload_size',
       MAX_ATTACHMENT_BYTES
     )
-    return hasVideoType(file)
-      ? serverLimit
-      : Math.min(MAX_ATTACHMENT_BYTES, serverLimit)
+    return agentAttachmentMaxBytes(file, serverLimit)
   },
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
