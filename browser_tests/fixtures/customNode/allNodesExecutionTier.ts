@@ -76,6 +76,8 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'downloads MiDaS weights via torch hub at execution; same non-interruptible download class as BLIP',
     'CLIPSeg Model Loader':
       'downloads a CLIPSeg segmentation model at execution; same non-interruptible download class as BLIP',
+    'CLIPSeg Masking':
+      'runs CLIPSeg inference, which downloads its model on first use; same network/model-dependent class as CLIPSeg Model Loader',
     'CLIPSeg Batch Masking':
       'runs CLIPSeg inference, which downloads its model on first use; same network/model-dependent class as CLIPSeg Model Loader',
     'True Random.org Number Generator':

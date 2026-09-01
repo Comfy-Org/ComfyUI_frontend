@@ -7133,7 +7133,7 @@
       },
       "mode": {
         "name": "modo",
-        "tooltip": "'speed' é mais rápido; 'precision' produz sincronização labial de maior qualidade pelo dobro do preço."
+        "tooltip": "'speed' é mais rápido; 'precision' produz sincronização labial de maior qualidade a um preço mais alto."
       },
       "output_language": {
         "name": "idioma de saída",
@@ -24755,6 +24755,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "Recortar Vídeo",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Região de recorte em pixels. Largura/altura zero mantém o quadro completo."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "Amostre um número fixo de quadros de um vídeo usando várias estratégias.",
     "display_name": "Amostrar Quadro de Vídeo",
@@ -24856,6 +24873,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Aparar Vídeo (Avançado)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Se for True, quando a duração especificada não for possível, será gerado um erro."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Janela de recorte usando os quadros inicial/final."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
