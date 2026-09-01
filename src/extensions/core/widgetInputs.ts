@@ -5,6 +5,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
+  ISerialisedNode,
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
@@ -39,6 +40,7 @@ const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
+  private configuredWidgetValue?: WidgetValue
   static override category: string
   constructor(title: string) {
     super(title)
@@ -124,6 +126,10 @@ export class PrimitiveNode extends LGraphNode {
     return values
   }
 
+  override onConfigure(serialisedNode: ISerialisedNode) {
+    this.configuredWidgetValue = serialisedNode.widgets_values?.[0]
+  }
+
   override onAfterGraphConfigured() {
     if (
       this.graph &&
@@ -135,6 +141,7 @@ export class PrimitiveNode extends LGraphNode {
       // Merge values if required
       this._mergeWidgetConfig()
     }
+    this.configuredWidgetValue = undefined
   }
 
   override onConnectionsChange(
@@ -251,6 +258,9 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
+    const configuredWidgetValue = recreating
+      ? undefined
+      : this.configuredWidgetValue
 
     if (
       type === 'COMBO' &&
@@ -259,6 +269,8 @@ export class PrimitiveNode extends LGraphNode {
       widget = this._createAssetWidget(node, widgetName, inputData)
       const theirWidget = node.widgets?.find((w) => w.name === widgetName)
       if (theirWidget) widget.value = theirWidget.value
+      if (configuredWidgetValue !== undefined)
+        widget.value = configuredWidgetValue
       this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
       return
     }
@@ -276,6 +288,8 @@ export class PrimitiveNode extends LGraphNode {
         widget.value = theirWidget.value
       }
     }
+    if (configuredWidgetValue !== undefined)
+      widget.value = configuredWidgetValue
 
     if (
       !inputData?.[1]?.control_after_generate &&
