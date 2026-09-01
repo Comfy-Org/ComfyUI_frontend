@@ -375,6 +375,17 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
+  it('keeps the forced zero when zeroState is set and the balance is unknown', () => {
+    activeProSubscription()
+    state.balance = null
+    const { container } = renderTile({ zeroState: true })
+
+    // zeroState is an explicit instruction to display zero; an unknown
+    // balance must not replace it with a loading skeleton.
+    expect(container.textContent).toContain('0remaining')
+    expect(screen.queryAllByRole('status')).toHaveLength(0)
+  })
+
   it('shows no figure and no verdict while the balance is still loading', () => {
     activeProSubscription()
     state.canTopUp = true
