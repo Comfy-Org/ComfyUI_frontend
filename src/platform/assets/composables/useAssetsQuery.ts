@@ -1,4 +1,5 @@
-import { ref } from 'vue'
+import { refAutoReset, until } from '@vueuse/core'
+import { computed, ref } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 import type { ListAssetsData } from '@comfyorg/ingest-types'
 
@@ -26,14 +27,16 @@ function assetsQueryInternal(
 
   let nextCursor: string | undefined
   const seenCursors = new Set<string | undefined>()
-  const hasMore = ref(true)
+  const morePages = ref(true)
+  const backingOff = refAutoReset(false, 2000)
+  const hasMore = computed(() => morePages.value && !backingOff.value)
   const items = ref<AssetItem[]>([])
 
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   async function doLoadMore(signal?: AbortSignal) {
     if (!hasMore.value) return
     if (seenCursors.has(nextCursor)) {
-      hasMore.value = false
+      morePages.value = false
       return
     }
 
@@ -46,7 +49,7 @@ function assetsQueryInternal(
     if (!assetResponse) return
     seenCursors.add(nextCursor)
     nextCursor = assetResponse.next_cursor
-    hasMore.value = assetResponse.has_more
+    morePages.value = assetResponse.has_more
     items.value.push(...assetResponse.assets)
   }
 
@@ -84,10 +87,11 @@ function assetsQueryInternal(
       return
     }
     await preempt(async () => {
-      hasMore.value = true
+      morePages.value = true
       nextCursor = undefined
       seenCursors.clear()
       items.value = []
+      await until(backingOff).toBe(false)
       await doLoadMore()
     })
   }
@@ -102,9 +106,14 @@ function assetsQueryInternal(
       .fetchApi(`/assets?${query}`, requestOptions)
       .catch((e) => onError('asset fetch failed', e))
 
-    if (!resp) return
+    if (!resp) {
+      if (!signal?.aborted) backingOff.value = true
+      return
+    }
     if (!resp.ok) {
       onError('asset request failed', resp)
+      if (resp.status === 429 || resp.status >= 500) backingOff.value = true
+      else morePages.value = false
       return
     }
 
