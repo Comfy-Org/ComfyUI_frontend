@@ -1,8 +1,9 @@
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })
@@ -83,45 +84,22 @@ const FAQ_PAGES = [
   {
     name: 'pricing',
     url: '/cloud/pricing',
+    // PricingFaq.astro is plain markup — there is no island to wait for.
+    island: false,
     trigger: 'details > summary',
     opened: 'details[open]'
   },
   {
     name: 'enterprise',
     url: '/enterprise',
+    // FAQSplit01.vue, mounted client:visible.
+    island: true,
     trigger: 'button[data-slot="accordion-trigger"]',
     opened: '[data-slot="accordion-item"][data-state="open"]'
   }
 ]
 
-async function openFirstTwoEntries(
-  faq: Locator,
-  { trigger, opened }: { trigger: string; opened: string }
-) {
-  const triggers = faq.locator(trigger)
-  const openEntries = faq.locator(opened)
-
-  // Fail in seconds when the FAQ markup changes. Clicking a selector that
-  // matches nothing instead burns the whole 60s test timeout, on every retry,
-  // for every viewport — enough on its own to blow the job's time budget.
-  await expect(triggers.nth(1)).toBeVisible()
-
-  // Enterprise hydrates its accordion as a client:visible island, so the first
-  // click can land before the component is listening. Re-click until both
-  // entries report themselves open.
-  await expect
-    .poll(
-      async () => {
-        const open = await openEntries.count()
-        if (open < 2) await triggers.nth(open).click()
-        return openEntries.count()
-      },
-      { message: 'FAQ entries did not open', timeout: 10_000 }
-    )
-    .toBe(2)
-}
-
-for (const { name, url, trigger, opened } of FAQ_PAGES) {
+for (const { name, url, island, trigger, opened } of FAQ_PAGES) {
   test.describe(`${name} FAQ`, { tag: '@visual' }, () => {
     for (const vp of VIEWPORTS) {
       test(`${name}-faq-${vp.name}`, async ({ page }) => {
@@ -129,8 +107,17 @@ for (const { name, url, trigger, opened } of FAQ_PAGES) {
         await navigateAndSettle(page, url)
 
         const faq = page.locator('#faq')
-        await faq.scrollIntoViewIfNeeded()
-        await openFirstTwoEntries(faq, { trigger, opened })
+        if (island) await waitForIsland(page, faq)
+        else await faq.scrollIntoViewIfNeeded()
+
+        const triggers = faq.locator(trigger)
+        // Fail in seconds when the FAQ markup changes. Clicking a selector that
+        // matches nothing instead burns the whole 60s test timeout, on every
+        // retry and every viewport — enough to blow the job's time budget.
+        await expect(triggers.nth(1)).toBeVisible()
+        await triggers.nth(0).click()
+        await triggers.nth(1).click()
+        await expect(faq.locator(opened)).toHaveCount(2)
 
         await expect(faq).toHaveScreenshot(`${name}-faq-${vp.name}.png`)
       })
