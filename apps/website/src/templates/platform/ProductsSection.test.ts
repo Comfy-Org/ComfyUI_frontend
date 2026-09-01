@@ -21,15 +21,11 @@ describe('ProductsSection', () => {
     }
   })
 
-  it('sends the Builder CTA to the Builder page', () => {
+  it('renders no per-card CTA buttons — the whole card is the link', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
     expect(
-      screen
-        .getByRole('link', {
-          name: t('cta.getStarted', 'en')
-        })
-        .getAttribute('href')
-    ).toBe('/platform/builder')
+      screen.queryByRole('link', { name: t('cta.getStarted', 'en') })
+    ).toBeNull()
   })
 })
