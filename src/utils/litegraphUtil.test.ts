@@ -186,10 +186,13 @@ describe('getWidgetIdForNode', () => {
       { name: 'shared', type: 'text', value: 'two', options: {}, y: 0 }
     ]
 
-    expect([...mapLiveWidgetsById(node).keys()]).toEqual([
-      widgetId(graphId, toNodeId(42), 'shared'),
-      widgetId(graphId, toNodeId(42), 'shared#1')
-    ])
+    const widgetsById = mapLiveWidgetsById(node)
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared'))).toBe(
+      node.widgets[0]
+    )
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared#1'))).toBe(
+      node.widgets[1]
+    )
     expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared#1'])
   })
 
@@ -201,11 +204,16 @@ describe('getWidgetIdForNode', () => {
       { name: 'shared#1', type: 'number', value: 3, options: {}, y: 0 }
     ]
 
-    expect([...mapLiveWidgetsById(node).keys()]).toEqual([
-      widgetId(graphId, toNodeId(42), 'shared'),
-      widgetId(graphId, toNodeId(42), 'shared#2'),
-      widgetId(graphId, toNodeId(42), 'shared#1')
-    ])
+    const widgetsById = mapLiveWidgetsById(node)
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared'))).toBe(
+      node.widgets[0]
+    )
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared#2'))).toBe(
+      node.widgets[1]
+    )
+    expect(widgetsById.get(widgetId(graphId, toNodeId(42), 'shared#1'))).toBe(
+      node.widgets[2]
+    )
     expect(getWidgetIdForNode(node, node.widgets[1])).toBe(
       widgetId(graphId, toNodeId(42), 'shared#2')
     )
