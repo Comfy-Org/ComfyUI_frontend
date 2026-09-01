@@ -1662,6 +1662,8 @@ describe('useWorkflowService', () => {
         )
       } as unknown as ComfyWorkflow
 
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
       try {
         const pending = useWorkflowService().insertWorkflow(workflow)
         Reflect.set(app, 'canvas', {
@@ -1673,7 +1675,13 @@ describe('useWorkflowService', () => {
 
         expect(deserialize).not.toHaveBeenCalled()
         expect(app.canvas._deserializeItems).not.toHaveBeenCalled()
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'insertWorkflow aborted: canvas or graph was replaced'
+          )
+        )
       } finally {
+        warnSpy.mockRestore()
         Reflect.set(app, 'canvas', originalCanvas)
         Reflect.set(originalCanvas, 'graph', priorGraph)
         Reflect.set(originalCanvas, '_deserializeItems', priorDeserialize)
@@ -1698,6 +1706,8 @@ describe('useWorkflowService', () => {
         )
       } as unknown as ComfyWorkflow
 
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
       try {
         const pending = useWorkflowService().insertWorkflow(workflow)
         Reflect.set(canvas, 'graph', {})
@@ -1705,7 +1715,13 @@ describe('useWorkflowService', () => {
         await pending
 
         expect(deserialize).not.toHaveBeenCalled()
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'insertWorkflow aborted: canvas or graph was replaced'
+          )
+        )
       } finally {
+        warnSpy.mockRestore()
         Reflect.set(canvas, 'graph', priorGraph)
         Reflect.set(canvas, '_deserializeItems', priorDeserialize)
       }
