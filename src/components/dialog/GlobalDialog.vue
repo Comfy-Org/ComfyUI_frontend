@@ -14,10 +14,15 @@
         />
         <DialogContent
           v-reka-z-index
+          v-bind="
+            item.dialogComponentProps.useAutomaticLabeling
+              ? {}
+              : { 'aria-labelledby': item.key }
+          "
           :size="item.dialogComponentProps.size ?? 'md'"
           :maximized="!!item.dialogComponentProps.maximized"
           :class="item.dialogComponentProps.contentClass"
-          :aria-labelledby="item.key"
+          :data-dialog-key="item.key"
           @open-auto-focus="(e) => onRekaOpenAutoFocus(e, item.key)"
           @escape-key-down="
             (e) =>
@@ -166,7 +171,7 @@ function onRekaOpenChange(key: string, open: boolean) {
 // Reka's default auto-focus when one is present.
 function onRekaOpenAutoFocus(event: Event, key: string) {
   const content = document.querySelector<HTMLElement>(
-    `[aria-labelledby="${CSS.escape(key)}"]`
+    `[data-dialog-key="${CSS.escape(key)}"]`
   )
   const autofocusEl = content?.querySelector<HTMLElement>('[autofocus]')
   if (autofocusEl) {

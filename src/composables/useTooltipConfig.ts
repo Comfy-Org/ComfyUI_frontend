@@ -17,7 +17,7 @@ export const buildTooltipConfig = (value: string) => ({
   }
 })
 
-export const AGENT_TOOLTIP_SHOW_DELAY = 300
+const AGENT_TOOLTIP_SHOW_DELAY = 300
 
 export const AGENT_REKA_TOOLTIP_PROVIDER_PROPS = {
   delayDuration: AGENT_TOOLTIP_SHOW_DELAY,
@@ -25,7 +25,7 @@ export const AGENT_REKA_TOOLTIP_PROVIDER_PROPS = {
   disableHoverableContent: true
 } as const
 
-export const AGENT_TOOLTIP_SURFACE_CLASS =
+const AGENT_TOOLTIP_SURFACE_CLASS =
   'rounded-lg bg-[#171717] px-3 py-1.5 font-inter text-xs leading-4 text-[#fafafa] shadow-none ring-1 ring-inset ring-charcoal-200'
 
 export const AGENT_REKA_TOOLTIP_CONTENT_CLASS =
