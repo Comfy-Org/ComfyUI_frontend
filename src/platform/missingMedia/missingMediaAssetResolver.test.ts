@@ -1,5 +1,4 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -11,24 +10,13 @@ import {
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-const mockInputItems = ref<AssetItem[]>([])
-const mockInputHasMore = ref(false)
-
-const { mockUseAssetsQuery } = vi.hoisted(() => ({
-  mockUseAssetsQuery: vi.fn()
-}))
-
-const { mockGetAssetsPageByTag } = vi.hoisted(() => ({
+const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
+  mockGetAllAssetsByTag: vi.fn(),
   mockGetAssetsPageByTag: vi.fn()
 }))
 
 const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
-}))
-
-vi.mock('@/platform/assets/composables/useAssetsQuery', () => ({
-  useAssetsQuery: mockUseAssetsQuery,
-  invalidateAll: vi.fn()
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
@@ -44,6 +32,7 @@ vi.mock('@/platform/assets/services/assetService', async () => {
     ...actual,
     assetService: {
       ...actual.assetService,
+      getAllAssetsByTag: mockGetAllAssetsByTag,
       getAssetsPageByTag: mockGetAssetsPageByTag
     }
   }
@@ -114,23 +103,14 @@ function makeAssetPage(
 
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
-    mockInputItems.value = []
-    mockInputHasMore.value = false
-    mockUseAssetsQuery.mockReturnValue({
-      items: mockInputItems,
-      hasMore: mockInputHasMore,
-      loadMore: vi.fn(() => {
-        mockInputHasMore.value = false
-        return Promise.resolve()
-      })
-    })
+    mockGetAllAssetsByTag.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
   it('loads cloud input assets via a public-inclusive query', async () => {
     const inputAsset = makeAsset('photo.png')
-    mockInputItems.value = [inputAsset]
+    mockGetAllAssetsByTag.mockResolvedValue([inputAsset])
 
     const result = await resolveMissingMediaAssetSources({
       isCloud: true,
@@ -139,10 +119,11 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
-    expect(mockUseAssetsQuery).toHaveBeenCalledWith({
-      include_tags: ['input'],
-      include_public: true
-    })
+    expect(mockGetAllAssetsByTag).toHaveBeenCalledWith(
+      'input',
+      true,
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
     expect(result.inputAssets).toEqual([inputAsset])
     expect(result.generatedAssets).toEqual([])
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
@@ -237,6 +218,43 @@ describe('resolveMissingMediaAssetSources', () => {
       matchingHashAsset
     ])
     expect(mockGetAssetsPageByTag).toHaveBeenCalledTimes(2)
+  })
+
+  it('aborts cloud output asset loading when input asset loading fails', async () => {
+    const inputError = new Error('input failed')
+    let rejectInputAssets!: (err: Error) => void
+    let resolveOutputAssets!: (page: ReturnType<typeof makeAssetPage>) => void
+    mockGetAllAssetsByTag.mockReturnValueOnce(
+      new Promise<AssetItem[]>((_, reject) => {
+        rejectInputAssets = reject
+      })
+    )
+    mockGetAssetsPageByTag.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveOutputAssets = resolve
+      })
+    )
+
+    const promise = resolveMissingMediaAssetSources({
+      isCloud: true,
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set(['target.png']),
+      allowCompactSuffix: true
+    })
+
+    await Promise.resolve()
+    expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
+
+    rejectInputAssets(inputError)
+    await expect(promise).rejects.toBe(inputError)
+
+    resolveOutputAssets(makeAssetPage([makeAsset('other.png')]))
+    await Promise.resolve()
+
+    const outputSignal = mockGetAssetsPageByTag.mock.calls[0]?.[2]?.signal
+    expect(outputSignal).toBeInstanceOf(AbortSignal)
+    expect(outputSignal.aborted).toBe(true)
+    expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
   it('stops reading generated history once all requested names are found', async () => {

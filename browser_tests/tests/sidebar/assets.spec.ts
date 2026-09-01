@@ -872,9 +872,11 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 
       const payload = exportRequests[0]
       expect(payload.job_ids).toEqual([JOB_IDS.gamma])
-      expect(
-        payload.job_asset_name_filters?.[JOB_IDS.gamma]?.toSorted()
-      ).toEqual(['abstract_art.png', 'abstract_art_alt.png'])
+      const assetNames = payload.job_asset_name_filters?.[JOB_IDS.gamma] ?? []
+      expect(assetNames).toHaveLength(2)
+      expect(assetNames).toEqual(
+        expect.arrayContaining(['abstract_art.png', 'abstract_art_alt.png'])
+      )
       expect(payload.naming_strategy).toBe('preserve')
     }
   )
@@ -899,8 +901,9 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await expect.poll(() => exportRequests).toHaveLength(1)
 
       const payload = exportRequests[0]
-      expect(payload.job_ids?.toSorted()).toEqual(
-        [JOB_IDS.alpha, JOB_IDS.beta].toSorted()
+      expect(payload.job_ids).toHaveLength(2)
+      expect(payload.job_ids).toEqual(
+        expect.arrayContaining([JOB_IDS.alpha, JOB_IDS.beta])
       )
       expect(payload.job_asset_name_filters).toBeUndefined()
       expect(payload.naming_strategy).toBe('group_by_job_time')

@@ -277,8 +277,7 @@ describe('usePreemptableQueue', () => {
     expect(running.value).toBe(true)
     gate.resolve()
     await done
-    await new Promise((r) => setTimeout(r, 0))
-    expect(running.value).toBe(false)
+    await vi.waitFor(() => expect(running.value).toBe(false))
   })
 
   it('promotes a queued task after the current completes', async () => {

@@ -54,7 +54,7 @@ class SharedPagedList<T> implements PagedList<T> {
   ) {}
   overlapping(): PagedList<T>[] {
     const snapshot = toValue(this.childList.items)
-    if (snapshot.length === 0) return [this]
+    if (snapshot.length === 0) return [this.childList]
 
     const staleKeys = new Set(snapshot.map(this.itemKeyFn))
     return [...this.cache.values()]

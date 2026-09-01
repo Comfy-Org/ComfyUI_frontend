@@ -1,13 +1,9 @@
-import { toValue } from 'vue'
-
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'
 
@@ -53,24 +49,17 @@ export async function resolveMissingMediaAssetSources({
   } else {
     signal?.addEventListener('abort', abortFromCaller, { once: true })
   }
-  const allInputs = async () => {
-    if (!useFeatureFlags().flags.assetsEnabled)
-      return toValue(useAssetsStore().inputAssets.items)
-    const inputAssets = useAssetsQuery({
-      include_tags: ['input'],
-      include_public: true
-    })
-    while (toValue(inputAssets.hasMore)) {
-      await inputAssets.loadMore()
-      controller.signal.throwIfAborted()
-    }
-
-    return toValue(inputAssets.items)
-  }
 
   try {
     const [inputAssets, generatedAssets] = await Promise.all([
-      abortSiblingsOnFailure(allInputs(), controller),
+      abortSiblingsOnFailure(
+        useFeatureFlags().flags.assetsEnabled
+          ? assetService.getAllAssetsByTag('input', true, {
+              signal: controller.signal
+            })
+          : Promise.resolve<AssetItem[]>([]),
+        controller
+      ),
       abortSiblingsOnFailure(
         includeGeneratedAssets
           ? fetchGeneratedAssets(controller.signal, {
