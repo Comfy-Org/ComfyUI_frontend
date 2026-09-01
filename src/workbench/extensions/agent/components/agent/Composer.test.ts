@@ -8,6 +8,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
@@ -211,6 +212,28 @@ describe('Composer', () => {
       ).toBeInTheDocument()
       expect(store.mode).toBe('auto_limited')
       expect(store.creditLimit).toBe(500)
+    })
+
+    it('keeps the popover open and reports a failed save', async () => {
+      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      mount()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+      )
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Save changes' })
+      )
+
+      expect(
+        await screen.findByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+      expect(useAgentRunModeStore().mode).toBe('ask_approval')
+      expect(useToastStore().messagesToAdd).toContainEqual({
+        severity: 'error',
+        detail: 'Could not save run permissions. Please try again.'
+      })
     })
 
     it('keeps Save disabled while the limit draft is invalid', async () => {

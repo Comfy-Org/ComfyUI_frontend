@@ -11,6 +11,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunMode } from '../../../stores/agent/agentRunModeStore'
 import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
@@ -18,8 +20,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()
+const toast = useToastStore()
 
 const open = ref(false)
+const saving = ref(false)
 const draftMode = ref<AgentRunMode>(store.mode)
 const draftLimit = ref(store.creditLimit)
 
@@ -31,12 +35,20 @@ function onOpenChange(next: boolean): void {
   }
 }
 
-function saveChanges(): void {
-  void store.save(
-    draftMode.value,
-    draftMode.value === 'auto_limited' ? draftLimit.value : null
-  )
-  open.value = false
+async function saveChanges(): Promise<void> {
+  saving.value = true
+  try {
+    await store.save(
+      draftMode.value,
+      draftMode.value === 'auto_limited' ? draftLimit.value : null
+    )
+    open.value = false
+  } catch (error) {
+    reportError(error, { errorType: 'agent_run_mode_save_failure' })
+    toast.add({ severity: 'error', detail: t('agent.runModeSaveFailed') })
+  } finally {
+    saving.value = false
+  }
 }
 
 function onDraftMode(value: string | undefined): void {
@@ -54,7 +66,9 @@ const limitValid = computed(() => {
   return limit !== null && Number.isFinite(limit) && Math.floor(limit) > 0
 })
 
-const saveable = computed(() => dirty.value && limitValid.value)
+const saveable = computed(
+  () => dirty.value && limitValid.value && !saving.value
+)
 
 const TRIGGER_LABEL_KEYS: Record<AgentRunMode, string> = {
   ask_approval: 'agent.runModeTriggerAsk',
