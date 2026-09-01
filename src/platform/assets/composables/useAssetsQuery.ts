@@ -5,9 +5,9 @@ import type { ListAssetsData } from '@comfyorg/ingest-types'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
-import { createSharedPagedList, usePreemptableQueue } from '@/utils/pagedList'
-import type { PagedList } from '@/utils/pagedList'
-import { encodeParams, sortedParams } from '@/utils/requestUtil'
+import { getPagedList, usePreemptableQueue } from '@/utils/pagedList'
+import type { SharedPagedListState, PagedList } from '@/utils/pagedList'
+import { encodeParams } from '@/utils/requestUtil'
 
 interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
@@ -119,7 +119,7 @@ function assetsQueryInternal(
   }
 
   async function doQuery(
-    overrideParams: Record<string, unknown>,
+    overrideParams: ListAssetsData['query'],
     signal?: AbortSignal
   ) {
     const requestOptions = { signal }
@@ -158,9 +158,21 @@ function assetsQueryInternal(
   }
 }
 
-export const { constructor: useAssetsQuery, invalidateAll } =
-  createSharedPagedList(
-    assetsQueryInternal,
-    (p) => JSON.stringify(sortedParams(p)),
-    (item) => item.id
+const sharedState: SharedPagedListState<ListAssetsData['query'], AssetItem> = {
+  cache: new Map(),
+  factory: assetsQueryInternal,
+  paramKeyFn: encodeParams,
+  itemKeyFn: (item) => item.id
+}
+
+export function useAssetsQuery(
+  params: ListAssetsData['query']
+): PagedList<AssetItem> {
+  return getPagedList(params, sharedState)
+}
+
+export async function invalidateAll() {
+  await Promise.all(
+    [...sharedState.cache.values()].map((e) => e.list.invalidate())
   )
+}

@@ -56,7 +56,7 @@ const stringModelValue = computed({
 })
 
 const { t } = useI18n()
-const assetsStore = useAssetsStore()
+const outputAssets = useAssetsStore().outputAssets
 
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
@@ -89,7 +89,7 @@ const {
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue: stringModelValue,
   assetKind: () => props.assetKind,
-  outputMediaAssets: () => assetsStore.outputAssets,
+  outputMediaAssets: outputAssets,
   assetData,
   isAssetMode: () => props.isAssetMode
 })
@@ -152,8 +152,7 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 const handleApproachEnd = useDebounceFn(async () => {
-  if (assetsStore.outputAssets.hasMore)
-    await assetsStore.outputAssets.loadMore()
+  if (outputAssets.hasMore) await outputAssets.loadMore()
 }, 300)
 
 const isUploading = ref(false)
@@ -185,7 +184,7 @@ async function updateFiles(files: File[]) {
       :base-model-options
       :is-uploading
       v-bind="combinedProps"
-      :loading-more="toValue(assetsStore.outputAssets.isLoading)"
+      :loading-more="toValue(outputAssets.isLoading)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

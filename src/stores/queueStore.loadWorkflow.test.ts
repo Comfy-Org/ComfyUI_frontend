@@ -20,10 +20,7 @@ vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapInputFileToAssetItem: vi.fn(),
-  mapTaskOutputToAssetItem: vi.fn()
-}))
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 const mockWorkflow: ComfyWorkflowJSON = {
   last_node_id: 5,

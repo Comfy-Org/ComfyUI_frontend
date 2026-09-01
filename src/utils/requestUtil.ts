@@ -1,19 +1,6 @@
-import { omitBy } from 'es-toolkit/object'
-
 type Params = Record<string, string[] | string | number | boolean>
 
-export function encodeParams(params: Params) {
-  const withoutNull = omitBy(params, (param) => param === undefined)
-  const parts = Object.entries(withoutNull).map(([key, value]) => {
-    const encoded = Array.isArray(value)
-      ? value.map(String).map(encodeURIComponent).join(',')
-      : encodeURIComponent(String(value))
-    return `${encodeURIComponent(key)}=${encoded}`
-  })
-  return parts.join('&')
-}
-
-export function sortedParams(params: Params = {}): Params {
+function sortedParams(params: Params = {}): Params {
   const keys = Object.keys(params)
     .filter((k) => params[k] !== undefined)
     .sort()
@@ -23,4 +10,15 @@ export function sortedParams(params: Params = {}): Params {
     obj[k] = Array.isArray(v) ? v.toSorted((a, b) => a.localeCompare(b)) : v
   }
   return obj
+}
+
+export function encodeParams(params: Params = {}) {
+  const sorted = sortedParams(params)
+  const parts = Object.entries(sorted).map(([key, value]) => {
+    const encoded = Array.isArray(value)
+      ? value.map(String).map(encodeURIComponent).join(',')
+      : encodeURIComponent(String(value))
+    return `${encodeURIComponent(key)}=${encoded}`
+  })
+  return parts.join('&')
 }

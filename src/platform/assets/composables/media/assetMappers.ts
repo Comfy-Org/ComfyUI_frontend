@@ -1,13 +1,10 @@
-import { toValue } from 'vue'
-import type { MaybeRef } from 'vue'
-
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import type { ResultItemInit, TaskItemImpl } from '@/stores/queueStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import {
   getMediaTypeFromFilename,
@@ -18,10 +15,7 @@ class AssetResultItem extends ResultItemImpl {
   private readonly _url: string
   private readonly _previewUrl: string
 
-  constructor(
-    asset: AssetItem,
-    init: ConstructorParameters<typeof ResultItemImpl>[0]
-  ) {
+  constructor(asset: AssetItem, init: ResultItemInit) {
     super(init)
     this._url = asset.preview_url ?? ''
     this._previewUrl = asset.thumbnail_url ?? this._url
@@ -91,6 +85,8 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
 
 const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+const byIsTemp = (a: AssetItem, b: AssetItem): number =>
+  Number(a.tags.includes('temp')) - Number(b.tags.includes('temp'))
 
 function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
@@ -113,12 +109,12 @@ function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
  * metadata pass through ungrouped.
  */
 export function unflattenOutputAssets(
-  flatAssets: MaybeRef<readonly AssetItem[]>
+  flatAssets: readonly AssetItem[]
 ): AssetItem[] {
   const assetsByJob = new Map<string, AssetItem[]>()
   const ungrouped: AssetItem[] = []
 
-  for (const asset of toValue(flatAssets)) {
+  for (const asset of flatAssets) {
     const { job_id } = asset
     if (!job_id) {
       ungrouped.push(asset)
@@ -132,9 +128,11 @@ export function unflattenOutputAssets(
   const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
     const ordered = [...assets].sort(byCreatedAtAsc)
     const representative =
-      ordered.findLast((asset) =>
-        isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
-      ) ?? ordered.at(-1)!
+      ordered
+        .toSorted(byIsTemp)
+        .findLast((asset) =>
+          isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+        ) ?? ordered.at(-1)!
     return {
       ...representative,
       id: job_id,

@@ -12,58 +12,81 @@ export interface PagedList<T> {
 
 export function wrapPagedList<T>(
   list: PagedList<T>,
-  filter: (items: MaybeRef<readonly T[]>) => T[]
+  transform: (items: readonly T[]) => T[]
 ): PagedList<T> {
-  return { ...list, items: computed(() => filter(list.items)) }
+  return { ...list, items: computed(() => transform(toValue(list.items))) }
 }
 
 interface CacheEntry<T> {
   list: PagedList<T>
   refCount: number
 }
+type Cache<T> = Map<string, CacheEntry<T>>
 
-export function createSharedPagedList<TParams, TItem>(
-  factory: (params: TParams) => PagedList<TItem>,
-  paramKeyFn: (params: TParams) => string,
-  itemKeyFn: (item: TItem) => unknown = (item) => item
-) {
-  const cache = new Map<string, CacheEntry<TItem>>()
+export interface SharedPagedListState<TParams, TItem> {
+  readonly cache: Cache<TItem>
+  readonly factory: (params: TParams) => PagedList<TItem>
+  readonly paramKeyFn: (params: TParams) => string
+  readonly itemKeyFn: (item: TItem) => unknown
+}
 
-  async function invalidateItems(items: string[]) {
-    await Promise.all([...cache.values()].map((e) => e.list.invalidate(items)))
+export function getPagedList<TParams, TItem>(
+  params: TParams,
+  state: SharedPagedListState<TParams, TItem>
+): PagedList<TItem> {
+  const key = state.paramKeyFn(params)
+  const entry = state.cache.get(key) ?? {
+    list: state.factory(params),
+    refCount: 0
+  }
+  state.cache.set(key, entry)
+  entry.refCount++
+
+  onScopeDispose(() => --entry.refCount || state.cache.delete(key))
+  return new SharedPagedList(entry.list, state.cache, state.itemKeyFn)
+}
+
+class SharedPagedList<T> implements PagedList<T> {
+  constructor(
+    private readonly childList: PagedList<T>,
+    private readonly cache: Cache<T>,
+    private readonly itemKeyFn: (item: T) => unknown
+  ) {}
+  overlapping(): PagedList<T>[] {
+    const snapshot = toValue(this.childList.items)
+    if (snapshot.length === 0) return [this]
+
+    const staleKeys = new Set(snapshot.map(this.itemKeyFn))
+    return [...this.cache.values()]
+      .filter((e) =>
+        toValue(e.list.items).some((item) =>
+          staleKeys.has(this.itemKeyFn(item))
+        )
+      )
+      .map((e) => e.list)
   }
 
-  function overlapping(entry: CacheEntry<TItem>): CacheEntry<TItem>[] {
-    const snapshot = toValue(entry.list.items)
-    if (snapshot.length === 0) return [entry]
-
-    const staleKeys = new Set(snapshot.map(itemKeyFn))
-    return [...cache.values()].filter((e) =>
-      toValue(e.list.items).some((item) => staleKeys.has(itemKeyFn(item)))
-    )
+  get hasMore() {
+    return this.childList.hasMore
   }
-
-  function constructor(params: TParams): PagedList<TItem> {
-    const key = paramKeyFn(params)
-    const entry = cache.get(key) ?? { list: factory(params), refCount: 0 }
-    cache.set(key, entry)
-    entry.refCount++
-
-    onScopeDispose(() => --entry.refCount || cache.delete(key))
-
-    async function invalidate(stale?: string[]) {
-      if (stale) await invalidateItems(stale)
-      else await Promise.all(overlapping(entry).map((e) => e.list.invalidate()))
-    }
-    async function loadNew() {
-      await Promise.all(overlapping(entry).map((e) => e.list.loadNew()))
-    }
-    return { ...entry.list, invalidate, loadNew }
+  async invalidate(stale?: string[]) {
+    const toInvalidate = stale
+      ? [...this.cache.values()].map((l) => l.list)
+      : this.overlapping()
+    await Promise.all(toInvalidate.map((l) => l.invalidate(stale)))
   }
-  async function invalidateAll() {
-    await Promise.all([...cache.values()].map((e) => e.list.invalidate()))
+  get isLoading() {
+    return this.childList.isLoading
   }
-  return { constructor, invalidateAll }
+  get items() {
+    return this.childList.items
+  }
+  get loadMore() {
+    return this.childList.loadMore
+  }
+  async loadNew() {
+    await Promise.all(this.overlapping().map((l) => l.loadNew()))
+  }
 }
 
 type Runner = (signal: AbortSignal) => Promise<void>

@@ -62,7 +62,7 @@ export async function resolveMissingMediaAssetSources({
     })
     while (toValue(inputAssets.hasMore)) {
       await inputAssets.loadMore()
-      if (controller.signal.aborted) throw new Error('aborted')
+      controller.signal.throwIfAborted()
     }
 
     return toValue(inputAssets.items)

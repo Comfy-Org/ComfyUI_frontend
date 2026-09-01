@@ -3,6 +3,7 @@ import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 
@@ -20,7 +21,7 @@ vi.mock(
   })
 )
 
-const mockResolveOutputAssetItems = vi.fn()
+const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 function createMockMediaAssets() {
   return {
@@ -35,10 +36,6 @@ function createMockMediaAssets() {
 
 let mockMediaAssets = createMockMediaAssets()
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => mockMediaAssets
-}))
-
 vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
   useAssetFilterOptions: () => ({
     ownershipOptions: computed(() => []),
@@ -47,10 +44,20 @@ vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
   })
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  resolveOutputAssetItems: (...args: unknown[]) =>
-    mockResolveOutputAssetItems(...args)
-}))
+vi.mock('@/platform/assets/utils/outputAssetUtil')
+
+function makeResolvedOutput(
+  id: string,
+  name: string,
+  previewUrl = ''
+): AssetItem {
+  return fromPartial({
+    id,
+    name,
+    preview_url: previewUrl,
+    tags: ['output']
+  })
+}
 
 function createDefaultOptions(
   overrides: Partial<UseWidgetSelectItemsOptions> = {}
@@ -455,24 +462,21 @@ describe('useWidgetSelectItems', () => {
       ]
 
       mockResolveOutputAssetItems.mockResolvedValue([
-        {
-          id: 'job-1-5-output_001.png',
-          name: 'output_001.png',
-          preview_url: '/api/view?filename=output_001.png&type=output',
-          tags: ['output']
-        },
-        {
-          id: 'job-1-5-output_002.png',
-          name: 'output_002.png',
-          preview_url: '/api/view?filename=output_002.png&type=output',
-          tags: ['output']
-        },
-        {
-          id: 'job-1-5-output_003.png',
-          name: 'output_003.png',
-          preview_url: '/api/view?filename=output_003.png&type=output',
-          tags: ['output']
-        }
+        makeResolvedOutput(
+          'job-1-5-output_001.png',
+          'output_001.png',
+          '/api/view?filename=output_001.png&type=output'
+        ),
+        makeResolvedOutput(
+          'job-1-5-output_002.png',
+          'output_002.png',
+          '/api/view?filename=output_002.png&type=output'
+        ),
+        makeResolvedOutput(
+          'job-1-5-output_003.png',
+          'output_003.png',
+          '/api/view?filename=output_003.png&type=output'
+        )
       ])
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -519,40 +523,18 @@ describe('useWidgetSelectItems', () => {
         makeMultiOutputAsset('job-B', 'previewB.png', '2', 2)
       ]
 
-      mockResolveOutputAssetItems.mockImplementation(
-        async (meta: { jobId: string }) => {
-          if (meta.jobId === 'job-A') {
-            return [
-              {
-                id: 'A-1',
-                name: 'a1.png',
-                preview_url: '',
-                tags: ['output']
-              },
-              {
-                id: 'A-2',
-                name: 'a2.png',
-                preview_url: '',
-                tags: ['output']
-              }
-            ]
-          }
+      mockResolveOutputAssetItems.mockImplementation(async (meta) => {
+        if (meta.jobId === 'job-A') {
           return [
-            {
-              id: 'B-1',
-              name: 'b1.png',
-              preview_url: '',
-              tags: ['output']
-            },
-            {
-              id: 'B-2',
-              name: 'b2.png',
-              preview_url: '',
-              tags: ['output']
-            }
+            makeResolvedOutput('A-1', 'a1.png'),
+            makeResolvedOutput('A-2', 'a2.png')
           ]
         }
-      )
+        return [
+          makeResolvedOutput('B-1', 'b1.png'),
+          makeResolvedOutput('B-2', 'b2.png')
+        ]
+      })
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
         createDefaultOptions({
@@ -606,18 +588,8 @@ describe('useWidgetSelectItems', () => {
       ]
 
       mockResolveOutputAssetItems.mockResolvedValue([
-        {
-          id: 'c-1',
-          name: 'out1.png',
-          preview_url: '',
-          tags: ['output']
-        },
-        {
-          id: 'c-2',
-          name: 'out2.png',
-          preview_url: '',
-          tags: ['output']
-        }
+        makeResolvedOutput('c-1', 'out1.png'),
+        makeResolvedOutput('c-2', 'out2.png')
       ])
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(

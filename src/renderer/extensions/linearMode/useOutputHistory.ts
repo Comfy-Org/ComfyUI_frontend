@@ -75,7 +75,7 @@ export function useOutputHistory(): {
 
     const pathMap = executionStore.jobIdToSessionWorkflowPath
 
-    return toValue(items).filter((asset) => {
+    return items.filter((asset) => {
       const m = getOutputAssetMetadata(asset?.user_metadata)
       return m ? pathMap.get(m.jobId) === path : false
     })
