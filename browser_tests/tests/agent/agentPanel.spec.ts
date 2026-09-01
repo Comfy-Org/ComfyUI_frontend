@@ -1,4 +1,4 @@
-import type { Locator, WebSocketRoute } from '@playwright/test'
+import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -108,16 +108,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     expect(animationName).toBe('agent-shimmer')
   })
 
-  // The expand state of a settled tool group is runtime-order dependent
-  // (two CI runs held opposite stable states at the same point), so the
-  // journey ensures visibility instead of pinning either lifecycle.
-  async function ensureOpen(summary: Locator): Promise<void> {
-    if ((await summary.getAttribute('aria-expanded')) !== 'true') {
-      await summary.click()
-    }
-    await expect(summary).toHaveAttribute('aria-expanded', 'true')
-  }
-
   test('shows the greeting, inserts a suggested prompt, and completes a chat turn', async ({
     comfyPage,
     postedMessages,
@@ -165,7 +155,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 1 tool call for 1.3 seconds'
     })
     await expect(firstSummary).toBeVisible()
-    await ensureOpen(firstSummary)
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
 
@@ -175,13 +165,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         'The first graph edit is complete. I will check the remaining work.'
       )
     ).toBeVisible()
-    await ensureOpen(firstSummary)
-    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
 
     pushEvent(ws, OPEN_TAB_TOOL_EVENT)
 
@@ -189,8 +181,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 1 tool call for 0.5 seconds'
     })
     await expect(secondSummary).toBeVisible()
-    await ensureOpen(firstSummary)
-    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Set widget')).toBeHidden()
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toHaveCount(0)
@@ -201,7 +193,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       name: 'Ran 2 tool calls for 0.7 seconds'
     })
     await expect(finalSummary).toBeVisible()
-    await ensureOpen(finalSummary)
+    await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
     await expect(
       panel.getByRole('button', {
         name: /^Ran \d+ tool calls?(?: for \d+(?:\.\d+)? seconds)?$/
@@ -211,8 +203,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(secondSummary).toHaveCount(0)
 
     const toolRows = panel.getByRole('listitem')
-    await expect(toolRows).toHaveCount(3)
-    await expect(toolRows.filter({ hasText: 'Set widget' })).toBeVisible()
+    await expect(toolRows).toHaveCount(2)
+    await expect(toolRows.filter({ hasText: 'Set widget' })).toHaveCount(0)
     await expect(
       toolRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
     ).toBeVisible()
@@ -229,13 +221,17 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
-    await ensureOpen(finalSummary)
-    await ensureOpen(firstSummary)
-    await expect(panel.getByText('Opened a new tab')).toBeVisible()
+    await expect(finalSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+    await expect(panel.getByText('Opened a new tab')).toBeHidden()
 
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
     await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0)
+    await expect(
+      panel.getByRole('button', { name: /ran 2 tool calls/i })
+    ).toHaveAttribute('aria-expanded', 'false')
+    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
   })
 
   test.describe('composer sizing', () => {
