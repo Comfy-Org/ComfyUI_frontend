@@ -724,9 +724,13 @@ describe('billingOperationStore', () => {
         status: 'succeeded',
         started_at: new Date().toISOString()
       })
+      const error = new Error('toast rendering failed')
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
       mockToastAdd.mockImplementationOnce(() => {})
       mockToastAdd.mockImplementationOnce(() => {
-        throw new Error('toast rendering failed')
+        throw error
       })
 
       const store = useBillingOperationStore()
@@ -735,6 +739,11 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Billing operation op-1 success handling failed',
+        error
+      )
+      consoleErrorSpy.mockRestore()
     })
 
     it('resolves the terminal promise even if reconciliation throws synchronously', async () => {

@@ -731,6 +731,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         summary: t(messageKey),
         life: 5000
       })
+    } catch (error) {
+      console.error(`Billing operation ${opId} success handling failed`, error)
+      throw error
     } finally {
       resolveTerminal(opId)
     }
