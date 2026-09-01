@@ -191,6 +191,7 @@ const liteGraphFixture = `import {
   beforeEach,
   describe,
   it,
+  onTestFinished,
   suite
 } from 'vitest'
 import { LiteGraph as Graph } from '@/lib/litegraph/src/litegraph'
@@ -224,9 +225,22 @@ describe.for([1])('parameterized collection registration', () => {
 suite.for([1])('parameterized collection registration alias', () => {
   Graph.registerNodeType('suite-for', class {})
 })
+describe.skipIf(true)('conditional collection registration', () => {
+  Graph.registerNodeType('describe-skip-if', class {})
+})
+suite.runIf(true)('conditional collection registration alias', () => {
+  Graph.registerNodeType('suite-run-if', class {})
+})
+describe.skipIf(true).sequential('modified conditional registration', () => {
+  Graph.registerNodeType('describe-skip-if-sequential', class {})
+})
+suite.runIf(true).concurrent('modified conditional registration alias', () => {
+  Graph.registerNodeType('suite-run-if-concurrent', class {})
+})
 
 afterAll(() => Graph.unregisterNodeType('suite'))
 afterEach(() => Graph.clearRegisteredTypes())
+onTestFinished(() => Graph.unregisterNodeType('finished'))
 it('allows per-test registration', () => {
   Graph.registerNodeType('inline', class {})
   Graph.unregisterNodeType('inline')
@@ -343,10 +357,10 @@ describe('Vitest cleanup rules', () => {
   it('reports persistent LiteGraph registrations and redundant cleanup', () => {
     expect(
       output.match(/Register LiteGraph node types in beforeEach or a test/g)
-    ).toHaveLength(11)
+    ).toHaveLength(15)
     expect(
       output.match(/LiteGraph\.unregisterNodeType\(\) is redundant/g)
-    ).toHaveLength(1)
+    ).toHaveLength(2)
     expect(
       output.match(/LiteGraph\.clearRegisteredTypes\(\) is redundant/g)
     ).toHaveLength(1)

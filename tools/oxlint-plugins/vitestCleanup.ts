@@ -25,7 +25,8 @@ const SUITE_CALLBACK_MODIFIERS = new Set([
   'skip',
   'todo'
 ])
-const TEARDOWN_IMPORTS = new Set(['afterAll', 'afterEach'])
+const SUITE_CALLBACK_FACTORIES = new Set(['each', 'for', 'runIf', 'skipIf'])
+const TEARDOWN_IMPORTS = new Set(['afterAll', 'afterEach', 'onTestFinished'])
 const HOOK_IMPORTS = new Set([
   'afterAll',
   'afterEach',
@@ -259,6 +260,24 @@ function enclosingExecutionBoundaryIndex(ancestors: readonly Node[]): number {
   return ancestors.findLastIndex(isDeferredBoundary)
 }
 
+function isSuiteFactoryCallback(
+  context: RuleContext,
+  expression: Expression,
+  callbackImports: ReadonlySet<string>
+): boolean {
+  const unwrapped = unwrapChain(expression)
+  if (unwrapped.type !== 'CallExpression') return false
+
+  const factory = asMemberExpression((unwrapped as CallExpression).callee)
+  const factoryName = factory && staticMemberName(factory)
+  return (
+    factory !== undefined &&
+    factoryName !== undefined &&
+    SUITE_CALLBACK_FACTORIES.has(factoryName) &&
+    isVitestCallback(context, factory.object, callbackImports)
+  )
+}
+
 function isVitestCallback(
   context: RuleContext,
   expression: Expression,
@@ -272,6 +291,8 @@ function isVitestCallback(
   ) {
     return true
   }
+
+  if (isSuiteFactoryCallback(context, expression, callbackImports)) return true
 
   const modifier = asMemberExpression(expression)
   const modifierName = modifier && staticMemberName(modifier)
@@ -290,17 +311,7 @@ function isVitestCallbackCall(
 ): node is CallExpression {
   if (node?.type !== 'CallExpression') return false
   const call = node as CallExpression
-  if (isVitestCallback(context, call.callee, callbackImports)) return true
-
-  const factoryCall = unwrapChain(call.callee)
-  if (factoryCall.type !== 'CallExpression') return false
-  const factory = asMemberExpression((factoryCall as CallExpression).callee)
-  const factoryName = factory && staticMemberName(factory)
-  return (
-    factory !== undefined &&
-    (factoryName === 'each' || factoryName === 'for') &&
-    isVitestCallback(context, factory.object, callbackImports)
-  )
+  return isVitestCallback(context, call.callee, callbackImports)
 }
 
 function runsDirectlyInVitestCallback(
