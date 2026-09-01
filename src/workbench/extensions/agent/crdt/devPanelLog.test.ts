@@ -39,7 +39,9 @@ describe('devPanelLog', () => {
     }
 
     const firstVisibleSeq = devEvents.value[0].seq
-    const lastVisibleSeq = devEvents.value.at(-1)?.seq
+    const lastVisibleEvent = devEvents.value.at(-1)
+    expect(lastVisibleEvent).toBeDefined()
+    const lastVisibleSeq = lastVisibleEvent!.seq
     expect(devEvents.value.map((event) => event.seq)).toEqual(
       Array.from({ length: 500 }, (_, index) => firstVisibleSeq + index)
     )
@@ -49,7 +51,7 @@ describe('devPanelLog', () => {
     recordDevEvent('doc_reset', null)
 
     expect(devEvents.value).toHaveLength(1)
-    expect(devEvents.value[0].seq).toBe((lastVisibleSeq ?? 0) + 1)
+    expect(devEvents.value[0].seq).toBe(lastVisibleSeq + 1)
   })
 
   it('notifies shallow-ref consumers after record and clear', () => {
