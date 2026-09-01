@@ -83,9 +83,8 @@ export async function writeMarkdownTwins(
     const route = `/${pathname}`
     const twinPath = markdownTwinPath(route)
     const target = join(root, twinPath)
-    const html = await readBuiltPage(root, pathname)
 
-    if (!html || isExcludedFromSitemap(new URL(route, site).href)) {
+    if (isExcludedFromSitemap(new URL(route, site).href)) {
       report.skipped.push(twinPath)
       continue
     }
@@ -93,10 +92,17 @@ export async function writeMarkdownTwins(
       // A page endpoint (e.g. supported-models' [slug].md.ts) already wrote
       // this twin. It is a real, current twin — section indexes and
       // llms-full.txt must still include it, just not regenerate it here.
+      // Checked ahead of readBuiltPage: a page can ship a markdown twin with
+      // no HTML counterpart at all, and that twin is still real content.
       report.existing.push(twinPath)
       continue
     }
 
+    const html = await readBuiltPage(root, pathname)
+    if (!html) {
+      report.skipped.push(twinPath)
+      continue
+    }
     const page = htmlToTwin(html, new URL(route, site).href)
     await mkdir(dirname(target), { recursive: true })
     await writeFile(target, renderTwin(page), 'utf8')

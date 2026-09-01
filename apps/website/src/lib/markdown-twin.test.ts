@@ -183,6 +183,22 @@ describe('writeMarkdownTwins', () => {
     )
   })
 
+  it('reports an existing twin even when the page has no built HTML at all', async () => {
+    // A page endpoint can ship a markdown twin with no .astro/HTML
+    // counterpart (e.g. a markdown-only resource). That twin is still real,
+    // current content, so it must be classified as `existing`, not lumped
+    // into `skipped` alongside pages that genuinely have neither an HTML
+    // page nor a twin.
+    const root = await mkdtemp(join(tmpdir(), 'twins-'))
+    await writeFile(join(root, 'reference.md'), '# hand-written, no HTML\n')
+
+    const report = await writeMarkdownTwins(root, ['reference/'])
+
+    expect(report.written).toEqual([])
+    expect(report.existing).toEqual(['/reference.md'])
+    expect(report.skipped).toEqual([])
+  })
+
   it('feeds section indexes and llms-full.txt from written and existing twins alike', async () => {
     // Regression test for a bug where astro:build:done only passed
     // report.written downstream: a page endpoint's pre-existing twin
