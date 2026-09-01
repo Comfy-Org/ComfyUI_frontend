@@ -15,5 +15,5 @@ export function getOutputKey({
     return null
   }
 
-  return `${nodeId}-${subfolder}-${filename}`
+  return JSON.stringify([String(nodeId), subfolder, filename])
 }

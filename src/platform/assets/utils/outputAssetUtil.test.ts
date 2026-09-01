@@ -114,12 +114,17 @@ describe('getTotalAssetOutputCount', () => {
     const parent = createAsset({
       id: 'job-1-parent',
       name: 'parent.png',
-      user_metadata: { jobId: 'job-1', nodeId: '1', outputCount: 4 }
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: '1',
+        subfolder: 'outputs',
+        outputCount: 4
+      }
     })
     const child = createAsset({
       id: 'job-1-child',
       name: 'child.png',
-      user_metadata: { jobId: 'job-1', nodeId: '2' }
+      user_metadata: { jobId: 'job-1', nodeId: '2', subfolder: 'outputs' }
     })
 
     expect(getTotalAssetOutputCount([parent, child])).toBe(4)
