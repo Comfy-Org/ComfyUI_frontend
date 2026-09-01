@@ -90,7 +90,7 @@
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelStore.enabled && agentPanelStore.flagDelivered"
+        v-if="agentPanelStore.enabled"
         variant="link"
         size="sm"
         :aria-pressed="agentPanelStore.isOpen"

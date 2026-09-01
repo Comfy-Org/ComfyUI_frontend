@@ -298,13 +298,18 @@ describe('WorkflowTabs agent entry button', () => {
     ).toBeNull()
   })
 
-  it('does not render the entry button before server flags settle', () => {
+  it('renders the entry button even before server flags settle', () => {
+    // flagDelivered is a pure QA marker (data-agent-flag-delivered); the
+    // entry button gates on the PostHog `enabled` entitlement alone so an
+    // entitled user is never blocked by a websocket handshake that may
+    // never complete. See:
+    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16301#discussion_r3909242397
     agentPanelHolder.store.flagDelivered.value = false
     renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeNull()
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).not.toBeNull()
   })
 
   it('does not render the entry button while the feature flag is off', () => {
