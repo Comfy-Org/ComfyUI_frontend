@@ -13,8 +13,22 @@ const dirname = path.dirname(__filename)
 // builds those urls with, so a custom host, base path, or prefix needs no second
 // edit here. GCS_PUBLIC_BASE_URL may carry a base path (`https://cdn/assets`),
 // which prefixes the media prefix in the stored url and so in the pattern too.
-const cdnBase = new URL(gcsPublicBase)
-const cdnBasePath = cdnBase.pathname.replace(/^\/+|\/+$/g, '')
+// Gated on GCS_BUCKET like the storage plugin itself: with GCS disabled the
+// pattern is unused, and a malformed GCS_PUBLIC_BASE_URL would otherwise throw
+// here and take down the local-disk media setup it has no bearing on.
+const cdnRemotePatterns = (): NonNullable<NextConfig['images']>['remotePatterns'] => {
+  if (!process.env.GCS_BUCKET) return undefined
+  const cdnBase = new URL(gcsPublicBase)
+  const cdnBasePath = cdnBase.pathname.replace(/^\/+|\/+$/g, '')
+  return [
+    {
+      protocol: cdnBase.protocol === 'http:' ? 'http' : 'https',
+      hostname: cdnBase.hostname,
+      port: cdnBase.port || undefined,
+      pathname: `/${[cdnBasePath, gcsMediaPrefix, '**'].filter(Boolean).join('/')}`,
+    },
+  ]
+}
 
 const nextConfig: NextConfig = {
   images: {
@@ -25,14 +39,7 @@ const nextConfig: NextConfig = {
       },
     ],
     // Admin thumbnails when media is served from the CDN-backed bucket.
-    remotePatterns: [
-      {
-        protocol: cdnBase.protocol === 'http:' ? 'http' : 'https',
-        hostname: cdnBase.hostname,
-        port: cdnBase.port || undefined,
-        pathname: `/${[cdnBasePath, gcsMediaPrefix, '**'].filter(Boolean).join('/')}`,
-      },
-    ],
+    remotePatterns: cdnRemotePatterns(),
   },
   // Next 16 bundles with Turbopack, which resolves TypeScript sources natively —
   // the Payload template's `webpack.resolve.extensionAlias` hook is not applied
