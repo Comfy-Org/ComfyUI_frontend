@@ -22,21 +22,28 @@ adopted for, causes visible canvas flicker and state loss, and desynchronizes an
 projector (ECS/semantic) still holding a reference to the old doc instance.
 
 The misconception "seq gap → rebuild the doc" has appeared in review discussion and in
-follower code on in-flight branches. The `poc/fe-crdt-follower` branch's
-`layoutFollowerBridge.ts` implements the correct behavior: withhold the gapped frame,
-resubscribe with the current state vector, receive only the missed delta.
+follower code on in-flight branches. However, a gap alone cannot distinguish a missing
+ordinary update from a missing `doc_reset`. Yjs state vectors identify known structs,
+not the application-level lineage of a document. Replaying a vector against a newly
+minted host doc can therefore retain stale structs from the old lineage.
+
+The protocol must make lineage observable before delta replay is safe. Every document
+lineage has an immutable generation ID minted with the host Y.Doc. The host includes it
+in every `doc_update`, `doc_reset`, and `doc_subscribed` frame, while the follower stores
+it with its Y.Doc and includes it in subscription requests. Missing, unverifiable, or
+mismatched generation IDs are lineage breaks; state vectors must never cross them.
 
 ## Decision
 
-1. On a sequence gap or reconnect, the follower **keeps its existing Y.Doc** and
-   resubscribes with its state vector; the host replays the delta. The canvas is never
-   wiped.
-2. Destroying or replacing the follower doc is reserved **exclusively** for an explicit
-   `doc_reset` frame — a genuine lineage break (the host re-minted the document). A
-   `doc_reset` MUST be dispatched to every projector/consumer of the old doc instance
-   before replacement.
-3. Any implementation that wipes or replaces the follower doc on an ordinary seq gap or
-   reconnect is a **defect**, to be flagged in review regardless of author.
+1. On a sequence gap or reconnect, the follower resubscribes with its generation ID and
+   state vector.
+2. The follower keeps its existing Y.Doc and applies the returned delta only after the
+   host confirms the same generation.
+3. A missing, unverifiable, or different generation is a lineage break. The follower
+   MUST dispatch `doc_reset` to every projector and consumer before replacing the doc
+   and subscribing from an empty state vector.
+4. Applying an update from an unverified or different generation to the existing doc is
+   a defect.
 
 ### `doc_reset` versus an ordinary sequence gap
 
@@ -68,9 +75,8 @@ lineage, cursor, reset-precedence, or replacement-barrier contracts.
 
 - Reviews of any sync/reconnect code check for doc replacement outside the `doc_reset`
   path.
-- Follower recovery logic must track the doc's state vector and support delta
-  resubscription; the transport protocol must distinguish ordinary gaps from `doc_reset`
-  lineage breaks.
+- Follower recovery logic must track the doc's generation and state vector. The
+  transport protocol must reject delta resubscription across generations.
 - Projectors and other doc consumers must handle `doc_reset` as an explicit lifecycle
   event rather than discovering a swapped doc instance implicitly.
 
@@ -88,5 +94,8 @@ lineage, cursor, reset-precedence, or replacement-barrier contracts.
   — bounded scalar-v1, reset/remint deferral, and the deployed-proof bar.
 - [DQ-47 resolution](https://github.com/christian-byrne/blocked-on-christian/issues/56#issuecomment-5462261123)
   — vehicle, status, and deferred-contract disposition.
-- `poc/fe-crdt-follower` → `layoutFollowerBridge.ts` (reference implementation of
-  state-vector delta replay).
+- [`docFrameClient.ts`](../../src/workbench/extensions/agent/crdt/docFrameClient.ts) is
+  the frame parser and subscription encoder that must carry and validate generation IDs.
+- [`layoutFollowerBridge.ts`](../../src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts)
+  owns gap recovery and the ordered reset-before-replacement lifecycle. Generation
+  validation is a prerequisite for its same-doc delta path.
