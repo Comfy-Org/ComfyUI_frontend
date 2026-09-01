@@ -304,6 +304,20 @@ describe('WorkflowTemplateSelectorDialog detail routing', () => {
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
   })
 
+  it('opens directly when inventory cannot confirm a missing model', async () => {
+    mocks.resolveAvailability.mockResolvedValueOnce([
+      { model: fixtures.activeModel, status: 'unknown' }
+    ])
+    renderDialog()
+    await clickTemplateCard()
+
+    await waitFor(() => {
+      expect(mocks.resolveAvailability).toHaveBeenCalledOnce()
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(screen.queryByRole('article')).not.toBeInTheDocument()
+  })
+
   it('invalidates pending preparation when navigation changes', async () => {
     let resolvePreparation:
       | ((prepared: typeof fixtures.prepared) => void)
