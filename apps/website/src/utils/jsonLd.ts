@@ -57,7 +57,10 @@ export function pageContext(
 ): PageContext & { url: string } {
   return {
     siteUrl: siteUrlFrom(site),
-    locale: currentLocale === 'zh-CN' ? 'zh-CN' : 'en',
+    locale:
+      currentLocale === 'zh-CN' || currentLocale === 'ja'
+        ? currentLocale
+        : 'en',
     url: absoluteUrl(site, pathname)
   }
 }

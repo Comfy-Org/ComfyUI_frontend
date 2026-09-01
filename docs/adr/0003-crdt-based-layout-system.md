@@ -220,31 +220,11 @@ mutation with no name.
 
 ### Amendment (2026-08-23): merge-boundary reconciliation constraint
 
-**Open question resolved.** Can duplicate-entity-ID reconciliation live at the
-CRDT merge boundary while the in-memory registries keep a strict no-collision
-invariant? **Yes — and that is the required split of responsibility.**
-
-**What the in-memory registries guarantee.** Each dedicated store
-(`nodeDataStore`, `widgetValueStore`, `linkStore`, `rerouteStore`) enforces
-its own collision contract at registration time:
-
-- `nodeDataStore.registerNode` is identity-keyed (Set membership); re-adding
-  the same `NodeState` object is a no-op, not a collision.
-- `widgetValueStore.registerWidget` is type-discriminated: same `WidgetId` and
-  same `type` returns the existing state; same `WidgetId` with a different
-  `type` overwrites (the widget has changed kind). This is idempotent on
-  re-registration but intentional on type change.
-- `linkStore.registerLink` is first-registration-wins per target input slot: a
-  second topology claiming the same slot is rejected (`undefined` return) rather
-  than clobbering the incumbent.
-- `rerouteStore.registerReroute` is first-registration-wins per chain ID: a
-  duplicate chain ID logs a warning and leaves the live registration untouched.
-
-None of these stores resolve conflicts between two independently-created
-entities that happen to share an ID. They assume incoming IDs are already
-deduplicated. If two concurrent operations created a node with ID `42`, the
-stores have no mechanism to choose between them — they will silently keep
-whichever arrived first and discard the other without surfacing a diagnostic.
+In-memory registration and collision recovery follow
+[ADR 0016](0016-entity-registration-collision-and-recovery-boundaries.md).
+The CRDT boundary must reconcile distributed conflicts over stable entity
+identity keys before registration. Registries with recyclable structural keys
+retain their documented local policies.
 
 **What the CRDT merge boundary must guarantee.** Before any merged entity set
 is committed to the in-memory registries, the Yjs merge layer is responsible

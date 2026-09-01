@@ -97,7 +97,7 @@
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
-                  remaining: monthlyBonusCredits,
+                  remaining: monthlyRemainingDisplay,
                   total: creditPoolTotalDisplay
                 })
               }}
@@ -260,7 +260,6 @@ const {
 } = useBillingContext()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const {
-  monthlyBonusCredits,
   prepaidCredits,
   totalCredits,
   monthlyBonusCreditsValue,
@@ -292,11 +291,13 @@ const creditPoolTotalCredits = computed<number | null>(() => {
     : monthlyCredits
 })
 
-// The server keeps top-up open for sales-managed plans whatever their
-// subscription row says, so their real balance must never be zeroed into the
-// reactivate-to-use-credits treatment reserved for lapsed self-serve plans.
+// The reactivate-to-use-credits treatment sells a self-serve reactivation, so
+// it applies only where one exists. Tier decides that, as it does for the
+// credit pool above: can_top_up is a rollout-defaulted capability that also
+// fails open for owners on an unreadable snapshot, which would drop a lapsed
+// self-serve team out of this state during a capabilities outage.
 const showsInactivePlanState = computed(
-  () => inactivePlan === true && !canTopUp.value
+  () => inactivePlan === true && !isSalesManagedTier(subscription.value?.tier)
 )
 
 const usage = computed(() =>
@@ -336,12 +337,15 @@ const creditPoolTotalDisplay = computed(() => {
 })
 
 const usedDisplay = computed(() => formatCreditCount(usage.value.used))
+const monthlyRemainingDisplay = computed(() =>
+  formatCreditCount(usage.value.remaining)
+)
 
 const compactNumber = computed(
   () => new Intl.NumberFormat(locale.value, { notation: 'compact' })
 )
 const monthlyRemainingCompact = computed(() =>
-  compactNumber.value.format(monthlyBonusCreditsValue.value)
+  compactNumber.value.format(usage.value.remaining)
 )
 const creditPoolTotalCompact = computed(() => {
   const total = creditPoolTotalCredits.value

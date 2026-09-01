@@ -12,10 +12,11 @@ interface WaveformBar {
 interface UseWaveAudioPlayerOptions {
   src: Ref<string>
   barCount?: number
+  waveform?: boolean
 }
 
 export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
-  const { src, barCount = 40 } = options
+  const { src, barCount = 40, waveform = true } = options
 
   const audioRef = ref<HTMLAudioElement>()
   const waveformRef = ref<HTMLElement>()
@@ -157,7 +158,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     (url) => {
       playing.value = false
       currentTime.value = 0
-      void decodeAudioSource(url)
+      if (waveform) void decodeAudioSource(url)
     },
     { immediate: true }
   )
@@ -176,6 +177,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     seekToStart,
     seekToEnd,
     volume,
+    muted,
     volumeIcon,
     toggleMute,
     seekToRatio,

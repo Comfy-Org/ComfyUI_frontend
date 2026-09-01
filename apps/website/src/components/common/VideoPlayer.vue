@@ -302,10 +302,11 @@ function toggleFullscreen() {
       />
     </video>
 
-    <!-- Persistent corner pause and mute toggles -->
+    <!-- Persistent corner pause and mute toggles. z-30 keeps them above the
+      overlay hero's scrim and content layers. -->
     <div
       v-if="src && muteOnly && !hideControls"
-      class="absolute top-4 right-4 flex gap-2 lg:top-6 lg:right-6"
+      class="absolute top-4 right-4 z-30 flex gap-2 lg:top-6 lg:right-6"
     >
       <PlayPauseButton
         :playing

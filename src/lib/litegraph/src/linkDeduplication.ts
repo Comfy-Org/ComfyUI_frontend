@@ -83,18 +83,8 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
     const isExactDuplicate =
       toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
       survivor.origin_slot === fields.origin_slot
-    if (!isExactDuplicate) {
-      console.warn(
-        `Dropping competing link to occupied input ${fields.target_id}:${fields.target_slot}`,
-        {
-          droppedLinkId: fields.id,
-          survivorLinkId: survivor.id,
-          targetNodeId: fields.target_id,
-          targetSlot: fields.target_slot
-        }
-      )
-    }
-
+    let droppedLinkId = fields.id
+    let survivorLinkId = survivor.id
     if (
       !isExactDuplicate &&
       referencedInputLinks.has(fields.id) &&
@@ -105,8 +95,18 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
         if (survivorId === survivor.id) survivorByDuplicateId.set(id, fields.id)
       }
       survivorByDuplicateId.set(survivor.id, fields.id)
+      droppedLinkId = survivor.id
+      survivorLinkId = fields.id
     } else {
       survivorByDuplicateId.set(fields.id, survivor.id)
+    }
+    if (!isExactDuplicate) {
+      console.warn('Dropping competing link to an occupied input', {
+        droppedLinkId,
+        survivorLinkId,
+        targetNodeId: toNodeId(fields.target_id),
+        targetSlot: fields.target_slot
+      })
     }
   }
   if (links.length === data.links.length) return data
@@ -147,7 +147,7 @@ export function detachSerialisedLinks(
  */
 export function realignInputLinkSlots(
   graph: LGraph,
-  nodesData: Iterable<readonly [NodeId, ISerialisedNode]>
+  nodesData: Iterable<readonly [NodeId, Pick<ISerialisedNode, 'id' | 'inputs'>]>
 ): void {
   for (const [nodeId, nodeData] of nodesData) {
     const node = graph.getNodeById(nodeId)
@@ -163,9 +163,12 @@ export function realignInputLinkSlots(
       referencedNames.set(link, names)
     }
 
-    for (let pass = 0; pass < Math.max(1, referencedNames.size); pass++) {
+    const skipped = new Set<LLink>()
+    let successfulPasses = 0
+    while (successfulPasses < referencedNames.size) {
       const moved: { link: LLink; slot: number }[] = []
       for (const [link, names] of referencedNames) {
+        if (skipped.has(link)) continue
         const slots = node.inputs.flatMap((input, slot) =>
           names.includes(input.name) ? [slot] : []
         )
@@ -201,8 +204,24 @@ export function realignInputLinkSlots(
       )
       if (!result.ok) {
         console.error('Failed to realign input link slots', result.error)
-        break
+        const participantIds = new Set([
+          ...moved.map(({ link }) => link.id),
+          ...removals.map((link) => link.id)
+        ])
+        const blocked = moved.filter(({ link, slot }) => {
+          const occupant = useLinkStore().getInputSlotLink(
+            graphScopeOf(graph),
+            link.target_id,
+            slot
+          )
+          return occupant && !participantIds.has(occupant.id)
+        })
+        for (const { link } of blocked.length ? blocked : moved) {
+          skipped.add(link)
+        }
+        continue
       }
+      successfulPasses++
 
       for (const { connection, link } of removedConnections) {
         link.disconnect(graph)
