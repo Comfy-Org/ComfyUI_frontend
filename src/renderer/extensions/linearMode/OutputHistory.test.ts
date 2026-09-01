@@ -191,7 +191,6 @@ function historyItems(): HTMLElement[] {
 
 describe('OutputHistory', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mediaRef.value = []
     hasMoreRef.value = false
     selectedIdRef.value = null
