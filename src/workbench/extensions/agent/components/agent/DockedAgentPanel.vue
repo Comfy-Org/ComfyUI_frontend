@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
+import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -64,8 +64,7 @@ const AgentPanelRoot = defineAsyncComponent({
 })
 
 const agentPanelStore = useAgentPanelStore()
-const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
-const docked = computed(() => enabled.value && isOpen.value)
+const { width, docked } = storeToRefs(agentPanelStore)
 
 const isResizing = ref(false)
 let resizeStartX = 0

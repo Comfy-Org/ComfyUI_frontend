@@ -58,9 +58,7 @@ export function registerAgentPanelExtension(): void {
       registerWorkflowTabActivityTracker()
       const agentPanelStore = useAgentPanelStore()
       registerViewportInset('agent-panel', () =>
-        agentPanelStore.enabled && agentPanelStore.isOpen
-          ? agentPanelStore.width
-          : 0
+        agentPanelStore.docked ? agentPanelStore.width : 0
       )
       return setupFlagGate()
     }

@@ -1,9 +1,22 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   getViewportInset,
   registerViewportInset
 } from './viewportInsetRegistry'
+
+const disposers: Array<() => void> = []
+function trackedRegister(
+  ...args: Parameters<typeof registerViewportInset>
+): ReturnType<typeof registerViewportInset> {
+  const unregister = registerViewportInset(...args)
+  disposers.push(unregister)
+  return unregister
+}
+
+afterEach(() => {
+  while (disposers.length) disposers.pop()!()
+})
 
 describe('viewportInsetRegistry', () => {
   it('defaults to zero without a registered provider', () => {
@@ -65,5 +78,35 @@ describe('viewportInsetRegistry', () => {
 
     unregisterCurrent()
     expect(getViewportInset()).toBe(0)
+  })
+
+  it('isolates a throwing provider from the rest of the aggregate', () => {
+    trackedRegister('test-throws', () => {
+      throw new Error('boom')
+    })
+    trackedRegister('test-fine', () => 48)
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(getViewportInset()).toBe(48)
+    expect(errorSpy).toHaveBeenCalledOnce()
+    errorSpy.mockRestore()
+  })
+
+  it('treats a NaN or Infinity provider as contributing zero', () => {
+    trackedRegister('test-nan', () => NaN)
+    trackedRegister('test-infinite', () => Infinity)
+    trackedRegister('test-fine', () => 48)
+
+    expect(getViewportInset()).toBe(48)
+  })
+
+  it('warns in dev when a live registration is replaced under the same key', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    trackedRegister('test-collision', () => 10)
+    trackedRegister('test-collision', () => 20)
+
+    expect(warnSpy).toHaveBeenCalledOnce()
+    warnSpy.mockRestore()
   })
 })

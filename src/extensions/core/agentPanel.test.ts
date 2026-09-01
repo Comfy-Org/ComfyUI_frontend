@@ -6,7 +6,15 @@ const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   notifyAfterGraphConfigure: vi.fn(),
   notifyBeforeGraphLoad: vi.fn(),
-  agentStore: { enabled: false, isOpen: true, width: 500, close: vi.fn() },
+  agentStore: {
+    enabled: false,
+    isOpen: true,
+    width: 500,
+    close: vi.fn(),
+    get docked() {
+      return this.enabled && this.isOpen
+    }
+  },
   canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
