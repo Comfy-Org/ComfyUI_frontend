@@ -4141,8 +4141,6 @@
     "canceledCard": {
       "description": "Vous ne serez plus facturé. Vos fonctionnalités restent actives jusqu'au {date}.",
       "descriptionWithoutDate": "Vous ne serez plus facturé. Vos fonctionnalités restent actives jusqu’à la fin de votre période de facturation.",
-      "endedDescription": "Votre abonnement n’est plus actif.",
-      "endedTitle": "Votre abonnement a pris fin",
       "title": "Votre abonnement a été annulé"
     },
     "changePlan": "Changer d’abonnement",

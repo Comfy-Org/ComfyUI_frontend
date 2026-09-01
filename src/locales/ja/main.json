@@ -4141,8 +4141,6 @@
     "canceledCard": {
       "description": "今後請求されることはありません。{date}まで機能は有効です。",
       "descriptionWithoutDate": "今後請求は発生しません。機能は請求期間の終了まで有効です。",
-      "endedDescription": "サブスクリプションは無効になりました。",
-      "endedTitle": "サブスクリプションが終了しました",
       "title": "サブスクリプションはキャンセルされました"
     },
     "changePlan": "プランを変更",

@@ -614,27 +614,26 @@ const scheduledPlanName = computed(() => {
   )
 })
 
+// The card is a heads-up about a plan that is still running: it names the date
+// features stop. Once the plan has ended there is nothing to warn about, and
+// the panel already says so in its heading, its status badge and its credits
+// tile — a fourth telling in alarm colour outranks the payment-failed banner
+// while carrying less urgency.
 const showSubscriptionStateCard = computed(
-  () => isSubscriptionCancelled.value || isSubscriptionEnded.value
+  () => isSubscriptionCancelled.value && !isSubscriptionEnded.value
 )
 
 const subscriptionStateCardTitle = computed(() =>
-  isSubscriptionEnded.value
-    ? t('subscription.canceledCard.endedTitle')
-    : t('subscription.canceledCard.title')
+  t('subscription.canceledCard.title')
 )
 
-const subscriptionStateCardDescription = computed(() => {
-  if (isSubscriptionEnded.value) {
-    return t('subscription.canceledCard.endedDescription')
-  }
-  if (!formattedEndDate.value) {
-    return t('subscription.canceledCard.descriptionWithoutDate')
-  }
-  return t('subscription.canceledCard.description', {
-    date: formattedEndDate.value
-  })
-})
+const subscriptionStateCardDescription = computed(() =>
+  formattedEndDate.value
+    ? t('subscription.canceledCard.description', {
+        date: formattedEndDate.value
+      })
+    : t('subscription.canceledCard.descriptionWithoutDate')
+)
 
 const planDateDisplay = computed(() => {
   if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value)

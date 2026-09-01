@@ -4141,8 +4141,6 @@
     "canceledCard": {
       "description": "Você não será mais cobrado. Seus recursos permanecem ativos até {date}.",
       "descriptionWithoutDate": "Você não será cobrado novamente. Seus recursos permanecem ativos até o final do seu período de cobrança.",
-      "endedDescription": "Sua assinatura não está mais ativa.",
-      "endedTitle": "Sua assinatura foi encerrada",
       "title": "Sua assinatura foi cancelada"
     },
     "changePlan": "Alterar plano",

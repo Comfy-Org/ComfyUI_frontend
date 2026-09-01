@@ -706,7 +706,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockBillingStatus.value = 'inactive'
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Your subscription has ended')
+    ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
@@ -794,24 +796,38 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
   })
 
-  it('shows ended copy for an inactive ended subscription without a date', () => {
+  it('drops the state card once the subscription has ended', () => {
     mockSubscriptionStatus.value = 'ended'
     mockIsActiveSubscription.value = false
     mockIsInPersonalWorkspace.value = true
     mockEndDate.value = null
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
     expect(
-      screen.getByText('Your subscription is no longer active.')
-    ).toBeInTheDocument()
+      screen.queryByText('Your subscription has ended')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Your subscription is no longer active.')
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByText(/features remain active/i)
     ).not.toBeInTheDocument()
-    expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
+  })
+
+  it('keeps the state card while a cancelled plan is still running', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = true
+    mockIsInPersonalWorkspace.value = true
+    mockEndDate.value = '2027-04-25T00:00:00Z'
+    renderComponent()
+
+    expect(
+      screen.getByText('Your subscription has been canceled')
+    ).toBeInTheDocument()
+    expect(screen.getByText(/features remain active/i)).toBeInTheDocument()
   })
 
   it('preserves local inactive Team billing and invoice actions', async () => {
@@ -838,7 +854,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Your subscription has ended')
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Inactive team subscription' })
     ).toBeInTheDocument()
@@ -901,7 +919,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockSubscriptionStatus.value = 'ended'
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Your subscription has ended')
+    ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
   })
 

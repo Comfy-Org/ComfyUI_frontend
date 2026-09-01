@@ -4141,8 +4141,6 @@
     "canceledCard": {
       "description": "您将不再被扣费。您的功能将在 {date} 前保持激活。",
       "descriptionWithoutDate": "您将不会再次被扣费。您的功能将在本计费周期结束前保持激活状态。",
-      "endedDescription": "您的订阅已不再激活。",
-      "endedTitle": "您的订阅已结束",
       "title": "您的订阅已被取消"
     },
     "changePlan": "更改套餐",

@@ -4141,8 +4141,6 @@
     "canceledCard": {
       "description": "No se te cobrará de nuevo. Tus funciones seguirán activas hasta {date}.",
       "descriptionWithoutDate": "No se te volverá a cobrar. Tus funciones seguirán activas hasta el final de tu periodo de facturación.",
-      "endedDescription": "Tu suscripción ya no está activa.",
-      "endedTitle": "Tu suscripción ha finalizado",
       "title": "Tu suscripción ha sido cancelada"
     },
     "changePlan": "Cambiar plan",

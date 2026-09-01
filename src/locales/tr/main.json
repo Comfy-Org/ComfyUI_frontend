@@ -4141,8 +4141,6 @@
     "canceledCard": {
       "description": "Tekrar ücretlendirilmeyeceksiniz. Özellikleriniz {date} tarihine kadar aktif kalacak.",
       "descriptionWithoutDate": "Tekrar ücretlendirilmeyeceksiniz. Özellikleriniz fatura dönemi sonuna kadar aktif kalacak.",
-      "endedDescription": "Aboneliğiniz artık aktif değil.",
-      "endedTitle": "Aboneliğiniz sona erdi",
       "title": "Aboneliğiniz iptal edildi"
     },
     "changePlan": "Planı değiştir",
