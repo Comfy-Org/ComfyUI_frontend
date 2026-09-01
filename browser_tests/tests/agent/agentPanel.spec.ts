@@ -16,15 +16,46 @@ import {
   THINKING_EVENT,
   THINKING_TEXT,
   TOOL_CALL_EVENT,
+  WORKFLOW_ID,
+  agentDocSubscribed,
+  agentWorkflowUpdates,
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
+import type { AgentDocWireFrame } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
-function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
+function pushEvent(
+  ws: WebSocketRoute,
+  event: AgentWsEvent | AgentDocWireFrame
+): void {
   ws.send(JSON.stringify(event))
+}
+
+function isWorkflowSubscribe(message: string): boolean {
+  return workflowSubscribeStateVector(message) !== undefined
+}
+
+function workflowSubscribeStateVector(message: string): string | undefined {
+  try {
+    const frame: unknown = JSON.parse(message)
+    if (typeof frame !== 'object' || frame === null) return
+    const { type, data } = frame as { type?: unknown; data?: unknown }
+    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
+      return
+    const subscribe = data as {
+      workflow_id?: unknown
+      state_vector_b64?: unknown
+    }
+    if (subscribe.workflow_id !== WORKFLOW_ID) return
+    return typeof subscribe.state_vector_b64 === 'string'
+      ? subscribe.state_vector_b64
+      : undefined
+  } catch {
+    return
+  }
 }
 
 test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
@@ -169,6 +200,78 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       panel.getByRole('button', { name: /ran 2 tool calls/i })
     ).toHaveAttribute('aria-expanded', 'false')
     await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('retains the agent doc and requests a delta after reconnect', async ({
+    comfyPage,
+    getWebSocket,
+    postedMessages,
+    webSocketMessages
+  }) => {
+    test.setTimeout(30_000)
+
+    const page = comfyPage.page
+    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    const panel = page.locator('#agent-panel-root')
+    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    await composer.fill('Add a node to this workflow')
+    await panel.getByRole('button', { name: 'Send' }).click()
+
+    await expect.poll(() => postedMessages.length).toBe(1)
+    await expect
+      .poll(() => webSocketMessages.some(isWorkflowSubscribe))
+      .toBe(true)
+
+    const ws = await getWebSocket()
+    pushEvent(ws, agentDocSubscribed())
+    const updates = agentWorkflowUpdates()
+    pushEvent(ws, updates.initial)
+
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window.app!.graph._nodes.some(
+            (node) =>
+              String(node.id) === '41' && node.title === 'Agent-created node'
+          )
+        )
+      )
+      .toBe(true)
+
+    const messagesBeforeReconnect = webSocketMessages.length
+    await ws.close()
+    await expect
+      .poll(
+        () =>
+          webSocketMessages
+            .slice(messagesBeforeReconnect)
+            .filter(isWorkflowSubscribe).length
+      )
+      .toBeGreaterThanOrEqual(1)
+
+    const reconnectSubscribe = webSocketMessages
+      .slice(messagesBeforeReconnect)
+      .map(workflowSubscribeStateVector)
+      .find((stateVector) => stateVector !== undefined)
+    expect(reconnectSubscribe).toBeTruthy()
+
+    const reconnectedWs = await getWebSocket()
+    pushEvent(reconnectedWs, agentDocSubscribed())
+    pushEvent(reconnectedWs, updates.reconnectDelta)
+
+    await expect(panel.getByTestId('agent-crdt-status')).toContainText(
+      '2 updates'
+    )
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            window.app!.graph._nodes.filter((node) => String(node.id) === '41')
+              .length
+        )
+      )
+      .toBe(1)
   })
 
   test.describe('composer sizing', () => {
