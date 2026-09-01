@@ -74,10 +74,10 @@ const metaClass = 'flex items-center gap-1.5 text-primary-comfy-canvas/70'
         <CardHeader class="gap-2 px-6 pt-6">
           <Badge variant="category">{{ row.category }}</Badge>
           <CardTitle class="line-clamp-2 pt-2 text-lg md:text-xl">
-            {{ row.event.title[locale] }}
+            {{ row.title }}
           </CardTitle>
           <CardDescription class="line-clamp-3">
-            {{ row.event.description[locale] }}
+            {{ row.description }}
           </CardDescription>
         </CardHeader>
 

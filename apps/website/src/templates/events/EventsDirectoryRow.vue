@@ -53,11 +53,11 @@ const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
       </Badge>
 
       <h3 class="truncate text-sm font-light text-primary-warm-white">
-        {{ row.event.title[locale] }}
+        {{ row.title }}
       </h3>
 
       <p class="line-clamp-2 text-[11px] text-primary-comfy-canvas/70">
-        {{ row.event.description[locale] }}
+        {{ row.description }}
       </p>
 
       <div

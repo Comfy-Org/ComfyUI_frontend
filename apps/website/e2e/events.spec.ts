@@ -281,7 +281,9 @@ test.describe('Events page — desktop @smoke', () => {
       // Upcoming events sort first and offer the calendar menu; past events
       // follow and link out to their recording.
       for (const [i, event] of directoryEvents.entries()) {
-        await expect(rows.nth(i)).toContainText(event.title[locale])
+        await expect(rows.nth(i)).toContainText(
+          event.title[locale] || event.title.en
+        )
       }
     }
   })
