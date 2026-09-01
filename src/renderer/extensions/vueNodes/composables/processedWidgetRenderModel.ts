@@ -37,6 +37,8 @@ import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { getControlWidget } from '@/types/simplifiedWidget'
+import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type {
   LinkedUpstreamInfo,
   SafeControlWidget,
@@ -124,7 +126,7 @@ function buildSlotMetadata(
   const linkStore = useLinkStore()
   const scope = graphRef ? graphScopeOf(graphRef) : undefined
   const metadata = new Map<string, WidgetSlotMetadata>()
-  inputs?.forEach((input, index) => {
+  for (const [index, input] of inputs?.entries() ?? []) {
     const link = scope
       ? linkStore.getInputSlotLink(scope, nodeId, index)
       : undefined
@@ -142,11 +144,14 @@ function buildSlotMetadata(
       type: String(input.type)
     }
     const widgetName = input.widget?.name
-    if (widgetName) metadata.set(widgetName, slotInfo)
-    else if ((input.widgetId !== undefined || linked) && input.name) {
+    if (widgetName) {
+      metadata.set(widgetName, slotInfo)
+      continue
+    }
+    if ((input.widgetId !== undefined || linked) && input.name) {
       metadata.set(input.name, slotInfo)
     }
-  })
+  }
   return metadata
 }
 
@@ -160,13 +165,14 @@ function getHostNode(
 }
 
 function isWidgetVisible(
-  options: IWidgetOptions,
+  visibility: WidgetVisibilityComponent | undefined,
   showAdvanced: boolean,
   ignoreAdvanced = false
 ): boolean {
-  const hidden = options.hidden ?? false
-  const advanced = options.advanced ?? false
-  return !hidden && (!advanced || showAdvanced || ignoreAdvanced)
+  if (!visibility) return true
+  return isWidgetVisibleOnSurface(visibility, 'vueNode', {
+    showAdvanced: showAdvanced || ignoreAdvanced
+  })
 }
 
 function hasWidgetError(
@@ -361,8 +367,8 @@ function processWidget(
   const liveWidget = ctx.liveWidgets.get(id)
   const type = liveWidget?.type ?? widgetState.type
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
+  const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
   const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
-  if (options.advanced === undefined) options.advanced = renderState?.advanced
   if (!shouldRenderAsVue({ type, options })) return null
 
   const { live, errorTarget, controlWidget, sourceExecutionId } =
@@ -370,10 +376,13 @@ function processWidget(
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
   const visible = isWidgetVisible(
-    options,
+    visibility,
     ctx.showAdvanced,
     slotInfo?.linked || slotInfo?.promoted
   )
+  const advanced = visibility
+    ? visibility.display.vueNode === 'advanced'
+    : (options.advanced ?? false)
   const isDisabled = slotInfo?.linked || widgetState.disabled
   const widgetOptions = isDisabled ? { ...options, disabled: true } : options
   const value = normalizeWidgetValue(widgetState.value)
@@ -398,7 +407,7 @@ function processWidget(
     name: widgetState.name,
     type,
     value,
-    borderStyle: widgetOptions.advanced
+    borderStyle: advanced
       ? 'ring ring-component-node-widget-advanced'
       : undefined,
     callback: updateHandler,
@@ -447,6 +456,7 @@ function processWidget(
           (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
     simplified,
     visible,
+    suppressedByConnection: visibility?.suppression.byConnection ?? false,
     updateHandler,
     tooltipConfig,
     slotMetadata: slotInfo

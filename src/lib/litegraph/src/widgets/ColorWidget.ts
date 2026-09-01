@@ -26,8 +26,6 @@ export class ColorWidget
   extends BaseWidget<IColorWidget>
   implements IColorWidget
 {
-  override type = 'color' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { fillStyle, strokeStyle, textAlign } = ctx
 

@@ -9,8 +9,6 @@ export class GradientSliderWidget
   extends BaseWidget<IGradientSliderWidget>
   implements IGradientSliderWidget
 {
-  override type = 'gradientslider' as const
-
   override drawWidget(
     ctx: CanvasRenderingContext2D,
     { width, showText = true }: DrawWidgetOptions

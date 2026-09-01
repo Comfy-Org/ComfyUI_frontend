@@ -226,10 +226,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // identifier used by onGraphConfigured (widgetInputs.ts) to match
         // inputs to widgets. Changing it to the display label would cause
         // collisions when two promoted inputs share the same label.
-        if (input._widget) input._widget.label = newName
         if (input.widgetId) {
-          const state = useWidgetValueStore().getWidget(input.widgetId)
-          if (state) state.label = newName
+          useWidgetValueStore().setLabel(input.widgetId, newName)
         }
         this.invalidatePromotedViews()
         this.graph?.trigger('node:slot-label:changed', {

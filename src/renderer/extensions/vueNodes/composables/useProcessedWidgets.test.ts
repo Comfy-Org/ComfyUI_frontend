@@ -245,6 +245,18 @@ describe('widget visibility', () => {
   it('keeps hidden widgets hidden even when linked', () => {
     expect(visibilityOf({ hidden: true }, { linked: true })).toBe(false)
   })
+
+  it('hides connection-suppressed widgets and flags them for socket-only rows', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'w')
+    registerWidgetState(id, { type: 'text' })
+    const visibility = useWidgetValueStore().getWidgetVisibility(id)
+    if (!visibility) throw new Error('Missing visibility component')
+    visibility.suppression.byConnection = true
+
+    const [processed] = processWidgets({ widgetIds: [id] })
+    expect(processed?.visible).toBe(false)
+    expect(processed?.suppressedByConnection).toBe(true)
+  })
 })
 
 describe('widget error state', () => {
@@ -535,10 +547,9 @@ describe('computeProcessedWidgets', () => {
       {
         type: 'unknown',
         value: 'model.safetensors',
-        options: {}
+        options: { advanced: true }
       },
       {
-        advanced: true,
         hasLayoutSize: true,
         isDOMWidget: true,
         tooltip: 'Choose checkpoint'

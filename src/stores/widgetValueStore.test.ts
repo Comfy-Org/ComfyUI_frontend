@@ -5,6 +5,7 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
 import { useWidgetValueStore } from './widgetValueStore'
 
@@ -14,6 +15,16 @@ function state<T>(
   extra: Partial<Omit<WidgetState<T>, 'type' | 'value'>> = {}
 ): Omit<WidgetState<T>, 'nodeId' | 'name' | 'y'> & { y?: number } {
   return { type, value, options: {}, ...extra }
+}
+
+function visibility(
+  display: WidgetVisibilityComponent['display'],
+  suppression: WidgetVisibilityComponent['suppression'] = {
+    byExtension: false,
+    byConnection: false
+  }
+): WidgetVisibilityComponent {
+  return { display, suppression }
 }
 
 describe('useWidgetValueStore', () => {
@@ -158,13 +169,63 @@ describe('useWidgetValueStore', () => {
     it('clears omitted render state when a widget id is recycled', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 5), {
-        advanced: true,
+        hasLayoutSize: true,
         tooltip: 'old'
       })
 
       store.registerWidget(seedA, state('string', 'new'))
 
       expect(store.getWidgetRenderState(seedA)).toEqual({})
+    })
+
+    it('updates display and preserves dynamic suppression on re-registration', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 5),
+        {},
+        visibility(
+          { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          { byExtension: true, byConnection: true }
+        )
+      )
+
+      store.registerWidget(
+        seedA,
+        state('number', 10),
+        {},
+        visibility({ canvas: 'never', vueNode: 'never', panel: 'never' })
+      )
+
+      expect(store.getWidgetVisibility(seedA)).toEqual({
+        display: { canvas: 'never', vueNode: 'never', panel: 'never' },
+        suppression: { byExtension: true, byConnection: true }
+      })
+    })
+
+    it('resets visibility when the widget type changes', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(
+        seedA,
+        state('number', 5),
+        {},
+        visibility(
+          { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          { byExtension: true, byConnection: true }
+        )
+      )
+
+      store.registerWidget(
+        seedA,
+        state('string', 'new'),
+        {},
+        visibility({ canvas: 'never', vueNode: 'never', panel: 'never' })
+      )
+
+      expect(store.getWidgetVisibility(seedA)).toEqual({
+        display: { canvas: 'never', vueNode: 'never', panel: 'never' },
+        suppression: { byExtension: false, byConnection: false }
+      })
     })
 
     it('registers a widget with all properties', () => {
@@ -265,6 +326,30 @@ describe('useWidgetValueStore', () => {
   })
 
   describe('widget rename', () => {
+    it('moves state, render state, and visibility together', () => {
+      const store = useWidgetValueStore()
+      const renamed = widgetId(graphA, toNodeId('node-1'), 'renamed')
+      const registered = store.registerWidget(
+        seedA,
+        state('number', 1),
+        { tooltip: 'seed' },
+        visibility(
+          { canvas: 'shown', vueNode: 'shown', panel: 'never' },
+          { byExtension: true, byConnection: false }
+        )
+      )
+      const render = store.getWidgetRenderState(seedA)
+      const component = store.getWidgetVisibility(seedA)
+
+      expect(store.renameWidget(seedA, renamed)).toBe(registered)
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getWidgetVisibility(seedA)).toBeUndefined()
+      expect(store.getWidget(renamed)).toBe(registered)
+      expect(store.getWidgetRenderState(renamed)).toBe(render)
+      expect(store.getWidgetVisibility(renamed)).toBe(component)
+    })
+
     it('rejects an occupied destination without changing either widget', () => {
       const store = useWidgetValueStore()
       const nodeId = toNodeId('node-1')
@@ -352,6 +437,19 @@ describe('useWidgetValueStore', () => {
       ).toBe(false)
     })
 
+    it('maps legacy option updates to the visibility component', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 100))
+
+      expect(
+        store.updateOptions(seedA, { hidden: true, hideInPanel: true })
+      ).toBe(true)
+      expect(store.getWidgetVisibility(seedA)).toEqual({
+        display: { canvas: 'shown', vueNode: 'shown', panel: 'never' },
+        suppression: { byExtension: true, byConnection: false }
+      })
+    })
+
     it('deleteWidget removes registered widgets from node order', () => {
       const store = useWidgetValueStore()
       const steps = widgetId(graphA, toNodeId('node-1'), 'steps')
@@ -360,6 +458,8 @@ describe('useWidgetValueStore', () => {
 
       expect(store.deleteWidget(seedA)).toBe(true)
       expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getWidgetVisibility(seedA)).toBeUndefined()
       expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([
         steps
       ])
@@ -420,19 +520,22 @@ describe('useWidgetValueStore', () => {
       store.clearGraph(graphA)
 
       expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getWidgetVisibility(seedA)).toBeUndefined()
       expect(store.getWidget(seedB)?.value).toBe(2)
     })
 
     it('clearNode removes only the target node values, render state, and order', () => {
       const store = useWidgetValueStore()
       const sibling = widgetId(graphA, toNodeId('node-2'), 'seed')
-      store.registerWidget(seedA, state('number', 1), { advanced: true })
+      store.registerWidget(seedA, state('number', 1), { hasLayoutSize: true })
       store.registerWidget(sibling, state('number', 2))
 
       store.clearNode(graphA, toNodeId('node-1'))
 
       expect(store.getWidget(seedA)).toBeUndefined()
       expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getWidgetVisibility(seedA)).toBeUndefined()
       expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([])
       expect(store.getWidget(sibling)?.value).toBe(2)
     })

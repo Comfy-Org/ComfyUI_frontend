@@ -8,6 +8,10 @@ import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseTog
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { NodeId } from '@/types/nodeId'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface
+} from '@/types/widgetVisibility'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
@@ -37,14 +41,17 @@ const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
     .map((node) => {
       const { widgets = [] } = node
       const advancedWidgets = widgets
-        .filter(
-          (w) =>
-            !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              w.options?.hideInPanel
-            ) && w.options?.advanced
-        )
+        .filter((w) => {
+          const visibility = w.visibility ?? deriveWidgetVisibility(w)
+          return (
+            isWidgetVisibleOnSurface(visibility, 'panel', {
+              showAdvanced: true
+            }) &&
+            !isWidgetVisibleOnSurface(visibility, 'panel', {
+              showAdvanced: false
+            })
+          )
+        })
         .map((widget) => ({ node, widget }))
       return { widgets: advancedWidgets, node }
     })

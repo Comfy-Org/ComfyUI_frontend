@@ -618,6 +618,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 label: widget.name
               },
               {},
+              undefined,
               context
             )
           }
@@ -642,6 +643,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 label: mutation.name
               },
               {},
+              undefined,
               context
             )
           } else {

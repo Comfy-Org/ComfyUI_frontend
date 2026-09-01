@@ -36,6 +36,46 @@ test.describe('Properties panel - Node selection', () => {
     })
 
     test(
+      'hideInPanel keeps a widget on the node but removes it from Parameters',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
+        await comfyPage.page.evaluate(() => {
+          const kSampler = window.app!.graph.nodes.find(
+            (candidate) => candidate.type === 'KSampler'
+          )
+          if (!kSampler) throw new Error('KSampler node not found')
+          window.app!.canvas.selectNode(kSampler)
+        })
+        await expect(panel.panelTitle).toContainText('KSampler')
+        await panel.getTab('Parameters').click()
+        const nodeWidget = node.getByLabel('steps', { exact: true })
+        const panelWidget = panel.contentArea.getByText('steps', {
+          exact: true
+        })
+
+        await expect(nodeWidget).toBeVisible()
+        await expect(panelWidget).toBeVisible()
+
+        await comfyPage.page.evaluate(() => {
+          const node = window.app!.graph.nodes.find(
+            (candidate) => candidate.type === 'KSampler'
+          )
+          const widget = node?.widgets?.find(
+            (candidate) => candidate.name === 'steps'
+          )
+          if (!widget) throw new Error('KSampler steps widget not found')
+          widget.options.hideInPanel = true
+        })
+
+        await panel.getTab('Info').click()
+        await panel.getTab('Parameters').click()
+        await expect(nodeWidget).toBeVisible()
+        await expect(panelWidget).toBeHidden()
+      }
+    )
+
+    test(
       'should not display canvasOnly widgets',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
@@ -54,7 +94,7 @@ test.describe('Properties panel - Node selection', () => {
     )
 
     test(
-      'a linked widget is disabled',
+      'a linked widget is suppressed while its slot remains connected',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
         const seed = panel.contentArea.getByLabel('seed').locator('input')
@@ -63,9 +103,14 @@ test.describe('Properties panel - Node selection', () => {
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
         await ksampler.select()
+        await expect(seed).toBeVisible()
         await expect(seed).toBeEnabled()
-        await intNode.getSlot('INT').dragTo(ksampler.getSlot('seed'))
-        await expect(seed).toBeDisabled()
+        const seedSlot = ksampler.getSlot('seed')
+        await intNode.getSlot('INT').dragTo(seedSlot)
+        await expect(seed).toHaveCount(0)
+        await expect
+          .poll(() => comfyPage.vueNodes.isSlotConnected(seedSlot))
+          .toBe(true)
       }
     )
   })

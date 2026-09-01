@@ -30,8 +30,6 @@ export class ComboWidget
   extends BaseSteppedWidget<IStringComboWidget | IComboWidget>
   implements IComboWidget
 {
-  override type = 'combo' as const
-
   override get _displayValue() {
     if (this.computedDisabled) return ''
 

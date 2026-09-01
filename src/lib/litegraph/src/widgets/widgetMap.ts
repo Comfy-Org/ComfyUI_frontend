@@ -89,12 +89,17 @@ function collectDescriptors(value: object) {
   return descriptors
 }
 
-function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
+function adoptConcreteWidget<C extends BaseWidget>(
+  widget: IBaseWidget,
+  concrete: C
+): C {
   if (concrete === widget || !Object.isExtensible(widget)) return concrete
 
+  const rawOptions = widget.options
   const descriptors = collectDescriptors(concrete)
   const foreignDescriptors = collectDescriptors(widget)
   for (const [key, foreignDescriptor] of foreignDescriptors) {
+    if (key === 'options') continue
     const concreteDescriptor = descriptors.get(key)
     if (!concreteDescriptor) {
       descriptors.set(key, foreignDescriptor)
@@ -120,8 +125,21 @@ function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
     if (
       foreignDescriptor.get === undefined &&
       foreignDescriptor.set === undefined
-    )
+    ) {
+      if (
+        key === 'hidden' &&
+        concreteDescriptor.get &&
+        concreteDescriptor.set
+      ) {
+        descriptors.set(key, {
+          configurable: foreignDescriptor.configurable,
+          enumerable: foreignDescriptor.enumerable,
+          get: concreteDescriptor.get,
+          set: concreteDescriptor.set
+        })
+      }
       continue
+    }
 
     if (concreteDescriptor?.get && concreteDescriptor.set) {
       descriptors.set(key, {
@@ -150,7 +168,9 @@ function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
     return concrete
 
   Object.defineProperties(widget, Object.fromEntries(descriptors))
-  return widget as unknown as C
+  const adopted = widget as unknown as C
+  if (adopted instanceof BaseWidget) adopted.options = rawOptions
+  return adopted
 }
 
 /**

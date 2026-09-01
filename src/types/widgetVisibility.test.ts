@@ -1,0 +1,214 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  applyLegacyHiddenWrite,
+  deriveWidgetDisplay,
+  deriveWidgetVisibility,
+  isLegacyHiddenWidgetType,
+  isLegacyWidgetHidingType,
+  isWidgetAdvanced,
+  isWidgetHidden,
+  isWidgetHiddenInPanel,
+  isWidgetVisibleOnSurface,
+  occupiesCanvasRow,
+  setWidgetAdvanced,
+  setWidgetHiddenInPanel,
+  WIDGET_SURFACES
+} from '@/types/widgetVisibility'
+
+describe('deriveWidgetDisplay', () => {
+  it('defaults to shown on every surface', () => {
+    expect(deriveWidgetDisplay({ type: 'number' })).toEqual({
+      canvas: 'shown',
+      vueNode: 'shown',
+      panel: 'shown'
+    })
+  })
+
+  it('spec advanced gates the vueNode and panel surfaces only', () => {
+    expect(
+      deriveWidgetDisplay({ type: 'number', options: { advanced: true } })
+    ).toEqual({ canvas: 'shown', vueNode: 'advanced', panel: 'advanced' })
+  })
+
+  it('runtime advanced property gates every surface', () => {
+    expect(deriveWidgetDisplay({ type: 'number', advanced: true })).toEqual({
+      canvas: 'advanced',
+      vueNode: 'advanced',
+      panel: 'advanced'
+    })
+  })
+
+  it('canvasOnly removes vueNode and panel surfaces', () => {
+    expect(
+      deriveWidgetDisplay({ type: 'combo', options: { canvasOnly: true } })
+    ).toEqual({ canvas: 'shown', vueNode: 'never', panel: 'never' })
+  })
+
+  it('hideInPanel removes only the panel surface', () => {
+    expect(
+      deriveWidgetDisplay({ type: 'text', options: { hideInPanel: true } })
+    ).toEqual({ canvas: 'shown', vueNode: 'shown', panel: 'never' })
+  })
+})
+
+describe('isWidgetVisibleOnSurface', () => {
+  const shown = deriveWidgetVisibility({ type: 'number' })
+
+  it.for([
+    ['shown', false, true],
+    ['advanced', false, false],
+    ['advanced', true, true],
+    ['never', true, false]
+  ] as const)(
+    '%s with showAdvanced %s resolves to %s on every surface',
+    ([tier, showAdvanced, expected]) => {
+      const visibility = deriveWidgetVisibility({ type: 'number' })
+      for (const surface of WIDGET_SURFACES) {
+        visibility.display[surface] = tier
+        expect(
+          isWidgetVisibleOnSurface(visibility, surface, { showAdvanced })
+        ).toBe(expected)
+      }
+    }
+  )
+
+  it('suppression hides on every surface regardless of tier', () => {
+    const suppressed = {
+      display: { ...shown.display },
+      suppression: { byExtension: false, byConnection: true }
+    }
+    expect(
+      isWidgetVisibleOnSurface(suppressed, 'canvas', { showAdvanced: true })
+    ).toBe(false)
+    expect(
+      isWidgetVisibleOnSurface(suppressed, 'vueNode', { showAdvanced: true })
+    ).toBe(false)
+    expect(
+      isWidgetVisibleOnSurface(suppressed, 'panel', { showAdvanced: true })
+    ).toBe(false)
+  })
+
+  it('advanced tier is gated by the view', () => {
+    const advanced = deriveWidgetVisibility({
+      type: 'number',
+      advanced: true
+    })
+    expect(
+      isWidgetVisibleOnSurface(advanced, 'canvas', { showAdvanced: false })
+    ).toBe(false)
+    expect(
+      isWidgetVisibleOnSurface(advanced, 'canvas', { showAdvanced: true })
+    ).toBe(true)
+  })
+})
+
+describe('occupiesCanvasRow', () => {
+  it('keeps the row for a connection-suppressed widget', () => {
+    const visibility = deriveWidgetVisibility({ type: 'number' })
+    visibility.suppression.byConnection = true
+    expect(occupiesCanvasRow(visibility, { showAdvanced: false })).toBe(true)
+    expect(
+      isWidgetVisibleOnSurface(visibility, 'canvas', { showAdvanced: false })
+    ).toBe(false)
+  })
+
+  it('keeps the row for a connection-suppressed advanced widget regardless of the toggle', () => {
+    const visibility = deriveWidgetVisibility({
+      type: 'number',
+      advanced: true
+    })
+    visibility.suppression.byConnection = true
+    expect(occupiesCanvasRow(visibility, { showAdvanced: false })).toBe(true)
+  })
+
+  it('drops the row for extension-hidden widgets', () => {
+    const visibility = deriveWidgetVisibility({ type: 'number', hidden: true })
+    visibility.suppression.byConnection = true
+    expect(occupiesCanvasRow(visibility, { showAdvanced: true })).toBe(false)
+  })
+
+  it('follows the canvas tier when not suppressed', () => {
+    const visibility = deriveWidgetVisibility({
+      type: 'number',
+      advanced: true
+    })
+    expect(occupiesCanvasRow(visibility, { showAdvanced: false })).toBe(false)
+    expect(occupiesCanvasRow(visibility, { showAdvanced: true })).toBe(true)
+  })
+})
+
+describe('legacy facades', () => {
+  it.for([
+    ['options.hidden', { type: 'number', options: { hidden: true } }],
+    ['widget.hidden', { type: 'number', hidden: true }],
+    ['type "hidden"', { type: 'hidden' }],
+    ['tschide type', { type: 'tschideSeed' }]
+  ] as const)('registration hidden via %s starts suppressed', ([, source]) => {
+    const visibility = deriveWidgetVisibility(source)
+    expect(visibility.suppression.byExtension).toBe(true)
+    expect(isWidgetHidden(visibility)).toBe(true)
+  })
+
+  it('tolerates nullish widget types written by extensions', () => {
+    expect(isLegacyHiddenWidgetType(null)).toBe(false)
+    expect(isLegacyHiddenWidgetType(undefined)).toBe(false)
+    expect(isLegacyWidgetHidingType(null)).toBe(false)
+    expect(isLegacyWidgetHidingType(undefined)).toBe(false)
+  })
+
+  it('canvasOnly plus hideInPanel does not read as hidden', () => {
+    const canvasOnly = deriveWidgetVisibility({
+      type: 'combo',
+      options: { canvasOnly: true, hideInPanel: true }
+    })
+    expect(isWidgetHidden(canvasOnly)).toBe(false)
+  })
+
+  it('hidden writes round-trip without losing static display tiers', () => {
+    const visibility = deriveWidgetVisibility({
+      type: 'number',
+      advanced: true
+    })
+    applyLegacyHiddenWrite(visibility, true)
+    expect(isWidgetHidden(visibility)).toBe(true)
+    applyLegacyHiddenWrite(visibility, false)
+    expect(isWidgetHidden(visibility)).toBe(false)
+    expect(visibility.display.canvas).toBe('advanced')
+  })
+
+  it('hideInPanel writes toggle the panel tier around its vueNode baseline', () => {
+    const advanced = deriveWidgetVisibility({
+      type: 'number',
+      options: { advanced: true }
+    })
+    setWidgetHiddenInPanel(advanced, true)
+    expect(isWidgetHiddenInPanel(advanced)).toBe(true)
+    setWidgetHiddenInPanel(advanced, false)
+    expect(advanced.display.panel).toBe('advanced')
+
+    const canvasOnly = deriveWidgetVisibility({
+      type: 'combo',
+      options: { canvasOnly: true }
+    })
+    setWidgetHiddenInPanel(canvasOnly, false)
+    expect(canvasOnly.display.panel).toBe('never')
+  })
+
+  it('advanced writes toggle shown tiers only', () => {
+    const visibility = deriveWidgetVisibility({
+      type: 'number',
+      options: { hideInPanel: true }
+    })
+    setWidgetAdvanced(visibility, true)
+    expect(isWidgetAdvanced(visibility)).toBe(true)
+    expect(visibility.display).toEqual({
+      canvas: 'advanced',
+      vueNode: 'advanced',
+      panel: 'never'
+    })
+    setWidgetAdvanced(visibility, false)
+    expect(isWidgetAdvanced(visibility)).toBe(false)
+    expect(visibility.display.panel).toBe('never')
+  })
+})

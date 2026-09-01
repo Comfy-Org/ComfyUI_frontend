@@ -8,14 +8,13 @@
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
     }"
   >
-    <template v-for="widget in processedWidgets" :key="widget.renderKey">
+    <template v-for="widget in renderedWidgets" :key="widget.renderKey">
       <div
-        v-if="shouldRenderRow(widget)"
-        :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
+        :data-testid="showsControl(widget) ? 'node-widget' : undefined"
         :class="
           cn(
             'group col-span-full grid grid-cols-subgrid items-stretch',
-            !isConvertedWidget(widget) && 'lg-node-widget'
+            showsControl(widget) && 'lg-node-widget'
           )
         "
       >
@@ -39,11 +38,12 @@
             :has-error="widget.hasError"
             :index="widget.slotMetadata.index"
             :socketless="widget.simplified.spec?.socketless"
+            :standalone="!showsControl(widget)"
             dot-only
           />
         </div>
         <AppInput
-          v-if="!isConvertedWidget(widget)"
+          v-if="showsControl(widget)"
           :widget-id="widget.widgetId"
           :name="widget.simplified.name"
           :enable="canSelectInputs && !widget.simplified.options?.disabled"
@@ -96,8 +96,16 @@ const isConvertedWidgetType = (type: string) =>
 const isConvertedWidget = (widget: WidgetGridItem) =>
   isConvertedWidgetType(widget.simplified.type)
 
+const isSuppressedSocketRow = (widget: WidgetGridItem) =>
+  !!widget.suppressedByConnection && !!widget.slotMetadata
+
+const showsControl = (widget: WidgetGridItem) =>
+  !isConvertedWidget(widget) && widget.visible
+
 const shouldRenderRow = (widget: WidgetGridItem) =>
-  isConvertedWidget(widget) ? !!widget.slotMetadata : widget.visible
+  isConvertedWidget(widget)
+    ? !!widget.slotMetadata
+    : widget.visible || isSuppressedSocketRow(widget)
 
 const {
   processedWidgets,
@@ -115,12 +123,12 @@ const {
 
 useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
 const canvasStore = useCanvasStore()
+const renderedWidgets = computed(() => processedWidgets.filter(shouldRenderRow))
 
 const gridTemplateRows = computed(() =>
-  processedWidgets
-    .filter(shouldRenderRow)
+  renderedWidgets.value
     .map((widget) =>
-      !isConvertedWidget(widget) &&
+      showsControl(widget) &&
       (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
         ? 'auto'
         : 'min-content'
@@ -129,8 +137,7 @@ const gridTemplateRows = computed(() =>
 )
 
 const layoutKey = computed(() =>
-  processedWidgets
-    .filter((widget) => widget.visible)
+  renderedWidgets.value
     .map((widget) => `${widget.renderKey}:${widget.slotMetadata?.index ?? ''}`)
     .join('|')
 )

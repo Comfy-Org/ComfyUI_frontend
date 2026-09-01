@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const { state } = vi.hoisted(() => ({
   state: {
-    extension: null as { nodeCreated: (node: unknown) => void } | null,
-    widgetState: undefined as { options: Record<string, unknown> } | undefined
+    extension: null as { nodeCreated: (node: unknown) => void } | null
   }
 }))
 
@@ -13,10 +12,6 @@ vi.mock('@/services/extensionService', () => ({
       state.extension = ext
     }
   })
-}))
-
-vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({ getWidget: () => state.widgetState })
 }))
 
 await import('./createBoundingBoxes')
@@ -46,10 +41,6 @@ function makeNode(connected: boolean, comfyClass = 'CreateBoundingBoxes') {
   }
 }
 
-beforeEach(() => {
-  state.widgetState = undefined
-})
-
 describe('Comfy.CreateBoundingBoxes extension', () => {
   it('ignores nodes of other classes', () => {
     const node = makeNode(true, 'SomethingElse')
@@ -63,7 +54,6 @@ describe('Comfy.CreateBoundingBoxes extension', () => {
     expect(node.setSize).toHaveBeenCalledWith([420, 560])
     expect(node.widgets[0].hidden).toBe(true)
     expect(node.widgets[1].hidden).toBe(true)
-    expect(node.widgets[0].options.hidden).toBe(true)
     expect(node.widgets[2].hidden).toBe(false)
   })
 
@@ -71,7 +61,6 @@ describe('Comfy.CreateBoundingBoxes extension', () => {
     const node = makeNode(false)
     state.extension!.nodeCreated(node)
     expect(node.widgets[0].hidden).toBe(false)
-    expect(node.widgets[0].options.hidden).toBe(false)
   })
 
   it('always hides the internal last_incoming widget', () => {
@@ -79,16 +68,7 @@ describe('Comfy.CreateBoundingBoxes extension', () => {
       const node = makeNode(connected)
       state.extension!.nodeCreated(node)
       expect(node.widgets[3].hidden).toBe(true)
-      expect(node.widgets[3].options.hidden).toBe(true)
     }
-  })
-
-  it('writes visibility through the widget value store when present', () => {
-    state.widgetState = { options: {} }
-    const node = makeNode(true)
-    node.widgets[0].widgetId = 'w-0'
-    state.extension!.nodeCreated(node)
-    expect(state.widgetState.options.hidden).toBe(true)
   })
 
   it('chains a connections-change handler that re-syncs visibility', () => {

@@ -6,8 +6,6 @@ export class VideoEditWidget
   extends BaseWidget<IVideoEditWidget>
   implements IVideoEditWidget
 {
-  override type = 'videoedit' as const
-
   drawWidget(): void {}
 
   onClick(_options: WidgetEventOptions): void {}

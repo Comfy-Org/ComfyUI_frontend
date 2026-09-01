@@ -15,6 +15,7 @@ import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import { isWidgetHidden } from '@/types/widgetVisibility'
 
 function createTestWidget(
   node: LGraphNode,
@@ -42,11 +43,14 @@ class MutableTypeWidget extends BaseWidget<IBaseWidget<number, string>> {
   onClick(_options: WidgetEventOptions): void {}
 }
 
-function createMutableTypeWidget(node: LGraphNode): MutableTypeWidget {
+function createMutableTypeWidget(
+  node: LGraphNode,
+  name = 'typeChangedWidget'
+): MutableTypeWidget {
   return new MutableTypeWidget(
     {
       type: 'number',
-      name: 'typeChangedWidget',
+      name,
       value: 42,
       options: { min: 0, max: 100 },
       y: 0
@@ -96,6 +100,85 @@ describe('BaseWidget store integration', () => {
       expect(widget.disabled).toBe(true)
       expect(widget.advanced).toBe(true)
     })
+
+    it('keeps visibility writes shimmed when options are replaced', () => {
+      const widget = createTestWidget(node)
+
+      widget.options = { ...widget.options }
+      widget.options.hidden = true
+      widget.options.hideInPanel = true
+      widget.options.advanced = true
+
+      expect(widget.hidden).toBe(true)
+      expect(widget.visibility.display.panel).toBe('never')
+      expect(widget.advanced).toBe(true)
+
+      widget.setNodeId(toNodeId(1))
+      widget.options = { ...widget.options }
+      widget.options.hidden = false
+      widget.options.hideInPanel = false
+      widget.options.advanced = false
+
+      expect(widget.hidden).toBe(false)
+      expect(widget.visibility.display.panel).toBe('shown')
+      expect(widget.advanced).toBe(false)
+    })
+
+    it('supplies shimmed options when constructed without them', () => {
+      const widget = new MutableTypeWidget(
+        fromAny({
+          type: 'GHOST',
+          name: 'ghost',
+          value: 0,
+          y: 0
+        }),
+        node
+      )
+
+      expect(widget.options.hidden).toBe(false)
+
+      widget.options.hidden = true
+
+      expect(widget.hidden).toBe(true)
+    })
+
+    it('keeps options.hidden component-driven when an extension shadows the hidden accessor', () => {
+      const widget = createTestWidget(node)
+
+      Object.defineProperty(widget, 'hidden', {
+        configurable: true,
+        get: () => true,
+        set: () => {}
+      })
+
+      expect(widget.hidden).toBe(true)
+      expect(widget.options.hidden).toBe(false)
+      expect(widget.visibility.suppression.byExtension).toBe(false)
+    })
+
+    it.for(['hidden', 'hideInPanel'] as const)(
+      'keeps options.%s observable through object operations',
+      (property) => {
+        const widget = createTestWidget(node)
+
+        widget.options[property] = true
+
+        expect(Object.keys(widget.options)).toContain(property)
+        expect({ ...widget.options }).toMatchObject({ [property]: true })
+        expect(property in widget.options).toBe(true)
+        expect(JSON.parse(JSON.stringify(widget.options))).toMatchObject({
+          [property]: true
+        })
+        expect(
+          Object.getOwnPropertyDescriptor(widget.options, property)
+        ).toEqual(expect.objectContaining({ enumerable: true, value: true }))
+
+        delete widget.options[property]
+
+        expect(property in widget.options).toBe(false)
+        expect(widget.options[property]).toBe(false)
+      }
+    )
   })
 
   describe('metadata properties after registration', () => {
@@ -141,6 +224,46 @@ describe('BaseWidget store integration', () => {
       expect(state?.options.hidden).toBe(false)
       expect(widget.hidden).toBe(false)
       expect(widget.advanced).toBe(true)
+    })
+
+    it('maps legacy visibility APIs to the visibility component', () => {
+      const widget = createMutableTypeWidget(node, 'visibleWidget')
+      widget.setNodeId(toNodeId(1))
+      const id = widgetId(graph.id, toNodeId(1), 'visibleWidget')
+
+      const visibility = () => {
+        const component = store.getWidgetVisibility(id)
+        return component && isWidgetHidden(component)
+      }
+
+      widget.options.hidden = true
+      expect(visibility()).toBe(true)
+      expect(widget.hidden).toBe(true)
+
+      widget.hidden = false
+      expect(visibility()).toBe(false)
+      expect(widget.options.hidden).toBe(false)
+
+      widget.type = 'smZhidden'
+      expect(visibility()).toBe(true)
+      widget.type = 'number'
+      expect(visibility()).toBe(false)
+
+      widget.options.hideInPanel = true
+      expect(store.getWidgetVisibility(id)?.display.panel).toBe('never')
+      delete widget.options.hideInPanel
+      expect(store.getWidgetVisibility(id)?.display.panel).toBe('shown')
+    })
+
+    it('clears stale hidden state when a converted widget is restored', () => {
+      const widget = createMutableTypeWidget(node, 'convertedWidget')
+      widget.setNodeId(toNodeId(1))
+
+      widget.type = 'converted-widget'
+      widget.hidden = true
+      widget.type = 'number'
+
+      expect(widget.hidden).toBe(false)
     })
 
     it('syncs value with store', () => {
@@ -199,8 +322,8 @@ describe('BaseWidget store integration', () => {
       expect(state?.disabled).toBe(false)
       expect(state?.label).toBeUndefined()
 
-      expect(widget.hidden).toBeUndefined()
-      expect(widget.advanced).toBeUndefined()
+      expect(widget.hidden).toBe(false)
+      expect(widget.advanced).toBe(false)
     })
 
     it('registers widget value accessible via getWidget', () => {

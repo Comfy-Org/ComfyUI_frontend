@@ -9,8 +9,6 @@ export class SliderWidget
   extends BaseWidget<ISliderWidget>
   implements ISliderWidget
 {
-  override type = 'slider' as const
-
   marker?: number
 
   /**
