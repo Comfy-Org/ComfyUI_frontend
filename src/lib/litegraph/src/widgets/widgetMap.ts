@@ -75,36 +75,81 @@ export type WidgetTypeMap = {
 
 const toWidgetClass = instantiateClass
 
+function collectDescriptors(value: object) {
+  const descriptors = new Map<PropertyKey, PropertyDescriptor>()
+  let current: object | null = value
+  while (current && current !== Object.prototype) {
+    for (const key of Reflect.ownKeys(current)) {
+      if (key === 'constructor' || descriptors.has(key)) continue
+      const descriptor = Object.getOwnPropertyDescriptor(current, key)
+      if (descriptor) descriptors.set(key, descriptor)
+    }
+    current = Object.getPrototypeOf(current) as object | null
+  }
+  return descriptors
+}
+
 function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
   if (concrete === widget || !Object.isExtensible(widget)) return concrete
 
-  const descriptors: PropertyDescriptorMap = {
-    ...Object.getOwnPropertyDescriptors(concrete)
-  }
-  let prototype = Object.getPrototypeOf(concrete) as object | null
-  while (prototype && prototype !== Object.prototype) {
-    for (const [key, descriptor] of Object.entries(
-      Object.getOwnPropertyDescriptors(prototype)
-    )) {
-      if (
-        descriptors[key] === undefined &&
-        (descriptor.get !== undefined || descriptor.set !== undefined)
-      )
-        descriptors[key] = descriptor
+  const descriptors = collectDescriptors(concrete)
+  const foreignDescriptors = collectDescriptors(widget)
+  for (const [key, foreignDescriptor] of foreignDescriptors) {
+    const concreteDescriptor = descriptors.get(key)
+    if (!concreteDescriptor) {
+      descriptors.set(key, foreignDescriptor)
+      continue
     }
-    prototype = Object.getPrototypeOf(prototype) as object | null
+    const concreteIsGetterOnly =
+      concreteDescriptor.get !== undefined &&
+      concreteDescriptor.set === undefined
+    if (concreteIsGetterOnly && foreignDescriptor.set !== undefined) {
+      descriptors.set(key, {
+        ...foreignDescriptor,
+        get: foreignDescriptor.get ?? concreteDescriptor.get
+      })
+      continue
+    }
+    if (
+      concreteIsGetterOnly &&
+      Object.getOwnPropertyDescriptor(widget, key)?.writable === true
+    ) {
+      descriptors.set(key, foreignDescriptor)
+      continue
+    }
+    if (
+      foreignDescriptor.get === undefined &&
+      foreignDescriptor.set === undefined
+    )
+      continue
+
+    if (concreteDescriptor?.get && concreteDescriptor.set) {
+      descriptors.set(key, {
+        configurable: foreignDescriptor.configurable,
+        enumerable: foreignDescriptor.enumerable,
+        get() {
+          foreignDescriptor.get?.call(this)
+          return concreteDescriptor.get?.call(this)
+        },
+        set(value: unknown) {
+          concreteDescriptor.set?.call(this, value)
+          foreignDescriptor.set?.call(this, value)
+        }
+      })
+    }
   }
 
-  const existingDescriptors = Object.getOwnPropertyDescriptors(widget)
   if (
-    Object.keys(descriptors).some(
-      (key) => existingDescriptors[key]?.configurable === false
+    Reflect.ownKeys(widget).some(
+      (key) =>
+        descriptors.has(key) &&
+        Object.getOwnPropertyDescriptor(widget, key)?.configurable === false
     ) ||
     !Reflect.setPrototypeOf(widget, Object.getPrototypeOf(concrete))
   )
     return concrete
 
-  Object.defineProperties(widget, descriptors)
+  Object.defineProperties(widget, Object.fromEntries(descriptors))
   return widget as unknown as C
 }
 
