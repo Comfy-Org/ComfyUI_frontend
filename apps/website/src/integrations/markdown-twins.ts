@@ -6,6 +6,35 @@ import { fileURLToPath } from 'node:url'
 import { isExcludedFromSitemap } from '../config/indexing'
 import { htmlToTwin, renderTwin } from '../lib/markdown-twin'
 import { markdownTwinPath } from '../lib/markdown-twin-path'
+import { writeFullText, writeSectionIndexes } from '../lib/section-index'
+import type { SectionSpec } from '../lib/section-index'
+
+/** Sections that get their own llms.txt, the Vercel and Cloudflare pattern. */
+const SECTIONS: SectionSpec[] = [
+  {
+    prefix: '/learning',
+    title: 'Learning',
+    summary:
+      'Hands-on ComfyUI tutorials by discipline: basics, ad creative, animation, and VFX.'
+  },
+  {
+    prefix: '/customers',
+    title: 'Customers',
+    summary:
+      'How studios, brands, artists, and universities use ComfyUI in production.'
+  },
+  {
+    prefix: '/events',
+    title: 'Events',
+    summary:
+      'Livestreams, hackathons, and community meetups, upcoming and recorded.'
+  },
+  {
+    prefix: '/cloud/supported-nodes',
+    title: 'Supported nodes on Comfy Cloud',
+    summary: 'Custom-node packs preinstalled on Comfy Cloud, one page per pack.'
+  }
+]
 
 export interface TwinReport {
   written: string[]
@@ -73,12 +102,19 @@ export function markdownTwins(): AstroIntegration {
     name: 'comfy:markdown-twins',
     hooks: {
       'astro:build:done': async ({ dir, pages, logger }) => {
+        const root = fileURLToPath(dir)
         const report = await writeMarkdownTwins(
-          fileURLToPath(dir),
+          root,
           pages.map((page) => page.pathname)
         )
+        const indexes = await writeSectionIndexes(
+          root,
+          report.written,
+          SECTIONS
+        )
+        const fullText = await writeFullText(root, report.written)
         logger.info(
-          `wrote ${report.written.length} markdown twins, skipped ${report.skipped.length}`
+          `wrote ${report.written.length} markdown twins, skipped ${report.skipped.length}, ${indexes.length} section indexes, and ${fullText}`
         )
       }
     }
