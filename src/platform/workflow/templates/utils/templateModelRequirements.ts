@@ -3,6 +3,11 @@ import type {
   FlattenableWorkflowNode
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
+import {
+  getModelFileKey,
+  getSelectedModelsMetadata,
+  isNodeAndAncestorsActive
+} from '@/platform/workflow/core/utils/modelRequirements'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { zModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -57,29 +62,20 @@ function getDeclaredModels(value: unknown): ModelFile[] {
   })
 }
 
-function getSelectedModelNames(value: unknown): Set<string> {
-  const widgetValues = Array.isArray(value)
-    ? value
-    : isRecord(value)
-      ? Object.values(value)
-      : []
+function getSelectedNodeModels(
+  node: FlattenableWorkflowNode,
+  workflowModels: readonly ModelFile[]
+): ModelFile[] {
+  const nodeModels = isRecord(node.properties)
+    ? getDeclaredModels(node.properties.models)
+    : []
 
-  return new Set(
-    widgetValues.filter(
-      (widgetValue): widgetValue is string =>
-        typeof widgetValue === 'string' && widgetValue.trim().length > 0
-    )
-  )
-}
-
-function getSelectedNodeModels(node: FlattenableWorkflowNode): ModelFile[] {
-  if (!isRecord(node.properties)) return []
-
-  const selectedModelNames = getSelectedModelNames(node.widgets_values)
-  if (selectedModelNames.size === 0) return []
-
-  return getDeclaredModels(node.properties.models).filter((model) =>
-    selectedModelNames.has(model.name)
+  return (
+    getSelectedModelsMetadata({
+      type: node.type,
+      widgets_values: node.widgets_values,
+      properties: { models: [...nodeModels, ...workflowModels] }
+    }) ?? []
   )
 }
 
@@ -98,10 +94,11 @@ function getNodeDisplayName(node: FlattenableWorkflowNode): string {
 }
 
 function getSelectedNodeModelDetails(
-  node: FlattenableWorkflowNode
+  node: FlattenableWorkflowNode,
+  workflowModels: readonly ModelFile[]
 ): TemplateModelRequirementDetail[] {
   const usedBy = getNodeDisplayName(node)
-  return getSelectedNodeModels(node).map((model) => ({
+  return getSelectedNodeModels(node, workflowModels).map((model) => ({
     model,
     usedBy: [usedBy]
   }))
@@ -120,7 +117,7 @@ function mergeModelRequirementDetails(
   >()
 
   for (const { model, usedBy } of details) {
-    const key = JSON.stringify([model.name, model.directory])
+    const key = getModelFileKey(model)
     const existing = aggregates.get(key)
     if (!existing) {
       aggregates.set(key, {
@@ -154,13 +151,12 @@ export function extractTemplateModelRequirementDetails(
 ): readonly TemplateModelRequirementDetail[] {
   if (!isRecord(workflow)) return []
 
-  const nodeDetails = flattenWorkflowNodes(
-    toFlattenableWorkflow(workflow)
-  ).flatMap(getSelectedNodeModelDetails)
-  const topLevelDetails = getDeclaredModels(workflow.models).map((model) => ({
-    model,
-    usedBy: []
-  }))
+  const workflowModels = getDeclaredModels(workflow.models)
+  const nodes = flattenWorkflowNodes(toFlattenableWorkflow(workflow))
+  const nodesById = new Map(nodes.map((node) => [String(node.id), node]))
+  const nodeDetails = nodes
+    .filter((node) => isNodeAndAncestorsActive(node, nodesById))
+    .flatMap((node) => getSelectedNodeModelDetails(node, workflowModels))
 
-  return mergeModelRequirementDetails([...nodeDetails, ...topLevelDetails])
+  return mergeModelRequirementDetails(nodeDetails)
 }
