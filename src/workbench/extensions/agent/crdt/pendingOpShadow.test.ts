@@ -152,6 +152,19 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     expect(surface.isPending(node('n1'))).toBe(true)
   })
 
+  it('starts subscriptions added during notification on the next change', () => {
+    const surface = createPendingOpShadowSurface()
+    const lateChanges: ShadowChange[] = []
+    surface.subscribe(() => {
+      surface.subscribe((change) => lateChanges.push(change))
+    })
+
+    surface.show('op-1', [node('n1')])
+    expect(lateChanges).toEqual([])
+    surface.show('op-2', [node('n2')])
+    expect(lateChanges).toEqual([{ type: 'show', opId: 'op-2' }])
+  })
+
   it('snapshots are decoupled from caller input and internal state', () => {
     const surface = createPendingOpShadowSurface()
     const input = [node('n1')]

@@ -84,7 +84,9 @@ export interface PendingOpShadowSurface {
   size(): number
   /**
    * Observe surface changes. The listener runs synchronously after each
-   * mutation that changed state. Returns an unsubscribe function.
+   * mutation that changed state. Reentrant mutations are delivered
+   * synchronously; listeners added during delivery begin on the next change.
+   * Returns an unsubscribe function.
    */
   subscribe(listener: (change: ShadowChange) => void): () => void
 }
