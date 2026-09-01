@@ -24,8 +24,8 @@ function submit(): void {
 }
 
 function onEnter(event: KeyboardEvent): void {
-  if (event.isComposing) return
   event.preventDefault()
+  if (event.isComposing) return
   submit()
 }
 </script>

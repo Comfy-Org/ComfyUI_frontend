@@ -41,19 +41,20 @@ describe('CompactAgentComposer', () => {
     const textbox = screen.getByRole('textbox')
     await userEvent.type(textbox, '生成图片')
 
-    textbox.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        key: 'Enter',
-        isComposing: true,
-        bubbles: true
-      })
-    )
+    const enter = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      isComposing: true,
+      bubbles: true,
+      cancelable: true
+    })
+    textbox.dispatchEvent(enter)
 
+    expect(enter.defaultPrevented).toBe(true)
     expect(useAgentComposerStore().pendingSubmission).toBeNull()
     expect(useAgentPanelStore().isOpen).toBe(false)
   })
 
-  it('opens the full panel only from its explicit control', async () => {
+  it('opens the full panel from its explicit control without submitting', async () => {
     render(CompactAgentComposer, {
       global: { plugins: [i18n] }
     })
