@@ -5,7 +5,6 @@ const baseRoutes = {
   download: '/download',
   cloud: '/cloud',
   cloudPricing: '/cloud/pricing',
-  cloudEnterprise: '/cloud/enterprise',
   enterprise: '/enterprise',
   managedBuilds: '/enterprise/managed-builds',
   api: '/api',

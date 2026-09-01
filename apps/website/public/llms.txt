@@ -75,7 +75,8 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [Comfy API](https://comfy.org/api/): Turn any ComfyUI workflow into a production endpoint: submit jobs, inject dynamic inputs at runtime, and run open and partner models through one API on Comfy Cloud.
 - [Comfy MCP](https://comfy.org/mcp/): The full ComfyUI engine over the Model Context Protocol, so Claude Code, Claude Desktop, and any MCP client can build workflows and generate images, video, audio, and 3D, on Comfy Cloud or your own machine.
 - [Comfy CLI](https://comfy.org/cli/): The command line for the ComfyUI engine: generate images, video, audio, and 3D from Claude Code, Codex, Cursor, or any shell, with JSON output built for agents and scripts.
-- [Comfy Enterprise](https://comfy.org/cloud/enterprise/): ComfyUI for teams: dedicated GPU compute, priority queuing, custom SLAs, team workspaces with role-based access and SSO, bring-your-own API keys, and models cleared for commercial use.
+- [Comfy Enterprise](https://comfy.org/enterprise/): ComfyUI for teams: dedicated GPU compute, priority queuing, custom SLAs, team workspaces with role-based access and SSO, bring-your-own API keys, and models cleared for commercial use.
+- [ComfyUI Managed Builds](https://comfy.org/enterprise/managed-builds/): Reproducible ComfyUI environments for Enterprise: pin a release, runtime, custom nodes, and models, then build a deployable image.
 - [Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives/): Comfy experts who embed with your team, build your ComfyUI workflows, and teach your team to scale them.
 - [MiniMax Commercial License](https://comfy.org/minimax/license/): Commercial-use licenses for running MiniMax H3 and MiniMax Audio & Music locally; Comfy is the only official reseller, with Professional and Enterprise tiers.
 - [Launches](https://comfy.org/launches/): Everything new in ComfyUI in one place: the latest launches across desktop, cloud, and the core engine.
@@ -89,6 +90,7 @@ Languages: comfy.org is published in English and Simplified Chinese. Nearly ever
 - [LTX 2.5 (Lightricks, video model)](https://comfy.org/ltx-2.5/): Open weights: free to run on your own GPU, or on Comfy Cloud alongside every other model.
 - [MiniMax H3 (MiniMax, video model)](https://comfy.org/minimax-h3/): Open weights: multi-modal in and out, native stereo audio on every clip, up to 2K and 5-15s per generation.
 - [MiniMax Music 3 (MiniMax, music model)](https://comfy.org/minimax-music-3/): Open-weight text-to-music model, on Comfy Cloud or your own GPU.
+- [Pixal3D + TRELLIS.2 (Image to 3D model)](https://comfy.org/pixal3d-trellis2/): Turn a single image into a textured 3D model you can inspect, download, and continue refining on the graph.
 - [Seedance 2.5 (ByteDance, video model)](https://comfy.org/seedance-2.5/): Cinematic multi-shot video with native audio, from text or image.
 - [Wan 3.0 (Alibaba, video model)](https://comfy.org/wan-3.0/): Up to 30 seconds of video from a text prompt, an image, or video, image, and audio references, with sound produced alongside the picture, on Comfy Cloud.
 - [Wan Animate 2 (Alibaba, character animation model)](https://comfy.org/wan-animate-2/): Open source: transfers motion from a driving video onto your character, on Comfy Cloud or your own hardware.
