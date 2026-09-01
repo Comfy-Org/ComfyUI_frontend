@@ -416,11 +416,21 @@ export function useAgentCrdtFollower(
       bytes: update.update instanceof Uint8Array ? update.update.length : null,
       applied
     })
-    if (!applied)
+    if (!applied) {
       recordDevEvent('doc_update_dropped', {
         workflowId: update.workflowId,
         seq: update.seq
       })
+      // The follower doc already has this update; only the projection into
+      // the graph was dropped. A later bind() would attach to a doc that
+      // already contains the missed change and could never replay it, so
+      // rebind now - `bind()` re-arms reconcileNextFrame, which reconciles
+      // the graph against the doc's current state on the next frame.
+      reportError(new Error('agent CRDT frame dropped, forcing rebind'), {
+        errorType: 'agent_crdt_frame_dropped'
+      })
+      adapter.bind(update.workflowId, bridge.follower)
+    }
     const ids = currentDocNodeIds()
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
