@@ -79,9 +79,9 @@ describe('devPanelLog', () => {
     recordDevEvent('doc_update', { update: new Uint8Array([1, 2, 3]) })
 
     const serialized = stringifyDevEvents(devEvents.value)
-    expect(serialized).toContain('"Uint8Array(3)"')
-    expect(serialized).not.toContain('"0": 1')
-    expect(serialized).not.toContain('"1": 2')
-    expect(serialized).not.toContain('"2": 3')
+    const parsed = JSON.parse(serialized) as Array<{
+      detail: { update: string }
+    }>
+    expect(parsed[0].detail.update).toBe('Uint8Array(3)')
   })
 })
