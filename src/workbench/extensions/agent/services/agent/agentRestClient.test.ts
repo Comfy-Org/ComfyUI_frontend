@@ -74,7 +74,8 @@ describe('agentRestClient route + method', () => {
     const page = (
       offset: number,
       data: CloudWorkflowEntry[],
-      hasMore: boolean
+      hasMore: boolean,
+      nextCursor?: string
     ) =>
       jsonResponse(200, {
         data,
@@ -82,17 +83,33 @@ describe('agentRestClient route + method', () => {
           offset,
           limit: 100,
           total: data.length,
-          has_more: hasMore
+          has_more: hasMore,
+          next_cursor: nextCursor
         }
       })
-    respond(page(0, [{ id: 'wf-1', name: 'one' }], true))
+    respond(page(0, [{ id: 'wf-1', name: 'one' }], true, 'next page'))
     respond(page(1, [{ id: 'wf-2', name: 'two' }], false))
 
     const workflows = await makeClient().listCloudWorkflows()
 
-    expect(fetchApi.mock.calls[0][0]).toBe('/workflows?limit=100&offset=0')
-    expect(fetchApi.mock.calls[1][0]).toBe('/workflows?limit=100&offset=1')
+    expect(fetchApi.mock.calls[0][0]).toBe('/workflows?limit=100')
+    expect(fetchApi.mock.calls[1][0]).toBe(
+      '/workflows?limit=100&after=next%20page'
+    )
     expect(workflows.map((w) => w.id)).toEqual(['wf-1', 'wf-2'])
+  })
+
+  it('stops pagination when the server does not provide a new cursor', async () => {
+    respond(
+      jsonResponse(200, {
+        data: [],
+        pagination: { offset: 0, limit: 100, total: 0, has_more: true }
+      })
+    )
+
+    await makeClient().listCloudWorkflows()
+
+    expect(fetchApi).toHaveBeenCalledTimes(1)
   })
 })
 
