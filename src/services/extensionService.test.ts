@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { useContextKeyStore } from '@/platform/keybindings/contextKeyStore'
+import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 import { useExtensionService } from './extensionService'
 
@@ -345,5 +350,78 @@ describe('invokeExtensionsAsync', () => {
       expect(setup).toHaveBeenCalledOnce()
       expect(setup.mock.calls[0]).toHaveLength(1)
     })
+  })
+})
+
+describe('registerExtension keybindings', () => {
+  it('registers a dialog-scoped keybinding', () => {
+    useExtensionService().registerExtension({
+      name: 'Test.Scoped',
+      keybindings: [
+        {
+          combo: { key: 'z', ctrl: true },
+          commandId: 'Test.MaskUndo',
+          dialogKey: 'global-mask-editor'
+        }
+      ]
+    })
+
+    expect(
+      useKeybindingStore().getKeybindings(
+        new KeyComboImpl({ key: 'z', ctrl: true }),
+        'global-mask-editor'
+      )[0]?.commandId
+    ).toBe('Test.MaskUndo')
+  })
+
+  it('rejects a malformed keybinding with a toast and registers nothing', () => {
+    const toast = vi.spyOn(useToastStore(), 'add')
+    const extension: ComfyExtension = JSON.parse(
+      '{"name":"Test.Broken","keybindings":[{"combo":{"key":"k","ctrl":true}}]}'
+    )
+
+    useExtensionService().registerExtension(extension)
+
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.stringContaining('Test.Broken: invalid keybinding')
+      })
+    )
+    expect(
+      useKeybindingStore().getKeybindings(
+        new KeyComboImpl({ key: 'k', ctrl: true })
+      )
+    ).toEqual([])
+  })
+
+  it('registers context keys under the extension name', () => {
+    useExtensionService().registerExtension({
+      name: 'Test.Keys',
+      contextKeys: ['wasdMode']
+    })
+
+    const contextKeys = useContextKeyStore()
+    expect(contextKeys.ownerOf('Test.Keys.wasdMode')).toBe('Test.Keys')
+    expect(contextKeys.set('Test.Keys.wasdMode', true)).toBe(true)
+  })
+
+  it('rejects a keybinding whose when clause does not parse', () => {
+    const toast = vi.spyOn(useToastStore(), 'add')
+
+    useExtensionService().registerExtension({
+      name: 'Test.BadWhen',
+      keybindings: [
+        { combo: { key: 'w' }, commandId: 'Test.Pan', when: 'a || b' }
+      ]
+    })
+
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.stringContaining('Invalid when clause')
+      })
+    )
+    expect(
+      useKeybindingStore().getKeybindings(new KeyComboImpl({ key: 'w' }))
+    ).toEqual([])
   })
 })
