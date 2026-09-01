@@ -21,6 +21,7 @@
     <!-- Connection Dot -->
     <SlotConnectionDot
       :slot-key
+      :accessible-name
       :class="
         cn(
           'w-3 -translate-x-1/2',

@@ -241,7 +241,7 @@ describe('widget connection suppression', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'prompt', type: 'STRING' }]
       })
-      const { node, widget } = createWidgetNode(subgraph as unknown as LGraph)
+      const { node, widget } = createWidgetNode(subgraph)
 
       subgraph.inputNode.slots[0].connect(node.inputs[0], node)
       const host = createTestSubgraphNode(subgraph)

@@ -11,6 +11,7 @@ import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 import {
   applyLegacyHiddenWrite,
   deriveWidgetVisibility,
+  setWidgetAdvanced,
   setWidgetHiddenInPanel
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
@@ -102,6 +103,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const nextWidgets = reactive(new Map<WidgetId, WidgetEntity>())
     graphWidgets.value.set(graphId, nextWidgets)
     return nextWidgets
+  }
+
+  function findGraphWidgets(
+    graphId: UUID
+  ): Map<WidgetId, WidgetEntity> | undefined {
+    return graphWidgets.value.get(graphId)
   }
 
   function getGraphNodeWidgetOrders(graphId: UUID): Map<NodeId, WidgetId[]> {
@@ -272,6 +279,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       if (options.hideInPanel !== undefined) {
         setWidgetHiddenInPanel(visibility, options.hideInPanel)
       }
+      if (options.advanced !== undefined) {
+        setWidgetAdvanced(visibility, options.advanced, ['vueNode', 'panel'])
+      }
     }
     state.options = { ...state.options, ...options }
     return true
@@ -299,11 +309,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
 
     const { graphId, nodeId, name } = next
-    const widgets = getGraphWidgets(graphId)
+    const widgets = findGraphWidgets(graphId)
+    if (!widgets) return undefined
     const entity = widgets.get(oldId)
     if (!entity || widgets.has(newId)) return undefined
 
-    const order = getNodeWidgetOrder(graphId, nodeId)
+    const order = graphNodeWidgetOrders.value.get(graphId)?.get(nodeId)
+    if (!order) return undefined
     const index = order.indexOf(oldId)
 
     widgets.delete(oldId)
@@ -365,9 +377,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     localNodeId: NodeId,
     orderedWidgetIds: readonly WidgetId[]
   ): void {
-    const widgets = getGraphWidgets(graphId)
+    const widgets = findGraphWidgets(graphId)
     const nextOrder = orderedWidgetIds.filter(
-      (id) => widgets.get(id)?.state.nodeId === localNodeId
+      (id) => widgets?.get(id)?.state.nodeId === localNodeId
     )
     const graphOrders = getGraphNodeWidgetOrders(graphId)
     const order = graphOrders.get(localNodeId)

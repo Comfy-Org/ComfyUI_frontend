@@ -327,7 +327,10 @@ function seedNestedPromotedInputState(
 
   const store = useWidgetValueStore()
   const sourceState = store.getWidget(sourceSlot.widgetId)
-  if (!sourceState) return
+  const sourceVisibility = store.getWidgetVisibility(sourceSlot.widgetId)
+  if (!sourceState || !sourceVisibility) return
+  const visibility = cloneDeep(sourceVisibility)
+  visibility.suppression.byConnection = false
 
   const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
   hostInput.widget ??= { name: inputName }
@@ -343,7 +346,8 @@ function seedNestedPromotedInputState(
       serialize: sourceState.serialize,
       disabled: sourceState.disabled
     },
-    store.getWidgetRenderState(sourceSlot.widgetId) ?? {}
+    store.getWidgetRenderState(sourceSlot.widgetId) ?? {},
+    visibility
   )
 }
 

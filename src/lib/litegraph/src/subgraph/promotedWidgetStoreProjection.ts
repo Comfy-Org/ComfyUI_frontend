@@ -16,6 +16,7 @@ export function createPromotedWidgetStoreProjection(
       return input.label ?? store.getWidget(id)?.label ?? input.name
     },
     set label(next) {
+      input.label = next
       const state = store.getWidget(id)
       if (state) state.label = next
     },

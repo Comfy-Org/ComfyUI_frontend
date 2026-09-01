@@ -126,10 +126,12 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
     // name: the input control is suppressed regardless of the advanced toggle.
     await expect(maxShiftWidget).toHaveCount(1)
     await expect(maxShiftWidget.locator('input')).toHaveCount(0)
+    await expect(maxShiftWidget.getByTestId('slot-dot')).toBeVisible()
     await node.getByText(HIDE_ADVANCED_INPUTS).click()
 
     await expect(maxShiftWidget).toHaveCount(1)
     await expect(maxShiftWidget.locator('input')).toHaveCount(0)
+    await expect(maxShiftWidget.getByTestId('slot-dot')).toBeVisible()
     await expect(baseShiftWidget).toBeHidden()
   })
 

@@ -245,7 +245,6 @@ import { computed, nextTick, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
-import { isWidgetAdvanced } from '@/types/widgetVisibility'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -666,7 +665,7 @@ const showAdvancedInputsButton = computed(() => {
 
   const hasAdvancedWidgets = widgetIds.value.some((id) => {
     const visibility = widgetValueStore.getWidgetVisibility(id)
-    if (visibility) return isWidgetAdvanced(visibility)
+    if (visibility) return visibility.display.vueNode === 'advanced'
     return widgetValueStore.getWidget(id)?.options?.advanced
   })
   const alwaysShowAdvanced = settingStore.get(

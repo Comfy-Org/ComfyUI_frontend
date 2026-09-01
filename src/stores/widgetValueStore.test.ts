@@ -442,10 +442,14 @@ describe('useWidgetValueStore', () => {
       store.registerWidget(seedA, state('number', 100))
 
       expect(
-        store.updateOptions(seedA, { hidden: true, hideInPanel: true })
+        store.updateOptions(seedA, {
+          hidden: true,
+          hideInPanel: true,
+          advanced: true
+        })
       ).toBe(true)
       expect(store.getWidgetVisibility(seedA)).toEqual({
-        display: { canvas: 'shown', vueNode: 'shown', panel: 'never' },
+        display: { canvas: 'shown', vueNode: 'advanced', panel: 'never' },
         suppression: { byExtension: true, byConnection: false }
       })
     })

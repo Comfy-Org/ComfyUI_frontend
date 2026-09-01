@@ -150,6 +150,25 @@ describe('SubgraphWidgetPromotion', () => {
       })
     })
 
+    it('does not persist source connection suppression on the promoted widget', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget('Test Node')
+
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+      const input = promotedInputs(subgraphNode)[0]
+      if (!input) throw new Error('Missing promoted input')
+
+      expect(widget.visibility.suppression.byConnection).toBe(true)
+      expect(useWidgetValueStore().getWidgetVisibility(input.widgetId)).toEqual(
+        {
+          display: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          suppression: { byExtension: false, byConnection: false }
+        }
+      )
+    })
+
     it('resolves nested promoted widgets before the inner host input is hydrated', () => {
       const innerSubgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]

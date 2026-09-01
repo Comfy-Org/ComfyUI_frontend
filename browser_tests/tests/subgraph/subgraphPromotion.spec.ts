@@ -94,6 +94,26 @@ test.describe(
       'Promoted Widget Visibility in Vue Mode',
       { tag: ['@vue-nodes'] },
       () => {
+        test('Promoted widget connected to the subgraph input is interactive on the host', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+          const subgraphNodeId = '2'
+          await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+          await comfyPage.subgraph.promoteWidget(
+            comfyPage.vueNodes.getNodeByTitle('KSampler'),
+            'steps'
+          )
+          await comfyPage.subgraph.exitViaBreadcrumb()
+
+          const promotedWidget = comfyPage.vueNodes
+            .getNodeLocator(subgraphNodeId)
+            .getByLabel('steps', { exact: true })
+          await expect(promotedWidget).toBeVisible()
+          await expect(promotedWidget).toBeEnabled()
+        })
+
         test(
           'Promoted advanced widget remains visible when global advanced widgets are disabled',
           { tag: ['@node'] },

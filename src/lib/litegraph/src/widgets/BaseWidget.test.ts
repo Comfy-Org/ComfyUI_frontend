@@ -1,4 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -158,7 +158,7 @@ describe('BaseWidget store integration', () => {
 
     it('supplies shimmed options when constructed without them', () => {
       const widget = new MutableTypeWidget(
-        fromAny({
+        fromPartial({
           type: 'GHOST',
           name: 'ghost',
           value: 0,
