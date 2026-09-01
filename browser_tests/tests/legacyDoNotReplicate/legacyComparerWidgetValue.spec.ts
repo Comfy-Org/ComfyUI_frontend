@@ -38,18 +38,26 @@ test.describe('Legacy comparer widget', { tag: ['@widget', '@ui'] }, () => {
     test.slow()
     await trackVisibleErrors(comfyPage.page)
     await comfyPage.nodeOps.clearGraph()
+    await expect
+      .poll(
+        () =>
+          comfyPage.page.evaluate(
+            (type) => Boolean(window.LiteGraph?.registered_node_types[type]),
+            NODE_TYPE
+          ),
+        {
+          message: `${NODE_TYPE} is not registered - ComfyUI_devtools is not installed on this backend`
+        }
+      )
+      .toBe(true)
     await comfyPage.nodeOps.addNode(NODE_TYPE)
-    expect(
-      await comfyPage.nodeOps.getNodeCount(),
-      `${NODE_TYPE} is not registered - ComfyUI_devtools is not installed on this backend`
-    ).toBe(1)
 
     await comfyPage.menu.topbar.saveWorkflow(WORKFLOW_NAME)
     await openWorkflowFromSidebar(comfyPage, WORKFLOW_NAME)
 
-    expect(await exportedComparerWidgetValue(comfyPage)).toEqual(
-      SERIALISED_IMAGES
-    )
+    await expect
+      .poll(() => exportedComparerWidgetValue(comfyPage))
+      .toEqual(SERIALISED_IMAGES)
 
     await comfyPage.workflow.loadWorkflow('default')
 
