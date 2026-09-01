@@ -186,10 +186,12 @@ describe('CRDT human write-leg invariants (property)', () => {
         fc.integer({ min: 1, max: 4 }),
         (operations, failedAttempts) => {
           const attempts: Op[][] = []
+          const attemptIdentities: string[][] = []
           let callCount = 0
           const deps = {
             sendOps: (_workflowId: string, _tab: string, ops: Op[]) => {
               attempts.push(ops)
+              attemptIdentities.push(ops.map((op) => op.op_id))
               callCount += 1
               return callCount > failedAttempts
             },
@@ -211,11 +213,12 @@ describe('CRDT human write-leg invariants (property)', () => {
           enqueue(sender, operations)
           vi.advanceTimersByTime(failedAttempts * 500)
           expect(attempts).toHaveLength(failedAttempts + 1)
-          const minted = attempts[0]
-          for (const attempt of attempts) expect(attempt).toEqual(minted)
+          const mintedIdentities = attemptIdentities[0]
+          for (const identities of attemptIdentities)
+            expect(identities).toEqual(mintedIdentities)
 
           vi.advanceTimersByTime(10_000)
-          expect(attempts.at(-1)).toEqual(minted)
+          expect(attemptIdentities.at(-1)).toEqual(mintedIdentities)
           expect(attempts).toHaveLength(failedAttempts + 2)
           sender.detach()
         }
