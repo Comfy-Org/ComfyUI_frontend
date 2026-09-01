@@ -534,6 +534,34 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('does not project a preloaded document for an unrelated workflow', () => {
+    const host = mint(
+      {
+        nodes: [{ id: 1, type: 'Source', pos: [10, 20] }],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+    const createLayout = vi.fn()
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: createLayout, deleteNodes: vi.fn() }
+      })
+    )
+
+    adapter.bind('wf-b', follower)
+
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+    expect(createLayout).not.toHaveBeenCalled()
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('applies an implicit disconnect when delete-wins installs no replacement', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
