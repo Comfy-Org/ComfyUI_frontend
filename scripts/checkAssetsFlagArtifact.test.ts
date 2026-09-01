@@ -1,0 +1,111 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  assertAssetApiGate,
+  assertBuildProvenance,
+  assertNoTestFixtures
+} from './checkAssetsFlagArtifact'
+
+describe('assertAssetApiGate', () => {
+  it.for(['localhost', 'desktop'])(
+    'accepts a disabled %s Asset API gate',
+    (distribution) => {
+      expect(() =>
+        assertAssetApiGate(
+          ['function isAssetAPIEnabled() {\n  return false;\n}'],
+          distribution
+        )
+      ).not.toThrow()
+    }
+  )
+
+  it('accepts a Cloud gate controlled by the opt-in setting', () => {
+    expect(() =>
+      assertAssetApiGate(
+        [
+          'function isAssetAPIEnabled() {\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI");\n}'
+        ],
+        'cloud'
+      )
+    ).not.toThrow()
+  })
+
+  it('rejects a Cloud build that enables the Asset API unconditionally', () => {
+    expect(() =>
+      assertAssetApiGate(
+        ['function isAssetAPIEnabled() {\n  return true;\n}'],
+        'cloud'
+      )
+    ).toThrow('Built Asset API gate is invalid for cloud')
+  })
+
+  it('rejects a build without exactly one Asset API gate', () => {
+    expect(() => assertAssetApiGate([], 'localhost')).toThrow(
+      'Expected one Asset API gate in the build, found 0'
+    )
+  })
+})
+
+describe('assertBuildProvenance', () => {
+  const commit = '0123456789abcdef0123456789abcdef01234567'
+
+  it('accepts the exact source revision embedded in the artifact', () => {
+    expect(() =>
+      assertBuildProvenance(
+        JSON.stringify({ commit, distribution: 'desktop' }),
+        commit,
+        'desktop'
+      )
+    ).not.toThrow()
+  })
+
+  it('rejects an artifact built from another revision', () => {
+    expect(() =>
+      assertBuildProvenance(
+        JSON.stringify({ commit: 'old', distribution: 'desktop' }),
+        commit,
+        'desktop'
+      )
+    ).toThrow(`Build does not contain expected frontend commit ${commit}`)
+  })
+
+  it('rejects an artifact built for another distribution', () => {
+    expect(() =>
+      assertBuildProvenance(
+        JSON.stringify({ commit, distribution: 'cloud' }),
+        commit,
+        'desktop'
+      )
+    ).toThrow('Build distribution is cloud, expected desktop')
+  })
+
+  it.for(['null', '[]', '"invalid"'])(
+    'rejects a non-object manifest: %s',
+    (manifest) => {
+      expect(() => assertBuildProvenance(manifest, commit, 'desktop')).toThrow(
+        'Build manifest must be a JSON object'
+      )
+    }
+  )
+})
+
+describe('assertNoTestFixtures', () => {
+  it('accepts production chunks', () => {
+    expect(() =>
+      assertNoTestFixtures(['const endpoint="/api/assets"'])
+    ).not.toThrow()
+  })
+
+  it.for([
+    ['browser_tests/fixtures/assets', 'browser_tests/fixtures/'],
+    ['/__fixtures__/asset', '/__fixtures__/'],
+    [
+      'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL',
+      'COMFY_PRODUCTION_FORBIDDEN_MOCK_ASSET_SENTINEL'
+    ]
+  ])('rejects leaked test marker %s', ([chunkMarker, reportedMarker]) => {
+    expect(() =>
+      assertNoTestFixtures([`const fixture="${chunkMarker}"`])
+    ).toThrow(`Build contains test fixture marker: ${reportedMarker}`)
+  })
+})
