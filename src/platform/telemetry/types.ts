@@ -593,6 +593,14 @@ export interface WidgetFavoriteToggledMetadata {
   source: 'right_side_panel'
 }
 
+export interface LinkDedupDropMetadata {
+  target: string
+  dropped_link_id: number
+  survivor_link_id: number
+  dropped_origin: string
+  survivor_origin: string
+}
+
 /**
  * Fired once per node when its `widgets_values_named` restore path
  * disagrees with what the legacy positional `widgets_values` restore
@@ -1079,6 +1087,9 @@ export interface TelemetryProvider {
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
+  // Link deduplication diagnostics
+  trackLinkDedupDrop?(metadata: LinkDedupDropMetadata): void
+
   // Named values shadow-diff diagnostics
   trackNamedValuesShadowDiffMismatch?(
     metadata: NamedValuesShadowDiffMismatchMetadata
@@ -1242,6 +1253,9 @@ export const TelemetryEvents = {
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
+  // Link deduplication diagnostics
+  LINK_DEDUP_DROP: 'app:link_dedup_drop',
+
   // Named Values Shadow Diff (Comfy.Workflow.NamedValuesRestore diagnostics)
   NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
   NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
@@ -1325,6 +1339,7 @@ export type TelemetryEventProperties =
   | SettingChangedMetadata
   | UiButtonClickMetadata
   | WidgetFavoriteToggledMetadata
+  | LinkDedupDropMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
   | HelpCenterOpenedMetadata

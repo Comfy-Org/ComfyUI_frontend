@@ -11,7 +11,25 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
-import { conflictingOriginLinksRoot } from './__fixtures__/duplicateLinks'
+import {
+  conflictingOriginLinksRoot,
+  duplicateLinksRoot
+} from './__fixtures__/duplicateLinks'
+
+const { trackLinkDedupDrop } = vi.hoisted(() => ({
+  trackLinkDedupDrop: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () =>
+    new Proxy(
+      { trackLinkDedupDrop },
+      {
+        get: (target, prop) =>
+          prop in target ? target[prop as keyof typeof target] : () => undefined
+      }
+    )
+}))
 
 class DupTestNode extends LGraphNode {
   constructor(title?: string) {
@@ -88,6 +106,28 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
       expect.any(String),
       expect.objectContaining({ targetNodeId: toNodeId(3), targetSlot: 0 })
     )
+  })
+
+  it('reports the dropped and surviving competing links', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    configureConflictingOrigins()
+
+    expect(trackLinkDedupDrop).toHaveBeenCalledExactlyOnceWith({
+      target: '3:0',
+      dropped_link_id: 1,
+      survivor_link_id: 2,
+      dropped_origin: '1:0',
+      survivor_origin: '2:0'
+    })
+  })
+
+  it('does not report same-origin remaps as dropped connections', () => {
+    const graph = new LGraph()
+
+    graph.configure(structuredClone(duplicateLinksRoot))
+
+    expect(trackLinkDedupDrop).not.toHaveBeenCalled()
   })
 
   it('registers exactly one link at the contested input', () => {

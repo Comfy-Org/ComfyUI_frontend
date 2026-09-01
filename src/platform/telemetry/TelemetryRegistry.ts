@@ -20,6 +20,7 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -375,6 +376,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.dispatch((provider) => provider.trackLinkDedupDrop?.(metadata))
   }
 
   trackNamedValuesShadowDiffMismatch(

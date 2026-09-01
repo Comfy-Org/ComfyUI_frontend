@@ -1,3 +1,4 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
@@ -101,11 +102,20 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
       survivorByDuplicateId.set(fields.id, survivor.id)
     }
     if (!isExactDuplicate) {
+      const dropped = droppedLinkId === fields.id ? fields : survivor
+      const surviving = survivorLinkId === fields.id ? fields : survivor
       console.warn('Dropping competing link to an occupied input', {
         droppedLinkId,
         survivorLinkId,
         targetNodeId: toNodeId(fields.target_id),
         targetSlot: fields.target_slot
+      })
+      useTelemetry()?.trackLinkDedupDrop({
+        target: key,
+        dropped_link_id: droppedLinkId,
+        survivor_link_id: survivorLinkId,
+        dropped_origin: `${String(dropped.origin_id)}:${dropped.origin_slot}`,
+        survivor_origin: `${String(surviving.origin_id)}:${surviving.origin_slot}`
       })
     }
   }
