@@ -125,12 +125,17 @@ vestigial and can be deleted from the schedule.
 
 ### Editing the schedule over the API
 
-Rotation membership and order are normally edited in the on-call UI. If you need
-to script a change instead, note that **`PUT /api/v2/on-call/schedules/{id}` is a
-full replace** — `PATCH` answers `{"errors":["Not found"]}` even for a schedule
-that `GET` returns fine — so read the schedule first and edit what comes back
-rather than composing a body by hand. Any field the body omits is wiped, the call
-returns 200, and nothing warns.
+Rotation membership and order are normally edited in the on-call UI. The
+scripted procedure below is scoped to **tags-only edits** (e.g. deleting the
+vestigial `github:<user>:<login>` tags after the directory moved to a secret):
+its guard aborts unless every field except `tags` matches the original. A
+broader runbook that safely scripts rotation membership changes is tracked as a
+follow-up; until then, use the UI for those. Note that
+**`PUT /api/v2/on-call/schedules/{id}` is a full replace** — `PATCH` answers
+`{"errors":["Not found"]}` even for a schedule that `GET` returns fine — so read
+the schedule first and edit what comes back rather than composing a body by
+hand. Any field the body omits is wiped, the call returns 200, and nothing
+warns.
 
 The workflow's `DATADOG_APP_KEY` repo secret must remain read-only with the
 `on_call_read` permission. A manual `PUT` requires a separate local application

@@ -85,8 +85,12 @@ export function parseGithubLogins(raw: string | undefined): DirectoryParse {
   let parsed: unknown
   try {
     parsed = JSON.parse(raw)
-  } catch (error) {
-    return degraded(`${DIRECTORY_ENV} is not valid JSON (${String(error)})`)
+  } catch {
+    // Node can include an excerpt of the malformed input in the error
+    // message; this text reaches public Actions logs and Slack, while
+    // GitHub masks the complete secret value rather than arbitrary
+    // fragments. Emit a fixed message without any input context.
+    return degraded(`${DIRECTORY_ENV} is not valid JSON`)
   }
   if (!Array.isArray(parsed)) {
     return degraded(`${DIRECTORY_ENV} is not a JSON array`)
@@ -510,6 +514,15 @@ async function main() {
   }
 
   if (directory.unmappedMembers.length > 0) {
+    output('degraded', problems.join(' '))
+    process.exitCode = 1
+  }
+
+  // A parser warning (skipped entries, bad JSON, etc.) means the directory is
+  // partially or fully unusable. If the valid entries still cover the active
+  // rotation the run would otherwise stay green and the failure-only Slack
+  // alert never fires, so treat any directory warning as degraded.
+  if (directory.warnings.length > 0) {
     output('degraded', problems.join(' '))
     process.exitCode = 1
   }

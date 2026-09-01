@@ -63,28 +63,28 @@ describe('parseOnCallEmails', () => {
 })
 
 describe('parseGithubLogins', () => {
-  // The shape RELEASE_SHERIFF_DIRECTORY actually holds, mirroring
-  // rosters/release-sheriff-directory.json in Comfy-Org/github-workflows-ops.
+  // Synthetic entries that preserve the seven-entry parser coverage without
+  // publishing the real production roster (this repo is public).
   const liveDirectory = JSON.stringify([
-    { datadog_email: 'austin@comfy.org', github_login: 'AustinMroz' },
-    { datadog_email: 'ben@comfy.org', github_login: 'benceruleanlu' },
-    { datadog_email: 'cbyrne@comfy.org', github_login: 'christian-byrne' },
-    { datadog_email: 'drjkl@comfy.org', github_login: 'DrJKL' },
-    { datadog_email: 'jaewon@comfy.org', github_login: 'dante01yoon' },
-    { datadog_email: 'nathaniel@comfy.org', github_login: 'CodeJuggernaut' },
-    { datadog_email: 'shihchi@comfy.org', github_login: 'huang47' }
+    { datadog_email: 'alice@example.org', github_login: 'alice-gh' },
+    { datadog_email: 'bob@example.org', github_login: 'bob-gh' },
+    { datadog_email: 'carol@example.org', github_login: 'carol-gh' },
+    { datadog_email: 'dave@example.org', github_login: 'dave-gh' },
+    { datadog_email: 'eve@example.org', github_login: 'eve-gh' },
+    { datadog_email: 'frank@example.org', github_login: 'frank-gh' },
+    { datadog_email: 'grace@example.org', github_login: 'grace-gh' }
   ])
 
   it('keys the whole rotation by email local part, as the tags did', () => {
     expect(parseGithubLogins(liveDirectory)).toEqual({
       githubLoginByUser: {
-        austin: 'AustinMroz',
-        ben: 'benceruleanlu',
-        cbyrne: 'christian-byrne',
-        drjkl: 'DrJKL',
-        jaewon: 'dante01yoon',
-        nathaniel: 'CodeJuggernaut',
-        shihchi: 'huang47'
+        alice: 'alice-gh',
+        bob: 'bob-gh',
+        carol: 'carol-gh',
+        dave: 'dave-gh',
+        eve: 'eve-gh',
+        frank: 'frank-gh',
+        grace: 'grace-gh'
       },
       warning: null
     })
@@ -106,6 +106,13 @@ describe('parseGithubLogins', () => {
       expect(result.githubLoginByUser).toEqual({})
       expect(result.warning).toMatch(/release-sheriff-directory\.json/)
     }
+  })
+
+  it('does not leak malformed input in the JSON parse warning', () => {
+    const result = parseGithubLogins('{not valid json: SENSITIVE_LEAK}')
+    expect(result.githubLoginByUser).toEqual({})
+    expect(result.warning).toMatch(/is not valid JSON/)
+    expect(result.warning).not.toMatch(/SENSITIVE_LEAK/)
   })
 
   it('keeps usable entries and warns about the ones it dropped', () => {
