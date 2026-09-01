@@ -446,8 +446,8 @@ describe('useCoreCommands', () => {
 
   function findCommand(id: string) {
     const cmd = useCoreCommands().find((c) => c.id === id)
-    if (!cmd) throw new Error(`Command '${id}' not found`)
-    return cmd
+    if (!cmd) expect.fail(`Command '${id}' not found`)
+    return cmd!
   }
 
   beforeEach(() => {
