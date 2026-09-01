@@ -10,8 +10,10 @@ import { render } from '@testing-library/vue'
 import type { GraphOperation } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
+  const transport = { up: true }
   class FakeBridge extends EventTarget {
     subscribe = vi.fn((workflowId: string) => {
+      if (!transport.up) return
       this.subscribedWorkflowId = workflowId
     })
 
@@ -32,7 +34,11 @@ const bridgeState = vi.hoisted(() => {
     }
   }
 
-  return { FakeBridge, current: null as InstanceType<typeof FakeBridge> | null }
+  return {
+    FakeBridge,
+    current: null as InstanceType<typeof FakeBridge> | null,
+    transport
+  }
 })
 
 const clientState = vi.hoisted(() => ({
@@ -170,6 +176,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     bridgeState.current = null
+    bridgeState.transport.up = true
     clientState.transportUp = true
     clientState.attempts = []
     clientState.sent = []
@@ -179,8 +186,9 @@ describe('R-73 cross-workflow pending operation characterization', () => {
   })
 
   it('does not retarget a transport retry after workflow A switches to workflow B', async () => {
-    clientState.transportUp = false
     const { workflowId, enqueue } = mountFollower('wf-a')
+    bridgeState.transport.up = false
+    clientState.transportUp = false
 
     enqueue([deleteNode('a-queued')])
     expect(clientState.sent).toHaveLength(0)
@@ -188,6 +196,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const operationId = clientState.attempts[0].ops[0].op_id
 
     await switchWorkflow(workflowId, 'wf-b')
+    bridgeState.transport.up = true
     clientState.transportUp = true
     vi.advanceTimersByTime(500)
 
