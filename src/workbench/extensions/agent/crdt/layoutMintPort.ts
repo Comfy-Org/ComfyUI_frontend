@@ -95,22 +95,34 @@ function sameTarget(
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClear: IntentionalClear | null = null
 
-  function gate(
-    target: GraphMutationTarget,
-    change: LayoutChangeView,
-    teardown: boolean
-  ): boolean {
+  function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
     return shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
       localProvenance:
-        change.operation.graphId === target.rootGraphId &&
         change.operation.source !== AGENT_REMOTE_ACTOR &&
         actor !== undefined &&
         actor.startsWith(deps.localActorPrefix),
       teardown
     })
+  }
+
+  /**
+   * A local human edit against a graph the bound doc does not own is a
+   * divergence, not foreign provenance: surface it rather than folding it
+   * into the gate, where it would drop silently.
+   */
+  function ownsChange(
+    target: GraphMutationTarget,
+    change: LayoutChangeView
+  ): boolean {
+    if (change.operation.graphId === target.rootGraphId) return true
+    console.error(
+      `[agent-crdt] ${change.operation.type} for a graph the bound doc does not own`,
+      `${change.operation.graphId} != ${target.rootGraphId}`
+    )
+    return false
   }
 
   function enqueue(
@@ -132,7 +144,8 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     const inTeardown = deps.session.inTeardown()
     switch (operation.type) {
       case 'createNode': {
-        if (!gate(target, change, inTeardown)) return
+        if (!gate(change, inTeardown)) return
+        if (!ownsChange(target, change)) return
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(target, String(operation.nodeId))
         if (!node) {
@@ -159,7 +172,8 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         return
       }
       case 'deleteNode': {
-        if (!gate(target, change, inTeardown)) return
+        if (!gate(change, inTeardown)) return
+        if (!ownsChange(target, change)) return
         if (operation.nodeId === undefined) return
         enqueue('delete_node', operation.nodeId, {
           target,
@@ -180,7 +194,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         const captured = intentionalClear
         intentionalClear = null
         if (captured === null || !sameTarget(captured.target, target)) return
-        if (!gate(target, change, inTeardown)) return
+        if (!gate(change, inTeardown)) return
         enqueue('clear', target.rootGraphId, {
           target,
           operations: [{ op: 'clear', removed_nodes: captured.nodeIds }]

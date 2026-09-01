@@ -156,13 +156,30 @@ describe('attachLayoutMintPort', () => {
     expect(minted).toEqual([])
   })
 
-  it('rejects a delayed layout event after the active target changes', () => {
+  it('surfaces a delayed layout event after the active target changes', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
     deliver(createNodeChange('1'), {
       workflowId: 'wf-b',
       rootGraphId: 'other-root'
     })
 
     expect(minted).toEqual([])
+    expect(error).toHaveBeenCalledOnce()
+    error.mockRestore()
+  })
+
+  it('does not surface a foreign-graph change that was never local anyway', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    deliver(createNodeChange('1', AGENT_REMOTE_ACTOR), {
+      workflowId: 'wf-b',
+      rootGraphId: 'other-root'
+    })
+
+    expect(minted).toEqual([])
+    expect(error).not.toHaveBeenCalled()
+    error.mockRestore()
   })
 
   it('never mints inside a graph-teardown bracket', () => {

@@ -699,7 +699,10 @@ export const useWorkflowService = () => {
           }
           loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
           loadedWorkflow.changeTracker.reset(
-            ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+            ensureWorkflowId(
+              workflowData,
+              loadedWorkflow.activeState?.id ?? app.rootGraph?.id
+            )
           )
           loadedWorkflow.changeTracker.restore()
           return
@@ -729,7 +732,10 @@ export const useWorkflowService = () => {
     }
     loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
     loadedWorkflow.changeTracker.reset(
-      ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+      ensureWorkflowId(
+        workflowData,
+        loadedWorkflow.activeState?.id ?? app.rootGraph?.id
+      )
     )
     loadedWorkflow.changeTracker.restore()
   }
