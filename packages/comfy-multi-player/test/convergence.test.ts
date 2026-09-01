@@ -51,6 +51,8 @@ function touchedNodes(op: WireOp): string[] {
       return [String(op.path && op.path.length > 0 ? op.path[0] : op.node_id)];
     case "connect":
       return [String(op.from_node), String(op.to_node)];
+    case "disconnect":
+      return [String(op.to_node)];
     case "clear":
     case "delete_node":
     case "reset_doc":

@@ -32,8 +32,8 @@ export const LEGACY_NODE_INCARNATION = "0";
 // FROZEN_OPS / DEFERRED_OPS / BATCHABLE_OPS — op-vocabulary-v1.md §1)
 // ---------------------------------------------------------------------------
 
-/** The five implemented op kinds. `apply` rejects anything else loudly. */
-export const FROZEN_OPS = ["add_node", "connect", "set_widget", "delete_node", "clear"] as const;
+/** The implemented op kinds. `apply` rejects anything else loudly. */
+export const FROZEN_OPS = ["add_node", "connect", "disconnect", "set_widget", "delete_node", "clear"] as const;
 
 /** Defined by the vocabulary but deferred (§1.6): rejected until un-deferred by amendment. */
 export const DEFERRED_OPS = ["reset_doc"] as const;
@@ -60,7 +60,7 @@ export const DEFERRED_OPS = ["reset_doc"] as const;
  * belongs. `test/batch-policy.test.ts` pins the list, the README table, and
  * the deliberate non-enforcement together.
  */
-export const BATCHABLE_OPS = ["add_node", "connect", "set_widget", "delete_node"] as const;
+export const BATCHABLE_OPS = ["add_node", "connect", "disconnect", "set_widget", "delete_node"] as const;
 
 /** Every kind the vocabulary defines — implemented ({@link Op}) plus deferred ({@link DeferredOp}). */
 export type OpKind = WireOp["op"];
@@ -130,7 +130,7 @@ export interface OpBase {
 }
 
 // ---------------------------------------------------------------------------
-// The six declared op kinds: five implemented (`Op`) plus the deferred
+// The seven declared op kinds: six implemented (`Op`) plus the deferred
 // `reset_doc` (`DeferredOp`); together `WireOp`. "Frozen" now means
 // implemented — `FROZEN_OPS` is pinned to `Op["op"]` exactly (issue #17).
 // ---------------------------------------------------------------------------
@@ -281,6 +281,15 @@ export interface GrowConnectOp extends ConnectOpBase {
  */
 export type ConnectOp = ConcreteConnectOp | GrowConnectOp;
 
+export interface DisconnectOp extends OpBase {
+  op: "disconnect";
+  /** Link identity being severed. */
+  link_id: NodeId;
+  /** Concrete destination input register this disconnect claims. */
+  to_node: NodeId;
+  to_slot: number;
+}
+
 /** Fields every `set_widget` carries, whichever node the write is addressed to. */
 interface SetWidgetOpBase extends OpBase {
   op: "set_widget";
@@ -407,7 +416,7 @@ export interface ResetDocOp extends OpBase {
 }
 
 /**
- * The five op kinds `applyOps` IMPLEMENTS — a discriminated union on `op`.
+ * The op kinds `applyOps` IMPLEMENTS — a discriminated union on `op`.
  *
  * Every member is a kind that can actually be applied. Deferred kinds are in
  * {@link DeferredOp}; the full declared vocabulary is {@link WireOp}.
@@ -415,6 +424,7 @@ export interface ResetDocOp extends OpBase {
 export type Op =
   | AddNodeOp
   | ConnectOp
+  | DisconnectOp
   | SetWidgetOp
   | DeleteNodeOp
   | ClearOp;

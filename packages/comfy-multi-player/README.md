@@ -340,6 +340,7 @@ Six kinds, frozen:
 |---|---|---|
 | `add_node` | `node_id`, `class_type`, `pos`, `node` (the complete node object, inserted verbatim) | yes |
 | `connect` | `link_id`, `from_node`, `from_slot`, `to_node`, `link_type`, then EITHER a numeric `to_slot` (`ConcreteConnectOp`) OR a `grow` payload with `to_slot` null/absent (`GrowConnectOp`); `grow.promoted: true` names a subgraph instance's DECLARED input, materialized on the instance and LWW-gated as one register (schema Amendment A15) | yes |
+| `disconnect` | `link_id`, `to_node`, `to_slot`; claims the same concrete input register as `connect` and removes the winning slot occupant | yes |
 | `set_widget` | `node_id`, `widget` (name, never index), `value`, optional `old`; an interior write adds `path` AND `inner_widget` together (`InteriorSetWidgetOp`); a promoted HOST write adds `promoted: {value_index, instance_path, host_widgets_values}` instead — a positional write into a subgraph instance's opaque array (schema Amendment A15) | yes |
 | `delete_node` | `node_id`, `removed_links` | yes |
 | `clear` | `removed_nodes` | no |
@@ -353,7 +354,7 @@ Compile-time assertions in `src/types.ts` pin that `FROZEN_OPS` is exactly
 is exactly `WireOp["op"]`, and that `BATCHABLE_OPS ⊆ FROZEN_OPS`, so the lists
 and the unions cannot drift apart silently.
 
-**`Op` vs `WireOp`.** `Op` is what `applyOps` implements — the five kinds it
+**`Op` vs `WireOp`.** `Op` is what `applyOps` implements — the six kinds it
 can actually apply. `WireOp` is `Op` plus the deferred kinds a conforming peer
 may legally put on the wire, and it is what `ApplyFailure.op` and the stamp
 helpers take: a rejected `reset_doc` really does land in `failed.op`, so typing

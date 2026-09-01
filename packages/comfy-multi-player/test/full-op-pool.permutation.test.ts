@@ -45,8 +45,8 @@ const PRECONDITIONS = [
   "interior-or-inputcount",
   "promoted-or-autogrow",
 ] as const;
-const PAIR_EXECUTIONS = 110_592;
-const SAMPLED_RUNS = 44_704;
+const PAIR_EXECUTIONS = 150_528;
+const SAMPLED_RUNS = 24_736;
 const SAMPLED_EXECUTIONS = SAMPLED_RUNS * 2;
 const TOTAL_EXECUTIONS = PAIR_EXECUTIONS + SAMPLED_EXECUTIONS;
 const SAMPLE_SEED = 0x4f70504;
@@ -180,6 +180,14 @@ function makeOp(
       }
       return { ...common, to_slot: precondition === "to-slot-out-of-range" ? 5 : 0 };
     }
+    case "disconnect":
+      return {
+        ...env,
+        op: "disconnect",
+        link_id: precondition === "occupied-input" ? 80 : 100 + side,
+        to_node: precondition === "destination-missing" ? 999 : 20,
+        to_slot: precondition === "to-slot-out-of-range" ? 5 : 0,
+      };
     case "set_widget":
       if (precondition === "interior-or-inputcount") {
         return {
