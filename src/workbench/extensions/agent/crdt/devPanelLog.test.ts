@@ -63,12 +63,11 @@ describe('devPanelLog', () => {
     )
 
     try {
-      const stableEventsReference = devEvents.value
-
       recordDevEvent('ws_out', { frame: 'a' })
+      expect(devEvents.value.map((event) => event.kind)).toEqual(['ws_out'])
       clearDevEvents()
 
-      expect(devEvents.value).toBe(stableEventsReference)
+      expect(devEvents.value).toEqual([])
       expect(snapshots).toEqual([1, 0])
     } finally {
       stop()
