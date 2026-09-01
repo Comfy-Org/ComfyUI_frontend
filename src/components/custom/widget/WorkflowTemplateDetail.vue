@@ -31,7 +31,8 @@ const {
   modelSetupEnabled = false,
   setupPending = false,
   requirementsMet = false,
-  modelDownloadsAvailable = false
+  modelDownloadsAvailable = false,
+  remainingModelDownloadSize
 } = defineProps<{
   title: string
   description: string
@@ -43,6 +44,7 @@ const {
   setupPending?: boolean
   requirementsMet?: boolean
   modelDownloadsAvailable?: boolean
+  remainingModelDownloadSize?: string
 }>()
 
 const emit = defineEmits<{
@@ -61,6 +63,13 @@ const offerDownloadAndOpen = computed(
     modelSetupEnabled &&
     !requirementsMet &&
     (setupPending || modelDownloadsAvailable)
+)
+const downloadModelsAndOpenLabel = computed(() =>
+  remainingModelDownloadSize
+    ? t('templateWorkflows.detail.downloadModelsAndOpenWithSize', {
+        size: remainingModelDownloadSize
+      })
+    : t('templateWorkflows.detail.downloadModelsAndOpen')
 )
 
 defineExpose({
@@ -547,11 +556,9 @@ function getFailedDownloadLabel(
           "
         >
           {{
-            t(
-              offerDownloadAndOpen
-                ? 'templateWorkflows.detail.downloadModelsAndOpen'
-                : 'templateWorkflows.detail.openNow'
-            )
+            offerDownloadAndOpen
+              ? downloadModelsAndOpenLabel
+              : t('templateWorkflows.detail.openNow')
           }}
         </Button>
       </div>
