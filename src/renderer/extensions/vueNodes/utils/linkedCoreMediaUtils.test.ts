@@ -168,6 +168,13 @@ describe(shouldHideLinkedCoreMediaInputPreview, () => {
         })
       ).toBe(false)
       expect(
+        shouldHideLinkedCoreMediaInputPreview(
+          node,
+          { images: [{ type: 'output' }] },
+          true
+        )
+      ).toBe(true)
+      expect(
         shouldHideLinkedCoreMediaInputPreview(node, {
           images: [{ type: 'input' }, { type: 'output' }]
         })

@@ -96,7 +96,9 @@ test.describe('Load Image annotated widget value', { tag: '@widget' }, () => {
       await comfyPage.workflow.waitForWorkflowIdle()
 
       const ws = await getWebSocket()
-      new ExecutionHelper(comfyPage, ws).executed('', '10', {})
+      const execution = new ExecutionHelper(comfyPage, ws)
+      const jobId = await execution.run()
+      execution.executed(jobId, '10', {})
 
       await expect
         .poll(() =>

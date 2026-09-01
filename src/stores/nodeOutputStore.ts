@@ -104,6 +104,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return nodeOutputs.value[nodeToNodeLocatorId(node)]
   }
 
+  function isWidgetSourcedPreview(node: LGraphNode): boolean {
+    return widgetSourcedPreviews.has(nodeToNodeLocatorId(node))
+  }
+
   function getNodePreviews(node: LGraphNode): string[] | undefined {
     return nodePreviewImages.value[nodeToNodeLocatorId(node)]
   }
@@ -536,6 +540,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   return {
     getNodeOutputs,
+    isWidgetSourcedPreview,
     getNodeImageUrls,
     getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,

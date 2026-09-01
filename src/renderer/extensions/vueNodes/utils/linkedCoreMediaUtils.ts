@@ -69,10 +69,12 @@ export function shouldHideLinkedCoreMediaInputActions(
 
 export function shouldHideLinkedCoreMediaInputPreview(
   node: LGraphNode,
-  output: Pick<NodeExecutionOutput, 'images'> | undefined
+  output: Pick<NodeExecutionOutput, 'images'> | undefined,
+  widgetSourced = false
 ): boolean {
   return (
-    shouldHideLinkedCoreMediaInputActions(node) && isInputPreviewOutput(output)
+    shouldHideLinkedCoreMediaInputActions(node) &&
+    (widgetSourced || isInputPreviewOutput(output))
   )
 }
 
