@@ -5,9 +5,11 @@
  * Handles LRU eviction and quota management.
  */
 
-import { captureMessage } from '@sentry/vue'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+
+import { reportError } from '@/platform/telemetry/reportError'
+import { app as comfyApp } from '@/scripts/app'
 
 import type { DraftIndexV2 } from '../base/draftTypes'
 import { MAX_DRAFTS } from '../base/draftTypes'
@@ -35,7 +37,6 @@ import {
   writeIndex,
   writePayload
 } from '../base/storageIO'
-import { app as comfyApp } from '@/scripts/app'
 
 interface DraftMeta {
   name: string
@@ -229,18 +230,19 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     evicted: number,
     payloadBytes: number
   ): void {
-    captureMessage('localStorage quota exhausted after full draft eviction', {
-      level: 'warning',
-      tags: {
-        error_type: 'storage_quota_exhausted',
-        store: 'workflowDraftStoreV2'
-      },
-      extra: {
-        evictedDrafts: evicted,
-        remainingDrafts: finalIndex.order.length,
-        incomingPayloadBytes: payloadBytes
+    reportError(
+      new Error('localStorage quota exhausted after full draft eviction'),
+      {
+        errorType: 'storage_quota_exhausted',
+        level: 'warning',
+        tags: { store: 'workflowDraftStoreV2' },
+        context: {
+          evictedDrafts: evicted,
+          remainingDrafts: finalIndex.order.length,
+          incomingPayloadBytes: payloadBytes
+        }
       }
-    })
+    )
   }
 
   /**

@@ -3,10 +3,12 @@ import type { MockInstance } from 'vitest'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { reportError } from '@/platform/telemetry/reportError'
+
 import { createEmptyIndex } from '../base/draftCacheV2'
 import { MAX_DRAFTS } from '../base/draftTypes'
 import { hashPath } from '../base/hashUtil'
-import { resetStorageAvailable } from '../base/storageIO'
+import { readIndex, resetStorageAvailable } from '../base/storageIO'
 import { StorageKeys } from '../base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
@@ -23,9 +25,9 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-const captureMessageMock = vi.hoisted(() => vi.fn())
-vi.mock('@sentry/vue', () => ({
-  captureMessage: captureMessageMock
+const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: reportErrorMock
 }))
 
 const WORKSPACE = 'personal'
@@ -93,12 +95,9 @@ describe('workflowDraftStoreV2', () => {
 
       expect(result).toBe(true)
 
-      const indexJson = localStorage.getItem(INDEX_KEY)
-      expect(indexJson).not.toBeNull()
-
-      const index = JSON.parse(indexJson!)
-      expect(index.v).toBe(2)
-      expect(index.order).toHaveLength(1)
+      const index = readIndex(WORKSPACE)
+      expect(index?.v).toBe(2)
+      expect(index?.order).toHaveLength(1)
 
       const payloadKeys = Object.keys(localStorage).filter((k) =>
         k.startsWith(PAYLOAD_PREFIX)
@@ -217,19 +216,19 @@ describe('workflowDraftStoreV2', () => {
       const evictedPayloadKey = payloadKey('workflows/draft0.json')
       expect(localStorage.getItem(evictedPayloadKey)).not.toBeNull()
 
-      withQuotaMock(
-        (key, value) =>
-          key === INDEX_KEY &&
-          Boolean(
-            JSON.parse(value).entries[hashPath('workflows/overflow.json')]
-          )
-      )
+      let indexFailureInjected = false
+      withQuotaMock((key) => {
+        if (key !== INDEX_KEY || indexFailureInjected) return false
+        indexFailureInjected = true
+        return true
+      })
 
       const ok = store.saveDraft('workflows/overflow.json', '{"id":"new"}', {
         name: 'overflow',
         isTemporary: true
       })
       expect(ok).toBe(false)
+      expect(indexFailureInjected).toBe(true)
 
       expect(localStorage.getItem(evictedPayloadKey)).not.toBeNull()
       expect(store.getDraft('workflows/draft0.json')).not.toBeNull()
@@ -239,8 +238,7 @@ describe('workflowDraftStoreV2', () => {
 
   describe('handleQuotaExceeded', () => {
     function readIndexFromStorage() {
-      const json = localStorage.getItem(INDEX_KEY)
-      return json ? JSON.parse(json) : createEmptyIndex()
+      return readIndex(WORKSPACE) ?? createEmptyIndex()
     }
 
     function seedDraftDirect(path: string, data: string, name: string) {
@@ -328,7 +326,7 @@ describe('workflowDraftStoreV2', () => {
       expect(readIndexFromStorage().order).not.toContain('tailorphan')
     })
 
-    it('reports to Sentry when storage fills despite full eviction', () => {
+    it('reports quota exhaustion when storage fills despite full eviction', () => {
       const store = useWorkflowDraftStoreV2()
       seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
 
@@ -340,16 +338,16 @@ describe('workflowDraftStoreV2', () => {
       })
       expect(ok).toBe(false)
 
-      expect(captureMessageMock).toHaveBeenCalledWith(
-        expect.stringContaining('localStorage quota exhausted'),
-        expect.objectContaining({
-          level: 'warning',
-          tags: expect.objectContaining({
-            error_type: 'storage_quota_exhausted',
-            store: 'workflowDraftStoreV2'
-          })
-        })
-      )
+      expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'storage_quota_exhausted',
+        level: 'warning',
+        tags: { store: 'workflowDraftStoreV2' },
+        context: {
+          evictedDrafts: 1,
+          remainingDrafts: 0,
+          incomingPayloadBytes: expect.any(Number)
+        }
+      })
     })
 
     it('reports payload byte size measured against the serialized envelope', () => {
@@ -367,12 +365,14 @@ describe('workflowDraftStoreV2', () => {
       const expectedBytes = new TextEncoder().encode(envelope).length
       expect(expectedBytes).toBeGreaterThan(data.length)
 
-      const call = captureMessageMock.mock.calls.find(
-        ([msg]) =>
-          typeof msg === 'string' &&
-          msg.includes('localStorage quota exhausted')
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            incomingPayloadBytes: expectedBytes
+          })
+        })
       )
-      expect(call?.[1]?.extra?.incomingPayloadBytes).toBe(expectedBytes)
     })
 
     it('rolls the persisted index back when the final index write fails after eviction', () => {
@@ -380,17 +380,15 @@ describe('workflowDraftStoreV2', () => {
       seedDraftDirect('workflows/a.json', '{"id":"a"}', 'a')
 
       let payloadFailures = 0
-      withQuotaMock((key, value) => {
+      let indexFailureInjected = false
+      withQuotaMock((key) => {
         if (key.startsWith(PAYLOAD_PREFIX) && payloadFailures === 0) {
           payloadFailures++
           return true
         }
-        return (
-          key === INDEX_KEY &&
-          Boolean(
-            JSON.parse(value).entries[hashPath('workflows/incoming.json')]
-          )
-        )
+        if (key !== INDEX_KEY || indexFailureInjected) return false
+        indexFailureInjected = true
+        return true
       })
 
       const ok = store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
@@ -398,6 +396,7 @@ describe('workflowDraftStoreV2', () => {
         isTemporary: true
       })
       expect(ok).toBe(false)
+      expect(indexFailureInjected).toBe(true)
 
       const persisted = readIndexFromStorage()
       expect(persisted.order).not.toContain(hashPath('workflows/incoming.json'))
