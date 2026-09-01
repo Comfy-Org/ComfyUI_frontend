@@ -10,12 +10,14 @@ const useImageMock = vi.hoisted(() => ({
 }))
 
 vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
+  const actual = await vi.importActual<typeof import('@vueuse/core')>(
+    '@vueuse/core'
+  )
   const { ref } = await import('vue')
   useImageMock.state = ref<HTMLImageElement | undefined>(undefined)
   useImageMock.isReady = ref(false)
   return {
-    ...(actual as Record<string, unknown>),
+    ...actual,
     useImage: () => ({
       state: useImageMock.state,
       isReady: useImageMock.isReady
