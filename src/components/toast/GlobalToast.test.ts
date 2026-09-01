@@ -1,9 +1,10 @@
 import { createTestingPinia } from '@pinia/testing'
-import { cleanup, render } from '@testing-library/vue'
+import { cleanup, render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
+import { GRAPH_CANVAS_ANCHOR } from '@/constants/splitterConstants'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
@@ -21,7 +22,13 @@ function renderToast() {
   return render(GlobalToast, {
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn })],
-      stubs: { Toast: true }
+      stubs: {
+        Toast: {
+          props: ['group', 'position'],
+          template:
+            '<div data-testid="toast" :group="group" :position="position"><slot /></div>'
+        }
+      }
     }
   })
 }
@@ -64,6 +71,27 @@ describe('GlobalToast', () => {
 
     expect(toastService.removeAllGroups).toHaveBeenCalledOnce()
     expect(toastStore.removeAllRequested).toBe(false)
+  })
+
+  it('anchors the main toast to the canvas panel with viewport fallbacks', () => {
+    renderToast()
+    const [main] = screen.getAllByTestId('toast')
+    const classes = main.getAttribute('class') ?? ''
+
+    expect(main.getAttribute('position')).toBe('bottom-right')
+    expect(classes).toContain(`anchor(${GRAPH_CANVAS_ANCHOR}_top,1rem)`)
+    expect(classes).toContain(
+      `anchor(${GRAPH_CANVAS_ANCHOR}_right,anchor(--docked-agent-panel_left,calc(100vw-var(--workspace-inset-right,0px)-0.75rem)))`
+    )
+  })
+
+  it('keeps billing-operation messages on the dedicated outlet', () => {
+    renderToast()
+    const [main, billing] = screen.getAllByTestId('toast')
+
+    expect(main.getAttribute('group')).toBeNull()
+    expect(billing.getAttribute('group')).toBe('billing-operation')
+    expect(billing.getAttribute('position')).toBe('top-right')
   })
 
   it('holds messages raised during node selection mode until it exits', async () => {
