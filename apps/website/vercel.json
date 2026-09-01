@@ -80,8 +80,23 @@
       "permanent": false
     },
     {
-      "source": "/enterprise",
-      "destination": "/cloud/enterprise",
+      "source": "/cloud/enterprise",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/enterprise/",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise",
+      "destination": "/enterprise/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise/",
+      "destination": "/enterprise/",
       "permanent": true
     },
     {
