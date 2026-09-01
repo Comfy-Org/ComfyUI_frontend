@@ -52,16 +52,14 @@ export function useTypeformEmbed(
     isTypeformIdValid(toValue(typeformIdInput))
   )
 
-  const typeformId = computed(() =>
-    isValidTypeformId.value ? (toValue(typeformIdInput) ?? '') : ''
-  )
-
   whenever(typeformRef, async () => {
     try {
       await ensureScriptLoaded()
       const tf = window.tf
       if (typeof tf?.load !== 'function') {
-        throw new Error('Typeform API unavailable after script load')
+        console.error('Typeform API unavailable after script load')
+        typeformError.value = true
+        return
       }
       tf.load()
     } catch (err) {
@@ -72,7 +70,6 @@ export function useTypeformEmbed(
 
   return {
     typeformError,
-    isValidTypeformId,
-    typeformId
+    isValidTypeformId
   }
 }

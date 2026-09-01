@@ -176,6 +176,7 @@
         <ComfyHubPublishIntroPanel
           v-else
           data-testid="publish-intro"
+          :is-update="!!publishResult"
           :on-create-profile="handleOpenPublishDialog"
           :on-close="onClose"
           :show-close-button="false"

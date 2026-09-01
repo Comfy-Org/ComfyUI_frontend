@@ -1,5 +1,10 @@
 <template>
-  <div class="flex h-[700px] max-h-[85vh] w-[320px] max-w-[90vw] flex-col">
+  <div class="dark-theme flex max-h-full w-full max-w-md flex-col px-4 sm:px-6">
+    <h1
+      class="-mb-1 font-inter text-xl/8 font-semibold tracking-wide text-primary-comfy-canvas sm:text-2xl/8"
+    >
+      {{ $t('cloudOnboarding.survey.title') }}
+    </h1>
     <DynamicSurveyForm
       :key="activeSurvey.version"
       :survey="activeSurvey"

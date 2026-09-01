@@ -1,4 +1,8 @@
-import type { ImportPublishedAssetsRequest } from '@comfyorg/ingest-types'
+import type {
+  HubWorkflowDetail,
+  ImportPublishedAssetsRequest
+} from '@comfyorg/ingest-types'
+import { zGetHubWorkflowResponse } from '@comfyorg/ingest-types/zod'
 
 import type {
   PublishPrefill,
@@ -11,7 +15,6 @@ import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTy
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { AssetInfo } from '@/schemas/apiSchema'
 import {
-  zHubWorkflowPrefillResponse,
   zPublishRecordResponse,
   zSharedWorkflowResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
@@ -41,33 +44,40 @@ function mapApiThumbnailType(
   return value
 }
 
-interface PrefillMetadataFields {
-  description?: string | null
-  tags?: string[] | null
-  thumbnail_type?: 'image' | 'video' | 'image_comparison' | null
-  sample_image_urls?: string[] | null
-}
-
-function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
-  const description = fields.description ?? undefined
-  const tags = fields.tags ?? undefined
+function extractPrefill(fields: HubWorkflowDetail): PublishPrefill | null {
+  const name = fields.name
+  const description = fields.description
+  const tags = fields.tags?.map((tag) => tag.display_name)
   const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
-  const sampleImageUrls = fields.sample_image_urls ?? undefined
+  const thumbnailUrl = fields.thumbnail_url
+  const thumbnailComparisonUrl = fields.thumbnail_comparison_url
+  const sampleImageUrls = fields.sample_image_urls
 
   if (
+    !name &&
     !description &&
     !tags?.length &&
     !thumbnailType &&
+    !thumbnailUrl &&
+    !thumbnailComparisonUrl &&
     !sampleImageUrls?.length
   ) {
     return null
   }
 
-  return { description, tags, thumbnailType, sampleImageUrls }
+  return {
+    name,
+    description,
+    tags,
+    thumbnailType,
+    thumbnailUrl,
+    thumbnailComparisonUrl,
+    sampleImageUrls
+  }
 }
 
 function decodeHubWorkflowPrefill(payload: unknown): PublishPrefill | null {
-  const result = zHubWorkflowPrefillResponse.safeParse(payload)
+  const result = zGetHubWorkflowResponse.safeParse(payload)
   if (!result.success) return null
   return extractPrefill(result.data)
 }

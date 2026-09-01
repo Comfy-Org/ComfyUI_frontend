@@ -6,6 +6,7 @@ import type { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { ErrorCardData } from './types'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { useErrorReport } from './useErrorReport'
+import { toNodeId } from '@/types/nodeId'
 
 async function flushPromises() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -104,7 +105,7 @@ function makeCard(overrides: Partial<ErrorCardData> = {}): ErrorCardData {
   return {
     id: 'card-1',
     title: 'KSampler',
-    nodeId: createNodeExecutionId([42]),
+    nodeId: createNodeExecutionId([toNodeId(42)]),
     errors: [],
     ...overrides
   }
@@ -114,10 +115,6 @@ describe('useErrorReport', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(async () => {
-    mocks.getLogs.mockReset()
-    mocks.serialize.mockReset()
-    mocks.refetchSystemStats.mockReset()
-    mocks.generateErrorReport.mockReset()
     storeState.systemStats = null
     storeState.isLoading = false
     const store = await getStore()
@@ -182,7 +179,7 @@ describe('useErrorReport', () => {
       exceptionType: 'RuntimeError',
       exceptionMessage: 'CUDA oom',
       traceback: 'trace-0',
-      nodeId: createNodeExecutionId([42]),
+      nodeId: createNodeExecutionId([toNodeId(42)]),
       nodeType: 'KSampler',
       systemStats: sampleSystemStats,
       serverLogs: 'server logs',

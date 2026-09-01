@@ -1,8 +1,8 @@
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { NodeId } from '@/types/nodeId'
 
 import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
 
@@ -13,7 +13,7 @@ import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
  * on the projected widget.
  */
 export interface PromotedSource {
-  nodeId: string
+  nodeId: NodeId
   widgetName: string
 }
 
@@ -35,22 +35,6 @@ export function inputForWidget(
   widget: IBaseWidget
 ): INodeInputSlot | undefined {
   return node.getSlotFromWidget(widget)
-}
-
-/**
- * The interior source of a widget when it is a promoted subgraph input.
- * Replaces ad-hoc "is this promoted?" duck-typing: a widget is promoted iff its
- * host node is a subgraph node and its backing input slot has an interior
- * source.
- */
-export function widgetPromotedSource(
-  node: LGraphNode,
-  widget: IBaseWidget
-): PromotedSource | undefined {
-  if (!node.isSubgraphNode()) return undefined
-  const input = inputForWidget(node, widget)
-  if (!input) return undefined
-  return promotedInputSource(node, input)
 }
 
 /**
@@ -93,8 +77,7 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
       return store.getWidget(id)?.options ?? {}
     },
     get value() {
-      const value = store.getWidget(id)?.value
-      return isWidgetValue(value) ? value : undefined
+      return store.getWidget(id)?.value
     },
     set value(next) {
       store.setValue(id, next)
@@ -109,7 +92,6 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
   }
 }
 
-/** Every promoted subgraph input on a node, projected to ordinary widgets. */
 export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {
   return node.inputs.flatMap((input) => {
     const widget = promotedInputWidget(input)

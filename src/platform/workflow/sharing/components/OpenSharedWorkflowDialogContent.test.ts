@@ -2,7 +2,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
@@ -87,10 +87,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
 }
 
 describe('OpenSharedWorkflowDialogContent', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('loading state', () => {
     it('shows skeleton placeholders while loading', () => {
       mockGetSharedWorkflow.mockReturnValue(new Promise(() => {}))

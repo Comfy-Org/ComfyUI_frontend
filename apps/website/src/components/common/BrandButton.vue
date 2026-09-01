@@ -2,23 +2,24 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { computed } from 'vue'
-import type { HTMLAttributes } from 'vue'
+import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
 import type { BrandButtonVariants } from './brandButton.variants'
 import { brandButtonVariants } from './brandButton.variants'
+import { resolveRel } from '../../utils/cta'
 
 const props = defineProps<{
   href?: string
   target?: string
   rel?: string
+  download?: AnchorHTMLAttributes['download']
   variant?: BrandButtonVariants['variant']
   size?: BrandButtonVariants['size']
   class?: HTMLAttributes['class']
 }>()
 
-const resolvedRel = computed(
-  () =>
-    props.rel ?? (props.target === '_blank' ? 'noopener noreferrer' : undefined)
+const resolvedRel = computed(() =>
+  resolveRel({ rel: props.rel, target: props.target })
 )
 </script>
 
@@ -28,6 +29,7 @@ const resolvedRel = computed(
     :href="props.href"
     :target="props.target"
     :rel="resolvedRel"
+    :download="props.download"
     :class="
       cn(
         brandButtonVariants({ variant: props.variant, size: props.size }),

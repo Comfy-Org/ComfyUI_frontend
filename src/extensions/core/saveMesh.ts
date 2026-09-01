@@ -107,7 +107,7 @@ useExtensionService().registerExtension({
           name: inputSpec.name,
           component: Load3D,
           inputSpec,
-          options: {}
+          options: { hideInPanel: true }
         })
 
         widget.type = 'load3D'

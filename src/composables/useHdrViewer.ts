@@ -43,7 +43,7 @@ const CHANNEL_INDEX: Record<ChannelMode, number> = {
   luminance: 5
 }
 
-export interface PixelReadout {
+interface PixelReadout {
   x: number
   y: number
   r: number

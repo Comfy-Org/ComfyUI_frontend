@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { union } from 'es-toolkit/compat'
 import { until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
@@ -9,16 +9,18 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  areWorkflowIdsEquivalent,
+  ensureWorkflowId,
+  getLegacyWorkflowId
+} from '@/platform/workflow/core/utils/workflowId'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
-import { defaultGraphJSON } from '@/scripts/defaultGraph'
+import { defaultGraph } from '@/scripts/defaultGraph'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -26,6 +28,8 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -184,7 +188,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     ): path is keyof typeof workflowLookup.value =>
       typeof path === 'string' && path in workflowLookup.value
 
-    openWorkflowPaths.value = _.union(
+    openWorkflowPaths.value = union(
       left,
       openWorkflowPaths.value,
       right
@@ -254,20 +258,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return workflow
   }
 
-  const ensureWorkflowId = (
-    workflowData?: ComfyWorkflowJSON
-  ): ComfyWorkflowJSON => {
-    const base = workflowData
-      ? (JSON.parse(JSON.stringify(workflowData)) as ComfyWorkflowJSON)
-      : (JSON.parse(defaultGraphJSON) as ComfyWorkflowJSON)
-
-    if (!base.id) {
-      base.id = generateUUID()
-    }
-
-    return base
-  }
-
   /**
    * Helper to create a new temporary workflow
    */
@@ -280,8 +270,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
       modified: Date.now(),
       size: -1
     })
+    workflow.legacyId = getLegacyWorkflowId(workflowData?.id)
 
-    const initialWorkflowData = ensureWorkflowId(workflowData)
+    const initialWorkflowData = ensureWorkflowId(
+      structuredClone(workflowData ?? defaultGraph)
+    )
     workflow.originalContent = workflow.content =
       JSON.stringify(initialWorkflowData)
 
@@ -297,13 +290,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
 
-    const normalizedWorkflowData = workflowData
-      ? ensureWorkflowId(workflowData)
-      : undefined
-
     // Try to reuse an existing loaded workflow with the same filename
     // that is not stored in the workflows directory
-    if (path && normalizedWorkflowData) {
+    if (path && workflowData) {
       const existingWorkflow = workflows.value.find(
         (w) => w.fullFilename === path
       )
@@ -311,14 +300,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
         existingWorkflow?.changeTracker &&
         !existingWorkflow.directory.startsWith(
           ComfyWorkflow.basePath.slice(0, -1)
+        ) &&
+        areWorkflowIdsEquivalent(
+          existingWorkflow.activeState?.id,
+          workflowData.id,
+          existingWorkflow.legacyId
         )
       ) {
-        existingWorkflow.changeTracker.reset(normalizedWorkflowData)
+        existingWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
+        existingWorkflow.changeTracker.reset(
+          ensureWorkflowId(workflowData, existingWorkflow.activeState?.id)
+        )
         return existingWorkflow
       }
     }
 
-    return createNewWorkflow(fullPath, normalizedWorkflowData)
+    return createNewWorkflow(fullPath, workflowData)
   }
 
   /**
@@ -571,7 +568,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
-    const node = graph.getNodeById(id)
+    const parsedNodeId = parseNodeId(id)
+    if (!parsedNodeId) return
+    const node = graph.getNodeById(parsedNodeId)
     if (node?.isSubgraphNode()) return node.subgraph
   }
 

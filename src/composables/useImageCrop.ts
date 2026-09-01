@@ -2,12 +2,13 @@ import { useResizeObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 import { resolveNode } from '@/utils/litegraphUtil'
 
-export type ResizeDirection =
+type ResizeDirection =
   | 'top'
   | 'bottom'
   | 'left'
@@ -17,7 +18,7 @@ export type ResizeDirection =
   | 'sw'
   | 'se'
 
-export interface ResizeHandle {
+interface ResizeHandle {
   direction: ResizeDirection
   class: string
   style: {

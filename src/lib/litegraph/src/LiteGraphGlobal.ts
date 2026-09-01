@@ -339,6 +339,13 @@ export class LiteGraphGlobal {
   saveViewportWithGraph: boolean = true
 
   /**
+   * If `true`, widgets values are deserialised using a map of widget names to values instead of a list.
+   * This is intended as a temporary setting. It is planned to be made the default and eventually removed.
+   * @default false
+   */
+  namedValuesRestore: boolean = false
+
+  /**
    * Enable Vue nodes mode for rendering and positioning.
    * When true:
    * - Nodes will calculate slot positions using Vue component dimensions
@@ -450,8 +457,8 @@ export class LiteGraphGlobal {
 
     delete this.registered_node_types[String(base_class.type)]
 
-    const name = base_class.constructor.name
-    if (name) delete this.Nodes[name]
+    const name = base_class.name
+    if (name && this.Nodes[name] === base_class) delete this.Nodes[name]
   }
 
   /**
@@ -537,18 +544,14 @@ export class LiteGraphGlobal {
 
     let node: LGraphNode
 
-    if (this.catch_exceptions) {
-      try {
-        node = new base_class(title)
-      } catch (error) {
-        console.error(error)
-        return null
-      }
-    } else {
+    try {
       node = new base_class(title)
+      node._state.type = type
+    } catch (error) {
+      if (!this.catch_exceptions) throw error
+      console.error(error)
+      return null
     }
-
-    node.type = type
 
     if (!node.title && title) node.title = title
     node.properties ||= {}

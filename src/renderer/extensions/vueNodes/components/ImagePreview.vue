@@ -117,6 +117,17 @@
           <i-comfy:mask class="size-4" />
         </button>
 
+        <!-- Layer Editor Button -->
+        <button
+          v-if="hasMultipleImages && !imageError"
+          :class="actionButtonClass"
+          :title="$t('g.openLayerEditor')"
+          :aria-label="$t('g.openLayerEditor')"
+          @click="handleOpenLayerEditor"
+        >
+          <i class="icon-[lucide--layers] size-4" />
+        </button>
+
         <!-- Download Button -->
         <button
           v-if="!imageError"
@@ -203,9 +214,11 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
@@ -215,7 +228,7 @@ interface ImagePreviewProps {
   /** Array of image URLs to display */
   readonly imageUrls: readonly string[]
   /** Optional node ID for context-aware actions */
-  readonly nodeId?: string
+  readonly nodeId?: NodeId
 }
 
 const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
@@ -323,14 +336,24 @@ function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = true
+  useTelemetry()?.trackImageLoadFailed({ source: 'node_image_preview' })
   actualDimensions.value = null
 }
 
 function handleEditMask() {
   if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
+  const node = resolveNode(nodeId)
   if (!node) return
   maskEditor.openMaskEditor(node)
+}
+
+async function handleOpenLayerEditor() {
+  if (!nodeId) return
+  const node = resolveNode(nodeId)
+  if (!node) return
+  const { useLayerEditor } =
+    await import('@/renderer/extensions/layerEditor/composables/useLayerEditor')
+  useLayerEditor().openLayerEditor(node)
 }
 
 function handleDownload() {

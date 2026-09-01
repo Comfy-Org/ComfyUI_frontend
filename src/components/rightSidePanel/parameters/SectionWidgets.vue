@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { useMounted, watchDebounced } from '@vueuse/core'
+import { watchDebounced } from '@vueuse/core'
 import {
   computed,
   inject,
   onBeforeUnmount,
+  onMounted,
   provide,
   ref,
   shallowRef,
@@ -12,11 +13,11 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -25,11 +26,12 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
@@ -43,12 +45,12 @@ const {
   isDraggable = false,
   hiddenFavoriteIndicator = false,
   showNodeName = false,
-  parents = [],
+  host,
   enableEmptyState = false,
   tooltip
 } = defineProps<{
   label?: string
-  parents?: SubgraphNode[]
+  host?: SubgraphNode
   node?: LGraphNode
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
@@ -75,13 +77,12 @@ const widgets = shallowRef(widgetsProp)
 watchEffect(() => (widgets.value = widgetsProp))
 
 const draggableList = ref<DraggableList | undefined>()
-const isMounted = useMounted()
 
 function setDraggableState() {
   draggableList.value?.dispose()
   draggableList.value = undefined
 
-  if (!isMounted.value || !isDraggable || collapse.value) return
+  if (!isDraggable || collapse.value) return
   const container = widgetsContainer.value
   if (!container?.children?.length) return
 
@@ -128,11 +129,13 @@ function setDraggableState() {
 watchDebounced(
   [widgets, () => isDraggable, collapse],
   () => setDraggableState(),
-  { debounce: 100, immediate: true }
+  { debounce: 100 }
 )
+onMounted(setDraggableState)
 onBeforeUnmount(() => draggableList.value?.dispose())
 
 provide(HideLayoutFieldKey, true)
+provide(WidgetHeightKey, 'h-7')
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -141,30 +144,6 @@ const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
-
-function isWidgetShownOnParents(
-  widgetNode: LGraphNode,
-  widget: IBaseWidget
-): boolean {
-  const source = widgetPromotedSource(widgetNode, widget)
-  return parents.some((parent) => {
-    if (source) {
-      const interiorNodeId =
-        String(widgetNode.id) === String(parent.id)
-          ? source.nodeId
-          : String(widgetNode.id)
-
-      return isWidgetPromotedOnSubgraphNode(parent, {
-        sourceNodeId: interiorNodeId,
-        sourceWidgetName: source.widgetName
-      })
-    }
-    return isWidgetPromotedOnSubgraphNode(parent, {
-      sourceNodeId: String(widgetNode.id),
-      sourceWidgetName: widget.name
-    })
-  })
-}
 
 const isEmpty = computed(() => widgets.value.length === 0)
 
@@ -220,6 +199,11 @@ const canShowLocateButton = computed(
 function handleLocateNode() {
   if (!targetNode.value || !canvasStore.canvas) return
 
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_locate_node_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
   const graphNode = canvasStore.canvas.graph?.getNodeById(targetNode.value.id)
   if (graphNode) {
     canvasStore.canvas.animateToBounds(graphNode.boundingRect)
@@ -233,32 +217,85 @@ function navigateToErrorTab() {
   rightSidePanelStore.openPanel('errors')
 }
 
-function setWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+function clearWidgetErrors(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  value: WidgetValue
+) {
+  const rootGraph = widgetNode.graph?.rootGraph
+  if (!rootGraph) return
+
+  const executionId = getExecutionIdByNode(rootGraph, widgetNode)
+  if (!executionId) return
+
+  const options = { min: widget.options?.min, max: widget.options?.max }
+  const source = resolvePromotedWidgetSource(rootGraph, widgetNode, widget)
+  if (source?.sourceExecutionId) {
+    executionErrorStore.clearWidgetRelatedErrors(
+      source.sourceExecutionId,
+      source.sourceWidgetName,
+      source.sourceWidgetName,
+      value,
+      {
+        min: source.sourceWidget.options?.min,
+        max: source.sourceWidget.options?.max
+      }
+    )
+  }
+
+  executionErrorStore.clearWidgetRelatedErrors(
+    executionId,
+    widget.name,
+    widget.name,
+    value,
+    options
+  )
+}
+
+function setWidgetValue(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  value: WidgetValue
+) {
   // Store-backed widgets (interior node widgets and promoted subgraph inputs)
   // are addressed by widgetId; writing there keeps the displayed value in sync.
   if (widget.widgetId) useWidgetValueStore().setValue(widget.widgetId, value)
   widget.value = value
   widget.callback?.(value)
+  clearWidgetErrors(widgetNode, widget, value)
   canvasStore.canvas?.setDirty(true, true)
 }
 
 function handleResetAllWidgets() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_reset_all_parameters_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
   for (const { widget, node: widgetNode } of widgetsProp) {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
     if (defaultValue !== undefined) {
-      setWidgetValue(widget, defaultValue)
+      setWidgetValue(widgetNode, widget, defaultValue)
     }
   }
 }
 
-function handleWidgetValueUpdate(widget: IBaseWidget, newValue: WidgetValue) {
+function handleWidgetValueUpdate(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  newValue: WidgetValue
+) {
   if (newValue === undefined) return
-  setWidgetValue(widget, newValue)
+  setWidgetValue(widgetNode, widget, newValue)
 }
 
-function handleWidgetReset(widget: IBaseWidget, newValue: WidgetValue) {
-  setWidgetValue(widget, newValue)
+function handleWidgetReset(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  newValue: WidgetValue
+) {
+  setWidgetValue(widgetNode, widget, newValue)
 }
 
 defineExpose({
@@ -341,23 +378,22 @@ defineExpose({
 
       <div
         ref="widgetsContainer"
+        data-testid="section-widgets-list"
+        :data-draggable-ready="draggableList ? 'true' : undefined"
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
-        <TransitionGroup name="list-scale">
-          <WidgetItem
-            v-for="{ widget, node } in widgets"
-            :key="getStableWidgetRenderKey(widget)"
-            :widget="widget"
-            :node="node"
-            :is-draggable="isDraggable"
-            :hidden-favorite-indicator="hiddenFavoriteIndicator"
-            :show-node-name="showNodeName"
-            :parents="parents"
-            :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
-            @update:widget-value="handleWidgetValueUpdate(widget, $event)"
-            @reset-to-default="handleWidgetReset(widget, $event)"
-          />
-        </TransitionGroup>
+        <WidgetItem
+          v-for="{ widget, node } in widgets"
+          :key="getStableWidgetRenderKey(widget)"
+          :widget
+          :node
+          :is-draggable
+          :hidden-favorite-indicator
+          :show-node-name
+          :host
+          @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
+          @reset-to-default="handleWidgetReset(node, widget, $event)"
+        />
       </div>
     </PropertiesAccordionItem>
   </div>

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/scripts/app', () => ({
@@ -12,18 +10,20 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 import { widgetId as makeWidgetId } from '@/types/widgetId'
 
 import { createPromotedMultilineWidget } from './multilineTextarea'
 
-const WIDGET_ID = makeWidgetId('graph-1', 'node-1', 'prompt')
+const WIDGET_ID = makeWidgetId('graph-1', toNodeId('node-1'), 'prompt')
 
 function subgraphNode(): LGraphNode {
   const node = fromAny<LGraphNode, unknown>({
     id: 'node-1',
     graph: {
       rootGraph: { id: 'graph-1' },
-      getNodeById: (id: string) => (id === 'node-1' ? node : undefined)
+      getNodeById: (id: unknown) =>
+        id === toNodeId('node-1') ? node : undefined
     }
   })
   return node
@@ -50,7 +50,6 @@ function promote(
 
 describe('createPromotedMultilineWidget', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     useWidgetValueStore().registerWidget(WIDGET_ID, {
       type: 'customtext',
       value: 'hello',

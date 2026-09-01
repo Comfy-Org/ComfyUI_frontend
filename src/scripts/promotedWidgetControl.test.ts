@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -57,10 +55,6 @@ function createPromotedSeedHost(controlMode: string): SubgraphNode {
 }
 
 describe('applyPromotedWidgetControl', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('increments the host-owned value of a promoted seed after queueing', () => {
     const host = createPromotedSeedHost('increment')
     expect(promotedSeedValue(host)).toBe(1)
@@ -81,7 +75,10 @@ describe('applyPromotedWidgetControl', () => {
   it('does not run control on a host input fed by an external link', () => {
     const host = createPromotedSeedHost('increment')
     const seedInput = host.inputs.find((input) => input.name === 'seed')!
-    seedInput.link = 99
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    host.graph!.add(source)
+    source.connect(0, host, host.inputs.indexOf(seedInput))
 
     applyPromotedWidgetControl(host, 'afterQueued')
 

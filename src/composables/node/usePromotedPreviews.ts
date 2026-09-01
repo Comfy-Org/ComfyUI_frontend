@@ -5,7 +5,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
+import type { NodeId } from '@/types/nodeId'
 import {
   appendNodeExecutionId,
   createNodeLocatorId
@@ -13,7 +17,7 @@ import {
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
-  sourceNodeId: string
+  sourceNodeId: NodeId
   sourceWidgetName: string
   type: 'image' | 'video' | 'audio'
   urls: string[]
@@ -41,7 +45,7 @@ export function usePromotedPreviews(
   /** Touches reactive sources for Vue tracking; `getNodeImageUrls` reads non-reactive app state. */
   function readReactivePreviewUrls(
     leafHost: SubgraphNode,
-    leafSourceNodeId: string,
+    leafSourceNodeId: NodeId,
     leafExecutionId: NodeExecutionId,
     interiorNode: LGraphNode
   ): string[] | undefined {
@@ -49,6 +53,8 @@ export function usePromotedPreviews(
       leafHost.subgraph.id,
       leafSourceNodeId
     )
+    if (!locatorId) return undefined
+
     const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
     const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
     const reactiveExecutionOutputs =
@@ -75,7 +81,8 @@ export function usePromotedPreviews(
     if (node.isDetached) return []
 
     const rootGraphId = node.rootGraph.id
-    const hostLocator = String(node.id)
+    const hostLocator = getPreviewExposureHostLocator(node)
+    if (!hostLocator) return []
     const exposures = previewExposureStore.getExposures(
       rootGraphId,
       hostLocator
@@ -85,24 +92,28 @@ export function usePromotedPreviews(
     const hostNodesByLocator = new Map<string, SubgraphNode>([
       [hostLocator, node]
     ])
+    const hostExecutionsByLocator = new Map<string, string>([
+      [hostLocator, String(node.id)]
+    ])
 
     function resolveNestedHost(
       rootGraphId: UUID,
       currentHostLocator: string,
-      sourceNodeId: string
+      sourceNodeId: NodeId
     ) {
       const currentHost = hostNodesByLocator.get(currentHostLocator)
       const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
       if (!(sourceNode instanceof SubgraphNode)) return undefined
 
-      const pathLocator = `${currentHostLocator}:${sourceNode.id}`
-      const definitionLocator = String(sourceNode.id)
-      const hasPathExposures =
-        previewExposureStore.getExposures(rootGraphId, pathLocator).length > 0
-      const nestedHostLocator = hasPathExposures
-        ? pathLocator
-        : definitionLocator
+      const nestedHostLocator = getPreviewExposureHostLocator(sourceNode)
+      if (!nestedHostLocator) return undefined
+      const currentExecutionId = hostExecutionsByLocator.get(currentHostLocator)
+      if (!currentExecutionId) return undefined
       hostNodesByLocator.set(nestedHostLocator, sourceNode)
+      hostExecutionsByLocator.set(
+        nestedHostLocator,
+        `${currentExecutionId}:${sourceNode.id}`
+      )
       return { rootGraphId, hostNodeLocator: nestedHostLocator }
     }
 
@@ -120,13 +131,21 @@ export function usePromotedPreviews(
       const leafHostLocator =
         resolved?.steps.at(-1)?.hostNodeLocator ?? hostLocator
       const leafHost = hostNodesByLocator.get(leafHostLocator) ?? node
+      const leafHostExecutionId =
+        hostExecutionsByLocator.get(leafHostLocator) ?? String(node.id)
       const interiorNode = leafHost.subgraph.getNodeById(leaf.sourceNodeId)
       if (!interiorNode) return []
+
+      const leafExecutionId = appendNodeExecutionId(
+        leafHostExecutionId,
+        leaf.sourceNodeId
+      )
+      if (!leafExecutionId) return []
 
       const urls = readReactivePreviewUrls(
         leafHost,
         leaf.sourceNodeId,
-        appendNodeExecutionId(leafHostLocator, leaf.sourceNodeId),
+        leafExecutionId,
         interiorNode
       )
       if (!urls?.length) return []

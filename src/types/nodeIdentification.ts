@@ -1,6 +1,8 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
-const NODE_EXECUTION_ID_PATTERN = /^[^:]+(?::[^:]+)*$/
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * A globally unique identifier for nodes that maintains consistency across
@@ -28,12 +30,21 @@ export type NodeLocatorId = string & { readonly __brand: 'NodeLocatorId' }
  */
 export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
 
-function parseNodeIdSegment(part: string): NodeId {
-  return isNaN(Number(part)) ? part : Number(part)
+function requireNodeIdSegment(value: unknown): NodeId | null {
+  const nodeId = parseNodeId(value)
+  if (!nodeId || nodeId.includes(':')) return null
+  return nodeId
+}
+
+function parseNodeIdSegments(values: readonly unknown[]): NodeId[] | null {
+  const nodeIds = values.map(requireNodeIdSegment)
+  return nodeIds.every((nodeId): nodeId is NodeId => nodeId !== null)
+    ? nodeIds
+    : null
 }
 
 function nodeExecutionIdFromString(value: string): NodeExecutionId | null {
-  return NODE_EXECUTION_ID_PATTERN.test(value)
+  return parseNodeIdSegments(value.split(':'))
     ? (value as NodeExecutionId)
     : null
 }
@@ -42,25 +53,7 @@ function nodeExecutionIdFromString(value: string): NodeExecutionId | null {
  * Type guard to check if a value is a NodeLocatorId
  */
 export function isNodeLocatorId(value: unknown): value is NodeLocatorId {
-  if (typeof value !== 'string') return false
-
-  // Check if it's a simple node ID (root graph node)
-  const parts = value.split(':')
-  if (parts.length === 1) {
-    // Simple node ID - must be non-empty
-    return value.length > 0
-  }
-
-  // Check for UUID:nodeId format
-  if (parts.length !== 2) return false
-
-  // Check that node ID part is not empty
-  if (!parts[1]) return false
-
-  // Basic UUID format check (8-4-4-4-12 hex characters)
-  const uuidPattern =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  return uuidPattern.test(parts[0])
+  return typeof value === 'string' && parseNodeLocatorId(value) !== null
 }
 
 /**
@@ -78,23 +71,24 @@ export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
 export function parseNodeLocatorId(
   id: string
 ): { subgraphUuid: string | null; localNodeId: NodeId } | null {
-  if (!isNodeLocatorId(id)) return null
-
   const parts = id.split(':')
 
   if (parts.length === 1) {
-    // Simple node ID (root graph)
-    return {
-      subgraphUuid: null,
-      localNodeId: parseNodeIdSegment(id)
-    }
+    const localNodeId = requireNodeIdSegment(id)
+    if (!localNodeId) return null
+
+    return { subgraphUuid: null, localNodeId }
   }
 
-  const [subgraphUuid, localNodeId] = parts
-  return {
-    subgraphUuid,
-    localNodeId: parseNodeIdSegment(localNodeId)
-  }
+  if (parts.length !== 2) return null
+
+  const [subgraphUuid, localNodeIdPart] = parts
+  if (!UUID_PATTERN.test(subgraphUuid)) return null
+
+  const localNodeId = requireNodeIdSegment(localNodeIdPart)
+  if (!localNodeId) return null
+
+  return { subgraphUuid, localNodeId }
 }
 
 /**
@@ -106,12 +100,19 @@ export function parseNodeLocatorId(
 export function createNodeLocatorId(
   subgraphUuid: string | null,
   localNodeId: NodeId
-): NodeLocatorId {
-  return (
-    subgraphUuid ? `${subgraphUuid}:${localNodeId}` : String(localNodeId)
-  ) as NodeLocatorId
-}
+): NodeLocatorId
+export function createNodeLocatorId(
+  subgraphUuid: string | null,
+  localNodeId: NodeId
+): NodeLocatorId | null {
+  const nodeId = requireNodeIdSegment(localNodeId)
+  if (!nodeId) return null
+  if (subgraphUuid && !UUID_PATTERN.test(subgraphUuid)) return null
 
+  if (!subgraphUuid) return String(nodeId) as NodeLocatorId
+
+  return `${subgraphUuid}:${nodeId}` as NodeLocatorId
+}
 /**
  * Parse a NodeExecutionId into its component node IDs
  * @param id The NodeExecutionId to parse
@@ -121,21 +122,29 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
   const executionId = tryNormalizeNodeExecutionId(id)
   if (!executionId) return null
 
-  return executionId.split(':').map(parseNodeIdSegment)
+  return parseNodeIdSegments(executionId.split(':'))
 }
 
 /**
  * Create a NodeExecutionId from an array of node IDs
  * @param nodeIds Array of node IDs from root to target
- * @returns A properly formatted NodeExecutionId
+ * @returns A properly formatted NodeExecutionId, or null when any segment is invalid
  */
-export function createNodeExecutionId<const T extends readonly NodeId[]>(
-  nodeIds: T & (T extends readonly [] ? never : unknown)
-): NodeExecutionId {
-  if (nodeIds.length === 0) {
-    throw new Error('NodeExecutionId requires at least one node ID')
-  }
-  return nodeIds.map(String).join(':') as NodeExecutionId
+export function createNodeExecutionId<
+  const T extends readonly [SerializedNodeId, ...SerializedNodeId[]]
+>(nodeIds: T): NodeExecutionId
+export function createNodeExecutionId(
+  nodeIds: readonly SerializedNodeId[]
+): NodeExecutionId | null
+export function createNodeExecutionId(
+  nodeIds: readonly SerializedNodeId[]
+): NodeExecutionId | null {
+  if (nodeIds.length === 0) return null
+
+  const nodeIdSegments = parseNodeIdSegments(nodeIds)
+  return nodeIdSegments
+    ? nodeExecutionIdFromString(nodeIdSegments.join(':'))
+    : null
 }
 
 export function tryNormalizeNodeExecutionId(
@@ -145,10 +154,21 @@ export function tryNormalizeNodeExecutionId(
 }
 
 export function appendNodeExecutionId(
+  parentExecutionId: NodeExecutionId,
+  childNodeId: NodeId
+): NodeExecutionId
+export function appendNodeExecutionId(
   parentExecutionId: string,
   childNodeId: NodeId
-): NodeExecutionId {
-  return createNodeExecutionId([...parentExecutionId.split(':'), childNodeId])
+): NodeExecutionId | null
+export function appendNodeExecutionId(
+  parentExecutionId: string,
+  childNodeId: NodeId
+): NodeExecutionId | null {
+  const parentNodeIds = parseNodeExecutionId(parentExecutionId)
+  if (!parentNodeIds) return null
+
+  return createNodeExecutionId([...parentNodeIds, childNodeId])
 }
 
 /**
@@ -159,13 +179,12 @@ export function appendNodeExecutionId(
 export function getAncestorExecutionIds(
   executionId: string
 ): NodeExecutionId[] {
-  const normalized = tryNormalizeNodeExecutionId(executionId)
-  if (!normalized) return []
+  const nodeIds = parseNodeExecutionId(executionId)
+  if (!nodeIds) return []
 
-  const parts = normalized.split(':')
-  return Array.from({ length: parts.length }, (_, i) =>
-    createNodeExecutionId(parts.slice(0, i + 1))
-  )
+  return nodeIds
+    .map((_, index) => createNodeExecutionId(nodeIds.slice(0, index + 1)))
+    .filter((id): id is NodeExecutionId => id !== null)
 }
 
 /**

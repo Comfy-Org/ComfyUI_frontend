@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-export interface ResolvedHostWidget {
+interface ResolvedHostWidget {
   node: LGraphNode
   widget: IBaseWidget
 }

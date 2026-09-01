@@ -8,6 +8,7 @@
       variant="muted-textonly"
       class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.back')"
+      :disabled="isPolling"
       @click="handleBackToPricing"
     >
       <i class="pi pi-arrow-left text-xl" />
@@ -85,8 +86,19 @@
       :tier-key="selectedTierKey!"
       :billing-cycle="selectedBillingCycle"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
+      :authentication-state
+      :authentication-error
+      :can-retry-authentication
+      :is-authenticating
+      :reconciliation-operation-id
+      :quote-is-current
+      :is-applying-promotion-code
       @add-credit-card="handleAddCreditCard"
+      @apply-promotion-code="applyPromotionCode"
+      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
+      @retry-authentication="retryPaymentAuthentication"
     />
 
     <!-- Subscription Preview Step - Plan Transition -->
@@ -98,8 +110,20 @@
       "
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
+      :force-reactivation="reactivationRequired"
+      :authentication-state
+      :authentication-error
+      :can-retry-authentication
+      :is-authenticating
+      :reconciliation-operation-id
+      :quote-is-current
+      :is-applying-promotion-code
       @confirm="handleConfirmTransition"
+      @apply-promotion-code="applyPromotionCode"
+      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
+      @retry-authentication="retryPaymentAuthentication"
     />
 
     <!-- Success Step - subscribe/change-plan confirmation -->
@@ -114,9 +138,11 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
@@ -127,11 +153,13 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 const {
   onClose,
   reason,
-  isPersonal = false
+  isPersonal = false,
+  initialCheckout
 } = defineProps<{
   onClose: () => void
-  reason?: SubscriptionDialogReason
+  reason?: PaymentIntentSource
   isPersonal?: boolean
+  initialCheckout?: SubscriptionCheckoutSelection
 }>()
 
 const emit = defineEmits<{
@@ -145,16 +173,36 @@ const {
   isSubscribing,
   isResubscribing,
   previewData,
+  reactivationRequired,
+  quoteIsCurrent,
+  isApplyingPromotionCode,
   selectedTierKey,
   selectedBillingCycle,
+  activeCheckoutActionUrl,
+  authenticationState,
+  authenticationError,
+  canRetryAuthentication,
+  isAuthenticating,
+  reconciliationOperationId,
   isPolling,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,
   handleConfirmTransition,
+  retryPaymentAuthentication,
+  applyPromotionCode,
+  invalidateQuote,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit)
+} = useSubscriptionCheckout(emit, reason, {
+  tierPlanType: isPersonal ? 'personal' : 'team'
+})
+
+onMounted(() => {
+  if (initialCheckout?.planMode === 'personal') {
+    void handleSubscribeClick(initialCheckout)
+  }
+})
 </script>
 
 <style scoped>

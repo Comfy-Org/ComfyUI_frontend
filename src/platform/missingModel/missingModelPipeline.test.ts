@@ -10,8 +10,18 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 const { mockHandles } = vi.hoisted(() => {
+  const isAncestorPathActive = vi.fn((_graph: LGraph, _nodeId: string) => true)
+  const isCandidateScopeActive = vi.fn(
+    (graph: LGraph, candidate: MissingModelCandidate) => {
+      const executionId = candidate.sourceExecutionId ?? candidate.nodeId
+      return (
+        executionId == null || isAncestorPathActive(graph, String(executionId))
+      )
+    }
+  )
   const state = {
     enrichedCandidates: [] as MissingModelCandidate[]
   }
@@ -23,7 +33,8 @@ const { mockHandles } = vi.hoisted(() => {
         missingModelCandidates: null as MissingModelCandidate[] | null,
         createVerificationAbortController: vi.fn(() => new AbortController()),
         setFolderPaths: vi.fn(),
-        setFileSize: vi.fn()
+        setFileSize: vi.fn(),
+        setGatedRepoUrl: vi.fn()
       },
       workspaceWorkflow: {
         activeWorkflow: null as {
@@ -66,7 +77,8 @@ const { mockHandles } = vi.hoisted(() => {
         getFolderPaths: vi.fn()
       },
       fetchModelMetadata: vi.fn(),
-      isAncestorPathActive: vi.fn((_graph: LGraph, _nodeId: string) => true),
+      isAncestorPathActive,
+      isCandidateScopeActive,
       isMissingCandidateActive: vi.fn(
         (_graph: LGraph, _candidate: MissingModelCandidate) => true
       )
@@ -133,6 +145,8 @@ vi.mock('@/platform/missingModel/missingModelDownload', () => ({
 vi.mock('@/utils/graphTraversalUtil', () => ({
   isAncestorPathActive: (graph: LGraph, nodeId: string) =>
     mockHandles.isAncestorPathActive(graph, nodeId),
+  isCandidateScopeActive: (graph: LGraph, candidate: MissingModelCandidate) =>
+    mockHandles.isCandidateScopeActive(graph, candidate),
   isMissingCandidateActive: (graph: LGraph, candidate: MissingModelCandidate) =>
     mockHandles.isMissingCandidateActive(graph, candidate)
 }))
@@ -158,7 +172,6 @@ function createGraph(graphData = createWorkflowGraphData()): LGraph {
 
 describe('missingModelPipeline', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockHandles.state.enrichedCandidates = []
     mockHandles.missingModelStore.missingModelCandidates = null
     mockHandles.workspaceWorkflow.activeWorkflow = null
@@ -170,8 +183,20 @@ describe('missingModelPipeline', () => {
     )
     mockHandles.scanAllModelCandidates.mockReturnValue([])
     mockHandles.api.getFolderPaths.mockResolvedValue({})
-    mockHandles.fetchModelMetadata.mockResolvedValue({ fileSize: null })
+    mockHandles.fetchModelMetadata.mockResolvedValue({
+      fileSize: null,
+      gatedRepoUrl: null
+    })
     mockHandles.isAncestorPathActive.mockReturnValue(true)
+    mockHandles.isCandidateScopeActive.mockImplementation(
+      (graph: LGraph, candidate: MissingModelCandidate) => {
+        const executionId = candidate.sourceExecutionId ?? candidate.nodeId
+        return (
+          executionId == null ||
+          mockHandles.isAncestorPathActive(graph, String(executionId))
+        )
+      }
+    )
     mockHandles.isMissingCandidateActive.mockReturnValue(true)
   })
 
@@ -179,21 +204,39 @@ describe('missingModelPipeline', () => {
     it('reloads node definitions before scanning the current graph', async () => {
       const order: string[] = []
       const graph = createGraph()
+      let resolveReload: () => void = () => {}
       const reloadNodeDefs = vi.fn(async () => {
-        order.push('reload')
+        order.push('reload:start')
+        await new Promise<void>((resolve) => {
+          resolveReload = resolve
+        })
+        order.push('reload:end')
       })
       mockHandles.scanAllModelCandidates.mockImplementation(() => {
         order.push('scan')
         return []
       })
 
-      await refreshMissingModelPipeline({
+      const refreshPromise = refreshMissingModelPipeline({
         graph,
         reloadNodeDefs,
         missingModelStore: mockHandles.missingModelStore
       })
 
-      expect(order).toEqual(['reload', 'scan'])
+      expect(order).toEqual(['reload:start'])
+      resolveReload()
+      await refreshPromise
+
+      expect(order).toEqual(['reload:start', 'reload:end', 'scan'])
+    })
+
+    it('scans the current graph when node definition reload is omitted', async () => {
+      await refreshMissingModelPipeline({
+        graph: createGraph(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+
+      expect(mockHandles.scanAllModelCandidates).toHaveBeenCalled()
     })
 
     it('reuses active workflow model metadata when refreshing the current graph', async () => {
@@ -418,7 +461,10 @@ describe('missingModelPipeline', () => {
         downloadableCandidate,
         urlOnlyCandidate
       ]
-      mockHandles.fetchModelMetadata.mockResolvedValue({ fileSize: 1024 })
+      mockHandles.fetchModelMetadata.mockResolvedValue({
+        fileSize: 1024,
+        gatedRepoUrl: null
+      })
 
       await runMissingModelPipeline({
         graph: createGraph(),
@@ -435,6 +481,74 @@ describe('missingModelPipeline', () => {
         'https://example.com/downloadable.safetensors',
         1024
       )
+    })
+
+    it('stores gated repo URLs for candidates with complete download metadata', async () => {
+      const downloadableCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'gated.safetensors',
+        url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [downloadableCandidate]
+      mockHandles.fetchModelMetadata.mockResolvedValue({
+        fileSize: null,
+        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+      })
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(
+        mockHandles.missingModelStore.setGatedRepoUrl
+      ).toHaveBeenCalledWith(
+        'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
+        'https://huggingface.co/bfl/FLUX.1'
+      )
+      expect(mockHandles.missingModelStore.setFileSize).not.toHaveBeenCalled()
+    })
+
+    it('does not store gated repo URLs after verification is aborted', async () => {
+      const controller = new AbortController()
+      const downloadableCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'gated.safetensors',
+        url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [downloadableCandidate]
+      mockHandles.missingModelStore.createVerificationAbortController.mockReturnValueOnce(
+        controller
+      )
+      mockHandles.fetchModelMetadata.mockResolvedValue({
+        fileSize: null,
+        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+      })
+      controller.abort()
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledWith(
+        'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors'
+      )
+      expect(
+        mockHandles.missingModelStore.setGatedRepoUrl
+      ).not.toHaveBeenCalled()
     })
 
     it('clears surfaced and cached missing models when no candidates are confirmed missing', async () => {
@@ -523,6 +637,38 @@ describe('missingModelPipeline', () => {
         missingModelCandidates: [activeCandidate],
         missingMediaCandidates: undefined
       })
+    })
+
+    it('drops host-keyed promoted candidates whose source path is inactive', async () => {
+      const promotedCandidate = {
+        nodeId: '65',
+        sourceExecutionId: createNodeExecutionId([65, 77, 42]),
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'outer_ckpt',
+        name: 'inactive-source.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      }
+      const activeWorkflow = {
+        activeState: null,
+        pendingWarnings: null
+      }
+      const graph = createGraph()
+      mockHandles.state.enrichedCandidates = [promotedCandidate]
+      mockHandles.workspaceWorkflow.activeWorkflow = activeWorkflow
+      mockHandles.isAncestorPathActive.mockImplementation(
+        (_graph: LGraph, nodeId: string) => nodeId !== '65:77:42'
+      )
+
+      const result = await runMissingModelPipeline({
+        graph,
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+
+      expect(result.confirmedCandidates).toEqual([])
+      expect(activeWorkflow.pendingWarnings).toBeNull()
     })
 
     it('skips post-fetch surface when folder path refresh is aborted', async () => {

@@ -4,9 +4,8 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
   BaseWidget,
@@ -15,9 +14,11 @@ import {
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -27,7 +28,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -60,7 +60,7 @@ describe('SubgraphNode Construction', () => {
       size: [180, 80]
     })
 
-    expect(subgraphNode.id).toBe(42)
+    expect(subgraphNode.id).toBe(toNodeId(42))
     expect(Array.from(subgraphNode.pos)).toEqual([300, 150])
     expect(Array.from(subgraphNode.size)).toEqual([180, 80])
   })
@@ -249,6 +249,137 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
+  it('migrates promoted widget bindings when added to a graph', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(input, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: -1 })
+    const promotedInput = subgraphNode.inputs[0]
+    const previousId = promotedInput.widgetId
+    if (!previousId) throw new Error('Missing transient widgetId')
+    useWidgetValueStore().setValue(previousId, 'edited')
+
+    subgraph.rootGraph.add(subgraphNode)
+
+    const nextId = promotedInput.widgetId
+    expect(nextId).toBeDefined()
+    expect(nextId).not.toBe(previousId)
+    if (!nextId) throw new Error('Missing settled widgetId')
+    expect(useWidgetValueStore().getWidget(previousId)).toBeUndefined()
+    expect(useWidgetValueStore().getWidget(nextId)?.value).toBe('edited')
+    expect(promotedInput.widget).toMatchObject({ name: 'text' })
+    expect(subgraphNode.getWidgetFromSlot(promotedInput)).toBe(
+      promotedInput._widget
+    )
+    expect(subgraphNode.widgets).toContain(promotedInput._widget)
+  })
+
+  it('preserves a promoted widget when re-resolution fails', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    const link = subgraph.inputNode.slots[0].connect(input, interiorNode)
+    if (!link) throw new Error('Missing promoted widget link')
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const previousWidget = promotedInput._widget
+    const previousWidgetId = promotedInput.widgetId
+    if (!previousWidgetId) throw new Error('Missing widgetId')
+    useWidgetValueStore().setValue(previousWidgetId, 'edited')
+
+    subgraph.links.delete(link.id)
+    subgraphNode.rebuildInputWidgetBindings()
+
+    expect(promotedInput.widgetId).toBe(previousWidgetId)
+    expect(promotedInput._widget).toBe(previousWidget)
+    expect(useWidgetValueStore().getWidget(previousWidgetId)?.value).toBe(
+      'edited'
+    )
+  })
+
+  it('declines promotion when an empty widget name cannot be registered', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: '', type: 'STRING' },
+        { name: 'valid', type: 'STRING' }
+      ]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const emptyInput = interiorNode.addInput('', 'STRING')
+    emptyInput.widget = { name: '' }
+    const validInput = interiorNode.addInput('valid', 'STRING')
+    validInput.widget = { name: 'valid' }
+    interiorNode.addWidget('text', '', 'initial', () => {})
+    interiorNode.addWidget('text', 'valid', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(emptyInput, interiorNode)
+    subgraph.inputNode.slots[1].connect(validInput, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(subgraphNode)
+    const declinedInput = subgraphNode.inputs[0]
+
+    expect(isWidgetInputSlot(declinedInput)).toBe(false)
+    expect(declinedInput.widgetId).toBeUndefined()
+    expect(subgraphNode.getWidgetFromSlot(declinedInput)).toBeUndefined()
+    expect(subgraphNode.widgets).toHaveLength(1)
+
+    subgraphNode.arrange()
+    expect(declinedInput.boundingRect[2]).toBe(LiteGraph.NODE_SLOT_HEIGHT)
+
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'STRING')
+    subgraph.rootGraph.add(source)
+
+    expect(source.connect(0, subgraphNode, 0)).not.toBeNull()
+    expect(declinedInput.link).not.toBeNull()
+  })
+
+  it('clears an existing promotion when registration is later declined', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    const widget = interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(input, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    expect(promotedInput.widgetId).toBeDefined()
+
+    subgraph.inputs[0].name = ''
+    subgraph.inputs[0].events.dispatch('input-connected', {
+      input,
+      widget,
+      node: interiorNode
+    })
+
+    expect(isWidgetInputSlot(promotedInput)).toBe(false)
+    expect(promotedInput.widgetId).toBeUndefined()
+    expect(promotedInput._widget).toBeUndefined()
+  })
+
   it('binds promoted host widgets as stable LiteGraph widgets', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]
@@ -399,7 +530,7 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
-  it('should preserve renamed label through serialize/configure round-trip', () => {
+  it('keeps the renamed label after an in-place reconfigure', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'seed', type: 'INT' }]
     })
@@ -440,6 +571,66 @@ describe('SubgraphNode Synchronization', () => {
     expect(useWidgetValueStore().getWidget(inputSlot.widgetId)?.label).toBe(
       'My Seed'
     )
+  })
+
+  it('preserves a renamed label across a real definition reload', () => {
+    const interiorNodeType = 'test/interior-label-reload'
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: 'INT' }]
+    })
+
+    // A registered type: `configure` will not re-create an unregistered node,
+    // so an anonymous interior node makes the reload silently empty.
+    class InteriorNode extends LGraphNode {
+      static override title = 'Interior'
+      constructor() {
+        super('Interior')
+        const slot = this.addInput('value', 'INT')
+        slot.widget = { name: 'value' }
+        this.addOutput('out', 'INT')
+        this.addWidget('number', 'value', 0, () => {})
+      }
+    }
+    LiteGraph.registerNodeType(interiorNodeType, InteriorNode)
+    onTestFinished(() => {
+      delete LiteGraph.registered_node_types[interiorNodeType]
+    })
+
+    const interiorNode = LiteGraph.createNode(interiorNodeType)!
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 101 })
+    subgraph.inputs[0].label = 'My Seed'
+    subgraphNode.inputs[0].label = 'My Seed'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[0],
+      index: 0,
+      oldName: 'seed',
+      newName: 'My Seed'
+    })
+
+    const definition = JSON.parse(
+      JSON.stringify(subgraph.asSerialisable())
+    ) as ReturnType<typeof subgraph.asSerialisable>
+    const instance = JSON.parse(
+      JSON.stringify(subgraphNode.serialize())
+    ) as ExportedSubgraphInstance
+    useWidgetValueStore().clearGraph(subgraphNode.rootGraph.id)
+    subgraph.clear()
+
+    const reloadedSubgraph = createTestSubgraph({
+      rootGraph: subgraphNode.rootGraph
+    })
+    reloadedSubgraph.configure(definition)
+
+    const reloadedHost = createTestSubgraphNode(reloadedSubgraph, { id: 101 })
+    reloadedHost.configure(instance)
+
+    expect(reloadedHost.widgets).toMatchObject([
+      { name: 'seed', label: 'My Seed' }
+    ])
+    expect(reloadedHost.inputs[0].label).toBe('My Seed')
   })
 })
 
@@ -953,8 +1144,6 @@ describe('SubgraphNode Cleanup', () => {
 
 describe('SubgraphNode duplicate input pruning (#9977)', () => {
   it('should prune inputs that have no matching subgraph slot after configure', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'STRING' },
@@ -963,11 +1152,11 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
     })
 
     const parentGraph = new LGraph()
-    const instanceData = {
-      id: 1 as const,
+    const instanceData = fromPartial<ExportedSubgraphInstance>({
+      id: 1,
       type: subgraph.id,
-      pos: [0, 0] as [number, number],
-      size: [200, 100] as [number, number],
+      pos: [0, 0],
+      size: [200, 100],
       inputs: [
         { name: 'a', type: 'STRING', link: null },
         { name: 'b', type: 'NUMBER', link: null },
@@ -979,21 +1168,15 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
       flags: {},
       mode: 0,
       order: 0
-    }
+    })
 
-    const node = new SubgraphNode(
-      parentGraph,
-      subgraph,
-      instanceData as ExportedSubgraphInstance
-    )
+    const node = new SubgraphNode(parentGraph, subgraph, instanceData)
 
     expect(node.inputs).toHaveLength(2)
     expect(node.inputs.every((i) => i._subgraphSlot)).toBe(true)
   })
 
   it('should not accumulate duplicate inputs on reconfigure', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'STRING' },
@@ -1014,8 +1197,6 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
   })
 
   it('should serialize with exactly the subgraph-defined inputs', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'x', type: 'IMAGE' },
@@ -1033,8 +1214,6 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
 
 describe('Nested SubgraphNode duplicate input prevention', () => {
   it('should not duplicate inputs when the referenced subgraph is reconfigured', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'STRING' },
@@ -1058,8 +1237,6 @@ describe('Nested SubgraphNode duplicate input prevention', () => {
   })
 
   it('should not accumulate inputs across multiple reconfigure cycles', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'x', type: 'IMAGE' },

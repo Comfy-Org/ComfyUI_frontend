@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { createUuidv4 } from '@/utils/uuid'
 
 const { mockQueryRerouteAtPoint } = vi.hoisted(() => ({
   mockQueryRerouteAtPoint: vi.fn<() => unknown>(() => null)
@@ -12,7 +13,10 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: { queryRerouteAtPoint: mockQueryRerouteAtPoint }
 }))
 
+const GRAPH_ID = createUuidv4()
+
 interface StubGraph {
+  rootGraph: { id: typeof GRAPH_ID }
   getReroute: ReturnType<typeof vi.fn>
   getRerouteOnPos: ReturnType<typeof vi.fn>
   getGroupOnPos: ReturnType<typeof vi.fn>
@@ -29,9 +33,9 @@ describe('getCanvasContextMenuTarget', () => {
   let canvas: StubCanvas
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockQueryRerouteAtPoint.mockReturnValue(null)
     graph = {
+      rootGraph: { id: GRAPH_ID },
       getReroute: vi.fn(() => ({ id: 9 })),
       getRerouteOnPos: vi.fn(() => undefined),
       getGroupOnPos: vi.fn(() => ({ id: 1 }))
@@ -60,9 +64,28 @@ describe('getCanvasContextMenuTarget', () => {
 
     const target = resolve()
 
+    expect(mockQueryRerouteAtPoint).toHaveBeenCalledWith(GRAPH_ID, {
+      x: 10,
+      y: 20
+    })
     expect(graph.getReroute).toHaveBeenCalledWith(9)
     expect(graph.getRerouteOnPos).not.toHaveBeenCalled()
     expect(target.reroute).toEqual({ id: 9 })
+  })
+
+  it('falls back when a layout hit names a reroute in another graph', () => {
+    mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
+    graph.getReroute.mockReturnValue(undefined)
+    graph.getRerouteOnPos.mockReturnValue({ id: 7 })
+
+    const target = resolve()
+
+    expect(graph.getRerouteOnPos).toHaveBeenCalledWith(
+      10,
+      20,
+      canvas._visibleReroutes
+    )
+    expect(target.reroute).toEqual({ id: 7 })
   })
 
   it('falls back to the visible-scoped positional hit-test when the layout store misses', () => {

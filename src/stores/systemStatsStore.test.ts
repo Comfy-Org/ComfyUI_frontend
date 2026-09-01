@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SystemStats } from '@/schemas/apiSchema'
@@ -28,9 +26,7 @@ describe('useSystemStatsStore', () => {
   beforeEach(() => {
     // Mock API to prevent automatic fetch on store creation
     vi.mocked(api.getSystemStats).mockResolvedValue(null!)
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSystemStatsStore()
-    vi.clearAllMocks()
   })
 
   it('should initialize and start fetching immediately', async () => {

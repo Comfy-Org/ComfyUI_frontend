@@ -257,6 +257,24 @@ export class ExecutionHelper {
     )
   }
 
+  /**
+   * Put a single node into the `running` state at the given step progress,
+   * emitting both the `progress_state` and `progress` events the backend sends.
+   */
+  nodeRunning(jobId: string, nodeId: string, value: number, max: number): void {
+    const state: NodeProgressState = {
+      node_id: nodeId,
+      display_node_id: nodeId,
+      real_node_id: nodeId,
+      prompt_id: jobId,
+      state: 'running',
+      value,
+      max
+    }
+    this.progressState(jobId, { [nodeId]: state })
+    this.progress(jobId, nodeId, value, max)
+  }
+
   /** Send `progress_state` WS event with per-node execution state. */
   progressState(jobId: string, nodes: Record<string, NodeProgressState>): void {
     this.requireWs().send(

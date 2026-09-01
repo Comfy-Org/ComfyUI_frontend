@@ -10,8 +10,20 @@ import {
   countAssetRequestsByTag,
   createCloudAssetsFixture
 } from '@e2e/fixtures/assetApiFixture'
-import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  cleanupFakeModel,
+  loadWorkflowAndOpenErrorsTab
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+  expectNoMissingModelUi,
+  loadPromotedMissingModelAndOpenErrorsTab,
+  selectLegacyPromotedAssetModel,
+  selectSectionAssetPromotedModel,
+  selectVueAssetPromotedModel
+} from '@e2e/fixtures/utils/promotedMissingModel'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@/types/nodeId'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
@@ -20,10 +32,24 @@ const WORKFLOW = 'missing/nested_subgraph_installed_model'
 const IMPORT_SECTIONS_WORKFLOW = 'missing/cloud_missing_model_import_sections'
 const OUTER_SUBGRAPH_NODE_ID = '205'
 const LOTUS_MODEL_NAME = 'lotus-depth-d-v1-1.safetensors'
+const FAKE_MODEL_NAME = 'fake_model.safetensors'
+const RESOLVED_PROMOTED_MODEL_NAME = 'resolved_model.safetensors'
 const CLOUD_IMPORTABLE_MODEL_NAME = 'cloud_importable_model.safetensors'
 const CLOUD_UNKNOWN_MODEL_NAME = 'cloud_unknown_model.safetensors'
 const CLOUD_IMPORTED_CANONICAL_MODEL_NAME =
   'models/checkpoints/cloud_importable_model.safetensors'
+
+const FAKE_MODEL_ASSET: Asset = {
+  id: 'test-fake-checkpoint',
+  name: FAKE_MODEL_NAME,
+  size: 1_024,
+  mime_type: 'application/octet-stream',
+  tags: ['models', 'checkpoints'],
+  created_at: '2026-05-05T00:00:00Z',
+  updated_at: '2026-05-05T00:00:00Z',
+  last_access_time: '2026-05-05T00:00:00Z',
+  user_metadata: { filename: FAKE_MODEL_NAME }
+}
 
 const LOTUS_DIFFUSION_MODEL: Asset & { hash?: string } = {
   id: 'test-lotus-depth-d-v1-1',
@@ -55,7 +81,25 @@ const EXISTING_CLOUD_IMPORTABLE_MODEL: Asset & { hash?: string } = {
   }
 }
 
+const RESOLVED_PROMOTED_MODEL_ASSET: Asset & { hash?: string } = {
+  id: 'test-resolved-promoted-model',
+  name: RESOLVED_PROMOTED_MODEL_NAME,
+  hash: 'blake3:0000000000000000000000000000000000000000000000000000000000000205',
+  size: 1_024,
+  mime_type: 'application/octet-stream',
+  tags: ['models', 'checkpoints'],
+  created_at: '2026-05-05T00:00:00Z',
+  updated_at: '2026-05-05T00:00:00Z',
+  last_access_time: '2026-05-05T00:00:00Z',
+  user_metadata: {
+    filename: RESOLVED_PROMOTED_MODEL_NAME
+  }
+}
+
 const test = createCloudAssetsFixture([LOTUS_DIFFUSION_MODEL])
+const promotedModelTest = createCloudAssetsFixture([
+  RESOLVED_PROMOTED_MODEL_ASSET
+])
 
 function getRequestedIncludeTags(requestUrl: string): string[] {
   return (
@@ -131,24 +175,76 @@ test.describe(
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
       await expect(errorOverlay).toBeHidden()
 
-      const requestCountBeforeRootReturn = countAssetRequestsByTag(
-        cloudAssetRequests,
-        'diffusion_models'
-      )
-
+      // Returning to the root must not resurface the installed model as
+      // missing. No re-scan runs on graph switch, and none is needed — the
+      // contract is the absence of the error, not the presence of a re-scan.
       await comfyPage.subgraph.exitViaBreadcrumb()
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect(
+        comfyPage.vueNodes.getNodeLocator(OUTER_SUBGRAPH_NODE_ID)
+      ).toBeVisible()
+
       await panel.open(comfyPage.actionbar.propertiesButton)
-
-      await expect
-        .poll(
-          () =>
-            countAssetRequestsByTag(cloudAssetRequests, 'diffusion_models') >
-            requestCountBeforeRootReturn,
-          { timeout: 10_000 }
-        )
-        .toBe(true)
-
+      await expect(errorOverlay).toBeHidden()
       await expect(errorsTab).toBeHidden()
+    })
+
+    test('keeps Errors active through pasted-node verification and falls back when resolved', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const missingModelsGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      let visibleAssets: Asset[] = []
+      let markVerificationStarted: () => void = () => undefined
+      const verificationStarted = new Promise<void>((resolve) => {
+        markVerificationStarted = resolve
+      })
+      let releaseVerification: () => void = () => undefined
+      const verificationGate = new Promise<void>((resolve) => {
+        releaseVerification = resolve
+      })
+      await comfyPage.page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
+        markVerificationStarted()
+        await verificationGate
+        const response: ListAssetsResponse = {
+          assets: visibleAssets,
+          total: visibleAssets.length,
+          has_more: false
+        }
+        await route.fulfill({ json: response })
+      })
+
+      const source = await comfyPage.nodeOps.getNodeRefById('1')
+      await source.click('title')
+      await comfyPage.clipboard.copy()
+      await comfyPage.clipboard.paste()
+      await verificationStarted
+
+      await expect(panel.errorsTab).toHaveAttribute('aria-selected', 'true')
+      releaseVerification()
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
+      await expect(
+        missingModelsGroup.getByTestId(
+          TestIds.dialogs.missingModelReferenceCount
+        )
+      ).toHaveText('2')
+      await expect(panel.errorsTab).toHaveAttribute('aria-selected', 'true')
+
+      visibleAssets = [FAKE_MODEL_ASSET]
+      await source.click('title')
+      await comfyPage.clipboard.copy()
+      await comfyPage.clipboard.paste()
+
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(3)
+      await expect(missingModelsGroup).toBeHidden()
+      await expect(panel.errorsTab).toBeHidden()
+      await expect(panel.getTab('Parameters')).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
     })
 
     test('separates importable cloud models from unsupported rows', async ({
@@ -353,13 +449,94 @@ test.describe(
 
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const node = window.app!.graph.getNodeById(1)
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.graph.getNodeById(nodeId)
             return node?.widgets?.find((widget) => widget.name === 'ckpt_name')
               ?.value
-          })
+          }, toNodeId(1))
         )
         .toBe(CLOUD_IMPORTED_CANONICAL_MODEL_NAME)
     })
+  }
+)
+
+promotedModelTest.describe(
+  'Errors tab - Cloud promoted subgraph missing models',
+  { tag: '@cloud' },
+  () => {
+    promotedModelTest.beforeEach(async ({ comfyPage }) => {
+      await cleanupFakeModel(comfyPage)
+      await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
+      await comfyPage.settings.setSetting(
+        'Comfy.RightSidePanel.ShowErrorsTab',
+        true
+      )
+    })
+
+    promotedModelTest.afterEach(async ({ comfyPage }) => {
+      await cleanupFakeModel(comfyPage)
+    })
+
+    promotedModelTest(
+      'Changing a Cloud Vue promoted asset widget clears a nested subgraph error',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await loadPromotedMissingModelAndOpenErrorsTab(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
+        )
+
+        await selectVueAssetPromotedModel(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME,
+          RESOLVED_PROMOTED_MODEL_NAME
+        )
+
+        await expectNoMissingModelUi(comfyPage)
+      }
+    )
+
+    promotedModelTest(
+      'Changing a Cloud Vue promoted asset from the Parameters tab clears a nested subgraph error',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await loadPromotedMissingModelAndOpenErrorsTab(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
+        )
+
+        await selectSectionAssetPromotedModel(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME,
+          RESOLVED_PROMOTED_MODEL_NAME
+        )
+
+        await expectNoMissingModelUi(comfyPage)
+      }
+    )
+
+    promotedModelTest(
+      'Changing a Cloud legacy promoted asset clears a nested subgraph error',
+      { tag: ['@canvas', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await loadPromotedMissingModelAndOpenErrorsTab(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
+        )
+
+        await selectLegacyPromotedAssetModel(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          RESOLVED_PROMOTED_MODEL_ASSET.id
+        )
+
+        await expectNoMissingModelUi(comfyPage)
+      }
+    )
   }
 )
