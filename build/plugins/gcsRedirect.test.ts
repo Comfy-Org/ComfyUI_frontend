@@ -136,4 +136,46 @@ describe('handleGcsRedirect', () => {
       )
     )
   })
+
+  it('returns an error when GCS responds without a body', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        status: 200,
+        headers: new Headers(),
+        body: null
+      })
+    )
+    const res = response()
+    const end = vi.spyOn(res, 'end')
+
+    handleGcsRedirect(
+      proxyResponse(trustedHeaders),
+      request(),
+      res as unknown as ServerResponse
+    )
+
+    await vi.waitFor(() => {
+      expect(res.statusCode).toBe(500)
+      expect(end).toHaveBeenCalledWith('Empty response from GCS')
+    })
+  })
+
+  it('returns an error when the GCS fetch rejects', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('fetch failed')))
+    const res = response()
+    const end = vi.spyOn(res, 'end')
+
+    handleGcsRedirect(
+      proxyResponse(trustedHeaders),
+      request(),
+      res as unknown as ServerResponse
+    )
+
+    await vi.waitFor(() => {
+      expect(res.statusCode).toBe(500)
+      expect(end).toHaveBeenCalledWith('Error fetching media')
+    })
+  })
 })
