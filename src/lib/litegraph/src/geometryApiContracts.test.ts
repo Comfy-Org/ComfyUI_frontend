@@ -44,8 +44,10 @@ describe('geometry API contracts', () => {
       source.connect(0, target, 0)!
     )!
 
+    expect(graph.reroutes.get(reroute.id)).toBe(reroute)
     expect(() => Reflect.set(reroute, 'pos', [])).toThrow(TypeError)
     graph.removeReroute(reroute.id)
+    expect(graph.reroutes.has(reroute.id)).toBe(false)
     expect(() => Reflect.set(reroute, 'pos', [1])).toThrow(TypeError)
     expect([...reroute.pos]).toEqual([10, 20])
   })
