@@ -250,6 +250,8 @@ export function useAgentCrdtFollower(
         workflowId: target
       })
       bridge.resubscribe()
+      if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS)
+        reportSubscribeRetryExhausted()
     }, delay)
   }
 
