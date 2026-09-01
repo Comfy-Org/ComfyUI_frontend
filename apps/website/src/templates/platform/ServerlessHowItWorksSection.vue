@@ -1,5 +1,13 @@
 <script setup lang="ts">
+import {
+  useDocumentVisibility,
+  useElementVisibility,
+  useIntervalFn
+} from '@vueuse/core'
+import { computed, ref, useTemplateRef, watchEffect } from 'vue'
+
 import SectionHeader from '../../components/common/SectionHeader.vue'
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -16,6 +24,40 @@ const steps = stepNumbers.map((number) => ({
 const TEAM = ['JH', 'BF', 'JN']
 
 const APPS = ['Internal tool', 'Application', 'Website', 'Workflow'] as const
+
+// One workflow flows through all three steps; the examples rotate in sync.
+const WORKFLOWS = [
+  { file: 'virtual-try-on.json', endpoint: 'try-on-x7k2' },
+  { file: 'product-photos.json', endpoint: 'product-photos' },
+  { file: 'upscale-4k.json', endpoint: 'upscale-4k' }
+] as const
+
+const CYCLE_INTERVAL_MS = 3000
+
+const root = useTemplateRef<HTMLElement>('root')
+const visible = useElementVisibility(root)
+const documentVisibility = useDocumentVisibility()
+const workflowIndex = ref(0)
+
+const workflow = computed(() => WORKFLOWS[workflowIndex.value])
+
+const { pause, resume } = useIntervalFn(
+  () => {
+    workflowIndex.value = (workflowIndex.value + 1) % WORKFLOWS.length
+  },
+  CYCLE_INTERVAL_MS,
+  { immediate: false }
+)
+
+watchEffect(() => {
+  if (
+    visible.value &&
+    documentVisibility.value === 'visible' &&
+    !prefersReducedMotion()
+  )
+    resume()
+  else pause()
+})
 </script>
 
 <template>
@@ -29,7 +71,10 @@ const APPS = ['Internal tool', 'Application', 'Website', 'Workflow'] as const
       </template>
     </SectionHeader>
 
-    <ol class="relative mx-auto mt-10 flex max-w-4xl flex-col gap-12 lg:mt-14">
+    <ol
+      ref="root"
+      class="relative mx-auto mt-10 flex max-w-4xl flex-col gap-12 lg:mt-14"
+    >
       <li
         v-for="step in steps"
         :key="step.number"
@@ -64,7 +109,11 @@ const APPS = ['Internal tool', 'Application', 'Website', 'Workflow'] as const
           <div
             class="w-64 rounded-2xl border border-white/10 bg-black/40 p-4 font-mono text-[10px]/relaxed text-primary-comfy-canvas"
           >
-            <p class="text-primary-comfy-yellow">reference2video.json</p>
+            <Transition name="crossfade" mode="out-in">
+              <p :key="workflow.file" class="text-primary-comfy-yellow">
+                {{ workflow.file }}
+              </p>
+            </Transition>
             <p class="mt-1.5 text-smoke-700">{ "nodes": [...],</p>
             <p class="text-smoke-700">&nbsp;&nbsp;"models": [...],</p>
             <p class="text-smoke-700">&nbsp;&nbsp;"deps": [...] }</p>
@@ -83,8 +132,12 @@ const APPS = ['Internal tool', 'Application', 'Website', 'Workflow'] as const
           <div
             class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 rounded-full border px-4 py-2 font-mono text-[10px] text-primary-comfy-canvas"
           >
-            <span class="text-primary-comfy-yellow">POST</span>
-            https://abc-ref2v.run.comfy.app
+            <span class="text-primary-comfy-yellow">POST&#32;</span>
+            <Transition name="crossfade" mode="out-in">
+              <span :key="workflow.endpoint"
+                >https://{{ workflow.endpoint }}.run.comfy.app</span
+              >
+            </Transition>
           </div>
         </div>
 
@@ -97,7 +150,9 @@ const APPS = ['Internal tool', 'Application', 'Website', 'Workflow'] as const
           <div
             class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 rounded-full border px-4 py-2 font-mono text-[10px] text-primary-comfy-canvas"
           >
-            abc-ref2v
+            <Transition name="crossfade" mode="out-in">
+              <span :key="workflow.endpoint">{{ workflow.endpoint }}</span>
+            </Transition>
           </div>
           <svg viewBox="0 0 28 8" class="h-2 w-7" aria-hidden="true">
             <line
@@ -130,7 +185,9 @@ const APPS = ['Internal tool', 'Application', 'Website', 'Workflow'] as const
           <div
             class="border-primary-comfy-yellow/40 bg-primary-comfy-yellow/5 shrink-0 rounded-full border px-4 py-2 font-mono text-[10px] text-primary-comfy-canvas"
           >
-            abc-ref2v
+            <Transition name="crossfade" mode="out-in">
+              <span :key="workflow.endpoint">{{ workflow.endpoint }}</span>
+            </Transition>
           </div>
           <svg
             viewBox="0 0 40 96"
