@@ -26,12 +26,12 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
       await page.mouse.up()
       await expect(dock).toHaveCSS('width', `${width}px`)
 
-      const composer = panel.getByRole('textbox')
+      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
       const send = panel.getByRole('button', { name: 'Send' })
       await composer.fill('Keep controls usable')
 
-      await expect(composer).toBeVisible()
-      await expect(send).toBeVisible()
+      await expect(composer).toBeInViewport()
+      await expect(send).toBeInViewport()
       await expect(send).toBeEnabled()
     })
   }
