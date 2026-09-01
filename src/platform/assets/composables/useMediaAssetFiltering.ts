@@ -2,8 +2,8 @@ import { refDebounced } from '@vueuse/core'
 import { sortBy as sortByUtil } from 'es-toolkit'
 import Fuse from 'fuse.js'
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
-import type { Ref } from 'vue'
+import { computed, toValue, ref } from 'vue'
+import type { MaybeRef } from 'vue'
 
 import { useMediaAssetFilterStore } from '@/platform/assets/composables/useMediaAssetFilterStore'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
@@ -60,7 +60,7 @@ const compareAssetNames = (a: AssetItem, b: AssetItem): number =>
  * Media Asset Filtering composable
  * Manages search, filter, and sort for media assets
  */
-export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
+export function useMediaAssetFiltering(assets: MaybeRef<readonly AssetItem[]>) {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
   const sortBy = ref<SortOption>('newest')
@@ -74,11 +74,11 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
     includeScore: true
   }
 
-  const fuse = computed(() => new Fuse(assets.value, fuseOptions))
+  const fuse = computed(() => new Fuse(toValue(assets), fuseOptions))
 
   const searchFiltered = computed(() => {
     if (!debouncedSearchQuery.value.trim()) {
-      return assets.value
+      return toValue(assets)
     }
 
     const results = fuse.value.search(debouncedSearchQuery.value)

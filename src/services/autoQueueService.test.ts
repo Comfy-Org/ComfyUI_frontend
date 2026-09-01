@@ -3,6 +3,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+vi.mock('@/platform/assets/composables/media/assetMappers')
+
 const mocks = vi.hoisted(() => ({
   addEventListener:
     vi.fn<(event: string, listener: (event: Event) => void) => void>(),

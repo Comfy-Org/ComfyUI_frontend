@@ -851,8 +851,8 @@ describe('AgentPanelRoot attach flow', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await nextTick()
     const refresh = vi
-      .spyOn(useAssetsStore(), 'updateInputs')
-      .mockResolvedValue(undefined as never)
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
 
     dispatchDrag(screen.getByRole('textbox'), 'drop', {
       files: [new File(['x'], 'cat.png', { type: 'image/png' })]
