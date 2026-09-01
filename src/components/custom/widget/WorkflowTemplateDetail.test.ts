@@ -42,7 +42,7 @@ function renderDetail({
   modelSetupEnabled = false,
   setupPending = false,
   requirementsMet = false,
-  starterPackAvailable = false
+  modelDownloadsAvailable = false
 }: {
   renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
@@ -51,13 +51,13 @@ function renderDetail({
   modelSetupEnabled?: boolean
   setupPending?: boolean
   requirementsMet?: boolean
-  starterPackAvailable?: boolean
+  modelDownloadsAvailable?: boolean
 } = {}) {
   const modelSetupProps = {
     modelSetupEnabled,
     setupPending,
     requirementsMet,
-    starterPackAvailable
+    modelDownloadsAvailable
   }
 
   return render(WorkflowTemplateDetail, {
@@ -133,7 +133,7 @@ describe('WorkflowTemplateDetail', () => {
     const user = userEvent.setup()
     const result = renderDetail({
       modelSetupEnabled: true,
-      starterPackAvailable: true
+      modelDownloadsAvailable: true
     })
 
     await user.click(screen.getByRole('button', { name: 'Open now' }))
@@ -142,7 +142,7 @@ describe('WorkflowTemplateDetail', () => {
     )
 
     expect(result.emitted('open-template')).toEqual([[]])
-    expect(result.emitted('download-starter-pack')).toEqual([[]])
+    expect(result.emitted('download-models-and-open')).toEqual([[]])
     expect(
       screen.queryByRole('button', { name: 'Open without downloading' })
     ).not.toBeInTheDocument()

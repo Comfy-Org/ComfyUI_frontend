@@ -411,9 +411,9 @@
         model-setup-enabled
         :setup-pending="activeDetail.modelSetup.pending"
         :requirements-met="activeDetailModelRequirementsMet"
-        :starter-pack-available="activeDetailStarterPackAvailable"
+        :model-downloads-available="activeDetailModelDownloadsAvailable"
         @open-template="onOpenTemplate"
-        @download-starter-pack="onDownloadStarterPack"
+        @download-models-and-open="onDownloadModelsAndOpen"
         @download-model="onDownloadModel"
       >
         <template #preview>
@@ -1093,7 +1093,7 @@ function isModelRowComplete(
   )
 }
 
-function isStarterPackCandidate(
+function isModelDownloadCandidate(
   row: TemplateModelSetupRow,
   rowDownloads: TemplateModelRowDownloads
 ): boolean {
@@ -1113,13 +1113,13 @@ const activeDetailModelRequirementsMet = computed(() => {
   )
 })
 
-const activeDetailStarterPackAvailable = computed(() => {
+const activeDetailModelDownloadsAvailable = computed(() => {
   const setup = activeDetail.value?.modelSetup
   return Boolean(
     setup &&
     !setup.pending &&
     setup.result.rows.some((row) =>
-      isStarterPackCandidate(row, setup.rowDownloads)
+      isModelDownloadCandidate(row, setup.rowDownloads)
     )
   )
 })
@@ -1296,12 +1296,12 @@ function onDownloadModel(rowId: string) {
   }
 }
 
-async function onDownloadStarterPack() {
+async function onDownloadModelsAndOpen() {
   const setup = activeDetail.value?.modelSetup
   if (!setup || setup.pending || openPending.value) return
 
   for (const row of setup.result.rows) {
-    if (isStarterPackCandidate(row, setup.rowDownloads)) {
+    if (isModelDownloadCandidate(row, setup.rowDownloads)) {
       setup.rowDownloads.request(row.model)
     }
   }
