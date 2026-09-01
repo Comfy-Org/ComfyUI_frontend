@@ -156,7 +156,7 @@ describe('fromBoundingBoxes', () => {
         y: 200,
         width: 300,
         height: 400,
-        metadata: { type: 'text', text: 'hi', desc: 'd', palette: ['#fff'] }
+        metadata: { type: 'text', text: 'hi', desc: 'd', palette: ['#ffffff'] }
       }
     ]
     expect(fromBoundingBoxes(boxes, 1000, 1000)[0]).toEqual({
@@ -167,8 +167,29 @@ describe('fromBoundingBoxes', () => {
       type: 'text',
       text: 'hi',
       desc: 'd',
-      palette: ['#fff']
+      palette: ['#ffffff']
     })
+  })
+
+  it('normalizes palette entries and drops invalid colors', () => {
+    const boxes: BoundingBox[] = [
+      {
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+        metadata: {
+          type: 'obj',
+          text: '',
+          desc: '',
+          palette: ['#FF0000', '#abc', 'red', '', 123] as unknown as string[]
+        }
+      }
+    ]
+    expect(fromBoundingBoxes(boxes, 100, 100)[0].palette).toEqual([
+      '#ff0000',
+      '#aabbcc'
+    ])
   })
 
   it('fills defaults when metadata is missing or partial', () => {

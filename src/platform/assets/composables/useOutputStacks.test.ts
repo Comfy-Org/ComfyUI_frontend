@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as OutputAssetUtil from '@/platform/assets/utils/outputAssetUtil'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import { getOutputKey } from '@/platform/assets/utils/outputAssetUtil'
 
 const mocks = vi.hoisted(() => ({
   resolveOutputAssetItems: vi.fn()
@@ -34,7 +36,7 @@ function createDeferred<T>(): Deferred<T> {
 }
 
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  return fromPartial({
     id: 'asset-1',
     name: 'parent.png',
     tags: [],
@@ -45,14 +47,10 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
       subfolder: 'outputs'
     },
     ...overrides
-  }
+  })
 }
 
 describe('useOutputStacks', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
   it('expands stacks and exposes children as selectable assets', async () => {
     const parent = createAsset({ id: 'parent', name: 'parent.png' })
     const childA = createAsset({
@@ -77,7 +75,11 @@ describe('useOutputStacks', () => {
       expect.objectContaining({ jobId: 'job-1' }),
       {
         createdAt: parent.created_at,
-        excludeOutputKey: 'node-1-outputs-parent.png'
+        excludeOutputKey: getOutputKey({
+          nodeId: 'node-1',
+          subfolder: 'outputs',
+          filename: 'parent.png'
+        })
       }
     )
     expect(isStackExpanded(parent)).toBe(true)

@@ -30,23 +30,31 @@ export type NavItem =
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
+      badge?: 'new'
       href?: never
     }
-  | { label: string; href: string; columns?: never; featured?: never }
+  | {
+      label: string
+      href: string
+      badge?: 'new'
+      columns?: never
+      featured?: never
+    }
 
 export function getMainNavigation(locale: Locale): NavItem[] {
   const routes = getRoutes(locale)
   return [
     {
       label: t('nav.products', locale),
+      badge: 'new',
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/featured-model-card.jpg',
+        imageSrc: 'https://media.comfy.org/website/nav/ltx-card.webp',
         imageAlt: t('nav.featuredProductsAlt', locale),
         title: t('nav.featuredProductsTitle', locale),
         cta: {
-          label: t('cta.tryWorkflow', locale),
+          label: t('nav.featuredProductsCta', locale),
           ariaLabel: t('nav.featuredProductsCtaAria', locale),
-          href: 'https://comfy.org/workflows/api_seedance2_0_r2v-64f4db9e3e33/'
+          href: routes.ltx
         }
       },
       columns: [
@@ -62,7 +70,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             },
             {
               label: t('nav.comfyEnterprise', locale),
-              href: routes.cloudEnterprise
+              href: routes.enterprise
             }
           ]
         },
@@ -74,6 +82,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.mcp,
               badge: 'new'
             },
+            {
+              label: t('nav.comfyCli', locale),
+              href: routes.cli,
+              badge: 'new'
+            },
             // TODO: no page yet — re-enable when landing pages ship
             // { label: t('nav.appMode', locale), href: '#' },
             // { label: t('nav.agentSkills', locale), href: '#' },
@@ -82,6 +95,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.launches,
               badge: 'new'
             },
+            { label: t('nav.supportedModels', locale), href: routes.models },
             {
               label: t('nav.docs', locale),
               href: externalLinks.docs,
@@ -94,6 +108,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
     { label: t('nav.pricing', locale), href: routes.cloudPricing },
     {
       label: t('nav.community', locale),
+      badge: 'new',
       featured: {
         imageSrc: 'https://media.comfy.org/website/nav/featured-demo-card.jpg',
         imageAlt: t('nav.featuredCommunityAlt', locale),
@@ -109,7 +124,17 @@ export function getMainNavigation(locale: Locale): NavItem[] {
           header: t('nav.colPrograms', locale),
           items: [
             { label: t('nav.comfyHub', locale), href: externalLinks.workflows },
+            {
+              label: t('nav.fdct', locale),
+              href: routes.fdct,
+              badge: 'new'
+            },
             { label: t('nav.gallery', locale), href: routes.gallery },
+            {
+              label: t('nav.events', locale),
+              href: routes.events,
+              badge: 'new'
+            },
             {
               label: t('nav.affiliates', locale),
               href: routes.affiliates,

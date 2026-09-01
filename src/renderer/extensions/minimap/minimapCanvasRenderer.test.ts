@@ -1,19 +1,22 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
+import { useLinkStore } from '@/stores/linkStore'
 import { adjustColor } from '@/utils/colorUtil'
 import {
   createMockLGraph,
   createMockLGraphNode,
-  createMockLinks,
-  createMockLLink,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
 const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
@@ -25,10 +28,16 @@ vi.mock('@/utils/colorUtil', () => ({
 }))
 
 vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn().mockReturnValue({
-    nodeProgressStates: {}
-  })
+  useExecutionStore: vi.fn(() => ({
+    nodeLocationProgressStates: {}
+  }))
 }))
+
+const GRAPH_ID: UUID = 'renderer-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
 
 describe('minimapCanvasRenderer', () => {
   let mockCanvas: HTMLCanvasElement
@@ -36,7 +45,7 @@ describe('minimapCanvasRenderer', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
     mockContext = {
       clearRect: vi.fn(),
@@ -81,7 +90,8 @@ describe('minimapCanvasRenderer', () => {
         })
       ],
       _groups: [],
-      links: {} as typeof mockGraph.links,
+      id: GRAPH_ID,
+      rootGraph: { id: GRAPH_ID } as LGraph,
       getNodeById: vi.fn()
     })
 
@@ -253,31 +263,23 @@ describe('minimapCanvasRenderer', () => {
   })
 
   it('should render connections when enabled', () => {
-    const targetNode = {
-      id: '2',
-      pos: [300, 200],
-      size: [120, 60]
-    }
-
     mockGraph._nodes[0].outputs = [
       createMockNodeOutputSlot({
         name: 'output',
         type: 'number',
-        links: [toLinkId(1)],
         boundingRect: new Float64Array([0, 0, 10, 10])
       })
     ]
 
-    mockGraph.links = createMockLinks([
-      createMockLLink({
-        id: toLinkId(1),
-        target_id: toNodeId(2),
-        origin_slot: 0,
-        target_slot: 0
-      })
-    ])
-
-    mockGraph.getNodeById = vi.fn().mockReturnValue(targetNode)
+    useLinkStore().registerLink(GRAPH_SCOPE, {
+      id: toLinkId(1),
+      graphId: GRAPH_SCOPE.owningGraphId,
+      originNodeId: mockGraph._nodes[0].id,
+      originSlot: 0,
+      targetNodeId: toNodeId('2'),
+      targetSlot: 0,
+      type: 'number'
+    })
 
     const context: MinimapRenderContext = {
       bounds: { minX: 0, minY: 0, width: 500, height: 400 },

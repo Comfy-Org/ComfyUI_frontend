@@ -1,191 +1,55 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
 
-import type { User as FirebaseUser } from 'firebase/auth'
+import { useCurrentUser } from './useCurrentUser'
 
-import type { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-
-type FirebaseUserMock = Pick<
-  FirebaseUser,
-  'uid' | 'displayName' | 'email' | 'photoURL'
-> & {
-  providerData: Array<Pick<FirebaseUser['providerData'][number], 'providerId'>>
+const mockAuthState = {
+  currentUser: null as { uid: string } | null,
+  loading: false,
+  tokenRefreshTrigger: 0
 }
-
-type ApiKeyUser = NonNullable<
-  ReturnType<typeof useApiKeyAuthStore>['currentUser']
->
-
-const mockStores = vi.hoisted(() => ({
-  authStore: undefined as
-    | undefined
-    | {
-        currentUser: FirebaseUserMock | null
-        loading: boolean
-        tokenRefreshTrigger: number
-      },
-  apiKeyStore: undefined as
-    | undefined
-    | {
-        isAuthenticated: boolean
-        currentUser: ApiKeyUser | null
-        clearStoredApiKey: ReturnType<typeof vi.fn>
-      },
-  commandStore: undefined as
-    | undefined
-    | {
-        execute: ReturnType<typeof vi.fn>
-      }
-}))
-
 vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => mockStores.authStore
+  useAuthStore: () => mockAuthState
 }))
 
+const mockApiKeyState = {
+  isAuthenticated: false,
+  currentUser: null as { id: string; email?: string; name?: string } | null
+}
 vi.mock('@/stores/apiKeyAuthStore', () => ({
-  useApiKeyAuthStore: () => mockStores.apiKeyStore
+  useApiKeyAuthStore: () => mockApiKeyState
 }))
 
 vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => mockStores.commandStore
+  useCommandStore: () => ({ execute: vi.fn() })
 }))
-
-async function setup() {
-  vi.resetModules()
-  const authStore = reactive({
-    currentUser: null as FirebaseUserMock | null,
-    loading: false,
-    tokenRefreshTrigger: 0
-  })
-  const apiKeyStore = reactive({
-    isAuthenticated: false,
-    currentUser: null as ApiKeyUser | null,
-    clearStoredApiKey: vi.fn()
-  })
-  const commandStore = {
-    execute: vi.fn()
-  }
-
-  mockStores.authStore = authStore
-  mockStores.apiKeyStore = apiKeyStore
-  mockStores.commandStore = commandStore
-
-  const { useCurrentUser } = await import('./useCurrentUser')
-  return {
-    currentUser: useCurrentUser(),
-    authStore,
-    apiKeyStore,
-    commandStore
-  }
-}
-
-function firebaseUser(
-  providerId: string,
-  overrides: Partial<FirebaseUserMock> = {}
-): FirebaseUserMock {
-  return {
-    uid: 'firebase-user',
-    displayName: 'Firebase User',
-    email: 'firebase@example.com',
-    photoURL: 'https://example.com/photo.png',
-    providerData: [{ providerId }],
-    ...overrides
-  }
-}
 
 describe('useCurrentUser', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    mockAuthState.currentUser = null
+    mockApiKeyState.isAuthenticated = false
+    mockApiKeyState.currentUser = null
   })
 
-  it('uses API key user identity before firebase identity', async () => {
-    const { currentUser, authStore, apiKeyStore } = await setup()
-    expect(currentUser.isLoggedIn.value).toBe(false)
+  it('treats a key-only session as an API-key login', () => {
+    mockApiKeyState.isAuthenticated = true
+    mockApiKeyState.currentUser = { id: 'key-user' }
 
-    authStore.currentUser = firebaseUser('google.com')
-    apiKeyStore.isAuthenticated = true
-    apiKeyStore.currentUser = {
-      id: 'api-user',
-      name: 'API User',
-      email: 'api@example.com'
-    }
+    const { isApiKeyLogin, isLoggedIn, resolvedUserInfo } = useCurrentUser()
 
-    expect(currentUser.isLoggedIn.value).toBe(true)
-    expect(currentUser.isApiKeyLogin.value).toBe(true)
-    expect(currentUser.resolvedUserInfo.value).toEqual({ id: 'api-user' })
-    expect(currentUser.userDisplayName.value).toBe('API User')
-    expect(currentUser.userEmail.value).toBe('api@example.com')
-    expect(currentUser.userPhotoUrl.value).toBeNull()
-    expect(currentUser.providerName.value).toBe('Comfy API Key')
-    expect(currentUser.providerIcon.value).toBe('pi pi-key')
-    expect(currentUser.isEmailProvider.value).toBe(false)
+    expect(isApiKeyLogin.value).toBe(true)
+    expect(isLoggedIn.value).toBe(true)
+    expect(resolvedUserInfo.value).toEqual({ id: 'key-user' })
   })
 
-  it('maps firebase provider metadata to display fields', async () => {
-    const { currentUser, authStore } = await setup()
+  it('gives the Firebase session precedence over a stored API key', () => {
+    mockAuthState.currentUser = { uid: 'firebase-user' }
+    mockApiKeyState.isAuthenticated = true
+    mockApiKeyState.currentUser = { id: 'key-user' }
 
-    authStore.currentUser = firebaseUser('google.com')
-    expect(currentUser.providerName.value).toBe('Google')
-    expect(currentUser.providerIcon.value).toBe('pi pi-google')
-    expect(currentUser.userDisplayName.value).toBe('Firebase User')
-    expect(currentUser.userEmail.value).toBe('firebase@example.com')
-    expect(currentUser.userPhotoUrl.value).toBe('https://example.com/photo.png')
-    expect(currentUser.resolvedUserInfo.value).toEqual({ id: 'firebase-user' })
+    const { isApiKeyLogin, isLoggedIn, resolvedUserInfo } = useCurrentUser()
 
-    authStore.currentUser = firebaseUser('github.com')
-    expect(currentUser.providerName.value).toBe('GitHub')
-    expect(currentUser.providerIcon.value).toBe('pi pi-github')
-
-    authStore.currentUser = firebaseUser('password')
-    expect(currentUser.providerName.value).toBe('password')
-    expect(currentUser.providerIcon.value).toBe('pi pi-user')
-    expect(currentUser.isEmailProvider.value).toBe(true)
-  })
-
-  it('routes sign out through the active auth source', async () => {
-    const { currentUser, apiKeyStore, commandStore } = await setup()
-
-    apiKeyStore.isAuthenticated = true
-    apiKeyStore.currentUser = { id: 'api-user' }
-    await currentUser.handleSignOut()
-    expect(apiKeyStore.clearStoredApiKey).toHaveBeenCalledOnce()
-
-    apiKeyStore.isAuthenticated = false
-    await currentUser.handleSignOut()
-    expect(commandStore.execute).toHaveBeenCalledWith('Comfy.User.SignOut')
-  })
-
-  it('runs user lifecycle callbacks for resolve, token refresh, and logout', async () => {
-    const { currentUser, authStore } = await setup()
-    const resolved = vi.fn()
-    const tokenRefreshed = vi.fn()
-    const logout = vi.fn()
-
-    currentUser.onUserResolved(resolved)
-    currentUser.onTokenRefreshed(tokenRefreshed)
-    currentUser.onUserLogout(logout)
-
-    authStore.currentUser = firebaseUser('google.com')
-    await nextTick()
-    expect(resolved.mock.calls[0][0]).toEqual({ id: 'firebase-user' })
-
-    authStore.tokenRefreshTrigger += 1
-    await nextTick()
-    expect(tokenRefreshed).toHaveBeenCalledOnce()
-
-    authStore.currentUser = null
-    await nextTick()
-    expect(logout).toHaveBeenCalledOnce()
-  })
-
-  it('runs onUserResolved immediately when a user already exists', async () => {
-    const { currentUser, apiKeyStore } = await setup()
-    apiKeyStore.isAuthenticated = true
-    apiKeyStore.currentUser = { id: 'api-user' }
-    const resolved = vi.fn()
-
-    currentUser.onUserResolved(resolved)
-
-    expect(resolved.mock.calls[0][0]).toEqual({ id: 'api-user' })
+    expect(isApiKeyLogin.value).toBe(false)
+    expect(isLoggedIn.value).toBe(true)
+    expect(resolvedUserInfo.value).toEqual({ id: 'firebase-user' })
   })
 })

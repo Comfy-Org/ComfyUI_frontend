@@ -4,7 +4,7 @@
  * Confirm* sections carry their own). Catches accidental reverts of the
  * Phase 6 renderer flip.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 
@@ -18,17 +18,13 @@ import ConfirmHeader from '@/components/dialog/confirm/ConfirmHeader.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 
 describe('showConfirmDialog Reka renderer opt-in', () => {
-  beforeEach(() => {
-    showDialog.mockReset()
-  })
-
   it("sets renderer 'reka' with size 'md' and zeroed section padding", () => {
     showConfirmDialog()
 
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
-    expect(args.dialogComponentProps.headerClass).toBe('p-0')
+    expect(args.dialogComponentProps.headerClass).toBe('p-0 pr-3')
     expect(args.dialogComponentProps.bodyClass).toBe('p-0')
     expect(args.dialogComponentProps.footerClass).toBe('p-0')
     expect(args.dialogComponentProps.pt).toBeUndefined()

@@ -49,3 +49,39 @@ export function captureDownloadClick(platform: Platform) {
     console.error('PostHog download click capture failed', error)
   }
 }
+
+export function captureCliConnectionTabClick(connection: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:cli_connection_tab_clicked', { connection })
+  } catch (error) {
+    console.error('PostHog CLI connection tab capture failed', error)
+  }
+}
+
+export function captureCliClientTabClick(client: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:cli_client_tab_clicked', { client })
+  } catch (error) {
+    console.error('PostHog CLI client tab capture failed', error)
+  }
+}
+
+export function captureMcpConnectionTabClick(connection: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:mcp_connection_tab_clicked', { connection })
+  } catch (error) {
+    console.error('PostHog MCP connection tab capture failed', error)
+  }
+}
+
+export function captureMcpClientTabClick(client: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:mcp_client_tab_clicked', { client })
+  } catch (error) {
+    console.error('PostHog MCP client tab capture failed', error)
+  }
+}

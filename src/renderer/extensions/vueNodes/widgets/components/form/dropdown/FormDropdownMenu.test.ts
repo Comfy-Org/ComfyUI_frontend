@@ -135,25 +135,22 @@ describe('FormDropdownMenu', () => {
   })
 
   /** Regression: PrimeVue Popover teleports the menu to document.body, so
-   *  trackpad pinch-zoom and horizontal swipes must be guarded on the menu
-   *  itself rather than relying on the LGraphNode wheel handler. */
+   *  trackpad pinch-zoom must be guarded on the menu itself — `LGraphNode`
+   *  never sees these events. macOS pinch synthesizes `ctrlKey`; explicit
+   *  `⌘ + wheel` (and Windows/Linux equivalents) come through as `metaKey`. */
   it.for([
-    { name: 'pinch-zoom', overrides: { ctrlKey: true, deltaY: -10 } },
-    { name: 'horizontal swipe', overrides: { deltaX: 30, deltaY: 5 } }
-  ])('suppresses browser default for $name', ({ overrides }) => {
+    { name: 'ctrlKey', modifier: 'ctrlKey' as const },
+    { name: 'metaKey', modifier: 'metaKey' as const }
+  ])('suppresses browser default for pinch-zoom ($name)', ({ modifier }) => {
     render(FormDropdownMenu, {
       props: defaultProps,
       global: globalConfig
     })
 
     const root = screen.getByTestId('form-dropdown-menu')
-    const event = new WheelEvent('wheel', {
-      bubbles: true,
-      cancelable: true
-    })
-    Object.entries(overrides).forEach(([key, value]) => {
-      Object.defineProperty(event, key, { value })
-    })
+    const event = new WheelEvent('wheel', { bubbles: true, cancelable: true })
+    Object.defineProperty(event, modifier, { value: true })
+    Object.defineProperty(event, 'deltaY', { value: -10 })
     root.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(true)
@@ -211,19 +208,33 @@ describe('FormDropdownMenu', () => {
     expect(emitted('show-picker')).toHaveLength(1)
   })
 
-  /** Vertical scrolling must remain native so the dropdown's own scroll
-   *  container can scroll its content. */
-  it('does not suppress vertical scroll', () => {
+  /** Regression: slow trackpad vertical scrolls emit small-delta frames with
+   *  stray horizontal jitter (`|deltaX| > |deltaY|`). preventDefault-ing those
+   *  cancelled the native scroll and starved the VirtualGrid's `useScroll`,
+   *  leaving rows blank. Horizontal-swipe-to-navigate is blocked at the page
+   *  boundary by `overscroll-behavior: none` on `html, body`, so the local
+   *  handler must NOT preventDefault these events. The `pure vertical` case
+   *  also covers plain native scrolling of the dropdown's own content. */
+  it.for([
+    { name: 'pure vertical', overrides: { deltaY: 30 } },
+    {
+      name: 'slow scroll with horizontal jitter',
+      overrides: { deltaX: 1.5, deltaY: 1.2 }
+    },
+    {
+      name: 'pronounced horizontal swipe',
+      overrides: { deltaX: 30, deltaY: 5 }
+    }
+  ])('does not suppress $name wheel', ({ overrides }) => {
     render(FormDropdownMenu, {
       props: defaultProps,
       global: globalConfig
     })
 
     const root = screen.getByTestId('form-dropdown-menu')
-    const event = new WheelEvent('wheel', {
-      deltaY: 30,
-      bubbles: true,
-      cancelable: true
+    const event = new WheelEvent('wheel', { bubbles: true, cancelable: true })
+    Object.entries(overrides).forEach(([key, value]) => {
+      Object.defineProperty(event, key, { value })
     })
     root.dispatchEvent(event)
 

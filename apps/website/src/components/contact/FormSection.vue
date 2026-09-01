@@ -5,12 +5,19 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import { t } from '../../i18n/translations'
+import HubspotFormEmbed from '../common/HubspotFormEmbed.vue'
 import SectionLabel from '../common/SectionLabel.vue'
-import HubspotFormEmbed from './HubspotFormEmbed.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
+
+const englishFormId = '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
+
+const contactFormIds: Partial<Record<Locale, string>> = {
+  en: englishFormId,
+  'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93'
+}
 
 function tk(suffix: string): TranslationKey {
   return `contact.form.${suffix}` as TranslationKey
@@ -33,36 +40,41 @@ useHeroAnimation({
 </script>
 
 <template>
-  <section ref="sectionRef" class="px-4 py-20 lg:flex lg:px-20 lg:py-24">
+  <section
+    ref="sectionRef"
+    class="px-4 py-20 lg:flex lg:gap-16 lg:px-20 lg:py-24"
+  >
     <!-- Left column: intro + image -->
     <div class="lg:w-1/2">
-      <SectionLabel ref="badgeRef">
-        {{ t(tk('badge'), locale) }}
-      </SectionLabel>
+      <div class="lg:max-w-xl">
+        <SectionLabel ref="badgeRef">
+          {{ t(tk('badge'), locale) }}
+        </SectionLabel>
 
-      <h1
-        ref="headingRef"
-        class="text-primary-comfy-canvas mt-4 text-3xl font-light whitespace-pre-line lg:text-5xl"
-      >
-        {{ t(tk('heading'), locale) }}
-      </h1>
+        <h1
+          ref="headingRef"
+          class="mt-4 text-3xl font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
+        >
+          {{ t(tk('heading'), locale) }}
+        </h1>
 
-      <div ref="descRef">
-        <p class="text-primary-comfy-canvas mt-4 text-sm">
-          {{ t(tk('description'), locale) }}
-        </p>
+        <div ref="descRef">
+          <p class="mt-4 text-sm text-primary-comfy-canvas">
+            {{ t(tk('description'), locale) }}
+          </p>
 
-        <p class="text-primary-comfy-canvas mt-4 text-sm">
-          {{ t(tk('supportLink'), locale) }}
-          <a
-            href="https://docs.comfy.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-primary-comfy-yellow underline"
-          >
-            {{ t(tk('supportLinkCta'), locale) }}
-          </a>
-        </p>
+          <p class="mt-4 text-sm text-primary-comfy-canvas">
+            {{ t(tk('supportLink'), locale) }}
+            <a
+              href="https://docs.comfy.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary-comfy-yellow underline"
+            >
+              {{ t(tk('supportLinkCta'), locale) }}
+            </a>
+          </p>
+        </div>
       </div>
 
       <div ref="imageRef" class="mt-8 overflow-hidden rounded-2xl lg:-ml-20">
@@ -76,7 +88,10 @@ useHeroAnimation({
 
     <!-- Right column: form -->
     <div ref="formRef" class="mt-12 lg:mt-0 lg:w-1/2">
-      <HubspotFormEmbed :locale />
+      <HubspotFormEmbed
+        :form-id="contactFormIds[locale] ?? englishFormId"
+        :locale
+      />
     </div>
   </section>
 </template>

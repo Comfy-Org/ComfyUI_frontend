@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import ResourceList from '../components/booking-confirmation/ResourceList.vue'
+import HeroSection from '../components/legal/HeroSection.vue'
+import { externalLinks, getRoutes } from '../config/routes'
+
+const routes = getRoutes('en')
+
+const resources = [
+  {
+    label: 'Learning Center',
+    href: routes.learning,
+    display: 'comfy.org/learning'
+  },
+  {
+    label: 'Workflow templates',
+    href: externalLinks.workflows,
+    display: 'comfy.org/workflows'
+  },
+  {
+    label: 'Customer stories',
+    href: routes.customers,
+    display: 'comfy.org/customers'
+  },
+  {
+    label: 'Docs',
+    href: externalLinks.docs,
+    display: 'docs.comfy.org'
+  }
+]
+---
+
+<BaseLayout
+  title="You're booked - Comfy"
+  description="Your meeting is booked. Check your email for the calendar invite and meeting link."
+  noindex
+>
+  <HeroSection title="You're booked." class="text-center" />
+
+  <section class="-mt-8 px-6 pb-24 lg:-mt-12 lg:pb-40">
+    <div
+      class="text-primary-comfy-canvas mx-auto flex max-w-2xl flex-col gap-10 text-center text-base font-light lg:text-lg"
+    >
+      <p>Check your email for the calendar invite and meeting link!</p>
+
+      <div class="flex flex-col gap-4">
+        <h2 class="text-primary-comfy-yellow text-xl font-semibold italic lg:text-2xl">
+          Resources while you wait
+        </h2>
+        <ResourceList resources={resources} />
+      </div>
+    </div>
+  </section>
+</BaseLayout>

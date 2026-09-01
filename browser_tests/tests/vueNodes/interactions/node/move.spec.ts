@@ -12,14 +12,14 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   const getHeaderPos = async (
     comfyPage: ComfyPage,
     title: string
-  ): Promise<{ x: number; y: number; width: number; height: number }> => {
+  ): Promise<{ x: number; y: number }> => {
     const box = await comfyPage.vueNodes
       .getNodeByTitle(title)
       .getByTestId('node-title')
       .first()
       .boundingBox()
     if (!box) throw new Error(`${title} header not found`)
-    return box
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   }
 
   const getLoadCheckpointHeaderPos = async (comfyPage: ComfyPage) =>
@@ -84,29 +84,27 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await comfyPage.idleFrames(2)
   }
 
-  test('should allow moving nodes by dragging', async ({ comfyPage }) => {
-    const loadCheckpointHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
-      x: 256,
-      y: 256
-    })
+  test('should allow moving nodes by dragging', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    const initialHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    await comfyMouse.dragElementBy(node.header, { x: 100, y: 100 })
 
     const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
+    await expectPosChanged(initialHeaderPos, newHeaderPos)
   })
 
   test('should not move node when pointer moves less than drag threshold', async ({
-    comfyPage
+    comfyPage,
+    comfyMouse
   }) => {
     const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
 
     // Move only 2px — below the 3px drag threshold in useNodePointerInteractions
-    await comfyPage.page.mouse.move(headerPos.x, headerPos.y)
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(headerPos.x + 2, headerPos.y + 1, {
-      steps: 5
-    })
-    await comfyPage.page.mouse.up()
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    await comfyMouse.dragElementBy(node.header, { x: 2, y: 1 })
     await comfyPage.nextFrame()
 
     const afterPos = await getLoadCheckpointHeaderPos(comfyPage)
@@ -295,14 +293,12 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
 
       // Re-fetch drag source after clicks in case the header reflowed.
-      const dragSrc = await getHeaderPos(comfyPage, 'Load Checkpoint')
-      const centerX = dragSrc.x + dragSrc.width / 2
-      const centerY = dragSrc.y + dragSrc.height / 2
+      const headerPos = await getHeaderPos(comfyPage, 'Load Checkpoint')
 
-      await comfyPage.page.mouse.move(centerX, centerY)
+      await comfyPage.page.mouse.move(headerPos.x, headerPos.y)
       await comfyPage.page.mouse.down()
       await comfyPage.nextFrame()
-      await comfyPage.page.mouse.move(centerX + dx, centerY + dy, {
+      await comfyPage.page.mouse.move(headerPos.x + dx, headerPos.y + dy, {
         steps: 20
       })
       await comfyPage.page.mouse.up()
@@ -398,7 +394,10 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     })
 
     const getReroutePos = () =>
-      comfyPage.page.evaluate(() => [...graph!.reroutes.values()][0])
+      comfyPage.page.evaluate(() => {
+        const reroute = graph!.reroutes.values().next().value
+        return reroute ? [...reroute.pos] : null
+      })
     const getGroupPos = () =>
       comfyPage.page.evaluate(() => graph!.groups[0].pos)
     const initialReroutePos = await getReroutePos()
@@ -407,6 +406,18 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
 
     await expect.poll(getReroutePos).not.toEqual(initialReroutePos)
     await expect.poll(getGroupPos).not.toEqual(initialGroupPos)
+    const movedReroutePos = await getReroutePos()
+    const movedGroupPos = await getGroupPos()
+
+    await comfyPage.keyboard.undo()
+
+    await expect.poll(getReroutePos).toEqual(initialReroutePos)
+    await expect.poll(getGroupPos).toEqual(initialGroupPos)
+
+    await comfyPage.keyboard.redo()
+
+    await expect.poll(getReroutePos).toEqual(movedReroutePos)
+    await expect.poll(getGroupPos).toEqual(movedGroupPos)
   })
 
   test(
@@ -416,19 +427,24 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       // Disable minimap (gets in way of the node on small screens)
       await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
 
-      const loadCheckpointHeaderPos =
-        await getLoadCheckpointHeaderPos(comfyPage)
+      const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
+      await node.centerOnNode()
+      const nodeHeaderPos = await getHeaderPos(comfyPage, 'Save Image')
       await comfyPage.canvasOps.panWithTouch(
         {
           x: 64,
           y: 64
         },
-        loadCheckpointHeaderPos
+        nodeHeaderPos,
+        10
       )
 
-      const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-      expect(newHeaderPos.x).toBeCloseTo(loadCheckpointHeaderPos.x + 64)
-      expect(newHeaderPos.y).toBeCloseTo(loadCheckpointHeaderPos.y + 64)
+      await expect
+        .poll(() => getHeaderPos(comfyPage, 'Save Image').then((p) => p.x))
+        .toBeCloseTo(nodeHeaderPos.x + 64, 0)
+      await expect
+        .poll(() => getHeaderPos(comfyPage, 'Save Image').then((p) => p.y))
+        .toBeCloseTo(nodeHeaderPos.y + 64, 0)
     }
   )
 })

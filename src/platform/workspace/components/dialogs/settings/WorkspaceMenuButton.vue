@@ -31,10 +31,8 @@ const {
   showDeleteWorkspaceDialog,
   showEditWorkspaceDialog
 } = useDialogService()
-const { isWorkspaceSubscribed, isCurrentUserOriginalOwner } = storeToRefs(
-  useTeamWorkspaceStore()
-)
-const { uiConfig } = useWorkspaceUI()
+const { isWorkspaceSubscribed } = storeToRefs(useTeamWorkspaceStore())
+const { permissions, uiConfig } = useWorkspaceUI()
 
 // Disable delete when the workspace has an active subscription (prevents
 // accidental deletion); uses the workspace's own status, not the global one.
@@ -50,6 +48,22 @@ const deleteTooltip = computed(() => {
   return tooltipKey ? t(tooltipKey) : undefined
 })
 
+function leaveWorkspace() {
+  if (!permissions.value.canLeaveWorkspace) return
+  void showLeaveWorkspaceDialog()
+}
+
+function deleteWorkspace() {
+  if (
+    !permissions.value.canManageSubscription ||
+    uiConfig.value.workspaceMenuAction !== 'delete' ||
+    isDeleteDisabled.value
+  ) {
+    return
+  }
+  void showDeleteWorkspaceDialog()
+}
+
 const menuItems = computed<MenuItem[]>(() => {
   const items: MenuItem[] = []
 
@@ -61,37 +75,28 @@ const menuItems = computed<MenuItem[]>(() => {
     })
   }
 
-  const action = uiConfig.value.workspaceMenuAction
-  if (action === 'delete') {
+  if (
+    uiConfig.value.workspaceMenuAction === 'delete' &&
+    permissions.value.canManageSubscription
+  ) {
     items.push({
       label: t('workspacePanel.menu.deleteWorkspace'),
       icon: 'pi pi-trash',
-      class: isDeleteDisabled.value ? 'text-danger/50' : 'text-danger',
+      class: isDeleteDisabled.value
+        ? 'text-destructive-background/50'
+        : 'text-destructive-background',
       disabled: isDeleteDisabled.value,
       tooltip: deleteTooltip.value,
-      command: isDeleteDisabled.value
-        ? undefined
-        : () => showDeleteWorkspaceDialog()
+      command: isDeleteDisabled.value ? undefined : deleteWorkspace
     })
   }
 
-  // Members and non-creator owners can leave; the creator sees it disabled.
-  if (action === 'leave' || action === 'delete') {
-    items.push(
-      isCurrentUserOriginalOwner.value
-        ? {
-            label: t('workspacePanel.menu.leaveWorkspace'),
-            icon: 'pi pi-sign-out',
-            class: 'opacity-50',
-            disabled: true,
-            tooltip: t('workspacePanel.menu.creatorCannotLeave')
-          }
-        : {
-            label: t('workspacePanel.menu.leaveWorkspace'),
-            icon: 'pi pi-sign-out',
-            command: () => showLeaveWorkspaceDialog()
-          }
-    )
+  if (permissions.value.canLeaveWorkspace) {
+    items.push({
+      label: t('workspacePanel.menu.leaveWorkspace'),
+      icon: 'pi pi-sign-out',
+      command: leaveWorkspace
+    })
   }
 
   return items

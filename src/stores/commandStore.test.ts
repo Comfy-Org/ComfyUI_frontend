@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -30,11 +28,6 @@ vi.mock('@/platform/keybindings/keybindingStore', () => ({
 }))
 
 describe('commandStore', () => {
-  beforeEach(() => {
-    keybindingMock.value = null
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('registerCommand', () => {
     it('registers a command by id', () => {
       const store = useCommandStore()
