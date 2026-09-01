@@ -79,7 +79,9 @@ export class LoaderManager implements LoaderManagerInterface {
 
   init(): void {}
 
-  dispose(): void {}
+  dispose(): void {
+    this.currentLoadId += 1
+  }
 
   async loadModel(
     url: string,

@@ -622,6 +622,27 @@ describe('LoaderManager', () => {
       expect(endEmits).toHaveLength(1)
     })
 
+    it('discards a pending load when disposed', async () => {
+      const { lm, modelManager, eventManager } = makeLoaderManager()
+      let resolveLoad!: (value: THREE.Object3D) => void
+      const pendingLoad = new Promise<THREE.Object3D>((resolve) => {
+        resolveLoad = resolve
+      })
+      meshLoad.mockImplementationOnce(() => pendingLoad.then(loadResult))
+
+      const loadPromise = lm.loadModel('api/view?filename=slow.glb')
+      lm.dispose()
+      resolveLoad(new THREE.Object3D())
+      await loadPromise
+
+      expect(modelManager.setupModel).not.toHaveBeenCalled()
+      expect(lm.getCurrentAdapter()).toBeNull()
+      expect(eventManager.emitEvent).not.toHaveBeenCalledWith(
+        'modelLoadingEnd',
+        null
+      )
+    })
+
     it('logs and drops the load when the URL is missing a filename param', async () => {
       const { lm, modelManager } = makeLoaderManager()
       const consoleError = vi
