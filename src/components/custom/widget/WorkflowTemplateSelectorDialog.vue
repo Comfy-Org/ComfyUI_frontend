@@ -1255,10 +1255,13 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     const requirements = extractTemplateModelRequirementDetails(
       prepared.workflow
     )
-    const inputAssetsPromise = resolveTemplateInputAssets(
-      template.name,
-      () => window.__comfyDesktop2
-    )
+    const inputAssetsPromise =
+      prepared.sourceModule === 'default'
+        ? resolveTemplateInputAssets(
+            template.name,
+            () => window.__comfyDesktop2
+          )
+        : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
     if (requirements.length === 0) {
       const inputAssets = await inputAssetsPromise
       if (generation !== detailGeneration) return
