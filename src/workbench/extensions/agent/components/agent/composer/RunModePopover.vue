@@ -63,7 +63,7 @@ const dirty = computed(
 const limitValid = computed(() => {
   if (draftMode.value !== 'auto_limited') return true
   const limit = draftLimit.value
-  return limit !== null && Number.isFinite(limit) && Math.floor(limit) > 0
+  return limit !== null && Number.isInteger(limit) && limit > 0
 })
 
 const saveable = computed(

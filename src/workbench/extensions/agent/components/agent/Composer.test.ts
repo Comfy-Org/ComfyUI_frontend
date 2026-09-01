@@ -250,6 +250,11 @@ describe('Composer', () => {
       expect(
         screen.getByRole('button', { name: 'Save changes' })
       ).toBeDisabled()
+
+      await userEvent.type(input, '1.5')
+      expect(
+        screen.getByRole('button', { name: 'Save changes' })
+      ).toBeDisabled()
     })
 
     it('enables Save when only the credit limit changes', async () => {
