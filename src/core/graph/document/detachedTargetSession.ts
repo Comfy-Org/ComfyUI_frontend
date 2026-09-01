@@ -133,11 +133,10 @@ export function createDetachedTargetSession(
     if (!frame) return { status: 'idle' }
 
     const staged = new Y.Doc()
-    Y.applyUpdate(staged, Y.encodeStateAsUpdate(committedDoc))
-    Y.applyUpdate(staged, frame.update)
-
     let applied: boolean
     try {
+      Y.applyUpdate(staged, Y.encodeStateAsUpdate(committedDoc))
+      Y.applyUpdate(staged, frame.update)
       applied = port.apply(frame, staged)
     } catch (error) {
       staged.destroy()
