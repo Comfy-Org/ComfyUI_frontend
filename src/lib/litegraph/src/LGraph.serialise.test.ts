@@ -115,6 +115,27 @@ describe('LGraph Serialisation', () => {
     expect(error).not.toHaveBeenCalled()
   })
 
+  test('serialises a duplicated live node once through the fallback', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Doubled')
+    graph.add(node)
+    graph._nodes.push(node)
+    const adapterOnly = new LGraphNode('Adapter only')
+    adapterOnly.id = toNodeId(99)
+    graph._nodes.push(adapterOnly)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual([
+      'Doubled',
+      'Adapter only'
+    ])
+    expect(error).toHaveBeenCalledOnce()
+  })
+
   test('round trips namespaced node and graph extension payloads', ({
     expect,
     minimalGraph
