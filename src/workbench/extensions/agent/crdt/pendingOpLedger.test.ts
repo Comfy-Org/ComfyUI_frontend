@@ -55,6 +55,13 @@ describe('enqueue', () => {
     expect(ledger.enqueue('op-1', 'again')).toBe(false)
     expect(ledger.enqueue('op-2', 'again')).toBe(false)
   })
+
+  it('refuses an id after its entry has been removed', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['op-1'])
+    expect(ledger.take('op-1')).toBeDefined()
+    expect(ledger.enqueue('op-1', 'again')).toBe(false)
+  })
 })
 
 describe('markInFlight', () => {
