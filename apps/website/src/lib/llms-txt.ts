@@ -76,9 +76,12 @@ export function findCanonicalDrift(
   const drift: CanonicalDrift[] = []
   for (const { path, link } of internalLinks(links)) {
     const canonical = canonicalFor(path)
+    if (canonical === undefined) continue
+    const canonicalUrl = new URL(canonical)
+    const linkUrl = new URL(link.url)
     if (
-      canonical !== undefined &&
-      normalizePath(new URL(canonical).pathname) !== path
+      canonicalUrl.origin !== linkUrl.origin ||
+      normalizePath(canonicalUrl.pathname) !== path
     ) {
       drift.push({ link, canonical })
     }

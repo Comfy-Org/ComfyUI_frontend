@@ -152,4 +152,23 @@ describe('findCanonicalDrift', () => {
 
     expect(drift).toEqual([])
   })
+
+  it('flags a same-path canonical on a different origin', () => {
+    const links = [
+      {
+        title: 'Enterprise',
+        url: 'https://comfy.org/enterprise/',
+        description: ''
+      }
+    ]
+
+    const drift = findCanonicalDrift(
+      links,
+      () => 'https://evil.example.com/enterprise/'
+    )
+
+    expect(drift).toEqual([
+      { link: links[0], canonical: 'https://evil.example.com/enterprise/' }
+    ])
+  })
 })
