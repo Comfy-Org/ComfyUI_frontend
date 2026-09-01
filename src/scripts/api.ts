@@ -751,10 +751,7 @@ export class ComfyApi extends EventTarget {
       )
 
       setTimeout(() => {
-        if (
-          this.socket === socket &&
-          !this.serverFeatureFlagsReceived.value
-        ) {
+        if (this.socket === socket && !this.serverFeatureFlagsReceived.value) {
           this.serverFeatureFlags.value = {}
           this.serverFeatureFlagsReceived.value = true
         }

@@ -17,9 +17,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
-  const flagDelivered = computed(
-    () => api.serverFeatureFlagsReceived.value
-  )
+  const flagDelivered = computed(() => api.serverFeatureFlagsReceived.value)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
 
