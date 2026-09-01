@@ -78,7 +78,9 @@ test.describe('Inactive Team subscription billing', { tag: '@cloud' }, () => {
   })
 
   test('keeps the owner billing portal available', async ({ page }) => {
-    await expect(content.getByRole('heading', { name: 'Team' })).toBeVisible()
+    await expect(
+      content.getByRole('heading', { name: 'Team', exact: true })
+    ).toBeVisible()
     await expect(content.getByText('Inactive', { exact: true })).toBeVisible()
     await expect(
       content.getByRole('button', { name: 'Reactivate plan' })

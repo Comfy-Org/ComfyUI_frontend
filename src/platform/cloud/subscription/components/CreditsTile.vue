@@ -385,11 +385,21 @@ const showBar = computed(
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
+// A lapsed self-serve plan routes recovery through Reactivate plan, so the tile
+// withdraws its own button. Sales-managed tiers have no self-serve reactivation,
+// and whether a terminal contract may still top up is the server's call through
+// can_top_up (BE-10999) rather than a presentation state's.
+const withholdsActionButton = computed(
+  () =>
+    showsInactivePlanState.value &&
+    !isSalesManagedTier(subscription.value?.tier)
+)
+
 const showActionButton = computed(
   () =>
     (canTopUp.value || canSubscribeSelfServe.value) &&
     !zeroState &&
-    !showsInactivePlanState.value
+    !withholdsActionButton.value
 )
 
 const isMonthlyDepleted = computed(
