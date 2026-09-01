@@ -86,7 +86,7 @@ export class TopUpCreditsDialog extends BaseDialog {
       name: /continue to payment|add credits/i
     })
     // Headless dialog uses its own X button, not PrimeVue's header close
-    this.closeButton = this.root.locator('button:has([class*="lucide--x"])')
+    this.closeButton = this.root.getByRole('button', { name: 'Close' })
     this.minWarning = this.root.getByText(/minimum/i)
     this.ceilingWarning = this.root.getByText(/maximum/i)
   }
