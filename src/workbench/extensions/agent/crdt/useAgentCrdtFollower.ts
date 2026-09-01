@@ -294,6 +294,26 @@ export function useAgentCrdtFollower(
       scheduleSubscribeRetry()
     }
   }
+  const handleProjectionFailure = (error: unknown, update: DocUpdate): void => {
+    projectionErrors.value += 1
+    const failure = {
+      workflowId: update.workflowId,
+      seq: update.seq,
+      message: error instanceof Error ? error.message : String(error)
+    }
+    recordDevEvent('projection_error', failure)
+    connected.value = false
+    adapter.discardPending(update.workflowId)
+    bridge.resubscribe()
+    if (!projectionFailureReported) {
+      projectionFailureReported = true
+      reportError(error, {
+        errorType: 'agent_crdt_projection_failure',
+        tags: { workflow_id: update.workflowId },
+        context: { sequence: update.seq }
+      })
+    }
+  }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
@@ -306,27 +326,15 @@ export function useAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     try {
-      if (adapter.applyFrame(update) === false)
-        throw new Error('ECS mutation batch rejected the authoritative update')
+      if (adapter.applyFrame(update) === false) {
+        handleProjectionFailure(
+          new Error('ECS mutation batch rejected the authoritative update'),
+          update
+        )
+        return
+      }
     } catch (error) {
-      projectionErrors.value += 1
-      const failure = {
-        workflowId: update.workflowId,
-        seq: update.seq,
-        message: error instanceof Error ? error.message : String(error)
-      }
-      recordDevEvent('projection_error', failure)
-      connected.value = false
-      adapter.discardPending(update.workflowId)
-      bridge.resubscribe()
-      if (!projectionFailureReported) {
-        projectionFailureReported = true
-        reportError(error, {
-          errorType: 'agent_crdt_projection_failure',
-          tags: { workflow_id: update.workflowId },
-          context: { sequence: update.seq }
-        })
-      }
+      handleProjectionFailure(error, update)
       return
     }
     recordDevEvent('doc_update', {

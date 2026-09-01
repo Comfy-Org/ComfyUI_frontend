@@ -381,6 +381,22 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('reports an ECS projection rejection without throwing', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValueOnce(false)
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+    expect(status().projectionErrors).toBe(1)
+    expect(adapterState.discardPending).toHaveBeenCalledWith('wf-1')
+    expect(bridge().resubscribe).toHaveBeenCalled()
+    expect(reportErrorMock).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_crdt_projection_failure' })
+    )
+    unmount()
+  })
+
   it('keeps failure counters monotonic across resets and workflow switches', async () => {
     const { unmount, workflowId, status } = mountFollower('wf-1')
     adapterState.applyFrame.mockImplementationOnce(() => {
