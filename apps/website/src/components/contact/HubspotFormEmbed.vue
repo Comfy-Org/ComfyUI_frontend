@@ -101,15 +101,15 @@ onMounted(() => {
   <div class="min-h-[640px] w-full">
     <p
       v-if="hasEmbedLoadError"
-      class="text-primary-comfy-canvas text-sm/6"
+      class="text-sm/6 text-primary-comfy-canvas"
       role="status"
     >
       {{ t('contact.form.embedLoadErrorPrefix', locale) }}
       <a
         class="text-primary-comfy-yellow underline"
-        href="mailto:hello@comfy.org"
+        href="mailto:support@comfy.org"
       >
-        hello@comfy.org
+        support@comfy.org
       </a>
       {{ t('contact.form.embedLoadErrorSuffix', locale) }}
     </p>
