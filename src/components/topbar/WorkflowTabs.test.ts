@@ -285,6 +285,8 @@ describe('WorkflowTabs agent entry button', () => {
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = false
     agentPanelHolder.store.isOpen.value = false
+    agentPanelHolder.store.gateSettled.value = false
+    agentPanelHolder.store.flagDelivered.value = false
   })
 
   it('does not render the entry button in the legacy tab bar even with the flag on', () => {
@@ -351,6 +353,7 @@ describe('WorkflowTabs agent entry button', () => {
   })
 
   it('exposes the flag-delivered signal only after the first server delivery', async () => {
+    agentPanelHolder.store.flagDelivered.value = false
     renderComponent()
 
     const actions = screen.getByTestId('integrated-tab-bar-actions')
