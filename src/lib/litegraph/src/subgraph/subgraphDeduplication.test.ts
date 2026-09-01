@@ -138,6 +138,63 @@ describe('normalizeSubgraphDefinitionIds', () => {
     expect(normalizedParent.nodes![0].type).toBe(normalizedChild.id)
     expect(normalizedChild.nodes![0].type).toBe(normalizedGrandchild.id)
   })
+
+  it('handles an explicit empty definitions.subgraphs list without error', () => {
+    const parent = makeSubgraph('parent')
+    ;(
+      parent as ExportedSubgraph & {
+        definitions?: { subgraphs?: ExportedSubgraph[] }
+      }
+    ).definitions = { subgraphs: [] }
+
+    const result = normalizeSubgraphDefinitionIds([parent])
+
+    expect(result.subgraphs).toHaveLength(1)
+    expect(result.subgraphs[0].name).toBe('parent')
+  })
+
+  it('preserves every sibling when a definition nests multiple subgraphs', () => {
+    const siblingA = makeSubgraph('legacy-sibling-a')
+    const siblingB = makeSubgraph('legacy-sibling-b')
+    const siblingC = makeSubgraph('legacy-sibling-c')
+    const parent = makeSubgraph('parent', [
+      'legacy-sibling-a',
+      'legacy-sibling-b',
+      'legacy-sibling-c'
+    ])
+    ;(
+      parent as ExportedSubgraph & {
+        definitions?: { subgraphs?: ExportedSubgraph[] }
+      }
+    ).definitions = { subgraphs: [siblingA, siblingB, siblingC] }
+
+    const result = normalizeSubgraphDefinitionIds([parent])
+
+    // Parent plus all three nested siblings survive flattening.
+    expect(result.subgraphs).toHaveLength(4)
+    const names = result.subgraphs.map((sg) => sg.name)
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'parent',
+        'legacy-sibling-a',
+        'legacy-sibling-b',
+        'legacy-sibling-c'
+      ])
+    )
+
+    // Each sibling got its own normalized id and the parent's three nodes
+    // reference all three, not just the first.
+    const normalizedParent = result.subgraphs.find(
+      (sg) => sg.name === 'parent'
+    )!
+    const siblingIds = [
+      'legacy-sibling-a',
+      'legacy-sibling-b',
+      'legacy-sibling-c'
+    ].map((name) => result.subgraphs.find((sg) => sg.name === name)!.id)
+    expect(new Set(siblingIds).size).toBe(3)
+    expect(normalizedParent.nodes!.map((n) => n.type)).toEqual(siblingIds)
+  })
 })
 
 describe('topologicalSortSubgraphs', () => {
