@@ -351,6 +351,19 @@ describe('recording template', () => {
       ).toBe('custom-localhost-8200')
     })
 
+    it('encodes IPv6 hostnames for Windows-safe storage paths', () => {
+      expect(
+        storageStateKey({
+          id: 'custom',
+          label: 'Custom backend',
+          hint: '',
+          script: 'dev',
+          needsLocalBackend: false,
+          backendUrl: 'http://[::1]:8100/'
+        })
+      ).toBe('custom-%5B%3A%3A1%5D-8100')
+    })
+
     it('removes the legacy shared custom-backend storage state', () => {
       const legacyStateFile = join(browserTestsDir, 'storage-state.custom.json')
       writeFileSync(legacyStateFile, '{"cookies":[]}')
