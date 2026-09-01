@@ -243,10 +243,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       isAnimated = false
     }: { folder?: ResultItemType; isAnimated?: boolean } = {}
   ) {
-    if (!filenames || !node) return
+    if (!node) return
 
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
+    if (!filenames) {
+      widgetSourcedPreviews.delete(locatorId)
+      return
+    }
     if (typeof filenames === 'string') {
       setOutputsByLocatorId(
         locatorId,

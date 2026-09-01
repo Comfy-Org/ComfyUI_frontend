@@ -964,6 +964,20 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images).toBeUndefined()
   })
 
+  it('does not preserve a widget preview after its value is cleared', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'generated.png [output]')
+    store.setNodeOutputs(node, '')
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([toNodeId(5)]),
+      createMockOutputs()
+    )
+
+    expect(store.nodeOutputs['5']?.images).toBeUndefined()
+  })
+
   it('leaves an unannotated value in the caller-supplied folder', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
