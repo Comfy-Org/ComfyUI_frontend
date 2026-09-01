@@ -254,15 +254,11 @@ describe('updateEndpoints – realignInputLinkSlots() atomicity', () => {
       })
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const serialized = [
-      {
-        id: target.id,
-        inputs: [
-          { name: 'x', link: target.getInputLink(0)!.id as unknown as number }
-        ]
-      }
-    ] as unknown as ISerialisedNode[]
-    realignInputLinkSlots(graph, serialized)
+    const nodeData: Pick<ISerialisedNode, 'id' | 'inputs'> = {
+      id: target.id,
+      inputs: [{ name: 'x', type: 'INT', link: target.getInputLink(0)!.id }]
+    }
+    realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect(updateEndpoints).toHaveBeenCalledOnce()
     expect(updateEndpoints).toHaveReturnedWith(
