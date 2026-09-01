@@ -45,6 +45,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
         staged.value = []
         consumedSig.value = null
         stagedSig.value = null
+        dismissedSig.value = null
         lastLiveSig = null
         return
       }

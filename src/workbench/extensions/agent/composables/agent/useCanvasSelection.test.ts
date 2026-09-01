@@ -38,6 +38,22 @@ describe('useCanvasSelection', () => {
     expect(staged.value).toEqual([nodeB])
   })
 
+  it('accepts an unchanged dismissed selection after the feature is re-enabled', () => {
+    const selection = ref<SelectedNode[]>([nodeA])
+    const enabled = ref(true)
+    const { staged, remove } = useCanvasSelection({
+      selection,
+      isLive: ref(true),
+      enabled
+    })
+
+    remove('1')
+    enabled.value = false
+    enabled.value = true
+
+    expect(staged.value).toEqual([nodeA])
+  })
+
   it('clears on submit and does not re-stage the same selection', async () => {
     const selection = ref<SelectedNode[]>([nodeA])
     const { staged, consume } = useCanvasSelection({
