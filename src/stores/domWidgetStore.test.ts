@@ -129,8 +129,12 @@ describe('domWidgetStore', () => {
 
       store.clearAllPositionOverrides()
 
-      expect(store.widgetStates.get('widget-1')?.positionOverride).toBeUndefined()
-      expect(store.widgetStates.get('widget-2')?.positionOverride).toBeUndefined()
+      expect(
+        store.widgetStates.get('widget-1')?.positionOverride
+      ).toBeUndefined()
+      expect(
+        store.widgetStates.get('widget-2')?.positionOverride
+      ).toBeUndefined()
     })
   })
 
