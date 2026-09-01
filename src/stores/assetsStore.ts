@@ -118,6 +118,10 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
+  // Bumped by reset(); a fetch whose response arrives after a bump belongs to
+  // the previous identity and must not commit.
+  let identityGeneration = 0
+
   // Pagination state
   const historyOffset = ref(0)
   const hasMoreHistory = ref(true)
@@ -131,12 +135,23 @@ export const useAssetsStore = defineStore('assets', () => {
     ? fetchInputFilesFromCloud
     : fetchInputFilesFromAPI
 
+  async function fetchInputFilesForCurrentIdentity(): Promise<AssetItem[]> {
+    const generation = identityGeneration
+    try {
+      const assets = await fetchInputFiles()
+      return generation === identityGeneration ? assets : inputAssets.value
+    } catch (err) {
+      if (generation !== identityGeneration) return inputAssets.value
+      throw err
+    }
+  }
+
   const {
     state: inputAssets,
     isLoading: inputLoading,
     error: inputError,
     execute: executeUpdateInputs
-  } = useAsyncState(fetchInputFiles, [], {
+  } = useAsyncState(fetchInputFilesForCurrentIdentity, [], {
     immediate: false,
     resetOnExecute: false,
     onError: (err) => {
@@ -155,6 +170,8 @@ export const useAssetsStore = defineStore('assets', () => {
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
+    const generation = identityGeneration
+
     // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0
@@ -167,6 +184,8 @@ export const useAssetsStore = defineStore('assets', () => {
     const history = await api.getHistory(BATCH_SIZE, {
       offset: historyOffset.value
     })
+
+    if (generation !== identityGeneration) return allHistoryItems.value
 
     // Convert JobListItems to AssetItems
     const newAssets = mapHistoryToAssets(history)
@@ -222,20 +241,23 @@ export const useAssetsStore = defineStore('assets', () => {
    * Initial load of history assets
    */
   const updateHistory = async () => {
+    const generation = identityGeneration
     historyLoading.value = true
     historyError.value = null
     try {
       await fetchHistoryAssets(false)
+      if (generation !== identityGeneration) return
       historyAssets.value = allHistoryItems.value
     } catch (err) {
       console.error('Error fetching history assets:', err)
+      if (generation !== identityGeneration) return
       historyError.value = err
       // Keep existing data when error occurs
       if (!historyAssets.value.length) {
         historyAssets.value = []
       }
     } finally {
-      historyLoading.value = false
+      if (generation === identityGeneration) historyLoading.value = false
     }
   }
 
@@ -246,21 +268,24 @@ export const useAssetsStore = defineStore('assets', () => {
     // Guard: prevent concurrent loads and check if more items available
     if (!hasMoreHistory.value || isLoadingMore.value) return
 
+    const generation = identityGeneration
     isLoadingMore.value = true
     historyError.value = null
 
     try {
       await fetchHistoryAssets(true)
+      if (generation !== identityGeneration) return
       historyAssets.value = allHistoryItems.value
     } catch (err) {
       console.error('Error loading more history:', err)
+      if (generation !== identityGeneration) return
       historyError.value = err
       // Keep existing data when error occurs (consistent with updateHistory)
       if (!historyAssets.value.length) {
         historyAssets.value = []
       }
     } finally {
-      isLoadingMore.value = false
+      if (generation === identityGeneration) isLoadingMore.value = false
     }
   }
 
@@ -290,6 +315,7 @@ export const useAssetsStore = defineStore('assets', () => {
     flatOutputError.value = null
 
     flatOutputInFlight = (async () => {
+      const generation = identityGeneration
       const requestedAfter = loadMore ? flatOutputNextCursor : undefined
       try {
         const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
@@ -298,6 +324,7 @@ export const useAssetsStore = defineStore('assets', () => {
             ? { after: requestedAfter }
             : { offset: flatOutputOffset.value })
         })
+        if (generation !== identityGeneration) return flatOutputAssets.value
         const batch = page.assets
         const fresh = loadMore
           ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
@@ -315,13 +342,18 @@ export const useAssetsStore = defineStore('assets', () => {
           fresh.length > 0 && page.has_more && !cursorStuck
         return flatOutputAssets.value
       } catch (err) {
-        flatOutputError.value = err
         console.error('Failed to fetch output assets:', err)
+        if (generation !== identityGeneration) return flatOutputAssets.value
+        flatOutputError.value = err
         return loadMore ? flatOutputAssets.value : []
       } finally {
-        if (loadMore) flatOutputIsLoadingMore.value = false
-        else flatOutputLoading.value = false
-        flatOutputInFlight = null
+        // A reset already released the slot and may have started the new
+        // identity's fetch; releasing it again would strand that fetch.
+        if (generation === identityGeneration) {
+          if (loadMore) flatOutputIsLoadingMore.value = false
+          else flatOutputLoading.value = false
+          flatOutputInFlight = null
+        }
       }
     })()
 
@@ -894,6 +926,21 @@ export const useAssetsStore = defineStore('assets', () => {
       invalidateCategory('tag:models')
     }
 
+    /**
+     * Drop every cached category, aborting any walk still in flight. Used on an
+     * identity change, where the whole model inventory belongs to the previous
+     * account.
+     */
+    function invalidateAllCategories(): void {
+      const categories = new Set([
+        ...modelStateByCategory.value.keys(),
+        ...pendingRequestByCategory.keys(),
+        ...pendingPromiseByCategory.keys(),
+        ...abortByCategory.keys()
+      ])
+      for (const category of categories) invalidateCategory(category)
+    }
+
     return {
       getAssets,
       isLoading,
@@ -906,7 +953,8 @@ export const useAssetsStore = defineStore('assets', () => {
       invalidateCategory,
       updateAssetMetadata,
       updateAssetTags,
-      invalidateModelsForCategory
+      invalidateModelsForCategory,
+      invalidateAllCategories
     }
   }
 
@@ -922,8 +970,47 @@ export const useAssetsStore = defineStore('assets', () => {
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,
-    invalidateModelsForCategory
+    invalidateModelsForCategory,
+    invalidateAllCategories
   } = getModelState()
+
+  /**
+   * Drop every locally cached asset — outputs, history, inputs and the model
+   * inventory — so the previous account's data stops rendering after an
+   * in-session identity change. Loading flags and single-flight slots are
+   * released too, so a previous-identity request that never settles cannot
+   * starve the new identity's fetches.
+   */
+  const reset = () => {
+    identityGeneration++
+
+    historyOffset.value = 0
+    hasMoreHistory.value = true
+    allHistoryItems.value = []
+    loadedIds.clear()
+    historyAssets.value = []
+    historyError.value = null
+    historyLoading.value = false
+    isLoadingMore.value = false
+
+    flatOutputAssets.value = []
+    flatOutputError.value = null
+    flatOutputOffset.value = 0
+    flatOutputHasMore.value = true
+    flatOutputSeenIds.clear()
+    flatOutputNextCursor = undefined
+    flatOutputInFlight = null
+    flatOutputLoading.value = false
+    flatOutputIsLoadingMore.value = false
+
+    inputAssets.value = []
+    inputError.value = undefined
+    inputLoading.value = false
+    assetService.invalidateInputAssetsIncludingPublic()
+
+    invalidateAllCategories()
+    assetService.invalidateModelBuckets()
+  }
 
   // Watch for completed downloads and refresh model caches
   whenever(
@@ -983,6 +1070,7 @@ export const useAssetsStore = defineStore('assets', () => {
     updateHistory,
     loadMoreHistory,
     setAssetPreview,
+    reset,
 
     // Flat output assets (cloud-only, tag-based)
     flatOutputAssets,

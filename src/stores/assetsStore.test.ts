@@ -35,6 +35,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     getAssetsForNodeType: vi.fn(),
     getAssetsPageForNodeType: vi.fn(),
     invalidateInputAssetsIncludingPublic: vi.fn(),
+    invalidateModelBuckets: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()
@@ -2357,5 +2358,202 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     await Promise.all([p1, p2])
 
     expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
+  })
+})
+
+describe('assetsStore - reset() on identity change', () => {
+  const makeAsset = (id: string, name: string): AssetItem =>
+    fromPartial({ id, name, size: 0, tags: ['output'] })
+
+  const makePage = (assets: AssetItem[]): AssetResponse => ({
+    assets,
+    total: assets.length,
+    has_more: false
+  })
+
+  const makeJobItem = (index: number): JobListItem => ({
+    id: `prompt_${index}`,
+    status: 'completed',
+    create_time: 1000 + index,
+    update_time: 1000 + index,
+    last_state_update: 1000 + index,
+    priority: 1000 + index,
+    preview_output: {
+      filename: `output_${index}.png`,
+      subfolder: '',
+      type: 'output',
+      nodeId: 'node_1',
+      mediaType: 'images'
+    }
+  })
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('clears cached history and flat outputs and restarts paging', async () => {
+    vi.mocked(api.getHistory).mockResolvedValue([makeJobItem(0)])
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
+      makePage([makeAsset('a1', 'f1.png')])
+    )
+
+    const store = useAssetsStore()
+    await store.updateHistory()
+    await store.updateFlatOutputs()
+    expect(store.historyAssets).toHaveLength(1)
+    expect(store.flatOutputAssets).toHaveLength(1)
+    expect(store.hasMoreHistory).toBe(false)
+    expect(store.flatOutputHasMore).toBe(false)
+
+    store.reset()
+
+    expect(store.historyAssets).toEqual([])
+    expect(store.flatOutputAssets).toEqual([])
+    expect(store.hasMoreHistory).toBe(true)
+    expect(store.flatOutputHasMore).toBe(true)
+
+    await store.loadMoreHistory()
+    expect(api.getHistory).toHaveBeenLastCalledWith(200, { offset: 0 })
+  })
+
+  it('does not commit a history fetch that resolves after the reset', async () => {
+    let resolveHistory!: (jobs: JobListItem[]) => void
+    vi.mocked(api.getHistory).mockReturnValueOnce(
+      new Promise<JobListItem[]>((resolve) => {
+        resolveHistory = resolve
+      })
+    )
+
+    const store = useAssetsStore()
+    const inFlightUpdate = store.updateHistory()
+
+    store.reset()
+    resolveHistory([makeJobItem(0)])
+    await inFlightUpdate
+
+    expect(store.historyAssets).toEqual([])
+    expect(store.historyLoading).toBe(false)
+  })
+
+  it('does not commit a flat-output page that resolves after the reset', async () => {
+    let resolvePage!: (page: AssetResponse) => void
+    vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(
+      new Promise<AssetResponse>((resolve) => {
+        resolvePage = resolve
+      })
+    )
+
+    const store = useAssetsStore()
+    const inFlightUpdate = store.updateFlatOutputs()
+
+    store.reset()
+    resolvePage(makePage([makeAsset('a1', 'f1.png')]))
+    await inFlightUpdate
+
+    expect(store.flatOutputAssets).toEqual([])
+    expect(store.flatOutputHasMore).toBe(true)
+    expect(store.flatOutputLoading).toBe(false)
+  })
+
+  it('lets the new identity refetch outputs while the previous request is still pending', async () => {
+    let resolveFirstPage!: (page: AssetResponse) => void
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockReturnValueOnce(
+        new Promise<AssetResponse>((resolve) => {
+          resolveFirstPage = resolve
+        })
+      )
+      .mockResolvedValue(makePage([makeAsset('b1', 'account-b.png')]))
+
+    const store = useAssetsStore()
+    const accountAUpdate = store.updateFlatOutputs()
+
+    store.reset()
+    await store.updateFlatOutputs()
+
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['b1'])
+
+    resolveFirstPage(makePage([makeAsset('a1', 'account-a.png')]))
+    await accountAUpdate
+
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['b1'])
+    expect(store.flatOutputLoading).toBe(false)
+  })
+
+  it('does not surface a history failure raised by the previous identity', async () => {
+    let rejectHistory!: (err: Error) => void
+    vi.mocked(api.getHistory).mockReturnValueOnce(
+      new Promise<JobListItem[]>((_, reject) => {
+        rejectHistory = reject
+      })
+    )
+
+    const store = useAssetsStore()
+    const inFlightUpdate = store.updateHistory()
+
+    store.reset()
+    rejectHistory(new Error('401 Unauthorized'))
+    await inFlightUpdate
+
+    expect(store.historyError).toBeNull()
+    expect(store.historyLoading).toBe(false)
+  })
+
+  it('clears cached input assets and the model inventory', async () => {
+    mockIsCloud.value = true
+    try {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const store = useAssetsStore()
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+        fromPartial({ id: 'input-1', name: 'account-a.png', tags: ['input'] })
+      ])
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValue(
+        makePage([makeAsset('model-1', 'account-a.safetensors')])
+      )
+
+      await store.updateInputs()
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      expect(store.inputAssets).toHaveLength(1)
+      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(1)
+
+      store.reset()
+
+      expect(store.inputAssets).toEqual([])
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
+      expect(store.hasAssetKey('CheckpointLoaderSimple')).toBe(false)
+      expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
+    } finally {
+      mockIsCloud.value = false
+    }
+  })
+
+  it('does not commit an input fetch that resolves after the reset', async () => {
+    mockIsCloud.value = true
+    try {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const store = useAssetsStore()
+
+      let resolveInputs!: (assets: AssetItem[]) => void
+      vi.mocked(assetService.getAssetsByTag).mockReturnValueOnce(
+        new Promise<AssetItem[]>((resolve) => {
+          resolveInputs = resolve
+        })
+      )
+
+      const inFlightUpdate = store.updateInputs()
+
+      store.reset()
+      expect(store.inputLoading).toBe(false)
+
+      resolveInputs([
+        fromPartial({ id: 'input-1', name: 'account-a.png', tags: ['input'] })
+      ])
+      await inFlightUpdate
+
+      expect(store.inputAssets).toEqual([])
+    } finally {
+      mockIsCloud.value = false
+    }
   })
 })
