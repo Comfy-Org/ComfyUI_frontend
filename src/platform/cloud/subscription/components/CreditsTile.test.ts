@@ -142,7 +142,8 @@ const i18n = createI18n({
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
-        reactivateToUseCredits: 'Reactivate your plan to use these credits',
+        reactivateToUseCredits: 'Spendable once the plan is active again.',
+        planCreditsEnded: 'Plan credits ended with your subscription.',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
         monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
@@ -353,25 +354,55 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('shows disabled credit details for an inactive plan even while top-up reads open', () => {
+  it('keeps the retained balance visible on an inactive plan', () => {
     activeProSubscription()
-    // canTopUp fails open for owners on an unreadable snapshot, so a lapsed
-    // self-serve plan must keep this state on tier alone.
+    // canTopUp fails open for owners on an unreadable snapshot, so the tile
+    // must not offer top-up on the strength of that alone.
     state.canTopUp = true
     const { container } = renderTile({ inactivePlan: true })
 
-    expect(container.textContent).toContain('0remaining')
+    expect(container.textContent).toContain('1,055remaining')
     expect(container.textContent).toContain('Additional credits')
+    expect(container.textContent).toContain('633')
     expect(container.textContent).toContain(
-      'Reactivate your plan to use these credits'
+      'Spendable once the plan is active again.'
     )
+    expect(container.textContent).not.toContain('left of')
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('keeps Add credits and the real balance on an inactive sales-managed plan', () => {
+  it('states that plan credits ended when an inactive plan retained nothing', () => {
     activeProSubscription()
-    // A sales-managed plan has no self-serve reactivation to sell, so the
-    // reactivate-to-use-credits treatment must not apply.
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).toContain(
+      'Plan credits ended with your subscription.'
+    )
+    expect(container.textContent).not.toContain(
+      'Spendable once the plan is active again.'
+    )
+  })
+
+  it('withholds the credit note on an inactive plan until the balance is read', () => {
+    activeProSubscription()
+    state.balance = null
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).not.toContain(
+      'Plan credits ended with your subscription.'
+    )
+    expect(container.textContent).not.toContain(
+      'Spendable once the plan is active again.'
+    )
+  })
+
+  it('gives an inactive sales-managed plan the same retained-credit treatment', () => {
+    activeProSubscription()
     state.canTopUp = true
     state.tier = 'ENTERPRISE'
     state.subscription = {
@@ -381,10 +412,11 @@ describe('CreditsTile', () => {
     }
     const { container } = renderTile({ inactivePlan: true })
 
-    expect(container.textContent).not.toContain(
-      'Reactivate your plan to use these credits'
+    expect(container.textContent).toContain('633')
+    expect(container.textContent).toContain(
+      'Spendable once the plan is active again.'
     )
-    expect(screen.getByText('Add credits')).toBeInTheDocument()
+    expect(screen.queryByText('Add credits')).toBeNull()
   })
 
   it('does not borrow a catalog monthly pool for an Enterprise plan', () => {

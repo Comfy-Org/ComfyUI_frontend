@@ -78,9 +78,8 @@ test.describe('Inactive Team subscription billing', { tag: '@cloud' }, () => {
   })
 
   test('keeps the owner billing portal available', async ({ page }) => {
-    await expect(
-      content.getByRole('heading', { name: 'Inactive team subscription' })
-    ).toBeVisible()
+    await expect(content.getByRole('heading', { name: 'Team' })).toBeVisible()
+    await expect(content.getByText('Inactive', { exact: true })).toBeVisible()
     await expect(
       content.getByRole('button', { name: 'Reactivate plan' })
     ).toBeVisible()
@@ -88,6 +87,15 @@ test.describe('Inactive Team subscription billing', { tag: '@cloud' }, () => {
     await expect
       .poll(() => page.locator('html').getAttribute('data-opened-url'))
       .toBe('https://billing.example/portal')
+  })
+
+  test('shows the prepaid balance the workspace still holds', async () => {
+    await expect(content.getByText('12,660')).toBeVisible()
+    await expect(content.getByText('2,110')).toBeVisible()
+    await expect(
+      content.getByText('Spendable once the plan is active again.')
+    ).toBeVisible()
+    await expect(content.getByText(/left of/)).toHaveCount(0)
   })
 })
 

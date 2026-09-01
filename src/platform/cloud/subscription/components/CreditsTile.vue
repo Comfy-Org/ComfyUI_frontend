@@ -175,13 +175,20 @@
               <i class="icon-[lucide--info] size-4" />
             </Button>
           </span>
-          <span class="flex items-center gap-1 font-bold">
+          <Skeleton v-if="!balanceIsKnown" width="3rem" height="1rem" />
+          <span v-else class="flex items-center gap-1 font-bold">
             <i class="icon-[lucide--coins] size-4" />
             {{ displayPrepaid }}
           </span>
         </div>
-        <span class="text-sm">
-          {{ $t('subscription.reactivateToUseCredits') }}
+        <span v-if="balanceIsKnown" class="text-sm">
+          {{
+            $t(
+              prepaidCreditsValue > 0
+                ? 'subscription.reactivateToUseCredits'
+                : 'subscription.planCreditsEnded'
+            )
+          }}
         </span>
       </div>
     </template>
@@ -292,13 +299,10 @@ const creditPoolTotalCredits = computed<number | null>(() => {
     : monthlyCredits
 })
 
-// The reactivate-to-use-credits treatment sells a self-serve reactivation, so
-// it applies only where one exists. Tier decides that, as it does for the
-// credit pool above: can_top_up is a rollout-defaulted capability that also
-// fails open for owners on an unreadable snapshot, which would drop a lapsed
-// self-serve team out of this state during a capabilities outage.
-const showsInactivePlanState = computed(
-  () => inactivePlan === true && !isSalesManagedTier(subscription.value?.tier)
+const showsInactivePlanState = computed(() => inactivePlan === true)
+
+const balanceIsKnown = computed(
+  () => !isLoadingBalance.value && balance.value != null
 )
 
 const usage = computed(() =>
@@ -351,14 +355,10 @@ const creditPoolTotalCompact = computed(() => {
 })
 
 const displayTotal = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
-    : totalCredits.value
+  zeroState ? formatCreditCount(0) : totalCredits.value
 )
 const displayPrepaid = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
-    : prepaidCredits.value
+  zeroState ? formatCreditCount(0) : prepaidCredits.value
 )
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`

@@ -80,21 +80,20 @@
             <!-- OWNER Unsubscribed TEAM workspace -->
             <template v-if="showTeamSubscribePrompt">
               <div class="flex flex-col gap-2">
-                <h3
-                  :class="
-                    cn(
-                      'm-0 font-bold text-text-primary',
-                      showInactiveTeamSubscription ? 'text-base' : 'text-sm'
-                    )
-                  "
+                <div
+                  v-if="showInactiveTeamSubscription"
+                  class="flex items-center gap-2"
                 >
-                  {{
-                    $t(
-                      showInactiveTeamSubscription
-                        ? 'subscription.inactiveTeamTitle'
-                        : 'subscription.workspaceNotSubscribed'
-                    )
-                  }}
+                  <h3 class="m-0 text-base font-bold text-text-primary">
+                    {{ planDisplayName }}
+                  </h3>
+                  <StatusBadge
+                    :label="$t('subscription.inactiveBadge')"
+                    severity="secondary"
+                  />
+                </div>
+                <h3 v-else class="m-0 text-sm font-bold text-text-primary">
+                  {{ $t('subscription.workspaceNotSubscribed') }}
                 </h3>
                 <div class="text-sm text-text-secondary">
                   {{
@@ -220,10 +219,16 @@
                     {{ planDisplayName }}
                   </h3>
                   <StatusBadge
-                    v-if="isSubscriptionCancelled"
-                    :label="$t('subscription.canceled')"
-                    severity="warn"
+                    v-if="planStatusBadge"
+                    :label="planStatusBadge.label"
+                    :severity="planStatusBadge.severity"
                   />
+                </div>
+                <div
+                  v-if="showInactiveEnterpriseSubscription"
+                  class="text-sm text-text-secondary"
+                >
+                  {{ $t('subscription.inactiveEnterpriseDescription') }}
                 </div>
                 <div
                   v-if="!isNonCatalogPlan"
@@ -314,7 +319,7 @@
           <div class="w-full lg:max-w-md">
             <CreditsTile
               :zero-state="showZeroState"
-              :inactive-plan="showInactiveTeamSubscription"
+              :inactive-plan="showInactiveSubscription"
             />
           </div>
 
@@ -493,6 +498,18 @@ const isSubscriptionEnded = computed(() => {
   )
 })
 
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
+)
+
+const showInactiveSubscription = computed(
+  () =>
+    permissions.value.canManageSubscription &&
+    !isInPersonalWorkspace.value &&
+    isSubscriptionEnded.value &&
+    (isTeamPlan.value || isEnterprisePlan.value)
+)
+
 // Show subscribe prompt to owners without active subscription. A cancelled plan
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
@@ -529,12 +546,25 @@ const showTeamSubscribePrompt = computed(
 )
 
 const showInactiveTeamSubscription = computed(
-  () =>
-    permissions.value.canManageSubscription &&
-    !isInPersonalWorkspace.value &&
-    isSubscriptionEnded.value &&
-    isTeamPlan.value
+  () => showInactiveSubscription.value && isTeamPlan.value
 )
+
+const showInactiveEnterpriseSubscription = computed(
+  () => showInactiveSubscription.value && isEnterprisePlan.value
+)
+
+const planStatusBadge = computed(() => {
+  if (showInactiveSubscription.value) {
+    return {
+      label: t('subscription.inactiveBadge'),
+      severity: 'secondary' as const
+    }
+  }
+  if (isSubscriptionCancelled.value) {
+    return { label: t('subscription.canceled'), severity: 'warn' as const }
+  }
+  return null
+})
 
 const isPersonalFree = computed(
   () =>
@@ -553,8 +583,13 @@ const isMemberView = computed(
     !isWorkspaceSubscribed.value
 )
 
+// `showTeamSubscribePrompt` selects the subscribe header, and is true both for
+// a workspace that never subscribed and for one whose plan lapsed. Only the
+// former has no balance of its own to show.
 const showZeroState = computed(
-  () => showTeamSubscribePrompt.value || isMemberView.value
+  () =>
+    (showTeamSubscribePrompt.value && !showInactiveSubscription.value) ||
+    isMemberView.value
 )
 
 function handleSubscribeWorkspace() {
@@ -666,10 +701,6 @@ const subscriptionTierName = computed(() => {
     ? t('subscription.tierNameYearly', { name: baseName })
     : baseName
 })
-
-const isEnterprisePlan = computed(
-  () => subscription.value?.tier === 'ENTERPRISE'
-)
 
 const isNonCatalogPlan = computed(() =>
   isSalesManagedTier(subscription.value?.tier)

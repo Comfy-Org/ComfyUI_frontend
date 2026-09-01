@@ -287,6 +287,11 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
+const StatusBadgeStub = {
+  props: ['label', 'severity'],
+  template: '<span :data-severity="severity">{{ label }}</span>'
+}
+
 const CreditsTileStub = {
   props: ['zeroState', 'inactivePlan'],
   template:
@@ -323,7 +328,7 @@ function renderComponent({ stubFooter = true } = {}) {
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
-        StatusBadge: true,
+        StatusBadge: StatusBadgeStub,
         DropdownMenu: DropdownMenuStub
       }
     }
@@ -495,6 +500,28 @@ describe('SubscriptionPanelContentWorkspace', () => {
       expect(
         screen.queryByRole('button', { name: /subscribe|reactivate/i })
       ).not.toBeInTheDocument()
+    })
+
+    it('badges an ended Enterprise plan and keeps its credits out of the zero state', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'ended'
+      mockIsActiveSubscription.value = false
+      renderComponent()
+
+      expect(screen.getByText('Inactive')).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          "You can't run workflows or add new members. Contact your Comfy account manager to restore access."
+        )
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+        'data-inactive-plan',
+        'true'
+      )
+      expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+        'data-zero-state',
+        'false'
+      )
     })
 
     it('renders an unrecognized tier as Current plan without catalog content', () => {
@@ -822,9 +849,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsWorkspaceSubscribed.value = false
     renderComponent({ stubFooter: false })
 
-    expect(
-      screen.getByRole('heading', { name: 'Inactive team subscription' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(screen.getByText('Inactive')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
     await user.click(screen.getByRole('button', { name: 'Invoice history' }))
@@ -839,12 +865,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: 'Inactive team subscription' })
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(screen.getByText('Inactive')).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Reactivate your team plan to add more members and run workflows'
+        "You can't run workflows or add new members until this plan is active again."
       )
     ).toBeInTheDocument()
     expect(
@@ -858,7 +883,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
-      'true'
+      'false'
     )
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-inactive-plan',
