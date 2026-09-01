@@ -1,8 +1,21 @@
 import { isCloud } from '@/platform/distribution/types'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import {
+  UNKNOWN_ERROR_CODE,
+  parseErrorResponse
+} from '@/platform/remote/comfyui/errors'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
+
+export class SessionCookieError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: string
+  ) {
+    super(message)
+    this.name = 'SessionCookieError'
+  }
+}
 
 interface InFlightCreateSession {
   ownerUid: string | null
@@ -56,8 +69,11 @@ export const useSessionCookie = () => {
     const response = await createSessionWithHeader(authHeader)
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
-      throw new Error(message)
+      const { code, message } = await parseErrorResponse(response)
+      throw new SessionCookieError(
+        message,
+        code === UNKNOWN_ERROR_CODE ? undefined : code
+      )
     }
   }
 
@@ -151,8 +167,11 @@ export const useSessionCookie = () => {
           })
 
           if (!response.ok) {
-            const { message } = await parseErrorResponse(response)
-            throw new Error(message)
+            const { code, message } = await parseErrorResponse(response)
+            throw new SessionCookieError(
+              message,
+              code === UNKNOWN_ERROR_CODE ? undefined : code
+            )
           }
           confirmedSessionOwnerUid = null
         })

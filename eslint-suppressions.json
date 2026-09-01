@@ -161,7 +161,7 @@
   },
   "src/platform/auth/session/useSessionCookie.ts": {
     "comfy/no-new-error-throw": {
-      "count": 7
+      "count": 5
     }
   },
   "src/platform/cloud/oauth/oauthApi.ts": {
@@ -231,7 +231,7 @@
   },
   "src/platform/workflow/sharing/services/comfyHubService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 7
+      "count": 1
     }
   },
   "src/platform/workflow/sharing/services/workflowShareService.ts": {

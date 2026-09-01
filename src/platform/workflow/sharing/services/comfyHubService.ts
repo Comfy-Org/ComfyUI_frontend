@@ -1,5 +1,8 @@
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import {
+  UNKNOWN_ERROR_CODE,
+  parseErrorResponse
+} from '@/platform/remote/comfyui/errors'
 import {
   zHubAssetUploadUrlResponse,
   zHubLabelListResponse,
@@ -7,6 +10,16 @@ import {
   zHubWorkflowPublishResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { api } from '@/scripts/api'
+
+export class ComfyHubApiError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: string
+  ) {
+    super(message)
+    this.name = 'ComfyHubApiError'
+  }
+}
 
 type HubThumbnailType = 'image' | 'video' | 'image_comparison'
 
@@ -78,11 +91,14 @@ export function useComfyHubService() {
     })
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(
+      const { code, message } = await parseErrorResponse(
         response,
         'Failed to request upload URL'
       )
-      throw new Error(message)
+      throw new ComfyHubApiError(
+        message,
+        code === UNKNOWN_ERROR_CODE ? undefined : code
+      )
     }
 
     return parseRequiredJson(
@@ -106,11 +122,14 @@ export function useComfyHubService() {
     })
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(
+      const { code, message } = await parseErrorResponse(
         response,
         'Failed to upload file to presigned URL'
       )
-      throw new Error(message)
+      throw new ComfyHubApiError(
+        message,
+        code === UNKNOWN_ERROR_CODE ? undefined : code
+      )
     }
   }
 
@@ -122,11 +141,14 @@ export function useComfyHubService() {
         return null
       }
 
-      const { message } = await parseErrorResponse(
+      const { code, message } = await parseErrorResponse(
         response,
         'Failed to load ComfyHub profile'
       )
-      throw new Error(message)
+      throw new ComfyHubApiError(
+        message,
+        code === UNKNOWN_ERROR_CODE ? undefined : code
+      )
     }
 
     return parseRequiredJson(
@@ -152,11 +174,14 @@ export function useComfyHubService() {
     })
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(
+      const { code, message } = await parseErrorResponse(
         response,
         'Failed to create ComfyHub profile'
       )
-      throw new Error(message)
+      throw new ComfyHubApiError(
+        message,
+        code === UNKNOWN_ERROR_CODE ? undefined : code
+      )
     }
 
     return parseRequiredJson(
@@ -193,11 +218,14 @@ export function useComfyHubService() {
     })
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(
+      const { code, message } = await parseErrorResponse(
         response,
         'Failed to publish workflow'
       )
-      throw new Error(message)
+      throw new ComfyHubApiError(
+        message,
+        code === UNKNOWN_ERROR_CODE ? undefined : code
+      )
     }
 
     return parseRequiredJson(
@@ -211,11 +239,14 @@ export function useComfyHubService() {
     const response = await api.fetchApi('/hub/labels?type=tag')
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(
+      const { code, message } = await parseErrorResponse(
         response,
         'Failed to fetch hub labels'
       )
-      throw new Error(message)
+      throw new ComfyHubApiError(
+        message,
+        code === UNKNOWN_ERROR_CODE ? undefined : code
+      )
     }
 
     const data = await parseRequiredJson(
