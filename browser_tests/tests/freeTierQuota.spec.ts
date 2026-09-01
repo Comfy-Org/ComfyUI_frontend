@@ -15,6 +15,15 @@ test.describe('Free Tier Quota', { tag: ['@cloud', '@vue-nodes'] }, () => {
       free_tier_balance: { allowance: 5, remaining: 3, used: 0 }
     }
     await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
+    await page.route('**/api/billing/status', (r) =>
+      r.fulfill(
+        jsonRoute({
+          is_active: true,
+          has_funds: true,
+          subscription_tier: 'FREE'
+        })
+      )
+    )
   })
 
   wstest('Free Tier Quota', async ({ comfyPage, comfyMouse, getWebSocket }) => {
@@ -52,12 +61,12 @@ test.describe('Free Tier Quota', { tag: ['@cloud', '@vue-nodes'] }, () => {
       await execution.run()
       await expect.poll(() => freeTierQuota.getAvailable()).toBe('1')
       await execution.run()
-      await expect.poll(() => freeTierQuota.getAvailable()).toBe(undefined)
+      await expect.poll(() => freeTierQuota.getAvailable()).toBe('0')
       await execution.run()
       await execution.run()
       await execution.run()
       await comfyPage.nextFrame()
-      expect(await freeTierQuota.getAvailable()).toBe(undefined)
+      expect(await freeTierQuota.getAvailable()).toBe('0')
     })
   })
 })

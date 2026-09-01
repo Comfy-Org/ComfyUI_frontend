@@ -6,17 +6,26 @@
  * All distributions use the /jobs endpoint.
  */
 
+import { z } from 'zod'
+
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { JobId } from '@/schemas/apiSchema'
 
 import type {
+  JobAssetsResult,
   JobDetail,
   JobListItem,
+  JobOutputAsset,
   JobStatus,
   RawJobListItem
 } from './jobTypes'
-import { zJobDetail, zJobsListResponse, zWorkflowContainer } from './jobTypes'
+import {
+  zJobAssetsResponse,
+  zJobDetail,
+  zJobsListResponse,
+  zWorkflowContainer
+} from './jobTypes'
 
 /**
  * Position of the page to fetch. `after` is an opaque keyset cursor from a
@@ -30,26 +39,43 @@ export type JobsPageRequest =
 
 const MAX_ERROR_BODY_LENGTH = 200
 
-/**
- * Non-ok response from the jobs API. Carries the HTTP status so callers can
- * tell a rejected cursor (400 INVALID_CURSOR) apart from transient failures.
- */
-export class JobsApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number
-  ) {
-    super(message)
-    this.name = 'JobsApiError'
+// Cap synchronous JSON.parse so an oversized error body can't block the UI
+// thread; the structured error is a few hundred bytes at most.
+const MAX_ERROR_PARSE_LENGTH = 10_000
+
+const zJobsErrorBody = z.object({ code: z.string() })
+
+function parseErrorCode(body: string): string | undefined {
+  if (body.length > MAX_ERROR_PARSE_LENGTH) return undefined
+  try {
+    return zJobsErrorBody.safeParse(JSON.parse(body)).data?.code
+  } catch {
+    return undefined
   }
 }
 
-function jobsApiErrorMessage(status: number, body: string): string {
-  const truncated =
-    body.length > MAX_ERROR_BODY_LENGTH
-      ? `${body.slice(0, MAX_ERROR_BODY_LENGTH)}…`
-      : body
-  return `[Jobs API] Failed to fetch jobs: ${status} ${truncated}`.trim()
+/**
+ * Non-ok response from the jobs API. Carries the HTTP status and the parsed
+ * machine-readable `errorCode` (from the JSON error body) so callers can tell a
+ * rejected cursor (`INVALID_CURSOR`) apart from other 400s and transient
+ * failures. `errorCode` is undefined when the body isn't the structured error
+ * shape (e.g. a proxy error page).
+ */
+export class JobsApiError extends Error {
+  readonly errorCode?: string
+
+  constructor(
+    readonly status: number,
+    body: string
+  ) {
+    const truncated =
+      body.length > MAX_ERROR_BODY_LENGTH
+        ? `${body.slice(0, MAX_ERROR_BODY_LENGTH)}…`
+        : body
+    super(`[Jobs API] Failed to fetch jobs: ${status} ${truncated}`.trim())
+    this.name = 'JobsApiError'
+    this.errorCode = parseErrorCode(body)
+  }
 }
 
 interface FetchJobsRawResult {
@@ -91,7 +117,7 @@ async function fetchJobsRaw(
   const res = await fetchApi(url)
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    throw new JobsApiError(jobsApiErrorMessage(res.status, body), res.status)
+    throw new JobsApiError(res.status, body)
   }
   const parsed = zJobsListResponse.safeParse(await res.json())
   if (!parsed.success) {
@@ -213,6 +239,65 @@ export async function fetchJobDetail(
     console.error(`Failed to fetch job detail for job ${jobId}:`, error)
     return undefined
   }
+}
+
+// Server caps the page size at 500; a single job's outputs fit well within a
+// few pages, so this bound also guards against a runaway pagination loop.
+const JOB_ASSETS_PAGE_SIZE = 500
+const JOB_ASSETS_MAX_PAGES = 20
+
+/**
+ * Fetches all output assets for a job from GET /api/jobs/{job_id}/assets,
+ * paginating internally. Each asset carries a real asset id plus per-output
+ * node context (node_id, output_key, output_index) resolved server-side by
+ * content hash. Degrades to whatever was accumulated on any failure (e.g. the
+ * endpoint is unavailable on non-cloud distributions) so callers can still
+ * render; `complete` is false whenever pages are known to be missing, so a
+ * truncated list is distinguishable from a full one and callers can decline to
+ * cache it.
+ */
+export async function fetchJobAssets(
+  fetchApi: (url: string) => Promise<Response>,
+  jobId: JobId
+): Promise<JobAssetsResult> {
+  const assets: JobOutputAsset[] = []
+  let offset = 0
+
+  try {
+    for (let page = 0; page < JOB_ASSETS_MAX_PAGES; page++) {
+      const url = `/jobs/${encodeURIComponent(jobId)}/assets?limit=${JOB_ASSETS_PAGE_SIZE}&offset=${offset}`
+      const res = await fetchApi(url)
+      if (!res.ok) {
+        console.warn(
+          `[Jobs API] Failed to fetch assets for job ${jobId}: ${res.status}`
+        )
+        return { assets, complete: false }
+      }
+
+      const data = zJobAssetsResponse.parse(await res.json())
+      assets.push(...data.assets)
+
+      const hasMore = data.pagination?.has_more ?? false
+      if (!hasMore) return { assets, complete: true }
+
+      if (data.assets.length === 0) {
+        console.warn(
+          `[Jobs API] Job ${jobId} assets page reported has_more with an empty page; stopping pagination`
+        )
+        return { assets, complete: false }
+      }
+
+      offset += data.assets.length
+    }
+  } catch (error) {
+    console.error(`Failed to fetch assets for job ${jobId}:`, error)
+    return { assets, complete: false }
+  }
+
+  console.warn(
+    `[Jobs API] Job ${jobId} assets pagination hit the ${JOB_ASSETS_MAX_PAGES}-page cap; returning a truncated list`
+  )
+  return { assets, complete: false }
 }
 
 /**

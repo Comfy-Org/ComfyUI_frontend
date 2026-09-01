@@ -1,12 +1,4 @@
-import {
-  afterAll,
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 
@@ -70,6 +62,7 @@ interface MockGL {
   disable: ReturnType<typeof vi.fn>
   clearColor: ReturnType<typeof vi.fn>
   clear: ReturnType<typeof vi.fn>
+  isContextLost: ReturnType<typeof vi.fn>
   [key: string]: unknown
 }
 
@@ -146,57 +139,51 @@ function createMockGLContext(): MockGL {
     clearColor: vi.fn(),
     clear: vi.fn(),
 
-    getExtension: vi.fn().mockReturnValue({ loseContext: vi.fn() })
+    getExtension: vi.fn().mockReturnValue({ loseContext: vi.fn() }),
+    isContextLost: vi.fn().mockReturnValue(false)
   }
 }
 
 let mockGL: MockGL
-
-vi.stubGlobal(
-  'ImageData',
-  class {
-    data: Uint8ClampedArray
-    width: number
-    height: number
-    constructor(data: Uint8ClampedArray, w: number, h: number) {
-      this.data = data
-      this.width = w
-      this.height = h
-    }
-  }
-)
-
-vi.stubGlobal(
-  'OffscreenCanvas',
-  class {
-    width: number
-    height: number
-    constructor(w: number, h: number) {
-      this.width = w
-      this.height = h
-    }
-    getContext(contextId: string) {
-      return contextId === 'webgl2'
-        ? (mockGL as unknown as WebGL2RenderingContext)
-        : null
-    }
-    convertToBlob() {
-      return Promise.resolve(new Blob(['fake'], { type: 'image/webp' }))
-    }
-  }
-)
-
-afterAll(() => {
-  vi.unstubAllGlobals()
-})
 
 describe('useGLSLRenderer', () => {
   let renderer: ReturnType<typeof useGLSLRenderer>
   const validSource = 'void main() { fragColor0 = vec4(1.0); }'
 
   beforeEach(() => {
+    vi.stubGlobal(
+      'ImageData',
+      class {
+        data: Uint8ClampedArray
+        width: number
+        height: number
+        constructor(data: Uint8ClampedArray, w: number, h: number) {
+          this.data = data
+          this.width = w
+          this.height = h
+        }
+      }
+    )
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        width: number
+        height: number
+        constructor(w: number, h: number) {
+          this.width = w
+          this.height = h
+        }
+        getContext(contextId: string) {
+          return contextId === 'webgl2'
+            ? (mockGL as unknown as WebGL2RenderingContext)
+            : null
+        }
+        convertToBlob() {
+          return Promise.resolve(new Blob(['fake'], { type: 'image/webp' }))
+        }
+      }
+    )
     mockGL = createMockGLContext()
-    vi.clearAllMocks()
     vi.mocked(detectPassCount).mockReturnValue(1)
   })
 
@@ -271,6 +258,7 @@ describe('useGLSLRenderer', () => {
         .mockReturnValueOnce(false)
       mockGL.getShaderInfoLog.mockReturnValue('ERROR: syntax error')
 
+      renderer.dispose()
       renderer = useGLSLRenderer()
       renderer.init(128, 128)
       const result = renderer.compileFragment(validSource)
@@ -513,6 +501,25 @@ describe('useGLSLRenderer', () => {
     })
   })
 
+  describe('clearInputImage', () => {
+    beforeEach(() => {
+      renderer = useGLSLRenderer()
+      renderer.init(128, 128)
+    })
+
+    it('deletes the texture bound at the given index', () => {
+      renderer.bindInputImage(0, new Image())
+      mockGL.deleteTexture.mockClear()
+      renderer.clearInputImage(0)
+      expect(mockGL.deleteTexture).toHaveBeenCalledTimes(1)
+    })
+
+    it('does nothing when the slot is empty', () => {
+      renderer.clearInputImage(0)
+      expect(mockGL.deleteTexture).not.toHaveBeenCalled()
+    })
+  })
+
   describe('render', () => {
     const source = 'void main() { fragColor0 = vec4(1.0); }'
 
@@ -566,6 +573,7 @@ describe('useGLSLRenderer', () => {
     })
 
     it('does nothing without a compiled program', () => {
+      renderer.dispose()
       renderer = useGLSLRenderer()
       renderer.init(128, 128)
       mockGL.drawArrays.mockClear()
@@ -603,6 +611,67 @@ describe('useGLSLRenderer', () => {
       await expect(renderer.toBlob()).rejects.toThrow(
         'Renderer not initialized'
       )
+    })
+  })
+
+  describe('shared context', () => {
+    it('reuses one context across renderer instances', () => {
+      renderer = useGLSLRenderer()
+      renderer.init(64, 64)
+      const second = useGLSLRenderer()
+      second.init(64, 64)
+
+      expect(mockGL.pixelStorei).toHaveBeenCalledWith(
+        mockGL.UNPACK_FLIP_Y_WEBGL,
+        true
+      )
+      expect(mockGL.pixelStorei).toHaveBeenCalledTimes(1)
+
+      second.dispose()
+    })
+
+    it('restores its own canvas size and viewport before rendering', () => {
+      renderer = useGLSLRenderer()
+      renderer.init(128, 128)
+      renderer.compileFragment(validSource)
+
+      const second = useGLSLRenderer()
+      second.init(256, 256)
+
+      mockGL.viewport.mockClear()
+      renderer.render()
+
+      expect(mockGL.viewport).toHaveBeenCalledWith(0, 0, 128, 128)
+      expect(mockGL.uniform2f).toHaveBeenCalledWith('u_resolution', 128, 128)
+
+      second.dispose()
+    })
+
+    it('reports context loss from the shared context', () => {
+      renderer = useGLSLRenderer()
+      expect(renderer.isContextLost()).toBe(false)
+
+      renderer.init(64, 64)
+      expect(renderer.isContextLost()).toBe(false)
+
+      mockGL.isContextLost.mockReturnValue(true)
+      expect(renderer.isContextLost()).toBe(true)
+    })
+
+    it('keeps the context alive until the last renderer disposes', () => {
+      const loseContext = vi.fn()
+      mockGL.getExtension.mockReturnValue({ loseContext })
+
+      renderer = useGLSLRenderer()
+      renderer.init(64, 64)
+      const second = useGLSLRenderer()
+      second.init(64, 64)
+
+      renderer.dispose()
+      expect(loseContext).not.toHaveBeenCalled()
+
+      second.dispose()
+      expect(loseContext).toHaveBeenCalledTimes(1)
     })
   })
 

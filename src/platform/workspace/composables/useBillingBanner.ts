@@ -1,4 +1,4 @@
-import { createSharedComposable } from '@vueuse/core'
+import { createSharedComposable, useEventListener } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -15,6 +15,7 @@ export type BillingBannerKind =
 
 export interface BillingBannerInputs {
   billingControlEnabled: boolean
+  v1PaymentRecovery: boolean
   isTeamPlan: boolean
   isLoaded: boolean
   isActiveSubscription: boolean
@@ -27,29 +28,24 @@ export interface BillingBannerInputs {
 }
 
 // The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending. billingControlEnabled is the FE-1246 kill switch: the
-// whole banner is behind it so a PostHog rollback hides it for everyone. Then
-// gated on the team PLAN rather than the workspace type, because personal
-// workspaces are due to gain team plans (BE-1526) — a workspace-type gate would
-// then hide the banner from real team subscribers.
+// outOfCredits > ending. Payment recovery and the existing billing-control
+// notices have independent rollout gates.
 export function deriveBillingBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
-  if (!inputs.billingControlEnabled || !inputs.isTeamPlan || !inputs.isLoaded) {
+  if (!inputs.isTeamPlan || !inputs.isLoaded) {
     return null
   }
 
-  // Both sit above the isActiveSubscription gate because the backend folds
-  // billing_status into is_active: paused and payment_failed each report
-  // is_active=false, so either check would be dead code below it.
-  if (inputs.billingStatus === 'paused') return 'paused'
-  if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
-    return 'paymentFailed'
+  if (inputs.v1PaymentRecovery) {
+    if (inputs.billingStatus === 'paused') return 'paused'
+    if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
+      return 'paymentFailed'
+    }
   }
 
-  // Inactive workspaces surface a run-lock modal, not this banner. Members hit
-  // this on payment_failed, which is per design — only billing managers see it.
   if (!inputs.isActiveSubscription) return null
+  if (!inputs.billingControlEnabled) return null
 
   if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
     return 'outOfCredits'
@@ -62,8 +58,14 @@ export function deriveBillingBanner(
 }
 
 function useBillingBannerInternal() {
-  const { isActiveSubscription, billingStatus, subscription, isTeamPlan } =
-    useBillingContext()
+  const {
+    isActiveSubscription,
+    billingStatus,
+    subscription,
+    isTeamPlan,
+    fetchStatus,
+    fetchBalance
+  } = useBillingContext()
   const { permissions } = useWorkspaceUI()
   const { flags } = useFeatureFlags()
 
@@ -73,6 +75,7 @@ function useBillingBannerInternal() {
     if (!isCloud) return null
     return deriveBillingBanner({
       billingControlEnabled: flags.billingControlEnabled,
+      v1PaymentRecovery: flags.v1PaymentRecovery,
       isTeamPlan: isTeamPlan.value,
       isLoaded: subscription.value !== null,
       isActiveSubscription: isActiveSubscription.value,
@@ -94,6 +97,11 @@ function useBillingBannerInternal() {
   )
   watch(hasExhaustedFunds, (exhausted) => {
     if (!exhausted) dismissed.value = false
+  })
+
+  useEventListener(window, 'focus', () => {
+    if (kind.value !== 'paymentFailed') return
+    void Promise.allSettled([fetchStatus(), fetchBalance()])
   })
 
   function dismiss() {

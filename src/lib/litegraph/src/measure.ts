@@ -364,6 +364,31 @@ export function snapPoint(
 }
 
 /**
+ * Expands a {@link Rect} outwards so that all four edges lie on a grid of size
+ * {@link snapTo}.
+ *
+ * Unlike {@link snapPoint}, the rect is only ever grown, never shrunk, so
+ * anything it contained before the call is still contained afterwards.
+ * @param rect The rect that will be expanded, modified in place
+ * @param snapTo The grid size to expand out to (multiples thereof)
+ * @returns `true` if snapTo is truthy, otherwise `false`
+ */
+export function expandRectToGrid(rect: Rect, snapTo: number): boolean {
+  if (!snapTo) return false
+
+  const right = snapTo * Math.ceil((rect[0] + rect[2]) / snapTo)
+  const bottom = snapTo * Math.ceil((rect[1] + rect[3]) / snapTo)
+  const left = snapTo * Math.floor(rect[0] / snapTo)
+  const top = snapTo * Math.floor(rect[1] / snapTo)
+
+  rect[0] = left
+  rect[1] = top
+  rect[2] = right - left
+  rect[3] = bottom - top
+  return true
+}
+
+/**
  * Aligns a {@link Rect} relative to the edges or centre of a {@link container} rectangle.
  *
  * With no {@link inset}, the element will be placed on the interior of the {@link container},

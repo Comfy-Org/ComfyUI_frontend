@@ -14,7 +14,9 @@ export const badgeVariants = cva({
       subtle: 'bg-transparency-white-t4 text-primary-comfy-canvas',
       category: 'text-primary-comfy-yellow px-0 font-semibold uppercase',
       accent:
-        'before:bg-primary-comfy-yellow relative isolate overflow-visible rounded-none bg-transparent font-bold tracking-wide text-primary-comfy-ink uppercase before:absolute before:inset-0 before:-z-10 before:-skew-x-12 before:rounded-sm'
+        'before:bg-primary-comfy-yellow relative isolate overflow-visible rounded-none bg-transparent font-bold tracking-wide text-primary-comfy-ink uppercase before:absolute before:inset-0 before:-z-10 before:-skew-x-12 before:rounded-sm',
+      callout:
+        'before:bg-primary-comfy-plum text-primary-warm-white relative isolate overflow-visible rounded-none bg-transparent font-bold tracking-tight uppercase before:absolute before:inset-0 before:-z-10 before:-skew-x-12 before:rounded-sm'
     }
   },
   defaultVariants: {

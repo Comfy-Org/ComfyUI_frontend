@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -82,11 +80,6 @@ vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ fitView: vi.fn() })
 }))
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({ requestSlotLayoutSyncForAllNodes: vi.fn() })
-)
-
 const workflowServiceMocks = vi.hoisted(() => ({
   openWorkflow: vi.fn().mockResolvedValue(undefined)
 }))
@@ -116,8 +109,6 @@ async function flushHashWatcher() {
 
 describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.rootGraph.id = ids.root
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined

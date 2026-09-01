@@ -50,10 +50,6 @@ function makeContext(): ModelLoadContext {
 
 describe('SplatModelAdapter', () => {
   beforeEach(() => {
-    splatMeshSpies.ctor.mockClear()
-    splatMeshSpies.dispose.mockClear()
-    splatMeshSpies.getBoundingBox.mockClear()
-    splatMeshSpies.updateWorldMatrix.mockClear()
     vi.spyOn(ModelAdapterModule, 'fetchModelData').mockResolvedValue(
       new ArrayBuffer(8)
     )

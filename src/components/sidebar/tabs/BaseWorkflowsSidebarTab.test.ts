@@ -222,7 +222,6 @@ const getLeafPaths = (
 
 describe('BaseWorkflowsSidebarTab', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     resetCapturedSearchRoot()
 
     mockWorkflowStore.workflows = []

@@ -27,9 +27,7 @@ export function useCanvasInteractions() {
    * Whether Vue node components should handle pointer events.
    * Returns false when canvas is in read-only/panning mode (e.g., space key held for panning).
    */
-  const shouldHandleNodePointerEvents = computed(
-    () => !(canvasStore.canvas?.read_only ?? false)
-  )
+  const shouldHandleNodePointerEvents = computed(() => !canvasStore.isReadOnly)
 
   /**
    * Returns true if the wheel event target is inside an element that should
@@ -150,12 +148,12 @@ export function useCanvasInteractions() {
       return
     }
 
-    // Create new event with same properties
-    const EventConstructor = event.constructor as
-      | typeof MouseEvent
-      | typeof PointerEvent
-    const newEvent = new EventConstructor(event.type, event)
-    canvasEl.dispatchEvent(newEvent)
+    if (event instanceof PointerEvent) {
+      canvasEl.dispatchEvent(new PointerEvent(event.type, event))
+      return
+    }
+
+    canvasEl.dispatchEvent(new MouseEvent(event.type, event))
   }
 
   return {

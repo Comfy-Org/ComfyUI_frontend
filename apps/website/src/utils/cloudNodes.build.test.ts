@@ -35,8 +35,6 @@ describe('loadPacksForBuild', () => {
   const savedVercelEnv = process.env.VERCEL_ENV
 
   beforeEach(() => {
-    fetchCloudNodesMock.mockReset()
-    reportCloudNodesOutcomeMock.mockReset()
     delete process.env.VERCEL_ENV
   })
 

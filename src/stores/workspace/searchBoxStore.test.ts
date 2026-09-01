@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
@@ -34,12 +32,6 @@ function createMockSettingStore(): ReturnType<typeof useSettingStore> {
 }
 
 describe('useSearchBoxStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
-    vi.restoreAllMocks()
-  })
-
   describe('when user has new search box enabled', () => {
     beforeEach(() => {
       vi.mocked(mockSettingStore.get).mockReturnValue('default')
