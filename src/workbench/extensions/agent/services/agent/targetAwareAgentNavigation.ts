@@ -51,18 +51,6 @@ export function createTargetAwareAgentNavigation<Tab, Node>(
     return tab
   }
 
-  function resolveBackground(reference: AgentGraphReference): Node {
-    const tab = target(reference)
-    const node = dependencies.resolveIn(tab, reference.locatorId)
-    if (node === undefined)
-      throw new AgentTargetNavigationError(
-        'missing_node',
-        reference.workflowId,
-        reference.locatorId
-      )
-    return node
-  }
-
   async function navigate(reference: AgentGraphReference): Promise<Node> {
     const tab = target(reference)
     if (!(await dependencies.activate(tab)))
@@ -88,5 +76,5 @@ export function createTargetAwareAgentNavigation<Tab, Node>(
     return node
   }
 
-  return { navigate, resolveBackground }
+  return { navigate }
 }

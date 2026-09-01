@@ -60,19 +60,6 @@ describe('target-aware agent navigation', () => {
     expect(focus).toHaveBeenCalledWith(nodeA)
   })
 
-  it('does not activate or focus while resolving a background effect', () => {
-    const { focus, navigation, nodeA, open } = harness()
-
-    expect(
-      navigation.resolveBackground({
-        workflowId: 'wf-a',
-        locatorId: 'root-a:shared'
-      })
-    ).toBe(nodeA)
-    expect(open).not.toHaveBeenCalled()
-    expect(focus).not.toHaveBeenCalled()
-  })
-
   it('reports a missing binding as a typed recoverable error', async () => {
     const { navigation } = harness()
 
