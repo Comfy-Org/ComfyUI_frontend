@@ -14,6 +14,18 @@ vi.mock(
   () => ({ default: loadDockedAgentPanel() })
 )
 
+function getAsyncLoader(component: unknown): () => Promise<unknown> {
+  if (
+    component === null ||
+    typeof component !== 'object' ||
+    !('__asyncLoader' in component) ||
+    typeof component.__asyncLoader !== 'function'
+  ) {
+    throw new TypeError('Expected DockedAgentPanel to be an async component')
+  }
+  return component.__asyncLoader as () => Promise<unknown>
+}
+
 describe('useAgentDockMount', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -43,9 +55,7 @@ describe('useAgentDockMount', () => {
     expect(docked.value).toBe(false)
     store.isOpen = true
     expect(docked.value).toBe(true)
-    await (
-      DockedAgentPanel as { __asyncLoader: () => Promise<unknown> }
-    ).__asyncLoader()
+    await getAsyncLoader(DockedAgentPanel)()
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
     store.close('close_button')
     expect(docked.value).toBe(false)
