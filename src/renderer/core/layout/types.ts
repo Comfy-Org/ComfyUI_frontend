@@ -274,10 +274,15 @@ export interface LayoutStore {
   queryNodesInBounds(bounds: Bounds): NodeId[]
 
   // Hit testing queries for links, slots, and reroutes
-  queryLinkAtPoint(point: Point, ctx?: CanvasRenderingContext2D): LinkId | null
+  queryLinkAtPoint(
+    point: Point,
+    ctx?: CanvasRenderingContext2D,
+    dpr?: number
+  ): LinkId | null
   queryLinkSegmentAtPoint(
     point: Point,
-    ctx?: CanvasRenderingContext2D
+    ctx?: CanvasRenderingContext2D,
+    dpr?: number
   ): { linkId: LinkId; rerouteId: RerouteId | null } | null
   querySlotAtPoint(point: Point): SlotLayout | null
   queryRerouteAtPoint(point: Point): RerouteLayout | null
