@@ -176,13 +176,13 @@ describe('agentApiSchema contract subtleties', () => {
       type: 'agent_active_tab',
       data: {
         workflow_id: 'wf-1',
-        node_locator_id: 'root-a:42',
+        node_locator_id: '42',
         thread_id: 'th-1'
       }
     })
     expect(parsed.success).toBe(true)
     if (parsed.success)
-      expect(parsed.data.data).toMatchObject({ node_locator_id: 'root-a:42' })
+      expect(parsed.data.data).toMatchObject({ node_locator_id: '42' })
     expect(
       zAgentWsEvent.safeParse({
         type: 'agent_active_tab',
@@ -193,6 +193,12 @@ describe('agentApiSchema contract subtleties', () => {
       zAgentWsEvent.safeParse({
         type: 'agent_active_tab',
         data: { thread_id: 'th-1' }
+      }).success
+    ).toBe(false)
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', node_locator_id: 'invalid:42' }
       }).success
     ).toBe(false)
   })
