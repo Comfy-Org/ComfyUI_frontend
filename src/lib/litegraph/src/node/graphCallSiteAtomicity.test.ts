@@ -16,6 +16,7 @@ import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -62,14 +63,16 @@ describe('attachNodeToStores – LGraph.add() atomicity', () => {
     expect(graph._nodes_by_id[candidate.id]).toBe(candidate)
   })
 
-  it('never adds a node to _nodes before store registration succeeds', () => {
+  it('leaves graph indexes unchanged when store registration throws', () => {
     const graph = new LGraph()
-    // Confirm the node is fully registered on first access to _nodes.
     const node = new LGraphNode('N')
-    graph.add(node)
+    vi.spyOn(useNodeDataStore(), 'registerNode').mockImplementation(() => {
+      throw new Error('forced registration failure')
+    })
 
-    expect(graph._nodes).toContain(node)
-    expect(node._graphScope).toBeDefined()
+    expect(() => graph.add(node)).toThrow('forced registration failure')
+    expect(graph._nodes).toEqual([])
+    expect(graph._nodes_by_id).toEqual({})
   })
 })
 
