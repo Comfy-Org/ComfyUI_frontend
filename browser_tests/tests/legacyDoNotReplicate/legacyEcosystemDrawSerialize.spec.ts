@@ -44,7 +44,7 @@ test.describe(
         .toBe(37)
     })
 
-    test('assigning a custom draw removes its Vue control while connected', async ({
+    test('a custom draw renders as a canvas fallback regardless of connection', async ({
       comfyPage
     }) => {
       await comfyPage.nodeOps.clearGraph()
@@ -56,7 +56,9 @@ test.describe(
         node.addInput('steps', 'INT', { widget: { name: widget.name } })
         window.app!.graph.add(node)
 
+        const legacy = Object.assign(widget, { drawCalls: 0 })
         widget.draw = function (ctx, _owner, width, y, height) {
+          legacy.drawCalls++
           ctx.fillRect(0, y, width, height)
         }
         const source = window.LiteGraph!.createNode('Note')!
@@ -67,14 +69,31 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
-      await expect(
-        comfyPage.vueNodes.getNodeByTitle('Connected custom draw')
-      ).toBeVisible()
+      const node = comfyPage.vueNodes.getNodeByTitle('Connected custom draw')
+      await expect(node).toBeVisible()
       const steps = comfyPage.vueNodes.getWidgetByName(
         'Connected custom draw',
         'steps'
       )
       await expect(steps).toHaveCount(0)
+      await expect(node.locator('.lg-node-widget canvas')).toHaveCount(1)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes.find(
+              (candidate) => candidate.title === 'Connected custom draw'
+            )
+            const widget = node?.widgets?.find(
+              (candidate) => candidate.name === 'steps'
+            )
+            return widget &&
+              'drawCalls' in widget &&
+              typeof widget.drawCalls === 'number'
+              ? widget.drawCalls
+              : 0
+          })
+        )
+        .toBeGreaterThan(0)
 
       await comfyPage.page.evaluate(() => {
         const node = window.app!.graph.nodes.find(
@@ -86,8 +105,18 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
-      await expect(steps).toBeVisible()
-      await expect(steps.getByRole('spinbutton')).toHaveValue('20')
+      await expect(steps).toHaveCount(0)
+      await expect(node.locator('.lg-node-widget canvas')).toHaveCount(1)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes.find(
+              (candidate) => candidate.title === 'Connected custom draw'
+            )
+            return node?.serialize().widgets_values_named?.steps
+          })
+        )
+        .toBe(20)
     })
 
     test('serialize false removes a widget from both positional and named values', async ({
@@ -137,10 +166,8 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('widgets/boolean_widget')
-      const toggle = comfyPage.vueNodes.getWidgetByName(
-        'Node With Boolean Input',
-        'boolean_input'
-      )
+      const node = comfyPage.vueNodes.getNodeByTitle('Node With Boolean Input')
+      const enabledButton = node.getByRole('button', { name: 'Enabled' })
 
       await comfyPage.page.evaluate(() => {
         const widget = window.app!.graph.nodes[0]?.widgets?.[0]
@@ -149,8 +176,8 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
-      await expect(toggle).toBeVisible()
-      await toggle.click()
+      await expect(enabledButton).toBeVisible()
+      await enabledButton.click()
       await expect
         .poll(() =>
           comfyPage.page.evaluate(
@@ -167,7 +194,8 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
-      await expect(toggle).toBeHidden()
+      await expect(node).toBeVisible()
+      await expect(enabledButton).toHaveCount(0)
     })
   }
 )
