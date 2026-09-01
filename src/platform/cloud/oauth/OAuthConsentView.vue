@@ -47,15 +47,7 @@
             v-for="workspace in challenge.workspaces"
             :key="workspace.id"
             :value="workspace.id"
-            :class="
-              cn(
-                'flex w-full cursor-pointer items-center gap-3 rounded-md border-none bg-transparent px-3 py-2 text-left transition-colors',
-                'hover:bg-secondary-background-hover',
-                'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none',
-                selectedWorkspaceId === workspace.id &&
-                  'bg-secondary-background'
-              )
-            "
+            :class="workspaceItemClass(workspace)"
           >
             <WorkspaceProfilePic
               class="size-8 shrink-0 text-sm"
@@ -241,6 +233,15 @@ function workspaceSecondaryLabel(workspace: OAuthWorkspace): string {
   return workspace.role === 'owner'
     ? t('oauth.workspace.owner')
     : t('oauth.workspace.member')
+}
+
+function workspaceItemClass(workspace: OAuthWorkspace): string {
+  return cn(
+    'flex w-full cursor-pointer items-center gap-3 rounded-md border-none bg-transparent px-3 py-2 text-left transition-colors',
+    'hover:bg-secondary-background-hover',
+    'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none',
+    selectedWorkspaceId.value === workspace.id && 'bg-secondary-background'
+  )
 }
 
 function requestIdFromRoute(): string | null {
