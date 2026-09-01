@@ -55,20 +55,6 @@ describe('DragAndScale.fitToBounds', () => {
     )
   })
 
-  it('centers bounds within the unobscured region for a top inset', () => {
-    const ds = createDragAndScale(1920, 1080)
-    const bounds: [number, number, number, number] = [0, 0, 400, 300]
-    const top = 200
-
-    ds.fitToBounds(bounds, { insets: { top } })
-
-    const boundsCenterY = bounds[1] + bounds[3] * 0.5
-    const visibleCenterY = top + (1080 - top) / 2
-    expect((boundsCenterY + ds.offset[1]) * ds.scale).toBeCloseTo(
-      visibleCenterY
-    )
-  })
-
   it('uses reduced viewport for scale calculation with insets', () => {
     const ds = createDragAndScale(1920, 1080)
     const bounds: [number, number, number, number] = [0, 0, 800, 600]
@@ -89,7 +75,7 @@ describe('DragAndScale.fitToBounds', () => {
     const dsNoInset = createDragAndScale(1920, 1080)
     dsNoInset.fitToBounds(bounds)
 
-    ds.fitToBounds(bounds, { insets: { left: 0, right: 0, top: 0, bottom: 0 } })
+    ds.fitToBounds(bounds, { insets: { left: 0, right: 0 } })
 
     expect(ds.scale).toBeCloseTo(dsNoInset.scale)
     expect(ds.offset[0]).toBeCloseTo(dsNoInset.offset[0])
@@ -115,7 +101,7 @@ describe('DragAndScale.animateToBounds', () => {
     vi.useFakeTimers()
     try {
       const bounds: [number, number, number, number] = [50, 50, 500, 400]
-      const insets = { left: 150, right: 250, top: 100 }
+      const insets = { left: 150, right: 250 }
 
       const dsFit = createDragAndScale(1200, 900)
       dsFit.fitToBounds(bounds, { insets })

@@ -19,8 +19,6 @@ export interface DragAndScaleState {
 export interface ViewportInsets {
   left?: number
   right?: number
-  top?: number
-  bottom?: number
 }
 
 export type AnimationOptions = {
@@ -217,11 +215,9 @@ export class DragAndScale {
 
     const insetLeft = insets?.left ?? 0
     const insetRight = insets?.right ?? 0
-    const insetTop = insets?.top ?? 0
-    const insetBottom = insets?.bottom ?? 0
 
     const cw = fullCw - insetLeft - insetRight
-    const ch = fullCh - insetTop - insetBottom
+    const ch = fullCh
     let targetScale = this.scale
 
     if (zoom > 0) {
@@ -237,11 +233,10 @@ export class DragAndScale {
     const scaledHeight = ch / targetScale
 
     // Calculate the target position to center the bounds in the visible area
-    // Shift by insetLeft/insetTop so content is centered within the unobscured region
+    // Shift by insetLeft so content is centered within the unobscured region
     const targetX =
       -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5 + insetLeft / targetScale
-    const targetY =
-      -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5 + insetTop / targetScale
+    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
 
     // Apply the changes immediately
     this.offset[0] = targetX
@@ -275,14 +270,12 @@ export class DragAndScale {
 
     const insetLeft = insets?.left ?? 0
     const insetRight = insets?.right ?? 0
-    const insetTop = insets?.top ?? 0
-    const insetBottom = insets?.bottom ?? 0
 
     const startTimestamp = performance.now()
     const fullCw = this.element.width / window.devicePixelRatio
     const fullCh = this.element.height / window.devicePixelRatio
     const cw = fullCw - insetLeft - insetRight
-    const ch = fullCh - insetTop - insetBottom
+    const ch = fullCh
     const startX = this.offset[0]
     const startY = this.offset[1]
     const startX2 = startX - fullCw / this.scale
@@ -303,8 +296,7 @@ export class DragAndScale {
 
     const targetX =
       -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5 + insetLeft / targetScale
-    const targetY =
-      -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5 + insetTop / targetScale
+    const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
     const targetX2 = targetX - fullCw / targetScale
     const targetY2 = targetY - fullCh / targetScale
 

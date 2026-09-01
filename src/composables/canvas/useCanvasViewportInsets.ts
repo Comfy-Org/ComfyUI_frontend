@@ -23,9 +23,6 @@ export function useCanvasViewportInsets(): ComputedRef<ViewportInsets> {
     const overlapsHorizontally =
       panel.right.value > canvas.left.value &&
       panel.left.value < canvas.right.value
-    const overlapsVertically =
-      panel.bottom.value > canvas.top.value &&
-      panel.top.value < canvas.bottom.value
 
     return {
       left: overlapsHorizontally
@@ -33,12 +30,6 @@ export function useCanvasViewportInsets(): ComputedRef<ViewportInsets> {
         : 0,
       right: overlapsHorizontally
         ? Math.max(0, canvas.right.value - panel.right.value)
-        : 0,
-      top: overlapsVertically
-        ? Math.max(0, panel.top.value - canvas.top.value)
-        : 0,
-      bottom: overlapsVertically
-        ? Math.max(0, canvas.bottom.value - panel.bottom.value)
         : 0
     }
   })

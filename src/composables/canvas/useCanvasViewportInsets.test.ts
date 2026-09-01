@@ -63,7 +63,7 @@ describe('useCanvasViewportInsets', () => {
 
     const insets = await load()
     await nextTick()
-    expect(insets.value).toEqual({ left: 0, right: 0, top: 0, bottom: 0 })
+    expect(insets.value).toEqual({ left: 0, right: 0 })
   })
 
   it('computes left/right insets from a centered panel', async () => {
@@ -87,12 +87,7 @@ describe('useCanvasViewportInsets', () => {
 
     const insets = await load()
     await nextTick()
-    expect(insets.value).toMatchObject({
-      left: 300,
-      right: 300,
-      top: 0,
-      bottom: 0
-    })
+    expect(insets.value).toEqual({ left: 300, right: 300 })
   })
 
   it('returns zero insets when the panel element is absent', async () => {
@@ -108,7 +103,7 @@ describe('useCanvasViewportInsets', () => {
 
     const insets = await load()
     await nextTick()
-    expect(insets.value).toEqual({ left: 0, right: 0, top: 0, bottom: 0 })
+    expect(insets.value).toEqual({ left: 0, right: 0 })
   })
 
   it('returns zero insets when the panel does not overlap the canvas', async () => {
@@ -132,7 +127,7 @@ describe('useCanvasViewportInsets', () => {
 
     const insets = await load()
     await nextTick()
-    expect(insets.value).toEqual({ left: 0, right: 0, top: 0, bottom: 0 })
+    expect(insets.value).toEqual({ left: 0, right: 0 })
   })
 
   it('keeps horizontal insets when the panel has zero height', async () => {
@@ -156,12 +151,7 @@ describe('useCanvasViewportInsets', () => {
 
     const insets = await load()
     await nextTick()
-    expect(insets.value).toEqual({
-      left: 300,
-      right: 300,
-      top: 0,
-      bottom: 0
-    })
+    expect(insets.value).toEqual({ left: 300, right: 300 })
   })
 
   it('clamps negative differences to zero', async () => {
@@ -186,6 +176,6 @@ describe('useCanvasViewportInsets', () => {
 
     const insets = await load()
     await nextTick()
-    expect(insets.value).toEqual({ left: 0, right: 0, top: 0, bottom: 0 })
+    expect(insets.value).toEqual({ left: 0, right: 0 })
   })
 })
