@@ -2,8 +2,8 @@ import type { Model } from './models'
 import { models } from './models'
 import displayOverrides from './workshop-model-display.json'
 
-export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
-export type Modality = (typeof MODALITIES)[number]
+const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
+type Modality = (typeof MODALITIES)[number]
 
 export const MODALITY_FILTERS = ['all', ...MODALITIES, 'other'] as const
 export type ModalityFilter = (typeof MODALITY_FILTERS)[number]
@@ -11,7 +11,7 @@ export type ModalityFilter = (typeof MODALITY_FILTERS)[number]
 // Router only serves model id + billing today. Name, provider, modality and
 // price come from this hand-maintained file until Router exposes display
 // metadata (Detailed Requirements M1/M2). Values are placeholders.
-export interface WorkshopModelDisplay {
+interface WorkshopModelDisplay {
   readonly provider?: string
   readonly modality?: Modality
   readonly creditsPerRun?: number
@@ -29,11 +29,11 @@ export interface WorkshopModel {
 
 const display = displayOverrides as Record<string, WorkshopModelDisplay>
 
-export function modelDetailHref(slug: string): string {
+function modelDetailHref(slug: string): string {
   return `/p/supported-models/${slug}/`
 }
 
-export function toWorkshopModel(model: Model): WorkshopModel {
+function toWorkshopModel(model: Model): WorkshopModel {
   return {
     slug: model.slug,
     name: model.displayName,
