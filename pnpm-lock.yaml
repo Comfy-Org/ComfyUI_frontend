@@ -1050,6 +1050,9 @@ importers:
       vue-component-type-helpers:
         specifier: 'catalog:'
         version: 3.3.9
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.9(typescript@6.0.3)
 
   packages/design-system:
     dependencies:
