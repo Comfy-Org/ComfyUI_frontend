@@ -2274,6 +2274,34 @@ describe('AgentPanelRoot lifecycle', () => {
     )
   })
 
+  // The sibling test above pins the flag-clear half of the teardown ordering.
+  // This pins the other half: session.stop() must already have run when the
+  // exit raises, or an in-flight turn outlives the panel. stop() queues the
+  // abort, so a surviving activeTurnId is proof stop() never ran.
+  it('stops the session before a raising node-selection exit', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(202, { thread_id: 'th-1', message_id: 'm-1' }))
+    )
+
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await sendFromComposer('hello')
+
+    const convo = useAgentConversationStore()
+    expect(convo.activeTurnId).not.toBe(null)
+
+    const nodeSelection = useAgentNodeSelectionStore()
+    nodeSelection.enter()
+    vi.spyOn(nodeSelection, 'exit').mockImplementationOnce(() => {
+      throw new Error('exit raised')
+    })
+    expect(() => unmount()).toThrow('exit raised')
+
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(convo.activeTurnId).toBe(null)
+  })
+
   it('does not cancel the in-flight turn when the panel unmounts', async () => {
     const urls: string[] = []
     const fetchMock = vi.fn(async (url: string) => {
