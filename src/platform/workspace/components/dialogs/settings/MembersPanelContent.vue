@@ -63,7 +63,7 @@
             v-if="uiConfig.showMembersList && showViewTabs"
             :class="
               cn(
-                'sticky top-0 z-10 grid w-full items-center bg-base-background p-2',
+                'sticky -top-px z-10 grid w-full items-center bg-base-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
                 activeView === 'pending'
                   ? uiConfig.pendingGridCols
                   : uiConfig.headerGridCols
