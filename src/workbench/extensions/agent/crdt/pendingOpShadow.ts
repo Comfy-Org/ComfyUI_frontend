@@ -9,7 +9,8 @@
  *
  * - Presentation ONLY. Shadows never touch Yjs, never feed the applier, and
  *   are never encoded as a Yjs update or merged into the shared doc
- *   (KEEP-ALIVE #9, FORECLOSE #5). The module has zero imports.
+ *   (KEEP-ALIVE #9, FORECLOSE #5). The module's only import is
+ *   `@/base/assert` — a base-layer leaf with no Yjs/DOM/framework coupling.
  * - `show` registers a shadow exactly once per op id — never an overwrite —
  *   mirroring the ledger's enqueue semantics.
  * - `revert(opId)` and `clear(opId)` are the two removal verbs consumed by

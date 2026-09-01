@@ -212,16 +212,27 @@ describe('pendingOpShadow (s3-opt-5 presentation surface)', () => {
     expect(surface.pendingShadows()).toHaveLength(1)
   })
 
-  it('never touches Yjs or the shared doc: the module has zero imports', () => {
+  it('never touches Yjs or the shared doc: the only permitted import is @/base/assert', () => {
     // FORECLOSE #5 guard: the overlay must stay presentation-only. Importing
-    // yjs (or anything else) from this module would be the first step toward
-    // encoding shadows into the shared doc, so pin the import surface itself.
+    // yjs (or anything that could reach the shared doc) from this module
+    // would be the first step toward encoding shadows into the shared doc.
+    // @/base/assert is the repo's central invariant channel (ADR 0019) — a
+    // base-layer leaf with no Yjs/DOM/framework coupling.
     const source = readFileSync(
       new URL('./pendingOpShadow.ts', pathToFileURL(import.meta.filename)),
       'utf8'
     )
-    expect(source).not.toMatch(/\b(?:import|export)\s*(?:\(|\{|\*|["'])/)
-    expect(source).not.toMatch(/\brequire\s*\(/)
-    expect(source).not.toMatch(/\bfrom\s*["']yjs["']/)
+    const code = source
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+    expect(code).not.toMatch(/\bimport\s*\(/)
+    expect(code).not.toMatch(/\bimport\s*["']/)
+    expect(code).not.toMatch(/\bexport\s*(?:\{|\*)/)
+    expect(code).not.toMatch(/\brequire\s*\(/)
+    expect(code).not.toMatch(/\bfrom\s*["']yjs["']/)
+    const fromSpecifiers = [...code.matchAll(/\bfrom\s*["']([^"']+)["']/g)].map(
+      (m) => m[1]
+    )
+    expect(fromSpecifiers.every((s) => s === '@/base/assert')).toBe(true)
   })
 })
