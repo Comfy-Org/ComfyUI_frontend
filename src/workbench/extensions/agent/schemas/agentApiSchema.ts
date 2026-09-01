@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
+export const toTurnId = (value: string): TurnId => zTurnId.parse(value)
 
 export const zAgentTurnAccepted = z
   .object({
