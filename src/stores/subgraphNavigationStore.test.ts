@@ -558,6 +558,37 @@ describe('useSubgraphNavigationStore', () => {
     )
   })
 
+  it('returns false when a delayed graph navigation is superseded', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const firstId = '11111111-1111-4111-8111-111111111111'
+    const secondId = '22222222-2222-4222-8222-222222222222'
+    const firstGraph = createMockSubgraph(firstId)
+    const secondGraph = createMockSubgraph(secondId)
+    let resolveFirstPush: (() => void) | undefined
+
+    app.rootGraph.subgraphs.set(firstId, firstGraph)
+    app.rootGraph.subgraphs.set(secondId, secondGraph)
+    vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
+      app.canvas.graph = graph
+    })
+    routerPush.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveFirstPush = resolve
+        })
+    )
+
+    const firstNavigation = navigationStore.navigateToGraph(firstGraph)
+    await vi.waitFor(() => expect(resolveFirstPush).toBeTypeOf('function'))
+    const secondNavigation = navigationStore.navigateToGraph(secondGraph)
+    resolveFirstPush?.()
+
+    await expect(firstNavigation).resolves.toBe(false)
+    await expect(secondNavigation).resolves.toBe(true)
+    expect(app.canvas.graph).toBe(secondGraph)
+    expect(routeHash.value).toBe('#' + secondId)
+  })
+
   it('rejects a graph outside the active workflow without moving the canvas', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const originalGraph = app.canvas.graph
@@ -580,7 +611,7 @@ describe('useSubgraphNavigationStore', () => {
     expect(routerPush).not.toHaveBeenCalled()
   })
 
-  it('does not supersede workflow navigation when focus is already active', async () => {
+  it('leaves workflow navigation untouched when focus is already active', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowNavigationId = navigationStore.beginWorkflowNavigation()
 

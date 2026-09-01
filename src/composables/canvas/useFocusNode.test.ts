@@ -26,6 +26,7 @@ const { canvasStore, createCanvas } = vi.hoisted(() => {
   }
 })
 const navigateToGraph = vi.hoisted(() => vi.fn())
+const animationFrame = vi.hoisted(() => vi.fn())
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => canvasStore
@@ -51,13 +52,16 @@ describe('useFocusNode', () => {
       canvasStore.canvas!.graph = graph
       return true
     })
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    animationFrame.mockReset()
+    animationFrame.mockImplementation((callback: FrameRequestCallback) => {
       return animationFrames.push(callback)
     })
+    vi.stubGlobal('requestAnimationFrame', animationFrame)
   })
 
-  function finishNavigationFrames() {
+  async function finishNavigationFrames() {
     animationFrames.shift()?.(0)
+    await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
     animationFrames.shift()?.(0)
   }
 
@@ -69,7 +73,7 @@ describe('useFocusNode', () => {
     const focusPromise = useFocusNode().focusNodeInstance(node)
 
     await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
-    finishNavigationFrames()
+    await finishNavigationFrames()
     await focusPromise
 
     expect(navigateToGraph).toHaveBeenCalledWith(graph)
@@ -93,7 +97,7 @@ describe('useFocusNode', () => {
     const replacementCanvas = createCanvas()
     replacementCanvas.graph = graph
     canvasStore.canvas = replacementCanvas
-    finishNavigationFrames()
+    await finishNavigationFrames()
     await focusPromise
 
     expect(staleCanvas.animateToBounds).not.toHaveBeenCalled()
@@ -115,7 +119,7 @@ describe('useFocusNode', () => {
 
     await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
     canvasStore.canvas = undefined
-    finishNavigationFrames()
+    await finishNavigationFrames()
     await focusPromise
 
     expect(staleCanvas.animateToBounds).not.toHaveBeenCalled()
@@ -133,7 +137,7 @@ describe('useFocusNode', () => {
 
     await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
     canvasStore.canvas!.graph = competingGraph
-    finishNavigationFrames()
+    await finishNavigationFrames()
     await focusPromise
 
     expect(canvasStore.canvas!.animateToBounds).not.toHaveBeenCalled()
@@ -182,8 +186,6 @@ describe('useFocusNode', () => {
     } as unknown as LGraphNode
     graph.nodes.push(node)
     canvasStore.canvas!.graph = graph
-    const animationFrame = vi.mocked(requestAnimationFrame)
-
     await useFocusNode().focusNodeInstance(node)
 
     expect(animationFrame).not.toHaveBeenCalled()
@@ -204,6 +206,48 @@ describe('useFocusNode', () => {
     })
 
     await useFocusNode().focusNodeInstance(node)
+
+    expect(canvasStore.canvas!.animateToBounds).not.toHaveBeenCalled()
+  })
+
+  it('does not frame when the canvas is torn down during navigation', async () => {
+    const graph = { isRootGraph: false, nodes: [] } as unknown as LGraph
+    const node = {
+      graph,
+      boundingRect: [1, 2, 3, 4]
+    } as unknown as LGraphNode
+    graph.nodes.push(node)
+    const staleCanvas = canvasStore.canvas!
+    navigateToGraph.mockImplementation(async () => {
+      canvasStore.canvas = undefined
+      return true
+    })
+    const focusPromise = useFocusNode().focusNodeInstance(node)
+
+    await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
+    await finishNavigationFrames()
+    await focusPromise
+
+    expect(staleCanvas.animateToBounds).not.toHaveBeenCalled()
+  })
+
+  it('does not frame when navigation settles on another graph', async () => {
+    const graph = { isRootGraph: false, nodes: [] } as unknown as LGraph
+    const otherGraph = { isRootGraph: false, nodes: [] } as unknown as LGraph
+    const node = {
+      graph,
+      boundingRect: [1, 2, 3, 4]
+    } as unknown as LGraphNode
+    graph.nodes.push(node)
+    navigateToGraph.mockImplementation(async () => {
+      canvasStore.canvas!.graph = otherGraph
+      return true
+    })
+    const focusPromise = useFocusNode().focusNodeInstance(node)
+
+    await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
+    await finishNavigationFrames()
+    await focusPromise
 
     expect(canvasStore.canvas!.animateToBounds).not.toHaveBeenCalled()
   })
