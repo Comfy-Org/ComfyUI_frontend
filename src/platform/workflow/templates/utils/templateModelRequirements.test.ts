@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { extractTemplateModelRequirementDetails } from './templateModelRequirements'
 
@@ -16,13 +17,15 @@ function node(
   models: readonly unknown[],
   selectedModelNames: readonly string[] | Record<string, unknown>,
   {
+    mode,
     title,
     type = 'CheckpointLoaderSimple'
-  }: { title?: unknown; type?: string } = {}
+  }: { mode?: LGraphEventMode; title?: unknown; type?: string } = {}
 ) {
   return {
     id,
     type,
+    ...(mode !== undefined && { mode }),
     ...(title !== undefined && { title }),
     properties: { models },
     widgets_values: selectedModelNames
@@ -45,9 +48,8 @@ function subgraphDefinition(
 }
 
 describe('extractTemplateModelRequirementDetails', () => {
-  it('extracts selected node declarations before top-level declarations', () => {
-    const nodeModel = model('shared.safetensors', 'checkpoints', 'node-version')
-    const topLevelDuplicate = model(
+  it('uses workflow-level metadata only to enrich active node selections', () => {
+    const topLevelSelected = model(
       'shared.safetensors',
       'checkpoints',
       'top-level-version'
@@ -56,13 +58,10 @@ describe('extractTemplateModelRequirementDetails', () => {
 
     expect(
       extractTemplateModelRequirementDetails({
-        nodes: [node(1, [nodeModel], [nodeModel.name])],
-        models: [topLevelDuplicate, topLevelModel]
+        nodes: [node(1, [], [topLevelSelected.name])],
+        models: [topLevelSelected, topLevelModel]
       })
-    ).toEqual([
-      { model: nodeModel, usedBy: ['CheckpointLoaderSimple'] },
-      { model: topLevelModel, usedBy: [] }
-    ])
+    ).toEqual([{ model: topLevelSelected, usedBy: ['CheckpointLoaderSimple'] }])
   })
 
   it('only extracts node declarations selected by serialized widget values', () => {
@@ -119,6 +118,54 @@ describe('extractTemplateModelRequirementDetails', () => {
         }
       })
     ).toEqual([])
+  })
+
+  it.for([LGraphEventMode.NEVER, LGraphEventMode.BYPASS])(
+    'excludes selected models on inactive nodes in mode %s',
+    (mode) => {
+      const inactiveModel = model('inactive.safetensors', 'checkpoints')
+
+      expect(
+        extractTemplateModelRequirementDetails({
+          nodes: [node(1, [inactiveModel], [inactiveModel.name], { mode })]
+        })
+      ).toEqual([])
+    }
+  )
+
+  it.for([LGraphEventMode.NEVER, LGraphEventMode.BYPASS])(
+    'excludes selected models below an inactive subgraph in mode %s',
+    (mode) => {
+      const nestedModel = model('nested.safetensors', 'checkpoints')
+      const definition = subgraphDefinition('inactive-subgraph', [
+        node(2, [nestedModel], [nestedModel.name])
+      ])
+
+      expect(
+        extractTemplateModelRequirementDetails({
+          nodes: [{ id: 1, type: 'inactive-subgraph', mode }],
+          definitions: { subgraphs: [definition] }
+        })
+      ).toEqual([])
+    }
+  )
+
+  it('keeps only active usage when active and inactive nodes select the same model', () => {
+    const sharedModel = model('shared.safetensors', 'checkpoints')
+
+    expect(
+      extractTemplateModelRequirementDetails({
+        nodes: [
+          node(1, [sharedModel], [sharedModel.name], {
+            title: 'Active loader'
+          }),
+          node(2, [sharedModel], [sharedModel.name], {
+            mode: LGraphEventMode.BYPASS,
+            title: 'Bypassed loader'
+          })
+        ]
+      })
+    ).toEqual([{ model: sharedModel, usedBy: ['Active loader'] }])
   })
 
   it.for([
@@ -216,7 +263,7 @@ describe('extractTemplateModelRequirementDetails', () => {
     ])
   })
 
-  it('keeps top-level-only same-name models in separate directories', () => {
+  it('does not infer requirements from workflow-level metadata alone', () => {
     const checkpoint = model('shared.safetensors', 'checkpoints')
     const lora = model('shared.safetensors', 'loras')
 
@@ -224,9 +271,6 @@ describe('extractTemplateModelRequirementDetails', () => {
       extractTemplateModelRequirementDetails({
         models: [checkpoint, lora]
       })
-    ).toEqual([
-      { model: checkpoint, usedBy: [] },
-      { model: lora, usedBy: [] }
-    ])
+    ).toEqual([])
   })
 })
