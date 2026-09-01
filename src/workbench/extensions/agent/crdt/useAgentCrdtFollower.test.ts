@@ -286,6 +286,10 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
     expect(status().updatesApplied).toBe(3)
 
+    dispatchFrame('follower_replaced', { workflowId: 'wf-2' })
+    expect(status().updatesApplied).toBe(3)
+    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
     expect(status().updatesApplied).toBe(0)
     expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
