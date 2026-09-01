@@ -4,12 +4,16 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
-export function nodeWidgetId(node: LGraphNode, name: string): WidgetId | null {
+function nodeWidgetId(node: LGraphNode, name: string): WidgetId | null {
   const graphId = node.graph?.rootGraph?.id
   return graphId ? widgetId(graphId, node.id, name) : null
 }
 
-export function getNodeWidgetValue(node: LGraphNode, name: string): unknown {
+export function getNodeWidgetValue(
+  node: LGraphNode | null | undefined,
+  name: string
+): unknown {
+  if (!node) return undefined
   const id = nodeWidgetId(node, name)
   const state = id ? useWidgetValueStore().getWidget(id) : undefined
   if (state) return state.value
@@ -17,10 +21,11 @@ export function getNodeWidgetValue(node: LGraphNode, name: string): unknown {
 }
 
 export function setNodeWidgetValue(
-  node: LGraphNode,
+  node: LGraphNode | null | undefined,
   name: string,
   value: WidgetValue
 ): boolean {
+  if (!node) return false
   const id = nodeWidgetId(node, name)
   if (id && useWidgetValueStore().setValue(id, value)) return true
   const widget = node.widgets?.find((w) => w.name === name)
