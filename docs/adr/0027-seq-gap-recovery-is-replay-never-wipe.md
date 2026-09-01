@@ -1,4 +1,4 @@
-# 26. Seq-Gap Recovery Is State-Vector Delta Replay — Never Wipe the Follower Doc
+# 27. Seq-Gap Recovery Is State-Vector Delta Replay — Never Wipe the Follower Doc
 
 Date: 2026-08-28
 
