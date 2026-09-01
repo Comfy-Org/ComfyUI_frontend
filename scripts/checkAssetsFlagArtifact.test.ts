@@ -118,6 +118,17 @@ describe('assertBuildProvenance', () => {
       )
     }
   )
+
+  it('rejects malformed JSON manifests', () => {
+    expect(() => assertBuildProvenance('{', commit, 'desktop')).toThrow()
+  })
+
+  it.for([
+    JSON.stringify({ distribution: 'desktop' }),
+    JSON.stringify({ commit })
+  ])('rejects manifests missing a required field: %s', (manifest) => {
+    expect(() => assertBuildProvenance(manifest, commit, 'desktop')).toThrow()
+  })
 })
 
 describe('assertNoTestFixtures', () => {
