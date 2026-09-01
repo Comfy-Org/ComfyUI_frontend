@@ -240,6 +240,26 @@ describe('useMaskEditorSaver', () => {
     ])
   })
 
+  it('does not write server references after the source node is detached', async () => {
+    vi.mocked(api.fetchApi).mockImplementation(async () => {
+      mockNode.graph = null
+      return {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: 'clipspace-painted-masked-123.png',
+            subfolder: 'clipspace',
+            type: 'input'
+          })
+      } as Response
+    })
+
+    await useMaskEditorSaver().save()
+
+    expect(useNodeOutputStore().nodeOutputs['42']).toBeUndefined()
+    expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
+  })
+
   it('omits subfolder from the upload FormData under the unified contract', async () => {
     const fetchApiMock = vi.mocked(api.fetchApi)
 

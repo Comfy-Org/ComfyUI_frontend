@@ -277,6 +277,8 @@ export function useMaskEditorSaver() {
     node: LGraphNode,
     outputData: EditorOutputData
   ): void {
+    if (!node.graph) return
+
     const mainRef = outputData.paintedMaskedImage.ref
 
     writeImageWidgetValue(
