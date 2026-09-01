@@ -30,4 +30,22 @@ describe('bootstrap performance tracing', () => {
 
     expect(mark).toHaveBeenCalledWith('bootstrap/milestone/test')
   })
+
+  it('suppresses errors from Datadog telemetry', () => {
+    vi.stubGlobal('performance', {
+      mark: vi.fn(),
+      measure: vi.fn(() => ({ duration: 1 })),
+      now: vi.fn(() => 0)
+    })
+    vi.stubGlobal('DD_RUM', {
+      addAction: vi.fn(() => {
+        throw new Error('Datadog unavailable')
+      })
+    })
+
+    const span = perfMark('bootstrap/test')
+
+    expect(() => span.stop()).not.toThrow()
+    expect(() => perfPoint('bootstrap/milestone/test')).not.toThrow()
+  })
 })
