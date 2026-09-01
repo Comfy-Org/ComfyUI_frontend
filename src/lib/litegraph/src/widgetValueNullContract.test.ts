@@ -28,9 +28,9 @@ vi.mock('@/platform/nodeReplacement/cnrIdUtil', () => ({
 const NODE_TYPE = 'test/NullContractNode'
 const DEFAULT_VALUE = 'default'
 
-const nullSlotTypeContract = {
-  widgets_values: [30, null, 12345]
-} satisfies Partial<ISerialisedNode>
+const nullSlotTypeContract = [30, null, 12345] satisfies NonNullable<
+  ISerialisedNode['widgets_values']
+>
 
 function registerNullContractNode(): void {
   class NullContractNode extends LGraphNode {
@@ -75,10 +75,6 @@ function firstWidget(graph: LGraph) {
 describe('widget value null contract', () => {
   const origNamedValuesRestore = LiteGraph.namedValuesRestore
 
-  it('models null slots in the serialized node type', () => {
-    expect(nullSlotTypeContract.widgets_values[1]).toBeNull()
-  })
-
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     registerNullContractNode()
@@ -118,6 +114,23 @@ describe('widget value null contract', () => {
   })
 
   describe('LGraphNode.configure (workflow read)', () => {
+    it('restores a typed null in the middle positional slot', () => {
+      LiteGraph.namedValuesRestore = false
+      const graph = new LGraph()
+      const node = new LGraphNode('Three widgets')
+      node.addWidget('number', 'first', 0, () => undefined)
+      node.addWidget('number', 'nullable', 0, () => undefined)
+      node.addWidget('number', 'third', 0, () => undefined)
+      graph.add(node)
+
+      node.configure({
+        ...node.serialize(),
+        widgets_values: nullSlotTypeContract
+      })
+
+      expect(node.widgets?.map(({ value }) => value)).toEqual([30, null, 12345])
+    })
+
     it('restores a null widget value through the indexed path', () => {
       LiteGraph.namedValuesRestore = false
       const { graph } = makeGraphWithWidget(null)
